@@ -11,10 +11,10 @@
 package org.eclipse.milo.opcua.sdk.server.api.config;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-import com.google.common.io.Files;
 import org.eclipse.milo.opcua.sdk.server.identity.AnonymousIdentityValidator;
 import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.DefaultTrustListManager;
@@ -29,7 +29,7 @@ public class OpcUaServerConfigTest {
 
     @Test
     public void testCopy() throws IOException {
-        DefaultTrustListManager trustListManager = new DefaultTrustListManager(Files.createTempDir());
+        DefaultTrustListManager trustListManager = new DefaultTrustListManager(Files.createTempDirectory("OpcUaServerConfigTest.testCopy").toFile());
 
         ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
 
