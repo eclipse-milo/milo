@@ -32,6 +32,11 @@ public class ChunkDecoderTest {
             assertTrue(validateSequenceNumber(UInteger.MAX_VALUE - 1024, i));
         }
 
+        // wrapping around to anything < 1024 is allowed, from UInteger.MAX_VALUE
+        for (int i = 0; i < 1024; i++) {
+            assertTrue(validateSequenceNumber(UInteger.MAX_VALUE, i));
+        }
+
         // wrapping around to >= 1024 is not allowed
         for (int i = 1024; i < 2048; i++) {
             assertFalse(validateSequenceNumber(UInteger.MAX_VALUE - 1024, i));

@@ -537,7 +537,7 @@ public final class ChunkDecoder {
                 return sequenceNumber < 1024 || sequenceNumber == lastSequenceNumber + 1;
             } else if (lastSequenceNumber == UInteger.MAX_VALUE) {
                 // must wrap at this point
-                return sequenceNumber > 0 && sequenceNumber < 1024;
+                return sequenceNumber >= 0 && sequenceNumber < 1024;
             } else {
                 return sequenceNumber == lastSequenceNumber + 1;
             }
