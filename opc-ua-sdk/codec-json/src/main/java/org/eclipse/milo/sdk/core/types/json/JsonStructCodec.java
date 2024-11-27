@@ -217,11 +217,11 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
             if (hint instanceof BuiltinDataType) {
                 Matrix matrix = decoder.decodeMatrix(fieldName, (BuiltinDataType) hint);
 
-                return decodeBuiltinDataTypeMatrix(matrix);
+                return decodeBuiltinDataTypeMatrix(decoder.getEncodingContext(), matrix);
             } else if (hint instanceof EnumHint) {
                 Matrix matrix = decoder.decodeEnumMatrix(fieldName);
 
-                return decodeEnumMatrix(matrix);
+                return decodeEnumMatrix(decoder.getEncodingContext(), matrix);
             } else if (hint instanceof StructHint) {
                 if (dataTypeId.equals(NodeIds.Structure) || fieldAllowsSubtyping(field)) {
                     Matrix matrix = decoder.decodeMatrix(fieldName, BuiltinDataType.ExtensionObject);
@@ -279,7 +279,21 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
             case LocalizedText -> JsonConversions.fromLocalizedText(decoder.decodeLocalizedText(fieldName));
             case ExtensionObject -> JsonConversions.fromExtensionObject(decoder.decodeExtensionObject(fieldName));
             case DataValue -> JsonConversions.fromDataValue(decoder.decodeDataValue(fieldName));
-            case Variant -> JsonConversions.fromVariant(decoder.decodeVariant(fieldName));
+            case Variant -> {
+                Variant variant = decoder.decodeVariant(fieldName);
+
+                if (variant.getValue() instanceof ExtensionObject xo) {
+                    try {
+                        JsonStruct jsonStruct = (JsonStruct) xo.decode(decoder.getEncodingContext());
+
+                        yield jsonStruct.getJsonObject();
+                    } catch (Exception e) {
+                        yield JsonConversions.fromVariant(variant);
+                    }
+                } else {
+                    yield JsonConversions.fromVariant(variant);
+                }
+            }
             default -> JsonNull.INSTANCE;
         };
     }
@@ -447,39 +461,75 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
                 }
                 return array;
             }
-            case Variant:
+            case Variant: {
                 var array = new JsonArray();
-                for (Variant value : decoder.decodeVariantArray(fieldName)) {
-                    array.add(JsonConversions.fromVariant(value));
-                }
-                return array;
 
+                for (Variant variant : decoder.decodeVariantArray(fieldName)) {
+                    if (variant.getValue() instanceof ExtensionObject xo) {
+                        try {
+                            JsonStruct jsonStruct = (JsonStruct) xo.decode(decoder.getEncodingContext());
+
+                            array.add(jsonStruct.getJsonObject());
+                        } catch (Exception e) {
+                            array.add(JsonConversions.fromVariant(variant));
+                        }
+                    } else {
+                        array.add(JsonConversions.fromVariant(variant));
+                    }
+                }
+
+                return array;
+            }
             case DiagnosticInfo:
             default:
                 return JsonNull.INSTANCE;
         }
     }
 
-    static JsonElement decodeBuiltinDataTypeMatrix(Matrix matrix) {
+    static JsonElement decodeBuiltinDataTypeMatrix(EncodingContext context, Matrix matrix) {
         return matrix.getBuiltinDataType()
             .map(dataType ->
-                decodeBuiltinDataTypeMatrix(matrix.getElements(), dataType, matrix.getDimensions(), 0)
+                decodeBuiltinDataTypeMatrix(context, matrix.getElements(), dataType, matrix.getDimensions(), 0)
             )
             .orElse(JsonNull.INSTANCE);
     }
 
-    private static JsonElement decodeBuiltinDataTypeMatrix(Object flatArray, BuiltinDataType dataType, int[] dimensions, int offset) {
+    private static JsonElement decodeBuiltinDataTypeMatrix(
+        EncodingContext context,
+        Object flatArray,
+        BuiltinDataType dataType,
+        int[] dimensions,
+        int offset
+    ) {
+
         var jsonArray = new JsonArray();
 
         if (dimensions.length == 1) {
             for (int i = 0; i < dimensions[0]; i++) {
-                jsonArray.add(JsonConversions.from(Array.get(flatArray, offset + i), dataType));
+                if (dataType == BuiltinDataType.Variant) {
+                    try {
+                        Variant variant = (Variant) Array.get(flatArray, offset + i);
+
+                        if (variant.getValue() instanceof ExtensionObject xo) {
+                            JsonStruct jsonStruct = (JsonStruct) xo.decode(context);
+
+                            jsonArray.add(jsonStruct.getJsonObject());
+                        } else {
+                            jsonArray.add(JsonConversions.fromVariant(variant));
+                        }
+                    } catch (Exception e) {
+                        jsonArray.add(JsonConversions.from(Array.get(flatArray, offset + i), dataType));
+                    }
+                } else {
+                    jsonArray.add(JsonConversions.from(Array.get(flatArray, offset + i), dataType));
+                }
             }
         } else {
             int[] dimensionsTail = Arrays.copyOfRange(dimensions, 1, dimensions.length);
 
             for (int i = 0; i < dimensions[0]; i++) {
                 JsonElement e = decodeBuiltinDataTypeMatrix(
+                    context,
                     flatArray,
                     dataType,
                     dimensionsTail,
@@ -493,8 +543,8 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
         return jsonArray;
     }
 
-    static JsonElement decodeEnumMatrix(Matrix matrix) {
-        return decodeBuiltinDataTypeMatrix(matrix.getElements(), BuiltinDataType.Int32, matrix.getDimensions(), 0);
+    static JsonElement decodeEnumMatrix(EncodingContext context, Matrix matrix) {
+        return decodeBuiltinDataTypeMatrix(context, matrix.getElements(), BuiltinDataType.Int32, matrix.getDimensions(), 0);
     }
 
     static JsonElement decodeStructMatrix(EncodingContext context, Matrix matrix, boolean subtyped) {
