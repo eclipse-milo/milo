@@ -593,8 +593,11 @@ public class SessionFsmFactory {
                 SessionFsm.SessionActivityListeners sessionActivityListeners =
                     KEY_SESSION_ACTIVITY_LISTENERS.get(ctx);
 
-                sessionActivityListeners.sessionActivityListeners
-                    .forEach(listener -> listener.onSessionActive(session));
+                client.getConfig().getExecutor().execute(
+                    () ->
+                        sessionActivityListeners.sessionActivityListeners
+                            .forEach(listener -> listener.onSessionActive(session))
+                );
             });
 
         // onSessionInactive() callbacks
@@ -607,8 +610,11 @@ public class SessionFsmFactory {
                 SessionFsm.SessionActivityListeners sessionActivityListeners =
                     KEY_SESSION_ACTIVITY_LISTENERS.get(ctx);
 
-                sessionActivityListeners.sessionActivityListeners
-                    .forEach(listener -> listener.onSessionInactive(session));
+                client.getConfig().getExecutor().execute(
+                    () ->
+                        sessionActivityListeners.sessionActivityListeners
+                            .forEach(listener -> listener.onSessionInactive(session))
+                );
             });
 
 
