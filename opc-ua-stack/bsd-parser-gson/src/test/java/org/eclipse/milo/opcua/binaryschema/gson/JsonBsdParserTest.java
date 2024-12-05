@@ -151,7 +151,7 @@ public class JsonBsdParserTest extends BsdParserTest {
             "    \"LocationType\": 0\n" +
             "}";
 
-        JsonObject scanSettings = new JsonParser().parse(json).getAsJsonObject();
+        JsonObject scanSettings = JsonParser.parseString(json).getAsJsonObject();
 
         OpcUaBinaryDataTypeCodec<Object> codec = getCodec("ScanSettings");
 
