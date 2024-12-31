@@ -11,23 +11,21 @@
 package org.eclipse.milo.opcua.sdk.client.subscriptions;
 
 import java.util.Optional;
-
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 
 interface ServiceOperationResult<T> {
 
-    /**
-     * The StatusCode associated with the service call this operation was a part of.
-     *
-     * @return the StatusCode associated with the service call this operation was a part of.
-     */
-    StatusCode serviceResult();
+  /**
+   * The StatusCode associated with the service call this operation was a part of.
+   *
+   * @return the StatusCode associated with the service call this operation was a part of.
+   */
+  StatusCode serviceResult();
 
-    /**
-     * The operation-level result.
-     *
-     * @return the operation-level result.
-     */
-    Optional<T> operationResult();
-
+  /**
+   * The operation-level result.
+   *
+   * @return the operation-level result.
+   */
+  Optional<T> operationResult();
 }

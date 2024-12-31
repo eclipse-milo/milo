@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -23,16 +23,15 @@ import org.eclipse.milo.opcua.stack.transport.server.ServiceRequestContext;
 
 public interface NodeManagementServiceSet {
 
-    AddNodesResponse onAddNodes(
-        ServiceRequestContext context, AddNodesRequest request) throws UaException;
+  AddNodesResponse onAddNodes(ServiceRequestContext context, AddNodesRequest request)
+      throws UaException;
 
-    DeleteNodesResponse onDeleteNodes(
-        ServiceRequestContext context, DeleteNodesRequest request) throws UaException;
+  DeleteNodesResponse onDeleteNodes(ServiceRequestContext context, DeleteNodesRequest request)
+      throws UaException;
 
-    AddReferencesResponse onAddReferences(
-        ServiceRequestContext context, AddReferencesRequest request) throws UaException;
+  AddReferencesResponse onAddReferences(ServiceRequestContext context, AddReferencesRequest request)
+      throws UaException;
 
-    DeleteReferencesResponse onDeleteReferences(
-        ServiceRequestContext context, DeleteReferencesRequest request) throws UaException;
-
+  DeleteReferencesResponse onDeleteReferences(
+      ServiceRequestContext context, DeleteReferencesRequest request) throws UaException;
 }

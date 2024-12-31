@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -10,13 +10,8 @@
 
 package org.eclipse.milo.opcua.stack.transport.websocket;
 
-import java.net.ConnectException;
-import java.net.URI;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
+import static java.util.Objects.requireNonNullElse;
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
 import com.digitalpetri.fsm.FsmContext;
 import com.digitalpetri.netty.fsm.ChannelActions;
@@ -51,6 +46,13 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
+import java.net.ConnectException;
+import java.net.URI;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import org.eclipse.milo.opcua.stack.core.Stack;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -69,28 +71,27 @@ import org.eclipse.milo.opcua.stack.transport.client.uasc.UascClientConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Objects.requireNonNullElse;
-import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
-
 public class OpcWebSocketClientTransport extends AbstractUascClientTransport {
 
-    private static final FsmContext.Key<ClientApplicationContext> KEY_CLIENT_APPLICATION =
-        new FsmContext.Key<>("clientApplication", ClientApplicationContext.class);
+  private static final FsmContext.Key<ClientApplicationContext> KEY_CLIENT_APPLICATION =
+      new FsmContext.Key<>("clientApplication", ClientApplicationContext.class);
 
-    private static final String CHANNEL_FSM_LOGGER_NAME = "org.eclipse.milo.opcua.stack.client.WebSocketChannelFsm";
-    private static final AtomicLong INSTANCE_ID = new AtomicLong();
+  private static final String CHANNEL_FSM_LOGGER_NAME =
+      "org.eclipse.milo.opcua.stack.client.WebSocketChannelFsm";
+  private static final AtomicLong INSTANCE_ID = new AtomicLong();
 
-    private final ChannelFsm channelFsm;
+  private final ChannelFsm channelFsm;
 
-    private final OpcWebSocketClientTransportConfig config;
+  private final OpcWebSocketClientTransportConfig config;
 
-    public OpcWebSocketClientTransport(OpcWebSocketClientTransportConfig config) {
-        super(config);
+  public OpcWebSocketClientTransport(OpcWebSocketClientTransportConfig config) {
+    super(config);
 
-        this.config = config;
+    this.config = config;
 
-        // TODO use configurable executors
-        ChannelFsmConfig fsmConfig = ChannelFsmConfig.newBuilder()
+    // TODO use configurable executors
+    ChannelFsmConfig fsmConfig =
+        ChannelFsmConfig.newBuilder()
             .setLazy(false) // reconnect immediately
             .setMaxIdleSeconds(0) // keep alive handled by SessionFsm
             .setMaxReconnectDelaySeconds(16)
@@ -102,199 +103,196 @@ public class OpcWebSocketClientTransport extends AbstractUascClientTransport {
             .setLoggingContext(Map.of("instance-id", String.valueOf(INSTANCE_ID.incrementAndGet())))
             .build();
 
-        var factory = new ChannelFsmFactory(fsmConfig);
+    var factory = new ChannelFsmFactory(fsmConfig);
 
-        channelFsm = factory.newChannelFsm();
+    channelFsm = factory.newChannelFsm();
+  }
+
+  @Override
+  public OpcWebSocketClientTransportConfig getConfig() {
+    return config;
+  }
+
+  @Override
+  public CompletableFuture<Unit> connect(ClientApplicationContext applicationContext) {
+    channelFsm
+        .getFsm()
+        .withContext(
+            (Consumer<FsmContext<State, Event>>)
+                ctx -> ctx.set(KEY_CLIENT_APPLICATION, applicationContext));
+
+    return channelFsm.connect().thenApply(c -> Unit.VALUE);
+  }
+
+  @Override
+  public CompletableFuture<Unit> disconnect() {
+    return channelFsm.disconnect().thenApply(v -> Unit.VALUE);
+  }
+
+  @Override
+  protected CompletableFuture<Channel> getChannel() {
+    return channelFsm.getChannel();
+  }
+
+  private class ClientChannelActions implements ChannelActions {
+
+    private final Logger logger = LoggerFactory.getLogger(CHANNEL_FSM_LOGGER_NAME);
+
+    private final UascClientConfig config;
+
+    private ClientChannelActions(UascClientConfig config) {
+      this.config = config;
     }
 
     @Override
-    public OpcWebSocketClientTransportConfig getConfig() {
-        return config;
-    }
+    public CompletableFuture<Channel> connect(FsmContext<State, Event> ctx) {
+      ClientApplicationContext application =
+          (ClientApplicationContext) ctx.get(KEY_CLIENT_APPLICATION);
 
-    @Override
-    public CompletableFuture<Unit> connect(ClientApplicationContext applicationContext) {
-        channelFsm.getFsm().withContext(
-            (Consumer<FsmContext<State, Event>>) ctx ->
-                ctx.set(KEY_CLIENT_APPLICATION, applicationContext)
-        );
+      var handshakeFuture = new CompletableFuture<ClientSecureChannel>();
 
-        return channelFsm.connect().thenApply(c -> Unit.VALUE);
-    }
+      var bootstrap = new Bootstrap();
 
-    @Override
-    public CompletableFuture<Unit> disconnect() {
-        return channelFsm.disconnect().thenApply(v -> Unit.VALUE);
-    }
+      bootstrap
+          .channel(NioSocketChannel.class)
+          .group(OpcWebSocketClientTransport.this.config.getEventLoop())
+          .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+          .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5_000)
+          .option(ChannelOption.TCP_NODELAY, true)
+          .handler(
+              new ChannelInitializer<SocketChannel>() {
+                @Override
+                protected void initChannel(SocketChannel channel) throws Exception {
+                  String endpointUrl =
+                      requireNonNullElse(application.getEndpoint().getEndpointUrl(), "");
+                  String scheme = EndpointUtil.getScheme(endpointUrl);
 
-    @Override
-    protected CompletableFuture<Channel> getChannel() {
-        return channelFsm.getChannel();
-    }
+                  TransportProfile transportProfile =
+                      TransportProfile.fromUri(
+                          requireNonNullElse(
+                              application.getEndpoint().getTransportProfileUri(), ""));
 
-    private class ClientChannelActions implements ChannelActions {
+                  String subprotocol;
+                  if (transportProfile == TransportProfile.WSS_UASC_UABINARY) {
+                    subprotocol = "opcua+cp";
+                  } else if (transportProfile == TransportProfile.WSS_UAJSON) {
+                    subprotocol = "opcua+uajson";
+                  } else {
+                    throw new UaException(
+                        StatusCodes.Bad_InternalError,
+                        "unexpected TransportProfile: " + transportProfile);
+                  }
 
-        private final Logger logger = LoggerFactory.getLogger(CHANNEL_FSM_LOGGER_NAME);
+                  if ("opc.wss".equalsIgnoreCase(scheme)) {
+                    SslContext sslContext =
+                        SslContextBuilder.forClient()
+                            .trustManager(InsecureTrustManagerFactory.INSTANCE)
+                            .build();
 
-        private final UascClientConfig config;
+                    channel.pipeline().addLast(sslContext.newHandler(channel.alloc()));
+                  }
 
-        private ClientChannelActions(UascClientConfig config) {
-            this.config = config;
-        }
+                  EncodingLimits encodingLimits =
+                      application.getEncodingContext().getEncodingLimits();
 
-        @Override
-        public CompletableFuture<Channel> connect(FsmContext<State, Event> ctx) {
-            ClientApplicationContext application = (ClientApplicationContext) ctx.get(KEY_CLIENT_APPLICATION);
+                  int maxMessageSize = encodingLimits.getMaxMessageSize();
 
-            var handshakeFuture = new CompletableFuture<ClientSecureChannel>();
+                  channel.pipeline().addLast(new LoggingHandler(LogLevel.INFO));
+                  channel.pipeline().addLast(new HttpClientCodec());
+                  channel.pipeline().addLast(new HttpObjectAggregator(maxMessageSize));
 
-            var bootstrap = new Bootstrap();
+                  channel
+                      .pipeline()
+                      .addLast(
+                          new WebSocketClientProtocolHandler(
+                              WebSocketClientHandshakerFactory.newHandshaker(
+                                  new URI(endpointUrl),
+                                  WebSocketVersion.V13,
+                                  subprotocol,
+                                  true,
+                                  new DefaultHttpHeaders(),
+                                  encodingLimits.getMaxChunkSize())));
 
-            bootstrap.channel(NioSocketChannel.class)
-                .group(OpcWebSocketClientTransport.this.config.getEventLoop())
-                .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5_000)
-                .option(ChannelOption.TCP_NODELAY, true)
-                .handler(new ChannelInitializer<SocketChannel>() {
-                    @Override
-                    protected void initChannel(SocketChannel channel) throws Exception {
-                        String endpointUrl = requireNonNullElse(application.getEndpoint().getEndpointUrl(), "");
-                        String scheme = EndpointUtil.getScheme(endpointUrl);
+                  channel
+                      .pipeline()
+                      .addLast(new WebSocketFrameAggregator(encodingLimits.getMaxMessageSize()));
 
-                        TransportProfile transportProfile = TransportProfile.fromUri(
-                            requireNonNullElse(application.getEndpoint().getTransportProfileUri(), "")
-                        );
-
-                        String subprotocol;
-                        if (transportProfile == TransportProfile.WSS_UASC_UABINARY) {
-                            subprotocol = "opcua+cp";
-                        } else if (transportProfile == TransportProfile.WSS_UAJSON) {
-                            subprotocol = "opcua+uajson";
-                        } else {
-                            throw new UaException(
-                                StatusCodes.Bad_InternalError,
-                                "unexpected TransportProfile: " + transportProfile
-                            );
-                        }
-
-                        if ("opc.wss".equalsIgnoreCase(scheme)) {
-                            SslContext sslContext = SslContextBuilder.forClient()
-                                .trustManager(InsecureTrustManagerFactory.INSTANCE)
-                                .build();
-
-                            channel.pipeline().addLast(sslContext.newHandler(channel.alloc()));
-                        }
-
-                        EncodingLimits encodingLimits = application.getEncodingContext().getEncodingLimits();
-
-                        int maxMessageSize = encodingLimits.getMaxMessageSize();
-
-                        channel.pipeline().addLast(new LoggingHandler(LogLevel.INFO));
-                        channel.pipeline().addLast(new HttpClientCodec());
-                        channel.pipeline().addLast(new HttpObjectAggregator(maxMessageSize));
-
-                        channel.pipeline().addLast(
-                            new WebSocketClientProtocolHandler(
-                                WebSocketClientHandshakerFactory.newHandshaker(
-                                    new URI(endpointUrl),
-                                    WebSocketVersion.V13,
-                                    subprotocol,
-                                    true,
-                                    new DefaultHttpHeaders(),
-                                    encodingLimits.getMaxChunkSize()
-                                )
-                            )
-                        );
-
-                        channel.pipeline().addLast(
-                            new WebSocketFrameAggregator(encodingLimits.getMaxMessageSize())
-                        );
-
-                        // TODO when/where does the InboundUascResponseHandler get added?
-                        // OpcClientWebSocketFrameCodec adds UascClientAcknowledgeHandler when the WS upgrade is done.
-                        var codec = new OpcClientWebSocketBinaryFrameCodec(
-                            config,
-                            application,
-                            requestId::getAndIncrement,
-                            handshakeFuture
-                        );
-                        channel.pipeline().addLast(codec);
-                    }
-                });
-
-            String endpointUrl = application.getEndpoint().getEndpointUrl();
-
-            String host = EndpointUtil.getHost(endpointUrl);
-            assert host != null;
-
-            int port = EndpointUtil.getPort(endpointUrl);
-
-            bootstrap.connect(host, port).addListener((ChannelFuture f) -> {
-                if (!f.isSuccess()) {
-                    Throwable cause = f.cause();
-
-                    if (cause instanceof ConnectTimeoutException) {
-                        handshakeFuture.completeExceptionally(
-                            new UaException(StatusCodes.Bad_Timeout, f.cause())
-                        );
-                    } else if (cause instanceof ConnectException) {
-                        handshakeFuture.completeExceptionally(
-                            new UaException(StatusCodes.Bad_ConnectionRejected, f.cause())
-                        );
-                    } else {
-                        handshakeFuture.completeExceptionally(cause);
-                    }
+                  // TODO when/where does the InboundUascResponseHandler get added?
+                  // OpcClientWebSocketFrameCodec adds UascClientAcknowledgeHandler when the WS
+                  // upgrade is done.
+                  var codec =
+                      new OpcClientWebSocketBinaryFrameCodec(
+                          config, application, requestId::getAndIncrement, handshakeFuture);
+                  channel.pipeline().addLast(codec);
                 }
-            });
+              });
 
-            return handshakeFuture.thenApply(ClientSecureChannel::getChannel);
-        }
+      String endpointUrl = application.getEndpoint().getEndpointUrl();
 
-        @Override
-        public CompletableFuture<Void> disconnect(FsmContext<State, Event> ctx, Channel channel) {
-            var disconnectFuture = new CompletableFuture<Void>();
+      String host = EndpointUtil.getHost(endpointUrl);
+      assert host != null;
 
-            TimerTask onTimeout = t -> channel.close().addListener(
-                (ChannelFutureListener) channelFuture ->
-                    disconnectFuture.complete(null)
-            );
+      int port = EndpointUtil.getPort(endpointUrl);
 
-            Timeout timeout = config.getWheelTimer().newTimeout(
-                onTimeout,
-                5,
-                TimeUnit.SECONDS
-            );
+      bootstrap
+          .connect(host, port)
+          .addListener(
+              (ChannelFuture f) -> {
+                if (!f.isSuccess()) {
+                  Throwable cause = f.cause();
 
-            channel.pipeline().addFirst(new ChannelInboundHandlerAdapter() {
+                  if (cause instanceof ConnectTimeoutException) {
+                    handshakeFuture.completeExceptionally(
+                        new UaException(StatusCodes.Bad_Timeout, f.cause()));
+                  } else if (cause instanceof ConnectException) {
+                    handshakeFuture.completeExceptionally(
+                        new UaException(StatusCodes.Bad_ConnectionRejected, f.cause()));
+                  } else {
+                    handshakeFuture.completeExceptionally(cause);
+                  }
+                }
+              });
+
+      return handshakeFuture.thenApply(ClientSecureChannel::getChannel);
+    }
+
+    @Override
+    public CompletableFuture<Void> disconnect(FsmContext<State, Event> ctx, Channel channel) {
+      var disconnectFuture = new CompletableFuture<Void>();
+
+      TimerTask onTimeout =
+          t ->
+              channel
+                  .close()
+                  .addListener(
+                      (ChannelFutureListener) channelFuture -> disconnectFuture.complete(null));
+
+      Timeout timeout = config.getWheelTimer().newTimeout(onTimeout, 5, TimeUnit.SECONDS);
+
+      channel
+          .pipeline()
+          .addFirst(
+              new ChannelInboundHandlerAdapter() {
                 @Override
                 public void channelInactive(ChannelHandlerContext channelContext) throws Exception {
-                    // TODO MDC?
-                    logger.debug("channelInactive() disconnect complete");
-                    timeout.cancel();
-                    disconnectFuture.complete(null);
-                    super.channelInactive(channelContext);
+                  // TODO MDC?
+                  logger.debug("channelInactive() disconnect complete");
+                  timeout.cancel();
+                  disconnectFuture.complete(null);
+                  super.channelInactive(channelContext);
                 }
-            });
+              });
 
-            var requestHeader = new RequestHeader(
-                NodeId.NULL_VALUE,
-                DateTime.now(),
-                uint(0),
-                uint(0),
-                null,
-                uint(0),
-                null
-            );
+      var requestHeader =
+          new RequestHeader(
+              NodeId.NULL_VALUE, DateTime.now(), uint(0), uint(0), null, uint(0), null);
 
-            // TODO MDC?
-            logger.debug("Sending CloseSecureChannelRequest...");
+      // TODO MDC?
+      logger.debug("Sending CloseSecureChannelRequest...");
 
-            channel.pipeline().fireUserEventTriggered(new CloseSecureChannelRequest(requestHeader));
+      channel.pipeline().fireUserEventTriggered(new CloseSecureChannelRequest(requestHeader));
 
-            return disconnectFuture;
-        }
-
+      return disconnectFuture;
     }
-
-
+  }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -17,34 +17,35 @@ import org.eclipse.milo.opcua.stack.core.types.structured.JsonDataSetMessageCont
 import org.eclipse.milo.opcua.stack.core.types.structured.JsonNetworkMessageContentMask;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.2.2/#9.2.2.3">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.2.2/#9.2.2.3</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.2.2/#9.2.2.3">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.2.2/#9.2.2.3</a>
  */
 public interface JsonDataSetReaderMessageType extends DataSetReaderMessageType {
-    QualifiedProperty<JsonNetworkMessageContentMask> NETWORK_MESSAGE_CONTENT_MASK = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "NetworkMessageContentMask",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15654"),
-        -1,
-        JsonNetworkMessageContentMask.class
-    );
+  QualifiedProperty<JsonNetworkMessageContentMask> NETWORK_MESSAGE_CONTENT_MASK =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "NetworkMessageContentMask",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15654"),
+          -1,
+          JsonNetworkMessageContentMask.class);
 
-    QualifiedProperty<JsonDataSetMessageContentMask> DATA_SET_MESSAGE_CONTENT_MASK = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "DataSetMessageContentMask",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15658"),
-        -1,
-        JsonDataSetMessageContentMask.class
-    );
+  QualifiedProperty<JsonDataSetMessageContentMask> DATA_SET_MESSAGE_CONTENT_MASK =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "DataSetMessageContentMask",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15658"),
+          -1,
+          JsonDataSetMessageContentMask.class);
 
-    JsonNetworkMessageContentMask getNetworkMessageContentMask();
+  JsonNetworkMessageContentMask getNetworkMessageContentMask();
 
-    void setNetworkMessageContentMask(JsonNetworkMessageContentMask value);
+  void setNetworkMessageContentMask(JsonNetworkMessageContentMask value);
 
-    PropertyType getNetworkMessageContentMaskNode();
+  PropertyType getNetworkMessageContentMaskNode();
 
-    JsonDataSetMessageContentMask getDataSetMessageContentMask();
+  JsonDataSetMessageContentMask getDataSetMessageContentMask();
 
-    void setDataSetMessageContentMask(JsonDataSetMessageContentMask value);
+  void setDataSetMessageContentMask(JsonDataSetMessageContentMask value);
 
-    PropertyType getDataSetMessageContentMaskNode();
+  PropertyType getDataSetMessageContentMaskNode();
 }

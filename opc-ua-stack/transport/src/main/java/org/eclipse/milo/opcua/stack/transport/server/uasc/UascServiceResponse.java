@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -15,16 +15,15 @@ import org.eclipse.milo.opcua.stack.transport.server.ServiceResponse;
 
 public class UascServiceResponse extends ServiceResponse {
 
-    private final long requestId;
+  private final long requestId;
 
-    public UascServiceResponse(UaResponseMessageType responseMessage, long requestId) {
-        super(responseMessage);
+  public UascServiceResponse(UaResponseMessageType responseMessage, long requestId) {
+    super(responseMessage);
 
-        this.requestId = requestId;
-    }
+    this.requestId = requestId;
+  }
 
-    public long getRequestId() {
-        return requestId;
-    }
-
+  public long getRequestId() {
+    return requestId;
+  }
 }

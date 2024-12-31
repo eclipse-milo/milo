@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -12,7 +12,6 @@ package org.eclipse.milo.opcua.sdk.client.model.variables;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
@@ -35,211 +34,248 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AxisInformation;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 
 public class CubeItemTypeNode extends ArrayItemTypeNode implements CubeItemType {
-    public CubeItemTypeNode(OpcUaClient client, NodeId nodeId, NodeClass nodeClass,
-                            QualifiedName browseName, LocalizedText displayName, LocalizedText description,
-                            UInteger writeMask, UInteger userWriteMask, RolePermissionType[] rolePermissions,
-                            RolePermissionType[] userRolePermissions, AccessRestrictionType accessRestrictions,
-                            DataValue value, NodeId dataType, Integer valueRank, UInteger[] arrayDimensions,
-                            UByte accessLevel, UByte userAccessLevel, Double minimumSamplingInterval, Boolean historizing,
-                            AccessLevelExType accessLevelEx) {
-        super(client, nodeId, nodeClass, browseName, displayName, description, writeMask, userWriteMask, rolePermissions, userRolePermissions, accessRestrictions, value, dataType, valueRank, arrayDimensions, accessLevel, userAccessLevel, minimumSamplingInterval, historizing, accessLevelEx);
-    }
+  public CubeItemTypeNode(
+      OpcUaClient client,
+      NodeId nodeId,
+      NodeClass nodeClass,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType[] rolePermissions,
+      RolePermissionType[] userRolePermissions,
+      AccessRestrictionType accessRestrictions,
+      DataValue value,
+      NodeId dataType,
+      Integer valueRank,
+      UInteger[] arrayDimensions,
+      UByte accessLevel,
+      UByte userAccessLevel,
+      Double minimumSamplingInterval,
+      Boolean historizing,
+      AccessLevelExType accessLevelEx) {
+    super(
+        client,
+        nodeId,
+        nodeClass,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions,
+        value,
+        dataType,
+        valueRank,
+        arrayDimensions,
+        accessLevel,
+        userAccessLevel,
+        minimumSamplingInterval,
+        historizing,
+        accessLevelEx);
+  }
 
-    @Override
-    public AxisInformation getXAxisDefinition() throws UaException {
-        PropertyTypeNode node = getXAxisDefinitionNode();
-        return cast(node.getValue().getValue().getValue(), AxisInformation.class);
-    }
+  @Override
+  public AxisInformation getXAxisDefinition() throws UaException {
+    PropertyTypeNode node = getXAxisDefinitionNode();
+    return cast(node.getValue().getValue().getValue(), AxisInformation.class);
+  }
 
-    @Override
-    public void setXAxisDefinition(AxisInformation value) throws UaException {
-        PropertyTypeNode node = getXAxisDefinitionNode();
-        ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-        node.setValue(new Variant(encoded));
-    }
+  @Override
+  public void setXAxisDefinition(AxisInformation value) throws UaException {
+    PropertyTypeNode node = getXAxisDefinitionNode();
+    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
+    node.setValue(new Variant(encoded));
+  }
 
-    @Override
-    public AxisInformation readXAxisDefinition() throws UaException {
-        try {
-            return readXAxisDefinitionAsync().get();
-        } catch (ExecutionException | InterruptedException e) {
-            throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
-        }
+  @Override
+  public AxisInformation readXAxisDefinition() throws UaException {
+    try {
+      return readXAxisDefinitionAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
     }
+  }
 
-    @Override
-    public void writeXAxisDefinition(AxisInformation value) throws UaException {
-        try {
-            writeXAxisDefinitionAsync(value).get();
-        } catch (ExecutionException | InterruptedException e) {
-            throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
-        }
+  @Override
+  public void writeXAxisDefinition(AxisInformation value) throws UaException {
+    try {
+      writeXAxisDefinitionAsync(value).get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
     }
+  }
 
-    @Override
-    public CompletableFuture<? extends AxisInformation> readXAxisDefinitionAsync() {
-        return getXAxisDefinitionNodeAsync()
-            .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-            .thenApply(v -> cast(v.getValue().getValue(), AxisInformation.class));
+  @Override
+  public CompletableFuture<? extends AxisInformation> readXAxisDefinitionAsync() {
+    return getXAxisDefinitionNodeAsync()
+        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
+        .thenApply(v -> cast(v.getValue().getValue(), AxisInformation.class));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeXAxisDefinitionAsync(AxisInformation xAxisDefinition) {
+    ExtensionObject encoded =
+        ExtensionObject.encode(client.getStaticEncodingContext(), xAxisDefinition);
+    DataValue value = DataValue.valueOnly(new Variant(encoded));
+    return getXAxisDefinitionNodeAsync()
+        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  }
+
+  @Override
+  public PropertyTypeNode getXAxisDefinitionNode() throws UaException {
+    try {
+      return getXAxisDefinitionNodeAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
     }
+  }
 
-    @Override
-    public CompletableFuture<StatusCode> writeXAxisDefinitionAsync(AxisInformation xAxisDefinition) {
-        ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), xAxisDefinition);
-        DataValue value = DataValue.valueOnly(new Variant(encoded));
-        return getXAxisDefinitionNodeAsync()
-            .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-    }
-
-    @Override
-    public PropertyTypeNode getXAxisDefinitionNode() throws UaException {
-        try {
-            return getXAxisDefinitionNodeAsync().get();
-        } catch (ExecutionException | InterruptedException e) {
-            throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
-        }
-    }
-
-    @Override
-    public CompletableFuture<? extends PropertyTypeNode> getXAxisDefinitionNodeAsync() {
-        CompletableFuture<UaNode> future = getMemberNodeAsync(
+  @Override
+  public CompletableFuture<? extends PropertyTypeNode> getXAxisDefinitionNodeAsync() {
+    CompletableFuture<UaNode> future =
+        getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "XAxisDefinition",
             ExpandedNodeId.parse("ns=0;i=46"),
-            false
-        );
-        return future.thenApply(node -> (PropertyTypeNode) node);
-    }
+            false);
+    return future.thenApply(node -> (PropertyTypeNode) node);
+  }
 
-    @Override
-    public AxisInformation getYAxisDefinition() throws UaException {
-        PropertyTypeNode node = getYAxisDefinitionNode();
-        return cast(node.getValue().getValue().getValue(), AxisInformation.class);
-    }
+  @Override
+  public AxisInformation getYAxisDefinition() throws UaException {
+    PropertyTypeNode node = getYAxisDefinitionNode();
+    return cast(node.getValue().getValue().getValue(), AxisInformation.class);
+  }
 
-    @Override
-    public void setYAxisDefinition(AxisInformation value) throws UaException {
-        PropertyTypeNode node = getYAxisDefinitionNode();
-        ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-        node.setValue(new Variant(encoded));
-    }
+  @Override
+  public void setYAxisDefinition(AxisInformation value) throws UaException {
+    PropertyTypeNode node = getYAxisDefinitionNode();
+    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
+    node.setValue(new Variant(encoded));
+  }
 
-    @Override
-    public AxisInformation readYAxisDefinition() throws UaException {
-        try {
-            return readYAxisDefinitionAsync().get();
-        } catch (ExecutionException | InterruptedException e) {
-            throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
-        }
+  @Override
+  public AxisInformation readYAxisDefinition() throws UaException {
+    try {
+      return readYAxisDefinitionAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
     }
+  }
 
-    @Override
-    public void writeYAxisDefinition(AxisInformation value) throws UaException {
-        try {
-            writeYAxisDefinitionAsync(value).get();
-        } catch (ExecutionException | InterruptedException e) {
-            throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
-        }
+  @Override
+  public void writeYAxisDefinition(AxisInformation value) throws UaException {
+    try {
+      writeYAxisDefinitionAsync(value).get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
     }
+  }
 
-    @Override
-    public CompletableFuture<? extends AxisInformation> readYAxisDefinitionAsync() {
-        return getYAxisDefinitionNodeAsync()
-            .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-            .thenApply(v -> cast(v.getValue().getValue(), AxisInformation.class));
+  @Override
+  public CompletableFuture<? extends AxisInformation> readYAxisDefinitionAsync() {
+    return getYAxisDefinitionNodeAsync()
+        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
+        .thenApply(v -> cast(v.getValue().getValue(), AxisInformation.class));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeYAxisDefinitionAsync(AxisInformation yAxisDefinition) {
+    ExtensionObject encoded =
+        ExtensionObject.encode(client.getStaticEncodingContext(), yAxisDefinition);
+    DataValue value = DataValue.valueOnly(new Variant(encoded));
+    return getYAxisDefinitionNodeAsync()
+        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  }
+
+  @Override
+  public PropertyTypeNode getYAxisDefinitionNode() throws UaException {
+    try {
+      return getYAxisDefinitionNodeAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
     }
+  }
 
-    @Override
-    public CompletableFuture<StatusCode> writeYAxisDefinitionAsync(AxisInformation yAxisDefinition) {
-        ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), yAxisDefinition);
-        DataValue value = DataValue.valueOnly(new Variant(encoded));
-        return getYAxisDefinitionNodeAsync()
-            .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-    }
-
-    @Override
-    public PropertyTypeNode getYAxisDefinitionNode() throws UaException {
-        try {
-            return getYAxisDefinitionNodeAsync().get();
-        } catch (ExecutionException | InterruptedException e) {
-            throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
-        }
-    }
-
-    @Override
-    public CompletableFuture<? extends PropertyTypeNode> getYAxisDefinitionNodeAsync() {
-        CompletableFuture<UaNode> future = getMemberNodeAsync(
+  @Override
+  public CompletableFuture<? extends PropertyTypeNode> getYAxisDefinitionNodeAsync() {
+    CompletableFuture<UaNode> future =
+        getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "YAxisDefinition",
             ExpandedNodeId.parse("ns=0;i=46"),
-            false
-        );
-        return future.thenApply(node -> (PropertyTypeNode) node);
-    }
+            false);
+    return future.thenApply(node -> (PropertyTypeNode) node);
+  }
 
-    @Override
-    public AxisInformation getZAxisDefinition() throws UaException {
-        PropertyTypeNode node = getZAxisDefinitionNode();
-        return cast(node.getValue().getValue().getValue(), AxisInformation.class);
-    }
+  @Override
+  public AxisInformation getZAxisDefinition() throws UaException {
+    PropertyTypeNode node = getZAxisDefinitionNode();
+    return cast(node.getValue().getValue().getValue(), AxisInformation.class);
+  }
 
-    @Override
-    public void setZAxisDefinition(AxisInformation value) throws UaException {
-        PropertyTypeNode node = getZAxisDefinitionNode();
-        ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-        node.setValue(new Variant(encoded));
-    }
+  @Override
+  public void setZAxisDefinition(AxisInformation value) throws UaException {
+    PropertyTypeNode node = getZAxisDefinitionNode();
+    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
+    node.setValue(new Variant(encoded));
+  }
 
-    @Override
-    public AxisInformation readZAxisDefinition() throws UaException {
-        try {
-            return readZAxisDefinitionAsync().get();
-        } catch (ExecutionException | InterruptedException e) {
-            throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
-        }
+  @Override
+  public AxisInformation readZAxisDefinition() throws UaException {
+    try {
+      return readZAxisDefinitionAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
     }
+  }
 
-    @Override
-    public void writeZAxisDefinition(AxisInformation value) throws UaException {
-        try {
-            writeZAxisDefinitionAsync(value).get();
-        } catch (ExecutionException | InterruptedException e) {
-            throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
-        }
+  @Override
+  public void writeZAxisDefinition(AxisInformation value) throws UaException {
+    try {
+      writeZAxisDefinitionAsync(value).get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
     }
+  }
 
-    @Override
-    public CompletableFuture<? extends AxisInformation> readZAxisDefinitionAsync() {
-        return getZAxisDefinitionNodeAsync()
-            .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-            .thenApply(v -> cast(v.getValue().getValue(), AxisInformation.class));
+  @Override
+  public CompletableFuture<? extends AxisInformation> readZAxisDefinitionAsync() {
+    return getZAxisDefinitionNodeAsync()
+        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
+        .thenApply(v -> cast(v.getValue().getValue(), AxisInformation.class));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeZAxisDefinitionAsync(AxisInformation zAxisDefinition) {
+    ExtensionObject encoded =
+        ExtensionObject.encode(client.getStaticEncodingContext(), zAxisDefinition);
+    DataValue value = DataValue.valueOnly(new Variant(encoded));
+    return getZAxisDefinitionNodeAsync()
+        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  }
+
+  @Override
+  public PropertyTypeNode getZAxisDefinitionNode() throws UaException {
+    try {
+      return getZAxisDefinitionNodeAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
     }
+  }
 
-    @Override
-    public CompletableFuture<StatusCode> writeZAxisDefinitionAsync(AxisInformation zAxisDefinition) {
-        ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), zAxisDefinition);
-        DataValue value = DataValue.valueOnly(new Variant(encoded));
-        return getZAxisDefinitionNodeAsync()
-            .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-    }
-
-    @Override
-    public PropertyTypeNode getZAxisDefinitionNode() throws UaException {
-        try {
-            return getZAxisDefinitionNodeAsync().get();
-        } catch (ExecutionException | InterruptedException e) {
-            throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
-        }
-    }
-
-    @Override
-    public CompletableFuture<? extends PropertyTypeNode> getZAxisDefinitionNodeAsync() {
-        CompletableFuture<UaNode> future = getMemberNodeAsync(
+  @Override
+  public CompletableFuture<? extends PropertyTypeNode> getZAxisDefinitionNodeAsync() {
+    CompletableFuture<UaNode> future =
+        getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ZAxisDefinition",
             ExpandedNodeId.parse("ns=0;i=46"),
-            false
-        );
-        return future.thenApply(node -> (PropertyTypeNode) node);
-    }
+            false);
+    return future.thenApply(node -> (PropertyTypeNode) node);
+  }
 }

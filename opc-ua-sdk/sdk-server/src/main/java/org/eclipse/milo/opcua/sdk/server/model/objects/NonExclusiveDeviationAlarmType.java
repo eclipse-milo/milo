@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -16,34 +16,35 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.22/#5.8.22.2">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.22/#5.8.22.2</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.22/#5.8.22.2">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.22/#5.8.22.2</a>
  */
 public interface NonExclusiveDeviationAlarmType extends NonExclusiveLimitAlarmType {
-    QualifiedProperty<NodeId> SETPOINT_NODE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "SetpointNode",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-        -1,
-        NodeId.class
-    );
+  QualifiedProperty<NodeId> SETPOINT_NODE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "SetpointNode",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
+          -1,
+          NodeId.class);
 
-    QualifiedProperty<NodeId> BASE_SETPOINT_NODE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "BaseSetpointNode",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-        -1,
-        NodeId.class
-    );
+  QualifiedProperty<NodeId> BASE_SETPOINT_NODE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "BaseSetpointNode",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
+          -1,
+          NodeId.class);
 
-    NodeId getSetpointNode();
+  NodeId getSetpointNode();
 
-    void setSetpointNode(NodeId value);
+  void setSetpointNode(NodeId value);
 
-    PropertyType getSetpointNodeNode();
+  PropertyType getSetpointNodeNode();
 
-    NodeId getBaseSetpointNode();
+  NodeId getBaseSetpointNode();
 
-    void setBaseSetpointNode(NodeId value);
+  void setBaseSetpointNode(NodeId value);
 
-    PropertyType getBaseSetpointNodeNode();
+  PropertyType getBaseSetpointNodeNode();
 }

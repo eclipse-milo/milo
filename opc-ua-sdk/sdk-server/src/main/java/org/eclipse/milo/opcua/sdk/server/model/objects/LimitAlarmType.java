@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -16,230 +16,231 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.18">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.18</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.18">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.18</a>
  */
 public interface LimitAlarmType extends AlarmConditionType {
-    QualifiedProperty<Double> HIGH_HIGH_LIMIT = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "HighHighLimit",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-        -1,
-        Double.class
-    );
+  QualifiedProperty<Double> HIGH_HIGH_LIMIT =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "HighHighLimit",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
+          -1,
+          Double.class);
 
-    QualifiedProperty<Double> HIGH_LIMIT = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "HighLimit",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-        -1,
-        Double.class
-    );
+  QualifiedProperty<Double> HIGH_LIMIT =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "HighLimit",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
+          -1,
+          Double.class);
 
-    QualifiedProperty<Double> LOW_LIMIT = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "LowLimit",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-        -1,
-        Double.class
-    );
+  QualifiedProperty<Double> LOW_LIMIT =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "LowLimit",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
+          -1,
+          Double.class);
 
-    QualifiedProperty<Double> LOW_LOW_LIMIT = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "LowLowLimit",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-        -1,
-        Double.class
-    );
+  QualifiedProperty<Double> LOW_LOW_LIMIT =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "LowLowLimit",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
+          -1,
+          Double.class);
 
-    QualifiedProperty<Double> BASE_HIGH_HIGH_LIMIT = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "BaseHighHighLimit",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-        -1,
-        Double.class
-    );
+  QualifiedProperty<Double> BASE_HIGH_HIGH_LIMIT =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "BaseHighHighLimit",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
+          -1,
+          Double.class);
 
-    QualifiedProperty<Double> BASE_HIGH_LIMIT = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "BaseHighLimit",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-        -1,
-        Double.class
-    );
+  QualifiedProperty<Double> BASE_HIGH_LIMIT =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "BaseHighLimit",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
+          -1,
+          Double.class);
 
-    QualifiedProperty<Double> BASE_LOW_LIMIT = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "BaseLowLimit",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-        -1,
-        Double.class
-    );
+  QualifiedProperty<Double> BASE_LOW_LIMIT =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "BaseLowLimit",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
+          -1,
+          Double.class);
 
-    QualifiedProperty<Double> BASE_LOW_LOW_LIMIT = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "BaseLowLowLimit",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-        -1,
-        Double.class
-    );
+  QualifiedProperty<Double> BASE_LOW_LOW_LIMIT =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "BaseLowLowLimit",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
+          -1,
+          Double.class);
 
-    QualifiedProperty<UShort> SEVERITY_HIGH_HIGH = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "SeverityHighHigh",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-        -1,
-        UShort.class
-    );
+  QualifiedProperty<UShort> SEVERITY_HIGH_HIGH =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "SeverityHighHigh",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
+          -1,
+          UShort.class);
 
-    QualifiedProperty<UShort> SEVERITY_HIGH = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "SeverityHigh",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-        -1,
-        UShort.class
-    );
+  QualifiedProperty<UShort> SEVERITY_HIGH =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "SeverityHigh",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
+          -1,
+          UShort.class);
 
-    QualifiedProperty<UShort> SEVERITY_LOW = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "SeverityLow",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-        -1,
-        UShort.class
-    );
+  QualifiedProperty<UShort> SEVERITY_LOW =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "SeverityLow",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
+          -1,
+          UShort.class);
 
-    QualifiedProperty<UShort> SEVERITY_LOW_LOW = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "SeverityLowLow",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-        -1,
-        UShort.class
-    );
+  QualifiedProperty<UShort> SEVERITY_LOW_LOW =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "SeverityLowLow",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
+          -1,
+          UShort.class);
 
-    QualifiedProperty<Double> HIGH_HIGH_DEADBAND = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "HighHighDeadband",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-        -1,
-        Double.class
-    );
+  QualifiedProperty<Double> HIGH_HIGH_DEADBAND =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "HighHighDeadband",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
+          -1,
+          Double.class);
 
-    QualifiedProperty<Double> HIGH_DEADBAND = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "HighDeadband",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-        -1,
-        Double.class
-    );
+  QualifiedProperty<Double> HIGH_DEADBAND =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "HighDeadband",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
+          -1,
+          Double.class);
 
-    QualifiedProperty<Double> LOW_DEADBAND = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "LowDeadband",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-        -1,
-        Double.class
-    );
+  QualifiedProperty<Double> LOW_DEADBAND =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "LowDeadband",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
+          -1,
+          Double.class);
 
-    QualifiedProperty<Double> LOW_LOW_DEADBAND = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "LowLowDeadband",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-        -1,
-        Double.class
-    );
+  QualifiedProperty<Double> LOW_LOW_DEADBAND =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "LowLowDeadband",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
+          -1,
+          Double.class);
 
-    Double getHighHighLimit();
+  Double getHighHighLimit();
 
-    void setHighHighLimit(Double value);
+  void setHighHighLimit(Double value);
 
-    PropertyType getHighHighLimitNode();
+  PropertyType getHighHighLimitNode();
 
-    Double getHighLimit();
+  Double getHighLimit();
 
-    void setHighLimit(Double value);
+  void setHighLimit(Double value);
 
-    PropertyType getHighLimitNode();
+  PropertyType getHighLimitNode();
 
-    Double getLowLimit();
+  Double getLowLimit();
 
-    void setLowLimit(Double value);
+  void setLowLimit(Double value);
 
-    PropertyType getLowLimitNode();
+  PropertyType getLowLimitNode();
 
-    Double getLowLowLimit();
+  Double getLowLowLimit();
 
-    void setLowLowLimit(Double value);
+  void setLowLowLimit(Double value);
 
-    PropertyType getLowLowLimitNode();
+  PropertyType getLowLowLimitNode();
 
-    Double getBaseHighHighLimit();
+  Double getBaseHighHighLimit();
 
-    void setBaseHighHighLimit(Double value);
+  void setBaseHighHighLimit(Double value);
 
-    PropertyType getBaseHighHighLimitNode();
+  PropertyType getBaseHighHighLimitNode();
 
-    Double getBaseHighLimit();
+  Double getBaseHighLimit();
 
-    void setBaseHighLimit(Double value);
+  void setBaseHighLimit(Double value);
 
-    PropertyType getBaseHighLimitNode();
+  PropertyType getBaseHighLimitNode();
 
-    Double getBaseLowLimit();
+  Double getBaseLowLimit();
 
-    void setBaseLowLimit(Double value);
+  void setBaseLowLimit(Double value);
 
-    PropertyType getBaseLowLimitNode();
+  PropertyType getBaseLowLimitNode();
 
-    Double getBaseLowLowLimit();
+  Double getBaseLowLowLimit();
 
-    void setBaseLowLowLimit(Double value);
+  void setBaseLowLowLimit(Double value);
 
-    PropertyType getBaseLowLowLimitNode();
+  PropertyType getBaseLowLowLimitNode();
 
-    UShort getSeverityHighHigh();
+  UShort getSeverityHighHigh();
 
-    void setSeverityHighHigh(UShort value);
+  void setSeverityHighHigh(UShort value);
 
-    PropertyType getSeverityHighHighNode();
+  PropertyType getSeverityHighHighNode();
 
-    UShort getSeverityHigh();
+  UShort getSeverityHigh();
 
-    void setSeverityHigh(UShort value);
+  void setSeverityHigh(UShort value);
 
-    PropertyType getSeverityHighNode();
+  PropertyType getSeverityHighNode();
 
-    UShort getSeverityLow();
+  UShort getSeverityLow();
 
-    void setSeverityLow(UShort value);
+  void setSeverityLow(UShort value);
 
-    PropertyType getSeverityLowNode();
+  PropertyType getSeverityLowNode();
 
-    UShort getSeverityLowLow();
+  UShort getSeverityLowLow();
 
-    void setSeverityLowLow(UShort value);
+  void setSeverityLowLow(UShort value);
 
-    PropertyType getSeverityLowLowNode();
+  PropertyType getSeverityLowLowNode();
 
-    Double getHighHighDeadband();
+  Double getHighHighDeadband();
 
-    void setHighHighDeadband(Double value);
+  void setHighHighDeadband(Double value);
 
-    PropertyType getHighHighDeadbandNode();
+  PropertyType getHighHighDeadbandNode();
 
-    Double getHighDeadband();
+  Double getHighDeadband();
 
-    void setHighDeadband(Double value);
+  void setHighDeadband(Double value);
 
-    PropertyType getHighDeadbandNode();
+  PropertyType getHighDeadbandNode();
 
-    Double getLowDeadband();
+  Double getLowDeadband();
 
-    void setLowDeadband(Double value);
+  void setLowDeadband(Double value);
 
-    PropertyType getLowDeadbandNode();
+  PropertyType getLowDeadbandNode();
 
-    Double getLowLowDeadband();
+  Double getLowLowDeadband();
 
-    void setLowLowDeadband(Double value);
+  void setLowLowDeadband(Double value);
 
-    PropertyType getLowLowDeadbandNode();
+  PropertyType getLowLowDeadbandNode();
 }

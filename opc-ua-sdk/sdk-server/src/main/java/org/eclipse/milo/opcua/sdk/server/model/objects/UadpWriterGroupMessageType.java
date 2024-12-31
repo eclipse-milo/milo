@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -18,76 +18,77 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.DataSetOrderingType;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpNetworkMessageContentMask;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.2.1/#9.2.1.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.2.1/#9.2.1.1</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.2.1/#9.2.1.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.2.1/#9.2.1.1</a>
  */
 public interface UadpWriterGroupMessageType extends WriterGroupMessageType {
-    QualifiedProperty<UInteger> GROUP_VERSION = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "GroupVersion",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=20998"),
-        -1,
-        UInteger.class
-    );
+  QualifiedProperty<UInteger> GROUP_VERSION =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "GroupVersion",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=20998"),
+          -1,
+          UInteger.class);
 
-    QualifiedProperty<DataSetOrderingType> DATA_SET_ORDERING = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "DataSetOrdering",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=20408"),
-        -1,
-        DataSetOrderingType.class
-    );
+  QualifiedProperty<DataSetOrderingType> DATA_SET_ORDERING =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "DataSetOrdering",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=20408"),
+          -1,
+          DataSetOrderingType.class);
 
-    QualifiedProperty<UadpNetworkMessageContentMask> NETWORK_MESSAGE_CONTENT_MASK = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "NetworkMessageContentMask",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15642"),
-        -1,
-        UadpNetworkMessageContentMask.class
-    );
+  QualifiedProperty<UadpNetworkMessageContentMask> NETWORK_MESSAGE_CONTENT_MASK =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "NetworkMessageContentMask",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15642"),
+          -1,
+          UadpNetworkMessageContentMask.class);
 
-    QualifiedProperty<Double> SAMPLING_OFFSET = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "SamplingOffset",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-        -1,
-        Double.class
-    );
+  QualifiedProperty<Double> SAMPLING_OFFSET =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "SamplingOffset",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
+          -1,
+          Double.class);
 
-    QualifiedProperty<Double[]> PUBLISHING_OFFSET = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "PublishingOffset",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-        1,
-        Double[].class
-    );
+  QualifiedProperty<Double[]> PUBLISHING_OFFSET =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "PublishingOffset",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
+          1,
+          Double[].class);
 
-    UInteger getGroupVersion();
+  UInteger getGroupVersion();
 
-    void setGroupVersion(UInteger value);
+  void setGroupVersion(UInteger value);
 
-    PropertyType getGroupVersionNode();
+  PropertyType getGroupVersionNode();
 
-    DataSetOrderingType getDataSetOrdering();
+  DataSetOrderingType getDataSetOrdering();
 
-    void setDataSetOrdering(DataSetOrderingType value);
+  void setDataSetOrdering(DataSetOrderingType value);
 
-    PropertyType getDataSetOrderingNode();
+  PropertyType getDataSetOrderingNode();
 
-    UadpNetworkMessageContentMask getNetworkMessageContentMask();
+  UadpNetworkMessageContentMask getNetworkMessageContentMask();
 
-    void setNetworkMessageContentMask(UadpNetworkMessageContentMask value);
+  void setNetworkMessageContentMask(UadpNetworkMessageContentMask value);
 
-    PropertyType getNetworkMessageContentMaskNode();
+  PropertyType getNetworkMessageContentMaskNode();
 
-    Double getSamplingOffset();
+  Double getSamplingOffset();
 
-    void setSamplingOffset(Double value);
+  void setSamplingOffset(Double value);
 
-    PropertyType getSamplingOffsetNode();
+  PropertyType getSamplingOffsetNode();
 
-    Double[] getPublishingOffset();
+  Double[] getPublishingOffset();
 
-    void setPublishingOffset(Double[] value);
+  void setPublishingOffset(Double[] value);
 
-    PropertyType getPublishingOffsetNode();
+  PropertyType getPublishingOffsetNode();
 }

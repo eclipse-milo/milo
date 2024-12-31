@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -17,22 +17,21 @@ import org.testng.annotations.Test;
 
 public class SequenceHeaderTest extends SerializationFixture2 {
 
-    @DataProvider(name = "parameters")
-    public Object[][] getParameters() {
-        return new Object[][]{
-            {0, 0},
-            {Integer.MAX_VALUE - 1, Integer.MAX_VALUE - 1},
-            {Integer.MAX_VALUE, Integer.MAX_VALUE},
-            {Integer.MAX_VALUE + 1L, Integer.MAX_VALUE + 1L},
-            {UInteger.MAX_VALUE, UInteger.MAX_VALUE}
-        };
-    }
+  @DataProvider(name = "parameters")
+  public Object[][] getParameters() {
+    return new Object[][] {
+      {0, 0},
+      {Integer.MAX_VALUE - 1, Integer.MAX_VALUE - 1},
+      {Integer.MAX_VALUE, Integer.MAX_VALUE},
+      {Integer.MAX_VALUE + 1L, Integer.MAX_VALUE + 1L},
+      {UInteger.MAX_VALUE, UInteger.MAX_VALUE}
+    };
+  }
 
-    @Test(dataProvider = "parameters", description = "SequenceHeader is serializable.")
-    public void testSerialization(long sequenceNumber, long requestId) {
-        SequenceHeader header = new SequenceHeader(sequenceNumber, requestId);
+  @Test(dataProvider = "parameters", description = "SequenceHeader is serializable.")
+  public void testSerialization(long sequenceNumber, long requestId) {
+    SequenceHeader header = new SequenceHeader(sequenceNumber, requestId);
 
-        assertSerializable(header, SequenceHeader::encode, SequenceHeader::decode);
-    }
-
+    assertSerializable(header, SequenceHeader::encode, SequenceHeader::decode);
+  }
 }

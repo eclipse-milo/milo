@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -10,163 +10,167 @@
 
 package org.eclipse.milo.opcua.sdk.server.events.conversions;
 
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.testng.annotations.Test;
-
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.fail;
 
+import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
+import org.testng.annotations.Test;
+
 abstract class AbstractConversionTest<S> {
 
-    @Test
-    public void testNullConversion() {
-        for (BuiltinDataType targetType : BuiltinDataType.values()) {
-            assertNull(convert(null, targetType, true));
-            assertNull(convert(null, targetType, false));
+  @Test
+  public void testNullConversion() {
+    for (BuiltinDataType targetType : BuiltinDataType.values()) {
+      assertNull(convert(null, targetType, true));
+      assertNull(convert(null, targetType, false));
+    }
+  }
+
+  @Test
+  public void testAllConversions() {
+    for (BuiltinDataType targetType : BuiltinDataType.values()) {
+      Conversion[] conversions = getConversions(targetType);
+      ConversionType conversionType = getConversionType(targetType);
+      BuiltinDataType sourceType = BuiltinDataType.fromBackingClass(getSourceClass());
+
+      if (conversionType != ConversionType.NONE) {
+        if (conversions == null || conversions.length == 0) {
+          fail("expected conversions for " + targetType);
         }
-    }
 
-    @Test
-    public void testAllConversions() {
-        for (BuiltinDataType targetType : BuiltinDataType.values()) {
-            Conversion[] conversions = getConversions(targetType);
-            ConversionType conversionType = getConversionType(targetType);
-            BuiltinDataType sourceType = BuiltinDataType.fromBackingClass(getSourceClass());
+        System.out.println(String.format("%s -> %s [%s]", sourceType, targetType, conversionType));
 
-            if (conversionType != ConversionType.NONE) {
-                if (conversions == null || conversions.length == 0) {
-                    fail("expected conversions for " + targetType);
-                }
+        for (Conversion conversion : conversions) {
+          assertEquals(targetType, conversion.targetType);
 
-                System.out.println(String.format("%s -> %s [%s]", sourceType, targetType, conversionType));
+          S fromValue = getSourceClass().cast(conversion.fromValue);
+          Object targetValue = conversion.targetValue;
 
-                for (Conversion conversion : conversions) {
-                    assertEquals(targetType, conversion.targetType);
+          Object convertedValue =
+              convert(fromValue, targetType, conversionType == ConversionType.IMPLICIT);
 
-                    S fromValue = getSourceClass().cast(conversion.fromValue);
-                    Object targetValue = conversion.targetValue;
+          System.out.println(
+              String.format("\tfromValue=%s targetValue=%s", fromValue, targetValue));
 
-                    Object convertedValue = convert(fromValue, targetType, conversionType == ConversionType.IMPLICIT);
-
-                    System.out.println(String.format("\tfromValue=%s targetValue=%s", fromValue, targetValue));
-
-                    assertEquals(convertedValue, targetValue);
-                }
-            } else {
-                if (conversions.length != 0) {
-                    fail(String.format(
-                        "conversions defined for %s -> %s " +
-                            "but no ConversionType is defined", sourceType, targetType));
-                }
-            }
+          assertEquals(convertedValue, targetValue);
         }
-    }
-
-    @Test
-    public void testExplicitConversionsCalledImplicitlyAreNull() {
-        for (BuiltinDataType targetType : BuiltinDataType.values()) {
-            Conversion[] conversions = getConversions(targetType);
-
-            for (Conversion conversion : conversions) {
-                ConversionType conversionType = getConversionType(conversion.targetType);
-
-                if (conversionType == ConversionType.EXPLICIT) {
-                    S fromValue = getSourceClass().cast(conversion.fromValue);
-
-                    Object convertedValue = convert(fromValue, targetType, true);
-
-                    assertNull(convertedValue);
-                }
-            }
+      } else {
+        if (conversions.length != 0) {
+          fail(
+              String.format(
+                  "conversions defined for %s -> %s " + "but no ConversionType is defined",
+                  sourceType, targetType));
         }
+      }
     }
+  }
 
-    @Test
-    public void testImplicitConversionsCalledExplicitly() {
-        for (BuiltinDataType targetType : BuiltinDataType.values()) {
-            Conversion[] conversions = getConversions(targetType);
+  @Test
+  public void testExplicitConversionsCalledImplicitlyAreNull() {
+    for (BuiltinDataType targetType : BuiltinDataType.values()) {
+      Conversion[] conversions = getConversions(targetType);
 
-            for (Conversion conversion : conversions) {
-                ConversionType conversionType = getConversionType(conversion.targetType);
+      for (Conversion conversion : conversions) {
+        ConversionType conversionType = getConversionType(conversion.targetType);
 
-                if (conversionType == ConversionType.IMPLICIT) {
-                    S fromValue = getSourceClass().cast(conversion.fromValue);
+        if (conversionType == ConversionType.EXPLICIT) {
+          S fromValue = getSourceClass().cast(conversion.fromValue);
 
-                    Object convertedValue = convert(fromValue, targetType, false);
+          Object convertedValue = convert(fromValue, targetType, true);
 
-                    System.out.println(String.format(
-                        "[%s] fromValue=%s targetType=%s targetValue=%s",
-                        conversionType, fromValue, targetType, conversion.targetValue));
-
-                    assertEquals(convertedValue, conversion.targetValue);
-                }
-            }
+          assertNull(convertedValue);
         }
+      }
     }
+  }
 
-    protected Conversion c(@NotNull S fromValue, @NotNull Object targetValue) {
-        Conversion c = new Conversion();
-        c.fromValue = fromValue;
-        c.targetValue = targetValue;
-        c.targetType = BuiltinDataType.fromBackingClass(targetValue.getClass());
-        return c;
-    }
+  @Test
+  public void testImplicitConversionsCalledExplicitly() {
+    for (BuiltinDataType targetType : BuiltinDataType.values()) {
+      Conversion[] conversions = getConversions(targetType);
 
-    protected Conversion c(@NotNull S fromValue, @Nullable Object targetValue, @NotNull BuiltinDataType targetType) {
-        Conversion c = new Conversion();
-        c.fromValue = fromValue;
-        c.targetValue = targetValue;
-        c.targetType = targetType;
-        return c;
-    }
+      for (Conversion conversion : conversions) {
+        ConversionType conversionType = getConversionType(conversion.targetType);
 
-    protected abstract Class<S> getSourceClass();
+        if (conversionType == ConversionType.IMPLICIT) {
+          S fromValue = getSourceClass().cast(conversion.fromValue);
 
-    public abstract Conversion[] getConversions(BuiltinDataType targetType);
+          Object convertedValue = convert(fromValue, targetType, false);
 
-    public abstract ConversionType getConversionType(BuiltinDataType targetType);
+          System.out.println(
+              String.format(
+                  "[%s] fromValue=%s targetType=%s targetValue=%s",
+                  conversionType, fromValue, targetType, conversion.targetValue));
 
-    /*
-    {
-        //@formatter:off
-        switch (targetType) {
-            case Boolean:   return ConversionType.IMPLICIT;
-            case Byte:      return ConversionType.IMPLICIT;
-            case Float:     return ConversionType.IMPLICIT;
-            case Double:    return ConversionType.IMPLICIT;
-            case Int16:     return ConversionType.IMPLICIT;
-            case Int32:     return ConversionType.IMPLICIT;
-            case Int64:     return ConversionType.IMPLICIT;
-            case SByte:     return ConversionType.IMPLICIT;
-            case String:    return ConversionType.EXPLICIT;
-            case UInt16:    return ConversionType.IMPLICIT;
-            case UInt32:    return ConversionType.IMPLICIT;
-            case UInt64:    return ConversionType.IMPLICIT;
-            default:        return ConversionType.NONE;
+          assertEquals(convertedValue, conversion.targetValue);
         }
-        //@formatter:on
+      }
     }
-    */
+  }
 
-    // protected abstract Conversion[] getExplicitConversions();
+  protected Conversion c(@NonNull S fromValue, @NonNull Object targetValue) {
+    Conversion c = new Conversion();
+    c.fromValue = fromValue;
+    c.targetValue = targetValue;
+    c.targetType = BuiltinDataType.fromBackingClass(targetValue.getClass());
+    return c;
+  }
 
-    // protected abstract Conversion[] getImplicitConversions();
+  protected Conversion c(
+      @NonNull S fromValue, @Nullable Object targetValue, @NonNull BuiltinDataType targetType) {
+    Conversion c = new Conversion();
+    c.fromValue = fromValue;
+    c.targetValue = targetValue;
+    c.targetType = targetType;
+    return c;
+  }
 
-    protected abstract Object convert(Object fromValue, BuiltinDataType targetType, boolean implicit);
+  protected abstract Class<S> getSourceClass();
 
-    static class Conversion {
-        Object fromValue;
-        Object targetValue;
-        BuiltinDataType targetType;
-    }
+  public abstract Conversion[] getConversions(BuiltinDataType targetType);
 
-    enum ConversionType {
-        EXPLICIT,
-        IMPLICIT,
-        NONE
-    }
+  public abstract ConversionType getConversionType(BuiltinDataType targetType);
 
+  /*
+  {
+      //@formatter:off
+      switch (targetType) {
+          case Boolean:   return ConversionType.IMPLICIT;
+          case Byte:      return ConversionType.IMPLICIT;
+          case Float:     return ConversionType.IMPLICIT;
+          case Double:    return ConversionType.IMPLICIT;
+          case Int16:     return ConversionType.IMPLICIT;
+          case Int32:     return ConversionType.IMPLICIT;
+          case Int64:     return ConversionType.IMPLICIT;
+          case SByte:     return ConversionType.IMPLICIT;
+          case String:    return ConversionType.EXPLICIT;
+          case UInt16:    return ConversionType.IMPLICIT;
+          case UInt32:    return ConversionType.IMPLICIT;
+          case UInt64:    return ConversionType.IMPLICIT;
+          default:        return ConversionType.NONE;
+      }
+      //@formatter:on
+  }
+  */
+
+  // protected abstract Conversion[] getExplicitConversions();
+
+  // protected abstract Conversion[] getImplicitConversions();
+
+  protected abstract Object convert(Object fromValue, BuiltinDataType targetType, boolean implicit);
+
+  static class Conversion {
+    Object fromValue;
+    Object targetValue;
+    BuiltinDataType targetType;
+  }
+
+  enum ConversionType {
+    EXPLICIT,
+    IMPLICIT,
+    NONE
+  }
 }

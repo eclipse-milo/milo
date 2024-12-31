@@ -37,283 +37,339 @@ import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.util.Lazy;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.8/#9.1.8.2">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.8/#9.1.8.2</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.8/#9.1.8.2">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.8/#9.1.8.2</a>
  */
 public interface DataSetReaderType extends BaseObjectType {
-    QualifiedProperty<Object> PUBLISHER_ID = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "PublisherId",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
-        -1,
-        Object.class
-    );
+  QualifiedProperty<Object> PUBLISHER_ID =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "PublisherId",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
+          -1,
+          Object.class);
 
-    QualifiedProperty<UShort> WRITER_GROUP_ID = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "WriterGroupId",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-        -1,
-        UShort.class
-    );
+  QualifiedProperty<UShort> WRITER_GROUP_ID =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "WriterGroupId",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
+          -1,
+          UShort.class);
 
-    QualifiedProperty<UShort> DATA_SET_WRITER_ID = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "DataSetWriterId",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-        -1,
-        UShort.class
-    );
+  QualifiedProperty<UShort> DATA_SET_WRITER_ID =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "DataSetWriterId",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
+          -1,
+          UShort.class);
 
-    QualifiedProperty<DataSetMetaDataType> DATA_SET_META_DATA = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "DataSetMetaData",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14523"),
-        -1,
-        DataSetMetaDataType.class
-    );
+  QualifiedProperty<DataSetMetaDataType> DATA_SET_META_DATA =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "DataSetMetaData",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14523"),
+          -1,
+          DataSetMetaDataType.class);
 
-    QualifiedProperty<DataSetFieldContentMask> DATA_SET_FIELD_CONTENT_MASK = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "DataSetFieldContentMask",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15583"),
-        -1,
-        DataSetFieldContentMask.class
-    );
+  QualifiedProperty<DataSetFieldContentMask> DATA_SET_FIELD_CONTENT_MASK =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "DataSetFieldContentMask",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15583"),
+          -1,
+          DataSetFieldContentMask.class);
 
-    QualifiedProperty<Double> MESSAGE_RECEIVE_TIMEOUT = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "MessageReceiveTimeout",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-        -1,
-        Double.class
-    );
+  QualifiedProperty<Double> MESSAGE_RECEIVE_TIMEOUT =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "MessageReceiveTimeout",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
+          -1,
+          Double.class);
 
-    QualifiedProperty<UInteger> KEY_FRAME_COUNT = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "KeyFrameCount",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-        -1,
-        UInteger.class
-    );
+  QualifiedProperty<UInteger> KEY_FRAME_COUNT =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "KeyFrameCount",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          -1,
+          UInteger.class);
 
-    QualifiedProperty<String> HEADER_LAYOUT_URI = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "HeaderLayoutUri",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-        -1,
-        String.class
-    );
+  QualifiedProperty<String> HEADER_LAYOUT_URI =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "HeaderLayoutUri",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          -1,
+          String.class);
 
-    QualifiedProperty<MessageSecurityMode> SECURITY_MODE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "SecurityMode",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=302"),
-        -1,
-        MessageSecurityMode.class
-    );
+  QualifiedProperty<MessageSecurityMode> SECURITY_MODE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "SecurityMode",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=302"),
+          -1,
+          MessageSecurityMode.class);
 
-    QualifiedProperty<String> SECURITY_GROUP_ID = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "SecurityGroupId",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-        -1,
-        String.class
-    );
+  QualifiedProperty<String> SECURITY_GROUP_ID =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "SecurityGroupId",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          -1,
+          String.class);
 
-    QualifiedProperty<EndpointDescription[]> SECURITY_KEY_SERVICES = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "SecurityKeyServices",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=312"),
-        1,
-        EndpointDescription[].class
-    );
+  QualifiedProperty<EndpointDescription[]> SECURITY_KEY_SERVICES =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "SecurityKeyServices",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=312"),
+          1,
+          EndpointDescription[].class);
 
-    QualifiedProperty<KeyValuePair[]> DATA_SET_READER_PROPERTIES = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "DataSetReaderProperties",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14533"),
-        1,
-        KeyValuePair[].class
-    );
+  QualifiedProperty<KeyValuePair[]> DATA_SET_READER_PROPERTIES =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "DataSetReaderProperties",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14533"),
+          1,
+          KeyValuePair[].class);
 
-    Object getPublisherId();
+  Object getPublisherId();
 
-    void setPublisherId(Object value);
+  void setPublisherId(Object value);
 
-    PropertyType getPublisherIdNode();
+  PropertyType getPublisherIdNode();
 
-    UShort getWriterGroupId();
+  UShort getWriterGroupId();
 
-    void setWriterGroupId(UShort value);
+  void setWriterGroupId(UShort value);
 
-    PropertyType getWriterGroupIdNode();
+  PropertyType getWriterGroupIdNode();
 
-    UShort getDataSetWriterId();
+  UShort getDataSetWriterId();
 
-    void setDataSetWriterId(UShort value);
+  void setDataSetWriterId(UShort value);
 
-    PropertyType getDataSetWriterIdNode();
+  PropertyType getDataSetWriterIdNode();
 
-    DataSetMetaDataType getDataSetMetaData();
+  DataSetMetaDataType getDataSetMetaData();
 
-    void setDataSetMetaData(DataSetMetaDataType value);
+  void setDataSetMetaData(DataSetMetaDataType value);
 
-    PropertyType getDataSetMetaDataNode();
+  PropertyType getDataSetMetaDataNode();
 
-    DataSetFieldContentMask getDataSetFieldContentMask();
+  DataSetFieldContentMask getDataSetFieldContentMask();
 
-    void setDataSetFieldContentMask(DataSetFieldContentMask value);
+  void setDataSetFieldContentMask(DataSetFieldContentMask value);
 
-    PropertyType getDataSetFieldContentMaskNode();
+  PropertyType getDataSetFieldContentMaskNode();
 
-    Double getMessageReceiveTimeout();
+  Double getMessageReceiveTimeout();
 
-    void setMessageReceiveTimeout(Double value);
+  void setMessageReceiveTimeout(Double value);
 
-    PropertyType getMessageReceiveTimeoutNode();
+  PropertyType getMessageReceiveTimeoutNode();
 
-    UInteger getKeyFrameCount();
+  UInteger getKeyFrameCount();
 
-    void setKeyFrameCount(UInteger value);
+  void setKeyFrameCount(UInteger value);
 
-    PropertyType getKeyFrameCountNode();
+  PropertyType getKeyFrameCountNode();
 
-    String getHeaderLayoutUri();
+  String getHeaderLayoutUri();
 
-    void setHeaderLayoutUri(String value);
+  void setHeaderLayoutUri(String value);
 
-    PropertyType getHeaderLayoutUriNode();
+  PropertyType getHeaderLayoutUriNode();
 
-    MessageSecurityMode getSecurityMode();
+  MessageSecurityMode getSecurityMode();
 
-    void setSecurityMode(MessageSecurityMode value);
+  void setSecurityMode(MessageSecurityMode value);
 
-    PropertyType getSecurityModeNode();
+  PropertyType getSecurityModeNode();
 
-    String getSecurityGroupId();
+  String getSecurityGroupId();
 
-    void setSecurityGroupId(String value);
+  void setSecurityGroupId(String value);
 
-    PropertyType getSecurityGroupIdNode();
+  PropertyType getSecurityGroupIdNode();
 
-    EndpointDescription[] getSecurityKeyServices();
+  EndpointDescription[] getSecurityKeyServices();
 
-    void setSecurityKeyServices(EndpointDescription[] value);
+  void setSecurityKeyServices(EndpointDescription[] value);
 
-    PropertyType getSecurityKeyServicesNode();
+  PropertyType getSecurityKeyServicesNode();
 
-    KeyValuePair[] getDataSetReaderProperties();
+  KeyValuePair[] getDataSetReaderProperties();
 
-    void setDataSetReaderProperties(KeyValuePair[] value);
+  void setDataSetReaderProperties(KeyValuePair[] value);
 
-    PropertyType getDataSetReaderPropertiesNode();
+  PropertyType getDataSetReaderPropertiesNode();
 
-    DataSetReaderTransportType getTransportSettingsNode();
+  DataSetReaderTransportType getTransportSettingsNode();
 
-    DataSetReaderMessageType getMessageSettingsNode();
+  DataSetReaderMessageType getMessageSettingsNode();
 
-    PubSubStatusType getStatusNode();
+  PubSubStatusType getStatusNode();
 
-    PubSubDiagnosticsDataSetReaderType getDiagnosticsNode();
+  PubSubDiagnosticsDataSetReaderType getDiagnosticsNode();
 
-    SubscribedDataSetType getSubscribedDataSetNode();
+  SubscribedDataSetType getSubscribedDataSetNode();
 
-    MethodNode getCreateTargetVariablesMethodNode();
+  MethodNode getCreateTargetVariablesMethodNode();
 
-    MethodNode getCreateDataSetMirrorMethodNode();
+  MethodNode getCreateDataSetMirrorMethodNode();
 
-    abstract class CreateTargetVariablesMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  abstract class CreateTargetVariablesMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
 
-        private final Lazy<Argument[]> outputArguments = new Lazy<>();
+    private final Lazy<Argument[]> outputArguments = new Lazy<>();
 
-        public CreateTargetVariablesMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("ConfigurationVersion", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14593").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "")),
-                    new Argument("TargetVariablesToAdd", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14744").toNodeId(namespaceTable).orElseThrow(), 1, new UInteger[]{UInteger.valueOf(0)}, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return outputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("AddResults", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19").toNodeId(namespaceTable).orElseThrow(), 1, new UInteger[]{UInteger.valueOf(0)}, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            ConfigurationVersionDataType configurationVersion = (ConfigurationVersionDataType) inputValues[0].getValue();
-            FieldTargetDataType[] targetVariablesToAdd = (FieldTargetDataType[]) inputValues[1].getValue();
-            Out<StatusCode[]> addResults = new Out<>();
-            invoke(context, configurationVersion, targetVariablesToAdd, addResults);
-            return new Variant[]{new Variant(addResults.get())};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       ConfigurationVersionDataType configurationVersion,
-                                       FieldTargetDataType[] targetVariablesToAdd, Out<StatusCode[]> addResults) throws
-            UaException;
+    public CreateTargetVariablesMethod(UaMethodNode node) {
+      super(node);
     }
 
-    abstract class CreateDataSetMirrorMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
 
-        private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-        public CreateDataSetMirrorMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("ParentNodeName", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "")),
-                    new Argument("RolePermissions", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=96").toNodeId(namespaceTable).orElseThrow(), 1, new UInteger[]{UInteger.valueOf(0)}, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return outputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("ParentNodeId", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            String parentNodeName = (String) inputValues[0].getValue();
-            RolePermissionType[] rolePermissions = (RolePermissionType[]) inputValues[1].getValue();
-            Out<NodeId> parentNodeId = new Out<>();
-            invoke(context, parentNodeName, rolePermissions, parentNodeId);
-            return new Variant[]{new Variant(parentNodeId.get())};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       String parentNodeName, RolePermissionType[] rolePermissions, Out<NodeId> parentNodeId)
-            throws UaException;
+            return new Argument[] {
+              new Argument(
+                  "ConfigurationVersion",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14593")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "TargetVariablesToAdd",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14744")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  1,
+                  new UInteger[] {UInteger.valueOf(0)},
+                  new LocalizedText("", ""))
+            };
+          });
     }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return outputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "AddResults",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  1,
+                  new UInteger[] {UInteger.valueOf(0)},
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      ConfigurationVersionDataType configurationVersion =
+          (ConfigurationVersionDataType) inputValues[0].getValue();
+      FieldTargetDataType[] targetVariablesToAdd =
+          (FieldTargetDataType[]) inputValues[1].getValue();
+      Out<StatusCode[]> addResults = new Out<>();
+      invoke(context, configurationVersion, targetVariablesToAdd, addResults);
+      return new Variant[] {new Variant(addResults.get())};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        ConfigurationVersionDataType configurationVersion,
+        FieldTargetDataType[] targetVariablesToAdd,
+        Out<StatusCode[]> addResults)
+        throws UaException;
+  }
+
+  abstract class CreateDataSetMirrorMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+
+    private final Lazy<Argument[]> outputArguments = new Lazy<>();
+
+    public CreateDataSetMirrorMethod(UaMethodNode node) {
+      super(node);
+    }
+
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "ParentNodeName",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "RolePermissions",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=96")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  1,
+                  new UInteger[] {UInteger.valueOf(0)},
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return outputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "ParentNodeId",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      String parentNodeName = (String) inputValues[0].getValue();
+      RolePermissionType[] rolePermissions = (RolePermissionType[]) inputValues[1].getValue();
+      Out<NodeId> parentNodeId = new Out<>();
+      invoke(context, parentNodeName, rolePermissions, parentNodeId);
+      return new Variant[] {new Variant(parentNodeId.get())};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        String parentNodeName,
+        RolePermissionType[] rolePermissions,
+        Out<NodeId> parentNodeId)
+        throws UaException;
+  }
 }

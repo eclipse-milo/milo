@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -17,36 +17,33 @@ import org.opcfoundation.opcua.binaryschema.TypeDictionary;
 
 public abstract class DataTypeDictionaryInitializer {
 
-    private static final String BINARY_DICTIONARY_URI = "http://opcfoundation.org/UA/";
+  private static final String BINARY_DICTIONARY_URI = "http://opcfoundation.org/UA/";
 
-    public void initialize(NamespaceTable namespaceTable, DataTypeManager dataTypeManager) {
-        DataTypeDictionary binaryDictionary =
-            dataTypeManager.getTypeDictionary(BINARY_DICTIONARY_URI);
+  public void initialize(NamespaceTable namespaceTable, DataTypeManager dataTypeManager) {
+    DataTypeDictionary binaryDictionary = dataTypeManager.getTypeDictionary(BINARY_DICTIONARY_URI);
 
-        if (binaryDictionary == null) {
-            try {
-                TypeDictionary typeDictionary = BsdParser.parseBuiltinTypeDictionary();
+    if (binaryDictionary == null) {
+      try {
+        TypeDictionary typeDictionary = BsdParser.parseBuiltinTypeDictionary();
 
-                binaryDictionary = new BinaryDataTypeDictionary(typeDictionary);
+        binaryDictionary = new BinaryDataTypeDictionary(typeDictionary);
 
-                initializeStructs(namespaceTable, binaryDictionary);
+        initializeStructs(namespaceTable, binaryDictionary);
 
-                dataTypeManager.registerTypeDictionary(binaryDictionary);
+        dataTypeManager.registerTypeDictionary(binaryDictionary);
 
-                binaryDictionary.getTypes().forEach(
-                    type ->
-                        dataTypeManager.registerType(
-                            type.getDataTypeId(), type.getCodec(), type.getEncodingId(), null, null)
-                );
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
+        binaryDictionary
+            .getTypes()
+            .forEach(
+                type ->
+                    dataTypeManager.registerType(
+                        type.getDataTypeId(), type.getCodec(), type.getEncodingId(), null, null));
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
     }
+  }
 
-    protected abstract void initializeStructs(
-        NamespaceTable namespaceTable,
-        DataTypeDictionary binaryDictionary
-    ) throws Exception;
-
+  protected abstract void initializeStructs(
+      NamespaceTable namespaceTable, DataTypeDictionary binaryDictionary) throws Exception;
 }

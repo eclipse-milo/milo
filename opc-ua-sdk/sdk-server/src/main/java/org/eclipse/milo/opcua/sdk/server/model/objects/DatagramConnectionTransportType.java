@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -17,64 +17,65 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.QosDataType;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.3.1/#9.3.1.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.3.1/#9.3.1.1</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.3.1/#9.3.1.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.3.1/#9.3.1.1</a>
  */
 public interface DatagramConnectionTransportType extends ConnectionTransportType {
-    QualifiedProperty<UInteger> DISCOVERY_ANNOUNCE_RATE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "DiscoveryAnnounceRate",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-        -1,
-        UInteger.class
-    );
+  QualifiedProperty<UInteger> DISCOVERY_ANNOUNCE_RATE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "DiscoveryAnnounceRate",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          -1,
+          UInteger.class);
 
-    QualifiedProperty<UInteger> DISCOVERY_MAX_MESSAGE_SIZE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "DiscoveryMaxMessageSize",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-        -1,
-        UInteger.class
-    );
+  QualifiedProperty<UInteger> DISCOVERY_MAX_MESSAGE_SIZE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "DiscoveryMaxMessageSize",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          -1,
+          UInteger.class);
 
-    QualifiedProperty<String> QOS_CATEGORY = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "QosCategory",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-        -1,
-        String.class
-    );
+  QualifiedProperty<String> QOS_CATEGORY =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "QosCategory",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          -1,
+          String.class);
 
-    QualifiedProperty<QosDataType[]> DATAGRAM_QOS = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "DatagramQos",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=23603"),
-        1,
-        QosDataType[].class
-    );
+  QualifiedProperty<QosDataType[]> DATAGRAM_QOS =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "DatagramQos",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=23603"),
+          1,
+          QosDataType[].class);
 
-    UInteger getDiscoveryAnnounceRate();
+  UInteger getDiscoveryAnnounceRate();
 
-    void setDiscoveryAnnounceRate(UInteger value);
+  void setDiscoveryAnnounceRate(UInteger value);
 
-    PropertyType getDiscoveryAnnounceRateNode();
+  PropertyType getDiscoveryAnnounceRateNode();
 
-    UInteger getDiscoveryMaxMessageSize();
+  UInteger getDiscoveryMaxMessageSize();
 
-    void setDiscoveryMaxMessageSize(UInteger value);
+  void setDiscoveryMaxMessageSize(UInteger value);
 
-    PropertyType getDiscoveryMaxMessageSizeNode();
+  PropertyType getDiscoveryMaxMessageSizeNode();
 
-    String getQosCategory();
+  String getQosCategory();
 
-    void setQosCategory(String value);
+  void setQosCategory(String value);
 
-    PropertyType getQosCategoryNode();
+  PropertyType getQosCategoryNode();
 
-    QosDataType[] getDatagramQos();
+  QosDataType[] getDatagramQos();
 
-    void setDatagramQos(QosDataType[] value);
+  void setDatagramQos(QosDataType[] value);
 
-    PropertyType getDatagramQosNode();
+  PropertyType getDatagramQosNode();
 
-    NetworkAddressType getDiscoveryAddressNode();
+  NetworkAddressType getDiscoveryAddressNode();
 }

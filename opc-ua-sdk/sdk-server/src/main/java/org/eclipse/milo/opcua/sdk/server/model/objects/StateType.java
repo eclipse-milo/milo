@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -16,20 +16,21 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part16/4.4.8">https://reference.opcfoundation.org/v105/Core/docs/Part16/4.4.8</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part16/4.4.8">https://reference.opcfoundation.org/v105/Core/docs/Part16/4.4.8</a>
  */
 public interface StateType extends BaseObjectType {
-    QualifiedProperty<UInteger> STATE_NUMBER = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "StateNumber",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-        -1,
-        UInteger.class
-    );
+  QualifiedProperty<UInteger> STATE_NUMBER =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "StateNumber",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          -1,
+          UInteger.class);
 
-    UInteger getStateNumber();
+  UInteger getStateNumber();
 
-    void setStateNumber(UInteger value);
+  void setStateNumber(UInteger value);
 
-    PropertyType getStateNumberNode();
+  PropertyType getStateNumberNode();
 }

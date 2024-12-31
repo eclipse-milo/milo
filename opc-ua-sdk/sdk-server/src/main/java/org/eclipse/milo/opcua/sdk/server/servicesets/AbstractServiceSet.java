@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -18,26 +18,28 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ResponseHeader;
 
 public abstract class AbstractServiceSet {
 
-    public static ResponseHeader createResponseHeader(UaRequestMessageType request) {
-        return createResponseHeader(request, StatusCode.GOOD);
-    }
+  public static ResponseHeader createResponseHeader(UaRequestMessageType request) {
+    return createResponseHeader(request, StatusCode.GOOD);
+  }
 
-    public static ResponseHeader createResponseHeader(UaRequestMessageType request, long statusCode) {
-        return createResponseHeader(request, new StatusCode(statusCode));
-    }
+  public static ResponseHeader createResponseHeader(UaRequestMessageType request, long statusCode) {
+    return createResponseHeader(request, new StatusCode(statusCode));
+  }
 
-    public static ResponseHeader createResponseHeader(UaRequestMessageType request, StatusCode serviceResult) {
-        return new ResponseHeader(
-            DateTime.now(),
-            request.getRequestHeader().getRequestHandle(),
-            serviceResult,
-            null, null, null
-        );
-    }
+  public static ResponseHeader createResponseHeader(
+      UaRequestMessageType request, StatusCode serviceResult) {
+    return new ResponseHeader(
+        DateTime.now(),
+        request.getRequestHeader().getRequestHandle(),
+        serviceResult,
+        null,
+        null,
+        null);
+  }
 
-    public static ResponseHeader createResponseHeader(UaRequestMessageType request, DiagnosticInfo[] diagnosticInfos) {
-        // TODO use DiagnosticInfo to create crazy header...
-        return createResponseHeader(request, StatusCode.GOOD);
-    }
-
+  public static ResponseHeader createResponseHeader(
+      UaRequestMessageType request, DiagnosticInfo[] diagnosticInfos) {
+    // TODO use DiagnosticInfo to create crazy header...
+    return createResponseHeader(request, StatusCode.GOOD);
+  }
 }

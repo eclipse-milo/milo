@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -14,15 +14,15 @@ import java.util.Optional;
 
 public interface AccessContext {
 
-    AccessContext INTERNAL = Optional::empty;
+  AccessContext INTERNAL = Optional::empty;
 
-    /**
-     * Get the {@link Session} associated with this operation, if present.
-     * <p>
-     * If empty, the operation is internal and no user- or session-related restrictions should be applied.
-     *
-     * @return the {@link Session} associated with this operation, if present.
-     */
-    Optional<Session> getSession();
-
+  /**
+   * Get the {@link Session} associated with this operation, if present.
+   *
+   * <p>If empty, the operation is internal and no user- or session-related restrictions should be
+   * applied.
+   *
+   * @return the {@link Session} associated with this operation, if present.
+   */
+  Optional<Session> getSession();
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -22,62 +22,64 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.DiagnosticsLevel;
 import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.11/#9.1.11.2">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.11/#9.1.11.2</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.11/#9.1.11.2">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.11/#9.1.11.2</a>
  */
 public interface PubSubDiagnosticsType extends BaseObjectType {
-    BaseDataVariableType getDiagnosticsLevelNode();
+  BaseDataVariableType getDiagnosticsLevelNode();
 
-    DiagnosticsLevel getDiagnosticsLevel();
+  DiagnosticsLevel getDiagnosticsLevel();
 
-    void setDiagnosticsLevel(DiagnosticsLevel value);
+  void setDiagnosticsLevel(DiagnosticsLevel value);
 
-    PubSubDiagnosticsCounterType getTotalInformationNode();
+  PubSubDiagnosticsCounterType getTotalInformationNode();
 
-    UInteger getTotalInformation();
+  UInteger getTotalInformation();
 
-    void setTotalInformation(UInteger value);
+  void setTotalInformation(UInteger value);
 
-    PubSubDiagnosticsCounterType getTotalErrorNode();
+  PubSubDiagnosticsCounterType getTotalErrorNode();
 
-    UInteger getTotalError();
+  UInteger getTotalError();
 
-    void setTotalError(UInteger value);
+  void setTotalError(UInteger value);
 
-    MethodNode getResetMethodNode();
+  MethodNode getResetMethodNode();
 
-    BaseDataVariableType getSubErrorNode();
+  BaseDataVariableType getSubErrorNode();
 
-    Boolean getSubError();
+  Boolean getSubError();
 
-    void setSubError(Boolean value);
+  void setSubError(Boolean value);
 
-    BaseObjectType getCountersNode();
+  BaseObjectType getCountersNode();
 
-    BaseObjectType getLiveValuesNode();
+  BaseObjectType getLiveValuesNode();
 
-    abstract class ResetMethod extends AbstractMethodInvocationHandler {
-        public ResetMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            invoke(context);
-            return new Variant[]{};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context) throws
-            UaException;
+  abstract class ResetMethod extends AbstractMethodInvocationHandler {
+    public ResetMethod(UaMethodNode node) {
+      super(node);
     }
+
+    @Override
+    public Argument[] getInputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      invoke(context);
+      return new Variant[] {};
+    }
+
+    protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context)
+        throws UaException;
+  }
 }

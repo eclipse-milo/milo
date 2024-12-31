@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -14,62 +14,59 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
-
 import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 final class DateTimeConversions {
 
-    private DateTimeConversions() {}
+  private DateTimeConversions() {}
 
-    @NotNull
-    static String dateTimeToString(@NotNull DateTime dt) {
-        return dateToIso8601UtcString(dt.getJavaDate());
+  @NonNull
+  static String dateTimeToString(@NonNull DateTime dt) {
+    return dateToIso8601UtcString(dt.getJavaDate());
+  }
+
+  private static final DateFormat ISO_8601_UTC_DATE_FORMAT;
+
+  static {
+    ISO_8601_UTC_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+    ISO_8601_UTC_DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
+  }
+
+  private static String dateToIso8601UtcString(Date date) {
+    synchronized (ISO_8601_UTC_DATE_FORMAT) {
+      return ISO_8601_UTC_DATE_FORMAT.format(date);
     }
+  }
 
-    private static final DateFormat ISO_8601_UTC_DATE_FORMAT;
+  @Nullable
+  static Object convert(@NonNull Object o, BuiltinDataType targetType, boolean implicit) {
+    if (o instanceof DateTime) {
+      DateTime d = (DateTime) o;
 
-    static {
-        ISO_8601_UTC_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-        ISO_8601_UTC_DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
+      return implicit ? implicitConversion(d, targetType) : explicitConversion(d, targetType);
+    } else {
+      return null;
     }
+  }
 
-    private static String dateToIso8601UtcString(Date date) {
-        synchronized (ISO_8601_UTC_DATE_FORMAT) {
-            return ISO_8601_UTC_DATE_FORMAT.format(date);
-        }
+  @Nullable
+  static Object explicitConversion(@NonNull DateTime d, BuiltinDataType targetType) {
+    // @formatter:off
+    switch (targetType) {
+      case String:
+        return dateTimeToString(d);
+      default:
+        return implicitConversion(d, targetType);
     }
+    // @formatter:on
+  }
 
-    @Nullable
-    static Object convert(@NotNull Object o, BuiltinDataType targetType, boolean implicit) {
-        if (o instanceof DateTime) {
-            DateTime d = (DateTime) o;
-
-            return implicit ?
-                implicitConversion(d, targetType) :
-                explicitConversion(d, targetType);
-        } else {
-            return null;
-        }
-    }
-
-    @Nullable
-    static Object explicitConversion(@NotNull DateTime d, BuiltinDataType targetType) {
-        //@formatter:off
-        switch (targetType) {
-            case String:    return dateTimeToString(d);
-            default:        return implicitConversion(d, targetType);
-        }
-        //@formatter:on
-    }
-
-    @Nullable
-    static Object implicitConversion(@NotNull DateTime d, BuiltinDataType targetType) {
-        // no implicit conversions exist
-        return null;
-    }
-
-
+  @Nullable
+  static Object implicitConversion(@NonNull DateTime d, BuiltinDataType targetType) {
+    // no implicit conversions exist
+    return null;
+  }
 }

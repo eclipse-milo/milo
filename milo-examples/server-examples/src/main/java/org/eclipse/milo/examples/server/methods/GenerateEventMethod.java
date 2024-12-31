@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -10,8 +10,9 @@
 
 package org.eclipse.milo.examples.server.methods;
 
-import java.util.UUID;
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 
+import java.util.UUID;
 import org.eclipse.milo.opcua.sdk.core.ValueRanks;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
@@ -27,61 +28,57 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 
-import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
-
 public class GenerateEventMethod extends AbstractMethodInvocationHandler {
 
-    public static final Argument EVENT_TYPE_ID = new Argument(
-        "EventTypeId",
-        NodeIds.NodeId,
-        ValueRanks.Scalar,
-        null,
-        new LocalizedText("NodeId of the TypeDefinition of the event to generate.")
-    );
+  public static final Argument EVENT_TYPE_ID =
+      new Argument(
+          "EventTypeId",
+          NodeIds.NodeId,
+          ValueRanks.Scalar,
+          null,
+          new LocalizedText("NodeId of the TypeDefinition of the event to generate."));
 
-    private final OpcUaServer server;
+  private final OpcUaServer server;
 
-    public GenerateEventMethod(UaMethodNode methodNode) {
-        super(methodNode);
+  public GenerateEventMethod(UaMethodNode methodNode) {
+    super(methodNode);
 
-        this.server = methodNode.getNodeContext().getServer();
-    }
+    this.server = methodNode.getNodeContext().getServer();
+  }
 
-    @Override
-    public Argument[] getInputArguments() {
-        return new Argument[]{EVENT_TYPE_ID};
-    }
+  @Override
+  public Argument[] getInputArguments() {
+    return new Argument[] {EVENT_TYPE_ID};
+  }
 
-    @Override
-    public Argument[] getOutputArguments() {
-        return new Argument[0];
-    }
+  @Override
+  public Argument[] getOutputArguments() {
+    return new Argument[0];
+  }
 
-    @Override
-    protected Variant[] invoke(InvocationContext invocationContext, Variant[] inputValues) throws UaException {
-        NodeId eventTypeId = (NodeId) inputValues[0].getValue();
+  @Override
+  protected Variant[] invoke(InvocationContext invocationContext, Variant[] inputValues)
+      throws UaException {
+    NodeId eventTypeId = (NodeId) inputValues[0].getValue();
 
-        BaseEventTypeNode eventNode = server.getEventFactory().createEvent(
-            new NodeId(1, UUID.randomUUID()),
-            eventTypeId
-        );
+    BaseEventTypeNode eventNode =
+        server.getEventFactory().createEvent(new NodeId(1, UUID.randomUUID()), eventTypeId);
 
-        eventNode.setBrowseName(new QualifiedName(1, "foo"));
-        eventNode.setDisplayName(LocalizedText.english("foo"));
-        eventNode.setEventId(ByteString.of(new byte[]{0, 1, 2, 3}));
-        eventNode.setEventType(NodeIds.BaseEventType);
-        eventNode.setSourceNode(getNode().getNodeId());
-        eventNode.setSourceName(getNode().getDisplayName().getText());
-        eventNode.setTime(DateTime.now());
-        eventNode.setReceiveTime(DateTime.NULL_VALUE);
-        eventNode.setMessage(LocalizedText.english("event message!"));
-        eventNode.setSeverity(ushort(2));
+    eventNode.setBrowseName(new QualifiedName(1, "foo"));
+    eventNode.setDisplayName(LocalizedText.english("foo"));
+    eventNode.setEventId(ByteString.of(new byte[] {0, 1, 2, 3}));
+    eventNode.setEventType(NodeIds.BaseEventType);
+    eventNode.setSourceNode(getNode().getNodeId());
+    eventNode.setSourceName(getNode().getDisplayName().getText());
+    eventNode.setTime(DateTime.now());
+    eventNode.setReceiveTime(DateTime.NULL_VALUE);
+    eventNode.setMessage(LocalizedText.english("event message!"));
+    eventNode.setSeverity(ushort(2));
 
-        server.getEventNotifier().fire(eventNode);
+    server.getEventNotifier().fire(eventNode);
 
-        eventNode.delete();
+    eventNode.delete();
 
-        return new Variant[0];
-    }
-
+    return new Variant[0];
+  }
 }

@@ -10,10 +10,12 @@
 
 package org.eclipse.milo.opcua.sdk.server.nodes.factories;
 
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.server.AddressSpaceManager;
 import org.eclipse.milo.opcua.sdk.server.NodeManager;
@@ -38,150 +40,150 @@ import org.eclipse.milo.opcua.stack.core.encoding.OpcUaEncodingManager;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
-
 public class NodeFactoryTest {
 
-    private OpcUaServer server;
-    private UaNodeManager nodeManager;
-    private NodeFactory nodeFactory;
+  private OpcUaServer server;
+  private UaNodeManager nodeManager;
+  private NodeFactory nodeFactory;
 
-    @BeforeTest
-    public void setup() throws Exception {
-        server = Mockito.mock(OpcUaServer.class);
+  @BeforeTest
+  public void setup() throws Exception {
+    server = Mockito.mock(OpcUaServer.class);
 
-        NamespaceTable namespaceTable = new NamespaceTable();
-        Mockito.when(server.getNamespaceTable()).thenReturn(namespaceTable);
+    NamespaceTable namespaceTable = new NamespaceTable();
+    Mockito.when(server.getNamespaceTable()).thenReturn(namespaceTable);
 
-        nodeManager = new UaNodeManager();
+    nodeManager = new UaNodeManager();
 
-        AddressSpaceManager addressSpaceManager = Mockito.mock(AddressSpaceManager.class);
+    AddressSpaceManager addressSpaceManager = Mockito.mock(AddressSpaceManager.class);
 
-        Mockito
-            .when(addressSpaceManager.getManagedNode(Mockito.any(NodeId.class)))
-            .then(
-                (Answer<Optional<UaNode>>) invocationOnMock ->
-                    nodeManager.getNode(invocationOnMock.getArgument(0))
-            );
+    Mockito.when(addressSpaceManager.getManagedNode(Mockito.any(NodeId.class)))
+        .then(
+            (Answer<Optional<UaNode>>)
+                invocationOnMock -> nodeManager.getNode(invocationOnMock.getArgument(0)));
 
-        Mockito
-            .when(addressSpaceManager.getManagedNode(Mockito.any(ExpandedNodeId.class)))
-            .then(
-                (Answer<Optional<UaNode>>) invocationOnMock ->
-                    nodeManager.getNode(invocationOnMock.getArgument(0), namespaceTable)
-            );
+    Mockito.when(addressSpaceManager.getManagedNode(Mockito.any(ExpandedNodeId.class)))
+        .then(
+            (Answer<Optional<UaNode>>)
+                invocationOnMock ->
+                    nodeManager.getNode(invocationOnMock.getArgument(0), namespaceTable));
 
-        Mockito
-            .when(addressSpaceManager.getManagedReferences(Mockito.any(NodeId.class)))
-            .then(
-                (Answer<List<Reference>>) invocationOnMock ->
-                    nodeManager.getReferences(invocationOnMock.getArgument(0))
-            );
+    Mockito.when(addressSpaceManager.getManagedReferences(Mockito.any(NodeId.class)))
+        .then(
+            (Answer<List<Reference>>)
+                invocationOnMock -> nodeManager.getReferences(invocationOnMock.getArgument(0)));
 
-        Mockito.when(server.getAddressSpaceManager()).thenReturn(addressSpaceManager);
+    Mockito.when(server.getAddressSpaceManager()).thenReturn(addressSpaceManager);
 
-        Mockito.when(server.getEncodingContext()).thenReturn(DefaultEncodingContext.INSTANCE);
+    Mockito.when(server.getEncodingContext()).thenReturn(DefaultEncodingContext.INSTANCE);
 
-        Mockito.when(server.getEncodingManager()).thenReturn(OpcUaEncodingManager.getInstance());
+    Mockito.when(server.getEncodingManager()).thenReturn(OpcUaEncodingManager.getInstance());
 
-        UaNodeContext context = new UaNodeContext() {
-            @Override
-            public OpcUaServer getServer() {
-                return server;
-            }
+    UaNodeContext context =
+        new UaNodeContext() {
+          @Override
+          public OpcUaServer getServer() {
+            return server;
+          }
 
-            @Override
-            public NodeManager<UaNode> getNodeManager() {
-                return nodeManager;
-            }
+          @Override
+          public NodeManager<UaNode> getNodeManager() {
+            return nodeManager;
+          }
         };
 
-        new NodeLoader(context, nodeManager).loadNodes();
+    new NodeLoader(context, nodeManager).loadNodes();
 
-        ObjectTypeManager objectTypeManager = new ObjectTypeManager();
-        ObjectTypeInitializer.initialize(
-            server.getNamespaceTable(),
-            objectTypeManager
-        );
+    ObjectTypeManager objectTypeManager = new ObjectTypeManager();
+    ObjectTypeInitializer.initialize(server.getNamespaceTable(), objectTypeManager);
 
-        VariableTypeManager variableTypeManager = new VariableTypeManager();
-        VariableTypeInitializer.initialize(
-            server.getNamespaceTable(),
-            variableTypeManager
-        );
+    VariableTypeManager variableTypeManager = new VariableTypeManager();
+    VariableTypeInitializer.initialize(server.getNamespaceTable(), variableTypeManager);
 
-        nodeFactory = new NodeFactory(
-            context,
-            objectTypeManager,
-            variableTypeManager
-        );
-    }
+    nodeFactory = new NodeFactory(context, objectTypeManager, variableTypeManager);
+  }
 
-    @Test
-    public void testCreateAnalogItemType() throws Exception {
-        AnalogItemTypeNode analogItem = (AnalogItemTypeNode) nodeFactory.createNode(
-            new NodeId(1, "TestAnalog"),
-            NodeIds.AnalogItemType,
-            new NodeFactory.InstantiationCallback() {
-                @Override
-                public boolean includeOptionalNode(NodeId typeDefinitionId, QualifiedName browseName) {
+  @Test
+  public void testCreateAnalogItemType() throws Exception {
+    AnalogItemTypeNode analogItem =
+        (AnalogItemTypeNode)
+            nodeFactory.createNode(
+                new NodeId(1, "TestAnalog"),
+                NodeIds.AnalogItemType,
+                new NodeFactory.InstantiationCallback() {
+                  @Override
+                  public boolean includeOptionalNode(
+                      NodeId typeDefinitionId, QualifiedName browseName) {
                     return true;
-                }
-            }
-        );
+                  }
+                });
 
-        assertNotNull(analogItem);
-        assertTrue(nodeManager.containsNode(analogItem));
-    }
+    assertNotNull(analogItem);
+    assertTrue(nodeManager.containsNode(analogItem));
+  }
 
-    @Test
-    public void testInstanceListener() throws Exception {
-        final AtomicBoolean methodAdded = new AtomicBoolean(false);
-        final AtomicBoolean objectAdded = new AtomicBoolean(false);
-        final AtomicBoolean variableAdded = new AtomicBoolean(false);
+  @Test
+  public void testInstanceListener() throws Exception {
+    final AtomicBoolean methodAdded = new AtomicBoolean(false);
+    final AtomicBoolean objectAdded = new AtomicBoolean(false);
+    final AtomicBoolean variableAdded = new AtomicBoolean(false);
 
-        ServerTypeNode serverNode = (ServerTypeNode) nodeFactory.createNode(
-            new NodeId(0, "Server"),
-            NodeIds.ServerType,
-            new NodeFactory.InstantiationCallback() {
-                @Override
-                public boolean includeOptionalNode(NodeId typeDefinitionId, QualifiedName browseName) {
+    ServerTypeNode serverNode =
+        (ServerTypeNode)
+            nodeFactory.createNode(
+                new NodeId(0, "Server"),
+                NodeIds.ServerType,
+                new NodeFactory.InstantiationCallback() {
+                  @Override
+                  public boolean includeOptionalNode(
+                      NodeId typeDefinitionId, QualifiedName browseName) {
                     return true;
-                }
+                  }
 
-                @Override
-                public void onMethodAdded(@Nullable UaObjectNode parent, UaMethodNode instance) {
+                  @Override
+                  public void onMethodAdded(@Nullable UaObjectNode parent, UaMethodNode instance) {
                     String pbn = parent != null ? parent.getBrowseName().getName() : null;
-                    System.out.println("onMethodAdded parent=" + pbn + " instance=" + instance.getBrowseName().getName());
+                    System.out.println(
+                        "onMethodAdded parent="
+                            + pbn
+                            + " instance="
+                            + instance.getBrowseName().getName());
                     methodAdded.set(true);
-                }
+                  }
 
-                @Override
-                public void onObjectAdded(@Nullable UaNode parent, UaObjectNode instance, NodeId typeDefinitionId) {
+                  @Override
+                  public void onObjectAdded(
+                      @Nullable UaNode parent, UaObjectNode instance, NodeId typeDefinitionId) {
                     String pbn = parent != null ? parent.getBrowseName().getName() : null;
-                    System.out.println("onObjectAdded parent=" + pbn + " instance=" + instance.getBrowseName().getName());
+                    System.out.println(
+                        "onObjectAdded parent="
+                            + pbn
+                            + " instance="
+                            + instance.getBrowseName().getName());
                     objectAdded.set(true);
-                }
+                  }
 
-                @Override
-                public void onVariableAdded(@Nullable UaNode parent, UaVariableNode instance, NodeId typeDefinitionId) {
+                  @Override
+                  public void onVariableAdded(
+                      @Nullable UaNode parent, UaVariableNode instance, NodeId typeDefinitionId) {
                     String pbn = parent != null ? parent.getBrowseName().getName() : null;
-                    System.out.println("onVariableAdded parent=" + pbn + " instance=" + instance.getBrowseName().getName());
+                    System.out.println(
+                        "onVariableAdded parent="
+                            + pbn
+                            + " instance="
+                            + instance.getBrowseName().getName());
                     variableAdded.set(true);
-                }
-            }
-        );
+                  }
+                });
 
-        assertTrue(methodAdded.get());
-        assertTrue(objectAdded.get());
-        assertTrue(variableAdded.get());
-    }
-
+    assertTrue(methodAdded.get());
+    assertTrue(objectAdded.get());
+    assertTrue(variableAdded.get());
+  }
 }

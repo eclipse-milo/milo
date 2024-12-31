@@ -25,178 +25,208 @@ import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.util.Lazy;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.6.2">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.6.2</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.6.2">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.6.2</a>
  */
 public interface DialogConditionType extends ConditionType {
-    QualifiedProperty<LocalizedText> PROMPT = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "Prompt",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
-        -1,
-        LocalizedText.class
-    );
+  QualifiedProperty<LocalizedText> PROMPT =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "Prompt",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
+          -1,
+          LocalizedText.class);
 
-    QualifiedProperty<LocalizedText[]> RESPONSE_OPTION_SET = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ResponseOptionSet",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
-        1,
-        LocalizedText[].class
-    );
+  QualifiedProperty<LocalizedText[]> RESPONSE_OPTION_SET =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ResponseOptionSet",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
+          1,
+          LocalizedText[].class);
 
-    QualifiedProperty<Integer> DEFAULT_RESPONSE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "DefaultResponse",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=6"),
-        -1,
-        Integer.class
-    );
+  QualifiedProperty<Integer> DEFAULT_RESPONSE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "DefaultResponse",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=6"),
+          -1,
+          Integer.class);
 
-    QualifiedProperty<Integer> OK_RESPONSE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "OkResponse",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=6"),
-        -1,
-        Integer.class
-    );
+  QualifiedProperty<Integer> OK_RESPONSE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "OkResponse",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=6"),
+          -1,
+          Integer.class);
 
-    QualifiedProperty<Integer> CANCEL_RESPONSE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "CancelResponse",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=6"),
-        -1,
-        Integer.class
-    );
+  QualifiedProperty<Integer> CANCEL_RESPONSE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "CancelResponse",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=6"),
+          -1,
+          Integer.class);
 
-    QualifiedProperty<Integer> LAST_RESPONSE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "LastResponse",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=6"),
-        -1,
-        Integer.class
-    );
+  QualifiedProperty<Integer> LAST_RESPONSE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "LastResponse",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=6"),
+          -1,
+          Integer.class);
 
-    LocalizedText getPrompt();
+  LocalizedText getPrompt();
 
-    void setPrompt(LocalizedText value);
+  void setPrompt(LocalizedText value);
 
-    PropertyType getPromptNode();
+  PropertyType getPromptNode();
 
-    LocalizedText[] getResponseOptionSet();
+  LocalizedText[] getResponseOptionSet();
 
-    void setResponseOptionSet(LocalizedText[] value);
+  void setResponseOptionSet(LocalizedText[] value);
 
-    PropertyType getResponseOptionSetNode();
+  PropertyType getResponseOptionSetNode();
 
-    Integer getDefaultResponse();
+  Integer getDefaultResponse();
 
-    void setDefaultResponse(Integer value);
+  void setDefaultResponse(Integer value);
 
-    PropertyType getDefaultResponseNode();
+  PropertyType getDefaultResponseNode();
 
-    Integer getOkResponse();
+  Integer getOkResponse();
 
-    void setOkResponse(Integer value);
+  void setOkResponse(Integer value);
 
-    PropertyType getOkResponseNode();
+  PropertyType getOkResponseNode();
 
-    Integer getCancelResponse();
+  Integer getCancelResponse();
 
-    void setCancelResponse(Integer value);
+  void setCancelResponse(Integer value);
 
-    PropertyType getCancelResponseNode();
+  PropertyType getCancelResponseNode();
 
-    Integer getLastResponse();
+  Integer getLastResponse();
 
-    void setLastResponse(Integer value);
+  void setLastResponse(Integer value);
 
-    PropertyType getLastResponseNode();
+  PropertyType getLastResponseNode();
 
-    TwoStateVariableType getEnabledStateNode();
+  TwoStateVariableType getEnabledStateNode();
 
-    LocalizedText getEnabledState();
+  LocalizedText getEnabledState();
 
-    void setEnabledState(LocalizedText value);
+  void setEnabledState(LocalizedText value);
 
-    TwoStateVariableType getDialogStateNode();
+  TwoStateVariableType getDialogStateNode();
 
-    LocalizedText getDialogState();
+  LocalizedText getDialogState();
 
-    void setDialogState(LocalizedText value);
+  void setDialogState(LocalizedText value);
 
-    MethodNode getRespondMethodNode();
+  MethodNode getRespondMethodNode();
 
-    MethodNode getRespond2MethodNode();
+  MethodNode getRespond2MethodNode();
 
-    abstract class RespondMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  abstract class RespondMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
 
-        public RespondMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("SelectedResponse", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=6").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            Integer selectedResponse = (Integer) inputValues[0].getValue();
-            invoke(context, selectedResponse);
-            return new Variant[]{};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       Integer selectedResponse) throws UaException;
+    public RespondMethod(UaMethodNode node) {
+      super(node);
     }
 
-    abstract class Respond2Method extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
 
-        public Respond2Method(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("SelectedResponse", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=6").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "")),
-                    new Argument("Comment", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            Integer selectedResponse = (Integer) inputValues[0].getValue();
-            LocalizedText comment = (LocalizedText) inputValues[1].getValue();
-            invoke(context, selectedResponse, comment);
-            return new Variant[]{};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       Integer selectedResponse, LocalizedText comment) throws UaException;
+            return new Argument[] {
+              new Argument(
+                  "SelectedResponse",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=6")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
     }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      Integer selectedResponse = (Integer) inputValues[0].getValue();
+      invoke(context, selectedResponse);
+      return new Variant[] {};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Integer selectedResponse)
+        throws UaException;
+  }
+
+  abstract class Respond2Method extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+
+    public Respond2Method(UaMethodNode node) {
+      super(node);
+    }
+
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "SelectedResponse",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=6")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "Comment",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      Integer selectedResponse = (Integer) inputValues[0].getValue();
+      LocalizedText comment = (LocalizedText) inputValues[1].getValue();
+      invoke(context, selectedResponse, comment);
+      return new Variant[] {};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        Integer selectedResponse,
+        LocalizedText comment)
+        throws UaException;
+  }
 }

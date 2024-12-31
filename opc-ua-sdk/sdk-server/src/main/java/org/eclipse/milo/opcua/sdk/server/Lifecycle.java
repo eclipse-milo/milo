@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -12,14 +12,9 @@ package org.eclipse.milo.opcua.sdk.server;
 
 public interface Lifecycle {
 
-    /**
-     * Execute startup logic, if there is any.
-     */
-    void startup();
+  /** Execute startup logic, if there is any. */
+  void startup();
 
-    /**
-     * Execute shutdown logic, if there is any.
-     */
-    void shutdown();
-
+  /** Execute shutdown logic, if there is any. */
+  void shutdown();
 }

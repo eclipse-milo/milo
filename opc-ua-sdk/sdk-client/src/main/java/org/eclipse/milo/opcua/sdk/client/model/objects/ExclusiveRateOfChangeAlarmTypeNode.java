@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -12,7 +12,6 @@ package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
@@ -34,78 +33,100 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.EUInformation;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 
-public class ExclusiveRateOfChangeAlarmTypeNode extends ExclusiveLimitAlarmTypeNode implements ExclusiveRateOfChangeAlarmType {
-    public ExclusiveRateOfChangeAlarmTypeNode(OpcUaClient client, NodeId nodeId, NodeClass nodeClass,
-                                              QualifiedName browseName, LocalizedText displayName, LocalizedText description,
-                                              UInteger writeMask, UInteger userWriteMask, RolePermissionType[] rolePermissions,
-                                              RolePermissionType[] userRolePermissions, AccessRestrictionType accessRestrictions,
-                                              UByte eventNotifier) {
-        super(client, nodeId, nodeClass, browseName, displayName, description, writeMask, userWriteMask, rolePermissions, userRolePermissions, accessRestrictions, eventNotifier);
-    }
+public class ExclusiveRateOfChangeAlarmTypeNode extends ExclusiveLimitAlarmTypeNode
+    implements ExclusiveRateOfChangeAlarmType {
+  public ExclusiveRateOfChangeAlarmTypeNode(
+      OpcUaClient client,
+      NodeId nodeId,
+      NodeClass nodeClass,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType[] rolePermissions,
+      RolePermissionType[] userRolePermissions,
+      AccessRestrictionType accessRestrictions,
+      UByte eventNotifier) {
+    super(
+        client,
+        nodeId,
+        nodeClass,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions,
+        eventNotifier);
+  }
 
-    @Override
-    public EUInformation getEngineeringUnits() throws UaException {
-        PropertyTypeNode node = getEngineeringUnitsNode();
-        return cast(node.getValue().getValue().getValue(), EUInformation.class);
-    }
+  @Override
+  public EUInformation getEngineeringUnits() throws UaException {
+    PropertyTypeNode node = getEngineeringUnitsNode();
+    return cast(node.getValue().getValue().getValue(), EUInformation.class);
+  }
 
-    @Override
-    public void setEngineeringUnits(EUInformation value) throws UaException {
-        PropertyTypeNode node = getEngineeringUnitsNode();
-        ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
-        node.setValue(new Variant(encoded));
-    }
+  @Override
+  public void setEngineeringUnits(EUInformation value) throws UaException {
+    PropertyTypeNode node = getEngineeringUnitsNode();
+    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
+    node.setValue(new Variant(encoded));
+  }
 
-    @Override
-    public EUInformation readEngineeringUnits() throws UaException {
-        try {
-            return readEngineeringUnitsAsync().get();
-        } catch (ExecutionException | InterruptedException e) {
-            throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
-        }
+  @Override
+  public EUInformation readEngineeringUnits() throws UaException {
+    try {
+      return readEngineeringUnitsAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
     }
+  }
 
-    @Override
-    public void writeEngineeringUnits(EUInformation value) throws UaException {
-        try {
-            writeEngineeringUnitsAsync(value).get();
-        } catch (ExecutionException | InterruptedException e) {
-            throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
-        }
+  @Override
+  public void writeEngineeringUnits(EUInformation value) throws UaException {
+    try {
+      writeEngineeringUnitsAsync(value).get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
     }
+  }
 
-    @Override
-    public CompletableFuture<? extends EUInformation> readEngineeringUnitsAsync() {
-        return getEngineeringUnitsNodeAsync()
-            .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-            .thenApply(v -> cast(v.getValue().getValue(), EUInformation.class));
+  @Override
+  public CompletableFuture<? extends EUInformation> readEngineeringUnitsAsync() {
+    return getEngineeringUnitsNodeAsync()
+        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
+        .thenApply(v -> cast(v.getValue().getValue(), EUInformation.class));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeEngineeringUnitsAsync(EUInformation engineeringUnits) {
+    ExtensionObject encoded =
+        ExtensionObject.encode(client.getStaticEncodingContext(), engineeringUnits);
+    DataValue value = DataValue.valueOnly(new Variant(encoded));
+    return getEngineeringUnitsNodeAsync()
+        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  }
+
+  @Override
+  public PropertyTypeNode getEngineeringUnitsNode() throws UaException {
+    try {
+      return getEngineeringUnitsNodeAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
     }
+  }
 
-    @Override
-    public CompletableFuture<StatusCode> writeEngineeringUnitsAsync(EUInformation engineeringUnits) {
-        ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), engineeringUnits);
-        DataValue value = DataValue.valueOnly(new Variant(encoded));
-        return getEngineeringUnitsNodeAsync()
-            .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-    }
-
-    @Override
-    public PropertyTypeNode getEngineeringUnitsNode() throws UaException {
-        try {
-            return getEngineeringUnitsNodeAsync().get();
-        } catch (ExecutionException | InterruptedException e) {
-            throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
-        }
-    }
-
-    @Override
-    public CompletableFuture<? extends PropertyTypeNode> getEngineeringUnitsNodeAsync() {
-        CompletableFuture<UaNode> future = getMemberNodeAsync(
+  @Override
+  public CompletableFuture<? extends PropertyTypeNode> getEngineeringUnitsNodeAsync() {
+    CompletableFuture<UaNode> future =
+        getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "EngineeringUnits",
             ExpandedNodeId.parse("ns=0;i=46"),
-            false
-        );
-        return future.thenApply(node -> (PropertyTypeNode) node);
-    }
+            false);
+    return future.thenApply(node -> (PropertyTypeNode) node);
+  }
 }

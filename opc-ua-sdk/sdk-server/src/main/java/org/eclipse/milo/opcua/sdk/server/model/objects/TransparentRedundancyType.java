@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -16,34 +16,35 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.structured.RedundantServerDataType;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.8">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.8</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.8">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.8</a>
  */
 public interface TransparentRedundancyType extends ServerRedundancyType {
-    QualifiedProperty<String> CURRENT_SERVER_ID = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "CurrentServerId",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-        -1,
-        String.class
-    );
+  QualifiedProperty<String> CURRENT_SERVER_ID =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "CurrentServerId",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          -1,
+          String.class);
 
-    QualifiedProperty<RedundantServerDataType[]> REDUNDANT_SERVER_ARRAY = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "RedundantServerArray",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=853"),
-        1,
-        RedundantServerDataType[].class
-    );
+  QualifiedProperty<RedundantServerDataType[]> REDUNDANT_SERVER_ARRAY =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "RedundantServerArray",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=853"),
+          1,
+          RedundantServerDataType[].class);
 
-    String getCurrentServerId();
+  String getCurrentServerId();
 
-    void setCurrentServerId(String value);
+  void setCurrentServerId(String value);
 
-    PropertyType getCurrentServerIdNode();
+  PropertyType getCurrentServerIdNode();
 
-    RedundantServerDataType[] getRedundantServerArray();
+  RedundantServerDataType[] getRedundantServerArray();
 
-    void setRedundantServerArray(RedundantServerDataType[] value);
+  void setRedundantServerArray(RedundantServerDataType[] value);
 
-    PropertyType getRedundantServerArrayNode();
+  PropertyType getRedundantServerArrayNode();
 }

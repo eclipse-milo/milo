@@ -24,102 +24,141 @@ import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.util.Lazy;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.7.2">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.7.2</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.7.2">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.7.2</a>
  */
 public interface AcknowledgeableConditionType extends ConditionType {
-    TwoStateVariableType getEnabledStateNode();
+  TwoStateVariableType getEnabledStateNode();
 
-    LocalizedText getEnabledState();
+  LocalizedText getEnabledState();
 
-    void setEnabledState(LocalizedText value);
+  void setEnabledState(LocalizedText value);
 
-    TwoStateVariableType getAckedStateNode();
+  TwoStateVariableType getAckedStateNode();
 
-    LocalizedText getAckedState();
+  LocalizedText getAckedState();
 
-    void setAckedState(LocalizedText value);
+  void setAckedState(LocalizedText value);
 
-    TwoStateVariableType getConfirmedStateNode();
+  TwoStateVariableType getConfirmedStateNode();
 
-    LocalizedText getConfirmedState();
+  LocalizedText getConfirmedState();
 
-    void setConfirmedState(LocalizedText value);
+  void setConfirmedState(LocalizedText value);
 
-    MethodNode getAcknowledgeMethodNode();
+  MethodNode getAcknowledgeMethodNode();
 
-    MethodNode getConfirmMethodNode();
+  MethodNode getConfirmMethodNode();
 
-    abstract class AcknowledgeMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  abstract class AcknowledgeMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
 
-        public AcknowledgeMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("EventId", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "The identifier for the event to comment.")),
-                    new Argument("Comment", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "The comment to add to the condition."))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            ByteString eventId = (ByteString) inputValues[0].getValue();
-            LocalizedText comment = (LocalizedText) inputValues[1].getValue();
-            invoke(context, eventId, comment);
-            return new Variant[]{};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       ByteString eventId, LocalizedText comment) throws UaException;
+    public AcknowledgeMethod(UaMethodNode node) {
+      super(node);
     }
 
-    abstract class ConfirmMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
 
-        public ConfirmMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("EventId", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "The identifier for the event to comment.")),
-                    new Argument("Comment", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "The comment to add to the condition."))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            ByteString eventId = (ByteString) inputValues[0].getValue();
-            LocalizedText comment = (LocalizedText) inputValues[1].getValue();
-            invoke(context, eventId, comment);
-            return new Variant[]{};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       ByteString eventId, LocalizedText comment) throws UaException;
+            return new Argument[] {
+              new Argument(
+                  "EventId",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "The identifier for the event to comment.")),
+              new Argument(
+                  "Comment",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "The comment to add to the condition."))
+            };
+          });
     }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      ByteString eventId = (ByteString) inputValues[0].getValue();
+      LocalizedText comment = (LocalizedText) inputValues[1].getValue();
+      invoke(context, eventId, comment);
+      return new Variant[] {};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        ByteString eventId,
+        LocalizedText comment)
+        throws UaException;
+  }
+
+  abstract class ConfirmMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+
+    public ConfirmMethod(UaMethodNode node) {
+      super(node);
+    }
+
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "EventId",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "The identifier for the event to comment.")),
+              new Argument(
+                  "Comment",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "The comment to add to the condition."))
+            };
+          });
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      ByteString eventId = (ByteString) inputValues[0].getValue();
+      LocalizedText comment = (LocalizedText) inputValues[1].getValue();
+      invoke(context, eventId, comment);
+      return new Variant[] {};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        ByteString eventId,
+        LocalizedText comment)
+        throws UaException;
+  }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -16,20 +16,21 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.11">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.11</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.11">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.11</a>
  */
 public interface IOrderedObjectType extends BaseInterfaceType {
-    QualifiedProperty<Variant> NUMBER_IN_LIST = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "NumberInList",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=26"),
-        -1,
-        Variant.class
-    );
+  QualifiedProperty<Variant> NUMBER_IN_LIST =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "NumberInList",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=26"),
+          -1,
+          Variant.class);
 
-    Variant getNumberInList();
+  Variant getNumberInList();
 
-    void setNumberInList(Variant value);
+  void setNumberInList(Variant value);
 
-    PropertyType getNumberInListNode();
+  PropertyType getNumberInListNode();
 }

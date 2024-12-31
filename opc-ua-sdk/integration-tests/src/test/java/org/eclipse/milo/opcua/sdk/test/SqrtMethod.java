@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -22,46 +22,36 @@ import org.slf4j.LoggerFactory;
 
 public class SqrtMethod extends AbstractMethodInvocationHandler {
 
-    public static final Argument X = new Argument(
-        "x",
-        NodeIds.Double,
-        ValueRanks.Scalar,
-        null,
-        new LocalizedText("A value.")
-    );
+  public static final Argument X =
+      new Argument("x", NodeIds.Double, ValueRanks.Scalar, null, new LocalizedText("A value."));
 
-    public static final Argument X_SQRT = new Argument(
-        "x_sqrt",
-        NodeIds.Double,
-        ValueRanks.Scalar,
-        null,
-        new LocalizedText("A value.")
-    );
+  public static final Argument X_SQRT =
+      new Argument(
+          "x_sqrt", NodeIds.Double, ValueRanks.Scalar, null, new LocalizedText("A value."));
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    public SqrtMethod(UaMethodNode node) {
-        super(node);
-    }
+  public SqrtMethod(UaMethodNode node) {
+    super(node);
+  }
 
-    @Override
-    public Argument[] getInputArguments() {
-        return new Argument[]{X};
-    }
+  @Override
+  public Argument[] getInputArguments() {
+    return new Argument[] {X};
+  }
 
-    @Override
-    public Argument[] getOutputArguments() {
-        return new Argument[]{X_SQRT};
-    }
+  @Override
+  public Argument[] getOutputArguments() {
+    return new Argument[] {X_SQRT};
+  }
 
-    @Override
-    protected Variant[] invoke(InvocationContext invocationContext, Variant[] inputValues) {
-        logger.debug("Invoking sqrt() method of objectId={}", invocationContext.getObjectId());
+  @Override
+  protected Variant[] invoke(InvocationContext invocationContext, Variant[] inputValues) {
+    logger.debug("Invoking sqrt() method of objectId={}", invocationContext.getObjectId());
 
-        double x = (double) inputValues[0].getValue();
-        double xSqrt = Math.sqrt(x);
+    double x = (double) inputValues[0].getValue();
+    double xSqrt = Math.sqrt(x);
 
-        return new Variant[]{new Variant(xSqrt)};
-    }
-
+    return new Variant[] {new Variant(xSqrt)};
+  }
 }

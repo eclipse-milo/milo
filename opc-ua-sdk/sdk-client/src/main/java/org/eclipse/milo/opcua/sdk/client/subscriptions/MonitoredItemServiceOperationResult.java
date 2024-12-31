@@ -11,46 +11,43 @@
 package org.eclipse.milo.opcua.sdk.client.subscriptions;
 
 import java.util.Optional;
-
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public class MonitoredItemServiceOperationResult implements ServiceOperationResult<StatusCode> {
 
-    private final OpcUaMonitoredItem monitoredItem;
-    private final StatusCode serviceResult;
-    private final @Nullable StatusCode operationResult;
+  private final OpcUaMonitoredItem monitoredItem;
+  private final StatusCode serviceResult;
+  private final @Nullable StatusCode operationResult;
 
-    public MonitoredItemServiceOperationResult(
-        OpcUaMonitoredItem monitoredItem,
-        StatusCode serviceResult,
-        @Nullable StatusCode operationResult
-    ) {
+  public MonitoredItemServiceOperationResult(
+      OpcUaMonitoredItem monitoredItem,
+      StatusCode serviceResult,
+      @Nullable StatusCode operationResult) {
 
-        this.monitoredItem = monitoredItem;
-        this.serviceResult = serviceResult;
-        this.operationResult = operationResult;
-    }
+    this.monitoredItem = monitoredItem;
+    this.serviceResult = serviceResult;
+    this.operationResult = operationResult;
+  }
 
-    public OpcUaMonitoredItem monitoredItem() {
-        return monitoredItem;
-    }
+  public OpcUaMonitoredItem monitoredItem() {
+    return monitoredItem;
+  }
 
-    @Override
-    public StatusCode serviceResult() {
-        return serviceResult;
-    }
+  @Override
+  public StatusCode serviceResult() {
+    return serviceResult;
+  }
 
-    @Override
-    public Optional<StatusCode> operationResult() {
-        return Optional.ofNullable(operationResult);
-    }
+  @Override
+  public Optional<StatusCode> operationResult() {
+    return Optional.ofNullable(operationResult);
+  }
 
-    /**
-     * @return {@code true} if both the service and operation result are good.
-     */
-    public boolean isGood() {
-        return serviceResult.isGood() && operationResult != null && operationResult.isGood();
-    }
-
+  /**
+   * @return {@code true} if both the service and operation result are good.
+   */
+  public boolean isGood() {
+    return serviceResult.isGood() && operationResult != null && operationResult.isGood();
+  }
 }

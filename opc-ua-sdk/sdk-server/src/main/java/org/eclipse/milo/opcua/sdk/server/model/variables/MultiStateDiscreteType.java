@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -15,20 +15,21 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.3/#5.3.3.3">https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.3/#5.3.3.3</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.3/#5.3.3.3">https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.3/#5.3.3.3</a>
  */
 public interface MultiStateDiscreteType extends DiscreteItemType {
-    QualifiedProperty<LocalizedText[]> ENUM_STRINGS = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "EnumStrings",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
-        1,
-        LocalizedText[].class
-    );
+  QualifiedProperty<LocalizedText[]> ENUM_STRINGS =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "EnumStrings",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
+          1,
+          LocalizedText[].class);
 
-    LocalizedText[] getEnumStrings();
+  LocalizedText[] getEnumStrings();
 
-    void setEnumStrings(LocalizedText[] value);
+  void setEnumStrings(LocalizedText[] value);
 
-    PropertyType getEnumStringsNode();
+  PropertyType getEnumStringsNode();
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -17,6 +17,5 @@ import org.eclipse.milo.opcua.stack.transport.server.ServiceRequestContext;
 
 public interface MethodServiceSet {
 
-    CallResponse onCall(ServiceRequestContext context, CallRequest request) throws UaException;
-
+  CallResponse onCall(ServiceRequestContext context, CallRequest request) throws UaException;
 }

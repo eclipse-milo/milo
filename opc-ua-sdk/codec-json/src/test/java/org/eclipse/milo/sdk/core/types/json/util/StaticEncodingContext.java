@@ -14,11 +14,9 @@ import org.eclipse.milo.opcua.test.DataTypeInitializer;
 
 public class StaticEncodingContext extends AbstractEncodingContext {
 
-    public StaticEncodingContext() {
-        super();
+  public StaticEncodingContext() {
+    super();
 
-        new DataTypeInitializer().initialize(getNamespaceTable(), getDataTypeManager());
-    }
-
-
+    new DataTypeInitializer().initialize(getNamespaceTable(), getDataTypeManager());
+  }
 }

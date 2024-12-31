@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -19,19 +19,55 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 
-public class DeviceFailureEventTypeNode extends SystemEventTypeNode implements DeviceFailureEventType {
-    public DeviceFailureEventTypeNode(UaNodeContext context, NodeId nodeId, QualifiedName browseName,
-                                      LocalizedText displayName, LocalizedText description, UInteger writeMask,
-                                      UInteger userWriteMask, RolePermissionType[] rolePermissions,
-                                      RolePermissionType[] userRolePermissions, AccessRestrictionType accessRestrictions,
-                                      UByte eventNotifier) {
-        super(context, nodeId, browseName, displayName, description, writeMask, userWriteMask, rolePermissions, userRolePermissions, accessRestrictions, eventNotifier);
-    }
+public class DeviceFailureEventTypeNode extends SystemEventTypeNode
+    implements DeviceFailureEventType {
+  public DeviceFailureEventTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType[] rolePermissions,
+      RolePermissionType[] userRolePermissions,
+      AccessRestrictionType accessRestrictions,
+      UByte eventNotifier) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions,
+        eventNotifier);
+  }
 
-    public DeviceFailureEventTypeNode(UaNodeContext context, NodeId nodeId, QualifiedName browseName,
-                                      LocalizedText displayName, LocalizedText description, UInteger writeMask,
-                                      UInteger userWriteMask, RolePermissionType[] rolePermissions,
-                                      RolePermissionType[] userRolePermissions, AccessRestrictionType accessRestrictions) {
-        super(context, nodeId, browseName, displayName, description, writeMask, userWriteMask, rolePermissions, userRolePermissions, accessRestrictions);
-    }
+  public DeviceFailureEventTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType[] rolePermissions,
+      RolePermissionType[] userRolePermissions,
+      AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
 }

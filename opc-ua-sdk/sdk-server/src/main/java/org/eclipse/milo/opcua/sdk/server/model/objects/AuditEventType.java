@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -16,76 +16,77 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.3">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.3</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.3">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.3</a>
  */
 public interface AuditEventType extends BaseEventType {
-    QualifiedProperty<DateTime> ACTION_TIME_STAMP = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ActionTimeStamp",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-        -1,
-        DateTime.class
-    );
+  QualifiedProperty<DateTime> ACTION_TIME_STAMP =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ActionTimeStamp",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
+          -1,
+          DateTime.class);
 
-    QualifiedProperty<Boolean> STATUS = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "Status",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-        -1,
-        Boolean.class
-    );
+  QualifiedProperty<Boolean> STATUS =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "Status",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          -1,
+          Boolean.class);
 
-    QualifiedProperty<String> SERVER_ID = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ServerId",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-        -1,
-        String.class
-    );
+  QualifiedProperty<String> SERVER_ID =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ServerId",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          -1,
+          String.class);
 
-    QualifiedProperty<String> CLIENT_AUDIT_ENTRY_ID = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ClientAuditEntryId",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-        -1,
-        String.class
-    );
+  QualifiedProperty<String> CLIENT_AUDIT_ENTRY_ID =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ClientAuditEntryId",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          -1,
+          String.class);
 
-    QualifiedProperty<String> CLIENT_USER_ID = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ClientUserId",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-        -1,
-        String.class
-    );
+  QualifiedProperty<String> CLIENT_USER_ID =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ClientUserId",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          -1,
+          String.class);
 
-    DateTime getActionTimeStamp();
+  DateTime getActionTimeStamp();
 
-    void setActionTimeStamp(DateTime value);
+  void setActionTimeStamp(DateTime value);
 
-    PropertyType getActionTimeStampNode();
+  PropertyType getActionTimeStampNode();
 
-    Boolean getStatus();
+  Boolean getStatus();
 
-    void setStatus(Boolean value);
+  void setStatus(Boolean value);
 
-    PropertyType getStatusNode();
+  PropertyType getStatusNode();
 
-    String getServerId();
+  String getServerId();
 
-    void setServerId(String value);
+  void setServerId(String value);
 
-    PropertyType getServerIdNode();
+  PropertyType getServerIdNode();
 
-    String getClientAuditEntryId();
+  String getClientAuditEntryId();
 
-    void setClientAuditEntryId(String value);
+  void setClientAuditEntryId(String value);
 
-    PropertyType getClientAuditEntryIdNode();
+  PropertyType getClientAuditEntryIdNode();
 
-    String getClientUserId();
+  String getClientUserId();
 
-    void setClientUserId(String value);
+  void setClientUserId(String value);
 
-    PropertyType getClientUserIdNode();
+  PropertyType getClientUserIdNode();
 }

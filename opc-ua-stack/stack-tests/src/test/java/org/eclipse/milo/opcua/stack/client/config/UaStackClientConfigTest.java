@@ -1,4 +1,4 @@
-///*
+/// *
 // * Copyright (c) 2019 the Eclipse Milo Authors
 // *
 // * This program and the accompanying materials are made
@@ -8,26 +8,26 @@
 // * SPDX-License-Identifier: EPL-2.0
 // */
 //
-//package org.eclipse.milo.opcua.stack.client.config;
+// package org.eclipse.milo.opcua.stack.client.config;
 //
-//import java.security.cert.X509Certificate;
-//import java.util.List;
-//import java.util.Optional;
+// import java.security.cert.X509Certificate;
+// import java.util.List;
+// import java.util.Optional;
 //
-//import org.eclipse.milo.opcua.stack.SecurityFixture;
-//import org.eclipse.milo.opcua.stack.client.UaStackClientConfig;
-//import org.eclipse.milo.opcua.stack.client.security.ClientCertificateValidator;
-//import org.eclipse.milo.opcua.stack.core.Stack;
-//import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
-//import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
-//import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
-//import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
-//import org.testng.annotations.Test;
+// import org.eclipse.milo.opcua.stack.SecurityFixture;
+// import org.eclipse.milo.opcua.stack.client.UaStackClientConfig;
+// import org.eclipse.milo.opcua.stack.client.security.ClientCertificateValidator;
+// import org.eclipse.milo.opcua.stack.core.Stack;
+// import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
+// import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
+// import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
+// import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
+// import org.testng.annotations.Test;
 //
-//import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
-//import static org.testng.Assert.assertEquals;
+// import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
+// import static org.testng.Assert.assertEquals;
 //
-//public class UaStackClientConfigTest extends SecurityFixture {
+// public class UaStackClientConfigTest extends SecurityFixture {
 //
 //    private final EndpointDescription endpoint = new EndpointDescription(
 //        "opc.tcp://localhost:62541",
@@ -125,4 +125,4 @@
 //        assertEquals(copy.getAcknowledgeTimeout(), uint(12345));
 //    }
 //
-//}
+// }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -16,20 +16,21 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.structured.AddReferencesItem;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.22">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.22</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.22">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.22</a>
  */
 public interface AuditAddReferencesEventType extends AuditNodeManagementEventType {
-    QualifiedProperty<AddReferencesItem[]> REFERENCES_TO_ADD = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ReferencesToAdd",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=379"),
-        1,
-        AddReferencesItem[].class
-    );
+  QualifiedProperty<AddReferencesItem[]> REFERENCES_TO_ADD =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ReferencesToAdd",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=379"),
+          1,
+          AddReferencesItem[].class);
 
-    AddReferencesItem[] getReferencesToAdd();
+  AddReferencesItem[] getReferencesToAdd();
 
-    void setReferencesToAdd(AddReferencesItem[] value);
+  void setReferencesToAdd(AddReferencesItem[] value);
 
-    PropertyType getReferencesToAddNode();
+  PropertyType getReferencesToAddNode();
 }

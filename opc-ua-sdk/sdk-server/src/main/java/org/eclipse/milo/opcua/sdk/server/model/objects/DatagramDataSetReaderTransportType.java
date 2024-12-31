@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -16,50 +16,51 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReceiveQosDataType;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.3.1/#9.3.1.4">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.3.1/#9.3.1.4</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.3.1/#9.3.1.4">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.3.1/#9.3.1.4</a>
  */
 public interface DatagramDataSetReaderTransportType extends DataSetReaderTransportType {
-    QualifiedProperty<String> QOS_CATEGORY = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "QosCategory",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-        -1,
-        String.class
-    );
+  QualifiedProperty<String> QOS_CATEGORY =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "QosCategory",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          -1,
+          String.class);
 
-    QualifiedProperty<ReceiveQosDataType[]> DATAGRAM_QOS = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "DatagramQos",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=23608"),
-        1,
-        ReceiveQosDataType[].class
-    );
+  QualifiedProperty<ReceiveQosDataType[]> DATAGRAM_QOS =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "DatagramQos",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=23608"),
+          1,
+          ReceiveQosDataType[].class);
 
-    QualifiedProperty<String> TOPIC = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "Topic",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-        -1,
-        String.class
-    );
+  QualifiedProperty<String> TOPIC =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "Topic",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          -1,
+          String.class);
 
-    String getQosCategory();
+  String getQosCategory();
 
-    void setQosCategory(String value);
+  void setQosCategory(String value);
 
-    PropertyType getQosCategoryNode();
+  PropertyType getQosCategoryNode();
 
-    ReceiveQosDataType[] getDatagramQos();
+  ReceiveQosDataType[] getDatagramQos();
 
-    void setDatagramQos(ReceiveQosDataType[] value);
+  void setDatagramQos(ReceiveQosDataType[] value);
 
-    PropertyType getDatagramQosNode();
+  PropertyType getDatagramQosNode();
 
-    String getTopic();
+  String getTopic();
 
-    void setTopic(String value);
+  void setTopic(String value);
 
-    PropertyType getTopicNode();
+  PropertyType getTopicNode();
 
-    NetworkAddressType getAddressNode();
+  NetworkAddressType getAddressNode();
 }

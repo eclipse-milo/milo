@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -16,62 +16,63 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part13/4.2.1/#4.2.1.2">https://reference.opcfoundation.org/v105/Core/docs/Part13/4.2.1/#4.2.1.2</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part13/4.2.1/#4.2.1.2">https://reference.opcfoundation.org/v105/Core/docs/Part13/4.2.1/#4.2.1.2</a>
  */
 public interface AggregateConfigurationType extends BaseObjectType {
-    QualifiedProperty<Boolean> TREAT_UNCERTAIN_AS_BAD = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "TreatUncertainAsBad",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-        -1,
-        Boolean.class
-    );
+  QualifiedProperty<Boolean> TREAT_UNCERTAIN_AS_BAD =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "TreatUncertainAsBad",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          -1,
+          Boolean.class);
 
-    QualifiedProperty<UByte> PERCENT_DATA_BAD = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "PercentDataBad",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=3"),
-        -1,
-        UByte.class
-    );
+  QualifiedProperty<UByte> PERCENT_DATA_BAD =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "PercentDataBad",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=3"),
+          -1,
+          UByte.class);
 
-    QualifiedProperty<UByte> PERCENT_DATA_GOOD = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "PercentDataGood",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=3"),
-        -1,
-        UByte.class
-    );
+  QualifiedProperty<UByte> PERCENT_DATA_GOOD =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "PercentDataGood",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=3"),
+          -1,
+          UByte.class);
 
-    QualifiedProperty<Boolean> USE_SLOPED_EXTRAPOLATION = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "UseSlopedExtrapolation",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-        -1,
-        Boolean.class
-    );
+  QualifiedProperty<Boolean> USE_SLOPED_EXTRAPOLATION =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "UseSlopedExtrapolation",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          -1,
+          Boolean.class);
 
-    Boolean getTreatUncertainAsBad();
+  Boolean getTreatUncertainAsBad();
 
-    void setTreatUncertainAsBad(Boolean value);
+  void setTreatUncertainAsBad(Boolean value);
 
-    PropertyType getTreatUncertainAsBadNode();
+  PropertyType getTreatUncertainAsBadNode();
 
-    UByte getPercentDataBad();
+  UByte getPercentDataBad();
 
-    void setPercentDataBad(UByte value);
+  void setPercentDataBad(UByte value);
 
-    PropertyType getPercentDataBadNode();
+  PropertyType getPercentDataBadNode();
 
-    UByte getPercentDataGood();
+  UByte getPercentDataGood();
 
-    void setPercentDataGood(UByte value);
+  void setPercentDataGood(UByte value);
 
-    PropertyType getPercentDataGoodNode();
+  PropertyType getPercentDataGoodNode();
 
-    Boolean getUseSlopedExtrapolation();
+  Boolean getUseSlopedExtrapolation();
 
-    void setUseSlopedExtrapolation(Boolean value);
+  void setUseSlopedExtrapolation(Boolean value);
 
-    PropertyType getUseSlopedExtrapolationNode();
+  PropertyType getUseSlopedExtrapolationNode();
 }

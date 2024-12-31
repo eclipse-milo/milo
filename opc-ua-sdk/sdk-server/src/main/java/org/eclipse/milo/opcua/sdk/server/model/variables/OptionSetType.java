@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -15,34 +15,35 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.17">https://reference.opcfoundation.org/v105/Core/docs/Part5/7.17</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.17">https://reference.opcfoundation.org/v105/Core/docs/Part5/7.17</a>
  */
 public interface OptionSetType extends BaseDataVariableType {
-    QualifiedProperty<LocalizedText[]> OPTION_SET_VALUES = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "OptionSetValues",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
-        1,
-        LocalizedText[].class
-    );
+  QualifiedProperty<LocalizedText[]> OPTION_SET_VALUES =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "OptionSetValues",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
+          1,
+          LocalizedText[].class);
 
-    QualifiedProperty<Boolean[]> BIT_MASK = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "BitMask",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-        1,
-        Boolean[].class
-    );
+  QualifiedProperty<Boolean[]> BIT_MASK =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "BitMask",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          1,
+          Boolean[].class);
 
-    LocalizedText[] getOptionSetValues();
+  LocalizedText[] getOptionSetValues();
 
-    void setOptionSetValues(LocalizedText[] value);
+  void setOptionSetValues(LocalizedText[] value);
 
-    PropertyType getOptionSetValuesNode();
+  PropertyType getOptionSetValuesNode();
 
-    Boolean[] getBitMask();
+  Boolean[] getBitMask();
 
-    void setBitMask(Boolean[] value);
+  void setBitMask(Boolean[] value);
 
-    PropertyType getBitMaskNode();
+  PropertyType getBitMaskNode();
 }

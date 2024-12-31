@@ -10,6 +10,29 @@
 
 package org.eclipse.milo.opcua.sdk.client.session;
 
+import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_CLOSE_FUTURE;
+import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_KEEP_ALIVE_FAILURE_COUNT;
+import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_KEEP_ALIVE_SCHEDULED_FUTURE;
+import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_SESSION;
+import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_SESSION_ACTIVITY_LISTENERS;
+import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_SESSION_FUTURE;
+import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_SESSION_INITIALIZERS;
+import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_WAIT_FUTURE;
+import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_WAIT_TIME;
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
+import static org.eclipse.milo.opcua.stack.core.util.FutureUtils.complete;
+import static org.eclipse.milo.opcua.stack.core.util.FutureUtils.failedFuture;
+
+import com.digitalpetri.fsm.Fsm;
+import com.digitalpetri.fsm.FsmContext;
+import com.digitalpetri.fsm.dsl.ActionContext;
+import com.digitalpetri.fsm.dsl.FsmBuilder;
+import com.digitalpetri.netty.fsm.ChannelFsm;
+import com.google.common.collect.Streams;
+import com.google.common.primitives.Bytes;
+import io.netty.channel.Channel;
 import java.nio.ByteBuffer;
 import java.security.KeyPair;
 import java.security.PrivateKey;
@@ -25,15 +48,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
-
-import com.digitalpetri.fsm.Fsm;
-import com.digitalpetri.fsm.FsmContext;
-import com.digitalpetri.fsm.dsl.ActionContext;
-import com.digitalpetri.fsm.dsl.FsmBuilder;
-import com.digitalpetri.netty.fsm.ChannelFsm;
-import com.google.common.collect.Streams;
-import com.google.common.primitives.Bytes;
-import io.netty.channel.Channel;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfig;
 import org.eclipse.milo.opcua.sdk.client.OpcUaSession;
@@ -86,638 +100,649 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.slf4j.MDC.MDCCloseable;
 
-import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_CLOSE_FUTURE;
-import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_KEEP_ALIVE_FAILURE_COUNT;
-import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_KEEP_ALIVE_SCHEDULED_FUTURE;
-import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_SESSION;
-import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_SESSION_ACTIVITY_LISTENERS;
-import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_SESSION_FUTURE;
-import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_SESSION_INITIALIZERS;
-import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_WAIT_FUTURE;
-import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_WAIT_TIME;
-import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
-import static org.eclipse.milo.opcua.stack.core.util.FutureUtils.complete;
-import static org.eclipse.milo.opcua.stack.core.util.FutureUtils.failedFuture;
-
 public class SessionFsmFactory {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SessionFsm.LOGGER_NAME);
+  private static final Logger LOGGER = LoggerFactory.getLogger(SessionFsm.LOGGER_NAME);
 
-    private static final AtomicLong INSTANCE_ID = new AtomicLong();
+  private static final AtomicLong INSTANCE_ID = new AtomicLong();
 
-    private static final int MAX_WAIT_SECONDS = 16;
+  private static final int MAX_WAIT_SECONDS = 16;
 
-    private SessionFsmFactory() {}
+  private SessionFsmFactory() {}
 
-    public static SessionFsm newSessionFsm(OpcUaClient client) {
-        Long instanceId = INSTANCE_ID.incrementAndGet();
+  public static SessionFsm newSessionFsm(OpcUaClient client) {
+    Long instanceId = INSTANCE_ID.incrementAndGet();
 
-        FsmBuilder<State, Event> builder = new FsmBuilder<>(
+    FsmBuilder<State, Event> builder =
+        new FsmBuilder<>(
             SessionFsm.LOGGER_NAME,
             Map.of("instance-id", String.valueOf(instanceId)),
             client.getTransport().getConfig().getExecutor(),
-            instanceId
-        );
+            instanceId);
 
-        configureSessionFsm(builder, client);
+    configureSessionFsm(builder, client);
 
-        Fsm<State, Event> fsm = builder.build(State.Inactive);
+    Fsm<State, Event> fsm = builder.build(State.Inactive);
 
-        client.addFaultListener(new SessionFaultListener(fsm));
+    client.addFaultListener(new SessionFaultListener(fsm));
 
-        return new SessionFsm(fsm);
-    }
+    return new SessionFsm(fsm);
+  }
 
-    private static void configureSessionFsm(FsmBuilder<State, Event> fb, OpcUaClient client) {
-        configureInactiveState(fb, client);
-        configureCreatingWaitState(fb, client);
-        configureCreatingState(fb, client);
-        configureActivatingState(fb, client);
-        configureTransferringState(fb, client);
-        configureInitializingState(fb, client);
-        configureActiveState(fb, client);
-        configureClosingState(fb, client);
-    }
+  private static void configureSessionFsm(FsmBuilder<State, Event> fb, OpcUaClient client) {
+    configureInactiveState(fb, client);
+    configureCreatingWaitState(fb, client);
+    configureCreatingState(fb, client);
+    configureActivatingState(fb, client);
+    configureTransferringState(fb, client);
+    configureInitializingState(fb, client);
+    configureActiveState(fb, client);
+    configureClosingState(fb, client);
+  }
 
-    private static void configureInactiveState(
-        FsmBuilder<State, Event> fb,
-        @SuppressWarnings("unused") OpcUaClient client) {
+  private static void configureInactiveState(
+      FsmBuilder<State, Event> fb, @SuppressWarnings("unused") OpcUaClient client) {
 
-        /* Transitions */
+    /* Transitions */
 
-        fb.when(State.Inactive)
-            .on(Event.OpenSession.class)
-            .transitionTo(State.Creating);
+    fb.when(State.Inactive).on(Event.OpenSession.class).transitionTo(State.Creating);
 
+    /* External Transition Actions */
 
-        /* External Transition Actions */
+    fb.onTransitionTo(State.Inactive)
+        .from(s -> s != State.Inactive)
+        .viaAny()
+        .execute(FsmContext::processShelvedEvents);
 
-        fb.onTransitionTo(State.Inactive)
-            .from(s -> s != State.Inactive)
-            .viaAny()
-            .execute(FsmContext::processShelvedEvents);
+    /* Internal Transition Actions */
 
+    fb.onInternalTransition(State.Inactive)
+        .via(Event.GetSession.class)
+        .execute(
+            ctx -> {
+              Event.GetSession event = (Event.GetSession) ctx.event();
 
-        /* Internal Transition Actions */
-
-        fb.onInternalTransition(State.Inactive)
-            .via(Event.GetSession.class)
-            .execute(ctx -> {
-                Event.GetSession event = (Event.GetSession) ctx.event();
-
-                client.getTransport().getConfig().getExecutor().execute(() ->
-                    event.future.completeExceptionally(
-                        new UaException(StatusCodes.Bad_SessionClosed))
-                );
+              client
+                  .getTransport()
+                  .getConfig()
+                  .getExecutor()
+                  .execute(
+                      () ->
+                          event.future.completeExceptionally(
+                              new UaException(StatusCodes.Bad_SessionClosed)));
             });
 
-        fb.onInternalTransition(State.Inactive)
-            .via(Event.CloseSession.class)
-            .execute(ctx -> {
-                Event.CloseSession event = (Event.CloseSession) ctx.event();
+    fb.onInternalTransition(State.Inactive)
+        .via(Event.CloseSession.class)
+        .execute(
+            ctx -> {
+              Event.CloseSession event = (Event.CloseSession) ctx.event();
 
-                client.getTransport().getConfig().getExecutor().execute(() ->
-                    event.future.complete(Unit.VALUE)
-                );
+              client
+                  .getTransport()
+                  .getConfig()
+                  .getExecutor()
+                  .execute(() -> event.future.complete(Unit.VALUE));
             });
-    }
+  }
 
-    private static void configureCreatingWaitState(
-        FsmBuilder<State, Event> fb,
-        @SuppressWarnings("unused") OpcUaClient client) {
+  private static void configureCreatingWaitState(
+      FsmBuilder<State, Event> fb, @SuppressWarnings("unused") OpcUaClient client) {
 
-        /* Transitions */
+    /* Transitions */
 
-        fb.when(State.CreatingWait)
-            .on(Event.CreatingWaitExpired.class)
-            .transitionTo(State.Creating);
+    fb.when(State.CreatingWait).on(Event.CreatingWaitExpired.class).transitionTo(State.Creating);
 
-        fb.when(State.CreatingWait)
-            .on(Event.CloseSession.class)
-            .transitionTo(State.Inactive);
+    fb.when(State.CreatingWait).on(Event.CloseSession.class).transitionTo(State.Inactive);
 
+    /* External Transition Actions */
 
-        /* External Transition Actions */
+    fb.onTransitionTo(State.CreatingWait)
+        .from(s -> s != State.CreatingWait)
+        .viaAny()
+        .execute(FsmContext::processShelvedEvents);
 
-        fb.onTransitionTo(State.CreatingWait)
-            .from(s -> s != State.CreatingWait)
-            .viaAny()
-            .execute(FsmContext::processShelvedEvents);
+    fb.onTransitionTo(State.CreatingWait)
+        .from(s -> s != State.CreatingWait)
+        .viaAny()
+        .execute(
+            ctx -> {
+              SessionFuture sessionFuture = new SessionFuture();
+              KEY_SESSION_FUTURE.set(ctx, sessionFuture);
 
-        fb.onTransitionTo(State.CreatingWait)
-            .from(s -> s != State.CreatingWait)
-            .viaAny()
-            .execute(ctx -> {
-                SessionFuture sessionFuture = new SessionFuture();
-                KEY_SESSION_FUTURE.set(ctx, sessionFuture);
+              Long waitTime = KEY_WAIT_TIME.get(ctx);
+              if (waitTime == null) {
+                waitTime = 1L;
+              } else {
+                waitTime = Math.min(MAX_WAIT_SECONDS, waitTime << 1);
+              }
+              KEY_WAIT_TIME.set(ctx, waitTime);
 
-                Long waitTime = KEY_WAIT_TIME.get(ctx);
-                if (waitTime == null) {
-                    waitTime = 1L;
-                } else {
-                    waitTime = Math.min(MAX_WAIT_SECONDS, waitTime << 1);
-                }
-                KEY_WAIT_TIME.set(ctx, waitTime);
-
-                ScheduledFuture<?> waitFuture = client.getTransport().getConfig()
-                    .getScheduledExecutor().schedule(
-                        () -> ctx.fireEvent(new Event.CreatingWaitExpired()),
-                        waitTime,
-                        TimeUnit.SECONDS
-                    );
-                KEY_WAIT_FUTURE.set(ctx, waitFuture);
-            });
-
-        fb.onTransitionFrom(State.CreatingWait)
-            .to(State.Inactive)
-            .via(Event.CloseSession.class)
-            .execute(ctx -> {
-                ScheduledFuture<?> waitFuture = KEY_WAIT_FUTURE.remove(ctx);
-                if (waitFuture != null) {
-                    waitFuture.cancel(false);
-                }
-
-                KEY_WAIT_TIME.remove(ctx);
-
-                Event.CloseSession event = (Event.CloseSession) ctx.event();
-
-                client.getTransport().getConfig().getExecutor().execute(() ->
-                    event.future.complete(Unit.VALUE)
-                );
+              ScheduledFuture<?> waitFuture =
+                  client
+                      .getTransport()
+                      .getConfig()
+                      .getScheduledExecutor()
+                      .schedule(
+                          () -> ctx.fireEvent(new Event.CreatingWaitExpired()),
+                          waitTime,
+                          TimeUnit.SECONDS);
+              KEY_WAIT_FUTURE.set(ctx, waitFuture);
             });
 
+    fb.onTransitionFrom(State.CreatingWait)
+        .to(State.Inactive)
+        .via(Event.CloseSession.class)
+        .execute(
+            ctx -> {
+              ScheduledFuture<?> waitFuture = KEY_WAIT_FUTURE.remove(ctx);
+              if (waitFuture != null) {
+                waitFuture.cancel(false);
+              }
 
-        /* Internal Transition Actions */
+              KEY_WAIT_TIME.remove(ctx);
 
-        fb.onInternalTransition(State.CreatingWait)
-            .via(Event.GetSession.class)
-            .execute(SessionFsmFactory::handleGetSessionEvent);
+              Event.CloseSession event = (Event.CloseSession) ctx.event();
 
-        fb.onInternalTransition(State.CreatingWait)
-            .via(Event.OpenSession.class)
-            .execute(SessionFsmFactory::handleOpenSessionEvent);
-    }
-
-    private static void configureCreatingState(FsmBuilder<State, Event> fb, OpcUaClient client) {
-        /* Transitions */
-
-        fb.when(State.Creating)
-            .on(Event.CreateSessionSuccess.class)
-            .transitionTo(State.Activating);
-
-        fb.when(State.Creating)
-            .on(Event.CreateSessionFailure.class)
-            .transitionTo(State.CreatingWait)
-            .executeFirst(ctx -> {
-                Event.CreateSessionFailure e = (Event.CreateSessionFailure) ctx.event();
-
-                handleFailureToOpenSession(client, ctx, e.failure);
+              client
+                  .getTransport()
+                  .getConfig()
+                  .getExecutor()
+                  .execute(() -> event.future.complete(Unit.VALUE));
             });
 
+    /* Internal Transition Actions */
 
-        /* External Transition Actions */
+    fb.onInternalTransition(State.CreatingWait)
+        .via(Event.GetSession.class)
+        .execute(SessionFsmFactory::handleGetSessionEvent);
 
-        fb.onTransitionTo(State.Creating)
-            .from(State.Inactive)
-            .via(Event.OpenSession.class)
-            .execute(ctx -> {
-                SessionFuture sessionFuture = new SessionFuture();
-                KEY_SESSION_FUTURE.set(ctx, sessionFuture);
+    fb.onInternalTransition(State.CreatingWait)
+        .via(Event.OpenSession.class)
+        .execute(SessionFsmFactory::handleOpenSessionEvent);
+  }
 
-                handleOpenSessionEvent(ctx);
+  private static void configureCreatingState(FsmBuilder<State, Event> fb, OpcUaClient client) {
+    /* Transitions */
 
-                //noinspection Duplicates
-                createSession(ctx, client).whenComplete((csr, ex) -> {
-                    if (csr != null) {
-                        try (MDCCloseable ignored =
-                            MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+    fb.when(State.Creating).on(Event.CreateSessionSuccess.class).transitionTo(State.Activating);
+
+    fb.when(State.Creating)
+        .on(Event.CreateSessionFailure.class)
+        .transitionTo(State.CreatingWait)
+        .executeFirst(
+            ctx -> {
+              Event.CreateSessionFailure e = (Event.CreateSessionFailure) ctx.event();
+
+              handleFailureToOpenSession(client, ctx, e.failure);
+            });
+
+    /* External Transition Actions */
+
+    fb.onTransitionTo(State.Creating)
+        .from(State.Inactive)
+        .via(Event.OpenSession.class)
+        .execute(
+            ctx -> {
+              SessionFuture sessionFuture = new SessionFuture();
+              KEY_SESSION_FUTURE.set(ctx, sessionFuture);
+
+              handleOpenSessionEvent(ctx);
+
+              //noinspection Duplicates
+              createSession(ctx, client)
+                  .whenComplete(
+                      (csr, ex) -> {
+                        if (csr != null) {
+                          try (MDCCloseable ignored =
+                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
 
                             LOGGER.debug("CreateSession succeeded: {}", csr.getSessionId());
-                        }
+                          }
 
-                        ctx.fireEvent(new Event.CreateSessionSuccess(csr));
-                    } else {
-                        try (MDCCloseable ignored =
-                            MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+                          ctx.fireEvent(new Event.CreateSessionSuccess(csr));
+                        } else {
+                          try (MDCCloseable ignored =
+                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
 
                             LOGGER.debug("CreateSession failed: {}", ex.getMessage(), ex);
-                        }
+                          }
 
-                        ctx.fireEvent(new Event.CreateSessionFailure(ex));
-                    }
-                });
+                          ctx.fireEvent(new Event.CreateSessionFailure(ex));
+                        }
+                      });
             });
 
-        fb.onTransitionTo(State.Creating)
-            .from(State.CreatingWait)
-            .via(Event.CreatingWaitExpired.class)
-            .execute(ctx -> {
-                //noinspection Duplicates
-                createSession(ctx, client).whenComplete((csr, ex) -> {
-                    if (csr != null) {
-                        try (MDCCloseable ignored =
-                            MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+    fb.onTransitionTo(State.Creating)
+        .from(State.CreatingWait)
+        .via(Event.CreatingWaitExpired.class)
+        .execute(
+            ctx -> {
+              //noinspection Duplicates
+              createSession(ctx, client)
+                  .whenComplete(
+                      (csr, ex) -> {
+                        if (csr != null) {
+                          try (MDCCloseable ignored =
+                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
 
                             LOGGER.debug("CreateSession succeeded: {}", csr.getSessionId());
-                        }
+                          }
 
-                        ctx.fireEvent(new Event.CreateSessionSuccess(csr));
-                    } else {
-                        try (MDCCloseable ignored =
-                            MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+                          ctx.fireEvent(new Event.CreateSessionSuccess(csr));
+                        } else {
+                          try (MDCCloseable ignored =
+                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
 
                             LOGGER.debug("CreateSession failed: {}", ex.getMessage(), ex);
+                          }
+
+                          ctx.fireEvent(new Event.CreateSessionFailure(ex));
                         }
-
-                        ctx.fireEvent(new Event.CreateSessionFailure(ex));
-                    }
-                });
+                      });
             });
 
+    /* Internal Transition Actions */
 
-        /* Internal Transition Actions */
+    fb.onInternalTransition(State.Creating)
+        .via(Event.GetSession.class)
+        .execute(SessionFsmFactory::handleGetSessionEvent);
 
-        fb.onInternalTransition(State.Creating)
-            .via(Event.GetSession.class)
-            .execute(SessionFsmFactory::handleGetSessionEvent);
+    fb.onInternalTransition(State.Creating)
+        .via(Event.OpenSession.class)
+        .execute(SessionFsmFactory::handleOpenSessionEvent);
 
-        fb.onInternalTransition(State.Creating)
-            .via(Event.OpenSession.class)
-            .execute(SessionFsmFactory::handleOpenSessionEvent);
+    fb.onInternalTransition(State.Creating)
+        .via(Event.CloseSession.class)
+        .execute(ctx -> ctx.shelveEvent(ctx.event()));
+  }
 
-        fb.onInternalTransition(State.Creating)
-            .via(Event.CloseSession.class)
-            .execute(ctx -> ctx.shelveEvent(ctx.event()));
-    }
+  private static void configureActivatingState(FsmBuilder<State, Event> fb, OpcUaClient client) {
+    /* Transitions */
 
-    private static void configureActivatingState(FsmBuilder<State, Event> fb, OpcUaClient client) {
-        /* Transitions */
+    fb.when(State.Activating)
+        .on(Event.ActivateSessionSuccess.class)
+        .transitionTo(State.Transferring);
 
-        fb.when(State.Activating)
-            .on(Event.ActivateSessionSuccess.class)
-            .transitionTo(State.Transferring);
+    fb.when(State.Activating)
+        .on(Event.ActivateSessionFailure.class)
+        .transitionTo(State.CreatingWait)
+        .executeFirst(
+            ctx -> {
+              Event.ActivateSessionFailure e = (Event.ActivateSessionFailure) ctx.event();
 
-        fb.when(State.Activating)
-            .on(Event.ActivateSessionFailure.class)
-            .transitionTo(State.CreatingWait)
-            .executeFirst(ctx -> {
-                Event.ActivateSessionFailure e = (Event.ActivateSessionFailure) ctx.event();
-
-                handleFailureToOpenSession(client, ctx, e.failure);
+              handleFailureToOpenSession(client, ctx, e.failure);
             });
 
+    /* External Transition Actions */
 
-        /* External Transition Actions */
+    fb.onTransitionTo(State.Activating)
+        .from(State.Creating)
+        .via(Event.CreateSessionSuccess.class)
+        .execute(
+            ctx -> {
+              Event.CreateSessionSuccess event = (Event.CreateSessionSuccess) ctx.event();
 
-        fb.onTransitionTo(State.Activating)
-            .from(State.Creating)
-            .via(Event.CreateSessionSuccess.class)
-            .execute(ctx -> {
-                Event.CreateSessionSuccess event = (Event.CreateSessionSuccess) ctx.event();
-
-                activateSession(ctx, client, event.response).whenComplete((session, ex) -> {
-                    if (session != null) {
-                        try (MDCCloseable ignored =
-                            MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+              activateSession(ctx, client, event.response)
+                  .whenComplete(
+                      (session, ex) -> {
+                        if (session != null) {
+                          try (MDCCloseable ignored =
+                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
 
                             LOGGER.debug("Session activated: {}", session);
-                        }
+                          }
 
-                        ctx.fireEvent(new Event.ActivateSessionSuccess(session));
-                    } else {
-                        try (MDCCloseable ignored =
-                            MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+                          ctx.fireEvent(new Event.ActivateSessionSuccess(session));
+                        } else {
+                          try (MDCCloseable ignored =
+                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
 
                             LOGGER.debug("ActivateSession failed: {}", ex.getMessage(), ex);
+                          }
+
+                          ctx.fireEvent(new Event.ActivateSessionFailure(ex));
                         }
-
-                        ctx.fireEvent(new Event.ActivateSessionFailure(ex));
-                    }
-                });
+                      });
             });
 
+    /* Internal Transition Actions */
 
-        /* Internal Transition Actions */
+    fb.onInternalTransition(State.Activating)
+        .via(Event.GetSession.class)
+        .execute(SessionFsmFactory::handleGetSessionEvent);
 
-        fb.onInternalTransition(State.Activating)
-            .via(Event.GetSession.class)
-            .execute(SessionFsmFactory::handleGetSessionEvent);
+    fb.onInternalTransition(State.Activating)
+        .via(Event.OpenSession.class)
+        .execute(SessionFsmFactory::handleOpenSessionEvent);
 
-        fb.onInternalTransition(State.Activating)
-            .via(Event.OpenSession.class)
-            .execute(SessionFsmFactory::handleOpenSessionEvent);
+    fb.onInternalTransition(State.Activating)
+        .via(Event.CloseSession.class)
+        .execute(ctx -> ctx.shelveEvent(ctx.event()));
+  }
 
-        fb.onInternalTransition(State.Activating)
-            .via(Event.CloseSession.class)
-            .execute(ctx -> ctx.shelveEvent(ctx.event()));
-    }
+  private static void configureTransferringState(FsmBuilder<State, Event> fb, OpcUaClient client) {
+    /* Transitions */
 
-    private static void configureTransferringState(FsmBuilder<State, Event> fb,
-        OpcUaClient client) {
-        /* Transitions */
+    fb.when(State.Transferring)
+        .on(Event.TransferSubscriptionsSuccess.class)
+        .transitionTo(State.Initializing);
 
-        fb.when(State.Transferring)
-            .on(Event.TransferSubscriptionsSuccess.class)
-            .transitionTo(State.Initializing);
+    fb.when(State.Transferring)
+        .on(Event.TransferSubscriptionsFailure.class)
+        .transitionTo(State.CreatingWait)
+        .executeFirst(
+            ctx -> {
+              Event.TransferSubscriptionsFailure e =
+                  (Event.TransferSubscriptionsFailure) ctx.event();
 
-        fb.when(State.Transferring)
-            .on(Event.TransferSubscriptionsFailure.class)
-            .transitionTo(State.CreatingWait)
-            .executeFirst(ctx -> {
-                Event.TransferSubscriptionsFailure e = (Event.TransferSubscriptionsFailure) ctx.event();
-
-                handleFailureToOpenSession(client, ctx, e.failure);
+              handleFailureToOpenSession(client, ctx, e.failure);
             });
 
+    /* External Transition Actions */
 
-        /* External Transition Actions */
+    fb.onTransitionTo(State.Transferring)
+        .from(State.Activating)
+        .via(Event.ActivateSessionSuccess.class)
+        .execute(
+            ctx -> {
+              Event.ActivateSessionSuccess event = (Event.ActivateSessionSuccess) ctx.event();
 
-        fb.onTransitionTo(State.Transferring)
-            .from(State.Activating)
-            .via(Event.ActivateSessionSuccess.class)
-            .execute(ctx -> {
-                Event.ActivateSessionSuccess event = (Event.ActivateSessionSuccess) ctx.event();
-
-                transferSubscriptions(ctx, client, event.session).whenComplete((u, ex) -> {
-                    if (u != null) {
-                        try (MDCCloseable ignored =
-                            MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+              transferSubscriptions(ctx, client, event.session)
+                  .whenComplete(
+                      (u, ex) -> {
+                        if (u != null) {
+                          try (MDCCloseable ignored =
+                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
 
                             LOGGER.debug("TransferSubscriptions succeeded");
-                        }
+                          }
 
-                        ctx.fireEvent(new Event.TransferSubscriptionsSuccess(event.session));
-                    } else {
-                        try (MDCCloseable ignored =
-                            MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+                          ctx.fireEvent(new Event.TransferSubscriptionsSuccess(event.session));
+                        } else {
+                          try (MDCCloseable ignored =
+                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
 
                             LOGGER.debug("TransferSubscriptions failed: {}", ex.getMessage(), ex);
+                          }
+
+                          ctx.fireEvent(new Event.TransferSubscriptionsFailure(ex));
                         }
-
-                        ctx.fireEvent(new Event.TransferSubscriptionsFailure(ex));
-                    }
-                });
+                      });
             });
 
+    /* Internal Transition Actions */
 
-        /* Internal Transition Actions */
+    fb.onInternalTransition(State.Transferring)
+        .via(Event.GetSession.class)
+        .execute(SessionFsmFactory::handleGetSessionEvent);
 
-        fb.onInternalTransition(State.Transferring)
-            .via(Event.GetSession.class)
-            .execute(SessionFsmFactory::handleGetSessionEvent);
+    fb.onInternalTransition(State.Transferring)
+        .via(Event.OpenSession.class)
+        .execute(SessionFsmFactory::handleOpenSessionEvent);
 
-        fb.onInternalTransition(State.Transferring)
-            .via(Event.OpenSession.class)
-            .execute(SessionFsmFactory::handleOpenSessionEvent);
+    fb.onInternalTransition(State.Transferring)
+        .via(Event.CloseSession.class)
+        .execute(ctx -> ctx.shelveEvent(ctx.event()));
+  }
 
-        fb.onInternalTransition(State.Transferring)
-            .via(Event.CloseSession.class)
-            .execute(ctx -> ctx.shelveEvent(ctx.event()));
-    }
+  private static void configureInitializingState(FsmBuilder<State, Event> fb, OpcUaClient client) {
+    /* Transitions */
 
-    private static void configureInitializingState(FsmBuilder<State, Event> fb,
-        OpcUaClient client) {
-        /* Transitions */
+    fb.when(State.Initializing).on(Event.InitializeSuccess.class).transitionTo(State.Active);
 
-        fb.when(State.Initializing)
-            .on(Event.InitializeSuccess.class)
-            .transitionTo(State.Active);
+    fb.when(State.Initializing)
+        .on(Event.InitializeFailure.class)
+        .transitionTo(State.CreatingWait)
+        .executeFirst(
+            ctx -> {
+              Event.InitializeFailure e = (Event.InitializeFailure) ctx.event();
 
-        fb.when(State.Initializing)
-            .on(Event.InitializeFailure.class)
-            .transitionTo(State.CreatingWait)
-            .executeFirst(ctx -> {
-                Event.InitializeFailure e = (Event.InitializeFailure) ctx.event();
-
-                handleFailureToOpenSession(client, ctx, e.failure);
+              handleFailureToOpenSession(client, ctx, e.failure);
             });
 
+    /* External Transition Actions */
 
-        /* External Transition Actions */
+    fb.onTransitionTo(State.Initializing)
+        .from(State.Transferring)
+        .via(Event.TransferSubscriptionsSuccess.class)
+        .execute(
+            ctx -> {
+              Event.TransferSubscriptionsSuccess event =
+                  (Event.TransferSubscriptionsSuccess) ctx.event();
 
-        fb.onTransitionTo(State.Initializing)
-            .from(State.Transferring)
-            .via(Event.TransferSubscriptionsSuccess.class)
-            .execute(ctx -> {
-                Event.TransferSubscriptionsSuccess event = (Event.TransferSubscriptionsSuccess) ctx.event();
+              OpcUaSession session = event.session;
 
-                OpcUaSession session = event.session;
-
-                initialize(ctx, client, session).whenComplete((u, ex) -> {
-                    if (u != null) {
-                        try (MDCCloseable ignored =
-                            MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+              initialize(ctx, client, session)
+                  .whenComplete(
+                      (u, ex) -> {
+                        if (u != null) {
+                          try (MDCCloseable ignored =
+                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
 
                             LOGGER.debug("Initialization succeeded: {}", session);
-                        }
+                          }
 
-                        ctx.fireEvent(new Event.InitializeSuccess(session));
-                    } else {
-                        try (MDCCloseable ignored =
-                            MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+                          ctx.fireEvent(new Event.InitializeSuccess(session));
+                        } else {
+                          try (MDCCloseable ignored =
+                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
 
                             LOGGER.warn("Initialization failed: {}", session, ex);
-                        }
+                          }
 
-                        ctx.fireEvent(new Event.InitializeFailure(ex));
-                    }
-                });
+                          ctx.fireEvent(new Event.InitializeFailure(ex));
+                        }
+                      });
             });
 
+    /* Internal Transition Actions */
 
-        /* Internal Transition Actions */
+    fb.onInternalTransition(State.Initializing)
+        .via(Event.GetSession.class)
+        .execute(SessionFsmFactory::handleGetSessionEvent);
 
-        fb.onInternalTransition(State.Initializing)
-            .via(Event.GetSession.class)
-            .execute(SessionFsmFactory::handleGetSessionEvent);
+    fb.onInternalTransition(State.Initializing)
+        .via(Event.OpenSession.class)
+        .execute(SessionFsmFactory::handleOpenSessionEvent);
 
-        fb.onInternalTransition(State.Initializing)
-            .via(Event.OpenSession.class)
-            .execute(SessionFsmFactory::handleOpenSessionEvent);
+    fb.onInternalTransition(State.Initializing)
+        .via(Event.CloseSession.class)
+        .execute(ctx -> ctx.shelveEvent(ctx.event()));
+  }
 
-        fb.onInternalTransition(State.Initializing)
-            .via(Event.CloseSession.class)
-            .execute(ctx -> ctx.shelveEvent(ctx.event()));
-    }
+  private static void configureActiveState(FsmBuilder<State, Event> fb, OpcUaClient client) {
+    /* Transitions */
 
-    private static void configureActiveState(FsmBuilder<State, Event> fb, OpcUaClient client) {
-        /* Transitions */
+    fb.when(State.Active).on(Event.CloseSession.class).transitionTo(State.Closing);
 
-        fb.when(State.Active)
-            .on(Event.CloseSession.class)
-            .transitionTo(State.Closing);
+    fb.when(State.Active)
+        .on(
+            e ->
+                e.getClass() == Event.KeepAliveFailure.class
+                    || e.getClass() == Event.ServiceFault.class
+                    || e.getClass() == Event.ConnectionLost.class)
+        .transitionTo(State.CreatingWait);
 
-        fb.when(State.Active)
-            .on(e ->
-                e.getClass() == Event.KeepAliveFailure.class ||
-                    e.getClass() == Event.ServiceFault.class ||
-                    e.getClass() == Event.ConnectionLost.class
-            )
-            .transitionTo(State.CreatingWait);
+    /* External Transition Actions */
 
+    fb.onTransitionTo(State.Active)
+        .from(State.Initializing)
+        .via(Event.InitializeSuccess.class)
+        .execute(
+            ctx -> {
+              Event.InitializeSuccess event = (Event.InitializeSuccess) ctx.event();
 
-        /* External Transition Actions */
+              // reset the wait time
+              KEY_WAIT_TIME.remove(ctx);
 
-        fb.onTransitionTo(State.Active)
-            .from(State.Initializing)
-            .via(Event.InitializeSuccess.class)
-            .execute(ctx -> {
-                Event.InitializeSuccess event = (Event.InitializeSuccess) ctx.event();
+              long keepAliveInterval = client.getConfig().getKeepAliveInterval().longValue();
+              KEY_KEEP_ALIVE_FAILURE_COUNT.set(ctx, 0L);
 
-                // reset the wait time
-                KEY_WAIT_TIME.remove(ctx);
+              ScheduledFuture<?> scheduledFuture =
+                  client
+                      .getTransport()
+                      .getConfig()
+                      .getScheduledExecutor()
+                      .scheduleWithFixedDelay(
+                          () -> ctx.fireEvent(new Event.KeepAlive(event.session)),
+                          keepAliveInterval,
+                          keepAliveInterval,
+                          TimeUnit.MILLISECONDS);
+              KEY_KEEP_ALIVE_SCHEDULED_FUTURE.set(ctx, scheduledFuture);
 
-                long keepAliveInterval = client.getConfig().getKeepAliveInterval().longValue();
-                KEY_KEEP_ALIVE_FAILURE_COUNT.set(ctx, 0L);
+              KEY_SESSION.set(ctx, event.session);
 
-                ScheduledFuture<?> scheduledFuture = client.getTransport().getConfig()
-                    .getScheduledExecutor().scheduleWithFixedDelay(
-                        () -> ctx.fireEvent(new Event.KeepAlive(event.session)),
-                        keepAliveInterval,
-                        keepAliveInterval,
-                        TimeUnit.MILLISECONDS
-                    );
-                KEY_KEEP_ALIVE_SCHEDULED_FUTURE.set(ctx, scheduledFuture);
+              SessionFuture sessionFuture = KEY_SESSION_FUTURE.get(ctx);
 
-                KEY_SESSION.set(ctx, event.session);
+              OpcClientTransport transport = client.getTransport();
 
-                SessionFuture sessionFuture = KEY_SESSION_FUTURE.get(ctx);
+              if (transport instanceof OpcTcpClientTransport) {
+                ChannelFsm channelFsm = ((OpcTcpClientTransport) transport).getChannelFsm();
 
-                OpcClientTransport transport = client.getTransport();
+                channelFsm.addTransitionListener(
+                    new ChannelFsm.TransitionListener() {
+                      @Override
+                      public void onStateTransition(
+                          com.digitalpetri.netty.fsm.State from,
+                          com.digitalpetri.netty.fsm.State to,
+                          com.digitalpetri.netty.fsm.Event via) {
 
-                if (transport instanceof OpcTcpClientTransport) {
-                    ChannelFsm channelFsm = ((OpcTcpClientTransport) transport).getChannelFsm();
+                        if (from == com.digitalpetri.netty.fsm.State.Connected
+                            && to != com.digitalpetri.netty.fsm.State.Connected) {
 
-                    channelFsm.addTransitionListener(new ChannelFsm.TransitionListener() {
-                        @Override
-                        public void onStateTransition(
-                            com.digitalpetri.netty.fsm.State from,
-                            com.digitalpetri.netty.fsm.State to,
-                            com.digitalpetri.netty.fsm.Event via
-                        ) {
+                          channelFsm.removeTransitionListener(this);
 
-                            if (from == com.digitalpetri.netty.fsm.State.Connected &&
-                                to != com.digitalpetri.netty.fsm.State.Connected
-                            ) {
+                          try (MDCCloseable ignored =
+                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
 
-                                channelFsm.removeTransitionListener(this);
+                            LOGGER.debug(
+                                "ChannelFsm transition from={} to={} via={}", from, to, via);
+                          }
 
-                                try (MDCCloseable ignored =
-                                    MDC.putCloseable("instance-id",
-                                        ctx.getUserContext().toString())) {
-
-                                    LOGGER.debug(
-                                        "ChannelFsm transition from={} to={} via={}",
-                                        from, to, via);
-                                }
-
-                                ctx.fireEvent(new Event.ConnectionLost());
-                            }
+                          ctx.fireEvent(new Event.ConnectionLost());
                         }
+                      }
                     });
-                }
+              }
 
-                client.getTransport().getConfig().getExecutor().execute(() ->
-                    sessionFuture.future.complete(event.session)
-                );
+              client
+                  .getTransport()
+                  .getConfig()
+                  .getExecutor()
+                  .execute(() -> sessionFuture.future.complete(event.session));
             });
 
-        fb.onTransitionTo(State.Active)
-            .from(State.Initializing)
-            .via(Event.InitializeSuccess.class)
-            .execute(FsmContext::processShelvedEvents);
+    fb.onTransitionTo(State.Active)
+        .from(State.Initializing)
+        .via(Event.InitializeSuccess.class)
+        .execute(FsmContext::processShelvedEvents);
 
-        fb.onTransitionFrom(State.Active)
-            .to(s -> s == State.Closing || s == State.CreatingWait)
-            .viaAny()
-            .execute(ctx -> {
-                ScheduledFuture<?> scheduledFuture =
-                    KEY_KEEP_ALIVE_SCHEDULED_FUTURE.remove(ctx);
+    fb.onTransitionFrom(State.Active)
+        .to(s -> s == State.Closing || s == State.CreatingWait)
+        .viaAny()
+        .execute(
+            ctx -> {
+              ScheduledFuture<?> scheduledFuture = KEY_KEEP_ALIVE_SCHEDULED_FUTURE.remove(ctx);
 
-                if (scheduledFuture != null) {
-                    scheduledFuture.cancel(false);
-                }
+              if (scheduledFuture != null) {
+                scheduledFuture.cancel(false);
+              }
             });
 
-        // onSessionActive() callbacks
-        fb.onTransitionTo(State.Active)
-            .from(s -> s != State.Active)
-            .viaAny()
-            .execute(ctx -> {
-                OpcUaSession session = KEY_SESSION.get(ctx);
+    // onSessionActive() callbacks
+    fb.onTransitionTo(State.Active)
+        .from(s -> s != State.Active)
+        .viaAny()
+        .execute(
+            ctx -> {
+              OpcUaSession session = KEY_SESSION.get(ctx);
 
-                SessionFsm.SessionActivityListeners sessionActivityListeners =
-                    KEY_SESSION_ACTIVITY_LISTENERS.get(ctx);
+              SessionFsm.SessionActivityListeners sessionActivityListeners =
+                  KEY_SESSION_ACTIVITY_LISTENERS.get(ctx);
 
-                sessionActivityListeners.sessionActivityListeners
-                    .forEach(listener -> listener.onSessionActive(session));
+              client
+                  .getTransport()
+                  .getConfig()
+                  .getExecutor()
+                  .execute(
+                      () ->
+                          sessionActivityListeners.sessionActivityListeners.forEach(
+                              listener -> listener.onSessionActive(session)));
             });
 
-        // onSessionInactive() callbacks
-        fb.onTransitionFrom(State.Active)
-            .to(s -> s != State.Active)
-            .viaAny()
-            .execute(ctx -> {
-                OpcUaSession session = KEY_SESSION.get(ctx);
+    // onSessionInactive() callbacks
+    fb.onTransitionFrom(State.Active)
+        .to(s -> s != State.Active)
+        .viaAny()
+        .execute(
+            ctx -> {
+              OpcUaSession session = KEY_SESSION.get(ctx);
 
-                SessionFsm.SessionActivityListeners sessionActivityListeners =
-                    KEY_SESSION_ACTIVITY_LISTENERS.get(ctx);
+              SessionFsm.SessionActivityListeners sessionActivityListeners =
+                  KEY_SESSION_ACTIVITY_LISTENERS.get(ctx);
 
-                sessionActivityListeners.sessionActivityListeners
-                    .forEach(listener -> listener.onSessionInactive(session));
+              client
+                  .getTransport()
+                  .getConfig()
+                  .getExecutor()
+                  .execute(
+                      () ->
+                          sessionActivityListeners.sessionActivityListeners.forEach(
+                              listener -> listener.onSessionInactive(session)));
             });
 
+    /* Internal Transition Actions */
 
-        /* Internal Transition Actions */
+    fb.onInternalTransition(State.Active)
+        .via(Event.KeepAlive.class)
+        .execute(
+            ctx -> {
+              Event.KeepAlive event = (Event.KeepAlive) ctx.event();
 
-        fb.onInternalTransition(State.Active)
-            .via(Event.KeepAlive.class)
-            .execute(ctx -> {
-                Event.KeepAlive event = (Event.KeepAlive) ctx.event();
+              sendKeepAlive(client, event.session)
+                  .whenComplete(
+                      (response, ex) -> {
+                        if (response != null) {
+                          DataValue[] results = response.getResults();
 
-                sendKeepAlive(client, event.session).whenComplete((response, ex) -> {
-                    if (response != null) {
-                        DataValue[] results = response.getResults();
-
-                        if (results != null && results.length > 0) {
+                          if (results != null && results.length > 0) {
                             Object value = results[0].getValue().getValue();
                             if (value instanceof Integer) {
-                                ServerState state = ServerState.from((Integer) value);
+                              ServerState state = ServerState.from((Integer) value);
 
-                                try (MDCCloseable ignored =
-                                    MDC.putCloseable("instance-id",
-                                        ctx.getUserContext().toString())) {
+                              try (MDCCloseable ignored =
+                                  MDC.putCloseable(
+                                      "instance-id", ctx.getUserContext().toString())) {
 
-                                    LOGGER.debug("ServerState: {}", state);
-                                }
+                                LOGGER.debug("ServerState: {}", state);
+                              }
                             }
-                        }
+                          }
 
-                        KEY_KEEP_ALIVE_FAILURE_COUNT.set(ctx, 0L);
-                    } else {
-                        Long keepAliveFailureCount = KEY_KEEP_ALIVE_FAILURE_COUNT.get(ctx);
-
-                        if (keepAliveFailureCount == null) {
-                            keepAliveFailureCount = 1L;
+                          KEY_KEEP_ALIVE_FAILURE_COUNT.set(ctx, 0L);
                         } else {
+                          Long keepAliveFailureCount = KEY_KEEP_ALIVE_FAILURE_COUNT.get(ctx);
+
+                          if (keepAliveFailureCount == null) {
+                            keepAliveFailureCount = 1L;
+                          } else {
                             keepAliveFailureCount += 1L;
-                        }
+                          }
 
-                        KEY_KEEP_ALIVE_FAILURE_COUNT.set(ctx, keepAliveFailureCount);
+                          KEY_KEEP_ALIVE_FAILURE_COUNT.set(ctx, keepAliveFailureCount);
 
-                        long keepAliveFailuresAllowed = client.getConfig()
-                            .getKeepAliveFailuresAllowed().longValue();
+                          long keepAliveFailuresAllowed =
+                              client.getConfig().getKeepAliveFailuresAllowed().longValue();
 
-                        if (keepAliveFailureCount > keepAliveFailuresAllowed) {
+                          if (keepAliveFailureCount > keepAliveFailuresAllowed) {
                             try (MDCCloseable ignored =
                                 MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
 
-                                LOGGER.warn(
-                                    "Keep Alive failureCount={} exceeds failuresAllowed={}",
-                                    keepAliveFailureCount, keepAliveFailuresAllowed
-                                );
+                              LOGGER.warn(
+                                  "Keep Alive failureCount={} exceeds failuresAllowed={}",
+                                  keepAliveFailureCount,
+                                  keepAliveFailuresAllowed);
                             }
 
                             ctx.fireEvent(new Event.KeepAliveFailure());
@@ -728,201 +753,202 @@ public class SessionFsmFactory {
                             // alive to kick in.
                             OpcClientTransport transport = client.getTransport();
                             if (transport instanceof OpcTcpClientTransport) {
-                                ChannelFsm channelFsm = ((OpcTcpClientTransport) transport).getChannelFsm();
-                                Channel channel = channelFsm.getChannel().getNow(null);
-                                if (channel != null) {
-                                    channel.close();
-                                }
+                              ChannelFsm channelFsm =
+                                  ((OpcTcpClientTransport) transport).getChannelFsm();
+                              Channel channel = channelFsm.getChannel().getNow(null);
+                              if (channel != null) {
+                                channel.close();
+                              }
                             }
-                        } else {
+                          } else {
                             try (MDCCloseable ignored =
                                 MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
 
-                                LOGGER.debug(
-                                    "Keep Alive failureCount={}", keepAliveFailureCount, ex);
+                              LOGGER.debug("Keep Alive failureCount={}", keepAliveFailureCount, ex);
                             }
+                          }
                         }
-                    }
-                });
+                      });
             });
 
-        fb.onInternalTransition(State.Active)
-            .via(Event.GetSession.class)
-            .execute(SessionFsmFactory::handleGetSessionEvent);
+    fb.onInternalTransition(State.Active)
+        .via(Event.GetSession.class)
+        .execute(SessionFsmFactory::handleGetSessionEvent);
 
-        fb.onInternalTransition(State.Active)
-            .via(Event.OpenSession.class)
-            .execute(SessionFsmFactory::handleOpenSessionEvent);
-    }
+    fb.onInternalTransition(State.Active)
+        .via(Event.OpenSession.class)
+        .execute(SessionFsmFactory::handleOpenSessionEvent);
+  }
 
-    private static void configureClosingState(FsmBuilder<State, Event> fb, OpcUaClient client) {
-        /* Transitions */
+  private static void configureClosingState(FsmBuilder<State, Event> fb, OpcUaClient client) {
+    /* Transitions */
 
-        fb.when(State.Closing)
-            .on(Event.CloseSessionSuccess.class)
-            .transitionTo(State.Inactive);
+    fb.when(State.Closing).on(Event.CloseSessionSuccess.class).transitionTo(State.Inactive);
 
+    /* External Transition Actions */
 
-        /* External Transition Actions */
+    fb.onTransitionTo(State.Closing)
+        .from(State.Active)
+        .via(Event.CloseSession.class)
+        .execute(
+            ctx -> {
+              SessionFsm.CloseFuture closeFuture = new SessionFsm.CloseFuture();
+              KEY_CLOSE_FUTURE.set(ctx, closeFuture);
 
-        fb.onTransitionTo(State.Closing)
-            .from(State.Active)
-            .via(Event.CloseSession.class)
-            .execute(ctx -> {
-                SessionFsm.CloseFuture closeFuture = new SessionFsm.CloseFuture();
-                KEY_CLOSE_FUTURE.set(ctx, closeFuture);
+              Event.CloseSession closeSession = (Event.CloseSession) ctx.event();
+              complete(closeSession.future).with(closeFuture.future);
 
-                Event.CloseSession closeSession = (Event.CloseSession) ctx.event();
-                complete(closeSession.future).with(closeFuture.future);
+              OpcUaSession session = KEY_SESSION.get(ctx);
 
-                OpcUaSession session = KEY_SESSION.get(ctx);
+              closeSession(ctx, client, session)
+                  .whenComplete(
+                      (u, ex) -> {
+                        try (MDCCloseable ignored =
+                            MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
 
-                closeSession(ctx, client, session).whenComplete((u, ex) -> {
-                    try (MDCCloseable ignored =
-                        MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
-
-                        if (u != null) {
+                          if (u != null) {
                             LOGGER.debug("Session closed: {}", session);
-                        } else {
+                          } else {
                             LOGGER.debug("CloseSession failed: {}", ex.getMessage(), ex);
+                          }
                         }
-                    }
 
-                    ctx.fireEvent(new Event.CloseSessionSuccess());
-                });
+                        ctx.fireEvent(new Event.CloseSessionSuccess());
+                      });
             });
 
-        fb.onTransitionFrom(State.Closing)
-            .to(State.Inactive)
-            .via(Event.CloseSessionSuccess.class)
-            .execute(ctx -> {
-                SessionFsm.CloseFuture closeFuture = KEY_CLOSE_FUTURE.get(ctx);
+    fb.onTransitionFrom(State.Closing)
+        .to(State.Inactive)
+        .via(Event.CloseSessionSuccess.class)
+        .execute(
+            ctx -> {
+              SessionFsm.CloseFuture closeFuture = KEY_CLOSE_FUTURE.get(ctx);
 
-                if (closeFuture != null) {
-                    client.getTransport().getConfig().getExecutor().execute(() ->
-                        closeFuture.future.complete(Unit.VALUE)
-                    );
-                }
+              if (closeFuture != null) {
+                client
+                    .getTransport()
+                    .getConfig()
+                    .getExecutor()
+                    .execute(() -> closeFuture.future.complete(Unit.VALUE));
+              }
             });
 
+    /* Internal Transition Actions */
 
-        /* Internal Transition Actions */
+    fb.onInternalTransition(State.Closing)
+        .via(Event.CloseSession.class)
+        .execute(
+            ctx -> {
+              Event.CloseSession event = (Event.CloseSession) ctx.event();
 
-        fb.onInternalTransition(State.Closing)
-            .via(Event.CloseSession.class)
-            .execute(ctx -> {
-                Event.CloseSession event = (Event.CloseSession) ctx.event();
+              SessionFsm.CloseFuture closeFuture = KEY_CLOSE_FUTURE.get(ctx);
 
-                SessionFsm.CloseFuture closeFuture = KEY_CLOSE_FUTURE.get(ctx);
-
-                if (closeFuture != null) {
-                    complete(event.future).with(closeFuture.future);
-                }
+              if (closeFuture != null) {
+                complete(event.future).with(closeFuture.future);
+              }
             });
 
-        fb.onInternalTransition(State.Closing)
-            .via(e -> e.getClass() != Event.CloseSession.class)
-            .execute(ctx -> ctx.shelveEvent(ctx.event()));
+    fb.onInternalTransition(State.Closing)
+        .via(e -> e.getClass() != Event.CloseSession.class)
+        .execute(ctx -> ctx.shelveEvent(ctx.event()));
+  }
+
+  private static void handleGetSessionEvent(ActionContext<State, Event> ctx) {
+    CompletableFuture<OpcUaSession> sessionFuture = KEY_SESSION_FUTURE.get(ctx).future;
+
+    Event.GetSession event = (Event.GetSession) ctx.event();
+    complete(event.future).with(sessionFuture);
+  }
+
+  private static void handleOpenSessionEvent(ActionContext<State, Event> ctx) {
+    CompletableFuture<OpcUaSession> sessionFuture = KEY_SESSION_FUTURE.get(ctx).future;
+
+    Event.OpenSession event = (Event.OpenSession) ctx.event();
+    complete(event.future).with(sessionFuture);
+  }
+
+  private static void handleFailureToOpenSession(
+      OpcUaClient client, ActionContext<State, Event> ctx, Throwable failure) {
+
+    SessionFuture sessionFuture = KEY_SESSION_FUTURE.remove(ctx);
+
+    if (sessionFuture != null) {
+      client
+          .getTransport()
+          .getConfig()
+          .getExecutor()
+          .execute(() -> sessionFuture.future.completeExceptionally(failure));
+    }
+  }
+
+  private static CompletableFuture<Unit> closeSession(
+      FsmContext<State, Event> ctx, OpcUaClient client, OpcUaSession session) {
+
+    CompletableFuture<Unit> closeFuture = new CompletableFuture<>();
+
+    RequestHeader requestHeader =
+        client.newRequestHeader(session.getAuthenticationToken(), uint(5000));
+
+    CloseSessionRequest request = new CloseSessionRequest(requestHeader, true);
+
+    try (MDCCloseable ignored = MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+
+      LOGGER.debug("Sending CloseSessionRequest...");
     }
 
-    private static void handleGetSessionEvent(ActionContext<State, Event> ctx) {
-        CompletableFuture<OpcUaSession> sessionFuture = KEY_SESSION_FUTURE.get(ctx).future;
-
-        Event.GetSession event = (Event.GetSession) ctx.event();
-        complete(event.future).with(sessionFuture);
-    }
-
-    private static void handleOpenSessionEvent(ActionContext<State, Event> ctx) {
-        CompletableFuture<OpcUaSession> sessionFuture = KEY_SESSION_FUTURE.get(ctx).future;
-
-        Event.OpenSession event = (Event.OpenSession) ctx.event();
-        complete(event.future).with(sessionFuture);
-    }
-
-    private static void handleFailureToOpenSession(
-        OpcUaClient client,
-        ActionContext<State, Event> ctx,
-        Throwable failure
-    ) {
-
-        SessionFuture sessionFuture = KEY_SESSION_FUTURE.remove(ctx);
-
-        if (sessionFuture != null) {
-            client.getTransport().getConfig().getExecutor().execute(() ->
-                sessionFuture.future.completeExceptionally(failure)
-            );
-        }
-    }
-
-    private static CompletableFuture<Unit> closeSession(
-        FsmContext<State, Event> ctx,
-        OpcUaClient client,
-        OpcUaSession session
-    ) {
-
-        CompletableFuture<Unit> closeFuture = new CompletableFuture<>();
-
-        RequestHeader requestHeader = client.newRequestHeader(
-            session.getAuthenticationToken(),
-            uint(5000)
-        );
-
-        CloseSessionRequest request = new CloseSessionRequest(requestHeader, true);
-
-        try (MDCCloseable ignored =
-            MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
-
-            LOGGER.debug("Sending CloseSessionRequest...");
-        }
-
-        client.getTransport().sendRequestMessage(request).whenCompleteAsync(
+    client
+        .getTransport()
+        .sendRequestMessage(request)
+        .whenCompleteAsync(
             (csr, ex2) -> closeFuture.complete(Unit.VALUE),
-            client.getTransport().getConfig().getExecutor()
-        );
+            client.getTransport().getConfig().getExecutor());
 
-        return closeFuture;
+    return closeFuture;
+  }
+
+  @SuppressWarnings("Duplicates")
+  private static CompletableFuture<CreateSessionResponse> createSession(
+      FsmContext<State, Event> ctx, OpcUaClient client) {
+
+    EndpointDescription endpoint = client.getConfig().getEndpoint();
+
+    String gatewayServerUri = endpoint.getServer().getGatewayServerUri();
+
+    String serverUri;
+    if (gatewayServerUri != null && !gatewayServerUri.isEmpty()) {
+      serverUri = endpoint.getServer().getApplicationUri();
+    } else {
+      serverUri = null;
     }
 
-    @SuppressWarnings("Duplicates")
-    private static CompletableFuture<CreateSessionResponse> createSession(
-        FsmContext<State, Event> ctx,
-        OpcUaClient client
-    ) {
+    ByteString clientNonce = NonceUtil.generateNonce(32);
 
-        EndpointDescription endpoint = client.getConfig().getEndpoint();
-
-        String gatewayServerUri = endpoint.getServer().getGatewayServerUri();
-
-        String serverUri;
-        if (gatewayServerUri != null && !gatewayServerUri.isEmpty()) {
-            serverUri = endpoint.getServer().getApplicationUri();
-        } else {
-            serverUri = null;
-        }
-
-        ByteString clientNonce = NonceUtil.generateNonce(32);
-
-        ByteString clientCertificate = client.getConfig().getCertificate()
-            .map(c -> {
-                try {
+    ByteString clientCertificate =
+        client
+            .getConfig()
+            .getCertificate()
+            .map(
+                c -> {
+                  try {
                     return ByteString.of(c.getEncoded());
-                } catch (CertificateEncodingException e) {
+                  } catch (CertificateEncodingException e) {
                     return ByteString.NULL_VALUE;
-                }
-            })
+                  }
+                })
             .orElse(ByteString.NULL_VALUE);
 
-        ApplicationDescription clientDescription = new ApplicationDescription(
+    ApplicationDescription clientDescription =
+        new ApplicationDescription(
             client.getConfig().getApplicationUri(),
             client.getConfig().getProductUri(),
             client.getConfig().getApplicationName(),
             ApplicationType.Client,
             null,
             null,
-            null
-        );
+            null);
 
-        CreateSessionRequest request = new CreateSessionRequest(
+    CreateSessionRequest request =
+        new CreateSessionRequest(
             client.newRequestHeader(),
             clientDescription,
             serverUri,
@@ -931,398 +957,404 @@ public class SessionFsmFactory {
             clientNonce,
             clientCertificate,
             client.getConfig().getSessionTimeout().doubleValue(),
-            client.getConfig().getMaxResponseMessageSize()
-        );
+            client.getConfig().getMaxResponseMessageSize());
 
-        try (MDCCloseable ignored =
-            MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+    try (MDCCloseable ignored = MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
 
-            LOGGER.debug("Sending CreateSessionRequest...");
-        }
-
-        return client.getTransport()
-            .sendRequestMessage(request)
-            .thenApply(CreateSessionResponse.class::cast)
-            .thenCompose(response -> {
-                try {
-                    SecurityPolicy securityPolicy = SecurityPolicy.fromUri(
-                        endpoint.getSecurityPolicyUri());
-
-                    if (securityPolicy != SecurityPolicy.None) {
-                        if (response.getServerCertificate().isNullOrEmpty()) {
-                            throw new UaException(StatusCodes.Bad_SecurityChecksFailed,
-                                "Certificate missing from CreateSessionResponse");
-                        }
-
-                        List<X509Certificate> serverCertificateChain = CertificateUtil
-                            .decodeCertificates(response.getServerCertificate().bytesOrEmpty());
-
-                        X509Certificate serverCertificate = serverCertificateChain.get(0);
-
-                        X509Certificate certificateFromEndpoint = CertificateUtil
-                            .decodeCertificate(endpoint.getServerCertificate().bytesOrEmpty());
-
-                        if (!serverCertificate.equals(certificateFromEndpoint)) {
-                            throw new UaException(
-                                StatusCodes.Bad_SecurityChecksFailed,
-                                "Certificate from CreateSessionResponse did not " +
-                                    "match certificate from EndpointDescription!");
-                        }
-
-                        client.getConfig().getCertificateValidator().validateCertificateChain(
-                            serverCertificateChain,
-                            endpoint.getServer().getApplicationUri(),
-                            new String[]{EndpointUtil.getHost(endpoint.getEndpointUrl())}
-                        );
-
-                        SignatureData serverSignature = response.getServerSignature();
-
-                        byte[] dataBytes = Bytes.concat(
-                            clientCertificate.bytesOrEmpty(),
-                            clientNonce.bytesOrEmpty()
-                        );
-
-                        byte[] signatureBytes = serverSignature.getSignature().bytesOrEmpty();
-
-                        SignatureUtil.verify(
-                            SecurityAlgorithm.fromUri(serverSignature.getAlgorithm()),
-                            serverCertificate,
-                            dataBytes,
-                            signatureBytes
-                        );
-                    }
-
-                    return completedFuture(response);
-                } catch (UaException e) {
-                    return failedFuture(e);
-                }
-            });
+      LOGGER.debug("Sending CreateSessionRequest...");
     }
 
-    @SuppressWarnings("Duplicates")
-    private static CompletableFuture<OpcUaSession> activateSession(
-        FsmContext<State, Event> ctx,
-        OpcUaClient client,
-        CreateSessionResponse csr
-    ) {
+    return client
+        .getTransport()
+        .sendRequestMessage(request)
+        .thenApply(CreateSessionResponse.class::cast)
+        .thenCompose(
+            response -> {
+              try {
+                SecurityPolicy securityPolicy =
+                    SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri());
 
-        try {
-            EndpointDescription endpoint = client.getConfig().getEndpoint();
+                if (securityPolicy != SecurityPolicy.None) {
+                  if (response.getServerCertificate().isNullOrEmpty()) {
+                    throw new UaException(
+                        StatusCodes.Bad_SecurityChecksFailed,
+                        "Certificate missing from CreateSessionResponse");
+                  }
 
-            ByteString csrNonce = csr.getServerNonce();
+                  List<X509Certificate> serverCertificateChain =
+                      CertificateUtil.decodeCertificates(
+                          response.getServerCertificate().bytesOrEmpty());
 
-            SignedIdentityToken signedIdentityToken =
-                client.getConfig().getIdentityProvider()
-                    .getIdentityToken(endpoint, csrNonce);
+                  X509Certificate serverCertificate = serverCertificateChain.get(0);
 
-            UserIdentityToken userIdentityToken = signedIdentityToken.getToken();
-            SignatureData userTokenSignature = signedIdentityToken.getSignature();
+                  X509Certificate certificateFromEndpoint =
+                      CertificateUtil.decodeCertificate(
+                          endpoint.getServerCertificate().bytesOrEmpty());
 
-            ActivateSessionRequest request = new ActivateSessionRequest(
-                client.newRequestHeader(csr.getAuthenticationToken()),
-                buildClientSignature(client.getConfig(), csrNonce),
-                new SignedSoftwareCertificate[0],
-                client.getConfig().getSessionLocaleIds(),
-                ExtensionObject.encode(client.getStaticEncodingContext(), userIdentityToken),
-                userTokenSignature
-            );
+                  if (!serverCertificate.equals(certificateFromEndpoint)) {
+                    throw new UaException(
+                        StatusCodes.Bad_SecurityChecksFailed,
+                        "Certificate from CreateSessionResponse did not "
+                            + "match certificate from EndpointDescription!");
+                  }
 
-            try (MDCCloseable ignored =
-                MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+                  client
+                      .getConfig()
+                      .getCertificateValidator()
+                      .validateCertificateChain(
+                          serverCertificateChain,
+                          endpoint.getServer().getApplicationUri(),
+                          new String[] {EndpointUtil.getHost(endpoint.getEndpointUrl())});
 
-                LOGGER.debug("Sending ActivateSessionRequest...");
-            }
+                  SignatureData serverSignature = response.getServerSignature();
 
-            return client.getTransport()
-                .sendRequestMessage(request)
-                .thenApply(ActivateSessionResponse.class::cast)
-                .thenCompose(asr -> {
-                    ByteString asrNonce = asr.getServerNonce();
+                  byte[] dataBytes =
+                      Bytes.concat(clientCertificate.bytesOrEmpty(), clientNonce.bytesOrEmpty());
 
-                    // TODO check for repeated nonce?
+                  byte[] signatureBytes = serverSignature.getSignature().bytesOrEmpty();
 
-                    OpcUaSession session = new OpcUaSession(
+                  SignatureUtil.verify(
+                      SecurityAlgorithm.fromUri(serverSignature.getAlgorithm()),
+                      serverCertificate,
+                      dataBytes,
+                      signatureBytes);
+                }
+
+                return completedFuture(response);
+              } catch (UaException e) {
+                return failedFuture(e);
+              }
+            });
+  }
+
+  @SuppressWarnings("Duplicates")
+  private static CompletableFuture<OpcUaSession> activateSession(
+      FsmContext<State, Event> ctx, OpcUaClient client, CreateSessionResponse csr) {
+
+    try {
+      EndpointDescription endpoint = client.getConfig().getEndpoint();
+
+      ByteString csrNonce = csr.getServerNonce();
+
+      SignedIdentityToken signedIdentityToken =
+          client.getConfig().getIdentityProvider().getIdentityToken(endpoint, csrNonce);
+
+      UserIdentityToken userIdentityToken = signedIdentityToken.getToken();
+      SignatureData userTokenSignature = signedIdentityToken.getSignature();
+
+      ActivateSessionRequest request =
+          new ActivateSessionRequest(
+              client.newRequestHeader(csr.getAuthenticationToken()),
+              buildClientSignature(client.getConfig(), csrNonce),
+              new SignedSoftwareCertificate[0],
+              client.getConfig().getSessionLocaleIds(),
+              ExtensionObject.encode(client.getStaticEncodingContext(), userIdentityToken),
+              userTokenSignature);
+
+      try (MDCCloseable ignored =
+          MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+
+        LOGGER.debug("Sending ActivateSessionRequest...");
+      }
+
+      return client
+          .getTransport()
+          .sendRequestMessage(request)
+          .thenApply(ActivateSessionResponse.class::cast)
+          .thenCompose(
+              asr -> {
+                ByteString asrNonce = asr.getServerNonce();
+
+                // TODO check for repeated nonce?
+
+                OpcUaSession session =
+                    new OpcUaSession(
                         csr.getAuthenticationToken(),
                         csr.getSessionId(),
                         client.getConfig().getSessionName().get(),
                         csr.getRevisedSessionTimeout(),
                         csr.getMaxRequestMessageSize(),
                         csr.getServerCertificate(),
-                        csr.getServerSoftwareCertificates()
-                    );
+                        csr.getServerSoftwareCertificates());
 
-                    session.setServerNonce(asrNonce);
+                session.setServerNonce(asrNonce);
 
-                    return completedFuture(session);
-                });
-        } catch (Exception ex) {
-            return failedFuture(ex);
-        }
+                return completedFuture(session);
+              });
+    } catch (Exception ex) {
+      return failedFuture(ex);
+    }
+  }
+
+  @SuppressWarnings("Duplicates")
+  private static CompletableFuture<Unit> transferSubscriptions(
+      FsmContext<State, Event> ctx, OpcUaClient client, OpcUaSession session) {
+
+    List<OpcUaSubscription> subscriptions = client.getSubscriptions();
+
+    if (subscriptions.isEmpty()) {
+      return completedFuture(Unit.VALUE);
     }
 
-    @SuppressWarnings("Duplicates")
-    private static CompletableFuture<Unit> transferSubscriptions(
-        FsmContext<State, Event> ctx,
-        OpcUaClient client,
-        OpcUaSession session
-    ) {
+    CompletableFuture<Unit> transferFuture = new CompletableFuture<>();
 
-        List<OpcUaSubscription> subscriptions = client.getSubscriptions();
-
-        if (subscriptions.isEmpty()) {
-            return completedFuture(Unit.VALUE);
-        }
-
-        CompletableFuture<Unit> transferFuture = new CompletableFuture<>();
-
-        UInteger[] subscriptionIdsArray = subscriptions.stream()
+    UInteger[] subscriptionIdsArray =
+        subscriptions.stream()
             .flatMap(s -> s.getSubscriptionId().stream())
             .toArray(UInteger[]::new);
 
-        TransferSubscriptionsRequest request = new TransferSubscriptionsRequest(
-            client.newRequestHeader(session.getAuthenticationToken()),
-            subscriptionIdsArray,
-            true
-        );
+    TransferSubscriptionsRequest request =
+        new TransferSubscriptionsRequest(
+            client.newRequestHeader(session.getAuthenticationToken()), subscriptionIdsArray, true);
 
-        try (MDCCloseable ignored =
-            MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+    try (MDCCloseable ignored = MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
 
-            LOGGER.debug("Sending TransferSubscriptionsRequest...");
-        }
+      LOGGER.debug("Sending TransferSubscriptionsRequest...");
+    }
 
-        client.getTransport()
-            .sendRequestMessage(request)
-            .thenApply(TransferSubscriptionsResponse.class::cast)
-            .whenComplete((tsr, ex) -> {
-                if (tsr != null) {
-                    TransferResult[] results = requireNonNull(tsr.getResults());
+    client
+        .getTransport()
+        .sendRequestMessage(request)
+        .thenApply(TransferSubscriptionsResponse.class::cast)
+        .whenComplete(
+            (tsr, ex) -> {
+              if (tsr != null) {
+                TransferResult[] results = requireNonNull(tsr.getResults());
 
-                    try (MDCCloseable ignored =
-                        MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+                try (MDCCloseable ignored =
+                    MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
 
-                        LOGGER.debug(
-                            "TransferSubscriptions supported: {}",
-                            tsr.getResponseHeader().getServiceResult());
+                  LOGGER.debug(
+                      "TransferSubscriptions supported: {}",
+                      tsr.getResponseHeader().getServiceResult());
 
-                        if (LOGGER.isDebugEnabled()) {
-                            try {
-                                Stream<UInteger> subscriptionIds = subscriptions.stream()
-                                    .flatMap(s -> s.getSubscriptionId().stream());
-                                Stream<StatusCode> statusCodes = Stream.of(results)
-                                    .map(TransferResult::getStatusCode);
+                  if (LOGGER.isDebugEnabled()) {
+                    try {
+                      Stream<UInteger> subscriptionIds =
+                          subscriptions.stream().flatMap(s -> s.getSubscriptionId().stream());
+                      Stream<StatusCode> statusCodes =
+                          Stream.of(results).map(TransferResult::getStatusCode);
 
-                                //noinspection UnstableApiUsage
-                                String[] ss = Streams.zip(
-                                    subscriptionIds,
-                                    statusCodes,
-                                    (i, s) -> String.format("id=%s/%s",
-                                        i, StatusCodes.lookup(s.getValue())
-                                            .map(sa -> sa[0]).orElse(s.toString()))
-                                ).toArray(String[]::new);
+                      //noinspection UnstableApiUsage
+                      String[] ss =
+                          Streams.zip(
+                                  subscriptionIds,
+                                  statusCodes,
+                                  (i, s) ->
+                                      String.format(
+                                          "id=%s/%s",
+                                          i,
+                                          StatusCodes.lookup(s.getValue())
+                                              .map(sa -> sa[0])
+                                              .orElse(s.toString())))
+                              .toArray(String[]::new);
 
-                                LOGGER.debug("TransferSubscriptions results: {}",
-                                    Arrays.toString(ss));
-                            } catch (Throwable t) {
-                                LOGGER.error("error logging TransferSubscription results", t);
-                            }
-                        }
+                      LOGGER.debug("TransferSubscriptions results: {}", Arrays.toString(ss));
+                    } catch (Throwable t) {
+                      LOGGER.error("error logging TransferSubscription results", t);
                     }
+                  }
+                }
 
-                    client.getTransport().getConfig().getExecutor().execute(() -> {
-                        for (int i = 0; i < results.length; i++) {
+                client
+                    .getTransport()
+                    .getConfig()
+                    .getExecutor()
+                    .execute(
+                        () -> {
+                          for (int i = 0; i < results.length; i++) {
                             TransferResult result = results[i];
 
                             if (!result.getStatusCode().isGood()) {
-                                OpcUaSubscription subscription = subscriptions.get(i);
+                              OpcUaSubscription subscription = subscriptions.get(i);
 
-                                subscription.notifyTransferFailed(result.getStatusCode());
+                              subscription.notifyTransferFailed(result.getStatusCode());
                             }
-                        }
-                    });
+                          }
+                        });
 
-                    transferFuture.complete(Unit.VALUE);
-                } else {
-                    StatusCode statusCode = UaException.extract(ex)
-                        .map(UaException::getStatusCode)
-                        .orElse(StatusCode.BAD);
+                transferFuture.complete(Unit.VALUE);
+              } else {
+                StatusCode statusCode =
+                    UaException.extract(ex).map(UaException::getStatusCode).orElse(StatusCode.BAD);
 
-                    LOGGER.debug("TransferSubscriptions not supported: {}", statusCode);
+                LOGGER.debug("TransferSubscriptions not supported: {}", statusCode);
 
-                    client.getTransport().getConfig().getExecutor().execute(() -> {
-                        for (OpcUaSubscription subscription : subscriptions) {
+                client
+                    .getTransport()
+                    .getConfig()
+                    .getExecutor()
+                    .execute(
+                        () -> {
+                          for (OpcUaSubscription subscription : subscriptions) {
                             subscription.notifyTransferFailed(statusCode);
-                        }
-                    });
+                          }
+                        });
 
-                    // Bad_ServiceUnsupported is the correct response when transfers aren't
-                    // supported but server implementations interpret the spec differently.
-                    if (statusCode.getValue() == StatusCodes.Bad_NotImplemented ||
-                        statusCode.getValue() == StatusCodes.Bad_NotSupported ||
-                        statusCode.getValue() == StatusCodes.Bad_OutOfService ||
-                        statusCode.getValue() == StatusCodes.Bad_ServiceUnsupported) {
+                // Bad_ServiceUnsupported is the correct response when transfers aren't
+                // supported but server implementations interpret the spec differently.
+                if (statusCode.getValue() == StatusCodes.Bad_NotImplemented
+                    || statusCode.getValue() == StatusCodes.Bad_NotSupported
+                    || statusCode.getValue() == StatusCodes.Bad_OutOfService
+                    || statusCode.getValue() == StatusCodes.Bad_ServiceUnsupported) {
 
-                        // One of the expected responses; continue moving through the FSM.
+                  // One of the expected responses; continue moving through the FSM.
 
-                        transferFuture.complete(Unit.VALUE);
-                    } else {
-                        // An unexpected response; complete exceptionally and start over.
-                        // Subsequent runs through the FSM will not attempt transfer because
-                        // transferFailed() has been called for all the existing subscriptions.
-                        // This will prevent us from getting stuck in a "loop" attempting to
-                        // reconnect to a defective server that responds with a channel-level
-                        // Error message to subscription transfer requests instead of an
-                        // application-level ServiceFault.
+                  transferFuture.complete(Unit.VALUE);
+                } else {
+                  // An unexpected response; complete exceptionally and start over.
+                  // Subsequent runs through the FSM will not attempt transfer because
+                  // transferFailed() has been called for all the existing subscriptions.
+                  // This will prevent us from getting stuck in a "loop" attempting to
+                  // reconnect to a defective server that responds with a channel-level
+                  // Error message to subscription transfer requests instead of an
+                  // application-level ServiceFault.
 
-                        transferFuture.completeExceptionally(ex);
-                    }
+                  transferFuture.completeExceptionally(ex);
                 }
+              }
             });
 
-        return transferFuture;
+    return transferFuture;
+  }
+
+  private static CompletableFuture<Unit> initialize(
+      FsmContext<State, Event> ctx, OpcUaClient client, OpcUaSession session) {
+
+    LinkedList<SessionFsm.SessionInitializer> initializers =
+        new LinkedList<>(KEY_SESSION_INITIALIZERS.get(ctx).sessionInitializers);
+
+    if (initializers.isEmpty()) {
+      return completedFuture(Unit.VALUE);
+    } else {
+      return runSequentially(ctx, client, session, initializers);
     }
+  }
 
-    private static CompletableFuture<Unit> initialize(
-        FsmContext<State, Event> ctx,
-        OpcUaClient client,
-        OpcUaSession session
-    ) {
+  private static CompletableFuture<Unit> runSequentially(
+      FsmContext<State, Event> ctx,
+      OpcUaClient client,
+      OpcUaSession session,
+      LinkedList<SessionFsm.SessionInitializer> initializers) {
 
-        LinkedList<SessionFsm.SessionInitializer> initializers =
-            new LinkedList<>(KEY_SESSION_INITIALIZERS.get(ctx).sessionInitializers);
+    if (initializers.isEmpty()) {
+      return CompletableFuture.completedFuture(Unit.VALUE);
+    } else {
+      SessionFsm.SessionInitializer initializer = initializers.removeFirst();
 
-        if (initializers.isEmpty()) {
-            return completedFuture(Unit.VALUE);
-        } else {
-            return runSequentially(ctx, client, session, initializers);
-        }
+      return initializer
+          .initialize(client, session)
+          .exceptionally(
+              ex -> {
+                try (MDCCloseable ignored =
+                    MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+
+                  LOGGER.error(
+                      "Uncaught initialization error: {}",
+                      initializer.getClass().getSimpleName(),
+                      ex);
+                }
+
+                return Unit.VALUE;
+              })
+          .thenCompose(u -> runSequentially(ctx, client, session, initializers));
     }
+  }
 
-    private static CompletableFuture<Unit> runSequentially(
-        FsmContext<State, Event> ctx,
-        OpcUaClient client,
-        OpcUaSession session,
-        LinkedList<SessionFsm.SessionInitializer> initializers
-    ) {
+  private static CompletableFuture<ReadResponse> sendKeepAlive(
+      OpcUaClient client, OpcUaSession session) {
+    ReadRequest keepAliveRequest = createKeepAliveRequest(client, session);
 
-        if (initializers.isEmpty()) {
-            return CompletableFuture.completedFuture(Unit.VALUE);
-        } else {
-            SessionFsm.SessionInitializer initializer = initializers.removeFirst();
+    return client
+        .getTransport()
+        .sendRequestMessage(keepAliveRequest)
+        .thenApply(ReadResponse.class::cast);
+  }
 
-            return initializer.initialize(client, session)
-                .exceptionally(ex -> {
-                    try (MDCCloseable ignored =
-                        MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+  private static ReadRequest createKeepAliveRequest(OpcUaClient client, OpcUaSession session) {
+    RequestHeader requestHeader =
+        client.newRequestHeader(
+            session.getAuthenticationToken(), client.getConfig().getKeepAliveTimeout());
 
-                        LOGGER.error("Uncaught initialization error: {}",
-                            initializer.getClass().getSimpleName(), ex);
-                    }
+    return new ReadRequest(
+        requestHeader,
+        0.0,
+        TimestampsToReturn.Neither,
+        new ReadValueId[] {
+          new ReadValueId(
+              NodeIds.Server_ServerStatus_State,
+              AttributeId.Value.uid(),
+              null,
+              QualifiedName.NULL_VALUE)
+        });
+  }
 
-                    return Unit.VALUE;
-                })
-                .thenCompose(u -> runSequentially(ctx, client, session, initializers));
-        }
+  @SuppressWarnings("Duplicates")
+  private static SignatureData buildClientSignature(
+      OpcUaClientConfig config, ByteString serverNonce) throws Exception {
+
+    EndpointDescription endpoint = config.getEndpoint();
+
+    SecurityPolicy securityPolicy = SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri());
+
+    if (securityPolicy == SecurityPolicy.None) {
+      return new SignatureData(null, null);
+    } else {
+      SecurityAlgorithm signatureAlgorithm = securityPolicy.getAsymmetricSignatureAlgorithm();
+      PrivateKey privateKey = config.getKeyPair().map(KeyPair::getPrivate).orElse(null);
+      List<X509Certificate> serverCertificates =
+          CertificateUtil.decodeCertificates(endpoint.getServerCertificate().bytesOrEmpty());
+
+      // Signature data is serverCert + serverNonce signed with our private key.
+      byte[] serverNonceBytes = serverNonce.bytesOrEmpty();
+      byte[] serverCertificateBytes = serverCertificates.get(0).getEncoded();
+      byte[] dataToSign = Bytes.concat(serverCertificateBytes, serverNonceBytes);
+
+      byte[] signature =
+          SignatureUtil.sign(signatureAlgorithm, privateKey, ByteBuffer.wrap(dataToSign));
+
+      return new SignatureData(signatureAlgorithm.getUri(), ByteString.of(signature));
     }
+  }
 
-    private static CompletableFuture<ReadResponse> sendKeepAlive(OpcUaClient client,
-        OpcUaSession session) {
-        ReadRequest keepAliveRequest = createKeepAliveRequest(client, session);
+  private static class SessionFaultListener implements ServiceFaultListener {
 
-        return client.getTransport()
-            .sendRequestMessage(keepAliveRequest)
-            .thenApply(ReadResponse.class::cast);
-    }
+    private static final Predicate<StatusCode> SESSION_ERROR =
+        statusCode -> {
+          long status = statusCode.getValue();
 
-    private static ReadRequest createKeepAliveRequest(OpcUaClient client, OpcUaSession session) {
-        RequestHeader requestHeader = client.newRequestHeader(
-            session.getAuthenticationToken(),
-            client.getConfig().getKeepAliveTimeout()
-        );
-
-        return new ReadRequest(
-            requestHeader,
-            0.0,
-            TimestampsToReturn.Neither,
-            new ReadValueId[]{new ReadValueId(
-                NodeIds.Server_ServerStatus_State,
-                AttributeId.Value.uid(),
-                null,
-                QualifiedName.NULL_VALUE
-            )}
-        );
-    }
-
-    @SuppressWarnings("Duplicates")
-    private static SignatureData buildClientSignature(
-        OpcUaClientConfig config, ByteString serverNonce) throws Exception {
-
-        EndpointDescription endpoint = config.getEndpoint();
-
-        SecurityPolicy securityPolicy = SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri());
-
-        if (securityPolicy == SecurityPolicy.None) {
-            return new SignatureData(null, null);
-        } else {
-            SecurityAlgorithm signatureAlgorithm = securityPolicy.getAsymmetricSignatureAlgorithm();
-            PrivateKey privateKey = config.getKeyPair().map(KeyPair::getPrivate).orElse(null);
-            List<X509Certificate> serverCertificates = CertificateUtil.decodeCertificates(
-                endpoint.getServerCertificate().bytesOrEmpty()
-            );
-
-            // Signature data is serverCert + serverNonce signed with our private key.
-            byte[] serverNonceBytes = serverNonce.bytesOrEmpty();
-            byte[] serverCertificateBytes = serverCertificates.get(0).getEncoded();
-            byte[] dataToSign = Bytes.concat(serverCertificateBytes, serverNonceBytes);
-
-            byte[] signature = SignatureUtil.sign(
-                signatureAlgorithm,
-                privateKey,
-                ByteBuffer.wrap(dataToSign)
-            );
-
-            return new SignatureData(signatureAlgorithm.getUri(), ByteString.of(signature));
-        }
-    }
-
-    private static class SessionFaultListener implements ServiceFaultListener {
-
-        private static final Predicate<StatusCode> SESSION_ERROR = statusCode -> {
-            long status = statusCode.getValue();
-
-            return status == StatusCodes.Bad_SessionClosed ||
-                status == StatusCodes.Bad_SessionIdInvalid ||
-                status == StatusCodes.Bad_SessionNotActivated;
+          return status == StatusCodes.Bad_SessionClosed
+              || status == StatusCodes.Bad_SessionIdInvalid
+              || status == StatusCodes.Bad_SessionNotActivated;
         };
 
-        private static final Predicate<StatusCode> SECURE_CHANNEL_ERROR = statusCode -> {
-            long status = statusCode.getValue();
+    private static final Predicate<StatusCode> SECURE_CHANNEL_ERROR =
+        statusCode -> {
+          long status = statusCode.getValue();
 
-            return status == StatusCodes.Bad_SecureChannelIdInvalid ||
-                status == StatusCodes.Bad_SecurityChecksFailed ||
-                status == StatusCodes.Bad_TcpSecureChannelUnknown ||
-                status == StatusCodes.Bad_RequestTypeInvalid;
+          return status == StatusCodes.Bad_SecureChannelIdInvalid
+              || status == StatusCodes.Bad_SecurityChecksFailed
+              || status == StatusCodes.Bad_TcpSecureChannelUnknown
+              || status == StatusCodes.Bad_RequestTypeInvalid;
         };
 
-        private final Logger logger = LoggerFactory.getLogger(SessionFsm.LOGGER_NAME);
+    private final Logger logger = LoggerFactory.getLogger(SessionFsm.LOGGER_NAME);
 
-        private final Fsm<State, Event> fsm;
+    private final Fsm<State, Event> fsm;
 
-        private SessionFaultListener(Fsm<State, Event> fsm) {
-            this.fsm = fsm;
-        }
-
-        @Override
-        public void onServiceFault(ServiceFault serviceFault) {
-            StatusCode serviceResult = serviceFault.getResponseHeader().getServiceResult();
-
-            if (SESSION_ERROR.or(SECURE_CHANNEL_ERROR).test(serviceResult)) {
-                logger.debug("ServiceFault: {}", serviceResult);
-
-                fsm.fireEvent(new Event.ServiceFault(serviceResult));
-            }
-        }
-
+    private SessionFaultListener(Fsm<State, Event> fsm) {
+      this.fsm = fsm;
     }
 
+    @Override
+    public void onServiceFault(ServiceFault serviceFault) {
+      StatusCode serviceResult = serviceFault.getResponseHeader().getServiceResult();
+
+      if (SESSION_ERROR.or(SECURE_CHANNEL_ERROR).test(serviceResult)) {
+        logger.debug("ServiceFault: {}", serviceResult);
+
+        fsm.fireEvent(new Event.ServiceFault(serviceResult));
+      }
+    }
+  }
 }

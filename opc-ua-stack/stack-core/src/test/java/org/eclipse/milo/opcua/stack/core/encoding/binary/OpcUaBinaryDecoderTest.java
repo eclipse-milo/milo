@@ -10,74 +10,73 @@
 
 package org.eclipse.milo.opcua.stack.core.encoding.binary;
 
+import static org.testng.Assert.assertThrows;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.testng.annotations.Test;
 
-import static org.testng.Assert.assertThrows;
-
 public class OpcUaBinaryDecoderTest {
 
-    @Test
-    public void testReadDiagnosticInfoStackOverflow() {
-        ByteBuf buffer = Unpooled.buffer();
+  @Test
+  public void testReadDiagnosticInfoStackOverflow() {
+    ByteBuf buffer = Unpooled.buffer();
 
-        for (int i = 0; i < 10000; i++) {
-            buffer.writeByte(0x40);
-        }
-        buffer.writeByte(0x00);
-
-        assertThrows(UaSerializationException.class,
-            () ->
-                new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE)
-                    .setBuffer(buffer)
-                    .decodeDiagnosticInfo()
-        );
+    for (int i = 0; i < 10000; i++) {
+      buffer.writeByte(0x40);
     }
+    buffer.writeByte(0x00);
 
-    @Test
-    public void testReadVariantStackOverflow() {
-        ByteBuf buffer = Unpooled.buffer();
+    assertThrows(
+        UaSerializationException.class,
+        () ->
+            new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE)
+                .setBuffer(buffer)
+                .decodeDiagnosticInfo());
+  }
 
-        for (int i = 0; i < 10000; i++) {
-            buffer.writerIndex(5 * i);
+  @Test
+  public void testReadVariantStackOverflow() {
+    ByteBuf buffer = Unpooled.buffer();
 
-            buffer.writeByte(24 | 0x80);
-            buffer.writeByte(1);
-            buffer.writeByte(0);
-            buffer.writeByte(0);
-            buffer.writeByte(0);
-        }
-        buffer.writeByte(0);
+    for (int i = 0; i < 10000; i++) {
+      buffer.writerIndex(5 * i);
 
-        assertThrows(UaSerializationException.class,
-            () ->
-                new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE)
-                    .setBuffer(buffer)
-                    .decodeVariant()
-        );
+      buffer.writeByte(24 | 0x80);
+      buffer.writeByte(1);
+      buffer.writeByte(0);
+      buffer.writeByte(0);
+      buffer.writeByte(0);
     }
+    buffer.writeByte(0);
 
-    @Test
-    public void testReadVariantStackOverflow2() {
-        ByteBuf buffer = Unpooled.buffer();
+    assertThrows(
+        UaSerializationException.class,
+        () ->
+            new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE)
+                .setBuffer(buffer)
+                .decodeVariant());
+  }
 
-        for (int i = 0; i < 10000; i++) {
-            buffer.writerIndex(2 * i);
+  @Test
+  public void testReadVariantStackOverflow2() {
+    ByteBuf buffer = Unpooled.buffer();
 
-            buffer.writeByte(23);
-            buffer.writeByte(1);
-        }
-        buffer.writeByte(0);
+    for (int i = 0; i < 10000; i++) {
+      buffer.writerIndex(2 * i);
 
-        assertThrows(UaSerializationException.class,
-            () ->
-                new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE)
-                    .setBuffer(buffer)
-                    .decodeVariant()
-        );
+      buffer.writeByte(23);
+      buffer.writeByte(1);
     }
+    buffer.writeByte(0);
 
+    assertThrows(
+        UaSerializationException.class,
+        () ->
+            new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE)
+                .setBuffer(buffer)
+                .decodeVariant());
+  }
 }

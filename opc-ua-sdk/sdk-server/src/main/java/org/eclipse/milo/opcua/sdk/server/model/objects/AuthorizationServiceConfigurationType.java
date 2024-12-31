@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -16,48 +16,49 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/9.7.4">https://reference.opcfoundation.org/v105/Core/docs/Part12/9.7.4</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/9.7.4">https://reference.opcfoundation.org/v105/Core/docs/Part12/9.7.4</a>
  */
 public interface AuthorizationServiceConfigurationType extends BaseObjectType {
-    QualifiedProperty<String> SERVICE_URI = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ServiceUri",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-        -1,
-        String.class
-    );
+  QualifiedProperty<String> SERVICE_URI =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ServiceUri",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          -1,
+          String.class);
 
-    QualifiedProperty<ByteString> SERVICE_CERTIFICATE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ServiceCertificate",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15"),
-        -1,
-        ByteString.class
-    );
+  QualifiedProperty<ByteString> SERVICE_CERTIFICATE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ServiceCertificate",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15"),
+          -1,
+          ByteString.class);
 
-    QualifiedProperty<String> ISSUER_ENDPOINT_URL = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "IssuerEndpointUrl",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-        -1,
-        String.class
-    );
+  QualifiedProperty<String> ISSUER_ENDPOINT_URL =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "IssuerEndpointUrl",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          -1,
+          String.class);
 
-    String getServiceUri();
+  String getServiceUri();
 
-    void setServiceUri(String value);
+  void setServiceUri(String value);
 
-    PropertyType getServiceUriNode();
+  PropertyType getServiceUriNode();
 
-    ByteString getServiceCertificate();
+  ByteString getServiceCertificate();
 
-    void setServiceCertificate(ByteString value);
+  void setServiceCertificate(ByteString value);
 
-    PropertyType getServiceCertificateNode();
+  PropertyType getServiceCertificateNode();
 
-    String getIssuerEndpointUrl();
+  String getIssuerEndpointUrl();
 
-    void setIssuerEndpointUrl(String value);
+  void setIssuerEndpointUrl(String value);
 
-    PropertyType getIssuerEndpointUrlNode();
+  PropertyType getIssuerEndpointUrlNode();
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -10,6 +10,8 @@
 
 package org.eclipse.milo.opcua.sdk.client.session;
 
+import static org.testng.Assert.assertNotNull;
+
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfig;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
@@ -19,32 +21,30 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.testng.annotations.Test;
 
-import static org.testng.Assert.assertNotNull;
-
 public class SessionFsmTest {
 
-    @Test
-    public void testCloseSessionWhileInactive() throws Exception {
-        OpcUaClientConfig clientConfig = OpcUaClientConfig.builder()
-            .setEndpoint(new EndpointDescription(
-                "opc.tcp://localhost:12685",
-                null,
-                null,
-                MessageSecurityMode.None,
-                SecurityPolicy.None.getUri(),
-                null,
-                TransportProfile.TCP_UASC_UABINARY.getUri(),
-                null
-            ))
+  @Test
+  public void testCloseSessionWhileInactive() throws Exception {
+    OpcUaClientConfig clientConfig =
+        OpcUaClientConfig.builder()
+            .setEndpoint(
+                new EndpointDescription(
+                    "opc.tcp://localhost:12685",
+                    null,
+                    null,
+                    MessageSecurityMode.None,
+                    SecurityPolicy.None.getUri(),
+                    null,
+                    TransportProfile.TCP_UASC_UABINARY.getUri(),
+                    null))
             .setApplicationName(LocalizedText.english("Eclipse Milo Test Client"))
             .setApplicationUri("urn:eclipse:milo:examples:client")
             .build();
 
-        OpcUaClient client = OpcUaClient.create(clientConfig);
+    OpcUaClient client = OpcUaClient.create(clientConfig);
 
-        SessionFsm sessionFsm = SessionFsmFactory.newSessionFsm(client);
+    SessionFsm sessionFsm = SessionFsmFactory.newSessionFsm(client);
 
-        assertNotNull(sessionFsm.closeSession().get());
-    }
-
+    assertNotNull(sessionFsm.closeSession().get());
+  }
 }

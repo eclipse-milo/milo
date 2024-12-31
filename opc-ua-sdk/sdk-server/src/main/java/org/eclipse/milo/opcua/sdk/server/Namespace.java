@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -12,19 +12,16 @@ package org.eclipse.milo.opcua.sdk.server;
 
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 
-/**
- * A Namespace is an {@link AddressSpace} that manages all nodes for a given namespace index.
- */
+/** A Namespace is an {@link AddressSpace} that manages all nodes for a given namespace index. */
 public interface Namespace extends AddressSpace {
 
-    /**
-     * @return the index of this {@link Namespace} in the server's namespace array.
-     */
-    UShort getNamespaceIndex();
+  /**
+   * @return the index of this {@link Namespace} in the server's namespace array.
+   */
+  UShort getNamespaceIndex();
 
-    /**
-     * @return the URI identifying this {@link Namespace}.
-     */
-    String getNamespaceUri();
-
+  /**
+   * @return the URI identifying this {@link Namespace}.
+   */
+  String getNamespaceUri();
 }

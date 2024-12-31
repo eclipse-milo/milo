@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -15,20 +15,19 @@ import org.eclipse.milo.opcua.stack.core.types.structured.UserIdentityToken;
 
 public class SignedIdentityToken {
 
-    private final UserIdentityToken token;
-    private final SignatureData signature;
+  private final UserIdentityToken token;
+  private final SignatureData signature;
 
-    public SignedIdentityToken(UserIdentityToken token, SignatureData signature) {
-        this.token = token;
-        this.signature = signature;
-    }
+  public SignedIdentityToken(UserIdentityToken token, SignatureData signature) {
+    this.token = token;
+    this.signature = signature;
+  }
 
-    public UserIdentityToken getToken() {
-        return token;
-    }
+  public UserIdentityToken getToken() {
+    return token;
+  }
 
-    public SignatureData getSignature() {
-        return signature;
-    }
-
+  public SignatureData getSignature() {
+    return signature;
+  }
 }

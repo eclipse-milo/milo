@@ -27,103 +27,157 @@ import org.eclipse.milo.opcua.stack.core.types.structured.PriorityMappingEntryTy
 import org.eclipse.milo.opcua.stack.core.util.Lazy;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.2/#5.5.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.2/#5.5.2.2</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.2/#5.5.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part22/5.5.2/#5.5.2.2</a>
  */
 public interface PriorityMappingTableType extends BaseObjectType {
-    QualifiedProperty<PriorityMappingEntryType[]> PRIORITY_MAPPPING_ENTRIES = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "PriorityMapppingEntries",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=25220"),
-        1,
-        PriorityMappingEntryType[].class
-    );
+  QualifiedProperty<PriorityMappingEntryType[]> PRIORITY_MAPPPING_ENTRIES =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "PriorityMapppingEntries",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=25220"),
+          1,
+          PriorityMappingEntryType[].class);
 
-    PriorityMappingEntryType[] getPriorityMapppingEntries();
+  PriorityMappingEntryType[] getPriorityMapppingEntries();
 
-    void setPriorityMapppingEntries(PriorityMappingEntryType[] value);
+  void setPriorityMapppingEntries(PriorityMappingEntryType[] value);
 
-    PropertyType getPriorityMapppingEntriesNode();
+  PropertyType getPriorityMapppingEntriesNode();
 
-    MethodNode getAddPriorityMappingEntryMethodNode();
+  MethodNode getAddPriorityMappingEntryMethodNode();
 
-    MethodNode getDeletePriorityMappingEntryMethodNode();
+  MethodNode getDeletePriorityMappingEntryMethodNode();
 
-    abstract class AddPriorityMappingEntryMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  abstract class AddPriorityMappingEntryMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
 
-        public AddPriorityMappingEntryMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("MappingUri", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "")),
-                    new Argument("PriorityLabel", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "")),
-                    new Argument("PriorityValue_PCP", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=3").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "")),
-                    new Argument("PriorityValue_DSCP", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            String mappingUri = (String) inputValues[0].getValue();
-            String priorityLabel = (String) inputValues[1].getValue();
-            UByte priorityValuePcp = (UByte) inputValues[2].getValue();
-            UInteger priorityValueDscp = (UInteger) inputValues[3].getValue();
-            invoke(context, mappingUri, priorityLabel, priorityValuePcp, priorityValueDscp);
-            return new Variant[]{};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       String mappingUri, String priorityLabel, UByte priorityValuePcp, UInteger priorityValueDscp)
-            throws UaException;
+    public AddPriorityMappingEntryMethod(UaMethodNode node) {
+      super(node);
     }
 
-    abstract class DeletePriorityMappingEntryMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
 
-        public DeletePriorityMappingEntryMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("MappingUri", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "")),
-                    new Argument("PriorityLabel", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            String mappingUri = (String) inputValues[0].getValue();
-            String priorityLabel = (String) inputValues[1].getValue();
-            invoke(context, mappingUri, priorityLabel);
-            return new Variant[]{};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       String mappingUri, String priorityLabel) throws UaException;
+            return new Argument[] {
+              new Argument(
+                  "MappingUri",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "PriorityLabel",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "PriorityValue_PCP",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=3")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "PriorityValue_DSCP",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
     }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      String mappingUri = (String) inputValues[0].getValue();
+      String priorityLabel = (String) inputValues[1].getValue();
+      UByte priorityValuePcp = (UByte) inputValues[2].getValue();
+      UInteger priorityValueDscp = (UInteger) inputValues[3].getValue();
+      invoke(context, mappingUri, priorityLabel, priorityValuePcp, priorityValueDscp);
+      return new Variant[] {};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        String mappingUri,
+        String priorityLabel,
+        UByte priorityValuePcp,
+        UInteger priorityValueDscp)
+        throws UaException;
+  }
+
+  abstract class DeletePriorityMappingEntryMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+
+    public DeletePriorityMappingEntryMethod(UaMethodNode node) {
+      super(node);
+    }
+
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "MappingUri",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "PriorityLabel",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      String mappingUri = (String) inputValues[0].getValue();
+      String priorityLabel = (String) inputValues[1].getValue();
+      invoke(context, mappingUri, priorityLabel);
+      return new Variant[] {};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        String mappingUri,
+        String priorityLabel)
+        throws UaException;
+  }
 }

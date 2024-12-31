@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -19,13 +19,10 @@ import java.security.cert.CertPathValidatorSpi;
 
 public class OpcUaCertPathValidator extends CertPathValidatorSpi {
 
-    @Override
-    public CertPathValidatorResult engineValidate(
-        CertPath certPath,
-        CertPathParameters params
-    ) throws CertPathValidatorException, InvalidAlgorithmParameterException {
+  @Override
+  public CertPathValidatorResult engineValidate(CertPath certPath, CertPathParameters params)
+      throws CertPathValidatorException, InvalidAlgorithmParameterException {
 
-        return null;
-    }
-
+    return null;
+  }
 }

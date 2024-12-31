@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -16,36 +16,37 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetMetaDataType;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.9/#9.1.9.5">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.9/#9.1.9.5</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.9/#9.1.9.5">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.9/#9.1.9.5</a>
  */
 public interface StandaloneSubscribedDataSetType extends BaseObjectType {
-    QualifiedProperty<DataSetMetaDataType> DATA_SET_META_DATA = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "DataSetMetaData",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14523"),
-        -1,
-        DataSetMetaDataType.class
-    );
+  QualifiedProperty<DataSetMetaDataType> DATA_SET_META_DATA =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "DataSetMetaData",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14523"),
+          -1,
+          DataSetMetaDataType.class);
 
-    QualifiedProperty<Boolean> IS_CONNECTED = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "IsConnected",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-        -1,
-        Boolean.class
-    );
+  QualifiedProperty<Boolean> IS_CONNECTED =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "IsConnected",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          -1,
+          Boolean.class);
 
-    DataSetMetaDataType getDataSetMetaData();
+  DataSetMetaDataType getDataSetMetaData();
 
-    void setDataSetMetaData(DataSetMetaDataType value);
+  void setDataSetMetaData(DataSetMetaDataType value);
 
-    PropertyType getDataSetMetaDataNode();
+  PropertyType getDataSetMetaDataNode();
 
-    Boolean getIsConnected();
+  Boolean getIsConnected();
 
-    void setIsConnected(Boolean value);
+  void setIsConnected(Boolean value);
 
-    PropertyType getIsConnectedNode();
+  PropertyType getIsConnectedNode();
 
-    SubscribedDataSetType getSubscribedDataSetNode();
+  SubscribedDataSetType getSubscribedDataSetNode();
 }

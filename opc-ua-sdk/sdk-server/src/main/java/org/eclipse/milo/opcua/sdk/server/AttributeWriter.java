@@ -10,9 +10,10 @@
 
 package org.eclipse.milo.opcua.sdk.server;
 
+import static java.util.Objects.requireNonNullElse;
+
 import java.util.Optional;
 import java.util.Set;
-
 import org.eclipse.milo.opcua.sdk.core.NumericRange;
 import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.ValueRanks;
@@ -38,453 +39,435 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.util.ArrayUtil;
 import org.eclipse.milo.opcua.stack.core.util.TypeUtil;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Objects.requireNonNullElse;
-
-
 public class AttributeWriter {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AttributeWriter.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(AttributeWriter.class);
 
-    public static StatusCode writeAttribute(
-        AccessContext context,
-        UaServerNode node,
-        UInteger attributeId,
-        DataValue value,
-        @Nullable String indexRange
-    ) {
+  public static StatusCode writeAttribute(
+      AccessContext context,
+      UaServerNode node,
+      UInteger attributeId,
+      DataValue value,
+      @Nullable String indexRange) {
 
-        Optional<AttributeId> aid = AttributeId.from(attributeId);
+    Optional<AttributeId> aid = AttributeId.from(attributeId);
 
-        if (aid.isPresent()) {
-            return writeAttribute(context, node, aid.get(), value, indexRange);
-        } else {
-            return new StatusCode(StatusCodes.Bad_AttributeIdInvalid);
-        }
+    if (aid.isPresent()) {
+      return writeAttribute(context, node, aid.get(), value, indexRange);
+    } else {
+      return new StatusCode(StatusCodes.Bad_AttributeIdInvalid);
+    }
+  }
+
+  public static StatusCode writeAttribute(
+      AccessContext context,
+      UaServerNode node,
+      AttributeId attributeId,
+      DataValue value,
+      @Nullable String indexRange) {
+
+    if (!AttributeId.getAttributes(node.getNodeClass()).contains(attributeId)) {
+      return new StatusCode(StatusCodes.Bad_AttributeIdInvalid);
     }
 
-    public static StatusCode writeAttribute(
-        AccessContext context,
-        UaServerNode node,
-        AttributeId attributeId,
-        DataValue value,
-        @Nullable String indexRange
-    ) {
+    if (attributeId == AttributeId.UserRolePermissions) {
+      // Part 3, section 5.2.10
+      // https://reference.opcfoundation.org/v104/Core/docs/Part3/5.2.10/
+      // The value of this Attribute is derived from the rules used by the Server to
+      // map Sessions to Roles. This mapping may be vendor specific, or it may use the
+      // standard Role model defined in 4.8.
+      //
+      // This Attribute shall not be writeable.
+      return new StatusCode(StatusCodes.Bad_NotWritable);
+    } else if (attributeId != AttributeId.Value) {
+      WriteMask writeMask = writeMaskForAttribute(attributeId);
 
-        if (!AttributeId.getAttributes(node.getNodeClass()).contains(attributeId)) {
-            return new StatusCode(StatusCodes.Bad_AttributeIdInvalid);
-        }
+      Set<WriteMask> writeMasks = WriteMask.fromMask(node.getWriteMask());
+      if (!writeMasks.contains(writeMask)) {
+        return new StatusCode(StatusCodes.Bad_NotWritable);
+      }
 
-        if (attributeId == AttributeId.UserRolePermissions) {
-            // Part 3, section 5.2.10
-            // https://reference.opcfoundation.org/v104/Core/docs/Part3/5.2.10/
-            // The value of this Attribute is derived from the rules used by the Server to
-            // map Sessions to Roles. This mapping may be vendor specific, or it may use the
-            // standard Role model defined in 4.8.
-            //
-            // This Attribute shall not be writeable.
-            return new StatusCode(StatusCodes.Bad_NotWritable);
-        } else if (attributeId != AttributeId.Value) {
-            WriteMask writeMask = writeMaskForAttribute(attributeId);
+      Set<WriteMask> userWriteMasks =
+          WriteMask.fromMask(
+              (UInteger)
+                  requireNonNullElse(
+                      node.getAttribute(context, AttributeId.UserWriteMask), UInteger.MIN));
+      if (!userWriteMasks.contains(writeMask)) {
+        return new StatusCode(StatusCodes.Bad_UserAccessDenied);
+      }
+    }
 
-            Set<WriteMask> writeMasks = WriteMask.fromMask(node.getWriteMask());
-            if (!writeMasks.contains(writeMask)) {
-                return new StatusCode(StatusCodes.Bad_NotWritable);
-            }
+    Variant updateVariant = value.getValue();
 
-            Set<WriteMask> userWriteMasks = WriteMask.fromMask(
-                (UInteger) requireNonNullElse(node.getAttribute(context, AttributeId.UserWriteMask), UInteger.MIN)
-            );
-            if (!userWriteMasks.contains(writeMask)) {
-                return new StatusCode(StatusCodes.Bad_UserAccessDenied);
-            }
-        }
+    if (indexRange != null && !indexRange.isEmpty()) {
+      try {
+        NumericRange range = NumericRange.parse(indexRange);
 
-        Variant updateVariant = value.getValue();
+        Object current = node.getAttribute(AccessContext.INTERNAL, attributeId);
 
-        if (indexRange != null && !indexRange.isEmpty()) {
-            try {
-                NumericRange range = NumericRange.parse(indexRange);
+        Object valueAtRange =
+            NumericRange.writeToValueAtRange(Variant.of(current), updateVariant, range);
 
-                Object current = node.getAttribute(
-                    AccessContext.INTERNAL,
-                    attributeId
-                );
+        updateVariant = new Variant(valueAtRange);
+      } catch (UaException e) {
+        return e.getStatusCode();
+      }
+    }
 
-                Object valueAtRange = NumericRange.writeToValueAtRange(
-                    Variant.of(current),
-                    updateVariant,
-                    range
-                );
+    DateTime sourceTime = value.getSourceTime();
+    DateTime serverTime = value.getServerTime();
 
-                updateVariant = new Variant(valueAtRange);
-            } catch (UaException e) {
-                return e.getStatusCode();
-            }
-        }
-
-        DateTime sourceTime = value.getSourceTime();
-        DateTime serverTime = value.getServerTime();
-
-        value = new DataValue(
+    value =
+        new DataValue(
             updateVariant,
             value.getStatusCode(),
             (sourceTime == null || sourceTime.isNull()) ? DateTime.now() : sourceTime,
-            (serverTime == null || serverTime.isNull()) ? DateTime.now() : serverTime
-        );
+            (serverTime == null || serverTime.isNull()) ? DateTime.now() : serverTime);
 
-        if (attributeId == AttributeId.Value) {
-            try {
-                NodeId dataTypeId;
-                if (node instanceof VariableNode) {
-                    dataTypeId = ((VariableNode) node).getDataType();
-                } else if (node instanceof VariableTypeNode) {
-                    dataTypeId = ((VariableTypeNode) node).getDataType();
-                } else {
-                    dataTypeId = null;
-                }
-
-                if (dataTypeId != null) {
-                    boolean allowNulls = false;
-                    if (node instanceof UaVariableNode) {
-                        Boolean b = ((UaVariableNode) node).getAllowNulls();
-                        allowNulls = b != null ? b : false;
-                    }
-                    value = validateDataType(node.getNodeContext().getServer(), dataTypeId, value, allowNulls);
-                }
-
-                Integer valueRank;
-                UInteger[] arrayDimensions;
-                if (node instanceof VariableNode) {
-                    valueRank = ((VariableNode) node).getValueRank();
-                    arrayDimensions = ((VariableNode) node).getArrayDimensions();
-                } else if (node instanceof VariableTypeNode) {
-                    valueRank = ((VariableTypeNode) node).getValueRank();
-                    arrayDimensions = ((VariableTypeNode) node).getArrayDimensions();
-                } else {
-                    valueRank = 0;
-                    arrayDimensions = null;
-                }
-
-                if (valueRank > 0) {
-                    validateArrayType(valueRank, arrayDimensions, value);
-                }
-            } catch (UaException e) {
-                return e.getStatusCode();
-            }
-        }
-
-        try {
-            node.writeAttribute(context, attributeId, value);
-            return StatusCode.GOOD;
-        } catch (UaException e) {
-            return e.getStatusCode();
-        }
-    }
-
-    private static WriteMask writeMaskForAttribute(AttributeId attributeId) {
-        switch (attributeId) {
-            case AccessLevel:
-                return WriteMask.AccessLevel;
-            case ArrayDimensions:
-                return WriteMask.ArrayDimensions;
-            case BrowseName:
-                return WriteMask.BrowseName;
-            case ContainsNoLoops:
-                return WriteMask.ContainsNoLoops;
-            case DataType:
-                return WriteMask.DataType;
-            case Description:
-                return WriteMask.Description;
-            case DisplayName:
-                return WriteMask.DisplayName;
-            case EventNotifier:
-                return WriteMask.EventNotifier;
-            case Executable:
-                return WriteMask.Executable;
-            case Historizing:
-                return WriteMask.Historizing;
-            case InverseName:
-                return WriteMask.InverseName;
-            case IsAbstract:
-                return WriteMask.IsAbstract;
-            case MinimumSamplingInterval:
-                return WriteMask.MinimumSamplingInterval;
-            case NodeClass:
-                return WriteMask.NodeClass;
-            case NodeId:
-                return WriteMask.NodeId;
-            case Symmetric:
-                return WriteMask.Symmetric;
-            case UserAccessLevel:
-                return WriteMask.UserAccessLevel;
-            case UserExecutable:
-                return WriteMask.UserExecutable;
-            case UserWriteMask:
-                return WriteMask.UserWriteMask;
-            case Value:
-                return WriteMask.ValueForVariableType;
-            case ValueRank:
-                return WriteMask.ValueRank;
-            case WriteMask:
-                return WriteMask.WriteMask;
-            case RolePermissions:
-                return WriteMask.RolePermissions;
-            case AccessRestrictions:
-                return WriteMask.AccessRestrictions;
-            case AccessLevelEx:
-                return WriteMask.AccessLevelEx;
-            case DataTypeDefinition:
-                return WriteMask.DataTypeDefinition;
-            default:
-                throw new IllegalArgumentException("unknown AttributeId: " + attributeId);
-        }
-    }
-
-    private static DataValue validateDataType(
-        OpcUaServer server,
-        NodeId dataType,
-        DataValue value,
-        boolean allowNulls
-    ) throws UaException {
-
-        Variant variant = value.getValue();
-        if (variant == null) return value;
-
-        Object o = variant.getValue();
-        if (o == null) {
-            if (allowNulls) {
-                return value;
-            } else {
-                throw new UaException(StatusCodes.Bad_TypeMismatch);
-            }
-        }
-
-        Class<?> valueClass = o.getClass().isArray() ?
-            ArrayUtil.getType(o) : o.getClass();
-
-        Class<?> expectedClass = getExpectedClass(server, dataType, valueClass);
-
-        if (expectedClass != null) {
-            LOGGER.debug(
-                "dataTypeId={}, valueClass={}, expectedClass={}",
-                dataType, valueClass.getSimpleName(), expectedClass.getSimpleName());
-
-            if (!expectedClass.isAssignableFrom(valueClass)) {
-                // Writing a ByteString to a UByte[] is explicitly allowed by the spec.
-                if (o instanceof ByteString && expectedClass == UByte.class) {
-                    ByteString byteString = (ByteString) o;
-
-                    return new DataValue(
-                        new Variant(byteString.uBytes()),
-                        value.getStatusCode(),
-                        value.getSourceTime(),
-                        value.getServerTime()
-                    );
-                } else if (expectedClass == Variant.class) {
-                    // Allow writing anything to a Variant
-                    return value;
-                } else {
-                    throw new UaException(StatusCodes.Bad_TypeMismatch);
-                }
-            }
+    if (attributeId == AttributeId.Value) {
+      try {
+        NodeId dataTypeId;
+        if (node instanceof VariableNode) {
+          dataTypeId = ((VariableNode) node).getDataType();
+        } else if (node instanceof VariableTypeNode) {
+          dataTypeId = ((VariableTypeNode) node).getDataType();
         } else {
-            throw new UaException(StatusCodes.Bad_TypeMismatch);
+          dataTypeId = null;
         }
 
+        if (dataTypeId != null) {
+          boolean allowNulls = false;
+          if (node instanceof UaVariableNode) {
+            Boolean b = ((UaVariableNode) node).getAllowNulls();
+            allowNulls = b != null ? b : false;
+          }
+          value =
+              validateDataType(node.getNodeContext().getServer(), dataTypeId, value, allowNulls);
+        }
+
+        Integer valueRank;
+        UInteger[] arrayDimensions;
+        if (node instanceof VariableNode) {
+          valueRank = ((VariableNode) node).getValueRank();
+          arrayDimensions = ((VariableNode) node).getArrayDimensions();
+        } else if (node instanceof VariableTypeNode) {
+          valueRank = ((VariableTypeNode) node).getValueRank();
+          arrayDimensions = ((VariableTypeNode) node).getArrayDimensions();
+        } else {
+          valueRank = 0;
+          arrayDimensions = null;
+        }
+
+        if (valueRank > 0) {
+          validateArrayType(valueRank, arrayDimensions, value);
+        }
+      } catch (UaException e) {
+        return e.getStatusCode();
+      }
+    }
+
+    try {
+      node.writeAttribute(context, attributeId, value);
+      return StatusCode.GOOD;
+    } catch (UaException e) {
+      return e.getStatusCode();
+    }
+  }
+
+  private static WriteMask writeMaskForAttribute(AttributeId attributeId) {
+    switch (attributeId) {
+      case AccessLevel:
+        return WriteMask.AccessLevel;
+      case ArrayDimensions:
+        return WriteMask.ArrayDimensions;
+      case BrowseName:
+        return WriteMask.BrowseName;
+      case ContainsNoLoops:
+        return WriteMask.ContainsNoLoops;
+      case DataType:
+        return WriteMask.DataType;
+      case Description:
+        return WriteMask.Description;
+      case DisplayName:
+        return WriteMask.DisplayName;
+      case EventNotifier:
+        return WriteMask.EventNotifier;
+      case Executable:
+        return WriteMask.Executable;
+      case Historizing:
+        return WriteMask.Historizing;
+      case InverseName:
+        return WriteMask.InverseName;
+      case IsAbstract:
+        return WriteMask.IsAbstract;
+      case MinimumSamplingInterval:
+        return WriteMask.MinimumSamplingInterval;
+      case NodeClass:
+        return WriteMask.NodeClass;
+      case NodeId:
+        return WriteMask.NodeId;
+      case Symmetric:
+        return WriteMask.Symmetric;
+      case UserAccessLevel:
+        return WriteMask.UserAccessLevel;
+      case UserExecutable:
+        return WriteMask.UserExecutable;
+      case UserWriteMask:
+        return WriteMask.UserWriteMask;
+      case Value:
+        return WriteMask.ValueForVariableType;
+      case ValueRank:
+        return WriteMask.ValueRank;
+      case WriteMask:
+        return WriteMask.WriteMask;
+      case RolePermissions:
+        return WriteMask.RolePermissions;
+      case AccessRestrictions:
+        return WriteMask.AccessRestrictions;
+      case AccessLevelEx:
+        return WriteMask.AccessLevelEx;
+      case DataTypeDefinition:
+        return WriteMask.DataTypeDefinition;
+      default:
+        throw new IllegalArgumentException("unknown AttributeId: " + attributeId);
+    }
+  }
+
+  private static DataValue validateDataType(
+      OpcUaServer server, NodeId dataType, DataValue value, boolean allowNulls) throws UaException {
+
+    Variant variant = value.getValue();
+    if (variant == null) return value;
+
+    Object o = variant.getValue();
+    if (o == null) {
+      if (allowNulls) {
         return value;
+      } else {
+        throw new UaException(StatusCodes.Bad_TypeMismatch);
+      }
     }
 
-    private static void validateArrayType(
-        Integer valueRank,
-        UInteger[] arrayDimensions,
-        DataValue value) throws UaException {
+    Class<?> valueClass = o.getClass().isArray() ? ArrayUtil.getType(o) : o.getClass();
 
-        Variant variant = value.getValue();
-        if (variant == null) return;
+    Class<?> expectedClass = getExpectedClass(server, dataType, valueClass);
 
-        Object o = variant.getValue();
-        if (o == null) return;
+    if (expectedClass != null) {
+      LOGGER.debug(
+          "dataTypeId={}, valueClass={}, expectedClass={}",
+          dataType,
+          valueClass.getSimpleName(),
+          expectedClass.getSimpleName());
 
-        boolean valueIsArray = o.getClass().isArray();
+      if (!expectedClass.isAssignableFrom(valueClass)) {
+        // Writing a ByteString to a UByte[] is explicitly allowed by the spec.
+        if (o instanceof ByteString && expectedClass == UByte.class) {
+          ByteString byteString = (ByteString) o;
 
-        switch (valueRank) {
-            case ValueRanks.ScalarOrOneDimension:
-                if (valueIsArray) {
-                    int[] valueDimensions = ArrayUtil.getDimensions(o);
+          return new DataValue(
+              new Variant(byteString.uBytes()),
+              value.getStatusCode(),
+              value.getSourceTime(),
+              value.getServerTime());
+        } else if (expectedClass == Variant.class) {
+          // Allow writing anything to a Variant
+          return value;
+        } else {
+          throw new UaException(StatusCodes.Bad_TypeMismatch);
+        }
+      }
+    } else {
+      throw new UaException(StatusCodes.Bad_TypeMismatch);
+    }
 
-                    if (valueDimensions.length > 1) {
-                        throw new UaException(StatusCodes.Bad_TypeMismatch);
-                    }
-                }
-                break;
+    return value;
+  }
 
-            case ValueRanks.Any:
-                break;
+  private static void validateArrayType(
+      Integer valueRank, UInteger[] arrayDimensions, DataValue value) throws UaException {
 
-            case ValueRanks.Scalar:
-                if (valueIsArray) {
-                    throw new UaException(StatusCodes.Bad_TypeMismatch);
-                }
-                break;
+    Variant variant = value.getValue();
+    if (variant == null) return;
 
-            case ValueRanks.OneOrMoreDimensions:
-                if (!valueIsArray) {
-                    throw new UaException(StatusCodes.Bad_TypeMismatch);
-                }
-                break;
+    Object o = variant.getValue();
+    if (o == null) return;
 
-            case ValueRanks.OneDimension:
-            default:
-                if (!valueIsArray) {
-                    throw new UaException(StatusCodes.Bad_TypeMismatch);
-                }
+    boolean valueIsArray = o.getClass().isArray();
 
-                int[] valueDimensions = ArrayUtil.getDimensions(o);
+    switch (valueRank) {
+      case ValueRanks.ScalarOrOneDimension:
+        if (valueIsArray) {
+          int[] valueDimensions = ArrayUtil.getDimensions(o);
 
-                if (valueDimensions.length != valueRank) {
-                    throw new UaException(StatusCodes.Bad_TypeMismatch);
-                }
+          if (valueDimensions.length > 1) {
+            throw new UaException(StatusCodes.Bad_TypeMismatch);
+          }
+        }
+        break;
 
-                int[] nodeDimensions = Optional.ofNullable(arrayDimensions).map(uia -> {
-                    int[] dims = new int[uia.length];
-                    for (int i = 0; i < uia.length; i++) {
+      case ValueRanks.Any:
+        break;
+
+      case ValueRanks.Scalar:
+        if (valueIsArray) {
+          throw new UaException(StatusCodes.Bad_TypeMismatch);
+        }
+        break;
+
+      case ValueRanks.OneOrMoreDimensions:
+        if (!valueIsArray) {
+          throw new UaException(StatusCodes.Bad_TypeMismatch);
+        }
+        break;
+
+      case ValueRanks.OneDimension:
+      default:
+        if (!valueIsArray) {
+          throw new UaException(StatusCodes.Bad_TypeMismatch);
+        }
+
+        int[] valueDimensions = ArrayUtil.getDimensions(o);
+
+        if (valueDimensions.length != valueRank) {
+          throw new UaException(StatusCodes.Bad_TypeMismatch);
+        }
+
+        int[] nodeDimensions =
+            Optional.ofNullable(arrayDimensions)
+                .map(
+                    uia -> {
+                      int[] dims = new int[uia.length];
+                      for (int i = 0; i < uia.length; i++) {
                         dims[i] = uia[i].intValue();
-                    }
-                    return dims;
-                }).orElse(new int[0]);
+                      }
+                      return dims;
+                    })
+                .orElse(new int[0]);
 
-                if (nodeDimensions.length > 0) {
-                    if (nodeDimensions.length != valueDimensions.length) {
-                        throw new UaException(StatusCodes.Bad_TypeMismatch);
-                    }
+        if (nodeDimensions.length > 0) {
+          if (nodeDimensions.length != valueDimensions.length) {
+            throw new UaException(StatusCodes.Bad_TypeMismatch);
+          }
 
-                    for (int i = 0; i < nodeDimensions.length; i++) {
-                        if (nodeDimensions[i] > 0 && valueDimensions[i] > nodeDimensions[i]) {
-                            throw new UaException(StatusCodes.Bad_TypeMismatch);
-                        }
-                    }
-                }
-                break;
-        }
-    }
-
-    private static Class<?> getExpectedClass(
-        OpcUaServer server,
-        NodeId dataTypeId,
-        Class<?> valueClass) throws UaException {
-
-        if (TypeUtil.isBuiltin(dataTypeId)) {
-            return TypeUtil.getBackingClass(dataTypeId);
-        } else if (subtypeOf(server, dataTypeId, NodeIds.Structure)) {
-            return ExtensionObject.class;
-        } else if (subtypeOf(server, dataTypeId, NodeIds.Enumeration)) {
-            return Integer.class;
-        } else {
-            NodeId superBuiltInType = findConcreteBuiltInSuperTypeId(server, dataTypeId);
-
-            if (superBuiltInType != null) {
-                // One of dataTypeId's supertypes is a concrete built-in
-                // type; expect the same Class<?> as that built-in type.
-                return TypeUtil.getBackingClass(superBuiltInType);
-            } else {
-                int valueDataTypeId = TypeUtil.getBuiltinTypeId(valueClass);
-
-                if (valueDataTypeId > -1) {
-                    // The value they sent us maps to a built-in type.
-                    // If dataTypeId is a subtype of that built-in type,
-                    // the expected class is the class of the value they sent.
-                    NodeId builtInTypeId = new NodeId(0, valueDataTypeId);
-
-                    if (dataTypeId.equals(builtInTypeId) ||
-                        subtypeOf(server, builtInTypeId, dataTypeId)) {
-
-                        return valueClass;
-                    } else {
-                        throw new UaException(StatusCodes.Bad_TypeMismatch);
-                    }
-                } else {
-                    throw new UaException(StatusCodes.Bad_TypeMismatch);
-                }
+          for (int i = 0; i < nodeDimensions.length; i++) {
+            if (nodeDimensions[i] > 0 && valueDimensions[i] > nodeDimensions[i]) {
+              throw new UaException(StatusCodes.Bad_TypeMismatch);
             }
+          }
         }
+        break;
     }
+  }
 
-    /**
-     * @return {@code true} if {@code dataTypeId} is a subtype of {@code potentialSuperTypeId}.
-     */
-    private static boolean subtypeOf(OpcUaServer server, NodeId dataTypeId, NodeId potentialSuperTypeId) {
-        UaNode dataTypeNode = server.getAddressSpaceManager()
-            .getManagedNode(dataTypeId)
-            .orElse(null);
+  private static Class<?> getExpectedClass(
+      OpcUaServer server, NodeId dataTypeId, Class<?> valueClass) throws UaException {
 
-        if (dataTypeNode != null) {
-            NodeId superTypeId = getSuperTypeId(server, dataTypeId);
+    if (TypeUtil.isBuiltin(dataTypeId)) {
+      return TypeUtil.getBackingClass(dataTypeId);
+    } else if (subtypeOf(server, dataTypeId, NodeIds.Structure)) {
+      return ExtensionObject.class;
+    } else if (subtypeOf(server, dataTypeId, NodeIds.Enumeration)) {
+      return Integer.class;
+    } else {
+      NodeId superBuiltInType = findConcreteBuiltInSuperTypeId(server, dataTypeId);
 
-            if (superTypeId != null) {
-                return superTypeId.equals(potentialSuperTypeId) ||
-                    subtypeOf(server, superTypeId, potentialSuperTypeId);
-            } else {
-                return false;
-            }
+      if (superBuiltInType != null) {
+        // One of dataTypeId's supertypes is a concrete built-in
+        // type; expect the same Class<?> as that built-in type.
+        return TypeUtil.getBackingClass(superBuiltInType);
+      } else {
+        int valueDataTypeId = TypeUtil.getBuiltinTypeId(valueClass);
+
+        if (valueDataTypeId > -1) {
+          // The value they sent us maps to a built-in type.
+          // If dataTypeId is a subtype of that built-in type,
+          // the expected class is the class of the value they sent.
+          NodeId builtInTypeId = new NodeId(0, valueDataTypeId);
+
+          if (dataTypeId.equals(builtInTypeId) || subtypeOf(server, builtInTypeId, dataTypeId)) {
+
+            return valueClass;
+          } else {
+            throw new UaException(StatusCodes.Bad_TypeMismatch);
+          }
         } else {
-            return false;
+          throw new UaException(StatusCodes.Bad_TypeMismatch);
         }
+      }
     }
+  }
 
-    /**
-     * Find the first concrete built-in supertype for {@code dataTypeId}, if one exists.
-     *
-     * @return the first concrete built-in supertype for {@code dataTypeId}, if one exists.
-     */
-    @Nullable
-    private static NodeId findConcreteBuiltInSuperTypeId(OpcUaServer server, NodeId dataTypeId) {
-        if (TypeUtil.isBuiltin(dataTypeId) && isConcrete(server, dataTypeId)) {
-            return dataTypeId;
-        } else {
-            NodeId superTypeId = getSuperTypeId(server, dataTypeId);
+  /**
+   * @return {@code true} if {@code dataTypeId} is a subtype of {@code potentialSuperTypeId}.
+   */
+  private static boolean subtypeOf(
+      OpcUaServer server, NodeId dataTypeId, NodeId potentialSuperTypeId) {
+    UaNode dataTypeNode = server.getAddressSpaceManager().getManagedNode(dataTypeId).orElse(null);
 
-            if (superTypeId != null) {
-                return findConcreteBuiltInSuperTypeId(server, superTypeId);
-            } else {
-                return null;
-            }
-        }
+    if (dataTypeNode != null) {
+      NodeId superTypeId = getSuperTypeId(server, dataTypeId);
+
+      if (superTypeId != null) {
+        return superTypeId.equals(potentialSuperTypeId)
+            || subtypeOf(server, superTypeId, potentialSuperTypeId);
+      } else {
+        return false;
+      }
+    } else {
+      return false;
     }
+  }
 
-    @Nullable
-    private static NodeId getSuperTypeId(OpcUaServer server, NodeId dataTypeId) {
-        UaNode dataTypeNode = server.getAddressSpaceManager()
-            .getManagedNode(dataTypeId)
-            .orElse(null);
+  /**
+   * Find the first concrete built-in supertype for {@code dataTypeId}, if one exists.
+   *
+   * @return the first concrete built-in supertype for {@code dataTypeId}, if one exists.
+   */
+  @Nullable
+  private static NodeId findConcreteBuiltInSuperTypeId(OpcUaServer server, NodeId dataTypeId) {
+    if (TypeUtil.isBuiltin(dataTypeId) && isConcrete(server, dataTypeId)) {
+      return dataTypeId;
+    } else {
+      NodeId superTypeId = getSuperTypeId(server, dataTypeId);
 
-        if (dataTypeNode != null) {
-            return dataTypeNode.getReferences()
-                .stream()
-                .filter(Reference.SUBTYPE_OF)
-                .flatMap(r -> r.getTargetNodeId().toNodeId(server.getNamespaceTable()).stream())
-                .findFirst()
-                .orElse(null);
-        } else {
-            return null;
-        }
+      if (superTypeId != null) {
+        return findConcreteBuiltInSuperTypeId(server, superTypeId);
+      } else {
+        return null;
+      }
     }
+  }
 
-    private static boolean isAbstract(OpcUaServer server, NodeId dataTypeId) {
-        UaNode node = server.getAddressSpaceManager().getManagedNode(dataTypeId).orElse(null);
+  @Nullable
+  private static NodeId getSuperTypeId(OpcUaServer server, NodeId dataTypeId) {
+    UaNode dataTypeNode = server.getAddressSpaceManager().getManagedNode(dataTypeId).orElse(null);
 
-        if (node instanceof DataTypeNode) {
-            return ((DataTypeNode) node).getIsAbstract();
-        } else {
-            return false;
-        }
+    if (dataTypeNode != null) {
+      return dataTypeNode.getReferences().stream()
+          .filter(Reference.SUBTYPE_OF)
+          .flatMap(r -> r.getTargetNodeId().toNodeId(server.getNamespaceTable()).stream())
+          .findFirst()
+          .orElse(null);
+    } else {
+      return null;
     }
+  }
 
-    private static boolean isConcrete(OpcUaServer server, NodeId dataTypeId) {
-        return !isAbstract(server, dataTypeId);
+  private static boolean isAbstract(OpcUaServer server, NodeId dataTypeId) {
+    UaNode node = server.getAddressSpaceManager().getManagedNode(dataTypeId).orElse(null);
+
+    if (node instanceof DataTypeNode) {
+      return ((DataTypeNode) node).getIsAbstract();
+    } else {
+      return false;
     }
+  }
 
+  private static boolean isConcrete(OpcUaServer server, NodeId dataTypeId) {
+    return !isAbstract(server, dataTypeId);
+  }
 }

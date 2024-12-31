@@ -14,239 +14,237 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
-
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUI32;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part3/8.60">https://reference.opcfoundation.org/v105/Core/docs/Part3/8.60</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part3/8.60">https://reference.opcfoundation.org/v105/Core/docs/Part3/8.60</a>
  */
 public class AttributeWriteMask extends OptionSetUI32<AttributeWriteMask.Field> {
-    public AttributeWriteMask(UInteger value) {
-        super(value);
+  public AttributeWriteMask(UInteger value) {
+    super(value);
+  }
+
+  public boolean getAccessLevel() {
+    return get(Field.AccessLevel);
+  }
+
+  public boolean getArrayDimensions() {
+    return get(Field.ArrayDimensions);
+  }
+
+  public boolean getBrowseName() {
+    return get(Field.BrowseName);
+  }
+
+  public boolean getContainsNoLoops() {
+    return get(Field.ContainsNoLoops);
+  }
+
+  public boolean getDataType() {
+    return get(Field.DataType);
+  }
+
+  public boolean getDescription() {
+    return get(Field.Description);
+  }
+
+  public boolean getDisplayName() {
+    return get(Field.DisplayName);
+  }
+
+  public boolean getEventNotifier() {
+    return get(Field.EventNotifier);
+  }
+
+  public boolean getExecutable() {
+    return get(Field.Executable);
+  }
+
+  public boolean getHistorizing() {
+    return get(Field.Historizing);
+  }
+
+  public boolean getInverseName() {
+    return get(Field.InverseName);
+  }
+
+  public boolean getIsAbstract() {
+    return get(Field.IsAbstract);
+  }
+
+  public boolean getMinimumSamplingInterval() {
+    return get(Field.MinimumSamplingInterval);
+  }
+
+  public boolean getNodeClass() {
+    return get(Field.NodeClass);
+  }
+
+  public boolean getNodeId() {
+    return get(Field.NodeId);
+  }
+
+  public boolean getSymmetric() {
+    return get(Field.Symmetric);
+  }
+
+  public boolean getUserAccessLevel() {
+    return get(Field.UserAccessLevel);
+  }
+
+  public boolean getUserExecutable() {
+    return get(Field.UserExecutable);
+  }
+
+  public boolean getUserWriteMask() {
+    return get(Field.UserWriteMask);
+  }
+
+  public boolean getValueRank() {
+    return get(Field.ValueRank);
+  }
+
+  public boolean getWriteMask() {
+    return get(Field.WriteMask);
+  }
+
+  public boolean getValueForVariableType() {
+    return get(Field.ValueForVariableType);
+  }
+
+  public boolean getDataTypeDefinition() {
+    return get(Field.DataTypeDefinition);
+  }
+
+  public boolean getRolePermissions() {
+    return get(Field.RolePermissions);
+  }
+
+  public boolean getAccessRestrictions() {
+    return get(Field.AccessRestrictions);
+  }
+
+  public boolean getAccessLevelEx() {
+    return get(Field.AccessLevelEx);
+  }
+
+  @Override
+  public UInteger getValue() {
+    return (UInteger) value;
+  }
+
+  @Override
+  public Set<AttributeWriteMask.Field> toSet() {
+    return Arrays.stream(Field.values()).filter(this::get).collect(Collectors.toSet());
+  }
+
+  @Override
+  public String toString() {
+    var joiner = new StringJoiner(", ", AttributeWriteMask.class.getSimpleName() + "[", "]");
+    joiner.add("accessLevel=" + getAccessLevel());
+    joiner.add("arrayDimensions=" + getArrayDimensions());
+    joiner.add("browseName=" + getBrowseName());
+    joiner.add("containsNoLoops=" + getContainsNoLoops());
+    joiner.add("dataType=" + getDataType());
+    joiner.add("description=" + getDescription());
+    joiner.add("displayName=" + getDisplayName());
+    joiner.add("eventNotifier=" + getEventNotifier());
+    joiner.add("executable=" + getExecutable());
+    joiner.add("historizing=" + getHistorizing());
+    joiner.add("inverseName=" + getInverseName());
+    joiner.add("isAbstract=" + getIsAbstract());
+    joiner.add("minimumSamplingInterval=" + getMinimumSamplingInterval());
+    joiner.add("nodeClass=" + getNodeClass());
+    joiner.add("nodeId=" + getNodeId());
+    joiner.add("symmetric=" + getSymmetric());
+    joiner.add("userAccessLevel=" + getUserAccessLevel());
+    joiner.add("userExecutable=" + getUserExecutable());
+    joiner.add("userWriteMask=" + getUserWriteMask());
+    joiner.add("valueRank=" + getValueRank());
+    joiner.add("writeMask=" + getWriteMask());
+    joiner.add("valueForVariableType=" + getValueForVariableType());
+    joiner.add("dataTypeDefinition=" + getDataTypeDefinition());
+    joiner.add("rolePermissions=" + getRolePermissions());
+    joiner.add("accessRestrictions=" + getAccessRestrictions());
+    joiner.add("accessLevelEx=" + getAccessLevelEx());
+    return joiner.toString();
+  }
+
+  public static AttributeWriteMask of(AttributeWriteMask.Field... fields) {
+    long bits = 0L;
+
+    for (Field f : fields) {
+      bits |= (1L << f.bitIndex);
     }
 
-    public boolean getAccessLevel() {
-        return get(Field.AccessLevel);
-    }
+    return new AttributeWriteMask(UInteger.valueOf(bits));
+  }
 
-    public boolean getArrayDimensions() {
-        return get(Field.ArrayDimensions);
-    }
+  public enum Field implements OptionSetUInteger.BitIndex {
+    AccessLevel(0),
 
-    public boolean getBrowseName() {
-        return get(Field.BrowseName);
-    }
+    ArrayDimensions(1),
 
-    public boolean getContainsNoLoops() {
-        return get(Field.ContainsNoLoops);
-    }
+    BrowseName(2),
 
-    public boolean getDataType() {
-        return get(Field.DataType);
-    }
+    ContainsNoLoops(3),
 
-    public boolean getDescription() {
-        return get(Field.Description);
-    }
+    DataType(4),
 
-    public boolean getDisplayName() {
-        return get(Field.DisplayName);
-    }
+    Description(5),
 
-    public boolean getEventNotifier() {
-        return get(Field.EventNotifier);
-    }
+    DisplayName(6),
 
-    public boolean getExecutable() {
-        return get(Field.Executable);
-    }
+    EventNotifier(7),
 
-    public boolean getHistorizing() {
-        return get(Field.Historizing);
-    }
+    Executable(8),
 
-    public boolean getInverseName() {
-        return get(Field.InverseName);
-    }
+    Historizing(9),
 
-    public boolean getIsAbstract() {
-        return get(Field.IsAbstract);
-    }
+    InverseName(10),
 
-    public boolean getMinimumSamplingInterval() {
-        return get(Field.MinimumSamplingInterval);
-    }
+    IsAbstract(11),
 
-    public boolean getNodeClass() {
-        return get(Field.NodeClass);
-    }
+    MinimumSamplingInterval(12),
 
-    public boolean getNodeId() {
-        return get(Field.NodeId);
-    }
+    NodeClass(13),
 
-    public boolean getSymmetric() {
-        return get(Field.Symmetric);
-    }
+    NodeId(14),
 
-    public boolean getUserAccessLevel() {
-        return get(Field.UserAccessLevel);
-    }
+    Symmetric(15),
 
-    public boolean getUserExecutable() {
-        return get(Field.UserExecutable);
-    }
+    UserAccessLevel(16),
 
-    public boolean getUserWriteMask() {
-        return get(Field.UserWriteMask);
-    }
+    UserExecutable(17),
 
-    public boolean getValueRank() {
-        return get(Field.ValueRank);
-    }
+    UserWriteMask(18),
 
-    public boolean getWriteMask() {
-        return get(Field.WriteMask);
-    }
+    ValueRank(19),
 
-    public boolean getValueForVariableType() {
-        return get(Field.ValueForVariableType);
-    }
+    WriteMask(20),
 
-    public boolean getDataTypeDefinition() {
-        return get(Field.DataTypeDefinition);
-    }
+    ValueForVariableType(21),
 
-    public boolean getRolePermissions() {
-        return get(Field.RolePermissions);
-    }
+    DataTypeDefinition(22),
 
-    public boolean getAccessRestrictions() {
-        return get(Field.AccessRestrictions);
-    }
+    RolePermissions(23),
 
-    public boolean getAccessLevelEx() {
-        return get(Field.AccessLevelEx);
+    AccessRestrictions(24),
+
+    AccessLevelEx(25);
+
+    private final int bitIndex;
+
+    Field(int bitIndex) {
+      this.bitIndex = bitIndex;
     }
 
     @Override
-    public UInteger getValue() {
-        return (UInteger) value;
+    public int getBitIndex() {
+      return bitIndex;
     }
-
-    @Override
-    public Set<AttributeWriteMask.Field> toSet() {
-        return Arrays.stream(Field.values())
-            .filter(this::get)
-            .collect(Collectors.toSet());
-    }
-
-    @Override
-    public String toString() {
-        var joiner = new StringJoiner(", ", AttributeWriteMask.class.getSimpleName() + "[", "]");
-        joiner.add("accessLevel=" + getAccessLevel());
-        joiner.add("arrayDimensions=" + getArrayDimensions());
-        joiner.add("browseName=" + getBrowseName());
-        joiner.add("containsNoLoops=" + getContainsNoLoops());
-        joiner.add("dataType=" + getDataType());
-        joiner.add("description=" + getDescription());
-        joiner.add("displayName=" + getDisplayName());
-        joiner.add("eventNotifier=" + getEventNotifier());
-        joiner.add("executable=" + getExecutable());
-        joiner.add("historizing=" + getHistorizing());
-        joiner.add("inverseName=" + getInverseName());
-        joiner.add("isAbstract=" + getIsAbstract());
-        joiner.add("minimumSamplingInterval=" + getMinimumSamplingInterval());
-        joiner.add("nodeClass=" + getNodeClass());
-        joiner.add("nodeId=" + getNodeId());
-        joiner.add("symmetric=" + getSymmetric());
-        joiner.add("userAccessLevel=" + getUserAccessLevel());
-        joiner.add("userExecutable=" + getUserExecutable());
-        joiner.add("userWriteMask=" + getUserWriteMask());
-        joiner.add("valueRank=" + getValueRank());
-        joiner.add("writeMask=" + getWriteMask());
-        joiner.add("valueForVariableType=" + getValueForVariableType());
-        joiner.add("dataTypeDefinition=" + getDataTypeDefinition());
-        joiner.add("rolePermissions=" + getRolePermissions());
-        joiner.add("accessRestrictions=" + getAccessRestrictions());
-        joiner.add("accessLevelEx=" + getAccessLevelEx());
-        return joiner.toString();
-    }
-
-    public static AttributeWriteMask of(AttributeWriteMask.Field... fields) {
-        long bits = 0L;
-
-        for (Field f : fields) {
-            bits |= (1L << f.bitIndex);
-        }
-
-        return new AttributeWriteMask(UInteger.valueOf(bits));
-    }
-
-    public enum Field implements OptionSetUInteger.BitIndex {
-        AccessLevel(0),
-
-        ArrayDimensions(1),
-
-        BrowseName(2),
-
-        ContainsNoLoops(3),
-
-        DataType(4),
-
-        Description(5),
-
-        DisplayName(6),
-
-        EventNotifier(7),
-
-        Executable(8),
-
-        Historizing(9),
-
-        InverseName(10),
-
-        IsAbstract(11),
-
-        MinimumSamplingInterval(12),
-
-        NodeClass(13),
-
-        NodeId(14),
-
-        Symmetric(15),
-
-        UserAccessLevel(16),
-
-        UserExecutable(17),
-
-        UserWriteMask(18),
-
-        ValueRank(19),
-
-        WriteMask(20),
-
-        ValueForVariableType(21),
-
-        DataTypeDefinition(22),
-
-        RolePermissions(23),
-
-        AccessRestrictions(24),
-
-        AccessLevelEx(25);
-
-        private final int bitIndex;
-
-        Field(int bitIndex) {
-            this.bitIndex = bitIndex;
-        }
-
-        @Override
-        public int getBitIndex() {
-            return bitIndex;
-        }
-    }
+  }
 }

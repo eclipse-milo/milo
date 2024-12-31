@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -25,19 +25,18 @@ import org.eclipse.milo.opcua.stack.transport.server.ServiceRequestContext;
 
 public interface MonitoredItemServiceSet {
 
-    CreateMonitoredItemsResponse onCreateMonitoredItems(
-        ServiceRequestContext context, CreateMonitoredItemsRequest request) throws UaException;
+  CreateMonitoredItemsResponse onCreateMonitoredItems(
+      ServiceRequestContext context, CreateMonitoredItemsRequest request) throws UaException;
 
-    ModifyMonitoredItemsResponse onModifyMonitoredItems(
-        ServiceRequestContext context, ModifyMonitoredItemsRequest request) throws UaException;
+  ModifyMonitoredItemsResponse onModifyMonitoredItems(
+      ServiceRequestContext context, ModifyMonitoredItemsRequest request) throws UaException;
 
-    DeleteMonitoredItemsResponse onDeleteMonitoredItems(
-        ServiceRequestContext context, DeleteMonitoredItemsRequest request) throws UaException;
+  DeleteMonitoredItemsResponse onDeleteMonitoredItems(
+      ServiceRequestContext context, DeleteMonitoredItemsRequest request) throws UaException;
 
-    SetMonitoringModeResponse onSetMonitoringMode(
-        ServiceRequestContext context, SetMonitoringModeRequest request) throws UaException;
+  SetMonitoringModeResponse onSetMonitoringMode(
+      ServiceRequestContext context, SetMonitoringModeRequest request) throws UaException;
 
-    SetTriggeringResponse onSetTriggering(
-        ServiceRequestContext context, SetTriggeringRequest request) throws UaException;
-
+  SetTriggeringResponse onSetTriggering(ServiceRequestContext context, SetTriggeringRequest request)
+      throws UaException;
 }

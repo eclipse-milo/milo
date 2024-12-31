@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -10,9 +10,10 @@
 
 package org.eclipse.milo.examples.client;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -26,54 +27,51 @@ import org.eclipse.milo.opcua.stack.core.util.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Objects.requireNonNull;
-
 public class TranslateBrowsePathExample implements ClientExample {
 
-    public static void main(String[] args) throws Exception {
-        TranslateBrowsePathExample example = new TranslateBrowsePathExample();
+  public static void main(String[] args) throws Exception {
+    TranslateBrowsePathExample example = new TranslateBrowsePathExample();
 
-        new ClientExampleRunner(example).run();
-    }
+    new ClientExampleRunner(example).run();
+  }
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Override
-    public void run(OpcUaClient client, CompletableFuture<OpcUaClient> future) throws Exception {
-        client.connect();
+  @Override
+  public void run(OpcUaClient client, CompletableFuture<OpcUaClient> future) throws Exception {
+    client.connect();
 
-        TranslateBrowsePathsToNodeIdsResponse response = client.translateBrowsePaths(List.of(new BrowsePath(
-            NodeIds.ObjectsFolder,
-            new RelativePath(new RelativePathElement[]{
-                new RelativePathElement(
-                    NodeIds.HierarchicalReferences,
-                    false,
-                    true,
-                    new QualifiedName(2, "HelloWorld")
-                ),
-                new RelativePathElement(
-                    NodeIds.HierarchicalReferences,
-                    false,
-                    true,
-                    new QualifiedName(2, "ScalarTypes")
-                ),
-                new RelativePathElement(
-                    NodeIds.HierarchicalReferences,
-                    false,
-                    true,
-                    new QualifiedName(2, "UInt64")
-                )
-            })
-        )));
+    TranslateBrowsePathsToNodeIdsResponse response =
+        client.translateBrowsePaths(
+            List.of(
+                new BrowsePath(
+                    NodeIds.ObjectsFolder,
+                    new RelativePath(
+                        new RelativePathElement[] {
+                          new RelativePathElement(
+                              NodeIds.HierarchicalReferences,
+                              false,
+                              true,
+                              new QualifiedName(2, "HelloWorld")),
+                          new RelativePathElement(
+                              NodeIds.HierarchicalReferences,
+                              false,
+                              true,
+                              new QualifiedName(2, "ScalarTypes")),
+                          new RelativePathElement(
+                              NodeIds.HierarchicalReferences,
+                              false,
+                              true,
+                              new QualifiedName(2, "UInt64"))
+                        }))));
 
-        BrowsePathResult result = requireNonNull(response.getResults())[0];
-        StatusCode statusCode = result.getStatusCode();
-        logger.info("Status={}", statusCode);
+    BrowsePathResult result = requireNonNull(response.getResults())[0];
+    StatusCode statusCode = result.getStatusCode();
+    logger.info("Status={}", statusCode);
 
-        Lists.ofNullable(result.getTargets())
-            .forEach(target -> logger.info("TargetId={}", target.getTargetId()));
+    Lists.ofNullable(result.getTargets())
+        .forEach(target -> logger.info("TargetId={}", target.getTargetId()));
 
-        future.complete(client);
-    }
-
+    future.complete(client);
+  }
 }

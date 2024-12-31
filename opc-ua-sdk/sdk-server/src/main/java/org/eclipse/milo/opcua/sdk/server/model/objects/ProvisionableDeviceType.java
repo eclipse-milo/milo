@@ -27,94 +27,116 @@ import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.util.Lazy;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part21/9.3.3">https://reference.opcfoundation.org/v105/Core/docs/Part21/9.3.3</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part21/9.3.3">https://reference.opcfoundation.org/v105/Core/docs/Part21/9.3.3</a>
  */
 public interface ProvisionableDeviceType extends BaseObjectType {
-    QualifiedProperty<Boolean> IS_SINGLETON = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "IsSingleton",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-        -1,
-        Boolean.class
-    );
+  QualifiedProperty<Boolean> IS_SINGLETON =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "IsSingleton",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          -1,
+          Boolean.class);
 
-    Boolean getIsSingleton();
+  Boolean getIsSingleton();
 
-    void setIsSingleton(Boolean value);
+  void setIsSingleton(Boolean value);
 
-    PropertyType getIsSingletonNode();
+  PropertyType getIsSingletonNode();
 
-    MethodNode getRequestTicketsMethodNode();
+  MethodNode getRequestTicketsMethodNode();
 
-    MethodNode getSetRegistrarEndpointsMethodNode();
+  MethodNode getSetRegistrarEndpointsMethodNode();
 
-    abstract class RequestTicketsMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> outputArguments = new Lazy<>();
+  abstract class RequestTicketsMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> outputArguments = new Lazy<>();
 
-        public RequestTicketsMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return outputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("Tickets", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=25726").toNodeId(namespaceTable).orElseThrow(), 1, new UInteger[]{UInteger.valueOf(0)}, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            Out<String[]> tickets = new Out<>();
-            invoke(context, tickets);
-            return new Variant[]{new Variant(tickets.get())};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       Out<String[]> tickets) throws UaException;
+    public RequestTicketsMethod(UaMethodNode node) {
+      super(node);
     }
 
-    abstract class SetRegistrarEndpointsMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-        public SetRegistrarEndpointsMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("Registrars", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=308").toNodeId(namespaceTable).orElseThrow(), 1, new UInteger[]{UInteger.valueOf(0)}, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            ApplicationDescription[] registrars = (ApplicationDescription[]) inputValues[0].getValue();
-            invoke(context, registrars);
-            return new Variant[]{};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       ApplicationDescription[] registrars) throws UaException;
+    @Override
+    public Argument[] getInputArguments() {
+      return new Argument[] {};
     }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return outputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "Tickets",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=25726")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  1,
+                  new UInteger[] {UInteger.valueOf(0)},
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      Out<String[]> tickets = new Out<>();
+      invoke(context, tickets);
+      return new Variant[] {new Variant(tickets.get())};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Out<String[]> tickets)
+        throws UaException;
+  }
+
+  abstract class SetRegistrarEndpointsMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+
+    public SetRegistrarEndpointsMethod(UaMethodNode node) {
+      super(node);
+    }
+
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "Registrars",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=308")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  1,
+                  new UInteger[] {UInteger.valueOf(0)},
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      ApplicationDescription[] registrars = (ApplicationDescription[]) inputValues[0].getValue();
+      invoke(context, registrars);
+      return new Variant[] {};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        ApplicationDescription[] registrars)
+        throws UaException;
+  }
 }

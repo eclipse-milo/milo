@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -16,24 +16,25 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.structured.UnsignedRationalNumber;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.8">https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.8</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.8">https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.8</a>
  */
 public interface IIeeeBaseTsnTrafficSpecificationType extends BaseInterfaceType {
-    BaseDataVariableType getMaxIntervalFramesNode();
+  BaseDataVariableType getMaxIntervalFramesNode();
 
-    UShort getMaxIntervalFrames();
+  UShort getMaxIntervalFrames();
 
-    void setMaxIntervalFrames(UShort value);
+  void setMaxIntervalFrames(UShort value);
 
-    BaseDataVariableType getMaxFrameSizeNode();
+  BaseDataVariableType getMaxFrameSizeNode();
 
-    UInteger getMaxFrameSize();
+  UInteger getMaxFrameSize();
 
-    void setMaxFrameSize(UInteger value);
+  void setMaxFrameSize(UInteger value);
 
-    BaseDataVariableType getIntervalNode();
+  BaseDataVariableType getIntervalNode();
 
-    UnsignedRationalNumber getInterval();
+  UnsignedRationalNumber getInterval();
 
-    void setInterval(UnsignedRationalNumber value);
+  void setInterval(UnsignedRationalNumber value);
 }

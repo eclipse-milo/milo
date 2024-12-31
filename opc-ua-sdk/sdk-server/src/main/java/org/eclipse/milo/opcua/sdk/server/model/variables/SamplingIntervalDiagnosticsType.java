@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -13,30 +13,31 @@ package org.eclipse.milo.opcua.sdk.server.model.variables;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.10">https://reference.opcfoundation.org/v105/Core/docs/Part5/7.10</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.10">https://reference.opcfoundation.org/v105/Core/docs/Part5/7.10</a>
  */
 public interface SamplingIntervalDiagnosticsType extends BaseDataVariableType {
-    BaseDataVariableType getSamplingIntervalNode();
+  BaseDataVariableType getSamplingIntervalNode();
 
-    Double getSamplingInterval();
+  Double getSamplingInterval();
 
-    void setSamplingInterval(Double value);
+  void setSamplingInterval(Double value);
 
-    BaseDataVariableType getSampledMonitoredItemsCountNode();
+  BaseDataVariableType getSampledMonitoredItemsCountNode();
 
-    UInteger getSampledMonitoredItemsCount();
+  UInteger getSampledMonitoredItemsCount();
 
-    void setSampledMonitoredItemsCount(UInteger value);
+  void setSampledMonitoredItemsCount(UInteger value);
 
-    BaseDataVariableType getMaxSampledMonitoredItemsCountNode();
+  BaseDataVariableType getMaxSampledMonitoredItemsCountNode();
 
-    UInteger getMaxSampledMonitoredItemsCount();
+  UInteger getMaxSampledMonitoredItemsCount();
 
-    void setMaxSampledMonitoredItemsCount(UInteger value);
+  void setMaxSampledMonitoredItemsCount(UInteger value);
 
-    BaseDataVariableType getDisabledMonitoredItemsSamplingCountNode();
+  BaseDataVariableType getDisabledMonitoredItemsSamplingCountNode();
 
-    UInteger getDisabledMonitoredItemsSamplingCount();
+  UInteger getDisabledMonitoredItemsSamplingCount();
 
-    void setDisabledMonitoredItemsSamplingCount(UInteger value);
+  void setDisabledMonitoredItemsSamplingCount(UInteger value);
 }

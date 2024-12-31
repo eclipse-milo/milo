@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -17,20 +17,16 @@ import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 
 public final class AnonymousIdentityValidator extends AbstractIdentityValidator {
 
-    /**
-     * A static instance implementing AnonymousIdentityValidator
-     */
-    public static final AnonymousIdentityValidator INSTANCE = new AnonymousIdentityValidator();
+  /** A static instance implementing AnonymousIdentityValidator */
+  public static final AnonymousIdentityValidator INSTANCE = new AnonymousIdentityValidator();
 
-    @Override
-    public Identity.AnonymousIdentity validateAnonymousToken(
-        Session session,
-        AnonymousIdentityToken token,
-        UserTokenPolicy policy,
-        SignatureData signature
-    ) {
+  @Override
+  public Identity.AnonymousIdentity validateAnonymousToken(
+      Session session,
+      AnonymousIdentityToken token,
+      UserTokenPolicy policy,
+      SignatureData signature) {
 
-        return new DefaultAnonymousIdentity();
-    }
-
+    return new DefaultAnonymousIdentity();
+  }
 }

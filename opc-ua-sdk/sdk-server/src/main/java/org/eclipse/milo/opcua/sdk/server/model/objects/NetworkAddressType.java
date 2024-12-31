@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -13,12 +13,13 @@ package org.eclipse.milo.opcua.sdk.server.model.objects;
 import org.eclipse.milo.opcua.sdk.server.model.variables.SelectionListType;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.6">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.6</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.6">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.6</a>
  */
 public interface NetworkAddressType extends BaseObjectType {
-    SelectionListType getNetworkInterfaceNode();
+  SelectionListType getNetworkInterfaceNode();
 
-    String getNetworkInterface();
+  String getNetworkInterface();
 
-    void setNetworkInterface(String value);
+  void setNetworkInterface(String value);
 }

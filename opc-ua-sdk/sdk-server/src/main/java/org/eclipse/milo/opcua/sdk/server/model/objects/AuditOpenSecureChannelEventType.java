@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -18,104 +18,105 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.SecurityTokenRequestType;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.6">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.6</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.6">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.6</a>
  */
 public interface AuditOpenSecureChannelEventType extends AuditChannelEventType {
-    QualifiedProperty<ByteString> CLIENT_CERTIFICATE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ClientCertificate",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15"),
-        -1,
-        ByteString.class
-    );
+  QualifiedProperty<ByteString> CLIENT_CERTIFICATE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ClientCertificate",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15"),
+          -1,
+          ByteString.class);
 
-    QualifiedProperty<String> CLIENT_CERTIFICATE_THUMBPRINT = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ClientCertificateThumbprint",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-        -1,
-        String.class
-    );
+  QualifiedProperty<String> CLIENT_CERTIFICATE_THUMBPRINT =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ClientCertificateThumbprint",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          -1,
+          String.class);
 
-    QualifiedProperty<SecurityTokenRequestType> REQUEST_TYPE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "RequestType",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=315"),
-        -1,
-        SecurityTokenRequestType.class
-    );
+  QualifiedProperty<SecurityTokenRequestType> REQUEST_TYPE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "RequestType",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=315"),
+          -1,
+          SecurityTokenRequestType.class);
 
-    QualifiedProperty<String> SECURITY_POLICY_URI = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "SecurityPolicyUri",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-        -1,
-        String.class
-    );
+  QualifiedProperty<String> SECURITY_POLICY_URI =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "SecurityPolicyUri",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          -1,
+          String.class);
 
-    QualifiedProperty<MessageSecurityMode> SECURITY_MODE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "SecurityMode",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=302"),
-        -1,
-        MessageSecurityMode.class
-    );
+  QualifiedProperty<MessageSecurityMode> SECURITY_MODE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "SecurityMode",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=302"),
+          -1,
+          MessageSecurityMode.class);
 
-    QualifiedProperty<Double> REQUESTED_LIFETIME = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "RequestedLifetime",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-        -1,
-        Double.class
-    );
+  QualifiedProperty<Double> REQUESTED_LIFETIME =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "RequestedLifetime",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
+          -1,
+          Double.class);
 
-    QualifiedProperty<String> CERTIFICATE_ERROR_EVENT_ID = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "CertificateErrorEventId",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-        -1,
-        String.class
-    );
+  QualifiedProperty<String> CERTIFICATE_ERROR_EVENT_ID =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "CertificateErrorEventId",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          -1,
+          String.class);
 
-    ByteString getClientCertificate();
+  ByteString getClientCertificate();
 
-    void setClientCertificate(ByteString value);
+  void setClientCertificate(ByteString value);
 
-    PropertyType getClientCertificateNode();
+  PropertyType getClientCertificateNode();
 
-    String getClientCertificateThumbprint();
+  String getClientCertificateThumbprint();
 
-    void setClientCertificateThumbprint(String value);
+  void setClientCertificateThumbprint(String value);
 
-    PropertyType getClientCertificateThumbprintNode();
+  PropertyType getClientCertificateThumbprintNode();
 
-    SecurityTokenRequestType getRequestType();
+  SecurityTokenRequestType getRequestType();
 
-    void setRequestType(SecurityTokenRequestType value);
+  void setRequestType(SecurityTokenRequestType value);
 
-    PropertyType getRequestTypeNode();
+  PropertyType getRequestTypeNode();
 
-    String getSecurityPolicyUri();
+  String getSecurityPolicyUri();
 
-    void setSecurityPolicyUri(String value);
+  void setSecurityPolicyUri(String value);
 
-    PropertyType getSecurityPolicyUriNode();
+  PropertyType getSecurityPolicyUriNode();
 
-    MessageSecurityMode getSecurityMode();
+  MessageSecurityMode getSecurityMode();
 
-    void setSecurityMode(MessageSecurityMode value);
+  void setSecurityMode(MessageSecurityMode value);
 
-    PropertyType getSecurityModeNode();
+  PropertyType getSecurityModeNode();
 
-    Double getRequestedLifetime();
+  Double getRequestedLifetime();
 
-    void setRequestedLifetime(Double value);
+  void setRequestedLifetime(Double value);
 
-    PropertyType getRequestedLifetimeNode();
+  PropertyType getRequestedLifetimeNode();
 
-    String getCertificateErrorEventId();
+  String getCertificateErrorEventId();
 
-    void setCertificateErrorEventId(String value);
+  void setCertificateErrorEventId(String value);
 
-    PropertyType getCertificateErrorEventIdNode();
+  PropertyType getCertificateErrorEventIdNode();
 }

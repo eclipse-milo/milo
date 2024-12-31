@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -16,62 +16,63 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.8">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.8</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.8">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.8</a>
  */
 public interface AuditCreateSessionEventType extends AuditSessionEventType {
-    QualifiedProperty<String> SECURE_CHANNEL_ID = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "SecureChannelId",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-        -1,
-        String.class
-    );
+  QualifiedProperty<String> SECURE_CHANNEL_ID =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "SecureChannelId",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          -1,
+          String.class);
 
-    QualifiedProperty<ByteString> CLIENT_CERTIFICATE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ClientCertificate",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15"),
-        -1,
-        ByteString.class
-    );
+  QualifiedProperty<ByteString> CLIENT_CERTIFICATE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ClientCertificate",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15"),
+          -1,
+          ByteString.class);
 
-    QualifiedProperty<String> CLIENT_CERTIFICATE_THUMBPRINT = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ClientCertificateThumbprint",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-        -1,
-        String.class
-    );
+  QualifiedProperty<String> CLIENT_CERTIFICATE_THUMBPRINT =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ClientCertificateThumbprint",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          -1,
+          String.class);
 
-    QualifiedProperty<Double> REVISED_SESSION_TIMEOUT = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "RevisedSessionTimeout",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-        -1,
-        Double.class
-    );
+  QualifiedProperty<Double> REVISED_SESSION_TIMEOUT =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "RevisedSessionTimeout",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
+          -1,
+          Double.class);
 
-    String getSecureChannelId();
+  String getSecureChannelId();
 
-    void setSecureChannelId(String value);
+  void setSecureChannelId(String value);
 
-    PropertyType getSecureChannelIdNode();
+  PropertyType getSecureChannelIdNode();
 
-    ByteString getClientCertificate();
+  ByteString getClientCertificate();
 
-    void setClientCertificate(ByteString value);
+  void setClientCertificate(ByteString value);
 
-    PropertyType getClientCertificateNode();
+  PropertyType getClientCertificateNode();
 
-    String getClientCertificateThumbprint();
+  String getClientCertificateThumbprint();
 
-    void setClientCertificateThumbprint(String value);
+  void setClientCertificateThumbprint(String value);
 
-    PropertyType getClientCertificateThumbprintNode();
+  PropertyType getClientCertificateThumbprintNode();
 
-    Double getRevisedSessionTimeout();
+  Double getRevisedSessionTimeout();
 
-    void setRevisedSessionTimeout(Double value);
+  void setRevisedSessionTimeout(Double value);
 
-    PropertyType getRevisedSessionTimeoutNode();
+  PropertyType getRevisedSessionTimeoutNode();
 }

@@ -10,6 +10,10 @@
 
 package org.eclipse.milo.opcua.sdk.server.nodes;
 
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
+
 import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.server.AddressSpaceManager;
 import org.eclipse.milo.opcua.sdk.server.NodeManager;
@@ -34,150 +38,145 @@ import org.mockito.Mockito;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
-
 public class UaNodeTest {
 
-    private OpcUaServer server;
+  private OpcUaServer server;
 
-    @BeforeTest
-    public void setup() throws Exception {
-        server = Mockito.mock(OpcUaServer.class);
+  @BeforeTest
+  public void setup() throws Exception {
+    server = Mockito.mock(OpcUaServer.class);
 
-        AddressSpaceManager addressSpaceManager = new AddressSpaceManager(server);
-        NamespaceTable namespaceTable = new NamespaceTable();
-        ObjectTypeManager objectTypeManager = new ObjectTypeManager();
-        VariableTypeManager variableTypeManager = new VariableTypeManager();
+    AddressSpaceManager addressSpaceManager = new AddressSpaceManager(server);
+    NamespaceTable namespaceTable = new NamespaceTable();
+    ObjectTypeManager objectTypeManager = new ObjectTypeManager();
+    VariableTypeManager variableTypeManager = new VariableTypeManager();
 
-        Mockito.when(server.getNamespaceTable()).thenReturn(namespaceTable);
-        Mockito.when(server.getAddressSpaceManager()).thenReturn(addressSpaceManager);
-        Mockito.when(server.getObjectTypeManager()).thenReturn(objectTypeManager);
-        Mockito.when(server.getVariableTypeManager()).thenReturn(variableTypeManager);
-        Mockito.when(server.getEncodingContext()).thenReturn(DefaultEncodingContext.INSTANCE);
-        Mockito.when(server.getEncodingManager()).thenReturn(OpcUaEncodingManager.getInstance());
+    Mockito.when(server.getNamespaceTable()).thenReturn(namespaceTable);
+    Mockito.when(server.getAddressSpaceManager()).thenReturn(addressSpaceManager);
+    Mockito.when(server.getObjectTypeManager()).thenReturn(objectTypeManager);
+    Mockito.when(server.getVariableTypeManager()).thenReturn(variableTypeManager);
+    Mockito.when(server.getEncodingContext()).thenReturn(DefaultEncodingContext.INSTANCE);
+    Mockito.when(server.getEncodingManager()).thenReturn(OpcUaEncodingManager.getInstance());
 
-        UaNodeManager nodeManager = new UaNodeManager();
-        addressSpaceManager.register(nodeManager);
+    UaNodeManager nodeManager = new UaNodeManager();
+    addressSpaceManager.register(nodeManager);
 
-        UaNodeContext nodeContext = new UaNodeContext() {
-            @Override
-            public OpcUaServer getServer() {
-                return server;
-            }
+    UaNodeContext nodeContext =
+        new UaNodeContext() {
+          @Override
+          public OpcUaServer getServer() {
+            return server;
+          }
 
-            @Override
-            public NodeManager<UaNode> getNodeManager() {
-                return nodeManager;
-            }
+          @Override
+          public NodeManager<UaNode> getNodeManager() {
+            return nodeManager;
+          }
         };
 
-        new NodeLoader(nodeContext, nodeManager).loadNodes();
+    new NodeLoader(nodeContext, nodeManager).loadNodes();
 
-        ObjectTypeInitializer.initialize(
-            server.getNamespaceTable(),
-            objectTypeManager
-        );
+    ObjectTypeInitializer.initialize(server.getNamespaceTable(), objectTypeManager);
 
-        VariableTypeInitializer.initialize(
-            server.getNamespaceTable(),
-            variableTypeManager
-        );
-    }
+    VariableTypeInitializer.initialize(server.getNamespaceTable(), variableTypeManager);
+  }
 
-    @Test
-    public void testCreateDelete() {
-        NodeId nodeId = new NodeId(1, "TestObject");
+  @Test
+  public void testCreateDelete() {
+    NodeId nodeId = new NodeId(1, "TestObject");
 
-        UaNodeManager nodeManager = new UaNodeManager();
-        server.getAddressSpaceManager().register(nodeManager);
+    UaNodeManager nodeManager = new UaNodeManager();
+    server.getAddressSpaceManager().register(nodeManager);
 
-        UaNodeContext nodeContext = new UaNodeContext() {
-            @Override
-            public OpcUaServer getServer() {
-                return server;
-            }
+    UaNodeContext nodeContext =
+        new UaNodeContext() {
+          @Override
+          public OpcUaServer getServer() {
+            return server;
+          }
 
-            @Override
-            public NodeManager<UaNode> getNodeManager() {
-                return nodeManager;
-            }
+          @Override
+          public NodeManager<UaNode> getNodeManager() {
+            return nodeManager;
+          }
         };
 
-        assertFalse(nodeManager.containsNode(nodeId));
-        assertEquals(0, nodeManager.getReferences(nodeId).size());
+    assertFalse(nodeManager.containsNode(nodeId));
+    assertEquals(0, nodeManager.getReferences(nodeId).size());
 
-        UaObjectNode objectNode = UaObjectNode.build(nodeContext, b ->
-            b.setNodeId(nodeId)
-                .setBrowseName(new QualifiedName(1, "TestObject"))
-                .setDisplayName(LocalizedText.english("TestObject"))
-                .setTypeDefinition(NodeIds.FolderType)
-                .build()
-        );
+    UaObjectNode objectNode =
+        UaObjectNode.build(
+            nodeContext,
+            b ->
+                b.setNodeId(nodeId)
+                    .setBrowseName(new QualifiedName(1, "TestObject"))
+                    .setDisplayName(LocalizedText.english("TestObject"))
+                    .setTypeDefinition(NodeIds.FolderType)
+                    .build());
 
-        nodeManager.addNode(objectNode);
+    nodeManager.addNode(objectNode);
 
-        objectNode.addReference(new Reference(
+    objectNode.addReference(
+        new Reference(
             nodeId,
             NodeIds.HasComponent,
             NodeIds.ObjectNode.expanded(),
-            Reference.Direction.INVERSE
-        ));
+            Reference.Direction.INVERSE));
 
-        assertTrue(nodeManager.containsNode(nodeId));
-        assertTrue(nodeManager.getReferences(nodeId).size() > 0);
-        assertTrue(nodeManager.getReferences(NodeIds.ObjectNode).size() > 0);
+    assertTrue(nodeManager.containsNode(nodeId));
+    assertTrue(nodeManager.getReferences(nodeId).size() > 0);
+    assertTrue(nodeManager.getReferences(NodeIds.ObjectNode).size() > 0);
 
-        objectNode.delete();
+    objectNode.delete();
 
-        assertFalse(nodeManager.containsNode(nodeId));
-        assertEquals(0, nodeManager.getReferences(nodeId).size());
-        assertEquals(0, nodeManager.getReferences(NodeIds.ObjectNode).size());
-    }
+    assertFalse(nodeManager.containsNode(nodeId));
+    assertEquals(0, nodeManager.getReferences(nodeId).size());
+    assertEquals(0, nodeManager.getReferences(NodeIds.ObjectNode).size());
+  }
 
-    @Test
-    public void testCreateDeleteComplexInstance() throws UaException {
-        NodeId nodeId = new NodeId(1, "TestAnalog");
+  @Test
+  public void testCreateDeleteComplexInstance() throws UaException {
+    NodeId nodeId = new NodeId(1, "TestAnalog");
 
-        UaNodeManager nodeManager = new UaNodeManager();
-        server.getAddressSpaceManager().register(nodeManager);
+    UaNodeManager nodeManager = new UaNodeManager();
+    server.getAddressSpaceManager().register(nodeManager);
 
-        assertFalse(nodeManager.containsNode(nodeId));
-        assertEquals(0, nodeManager.getReferences(nodeId).size());
+    assertFalse(nodeManager.containsNode(nodeId));
+    assertEquals(0, nodeManager.getReferences(nodeId).size());
 
-        NodeFactory nodeFactory = new NodeFactory(
+    NodeFactory nodeFactory =
+        new NodeFactory(
             new UaNodeContext() {
-                @Override
-                public OpcUaServer getServer() {
-                    return server;
-                }
+              @Override
+              public OpcUaServer getServer() {
+                return server;
+              }
 
-                @Override
-                public NodeManager<UaNode> getNodeManager() {
-                    return nodeManager;
-                }
-            }
-        );
+              @Override
+              public NodeManager<UaNode> getNodeManager() {
+                return nodeManager;
+              }
+            });
 
-        AnalogItemTypeNode analogItem = (AnalogItemTypeNode) nodeFactory.createNode(
-            nodeId,
-            NodeIds.AnalogItemType,
-            new NodeFactory.InstantiationCallback() {
-                @Override
-                public boolean includeOptionalNode(NodeId typeDefinitionId, QualifiedName browseName) {
+    AnalogItemTypeNode analogItem =
+        (AnalogItemTypeNode)
+            nodeFactory.createNode(
+                nodeId,
+                NodeIds.AnalogItemType,
+                new NodeFactory.InstantiationCallback() {
+                  @Override
+                  public boolean includeOptionalNode(
+                      NodeId typeDefinitionId, QualifiedName browseName) {
                     return true;
-                }
-            }
-        );
+                  }
+                });
 
-        assertTrue(nodeManager.containsNode(nodeId));
-        assertTrue(nodeManager.getReferences(nodeId).size() > 0);
+    assertTrue(nodeManager.containsNode(nodeId));
+    assertTrue(nodeManager.getReferences(nodeId).size() > 0);
 
-        analogItem.delete();
+    analogItem.delete();
 
-        assertFalse(nodeManager.containsNode(nodeId));
-        assertEquals(0, nodeManager.getReferences(nodeId).size());
-    }
-
+    assertFalse(nodeManager.containsNode(nodeId));
+    assertEquals(0, nodeManager.getReferences(nodeId).size());
+  }
 }

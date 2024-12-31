@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -20,33 +20,34 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 
 class DynamicOptionSetCodec extends GenericDataTypeCodec<DynamicOptionSet> {
 
-    private final DataType dataType;
+  private final DataType dataType;
 
-    DynamicOptionSetCodec(DataType dataType) {
-        this.dataType = dataType;
-    }
+  DynamicOptionSetCodec(DataType dataType) {
+    this.dataType = dataType;
+  }
 
-    @Override
-    public Class<DynamicOptionSet> getType() {
-        return DynamicOptionSet.class;
-    }
+  @Override
+  public Class<DynamicOptionSet> getType() {
+    return DynamicOptionSet.class;
+  }
 
-    @Override
-    public DynamicOptionSet decodeType(EncodingContext context, UaDecoder decoder) throws UaSerializationException {
-        ByteString value = decoder.decodeByteString("Value");
-        ByteString validBits = decoder.decodeByteString("ValidBits");
+  @Override
+  public DynamicOptionSet decodeType(EncodingContext context, UaDecoder decoder)
+      throws UaSerializationException {
+    ByteString value = decoder.decodeByteString("Value");
+    ByteString validBits = decoder.decodeByteString("ValidBits");
 
-        var optionSet = new DynamicOptionSet(dataType);
-        optionSet.setValue(value);
-        optionSet.setValidBits(validBits);
+    var optionSet = new DynamicOptionSet(dataType);
+    optionSet.setValue(value);
+    optionSet.setValidBits(validBits);
 
-        return optionSet;
-    }
+    return optionSet;
+  }
 
-    @Override
-    public void encodeType(EncodingContext context, UaEncoder encoder, DynamicOptionSet value) throws UaSerializationException {
-        encoder.encodeByteString("Valid", value.getValue());
-        encoder.encodeByteString("ValidBits", value.getValidBits());
-    }
-
+  @Override
+  public void encodeType(EncodingContext context, UaEncoder encoder, DynamicOptionSet value)
+      throws UaSerializationException {
+    encoder.encodeByteString("Valid", value.getValue());
+    encoder.encodeByteString("ValidBits", value.getValidBits());
+  }
 }

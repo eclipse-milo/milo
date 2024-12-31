@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -17,52 +17,53 @@ import org.eclipse.milo.opcua.stack.core.types.structured.CartesianCoordinates;
 import org.eclipse.milo.opcua.stack.core.types.structured.Orientation;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.27">https://reference.opcfoundation.org/v105/Core/docs/Part5/7.27</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.27">https://reference.opcfoundation.org/v105/Core/docs/Part5/7.27</a>
  */
 public interface FrameType extends BaseDataVariableType {
-    QualifiedProperty<Boolean> CONSTANT = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "Constant",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-        -1,
-        Boolean.class
-    );
+  QualifiedProperty<Boolean> CONSTANT =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "Constant",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          -1,
+          Boolean.class);
 
-    QualifiedProperty<Boolean> FIXED_BASE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "FixedBase",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-        -1,
-        Boolean.class
-    );
+  QualifiedProperty<Boolean> FIXED_BASE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "FixedBase",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          -1,
+          Boolean.class);
 
-    Boolean getConstant();
+  Boolean getConstant();
 
-    void setConstant(Boolean value);
+  void setConstant(Boolean value);
 
-    PropertyType getConstantNode();
+  PropertyType getConstantNode();
 
-    Boolean getFixedBase();
+  Boolean getFixedBase();
 
-    void setFixedBase(Boolean value);
+  void setFixedBase(Boolean value);
 
-    PropertyType getFixedBaseNode();
+  PropertyType getFixedBaseNode();
 
-    CartesianCoordinatesType getCartesianCoordinatesNode();
+  CartesianCoordinatesType getCartesianCoordinatesNode();
 
-    CartesianCoordinates getCartesianCoordinates();
+  CartesianCoordinates getCartesianCoordinates();
 
-    void setCartesianCoordinates(CartesianCoordinates value);
+  void setCartesianCoordinates(CartesianCoordinates value);
 
-    OrientationType getOrientationNode();
+  OrientationType getOrientationNode();
 
-    Orientation getOrientation();
+  Orientation getOrientation();
 
-    void setOrientation(Orientation value);
+  void setOrientation(Orientation value);
 
-    BaseDataVariableType getBaseFrameNode();
+  BaseDataVariableType getBaseFrameNode();
 
-    NodeId getBaseFrame();
+  NodeId getBaseFrame();
 
-    void setBaseFrame(NodeId value);
+  void setBaseFrame(NodeId value);
 }

@@ -10,6 +10,11 @@
 
 package org.eclipse.milo.opcua.sdk.server;
 
+import static java.util.stream.Collectors.toList;
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
+
+import com.google.common.collect.Sets;
+import com.google.common.eventbus.EventBus;
 import java.net.InetSocketAddress;
 import java.security.KeyPair;
 import java.security.cert.CertificateEncodingException;
@@ -30,9 +35,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import com.google.common.collect.Sets;
-import com.google.common.eventbus.EventBus;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
 import org.eclipse.milo.opcua.sdk.core.typetree.ReferenceTypeTree;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.ServerDiagnosticsSummary;
@@ -90,678 +92,669 @@ import org.eclipse.milo.opcua.stack.transport.server.OpcServerTransport;
 import org.eclipse.milo.opcua.stack.transport.server.OpcServerTransportFactory;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.server.ServiceRequestContext;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.stream.Collectors.toList;
-import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
-
 public class OpcUaServer extends AbstractServiceHandler {
 
-    public static final String SDK_VERSION =
-        ManifestUtil.read("X-SDK-Version").orElse("dev");
+  public static final String SDK_VERSION = ManifestUtil.read("X-SDK-Version").orElse("dev");
 
-    static {
-        Logger logger = LoggerFactory.getLogger(OpcUaServer.class);
-        logger.info("Java version: " + System.getProperty("java.version"));
-        logger.info("Eclipse Milo OPC UA Stack version: {}", Stack.VERSION);
-        logger.info("Eclipse Milo OPC UA Server SDK version: {}", SDK_VERSION);
-    }
+  static {
+    Logger logger = LoggerFactory.getLogger(OpcUaServer.class);
+    logger.info("Java version: " + System.getProperty("java.version"));
+    logger.info("Eclipse Milo OPC UA Stack version: {}", Stack.VERSION);
+    logger.info("Eclipse Milo OPC UA Server SDK version: {}", SDK_VERSION);
+  }
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final Lazy<ApplicationDescription> applicationDescription = new Lazy<>();
+  private final Lazy<ApplicationDescription> applicationDescription = new Lazy<>();
 
-    private final Map<UInteger, Subscription> subscriptions = new ConcurrentHashMap<>();
-    private final AtomicLong monitoredItemCount = new AtomicLong(0L);
+  private final Map<UInteger, Subscription> subscriptions = new ConcurrentHashMap<>();
+  private final AtomicLong monitoredItemCount = new AtomicLong(0L);
 
-    private final NamespaceTable namespaceTable = new NamespaceTable();
-    private final ServerTable serverTable = new ServerTable();
+  private final NamespaceTable namespaceTable = new NamespaceTable();
+  private final ServerTable serverTable = new ServerTable();
 
-    private final AddressSpaceManager addressSpaceManager = new AddressSpaceManager(this);
-    private final SessionManager sessionManager = new SessionManager(this);
+  private final AddressSpaceManager addressSpaceManager = new AddressSpaceManager(this);
+  private final SessionManager sessionManager = new SessionManager(this);
 
-    private final EncodingManager encodingManager =
-        DefaultEncodingManager.createAndInitialize();
+  private final EncodingManager encodingManager = DefaultEncodingManager.createAndInitialize();
 
-    private final ObjectTypeManager objectTypeManager = new ObjectTypeManager();
-    private final VariableTypeManager variableTypeManager = new VariableTypeManager();
+  private final ObjectTypeManager objectTypeManager = new ObjectTypeManager();
+  private final VariableTypeManager variableTypeManager = new VariableTypeManager();
 
-    private final Lazy<DataTypeTree> dataTypeTree = new Lazy<>();
-    private final Lazy<ReferenceTypeTree> referenceTypeTree = new Lazy<>();
+  private final Lazy<DataTypeTree> dataTypeTree = new Lazy<>();
+  private final Lazy<ReferenceTypeTree> referenceTypeTree = new Lazy<>();
 
-    private final DataTypeManager dataTypeManager =
-        DefaultDataTypeManager.createAndInitialize(namespaceTable);
+  private final DataTypeManager dataTypeManager =
+      DefaultDataTypeManager.createAndInitialize(namespaceTable);
 
-    private final Set<NodeId> registeredViews = Sets.newConcurrentHashSet();
+  private final Set<NodeId> registeredViews = Sets.newConcurrentHashSet();
 
-    private final ServerDiagnosticsSummary diagnosticsSummary = new ServerDiagnosticsSummary(this);
+  private final ServerDiagnosticsSummary diagnosticsSummary = new ServerDiagnosticsSummary(this);
 
-    /**
-     * SecureChannel id sequence, starting at a random value in [1..{@link Integer#MAX_VALUE}],
-     * and wrapping back to 1 after {@link UInteger#MAX_VALUE}.
-     */
-    private final LongSequence secureChannelIds =
-        new LongSequence(1L, UInteger.MAX_VALUE, new Random().nextInt(Integer.MAX_VALUE - 1) + 1);
+  /**
+   * SecureChannel id sequence, starting at a random value in [1..{@link Integer#MAX_VALUE}], and
+   * wrapping back to 1 after {@link UInteger#MAX_VALUE}.
+   */
+  private final LongSequence secureChannelIds =
+      new LongSequence(1L, UInteger.MAX_VALUE, new Random().nextInt(Integer.MAX_VALUE - 1) + 1);
 
-    private final AtomicLong secureChannelTokenIds = new AtomicLong();
+  private final AtomicLong secureChannelTokenIds = new AtomicLong();
 
-    private final Map<TransportProfile, OpcServerTransport> transports = new ConcurrentHashMap<>();
+  private final Map<TransportProfile, OpcServerTransport> transports = new ConcurrentHashMap<>();
 
-    private final EventBus eventBus = new EventBus("server");
-    private final EventFactory eventFactory = new EventFactory(this);
-    private final EventNotifier eventNotifier = new ServerEventNotifier();
+  private final EventBus eventBus = new EventBus("server");
+  private final EventFactory eventFactory = new EventFactory(this);
+  private final EventNotifier eventNotifier = new ServerEventNotifier();
 
-    private final EncodingContext encodingContext;
+  private final EncodingContext encodingContext;
 
-    private final OpcUaNamespace opcUaNamespace;
-    private final ServerNamespace serverNamespace;
+  private final OpcUaNamespace opcUaNamespace;
+  private final ServerNamespace serverNamespace;
 
-    private final AccessController accessController;
+  private final AccessController accessController;
 
-    private final OpcUaServerConfig config;
-    private final OpcServerTransportFactory transportFactory;
-    private final ServerApplicationContext applicationContext;
+  private final OpcUaServerConfig config;
+  private final OpcServerTransportFactory transportFactory;
+  private final ServerApplicationContext applicationContext;
 
-    public OpcUaServer(OpcUaServerConfig config, OpcServerTransportFactory transportFactory) {
-        this.config = config;
-        this.transportFactory = transportFactory;
+  public OpcUaServer(OpcUaServerConfig config, OpcServerTransportFactory transportFactory) {
+    this.config = config;
+    this.transportFactory = transportFactory;
 
-        applicationContext = new ServerApplicationContextImpl();
+    applicationContext = new ServerApplicationContextImpl();
 
-        encodingContext = new EncodingContext() {
-            @Override
-            public DataTypeManager getDataTypeManager() {
-                return dataTypeManager;
-            }
+    encodingContext =
+        new EncodingContext() {
+          @Override
+          public DataTypeManager getDataTypeManager() {
+            return dataTypeManager;
+          }
 
-            @Override
-            public EncodingManager getEncodingManager() {
-                return encodingManager;
-            }
+          @Override
+          public EncodingManager getEncodingManager() {
+            return encodingManager;
+          }
 
-            @Override
-            public EncodingLimits getEncodingLimits() {
-                return config.getEncodingLimits();
-            }
+          @Override
+          public EncodingLimits getEncodingLimits() {
+            return config.getEncodingLimits();
+          }
 
-            @Override
-            public NamespaceTable getNamespaceTable() {
-                return namespaceTable;
-            }
+          @Override
+          public NamespaceTable getNamespaceTable() {
+            return namespaceTable;
+          }
 
-            @Override
-            public ServerTable getServerTable() {
-                return serverTable;
-            }
+          @Override
+          public ServerTable getServerTable() {
+            return serverTable;
+          }
         };
 
-        Stream<String> paths = config.getEndpoints()
-            .stream()
+    Stream<String> paths =
+        config.getEndpoints().stream()
             .map(e -> EndpointUtil.getPath(e.getEndpointUrl()))
             .distinct();
 
-        paths.forEach(path -> {
-            addServiceSet(path, new DefaultDiscoveryServiceSet(OpcUaServer.this));
+    paths.forEach(
+        path -> {
+          addServiceSet(path, new DefaultDiscoveryServiceSet(OpcUaServer.this));
 
-            if (!path.endsWith("/discovery")) {
-                addServiceSet(path, new DefaultAttributeServiceSet(OpcUaServer.this));
-                addServiceSet(path, new DefaultMethodServiceSet(OpcUaServer.this));
-                addServiceSet(path, new DefaultMonitoredItemServiceSet(OpcUaServer.this));
-                addServiceSet(path, new DefaultNodeManagementServiceSet(OpcUaServer.this));
-                addServiceSet(path, new DefaultSessionServiceSet(OpcUaServer.this));
-                addServiceSet(path, new DefaultSubscriptionServiceSet(OpcUaServer.this));
-                addServiceSet(path, new DefaultViewServiceSet(OpcUaServer.this));
-            }
+          if (!path.endsWith("/discovery")) {
+            addServiceSet(path, new DefaultAttributeServiceSet(OpcUaServer.this));
+            addServiceSet(path, new DefaultMethodServiceSet(OpcUaServer.this));
+            addServiceSet(path, new DefaultMonitoredItemServiceSet(OpcUaServer.this));
+            addServiceSet(path, new DefaultNodeManagementServiceSet(OpcUaServer.this));
+            addServiceSet(path, new DefaultSessionServiceSet(OpcUaServer.this));
+            addServiceSet(path, new DefaultSubscriptionServiceSet(OpcUaServer.this));
+            addServiceSet(path, new DefaultViewServiceSet(OpcUaServer.this));
+          }
         });
 
-        ObjectTypeInitializer.initialize(namespaceTable, objectTypeManager);
+    ObjectTypeInitializer.initialize(namespaceTable, objectTypeManager);
 
-        VariableTypeInitializer.initialize(namespaceTable, variableTypeManager);
+    VariableTypeInitializer.initialize(namespaceTable, variableTypeManager);
 
-        serverTable.add(config.getApplicationUri());
+    serverTable.add(config.getApplicationUri());
 
-        opcUaNamespace = new OpcUaNamespace(this);
-        opcUaNamespace.startup();
+    opcUaNamespace = new OpcUaNamespace(this);
+    opcUaNamespace.startup();
 
-        serverNamespace = new ServerNamespace(this);
-        serverNamespace.startup();
+    serverNamespace = new ServerNamespace(this);
+    serverNamespace.startup();
 
-        accessController = new DefaultAccessController(this);
-    }
+    accessController = new DefaultAccessController(this);
+  }
 
-    public CompletableFuture<OpcUaServer> startup() {
-        eventFactory.startup();
+  public CompletableFuture<OpcUaServer> startup() {
+    eventFactory.startup();
 
-        config.getEndpoints()
-            .stream()
-            .sorted(Comparator.comparing(EndpointConfig::getTransportProfile))
-            .forEach(endpoint -> {
-                logger.info(
-                    "Binding endpoint {} to {}:{} [{}/{}]",
-                    endpoint.getEndpointUrl(),
-                    endpoint.getBindAddress(),
-                    endpoint.getBindPort(),
-                    endpoint.getSecurityPolicy(),
-                    endpoint.getSecurityMode()
-                );
+    config.getEndpoints().stream()
+        .sorted(Comparator.comparing(EndpointConfig::getTransportProfile))
+        .forEach(
+            endpoint -> {
+              logger.info(
+                  "Binding endpoint {} to {}:{} [{}/{}]",
+                  endpoint.getEndpointUrl(),
+                  endpoint.getBindAddress(),
+                  endpoint.getBindPort(),
+                  endpoint.getSecurityPolicy(),
+                  endpoint.getSecurityMode());
 
-                TransportProfile transportProfile = endpoint.getTransportProfile();
+              TransportProfile transportProfile = endpoint.getTransportProfile();
 
-                OpcServerTransport transport = transports.computeIfAbsent(
-                    transportProfile,
-                    transportFactory::create
-                );
+              OpcServerTransport transport =
+                  transports.computeIfAbsent(transportProfile, transportFactory::create);
 
-                if (transport != null) {
-                    try {
-                        var bindAddress = new InetSocketAddress(endpoint.getBindAddress(), endpoint.getBindPort());
-                        transport.bind(applicationContext, bindAddress);
+              if (transport != null) {
+                try {
+                  var bindAddress =
+                      new InetSocketAddress(endpoint.getBindAddress(), endpoint.getBindPort());
+                  transport.bind(applicationContext, bindAddress);
 
-                        transports.put(transportProfile, transport);
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                } else {
-                    logger.warn("No OpcServerTransport for TransportProfile: {}", transportProfile);
+                  transports.put(transportProfile, transport);
+                } catch (Exception e) {
+                  throw new RuntimeException(e);
                 }
+              } else {
+                logger.warn("No OpcServerTransport for TransportProfile: {}", transportProfile);
+              }
             });
 
-        return CompletableFuture.completedFuture(this);
-    }
+    return CompletableFuture.completedFuture(this);
+  }
 
-    public CompletableFuture<OpcUaServer> shutdown() {
-        serverNamespace.shutdown();
-        opcUaNamespace.shutdown();
+  public CompletableFuture<OpcUaServer> shutdown() {
+    serverNamespace.shutdown();
+    opcUaNamespace.shutdown();
 
-        eventFactory.shutdown();
+    eventFactory.shutdown();
 
-        subscriptions.values()
-            .forEach(Subscription::deleteSubscription);
+    subscriptions.values().forEach(Subscription::deleteSubscription);
 
-        transports.values().forEach(transport -> {
-            try {
+    transports
+        .values()
+        .forEach(
+            transport -> {
+              try {
                 transport.unbind();
-            } catch (Exception e) {
+              } catch (Exception e) {
                 logger.warn("Error unbinding transport", e);
-            }
-        });
-        transports.clear();
+              }
+            });
+    transports.clear();
 
-        return CompletableFuture.completedFuture(this);
+    return CompletableFuture.completedFuture(this);
+  }
+
+  public OpcUaServerConfig getConfig() {
+    return config;
+  }
+
+  public AccessController getAccessController() {
+    return accessController;
+  }
+
+  public ServerApplicationContext getApplicationContext() {
+    return applicationContext;
+  }
+
+  public AddressSpaceManager getAddressSpaceManager() {
+    return addressSpaceManager;
+  }
+
+  public SessionManager getSessionManager() {
+    return sessionManager;
+  }
+
+  public OpcUaNamespace getOpcUaNamespace() {
+    return opcUaNamespace;
+  }
+
+  public ServerNamespace getServerNamespace() {
+    return serverNamespace;
+  }
+
+  public DataTypeManager getDataTypeManager() {
+    return dataTypeManager;
+  }
+
+  public EncodingManager getEncodingManager() {
+    return encodingManager;
+  }
+
+  public NamespaceTable getNamespaceTable() {
+    return namespaceTable;
+  }
+
+  public ServerTable getServerTable() {
+    return serverTable;
+  }
+
+  public EncodingContext getEncodingContext() {
+    return encodingContext;
+  }
+
+  public ServerDiagnosticsSummary getDiagnosticsSummary() {
+    return diagnosticsSummary;
+  }
+
+  /**
+   * Get an internal EventBus used to decouple communication between internal components of the
+   * Server implementation.
+   *
+   * <p>This EventBus is not intended for use by user implementations.
+   *
+   * @return an internal EventBus used to decouple communication between internal components of the
+   *     Server implementation.
+   */
+  public EventBus getInternalEventBus() {
+    return eventBus;
+  }
+
+  /**
+   * Get the shared {@link EventFactory}.
+   *
+   * @return the shared {@link EventFactory}.
+   */
+  public EventFactory getEventFactory() {
+    return eventFactory;
+  }
+
+  /**
+   * Get the Server's {@link EventNotifier}.
+   *
+   * @return the Server's {@link EventNotifier}.
+   */
+  public EventNotifier getEventNotifier() {
+    return eventNotifier;
+  }
+
+  public ObjectTypeManager getObjectTypeManager() {
+    return objectTypeManager;
+  }
+
+  public VariableTypeManager getVariableTypeManager() {
+    return variableTypeManager;
+  }
+
+  /**
+   * Get the Server's {@link DataTypeTree}.
+   *
+   * @return the Server's {@link DataTypeTree}.
+   */
+  public DataTypeTree getDataTypeTree() {
+    return dataTypeTree.get(() -> DataTypeTreeBuilder.build(this));
+  }
+
+  /**
+   * Re-build and return the Server's {@link DataTypeTree}.
+   *
+   * @return the re-built {@link DataTypeTree}.
+   */
+  public DataTypeTree updateDataTypeTree() {
+    dataTypeTree.reset();
+
+    return getDataTypeTree();
+  }
+
+  /**
+   * Get the Server's {@link ReferenceTypeTree}.
+   *
+   * @return the Server's {@link ReferenceTypeTree}.
+   */
+  public ReferenceTypeTree getReferenceTypeTree() {
+    return referenceTypeTree.get(() -> ReferenceTypeTreeBuilder.build(this));
+  }
+
+  /**
+   * Re-build and return the Server's {@link ReferenceTypeTree}.
+   *
+   * @return the re-built {@link ReferenceTypeTree}.
+   */
+  public ReferenceTypeTree updateReferenceTypeTree() {
+    referenceTypeTree.reset();
+
+    return getReferenceTypeTree();
+  }
+
+  public Set<NodeId> getRegisteredViews() {
+    return registeredViews;
+  }
+
+  public Map<UInteger, Subscription> getSubscriptions() {
+    return subscriptions;
+  }
+
+  public AtomicLong getMonitoredItemCount() {
+    return monitoredItemCount;
+  }
+
+  public Optional<KeyPair> getKeyPair(ByteString thumbprint) {
+    return config.getCertificateManager().getKeyPair(thumbprint);
+  }
+
+  public Optional<X509Certificate> getCertificate(ByteString thumbprint) {
+    return config.getCertificateManager().getCertificate(thumbprint);
+  }
+
+  public Optional<X509Certificate[]> getCertificateChain(ByteString thumbprint) {
+    return config.getCertificateManager().getCertificateChain(thumbprint);
+  }
+
+  public ExecutorService getExecutorService() {
+    return config.getExecutor();
+  }
+
+  public ScheduledExecutorService getScheduledExecutorService() {
+    return config.getScheduledExecutorService();
+  }
+
+  public Optional<RoleMapper> getRoleMapper() {
+    return config.getRoleMapper();
+  }
+
+  private class ServerApplicationContextImpl implements ServerApplicationContext {
+
+    @Override
+    public List<EndpointDescription> getEndpointDescriptions() {
+      return config.getEndpoints().stream()
+          .map(this::transformEndpoint)
+          .collect(Collectors.toUnmodifiableList());
     }
 
-    public OpcUaServerConfig getConfig() {
-        return config;
-    }
-
-    public AccessController getAccessController() {
-        return accessController;
-    }
-
-    public ServerApplicationContext getApplicationContext() {
-        return applicationContext;
-    }
-
-    public AddressSpaceManager getAddressSpaceManager() {
-        return addressSpaceManager;
-    }
-
-    public SessionManager getSessionManager() {
-        return sessionManager;
-    }
-
-    public OpcUaNamespace getOpcUaNamespace() {
-        return opcUaNamespace;
-    }
-
-    public ServerNamespace getServerNamespace() {
-        return serverNamespace;
-    }
-
-    public DataTypeManager getDataTypeManager() {
-        return dataTypeManager;
-    }
-
-    public EncodingManager getEncodingManager() {
-        return encodingManager;
-    }
-
-    public NamespaceTable getNamespaceTable() {
-        return namespaceTable;
-    }
-
-    public ServerTable getServerTable() {
-        return serverTable;
-    }
-
+    @Override
     public EncodingContext getEncodingContext() {
-        return encodingContext;
+      return encodingContext;
     }
 
-    public ServerDiagnosticsSummary getDiagnosticsSummary() {
-        return diagnosticsSummary;
+    @Override
+    public CertificateManager getCertificateManager() {
+      return config.getCertificateManager();
     }
 
-    /**
-     * Get an internal EventBus used to decouple communication between internal components of the
-     * Server implementation.
-     * <p>
-     * This EventBus is not intended for use by user implementations.
-     *
-     * @return an internal EventBus used to decouple communication between internal components of
-     *     the Server implementation.
-     */
-    public EventBus getInternalEventBus() {
-        return eventBus;
+    @Override
+    public Long getNextSecureChannelId() {
+      return secureChannelIds.getAndIncrement();
     }
 
-    /**
-     * Get the shared {@link EventFactory}.
-     *
-     * @return the shared {@link EventFactory}.
-     */
-    public EventFactory getEventFactory() {
-        return eventFactory;
+    @Override
+    public Long getNextSecureChannelTokenId() {
+      return secureChannelTokenIds.getAndIncrement();
     }
 
-    /**
-     * Get the Server's {@link EventNotifier}.
-     *
-     * @return the Server's {@link EventNotifier}.
-     */
-    public EventNotifier getEventNotifier() {
-        return eventNotifier;
+    @Override
+    public CompletableFuture<UaResponseMessageType> handleServiceRequest(
+        ServiceRequestContext context, UaRequestMessageType requestMessage) {
+
+      var future = new CompletableFuture<UaResponseMessageType>();
+
+      getExecutorService().execute(() -> handleServiceRequest(context, requestMessage, future));
+
+      return future;
     }
 
-    public ObjectTypeManager getObjectTypeManager() {
-        return objectTypeManager;
-    }
+    private void handleServiceRequest(
+        ServiceRequestContext context,
+        UaRequestMessageType requestMessage,
+        CompletableFuture<UaResponseMessageType> future) {
 
-    public VariableTypeManager getVariableTypeManager() {
-        return variableTypeManager;
-    }
+      String path = EndpointUtil.getPath(context.getEndpointUrl());
 
-    /**
-     * Get the Server's {@link DataTypeTree}.
-     *
-     * @return the Server's {@link DataTypeTree}.
-     */
-    public DataTypeTree getDataTypeTree() {
-        return dataTypeTree.get(() -> DataTypeTreeBuilder.build(this));
-    }
+      if (context.getSecureChannel().getSecurityPolicy() == SecurityPolicy.None) {
+        if (getEndpointDescriptions().stream()
+            .filter(e -> EndpointUtil.getPath(e.getEndpointUrl()).equals(path))
+            .filter(
+                e ->
+                    Objects.equals(
+                        e.getTransportProfileUri(), context.getTransportProfile().getUri()))
+            .noneMatch(
+                e -> Objects.equals(e.getSecurityPolicyUri(), SecurityPolicy.None.getUri()))) {
 
-    /**
-     * Re-build and return the Server's {@link DataTypeTree}.
-     *
-     * @return the re-built {@link DataTypeTree}.
-     */
-    public DataTypeTree updateDataTypeTree() {
-        dataTypeTree.reset();
+          if (!isDiscoveryService(requestMessage)) {
+            var errorMessage =
+                new ErrorMessage(
+                    StatusCodes.Bad_SecurityPolicyRejected,
+                    StatusCodes.lookup(StatusCodes.Bad_SecurityPolicyRejected)
+                        .map(ss -> ss[1])
+                        .orElse(""));
 
-        return getDataTypeTree();
-    }
+            context.getChannel().pipeline().fireUserEventTriggered(errorMessage);
 
-    /**
-     * Get the Server's {@link ReferenceTypeTree}.
-     *
-     * @return the Server's {@link ReferenceTypeTree}.
-     */
-    public ReferenceTypeTree getReferenceTypeTree() {
-        return referenceTypeTree.get(() -> ReferenceTypeTreeBuilder.build(this));
-    }
+            future.completeExceptionally(new UaException(StatusCodes.Bad_SecurityPolicyRejected));
+            return;
+          }
+        }
+      }
 
-    /**
-     * Re-build and return the Server's {@link ReferenceTypeTree}.
-     *
-     * @return the re-built {@link ReferenceTypeTree}.
-     */
-    public ReferenceTypeTree updateReferenceTypeTree() {
-        referenceTypeTree.reset();
+      Service service = Service.from(requestMessage.getTypeId());
+      ServiceHandler serviceHandler = service != null ? getServiceHandler(path, service) : null;
 
-        return getReferenceTypeTree();
-    }
-
-    public Set<NodeId> getRegisteredViews() {
-        return registeredViews;
-    }
-
-    public Map<UInteger, Subscription> getSubscriptions() {
-        return subscriptions;
-    }
-
-    public AtomicLong getMonitoredItemCount() {
-        return monitoredItemCount;
-    }
-
-    public Optional<KeyPair> getKeyPair(ByteString thumbprint) {
-        return config.getCertificateManager().getKeyPair(thumbprint);
-    }
-
-    public Optional<X509Certificate> getCertificate(ByteString thumbprint) {
-        return config.getCertificateManager().getCertificate(thumbprint);
-    }
-
-    public Optional<X509Certificate[]> getCertificateChain(ByteString thumbprint) {
-        return config.getCertificateManager().getCertificateChain(thumbprint);
-    }
-
-    public ExecutorService getExecutorService() {
-        return config.getExecutor();
-    }
-
-    public ScheduledExecutorService getScheduledExecutorService() {
-        return config.getScheduledExecutorService();
-    }
-
-    public Optional<RoleMapper> getRoleMapper() {
-        return config.getRoleMapper();
-    }
-
-    private class ServerApplicationContextImpl implements ServerApplicationContext {
-
-        @Override
-        public List<EndpointDescription> getEndpointDescriptions() {
-            return config.getEndpoints()
-                .stream()
-                .map(this::transformEndpoint)
-                .collect(Collectors.toUnmodifiableList());
+      if (serviceHandler != null) {
+        if (logger.isTraceEnabled()) {
+          logger.trace(
+              "Service request received: path={} handle={} service={} remote={}",
+              path,
+              requestMessage.getRequestHeader().getRequestHandle(),
+              service,
+              context.getChannel().remoteAddress());
         }
 
-        @Override
-        public EncodingContext getEncodingContext() {
-            return encodingContext;
-        }
+        if (serviceHandler instanceof AsyncServiceHandler) {
+          AsyncServiceHandler asyncServiceHandler = (AsyncServiceHandler) serviceHandler;
 
-        @Override
-        public CertificateManager getCertificateManager() {
-            return config.getCertificateManager();
-        }
-
-        @Override
-        public Long getNextSecureChannelId() {
-            return secureChannelIds.getAndIncrement();
-        }
-
-        @Override
-        public Long getNextSecureChannelTokenId() {
-            return secureChannelTokenIds.getAndIncrement();
-        }
-
-        @Override
-        public CompletableFuture<UaResponseMessageType> handleServiceRequest(
-            ServiceRequestContext context,
-            UaRequestMessageType requestMessage
-        ) {
-
-            var future = new CompletableFuture<UaResponseMessageType>();
-
-            getExecutorService().execute(
-                () ->
-                    handleServiceRequest(context, requestMessage, future)
-            );
-
-            return future;
-        }
-
-        private void handleServiceRequest(
-            ServiceRequestContext context,
-            UaRequestMessageType requestMessage,
-            CompletableFuture<UaResponseMessageType> future
-        ) {
-
-            String path = EndpointUtil.getPath(context.getEndpointUrl());
-
-            if (context.getSecureChannel().getSecurityPolicy() == SecurityPolicy.None) {
-                if (getEndpointDescriptions().stream()
-                    .filter(e -> EndpointUtil.getPath(e.getEndpointUrl()).equals(path))
-                    .filter(e -> Objects.equals(e.getTransportProfileUri(), context.getTransportProfile().getUri()))
-                    .noneMatch(e -> Objects.equals(e.getSecurityPolicyUri(), SecurityPolicy.None.getUri()))
-                ) {
-
-                    if (!isDiscoveryService(requestMessage)) {
-                        var errorMessage = new ErrorMessage(
-                            StatusCodes.Bad_SecurityPolicyRejected,
-                            StatusCodes.lookup(StatusCodes.Bad_SecurityPolicyRejected)
-                                .map(ss -> ss[1]).orElse("")
-                        );
-
-                        context.getChannel().pipeline().fireUserEventTriggered(errorMessage);
-
-                        future.completeExceptionally(new UaException(StatusCodes.Bad_SecurityPolicyRejected));
-                        return;
-                    }
-                }
-            }
-
-            Service service = Service.from(requestMessage.getTypeId());
-            ServiceHandler serviceHandler = service != null ? getServiceHandler(path, service) : null;
-
-            if (serviceHandler != null) {
-                if (logger.isTraceEnabled()) {
-                    logger.trace(
-                        "Service request received: path={} handle={} service={} remote={}",
-                        path,
-                        requestMessage.getRequestHeader().getRequestHandle(),
-                        service,
-                        context.getChannel().remoteAddress()
-                    );
-                }
-
-                if (serviceHandler instanceof AsyncServiceHandler) {
-                    AsyncServiceHandler asyncServiceHandler = (AsyncServiceHandler) serviceHandler;
-
-                    CompletableFuture<UaResponseMessageType> response =
-                        asyncServiceHandler.handleAsync(context, requestMessage).whenComplete((r, ex) -> {
-                            if (ex != null) {
-                                logger.warn(
-                                    "Service request completed exceptionally: path={} handle={} service={} remote={}",
-                                    path,
-                                    requestMessage.getRequestHeader().getRequestHandle(),
-                                    service,
-                                    context.getChannel().remoteAddress(),
-                                    ex
-                                );
-                            } else {
-                                if (logger.isTraceEnabled()) {
-                                    logger.trace(
-                                        "Service request completed: path={} handle={} service={} remote={}",
-                                        path,
-                                        requestMessage.getRequestHeader().getRequestHandle(),
-                                        service,
-                                        context.getChannel().remoteAddress()
-                                    );
-                                }
-                            }
-                        });
-
-                    FutureUtils.complete(future).with(response);
-                } else {
-                    try {
-                        UaResponseMessageType response = serviceHandler.handle(context, requestMessage);
-
-                        if (logger.isTraceEnabled()) {
+          CompletableFuture<UaResponseMessageType> response =
+              asyncServiceHandler
+                  .handleAsync(context, requestMessage)
+                  .whenComplete(
+                      (r, ex) -> {
+                        if (ex != null) {
+                          logger.warn(
+                              "Service request completed exceptionally: path={} handle={}"
+                                  + " service={} remote={}",
+                              path,
+                              requestMessage.getRequestHeader().getRequestHandle(),
+                              service,
+                              context.getChannel().remoteAddress(),
+                              ex);
+                        } else {
+                          if (logger.isTraceEnabled()) {
                             logger.trace(
                                 "Service request completed: path={} handle={} service={} remote={}",
                                 path,
                                 requestMessage.getRequestHeader().getRequestHandle(),
                                 service,
-                                context.getChannel().remoteAddress()
-                            );
+                                context.getChannel().remoteAddress());
+                          }
                         }
+                      });
 
-                        future.complete(response);
-                    } catch (UaException e) {
-                        logger.warn(
-                            "Service request completed exceptionally: path={} handle={} service={} remote={}",
-                            path,
-                            requestMessage.getRequestHeader().getRequestHandle(),
-                            service,
-                            context.getChannel().remoteAddress(),
-                            e
-                        );
+          FutureUtils.complete(future).with(response);
+        } else {
+          try {
+            UaResponseMessageType response = serviceHandler.handle(context, requestMessage);
 
-                        future.completeExceptionally(e);
-                    }
-                }
-            } else {
-                logger.warn("No ServiceHandler registered for path={} service={}", path, service);
-
-                future.completeExceptionally(new UaException(StatusCodes.Bad_NotImplemented));
+            if (logger.isTraceEnabled()) {
+              logger.trace(
+                  "Service request completed: path={} handle={} service={} remote={}",
+                  path,
+                  requestMessage.getRequestHeader().getRequestHandle(),
+                  service,
+                  context.getChannel().remoteAddress());
             }
+
+            future.complete(response);
+          } catch (UaException e) {
+            logger.warn(
+                "Service request completed exceptionally: path={} handle={} service={} remote={}",
+                path,
+                requestMessage.getRequestHeader().getRequestHandle(),
+                service,
+                context.getChannel().remoteAddress(),
+                e);
+
+            future.completeExceptionally(e);
+          }
         }
+      } else {
+        logger.warn("No ServiceHandler registered for path={} service={}", path, service);
 
-        /**
-         * Return {@code true} if {@code requestMessage} is one of the Discovery service requests:
-         * <ul>
-         *     <li>FindServersRequest</li>
-         *     <li>GetEndpointsRequest</li>
-         *     <li>RegisterServerRequest</li>
-         *     <li>FindServersOnNetworkRequest</li>
-         *     <li>RegisterServer2Request</li>
-         * </ul>
-         *
-         * @param requestMessage the {@link UaRequestMessageType} to check.
-         * @return {@code true} if {@code requestMessage} is one of the Discovery service requests.
-         */
-        private boolean isDiscoveryService(UaRequestMessageType requestMessage) {
-            Service service = Service.from(requestMessage.getTypeId());
+        future.completeExceptionally(new UaException(StatusCodes.Bad_NotImplemented));
+      }
+    }
 
-            if (service != null) {
-                switch (service) {
-                    case DISCOVERY_FIND_SERVERS:
-                    case DISCOVERY_GET_ENDPOINTS:
-                    case DISCOVERY_REGISTER_SERVER:
-                    case DISCOVERY_FIND_SERVERS_ON_NETWORK:
-                    case DISCOVERY_REGISTER_SERVER_2:
-                        return true;
+    /**
+     * Return {@code true} if {@code requestMessage} is one of the Discovery service requests:
+     *
+     * <ul>
+     *   <li>FindServersRequest
+     *   <li>GetEndpointsRequest
+     *   <li>RegisterServerRequest
+     *   <li>FindServersOnNetworkRequest
+     *   <li>RegisterServer2Request
+     * </ul>
+     *
+     * @param requestMessage the {@link UaRequestMessageType} to check.
+     * @return {@code true} if {@code requestMessage} is one of the Discovery service requests.
+     */
+    private boolean isDiscoveryService(UaRequestMessageType requestMessage) {
+      Service service = Service.from(requestMessage.getTypeId());
 
-                    default:
-                        return false;
-                }
-            }
+      if (service != null) {
+        switch (service) {
+          case DISCOVERY_FIND_SERVERS:
+          case DISCOVERY_GET_ENDPOINTS:
+          case DISCOVERY_REGISTER_SERVER:
+          case DISCOVERY_FIND_SERVERS_ON_NETWORK:
+          case DISCOVERY_REGISTER_SERVER_2:
+            return true;
 
+          default:
             return false;
         }
+      }
 
-        private EndpointDescription transformEndpoint(EndpointConfig endpoint) {
-            return new EndpointDescription(
-                endpoint.getEndpointUrl(),
-                getApplicationDescription(),
-                certificateByteString(endpoint.getCertificate()),
-                endpoint.getSecurityMode(),
-                endpoint.getSecurityPolicy().getUri(),
-                endpoint.getTokenPolicies().toArray(new UserTokenPolicy[0]),
-                endpoint.getTransportProfile().getUri(),
-                ubyte(getSecurityLevel(endpoint.getSecurityPolicy(), endpoint.getSecurityMode()))
-            );
+      return false;
+    }
+
+    private EndpointDescription transformEndpoint(EndpointConfig endpoint) {
+      return new EndpointDescription(
+          endpoint.getEndpointUrl(),
+          getApplicationDescription(),
+          certificateByteString(endpoint.getCertificate()),
+          endpoint.getSecurityMode(),
+          endpoint.getSecurityPolicy().getUri(),
+          endpoint.getTokenPolicies().toArray(new UserTokenPolicy[0]),
+          endpoint.getTransportProfile().getUri(),
+          ubyte(getSecurityLevel(endpoint.getSecurityPolicy(), endpoint.getSecurityMode())));
+    }
+
+    private ByteString certificateByteString(@Nullable X509Certificate certificate) {
+      if (certificate != null) {
+        try {
+          return ByteString.of(certificate.getEncoded());
+        } catch (CertificateEncodingException e) {
+          logger.error("Error decoding certificate.", e);
+          return ByteString.NULL_VALUE;
         }
+      } else {
+        return ByteString.NULL_VALUE;
+      }
+    }
 
-        private ByteString certificateByteString(@Nullable X509Certificate certificate) {
-            if (certificate != null) {
-                try {
-                    return ByteString.of(certificate.getEncoded());
-                } catch (CertificateEncodingException e) {
-                    logger.error("Error decoding certificate.", e);
-                    return ByteString.NULL_VALUE;
-                }
-            } else {
-                return ByteString.NULL_VALUE;
-            }
-        }
-
-
-        private ApplicationDescription getApplicationDescription() {
-            return applicationDescription.get(() -> {
-                List<String> discoveryUrls = config.getEndpoints()
-                    .stream()
+    private ApplicationDescription getApplicationDescription() {
+      return applicationDescription.get(
+          () -> {
+            List<String> discoveryUrls =
+                config.getEndpoints().stream()
                     .map(EndpointConfig::getEndpointUrl)
                     .filter(url -> url.endsWith("/discovery"))
                     .distinct()
                     .collect(toList());
 
-                if (discoveryUrls.isEmpty()) {
-                    discoveryUrls = config.getEndpoints()
-                        .stream()
-                        .map(EndpointConfig::getEndpointUrl)
-                        .distinct()
-                        .collect(toList());
-                }
-
-                return new ApplicationDescription(
-                    config.getApplicationUri(),
-                    config.getProductUri(),
-                    config.getApplicationName(),
-                    ApplicationType.Server,
-                    null,
-                    null,
-                    discoveryUrls.toArray(new String[0])
-                );
-            });
-        }
-
-        private short getSecurityLevel(SecurityPolicy securityPolicy, MessageSecurityMode securityMode) {
-            short securityLevel = 0;
-
-            switch (securityPolicy) {
-                case Aes256_Sha256_RsaPss:
-                case Basic256Sha256:
-                    securityLevel |= 0x08;
-                    break;
-                case Aes128_Sha256_RsaOaep:
-                    securityLevel |= 0x04;
-                    break;
-                case Basic256:
-                case Basic128Rsa15:
-                    securityLevel |= 0x01;
-                    break;
-                case None:
-                default:
-                    break;
+            if (discoveryUrls.isEmpty()) {
+              discoveryUrls =
+                  config.getEndpoints().stream()
+                      .map(EndpointConfig::getEndpointUrl)
+                      .distinct()
+                      .collect(toList());
             }
 
-            switch (securityMode) {
-                case SignAndEncrypt:
-                    securityLevel |= 0x80;
-                    break;
-                case Sign:
-                    securityLevel |= 0x40;
-                    break;
-                default:
-                    securityLevel |= 0x20;
-                    break;
-            }
-
-            return securityLevel;
-        }
-
+            return new ApplicationDescription(
+                config.getApplicationUri(),
+                config.getProductUri(),
+                config.getApplicationName(),
+                ApplicationType.Server,
+                null,
+                null,
+                discoveryUrls.toArray(new String[0]));
+          });
     }
 
-    private static class ServerEventNotifier implements EventNotifier {
+    private short getSecurityLevel(
+        SecurityPolicy securityPolicy, MessageSecurityMode securityMode) {
+      short securityLevel = 0;
 
-        private final List<EventListener> eventListeners = Collections.synchronizedList(new ArrayList<>());
+      switch (securityPolicy) {
+        case Aes256_Sha256_RsaPss:
+        case Basic256Sha256:
+          securityLevel |= 0x08;
+          break;
+        case Aes128_Sha256_RsaOaep:
+          securityLevel |= 0x04;
+          break;
+        case Basic256:
+        case Basic128Rsa15:
+          securityLevel |= 0x01;
+          break;
+        case None:
+        default:
+          break;
+      }
 
-        @Override
-        public void fire(BaseEventTypeNode event) {
-            List<EventListener> toNotify;
-            synchronized (eventListeners) {
-                toNotify = List.copyOf(eventListeners);
-            }
+      switch (securityMode) {
+        case SignAndEncrypt:
+          securityLevel |= 0x80;
+          break;
+        case Sign:
+          securityLevel |= 0x40;
+          break;
+        default:
+          securityLevel |= 0x20;
+          break;
+      }
 
-            toNotify.forEach(eventListener -> eventListener.onEvent(event));
-        }
+      return securityLevel;
+    }
+  }
 
-        @Override
-        public void register(EventListener eventListener) {
-            eventListeners.add(eventListener);
-        }
+  private static class ServerEventNotifier implements EventNotifier {
 
-        @Override
-        public void unregister(EventListener eventListener) {
-            eventListeners.remove(eventListener);
-        }
+    private final List<EventListener> eventListeners =
+        Collections.synchronizedList(new ArrayList<>());
 
+    @Override
+    public void fire(BaseEventTypeNode event) {
+      List<EventListener> toNotify;
+      synchronized (eventListeners) {
+        toNotify = List.copyOf(eventListeners);
+      }
+
+      toNotify.forEach(eventListener -> eventListener.onEvent(event));
     }
 
+    @Override
+    public void register(EventListener eventListener) {
+      eventListeners.add(eventListener);
+    }
+
+    @Override
+    public void unregister(EventListener eventListener) {
+      eventListeners.remove(eventListener);
+    }
+  }
 }

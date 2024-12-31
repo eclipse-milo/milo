@@ -10,41 +10,37 @@
 
 package org.eclipse.milo.opcua.sdk.server.diagnostics;
 
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
+
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.LongAdder;
-
 import org.eclipse.milo.opcua.stack.core.types.structured.ServiceCounterDataType;
-
-import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
 public class ServiceCounter {
 
-    private final LongAdder totalCount = new LongAdder();
-    private final LongAdder errorCount = new LongAdder();
+  private final LongAdder totalCount = new LongAdder();
+  private final LongAdder errorCount = new LongAdder();
 
-    public void record(CompletionStage<?> completionStage) {
-        completionStage.whenComplete((r, ex) -> {
-            totalCount.increment();
+  public void record(CompletionStage<?> completionStage) {
+    completionStage.whenComplete(
+        (r, ex) -> {
+          totalCount.increment();
 
-            if (ex != null) {
-                errorCount.increment();
-            }
+          if (ex != null) {
+            errorCount.increment();
+          }
         });
-    }
+  }
 
-    public void incrementTotalCount() {
-        totalCount.increment();
-    }
+  public void incrementTotalCount() {
+    totalCount.increment();
+  }
 
-    public void incrementErrorCount() {
-        errorCount.increment();
-    }
+  public void incrementErrorCount() {
+    errorCount.increment();
+  }
 
-    public ServiceCounterDataType getServiceCounter() {
-        return new ServiceCounterDataType(
-            uint(totalCount.sum()),
-            uint(errorCount.sum())
-        );
-    }
-
+  public ServiceCounterDataType getServiceCounter() {
+    return new ServiceCounterDataType(uint(totalCount.sum()), uint(errorCount.sum()));
+  }
 }

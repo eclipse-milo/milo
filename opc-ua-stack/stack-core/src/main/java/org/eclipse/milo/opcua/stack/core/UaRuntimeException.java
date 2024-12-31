@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -14,33 +14,32 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 
 public class UaRuntimeException extends RuntimeException implements UaExceptionStatus {
 
-    private final StatusCode statusCode;
+  private final StatusCode statusCode;
 
-    public UaRuntimeException(Throwable cause) {
-        super(cause);
+  public UaRuntimeException(Throwable cause) {
+    super(cause);
 
-        this.statusCode = new StatusCode(StatusCodes.Bad_InternalError);
-    }
+    this.statusCode = new StatusCode(StatusCodes.Bad_InternalError);
+  }
 
-    public UaRuntimeException(long statusCode) {
-        this.statusCode = new StatusCode(statusCode);
-    }
+  public UaRuntimeException(long statusCode) {
+    this.statusCode = new StatusCode(statusCode);
+  }
 
-    public UaRuntimeException(long statusCode, String message) {
-        super(message);
+  public UaRuntimeException(long statusCode, String message) {
+    super(message);
 
-        this.statusCode = new StatusCode(statusCode);
-    }
+    this.statusCode = new StatusCode(statusCode);
+  }
 
-    public UaRuntimeException(long statusCode, Throwable cause) {
-        super(cause);
+  public UaRuntimeException(long statusCode, Throwable cause) {
+    super(cause);
 
-        this.statusCode = new StatusCode(statusCode);
-    }
-    
-    @Override
-    public StatusCode getStatusCode() {
-        return statusCode;
-    }
+    this.statusCode = new StatusCode(statusCode);
+  }
 
+  @Override
+  public StatusCode getStatusCode() {
+    return statusCode;
+  }
 }

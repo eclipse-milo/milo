@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -14,27 +14,27 @@ import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 
 public interface DataTypeCodec {
 
-    /**
-     * @return the {@link Class} of the DataType this codec encodes.
-     */
-    Class<?> getType();
+  /**
+   * @return the {@link Class} of the DataType this codec encodes.
+   */
+  Class<?> getType();
 
-    /**
-     * Decode an Object using the provided {@link UaDecoder}.
-     *
-     * @param context the {@link EncodingContext}.
-     * @param decoder the {@link UaDecoder} to decode from.
-     * @return a decoded Object.
-     */
-    Object decode(EncodingContext context, UaDecoder decoder) throws UaSerializationException;
+  /**
+   * Decode an Object using the provided {@link UaDecoder}.
+   *
+   * @param context the {@link EncodingContext}.
+   * @param decoder the {@link UaDecoder} to decode from.
+   * @return a decoded Object.
+   */
+  Object decode(EncodingContext context, UaDecoder decoder) throws UaSerializationException;
 
-    /**
-     * Encode an Object using the provided {@link UaEncoder}.
-     *
-     * @param context the {@link EncodingContext}.
-     * @param encoder the {@link UaEncoder} to encode to.
-     * @param value   the Object to encode.
-     */
-    void encode(EncodingContext context, UaEncoder encoder, Object value) throws UaSerializationException;
-
+  /**
+   * Encode an Object using the provided {@link UaEncoder}.
+   *
+   * @param context the {@link EncodingContext}.
+   * @param encoder the {@link UaEncoder} to encode to.
+   * @param value the Object to encode.
+   */
+  void encode(EncodingContext context, UaEncoder encoder, Object value)
+      throws UaSerializationException;
 }

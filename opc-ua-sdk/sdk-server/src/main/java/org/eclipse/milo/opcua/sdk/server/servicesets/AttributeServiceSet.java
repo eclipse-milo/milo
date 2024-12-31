@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -23,14 +23,13 @@ import org.eclipse.milo.opcua.stack.transport.server.ServiceRequestContext;
 
 public interface AttributeServiceSet {
 
-    ReadResponse onRead(ServiceRequestContext context, ReadRequest request) throws UaException;
+  ReadResponse onRead(ServiceRequestContext context, ReadRequest request) throws UaException;
 
-    HistoryReadResponse onHistoryRead(
-        ServiceRequestContext context, HistoryReadRequest request) throws UaException;
+  HistoryReadResponse onHistoryRead(ServiceRequestContext context, HistoryReadRequest request)
+      throws UaException;
 
-    WriteResponse onWrite(ServiceRequestContext context, WriteRequest request) throws UaException;
+  WriteResponse onWrite(ServiceRequestContext context, WriteRequest request) throws UaException;
 
-    HistoryUpdateResponse onHistoryUpdate(
-        ServiceRequestContext context, HistoryUpdateRequest request) throws UaException;
-
+  HistoryUpdateResponse onHistoryUpdate(ServiceRequestContext context, HistoryUpdateRequest request)
+      throws UaException;
 }

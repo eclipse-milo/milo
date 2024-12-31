@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -13,5 +13,5 @@ package org.eclipse.milo.opcua.stack.transport.websocket;
 import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransportConfig;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.UascClientConfig;
 
-public interface OpcWebSocketClientTransportConfig extends OpcClientTransportConfig, UascClientConfig {
-}
+public interface OpcWebSocketClientTransportConfig
+    extends OpcClientTransportConfig, UascClientConfig {}

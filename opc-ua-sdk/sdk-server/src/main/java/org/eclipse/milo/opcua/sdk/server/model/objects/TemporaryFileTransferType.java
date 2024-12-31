@@ -27,166 +27,253 @@ import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.util.Lazy;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.4.1">https://reference.opcfoundation.org/v105/Core/docs/Part20/4.4.1</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.4.1">https://reference.opcfoundation.org/v105/Core/docs/Part20/4.4.1</a>
  */
 public interface TemporaryFileTransferType extends BaseObjectType {
-    QualifiedProperty<Double> CLIENT_PROCESSING_TIMEOUT = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ClientProcessingTimeout",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-        -1,
-        Double.class
-    );
+  QualifiedProperty<Double> CLIENT_PROCESSING_TIMEOUT =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ClientProcessingTimeout",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
+          -1,
+          Double.class);
 
-    Double getClientProcessingTimeout();
+  Double getClientProcessingTimeout();
 
-    void setClientProcessingTimeout(Double value);
+  void setClientProcessingTimeout(Double value);
 
-    PropertyType getClientProcessingTimeoutNode();
+  PropertyType getClientProcessingTimeoutNode();
 
-    MethodNode getGenerateFileForReadMethodNode();
+  MethodNode getGenerateFileForReadMethodNode();
 
-    MethodNode getGenerateFileForWriteMethodNode();
+  MethodNode getGenerateFileForWriteMethodNode();
 
-    MethodNode getCloseAndCommitMethodNode();
+  MethodNode getCloseAndCommitMethodNode();
 
-    abstract class GenerateFileForReadMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  abstract class GenerateFileForReadMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
 
-        private final Lazy<Argument[]> outputArguments = new Lazy<>();
+    private final Lazy<Argument[]> outputArguments = new Lazy<>();
 
-        public GenerateFileForReadMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("GenerateOptions", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return outputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("FileNodeId", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "")),
-                    new Argument("FileHandle", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "")),
-                    new Argument("CompletionStateMachine", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            Object generateOptions = (Object) inputValues[0].getValue();
-            Out<NodeId> fileNodeId = new Out<>();
-            Out<UInteger> fileHandle = new Out<>();
-            Out<NodeId> completionStateMachine = new Out<>();
-            invoke(context, generateOptions, fileNodeId, fileHandle, completionStateMachine);
-            return new Variant[]{new Variant(fileNodeId.get()), new Variant(fileHandle.get()), new Variant(completionStateMachine.get())};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       Object generateOptions, Out<NodeId> fileNodeId, Out<UInteger> fileHandle,
-                                       Out<NodeId> completionStateMachine) throws UaException;
+    public GenerateFileForReadMethod(UaMethodNode node) {
+      super(node);
     }
 
-    abstract class GenerateFileForWriteMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
 
-        private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-        public GenerateFileForWriteMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("GenerateOptions", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return outputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("FileNodeId", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "")),
-                    new Argument("FileHandle", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            Object generateOptions = (Object) inputValues[0].getValue();
-            Out<NodeId> fileNodeId = new Out<>();
-            Out<UInteger> fileHandle = new Out<>();
-            invoke(context, generateOptions, fileNodeId, fileHandle);
-            return new Variant[]{new Variant(fileNodeId.get()), new Variant(fileHandle.get())};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       Object generateOptions, Out<NodeId> fileNodeId, Out<UInteger> fileHandle) throws
-            UaException;
+            return new Argument[] {
+              new Argument(
+                  "GenerateOptions",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
     }
 
-    abstract class CloseAndCommitMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
+    @Override
+    public Argument[] getOutputArguments() {
+      return outputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
 
-        private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-        public CloseAndCommitMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("FileHandle", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return outputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("CompletionStateMachine", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            UInteger fileHandle = (UInteger) inputValues[0].getValue();
-            Out<NodeId> completionStateMachine = new Out<>();
-            invoke(context, fileHandle, completionStateMachine);
-            return new Variant[]{new Variant(completionStateMachine.get())};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       UInteger fileHandle, Out<NodeId> completionStateMachine) throws UaException;
+            return new Argument[] {
+              new Argument(
+                  "FileNodeId",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "FileHandle",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "CompletionStateMachine",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
     }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      Object generateOptions = (Object) inputValues[0].getValue();
+      Out<NodeId> fileNodeId = new Out<>();
+      Out<UInteger> fileHandle = new Out<>();
+      Out<NodeId> completionStateMachine = new Out<>();
+      invoke(context, generateOptions, fileNodeId, fileHandle, completionStateMachine);
+      return new Variant[] {
+        new Variant(fileNodeId.get()),
+        new Variant(fileHandle.get()),
+        new Variant(completionStateMachine.get())
+      };
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        Object generateOptions,
+        Out<NodeId> fileNodeId,
+        Out<UInteger> fileHandle,
+        Out<NodeId> completionStateMachine)
+        throws UaException;
+  }
+
+  abstract class GenerateFileForWriteMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+
+    private final Lazy<Argument[]> outputArguments = new Lazy<>();
+
+    public GenerateFileForWriteMethod(UaMethodNode node) {
+      super(node);
+    }
+
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "GenerateOptions",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return outputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "FileNodeId",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "FileHandle",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      Object generateOptions = (Object) inputValues[0].getValue();
+      Out<NodeId> fileNodeId = new Out<>();
+      Out<UInteger> fileHandle = new Out<>();
+      invoke(context, generateOptions, fileNodeId, fileHandle);
+      return new Variant[] {new Variant(fileNodeId.get()), new Variant(fileHandle.get())};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        Object generateOptions,
+        Out<NodeId> fileNodeId,
+        Out<UInteger> fileHandle)
+        throws UaException;
+  }
+
+  abstract class CloseAndCommitMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+
+    private final Lazy<Argument[]> outputArguments = new Lazy<>();
+
+    public CloseAndCommitMethod(UaMethodNode node) {
+      super(node);
+    }
+
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "FileHandle",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return outputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "CompletionStateMachine",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      UInteger fileHandle = (UInteger) inputValues[0].getValue();
+      Out<NodeId> completionStateMachine = new Out<>();
+      invoke(context, fileHandle, completionStateMachine);
+      return new Variant[] {new Variant(completionStateMachine.get())};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        UInteger fileHandle,
+        Out<NodeId> completionStateMachine)
+        throws UaException;
+  }
 }

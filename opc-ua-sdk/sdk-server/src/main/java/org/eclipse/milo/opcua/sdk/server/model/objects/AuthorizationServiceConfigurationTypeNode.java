@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -11,7 +11,6 @@
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
 import java.util.Optional;
-
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
@@ -24,67 +23,106 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 
-public class AuthorizationServiceConfigurationTypeNode extends BaseObjectTypeNode implements AuthorizationServiceConfigurationType {
-    public AuthorizationServiceConfigurationTypeNode(UaNodeContext context, NodeId nodeId,
-                                                     QualifiedName browseName, LocalizedText displayName, LocalizedText description,
-                                                     UInteger writeMask, UInteger userWriteMask, RolePermissionType[] rolePermissions,
-                                                     RolePermissionType[] userRolePermissions, AccessRestrictionType accessRestrictions,
-                                                     UByte eventNotifier) {
-        super(context, nodeId, browseName, displayName, description, writeMask, userWriteMask, rolePermissions, userRolePermissions, accessRestrictions, eventNotifier);
-    }
+public class AuthorizationServiceConfigurationTypeNode extends BaseObjectTypeNode
+    implements AuthorizationServiceConfigurationType {
+  public AuthorizationServiceConfigurationTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType[] rolePermissions,
+      RolePermissionType[] userRolePermissions,
+      AccessRestrictionType accessRestrictions,
+      UByte eventNotifier) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions,
+        eventNotifier);
+  }
 
-    public AuthorizationServiceConfigurationTypeNode(UaNodeContext context, NodeId nodeId,
-                                                     QualifiedName browseName, LocalizedText displayName, LocalizedText description,
-                                                     UInteger writeMask, UInteger userWriteMask, RolePermissionType[] rolePermissions,
-                                                     RolePermissionType[] userRolePermissions, AccessRestrictionType accessRestrictions) {
-        super(context, nodeId, browseName, displayName, description, writeMask, userWriteMask, rolePermissions, userRolePermissions, accessRestrictions);
-    }
+  public AuthorizationServiceConfigurationTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType[] rolePermissions,
+      RolePermissionType[] userRolePermissions,
+      AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
 
-    @Override
-    public PropertyTypeNode getServiceUriNode() {
-        Optional<VariableNode> propertyNode = getPropertyNode(AuthorizationServiceConfigurationType.SERVICE_URI);
-        return (PropertyTypeNode) propertyNode.orElse(null);
-    }
+  @Override
+  public PropertyTypeNode getServiceUriNode() {
+    Optional<VariableNode> propertyNode =
+        getPropertyNode(AuthorizationServiceConfigurationType.SERVICE_URI);
+    return (PropertyTypeNode) propertyNode.orElse(null);
+  }
 
-    @Override
-    public String getServiceUri() {
-        return getProperty(AuthorizationServiceConfigurationType.SERVICE_URI).orElse(null);
-    }
+  @Override
+  public String getServiceUri() {
+    return getProperty(AuthorizationServiceConfigurationType.SERVICE_URI).orElse(null);
+  }
 
-    @Override
-    public void setServiceUri(String value) {
-        setProperty(AuthorizationServiceConfigurationType.SERVICE_URI, value);
-    }
+  @Override
+  public void setServiceUri(String value) {
+    setProperty(AuthorizationServiceConfigurationType.SERVICE_URI, value);
+  }
 
-    @Override
-    public PropertyTypeNode getServiceCertificateNode() {
-        Optional<VariableNode> propertyNode = getPropertyNode(AuthorizationServiceConfigurationType.SERVICE_CERTIFICATE);
-        return (PropertyTypeNode) propertyNode.orElse(null);
-    }
+  @Override
+  public PropertyTypeNode getServiceCertificateNode() {
+    Optional<VariableNode> propertyNode =
+        getPropertyNode(AuthorizationServiceConfigurationType.SERVICE_CERTIFICATE);
+    return (PropertyTypeNode) propertyNode.orElse(null);
+  }
 
-    @Override
-    public ByteString getServiceCertificate() {
-        return getProperty(AuthorizationServiceConfigurationType.SERVICE_CERTIFICATE).orElse(null);
-    }
+  @Override
+  public ByteString getServiceCertificate() {
+    return getProperty(AuthorizationServiceConfigurationType.SERVICE_CERTIFICATE).orElse(null);
+  }
 
-    @Override
-    public void setServiceCertificate(ByteString value) {
-        setProperty(AuthorizationServiceConfigurationType.SERVICE_CERTIFICATE, value);
-    }
+  @Override
+  public void setServiceCertificate(ByteString value) {
+    setProperty(AuthorizationServiceConfigurationType.SERVICE_CERTIFICATE, value);
+  }
 
-    @Override
-    public PropertyTypeNode getIssuerEndpointUrlNode() {
-        Optional<VariableNode> propertyNode = getPropertyNode(AuthorizationServiceConfigurationType.ISSUER_ENDPOINT_URL);
-        return (PropertyTypeNode) propertyNode.orElse(null);
-    }
+  @Override
+  public PropertyTypeNode getIssuerEndpointUrlNode() {
+    Optional<VariableNode> propertyNode =
+        getPropertyNode(AuthorizationServiceConfigurationType.ISSUER_ENDPOINT_URL);
+    return (PropertyTypeNode) propertyNode.orElse(null);
+  }
 
-    @Override
-    public String getIssuerEndpointUrl() {
-        return getProperty(AuthorizationServiceConfigurationType.ISSUER_ENDPOINT_URL).orElse(null);
-    }
+  @Override
+  public String getIssuerEndpointUrl() {
+    return getProperty(AuthorizationServiceConfigurationType.ISSUER_ENDPOINT_URL).orElse(null);
+  }
 
-    @Override
-    public void setIssuerEndpointUrl(String value) {
-        setProperty(AuthorizationServiceConfigurationType.ISSUER_ENDPOINT_URL, value);
-    }
+  @Override
+  public void setIssuerEndpointUrl(String value) {
+    setProperty(AuthorizationServiceConfigurationType.ISSUER_ENDPOINT_URL, value);
+  }
 }

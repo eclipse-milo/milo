@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -14,55 +14,56 @@ import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 final class ExpandedNodeIdConversions {
 
-    private ExpandedNodeIdConversions() {}
+  private ExpandedNodeIdConversions() {}
 
-    @Nullable
-    static NodeId expandedNodeIdToNodeId(@NotNull ExpandedNodeId e) {
-        // TODO need a real NamespaceTable here
-        return e.toNodeId(new NamespaceTable()).orElse(null);
+  @Nullable
+  static NodeId expandedNodeIdToNodeId(@NonNull ExpandedNodeId e) {
+    // TODO need a real NamespaceTable here
+    return e.toNodeId(new NamespaceTable()).orElse(null);
+  }
+
+  @NonNull
+  static String expandedNodeIdToString(@NonNull ExpandedNodeId e) {
+    return e.toParseableString();
+  }
+
+  @Nullable
+  static Object convert(@NonNull Object o, BuiltinDataType targetType, boolean implicit) {
+    if (o instanceof ExpandedNodeId) {
+      ExpandedNodeId eni = (ExpandedNodeId) o;
+
+      return implicit ? implicitConversion(eni, targetType) : explicitConversion(eni, targetType);
+    } else {
+      return null;
     }
+  }
 
-    @NotNull
-    static String expandedNodeIdToString(@NotNull ExpandedNodeId e) {
-        return e.toParseableString();
+  @Nullable
+  static Object explicitConversion(@NonNull ExpandedNodeId eni, BuiltinDataType targetType) {
+    // @formatter:off
+    switch (targetType) {
+      case NodeId:
+        return expandedNodeIdToNodeId(eni);
+      default:
+        return implicitConversion(eni, targetType);
     }
+    // @formatter:on
+  }
 
-    @Nullable
-    static Object convert(@NotNull Object o, BuiltinDataType targetType, boolean implicit) {
-        if (o instanceof ExpandedNodeId) {
-            ExpandedNodeId eni = (ExpandedNodeId) o;
-
-            return implicit ?
-                implicitConversion(eni, targetType) :
-                explicitConversion(eni, targetType);
-        } else {
-            return null;
-        }
+  @Nullable
+  static Object implicitConversion(@NonNull ExpandedNodeId eni, BuiltinDataType targetType) {
+    // @formatter:off
+    switch (targetType) {
+      case String:
+        return expandedNodeIdToString(eni);
+      default:
+        return null;
     }
-
-    @Nullable
-    static Object explicitConversion(@NotNull ExpandedNodeId eni, BuiltinDataType targetType) {
-        //@formatter:off
-        switch (targetType) {
-            case NodeId:    return expandedNodeIdToNodeId(eni);
-            default:        return implicitConversion(eni, targetType);
-        }
-        //@formatter:on
-    }
-
-    @Nullable
-    static Object implicitConversion(@NotNull ExpandedNodeId eni, BuiltinDataType targetType) {
-        //@formatter:off
-        switch (targetType) {
-            case String:    return expandedNodeIdToString(eni);
-            default:        return null;
-        }
-        //@formatter:on
-    }
-
+    // @formatter:on
+  }
 }

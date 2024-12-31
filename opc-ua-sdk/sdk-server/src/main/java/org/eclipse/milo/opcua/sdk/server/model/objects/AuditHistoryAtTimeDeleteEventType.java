@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -17,34 +17,35 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.6.7">https://reference.opcfoundation.org/v105/Core/docs/Part11/5.6.7</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.6.7">https://reference.opcfoundation.org/v105/Core/docs/Part11/5.6.7</a>
  */
 public interface AuditHistoryAtTimeDeleteEventType extends AuditHistoryDeleteEventType {
-    QualifiedProperty<DateTime[]> REQ_TIMES = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ReqTimes",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-        1,
-        DateTime[].class
-    );
+  QualifiedProperty<DateTime[]> REQ_TIMES =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ReqTimes",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
+          1,
+          DateTime[].class);
 
-    QualifiedProperty<DataValue[]> OLD_VALUES = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "OldValues",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=23"),
-        1,
-        DataValue[].class
-    );
+  QualifiedProperty<DataValue[]> OLD_VALUES =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "OldValues",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=23"),
+          1,
+          DataValue[].class);
 
-    DateTime[] getReqTimes();
+  DateTime[] getReqTimes();
 
-    void setReqTimes(DateTime[] value);
+  void setReqTimes(DateTime[] value);
 
-    PropertyType getReqTimesNode();
+  PropertyType getReqTimesNode();
 
-    DataValue[] getOldValues();
+  DataValue[] getOldValues();
 
-    void setOldValues(DataValue[] value);
+  void setOldValues(DataValue[] value);
 
-    PropertyType getOldValuesNode();
+  PropertyType getOldValuesNode();
 }

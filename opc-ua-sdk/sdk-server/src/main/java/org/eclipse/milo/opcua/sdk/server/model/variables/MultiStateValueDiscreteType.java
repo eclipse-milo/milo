@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -16,34 +16,35 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.structured.EnumValueType;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.3/#5.3.3.4">https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.3/#5.3.3.4</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.3/#5.3.3.4">https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.3/#5.3.3.4</a>
  */
 public interface MultiStateValueDiscreteType extends DiscreteItemType {
-    QualifiedProperty<EnumValueType[]> ENUM_VALUES = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "EnumValues",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7594"),
-        1,
-        EnumValueType[].class
-    );
+  QualifiedProperty<EnumValueType[]> ENUM_VALUES =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "EnumValues",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7594"),
+          1,
+          EnumValueType[].class);
 
-    QualifiedProperty<LocalizedText> VALUE_AS_TEXT = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ValueAsText",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
-        -1,
-        LocalizedText.class
-    );
+  QualifiedProperty<LocalizedText> VALUE_AS_TEXT =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ValueAsText",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
+          -1,
+          LocalizedText.class);
 
-    EnumValueType[] getEnumValues();
+  EnumValueType[] getEnumValues();
 
-    void setEnumValues(EnumValueType[] value);
+  void setEnumValues(EnumValueType[] value);
 
-    PropertyType getEnumValuesNode();
+  PropertyType getEnumValuesNode();
 
-    LocalizedText getValueAsText();
+  LocalizedText getValueAsText();
 
-    void setValueAsText(LocalizedText value);
+  void setValueAsText(LocalizedText value);
 
-    PropertyType getValueAsTextNode();
+  PropertyType getValueAsTextNode();
 }

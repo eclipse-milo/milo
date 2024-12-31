@@ -10,11 +10,12 @@
 
 package org.eclipse.milo.opcua.sdk.server.servicesets.impl;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.AccessResult;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultAccessController.AccessControlAttributes;
@@ -38,574 +39,508 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 class DefaultAccessControllerTest {
 
-    private static final NodeId ROLE_A = new NodeId(1, "RoleA");
-    private static final NodeId ROLE_B = new NodeId(1, "RoleB");
+  private static final NodeId ROLE_A = new NodeId(1, "RoleA");
+  private static final NodeId ROLE_B = new NodeId(1, "RoleB");
 
-    private final AccessControlContext context = Mockito.mock(AccessControlContext.class);
-    private final Map<NodeId, AccessControlAttributes> attributesMap = new HashMap<>();
+  private final AccessControlContext context = Mockito.mock(AccessControlContext.class);
+  private final Map<NodeId, AccessControlAttributes> attributesMap = new HashMap<>();
 
-    @BeforeEach
-    void setup() {
-        Mockito.when(context.readAccessControlAttributes(Mockito.anyList())).thenReturn(attributesMap);
-    }
+  @BeforeEach
+  void setup() {
+    Mockito.when(context.readAccessControlAttributes(Mockito.anyList())).thenReturn(attributesMap);
+  }
 
-    @Test
-    void checkReadAccess_Value_Allowed() {
-        var nodeId = new NodeId(1, "foo");
-        var readValueId = new ReadValueId(
-            nodeId,
-            AttributeId.Value.uid(), null, null
-        );
+  @Test
+  void checkReadAccess_Value_Allowed() {
+    var nodeId = new NodeId(1, "foo");
+    var readValueId = new ReadValueId(nodeId, AttributeId.Value.uid(), null, null);
 
-        UByte userAccessLevel = AccessLevel.toValue(AccessLevel.READ_ONLY);
+    UByte userAccessLevel = AccessLevel.toValue(AccessLevel.READ_ONLY);
 
-        var attributes = new AccessControlAttributes(
-            null,
-            null,
-            userAccessLevel,
-            null,
-            null
-        );
-        attributesMap.put(nodeId, attributes);
+    var attributes = new AccessControlAttributes(null, null, userAccessLevel, null, null);
+    attributesMap.put(nodeId, attributes);
 
-        AccessResult result = DefaultAccessController
-            .checkReadAccess(context, List.of(readValueId)).get(readValueId);
+    AccessResult result =
+        DefaultAccessController.checkReadAccess(context, List.of(readValueId)).get(readValueId);
 
-        assertEquals(AccessResult.ALLOWED, result);
-    }
+    assertEquals(AccessResult.ALLOWED, result);
+  }
 
-    @Test
-    void checkReadAccess_Value_Denied() {
-        var nodeId = new NodeId(1, "foo");
-        var readValueId = new ReadValueId(
-            nodeId,
-            AttributeId.Value.uid(), null, null
-        );
+  @Test
+  void checkReadAccess_Value_Denied() {
+    var nodeId = new NodeId(1, "foo");
+    var readValueId = new ReadValueId(nodeId, AttributeId.Value.uid(), null, null);
 
-        UByte userAccessLevel = AccessLevel.toValue(AccessLevel.NONE);
+    UByte userAccessLevel = AccessLevel.toValue(AccessLevel.NONE);
 
-        var attributes = new AccessControlAttributes(
-            null,
-            null,
-            userAccessLevel,
-            null,
-            null
-        );
-        attributesMap.put(nodeId, attributes);
+    var attributes = new AccessControlAttributes(null, null, userAccessLevel, null, null);
+    attributesMap.put(nodeId, attributes);
 
-        AccessResult result = DefaultAccessController
-            .checkReadAccess(context, List.of(readValueId)).get(readValueId);
+    AccessResult result =
+        DefaultAccessController.checkReadAccess(context, List.of(readValueId)).get(readValueId);
 
-        assertEquals(AccessResult.DENIED_USER_ACCESS, result);
-    }
+    assertEquals(AccessResult.DENIED_USER_ACCESS, result);
+  }
 
-    @Test
-    void checkReadAccess_RolePermissions_Allowed() {
-        var nodeId = new NodeId(1, "foo");
-        var readValueId = new ReadValueId(
-            nodeId,
-            AttributeId.RolePermissions.uid(), null, null
-        );
+  @Test
+  void checkReadAccess_RolePermissions_Allowed() {
+    var nodeId = new NodeId(1, "foo");
+    var readValueId = new ReadValueId(nodeId, AttributeId.RolePermissions.uid(), null, null);
 
-        var attributes = new AccessControlAttributes(
+    var attributes =
+        new AccessControlAttributes(
             null,
             null,
             null,
             null,
-            new RolePermissionType[]{
-                new RolePermissionType(ROLE_A, PermissionType.of(PermissionType.Field.ReadRolePermissions))
-            }
-        );
-        attributesMap.put(nodeId, attributes);
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  ROLE_A, PermissionType.of(PermissionType.Field.ReadRolePermissions))
+            });
+    attributesMap.put(nodeId, attributes);
 
-        Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_A)));
+    Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_A)));
 
-        AccessResult result = DefaultAccessController
-            .checkReadAccess(context, List.of(readValueId)).get(readValueId);
+    AccessResult result =
+        DefaultAccessController.checkReadAccess(context, List.of(readValueId)).get(readValueId);
 
-        assertEquals(AccessResult.ALLOWED, result);
-    }
+    assertEquals(AccessResult.ALLOWED, result);
+  }
 
-    @Test
-    void checkReadAccess_RolePermissions_Denied() {
-        var nodeId = new NodeId(1, "foo");
-        var readValueId = new ReadValueId(
-            nodeId,
-            AttributeId.RolePermissions.uid(), null, null
-        );
+  @Test
+  void checkReadAccess_RolePermissions_Denied() {
+    var nodeId = new NodeId(1, "foo");
+    var readValueId = new ReadValueId(nodeId, AttributeId.RolePermissions.uid(), null, null);
 
-        var attributes = new AccessControlAttributes(
+    var attributes =
+        new AccessControlAttributes(
             null,
             null,
             null,
             null,
-            new RolePermissionType[]{
-                new RolePermissionType(ROLE_A, PermissionType.of())
-            }
-        );
-        attributesMap.put(nodeId, attributes);
+            new RolePermissionType[] {new RolePermissionType(ROLE_A, PermissionType.of())});
+    attributesMap.put(nodeId, attributes);
 
-        Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_A)));
+    Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_A)));
 
-        AccessResult result = DefaultAccessController
-            .checkReadAccess(context, List.of(readValueId)).get(readValueId);
+    AccessResult result =
+        DefaultAccessController.checkReadAccess(context, List.of(readValueId)).get(readValueId);
 
-        assertEquals(AccessResult.DENIED_USER_ACCESS, result);
-    }
+    assertEquals(AccessResult.DENIED_USER_ACCESS, result);
+  }
 
-    @Test
-    void checkWriteAccess_Value_Allowed() {
-        var nodeId = new NodeId(1, "foo");
-        var writeValue = new WriteValue(
-            nodeId,
-            AttributeId.Value.uid(),
-            null,
-            DataValue.valueOnly(Variant.NULL_VALUE)
-        );
+  @Test
+  void checkWriteAccess_Value_Allowed() {
+    var nodeId = new NodeId(1, "foo");
+    var writeValue =
+        new WriteValue(
+            nodeId, AttributeId.Value.uid(), null, DataValue.valueOnly(Variant.NULL_VALUE));
 
-        UByte userAccessLevel = AccessLevel.toValue(AccessLevel.READ_WRITE);
+    UByte userAccessLevel = AccessLevel.toValue(AccessLevel.READ_WRITE);
 
-        var attributes = new AccessControlAttributes(
-            null,
-            null,
-            userAccessLevel,
-            null,
-            null
-        );
-        attributesMap.put(nodeId, attributes);
+    var attributes = new AccessControlAttributes(null, null, userAccessLevel, null, null);
+    attributesMap.put(nodeId, attributes);
 
-        AccessResult result = DefaultAccessController
-            .checkWriteAccess(context, List.of(writeValue)).get(writeValue);
+    AccessResult result =
+        DefaultAccessController.checkWriteAccess(context, List.of(writeValue)).get(writeValue);
 
-        assertEquals(AccessResult.ALLOWED, result);
-    }
+    assertEquals(AccessResult.ALLOWED, result);
+  }
 
-    @Test
-    void checkWriteAccess_Value_Denied() {
-        var nodeId = new NodeId(1, "foo");
-        var writeValue = new WriteValue(
-            nodeId,
-            AttributeId.Value.uid(),
-            null,
-            DataValue.valueOnly(Variant.NULL_VALUE)
-        );
+  @Test
+  void checkWriteAccess_Value_Denied() {
+    var nodeId = new NodeId(1, "foo");
+    var writeValue =
+        new WriteValue(
+            nodeId, AttributeId.Value.uid(), null, DataValue.valueOnly(Variant.NULL_VALUE));
 
-        UByte userAccessLevel = AccessLevel.toValue(AccessLevel.READ_ONLY);
+    UByte userAccessLevel = AccessLevel.toValue(AccessLevel.READ_ONLY);
 
-        var attributes = new AccessControlAttributes(
-            null,
-            null,
-            userAccessLevel,
-            null,
-            null
-        );
-        attributesMap.put(nodeId, attributes);
+    var attributes = new AccessControlAttributes(null, null, userAccessLevel, null, null);
+    attributesMap.put(nodeId, attributes);
 
-        AccessResult result = DefaultAccessController
-            .checkWriteAccess(context, List.of(writeValue)).get(writeValue);
+    AccessResult result =
+        DefaultAccessController.checkWriteAccess(context, List.of(writeValue)).get(writeValue);
 
-        assertEquals(AccessResult.DENIED_USER_ACCESS, result);
-    }
+    assertEquals(AccessResult.DENIED_USER_ACCESS, result);
+  }
 
-    @Test
-    void checkWriteAccess_RolePermissions() {
-        var nodeId = new NodeId(1, "foo");
-        var writeValue = new WriteValue(
+  @Test
+  void checkWriteAccess_RolePermissions() {
+    var nodeId = new NodeId(1, "foo");
+    var writeValue =
+        new WriteValue(
             nodeId,
             AttributeId.RolePermissions.uid(),
             null,
-            DataValue.valueOnly(Variant.NULL_VALUE)
-        );
+            DataValue.valueOnly(Variant.NULL_VALUE));
 
-        {
-            attributesMap.put(nodeId, new AccessControlAttributes(
-                null,
-                null,
-                null,
-                null,
-                new RolePermissionType[]{new RolePermissionType(ROLE_A, PermissionType.of())}
-            ));
+    {
+      attributesMap.put(
+          nodeId,
+          new AccessControlAttributes(
+              null,
+              null,
+              null,
+              null,
+              new RolePermissionType[] {new RolePermissionType(ROLE_A, PermissionType.of())}));
 
-            Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_A)));
+      Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_A)));
 
-            AccessResult result = DefaultAccessController
-                .checkWriteAccess(context, List.of(writeValue)).get(writeValue);
+      AccessResult result =
+          DefaultAccessController.checkWriteAccess(context, List.of(writeValue)).get(writeValue);
 
-            assertEquals(AccessResult.DENIED_USER_ACCESS, result);
-        }
-
-        {
-            attributesMap.put(nodeId, new AccessControlAttributes(
-                null,
-                null,
-                null,
-                null,
-                new RolePermissionType[]{
-                    new RolePermissionType(ROLE_B, PermissionType.of(PermissionType.Field.WriteRolePermissions))
-                }
-            ));
-
-            Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_B)));
-
-            AccessResult result = DefaultAccessController
-                .checkWriteAccess(context, List.of(writeValue)).get(writeValue);
-
-            assertEquals(AccessResult.ALLOWED, result);
-        }
+      assertEquals(AccessResult.DENIED_USER_ACCESS, result);
     }
 
-    @Test
-    void checkWriteAccess_Historizing() {
-        var nodeId = new NodeId(1, "foo");
-        var writeValue = new WriteValue(
-            nodeId,
-            AttributeId.Historizing.uid(),
-            null,
-            DataValue.valueOnly(Variant.NULL_VALUE)
-        );
+    {
+      attributesMap.put(
+          nodeId,
+          new AccessControlAttributes(
+              null,
+              null,
+              null,
+              null,
+              new RolePermissionType[] {
+                new RolePermissionType(
+                    ROLE_B, PermissionType.of(PermissionType.Field.WriteRolePermissions))
+              }));
 
-        {
-            attributesMap.put(nodeId, new AccessControlAttributes(
-                null,
-                null,
-                null,
-                null,
-                new RolePermissionType[]{
-                    new RolePermissionType(ROLE_A, PermissionType.of()),
-                }
-            ));
+      Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_B)));
 
-            Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_A)));
+      AccessResult result =
+          DefaultAccessController.checkWriteAccess(context, List.of(writeValue)).get(writeValue);
 
-            AccessResult result = DefaultAccessController
-                .checkWriteAccess(context, List.of(writeValue)).get(writeValue);
+      assertEquals(AccessResult.ALLOWED, result);
+    }
+  }
 
-            assertEquals(AccessResult.DENIED_USER_ACCESS, result);
-        }
+  @Test
+  void checkWriteAccess_Historizing() {
+    var nodeId = new NodeId(1, "foo");
+    var writeValue =
+        new WriteValue(
+            nodeId, AttributeId.Historizing.uid(), null, DataValue.valueOnly(Variant.NULL_VALUE));
 
-        {
-            attributesMap.put(nodeId, new AccessControlAttributes(
-                null,
-                null,
-                null,
-                null,
-                new RolePermissionType[]{
-                    new RolePermissionType(ROLE_B, PermissionType.of(PermissionType.Field.WriteHistorizing)),
-                }
-            ));
+    {
+      attributesMap.put(
+          nodeId,
+          new AccessControlAttributes(
+              null,
+              null,
+              null,
+              null,
+              new RolePermissionType[] {
+                new RolePermissionType(ROLE_A, PermissionType.of()),
+              }));
 
-            Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_B)));
+      Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_A)));
 
-            AccessResult result = DefaultAccessController
-                .checkWriteAccess(context, List.of(writeValue)).get(writeValue);
+      AccessResult result =
+          DefaultAccessController.checkWriteAccess(context, List.of(writeValue)).get(writeValue);
 
-            assertEquals(AccessResult.ALLOWED, result);
-        }
+      assertEquals(AccessResult.DENIED_USER_ACCESS, result);
     }
 
-    @Test
-    void checkBrowseAccess() {
-        var nodeId = new NodeId(1, "foo");
+    {
+      attributesMap.put(
+          nodeId,
+          new AccessControlAttributes(
+              null,
+              null,
+              null,
+              null,
+              new RolePermissionType[] {
+                new RolePermissionType(
+                    ROLE_B, PermissionType.of(PermissionType.Field.WriteHistorizing)),
+              }));
 
-        {
-            attributesMap.put(nodeId, new AccessControlAttributes(
-                null,
-                null,
-                null,
-                null,
-                new RolePermissionType[]{new RolePermissionType(ROLE_A, PermissionType.of())}
-            ));
+      Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_B)));
 
-            Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_A)));
+      AccessResult result =
+          DefaultAccessController.checkWriteAccess(context, List.of(writeValue)).get(writeValue);
 
-            AccessResult result = DefaultAccessController
-                .checkBrowseAccess(context, List.of(nodeId)).get(nodeId);
+      assertEquals(AccessResult.ALLOWED, result);
+    }
+  }
 
-            assertEquals(AccessResult.DENIED_USER_ACCESS, result);
-        }
+  @Test
+  void checkBrowseAccess() {
+    var nodeId = new NodeId(1, "foo");
 
-        {
-            attributesMap.put(nodeId, new AccessControlAttributes(
-                null,
-                null,
-                null,
-                null,
-                new RolePermissionType[]{new RolePermissionType(ROLE_B, PermissionType.of(PermissionType.Field.Browse))}
-            ));
+    {
+      attributesMap.put(
+          nodeId,
+          new AccessControlAttributes(
+              null,
+              null,
+              null,
+              null,
+              new RolePermissionType[] {new RolePermissionType(ROLE_A, PermissionType.of())}));
 
-            Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_B)));
+      Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_A)));
 
-            AccessResult result = DefaultAccessController
-                .checkBrowseAccess(context, List.of(nodeId)).get(nodeId);
+      AccessResult result =
+          DefaultAccessController.checkBrowseAccess(context, List.of(nodeId)).get(nodeId);
 
-            assertEquals(AccessResult.ALLOWED, result);
-        }
+      assertEquals(AccessResult.DENIED_USER_ACCESS, result);
     }
 
-    @Test
-    void checkCallAccess() {
-        var objectNodeId = new NodeId(1, "object");
-        var methodNodeId = new NodeId(1, "method");
-        var callMethodRequest = new CallMethodRequest(objectNodeId, methodNodeId, null);
+    {
+      attributesMap.put(
+          nodeId,
+          new AccessControlAttributes(
+              null,
+              null,
+              null,
+              null,
+              new RolePermissionType[] {
+                new RolePermissionType(ROLE_B, PermissionType.of(PermissionType.Field.Browse))
+              }));
 
-        {
-            var attributes = new AccessControlAttributes(
-                null,
-                null,
-                null,
-                null,
-                new RolePermissionType[]{
-                    new RolePermissionType(ROLE_A, PermissionType.of()),
-                }
-            );
-            attributesMap.put(objectNodeId, attributes);
-            attributesMap.put(methodNodeId, attributes);
+      Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_B)));
 
-            Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_A)));
+      AccessResult result =
+          DefaultAccessController.checkBrowseAccess(context, List.of(nodeId)).get(nodeId);
 
-            AccessResult result = DefaultAccessController.checkCallAccess(
-                context,
-                List.of(callMethodRequest)
-            ).get(callMethodRequest);
+      assertEquals(AccessResult.ALLOWED, result);
+    }
+  }
 
-            assertEquals(AccessResult.DENIED_USER_ACCESS, result);
-        }
+  @Test
+  void checkCallAccess() {
+    var objectNodeId = new NodeId(1, "object");
+    var methodNodeId = new NodeId(1, "method");
+    var callMethodRequest = new CallMethodRequest(objectNodeId, methodNodeId, null);
 
-        {
-            var attributes = new AccessControlAttributes(
-                null,
-                null,
-                null,
-                null,
-                new RolePermissionType[]{new RolePermissionType(ROLE_B, PermissionType.of(PermissionType.Field.Call))}
-            );
-            attributesMap.put(objectNodeId, attributes);
-            attributesMap.put(methodNodeId, attributes);
+    {
+      var attributes =
+          new AccessControlAttributes(
+              null,
+              null,
+              null,
+              null,
+              new RolePermissionType[] {
+                new RolePermissionType(ROLE_A, PermissionType.of()),
+              });
+      attributesMap.put(objectNodeId, attributes);
+      attributesMap.put(methodNodeId, attributes);
 
-            Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_B)));
+      Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_A)));
 
-            AccessResult result = DefaultAccessController.checkCallAccess(
-                context,
-                List.of(callMethodRequest)
-            ).get(callMethodRequest);
+      AccessResult result =
+          DefaultAccessController.checkCallAccess(context, List.of(callMethodRequest))
+              .get(callMethodRequest);
 
-            assertEquals(AccessResult.ALLOWED, result);
-        }
+      assertEquals(AccessResult.DENIED_USER_ACCESS, result);
     }
 
-    @Test
-    void checkCallAccess_UserExecutable() {
-        var objectNodeId = new NodeId(1, "object");
-        var methodNodeId = new NodeId(1, "method");
-        var callMethodRequest = new CallMethodRequest(objectNodeId, methodNodeId, null);
+    {
+      var attributes =
+          new AccessControlAttributes(
+              null,
+              null,
+              null,
+              null,
+              new RolePermissionType[] {
+                new RolePermissionType(ROLE_B, PermissionType.of(PermissionType.Field.Call))
+              });
+      attributesMap.put(objectNodeId, attributes);
+      attributesMap.put(methodNodeId, attributes);
 
-        attributesMap.put(objectNodeId, new AccessControlAttributes(
-            null,
-            null,
-            null,
-            null,
-            null
-        ));
+      Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_B)));
 
-        {
-            attributesMap.put(methodNodeId, new AccessControlAttributes(
-                null,
-                null,
-                null,
-                false,
-                null
-            ));
+      AccessResult result =
+          DefaultAccessController.checkCallAccess(context, List.of(callMethodRequest))
+              .get(callMethodRequest);
 
-            Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of()));
+      assertEquals(AccessResult.ALLOWED, result);
+    }
+  }
 
-            AccessResult result = DefaultAccessController.checkCallAccess(
-                context,
-                List.of(callMethodRequest)
-            ).get(callMethodRequest);
+  @Test
+  void checkCallAccess_UserExecutable() {
+    var objectNodeId = new NodeId(1, "object");
+    var methodNodeId = new NodeId(1, "method");
+    var callMethodRequest = new CallMethodRequest(objectNodeId, methodNodeId, null);
 
-            assertEquals(AccessResult.DENIED_USER_ACCESS, result);
-        }
+    attributesMap.put(objectNodeId, new AccessControlAttributes(null, null, null, null, null));
 
-        {
-            attributesMap.put(methodNodeId, new AccessControlAttributes(
-                null,
-                null,
-                null,
-                true,
-                null
-            ));
+    {
+      attributesMap.put(methodNodeId, new AccessControlAttributes(null, null, null, false, null));
 
-            AccessResult result = DefaultAccessController.checkCallAccess(
-                context,
-                List.of(callMethodRequest)
-            ).get(callMethodRequest);
+      Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of()));
 
-            assertEquals(AccessResult.ALLOWED, result);
-        }
+      AccessResult result =
+          DefaultAccessController.checkCallAccess(context, List.of(callMethodRequest))
+              .get(callMethodRequest);
+
+      assertEquals(AccessResult.DENIED_USER_ACCESS, result);
     }
 
-    @Test
-    void checkAddReferences() {
-        var sourceNodeId = new NodeId(1, "source");
-        var targetNodeId = new NodeId(1, "target");
-        var addReferencesItem = new AddReferencesItem(
+    {
+      attributesMap.put(methodNodeId, new AccessControlAttributes(null, null, null, true, null));
+
+      AccessResult result =
+          DefaultAccessController.checkCallAccess(context, List.of(callMethodRequest))
+              .get(callMethodRequest);
+
+      assertEquals(AccessResult.ALLOWED, result);
+    }
+  }
+
+  @Test
+  void checkAddReferences() {
+    var sourceNodeId = new NodeId(1, "source");
+    var targetNodeId = new NodeId(1, "target");
+    var addReferencesItem =
+        new AddReferencesItem(
             sourceNodeId,
             NodeIds.HasComponent,
             true,
             null,
             targetNodeId.expanded(),
-            NodeClass.Object
-        );
+            NodeClass.Object);
 
-        {
-            var attributes = new AccessControlAttributes(
-                null,
-                null,
-                null,
-                null,
-                new RolePermissionType[]{new RolePermissionType(ROLE_A, PermissionType.of())}
-            );
-            attributesMap.put(sourceNodeId, attributes);
-            attributesMap.put(targetNodeId, attributes);
+    {
+      var attributes =
+          new AccessControlAttributes(
+              null,
+              null,
+              null,
+              null,
+              new RolePermissionType[] {new RolePermissionType(ROLE_A, PermissionType.of())});
+      attributesMap.put(sourceNodeId, attributes);
+      attributesMap.put(targetNodeId, attributes);
 
-            Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_A)));
+      Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_A)));
 
-            AccessResult result = DefaultAccessController.checkAddReferencesAccess(
-                context,
-                List.of(addReferencesItem)
-            ).get(addReferencesItem);
+      AccessResult result =
+          DefaultAccessController.checkAddReferencesAccess(context, List.of(addReferencesItem))
+              .get(addReferencesItem);
 
-            assertEquals(AccessResult.DENIED_USER_ACCESS, result);
-        }
-
-        {
-            var attributes = new AccessControlAttributes(
-                null,
-                null,
-                null,
-                null,
-                new RolePermissionType[]{
-                    new RolePermissionType(ROLE_B, PermissionType.of(PermissionType.Field.AddReference))
-                }
-            );
-            attributesMap.put(sourceNodeId, attributes);
-            attributesMap.put(targetNodeId, attributes);
-
-            Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_B)));
-
-            AccessResult result = DefaultAccessController.checkAddReferencesAccess(
-                context,
-                List.of(addReferencesItem)
-            ).get(addReferencesItem);
-
-            assertEquals(AccessResult.ALLOWED, result);
-        }
+      assertEquals(AccessResult.DENIED_USER_ACCESS, result);
     }
 
-    @Test
-    void checkDeleteNodes() {
-        var deleteNodesItem = new DeleteNodesItem(new NodeId(1, "foo"), true);
+    {
+      var attributes =
+          new AccessControlAttributes(
+              null,
+              null,
+              null,
+              null,
+              new RolePermissionType[] {
+                new RolePermissionType(ROLE_B, PermissionType.of(PermissionType.Field.AddReference))
+              });
+      attributesMap.put(sourceNodeId, attributes);
+      attributesMap.put(targetNodeId, attributes);
 
-        {
-            var attributes = new AccessControlAttributes(
-                null,
-                null,
-                null,
-                null,
-                new RolePermissionType[]{new RolePermissionType(ROLE_A, PermissionType.of())}
-            );
-            attributesMap.put(deleteNodesItem.getNodeId(), attributes);
+      Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_B)));
 
-            Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_A)));
+      AccessResult result =
+          DefaultAccessController.checkAddReferencesAccess(context, List.of(addReferencesItem))
+              .get(addReferencesItem);
 
-            AccessResult result = DefaultAccessController.checkDeleteNodesAccess(
-                context,
-                List.of(deleteNodesItem)
-            ).get(deleteNodesItem);
+      assertEquals(AccessResult.ALLOWED, result);
+    }
+  }
 
-            assertEquals(AccessResult.DENIED_USER_ACCESS, result);
-        }
+  @Test
+  void checkDeleteNodes() {
+    var deleteNodesItem = new DeleteNodesItem(new NodeId(1, "foo"), true);
 
-        {
-            var attributes = new AccessControlAttributes(
-                null,
-                null,
-                null,
-                null,
-                new RolePermissionType[]{
-                    new RolePermissionType(ROLE_B, PermissionType.of(PermissionType.Field.DeleteNode))
-                }
-            );
-            attributesMap.put(deleteNodesItem.getNodeId(), attributes);
+    {
+      var attributes =
+          new AccessControlAttributes(
+              null,
+              null,
+              null,
+              null,
+              new RolePermissionType[] {new RolePermissionType(ROLE_A, PermissionType.of())});
+      attributesMap.put(deleteNodesItem.getNodeId(), attributes);
 
-            Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_B)));
+      Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_A)));
 
-            AccessResult result = DefaultAccessController.checkDeleteNodesAccess(
-                context,
-                List.of(deleteNodesItem)
-            ).get(deleteNodesItem);
+      AccessResult result =
+          DefaultAccessController.checkDeleteNodesAccess(context, List.of(deleteNodesItem))
+              .get(deleteNodesItem);
 
-            assertEquals(AccessResult.ALLOWED, result);
-        }
+      assertEquals(AccessResult.DENIED_USER_ACCESS, result);
     }
 
-    @Test
-    void checkDeleteReferences() {
-        var sourceNodeId = new NodeId(1, "source");
-        var targetNodeId = new NodeId(1, "target");
-        var deleteReferencesItem = new DeleteReferencesItem(
-            sourceNodeId,
-            NodeIds.HasComponent,
-            true,
-            targetNodeId.expanded(),
-            true
-        );
+    {
+      var attributes =
+          new AccessControlAttributes(
+              null,
+              null,
+              null,
+              null,
+              new RolePermissionType[] {
+                new RolePermissionType(ROLE_B, PermissionType.of(PermissionType.Field.DeleteNode))
+              });
+      attributesMap.put(deleteNodesItem.getNodeId(), attributes);
 
-        {
-            var attributes = new AccessControlAttributes(
-                null,
-                null,
-                null,
-                null,
-                new RolePermissionType[]{new RolePermissionType(ROLE_A, PermissionType.of())}
-            );
-            attributesMap.put(deleteReferencesItem.getSourceNodeId(), attributes);
+      Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_B)));
 
-            Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_A)));
+      AccessResult result =
+          DefaultAccessController.checkDeleteNodesAccess(context, List.of(deleteNodesItem))
+              .get(deleteNodesItem);
 
-            AccessResult result = DefaultAccessController.checkDeleteReferencesAccess(
-                context,
-                List.of(deleteReferencesItem)
-            ).get(deleteReferencesItem);
+      assertEquals(AccessResult.ALLOWED, result);
+    }
+  }
 
-            assertEquals(AccessResult.DENIED_USER_ACCESS, result);
-        }
+  @Test
+  void checkDeleteReferences() {
+    var sourceNodeId = new NodeId(1, "source");
+    var targetNodeId = new NodeId(1, "target");
+    var deleteReferencesItem =
+        new DeleteReferencesItem(
+            sourceNodeId, NodeIds.HasComponent, true, targetNodeId.expanded(), true);
 
-        {
-            var attributes = new AccessControlAttributes(
-                null,
-                null,
-                null,
-                null,
-                new RolePermissionType[]{
-                    new RolePermissionType(ROLE_B, PermissionType.of(PermissionType.Field.RemoveReference))
-                }
-            );
-            attributesMap.put(deleteReferencesItem.getSourceNodeId(), attributes);
+    {
+      var attributes =
+          new AccessControlAttributes(
+              null,
+              null,
+              null,
+              null,
+              new RolePermissionType[] {new RolePermissionType(ROLE_A, PermissionType.of())});
+      attributesMap.put(deleteReferencesItem.getSourceNodeId(), attributes);
 
-            Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_B)));
+      Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_A)));
 
-            AccessResult result = DefaultAccessController.checkDeleteReferencesAccess(
-                context,
-                List.of(deleteReferencesItem)
-            ).get(deleteReferencesItem);
+      AccessResult result =
+          DefaultAccessController.checkDeleteReferencesAccess(
+                  context, List.of(deleteReferencesItem))
+              .get(deleteReferencesItem);
 
-            assertEquals(AccessResult.ALLOWED, result);
-        }
+      assertEquals(AccessResult.DENIED_USER_ACCESS, result);
     }
 
+    {
+      var attributes =
+          new AccessControlAttributes(
+              null,
+              null,
+              null,
+              null,
+              new RolePermissionType[] {
+                new RolePermissionType(
+                    ROLE_B, PermissionType.of(PermissionType.Field.RemoveReference))
+              });
+      attributesMap.put(deleteReferencesItem.getSourceNodeId(), attributes);
+
+      Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_B)));
+
+      AccessResult result =
+          DefaultAccessController.checkDeleteReferencesAccess(
+                  context, List.of(deleteReferencesItem))
+              .get(deleteReferencesItem);
+
+      assertEquals(AccessResult.ALLOWED, result);
+    }
+  }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -15,34 +15,35 @@ import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part16/4.4.17">https://reference.opcfoundation.org/v105/Core/docs/Part16/4.4.17</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part16/4.4.17">https://reference.opcfoundation.org/v105/Core/docs/Part16/4.4.17</a>
  */
 public interface AuditUpdateStateEventType extends AuditUpdateMethodEventType {
-    QualifiedProperty<Object> OLD_STATE_ID = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "OldStateId",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
-        -1,
-        Object.class
-    );
+  QualifiedProperty<Object> OLD_STATE_ID =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "OldStateId",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
+          -1,
+          Object.class);
 
-    QualifiedProperty<Object> NEW_STATE_ID = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "NewStateId",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
-        -1,
-        Object.class
-    );
+  QualifiedProperty<Object> NEW_STATE_ID =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "NewStateId",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
+          -1,
+          Object.class);
 
-    Object getOldStateId();
+  Object getOldStateId();
 
-    void setOldStateId(Object value);
+  void setOldStateId(Object value);
 
-    PropertyType getOldStateIdNode();
+  PropertyType getOldStateIdNode();
 
-    Object getNewStateId();
+  Object getNewStateId();
 
-    void setNewStateId(Object value);
+  void setNewStateId(Object value);
 
-    PropertyType getNewStateIdNode();
+  PropertyType getNewStateIdNode();
 }

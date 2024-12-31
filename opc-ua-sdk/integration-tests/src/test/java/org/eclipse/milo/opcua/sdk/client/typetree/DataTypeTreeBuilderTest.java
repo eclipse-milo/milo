@@ -17,14 +17,13 @@ import org.junit.jupiter.api.TestInstance;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class DataTypeTreeBuilderTest extends AbstractClientServerTest {
 
-    @Test
-    void build() throws Exception {
-        DataTypeTreeBuilder.build(client);
-    }
+  @Test
+  void build() throws Exception {
+    DataTypeTreeBuilder.build(client);
+  }
 
-    @Test
-    void buildAsync() throws Exception {
-        DataTypeTreeBuilder.buildAsync(client).get();
-    }
-
+  @Test
+  void buildAsync() throws Exception {
+    DataTypeTreeBuilder.buildAsync(client).get();
+  }
 }

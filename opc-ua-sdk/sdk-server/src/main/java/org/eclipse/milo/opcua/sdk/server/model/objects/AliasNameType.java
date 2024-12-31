@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -11,7 +11,7 @@
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part17/6.2">https://reference.opcfoundation.org/v105/Core/docs/Part17/6.2</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part17/6.2">https://reference.opcfoundation.org/v105/Core/docs/Part17/6.2</a>
  */
-public interface AliasNameType extends BaseObjectType {
-}
+public interface AliasNameType extends BaseObjectType {}

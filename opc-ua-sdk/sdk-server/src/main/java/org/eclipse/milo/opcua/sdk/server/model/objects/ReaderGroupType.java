@@ -25,95 +25,126 @@ import org.eclipse.milo.opcua.stack.core.types.structured.DataSetReaderDataType;
 import org.eclipse.milo.opcua.stack.core.util.Lazy;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.9">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.9</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.9">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.9</a>
  */
 public interface ReaderGroupType extends PubSubGroupType {
-    PubSubDiagnosticsReaderGroupType getDiagnosticsNode();
+  PubSubDiagnosticsReaderGroupType getDiagnosticsNode();
 
-    ReaderGroupTransportType getTransportSettingsNode();
+  ReaderGroupTransportType getTransportSettingsNode();
 
-    ReaderGroupMessageType getMessageSettingsNode();
+  ReaderGroupMessageType getMessageSettingsNode();
 
-    MethodNode getAddDataSetReaderMethodNode();
+  MethodNode getAddDataSetReaderMethodNode();
 
-    MethodNode getRemoveDataSetReaderMethodNode();
+  MethodNode getRemoveDataSetReaderMethodNode();
 
-    abstract class AddDataSetReaderMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  abstract class AddDataSetReaderMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
 
-        private final Lazy<Argument[]> outputArguments = new Lazy<>();
+    private final Lazy<Argument[]> outputArguments = new Lazy<>();
 
-        public AddDataSetReaderMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("Configuration", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15623").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return outputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("DataSetReaderNodeId", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            DataSetReaderDataType configuration = (DataSetReaderDataType) inputValues[0].getValue();
-            Out<NodeId> dataSetReaderNodeId = new Out<>();
-            invoke(context, configuration, dataSetReaderNodeId);
-            return new Variant[]{new Variant(dataSetReaderNodeId.get())};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       DataSetReaderDataType configuration, Out<NodeId> dataSetReaderNodeId) throws UaException;
+    public AddDataSetReaderMethod(UaMethodNode node) {
+      super(node);
     }
 
-    abstract class RemoveDataSetReaderMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
 
-        public RemoveDataSetReaderMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("DataSetReaderNodeId", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            NodeId dataSetReaderNodeId = (NodeId) inputValues[0].getValue();
-            invoke(context, dataSetReaderNodeId);
-            return new Variant[]{};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       NodeId dataSetReaderNodeId) throws UaException;
+            return new Argument[] {
+              new Argument(
+                  "Configuration",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15623")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
     }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return outputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "DataSetReaderNodeId",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      DataSetReaderDataType configuration = (DataSetReaderDataType) inputValues[0].getValue();
+      Out<NodeId> dataSetReaderNodeId = new Out<>();
+      invoke(context, configuration, dataSetReaderNodeId);
+      return new Variant[] {new Variant(dataSetReaderNodeId.get())};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        DataSetReaderDataType configuration,
+        Out<NodeId> dataSetReaderNodeId)
+        throws UaException;
+  }
+
+  abstract class RemoveDataSetReaderMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+
+    public RemoveDataSetReaderMethod(UaMethodNode node) {
+      super(node);
+    }
+
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "DataSetReaderNodeId",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      NodeId dataSetReaderNodeId = (NodeId) inputValues[0].getValue();
+      invoke(context, dataSetReaderNodeId);
+      return new Variant[] {};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, NodeId dataSetReaderNodeId)
+        throws UaException;
+  }
 }

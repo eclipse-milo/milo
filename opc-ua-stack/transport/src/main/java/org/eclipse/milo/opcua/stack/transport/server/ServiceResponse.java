@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -14,14 +14,13 @@ import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
 
 public class ServiceResponse {
 
-    private final UaResponseMessageType responseMessage;
+  private final UaResponseMessageType responseMessage;
 
-    public ServiceResponse(UaResponseMessageType responseMessage) {
-        this.responseMessage = responseMessage;
-    }
+  public ServiceResponse(UaResponseMessageType responseMessage) {
+    this.responseMessage = responseMessage;
+  }
 
-    public UaResponseMessageType getResponseMessage() {
-        return responseMessage;
-    }
-
+  public UaResponseMessageType getResponseMessage() {
+    return responseMessage;
+  }
 }

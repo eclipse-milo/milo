@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -18,24 +18,25 @@ import org.eclipse.milo.opcua.stack.core.types.structured.SessionSecurityDiagnos
 import org.eclipse.milo.opcua.stack.core.types.structured.SubscriptionDiagnosticsDataType;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.5">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.5</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.5">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.5</a>
  */
 public interface SessionDiagnosticsObjectType extends BaseObjectType {
-    SessionDiagnosticsVariableType getSessionDiagnosticsNode();
+  SessionDiagnosticsVariableType getSessionDiagnosticsNode();
 
-    SessionDiagnosticsDataType getSessionDiagnostics();
+  SessionDiagnosticsDataType getSessionDiagnostics();
 
-    void setSessionDiagnostics(SessionDiagnosticsDataType value);
+  void setSessionDiagnostics(SessionDiagnosticsDataType value);
 
-    SessionSecurityDiagnosticsType getSessionSecurityDiagnosticsNode();
+  SessionSecurityDiagnosticsType getSessionSecurityDiagnosticsNode();
 
-    SessionSecurityDiagnosticsDataType getSessionSecurityDiagnostics();
+  SessionSecurityDiagnosticsDataType getSessionSecurityDiagnostics();
 
-    void setSessionSecurityDiagnostics(SessionSecurityDiagnosticsDataType value);
+  void setSessionSecurityDiagnostics(SessionSecurityDiagnosticsDataType value);
 
-    SubscriptionDiagnosticsArrayType getSubscriptionDiagnosticsArrayNode();
+  SubscriptionDiagnosticsArrayType getSubscriptionDiagnosticsArrayNode();
 
-    SubscriptionDiagnosticsDataType[] getSubscriptionDiagnosticsArray();
+  SubscriptionDiagnosticsDataType[] getSubscriptionDiagnosticsArray();
 
-    void setSubscriptionDiagnosticsArray(SubscriptionDiagnosticsDataType[] value);
+  void setSubscriptionDiagnosticsArray(SubscriptionDiagnosticsDataType[] value);
 }

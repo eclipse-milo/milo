@@ -1,4 +1,4 @@
-///*
+/// *
 // * Copyright (c) 2022 the Eclipse Milo Authors
 // *
 // * This program and the accompanying materials are made
@@ -8,73 +8,73 @@
 // * SPDX-License-Identifier: EPL-2.0
 // */
 //
-//package org.eclipse.milo.opcua.stack;
+// package org.eclipse.milo.opcua.stack;
 //
-//import java.security.Security;
-//import java.security.cert.X509Certificate;
-//import java.util.ArrayList;
-//import java.util.Collections;
-//import java.util.LinkedHashSet;
-//import java.util.List;
-//import java.util.Set;
-//import java.util.UUID;
-//import java.util.concurrent.CompletableFuture;
+// import java.security.Security;
+// import java.security.cert.X509Certificate;
+// import java.util.ArrayList;
+// import java.util.Collections;
+// import java.util.LinkedHashSet;
+// import java.util.List;
+// import java.util.Set;
+// import java.util.UUID;
+// import java.util.concurrent.CompletableFuture;
 //
-//import org.bouncycastle.jce.provider.BouncyCastleProvider;
-//import org.eclipse.milo.opcua.stack.client.DiscoveryClient;
-//import org.eclipse.milo.opcua.stack.client.UaStackClient;
-//import org.eclipse.milo.opcua.stack.client.UaStackClientConfig;
-//import org.eclipse.milo.opcua.stack.core.AttributeId;
-//import org.eclipse.milo.opcua.stack.core.Stack;
-//import org.eclipse.milo.opcua.stack.core.StatusCodes;
-//import org.eclipse.milo.opcua.stack.core.UaException;
-//import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
-//import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
-//import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
-//import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
-//import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
-//import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
-//import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-//import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
-//import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
-//import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-//import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
-//import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-//import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
-//import org.eclipse.milo.opcua.stack.core.types.builtin.XmlElement;
-//import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
-//import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
-//import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
-//import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
-//import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
-//import org.eclipse.milo.opcua.stack.core.types.structured.ReadRequest;
-//import org.eclipse.milo.opcua.stack.core.types.structured.ReadResponse;
-//import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
-//import org.eclipse.milo.opcua.stack.core.types.structured.RequestHeader;
-//import org.eclipse.milo.opcua.stack.core.types.structured.ResponseHeader;
-//import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
-//import org.eclipse.milo.opcua.stack.core.util.FutureUtils;
-//import org.eclipse.milo.opcua.stack.server.EndpointConfiguration;
-//import org.eclipse.milo.opcua.stack.server.UaStackServer;
-//import org.eclipse.milo.opcua.stack.server.UaStackServerConfig;
-//import org.slf4j.Logger;
-//import org.slf4j.LoggerFactory;
-//import org.testng.annotations.AfterSuite;
-//import org.testng.annotations.BeforeSuite;
-//import org.testng.annotations.DataProvider;
-//import org.testng.annotations.Test;
+// import org.bouncycastle.jce.provider.BouncyCastleProvider;
+// import org.eclipse.milo.opcua.stack.client.DiscoveryClient;
+// import org.eclipse.milo.opcua.stack.client.UaStackClient;
+// import org.eclipse.milo.opcua.stack.client.UaStackClientConfig;
+// import org.eclipse.milo.opcua.stack.core.AttributeId;
+// import org.eclipse.milo.opcua.stack.core.Stack;
+// import org.eclipse.milo.opcua.stack.core.StatusCodes;
+// import org.eclipse.milo.opcua.stack.core.UaException;
+// import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
+// import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
+// import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
+// import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
+// import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+// import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+// import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+// import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
+// import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+// import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+// import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
+// import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+// import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+// import org.eclipse.milo.opcua.stack.core.types.builtin.XmlElement;
+// import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+// import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
+// import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
+// import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
+// import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
+// import org.eclipse.milo.opcua.stack.core.types.structured.ReadRequest;
+// import org.eclipse.milo.opcua.stack.core.types.structured.ReadResponse;
+// import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
+// import org.eclipse.milo.opcua.stack.core.types.structured.RequestHeader;
+// import org.eclipse.milo.opcua.stack.core.types.structured.ResponseHeader;
+// import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
+// import org.eclipse.milo.opcua.stack.core.util.FutureUtils;
+// import org.eclipse.milo.opcua.stack.server.EndpointConfiguration;
+// import org.eclipse.milo.opcua.stack.server.UaStackServer;
+// import org.eclipse.milo.opcua.stack.server.UaStackServerConfig;
+// import org.slf4j.Logger;
+// import org.slf4j.LoggerFactory;
+// import org.testng.annotations.AfterSuite;
+// import org.testng.annotations.BeforeSuite;
+// import org.testng.annotations.DataProvider;
+// import org.testng.annotations.Test;
 //
-//import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
-//import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
-//import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ulong;
-//import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
-//import static org.eclipse.milo.opcua.stack.core.util.ConversionUtil.a;
-//import static org.eclipse.milo.opcua.stack.core.util.ConversionUtil.l;
-//import static org.testng.Assert.assertEquals;
-//import static org.testng.Assert.assertThrows;
-//import static org.testng.Assert.fail;
+// import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
+// import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
+// import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ulong;
+// import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
+// import static org.eclipse.milo.opcua.stack.core.util.ConversionUtil.a;
+// import static org.eclipse.milo.opcua.stack.core.util.ConversionUtil.l;
+// import static org.testng.Assert.assertEquals;
+// import static org.testng.Assert.assertThrows;
+// import static org.testng.Assert.fail;
 //
-//public class ClientServerTest extends SecurityFixture {
+// public class ClientServerTest extends SecurityFixture {
 //
 //    static {
 //        Security.addProvider(new BouncyCastleProvider());
@@ -110,7 +110,8 @@
 //            {new Variant(LocalizedText.english("LocalizedText"))},
 //            {new Variant(ExtensionObject.encode(
 //                new TestEncodingContext(),
-//                new ReadValueId(NodeId.NULL_VALUE, uint(1), null, new QualifiedName(0, "DataEncoding"))
+//                new ReadValueId(NodeId.NULL_VALUE, uint(1), null, new QualifiedName(0,
+// "DataEncoding"))
 //            ))},
 //        };
 //    }
@@ -161,7 +162,8 @@
 //            );
 //
 //            List<ReadValueId> nodesToRead = List.of(request.getNodesToRead());
-//            List<DataValue> results = Collections.nCopies(nodesToRead.size(), new DataValue(variant));
+//            List<DataValue> results = Collections.nCopies(nodesToRead.size(), new
+// DataValue(variant));
 //
 //            ReadResponse response = new ReadResponse(header, a(results, DataValue.class), null);
 //
@@ -174,7 +176,8 @@
 //        EndpointDescription endpoint = endpoints[0];
 //
 //        logger.info("SecurityPolicy={}, MessageSecurityMode={}, input={}",
-//            SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri()), endpoint.getSecurityMode(), input);
+//            SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri()), endpoint.getSecurityMode(),
+// input);
 //
 //        UaStackClient client = createClient(endpoint);
 //
@@ -182,11 +185,13 @@
 //    }
 //
 //    @Test(dataProvider = "getVariants")
-//    public void testClientServerRoundTrip_TestStack_Basic128Rsa15_Sign(Variant input) throws Exception {
+//    public void testClientServerRoundTrip_TestStack_Basic128Rsa15_Sign(Variant input) throws
+// Exception {
 //        EndpointDescription endpoint = endpoints[1];
 //
 //        logger.info("SecurityPolicy={}, MessageSecurityMode={}, input={}",
-//            SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri()), endpoint.getSecurityMode(), input);
+//            SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri()), endpoint.getSecurityMode(),
+// input);
 //
 //        UaStackClient client = createClient(endpoint);
 //
@@ -194,11 +199,13 @@
 //    }
 //
 //    @Test(dataProvider = "getVariants")
-//    public void testClientServerRoundTrip_TestStack_Basic256_Sign(Variant input) throws Exception {
+//    public void testClientServerRoundTrip_TestStack_Basic256_Sign(Variant input) throws Exception
+// {
 //        EndpointDescription endpoint = endpoints[2];
 //
 //        logger.info("SecurityPolicy={}, MessageSecurityMode={}, input={}",
-//            SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri()), endpoint.getSecurityMode(), input);
+//            SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri()), endpoint.getSecurityMode(),
+// input);
 //
 //        UaStackClient client = createClient(endpoint);
 //
@@ -206,11 +213,13 @@
 //    }
 //
 //    @Test(dataProvider = "getVariants")
-//    public void testClientServerRoundTrip_TestStack_Basic256Sha256_Sign(Variant input) throws Exception {
+//    public void testClientServerRoundTrip_TestStack_Basic256Sha256_Sign(Variant input) throws
+// Exception {
 //        EndpointDescription endpoint = endpoints[3];
 //
 //        logger.info("SecurityPolicy={}, MessageSecurityMode={}, input={}",
-//            SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri()), endpoint.getSecurityMode(), input);
+//            SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri()), endpoint.getSecurityMode(),
+// input);
 //
 //        UaStackClient client = createClient(endpoint);
 //
@@ -218,11 +227,13 @@
 //    }
 //
 //    @Test(dataProvider = "getVariants")
-//    public void testClientServerRoundTrip_TestStack_Basic128Rsa15_SignAndEncrypt(Variant input) throws Exception {
+//    public void testClientServerRoundTrip_TestStack_Basic128Rsa15_SignAndEncrypt(Variant input)
+// throws Exception {
 //        EndpointDescription endpoint = endpoints[4];
 //
 //        logger.info("SecurityPolicy={}, MessageSecurityMode={}, input={}",
-//            SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri()), endpoint.getSecurityMode(), input);
+//            SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri()), endpoint.getSecurityMode(),
+// input);
 //
 //        UaStackClient client = createClient(endpoint);
 //
@@ -230,11 +241,13 @@
 //    }
 //
 //    @Test(dataProvider = "getVariants")
-//    public void testClientServerRoundTrip_TestStack_Basic256_SignAndEncrypt(Variant input) throws Exception {
+//    public void testClientServerRoundTrip_TestStack_Basic256_SignAndEncrypt(Variant input) throws
+// Exception {
 //        EndpointDescription endpoint = endpoints[5];
 //
 //        logger.info("SecurityPolicy={}, MessageSecurityMode={}, input={}",
-//            SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri()), endpoint.getSecurityMode(), input);
+//            SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri()), endpoint.getSecurityMode(),
+// input);
 //
 //        UaStackClient client = createClient(endpoint);
 //
@@ -242,11 +255,13 @@
 //    }
 //
 //    @Test(dataProvider = "getVariants")
-//    public void testClientServerRoundTrip_TestStack_Basic256Sha256_SignAndEncrypt(Variant input) throws Exception {
+//    public void testClientServerRoundTrip_TestStack_Basic256Sha256_SignAndEncrypt(Variant input)
+// throws Exception {
 //        EndpointDescription endpoint = endpoints[6];
 //
 //        logger.info("SecurityPolicy={}, MessageSecurityMode={}, input={}",
-//            SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri()), endpoint.getSecurityMode(), input);
+//            SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri()), endpoint.getSecurityMode(),
+// input);
 //
 //        UaStackClient client = createClient(endpoint);
 //
@@ -259,7 +274,8 @@
 //
 //        Variant input = new Variant(42);
 //        logger.info("SecurityPolicy={}, MessageSecurityMode={}, input={}",
-//            SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri()), endpoint.getSecurityMode(), input);
+//            SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri()), endpoint.getSecurityMode(),
+// input);
 //
 //        UaStackClient client = createClient(endpoint);
 //
@@ -303,7 +319,8 @@
 //        Variant input = new Variant(42);
 //
 //        logger.info("SecurityPolicy={}, MessageSecurityMode={}, input={}",
-//            SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri()), endpoint.getSecurityMode(), input);
+//            SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri()), endpoint.getSecurityMode(),
+// input);
 //
 //        UaStackClient client = createClient(endpoint);
 //
@@ -347,7 +364,8 @@
 //        Variant input = new Variant(42);
 //
 //        logger.info("SecurityPolicy={}, MessageSecurityMode={}, input={}",
-//            SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri()), endpoint.getSecurityMode(), input);
+//            SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri()), endpoint.getSecurityMode(),
+// input);
 //
 //        UaStackClient client = createClient(endpoint);
 //
@@ -469,7 +487,8 @@
 //        return UaStackClient.create(config);
 //    }
 //
-//    private void connectAndTest(Variant input, UaStackClient client) throws InterruptedException, java.util.concurrent.ExecutionException {
+//    private void connectAndTest(Variant input, UaStackClient client) throws InterruptedException,
+// java.util.concurrent.ExecutionException {
 //        setReadRequestHandler(input);
 //
 //        client.connect().get();
@@ -589,8 +608,10 @@
 //                 *
 //                 * Usage of the  "/discovery" suffix is defined by OPC UA Part 6:
 //                 *
-//                 * Each OPC UA Server Application implements the Discovery Service Set. If the OPC UA Server requires a
-//                 * different address for this Endpoint it shall create the address by appending the path "/discovery" to
+//                 * Each OPC UA Server Application implements the Discovery Service Set. If the OPC
+// UA Server requires a
+//                 * different address for this Endpoint it shall create the address by appending
+// the path "/discovery" to
 //                 * its base address.
 //                 */
 //
@@ -624,4 +645,4 @@
 //        null
 //    );
 //
-//}
+// }

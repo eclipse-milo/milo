@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -19,76 +19,77 @@ import org.eclipse.milo.opcua.stack.core.types.structured.EventFilter;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryEventFieldList;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.6.2">https://reference.opcfoundation.org/v105/Core/docs/Part11/5.6.2</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.6.2">https://reference.opcfoundation.org/v105/Core/docs/Part11/5.6.2</a>
  */
 public interface AuditHistoryEventUpdateEventType extends AuditHistoryUpdateEventType {
-    QualifiedProperty<NodeId> UPDATED_NODE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "UpdatedNode",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-        -1,
-        NodeId.class
-    );
+  QualifiedProperty<NodeId> UPDATED_NODE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "UpdatedNode",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
+          -1,
+          NodeId.class);
 
-    QualifiedProperty<PerformUpdateType> PERFORM_INSERT_REPLACE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "PerformInsertReplace",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11293"),
-        -1,
-        PerformUpdateType.class
-    );
+  QualifiedProperty<PerformUpdateType> PERFORM_INSERT_REPLACE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "PerformInsertReplace",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11293"),
+          -1,
+          PerformUpdateType.class);
 
-    QualifiedProperty<EventFilter> FILTER = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "Filter",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=725"),
-        -1,
-        EventFilter.class
-    );
+  QualifiedProperty<EventFilter> FILTER =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "Filter",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=725"),
+          -1,
+          EventFilter.class);
 
-    QualifiedProperty<HistoryEventFieldList[]> NEW_VALUES = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "NewValues",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=920"),
-        1,
-        HistoryEventFieldList[].class
-    );
+  QualifiedProperty<HistoryEventFieldList[]> NEW_VALUES =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "NewValues",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=920"),
+          1,
+          HistoryEventFieldList[].class);
 
-    QualifiedProperty<HistoryEventFieldList[]> OLD_VALUES = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "OldValues",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=920"),
-        1,
-        HistoryEventFieldList[].class
-    );
+  QualifiedProperty<HistoryEventFieldList[]> OLD_VALUES =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "OldValues",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=920"),
+          1,
+          HistoryEventFieldList[].class);
 
-    NodeId getUpdatedNode();
+  NodeId getUpdatedNode();
 
-    void setUpdatedNode(NodeId value);
+  void setUpdatedNode(NodeId value);
 
-    PropertyType getUpdatedNodeNode();
+  PropertyType getUpdatedNodeNode();
 
-    PerformUpdateType getPerformInsertReplace();
+  PerformUpdateType getPerformInsertReplace();
 
-    void setPerformInsertReplace(PerformUpdateType value);
+  void setPerformInsertReplace(PerformUpdateType value);
 
-    PropertyType getPerformInsertReplaceNode();
+  PropertyType getPerformInsertReplaceNode();
 
-    EventFilter getFilter();
+  EventFilter getFilter();
 
-    void setFilter(EventFilter value);
+  void setFilter(EventFilter value);
 
-    PropertyType getFilterNode();
+  PropertyType getFilterNode();
 
-    HistoryEventFieldList[] getNewValues();
+  HistoryEventFieldList[] getNewValues();
 
-    void setNewValues(HistoryEventFieldList[] value);
+  void setNewValues(HistoryEventFieldList[] value);
 
-    PropertyType getNewValuesNode();
+  PropertyType getNewValuesNode();
 
-    HistoryEventFieldList[] getOldValues();
+  HistoryEventFieldList[] getOldValues();
 
-    void setOldValues(HistoryEventFieldList[] value);
+  void setOldValues(HistoryEventFieldList[] value);
 
-    PropertyType getOldValuesNode();
+  PropertyType getOldValuesNode();
 }

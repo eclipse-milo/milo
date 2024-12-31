@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -14,20 +14,20 @@ import java.net.InetSocketAddress;
 
 public interface OpcServerTransport {
 
-    /**
-     * Bind a {@link ServerApplicationContext} to the given bind address and port.
-     *
-     * @param applicationContext the {@link ServerApplicationContext} to bind.
-     * @param bindAddress        the local address to bind to.
-     * @throws Exception if an error occurs binding to the address/port combination.
-     */
-    void bind(ServerApplicationContext applicationContext, InetSocketAddress bindAddress) throws Exception;
+  /**
+   * Bind a {@link ServerApplicationContext} to the given bind address and port.
+   *
+   * @param applicationContext the {@link ServerApplicationContext} to bind.
+   * @param bindAddress the local address to bind to.
+   * @throws Exception if an error occurs binding to the address/port combination.
+   */
+  void bind(ServerApplicationContext applicationContext, InetSocketAddress bindAddress)
+      throws Exception;
 
-    /**
-     * Unbind this transport (close the server channel).
-     *
-     * @throws Exception if an error occurs unbinding this transport.
-     */
-    void unbind() throws Exception;
-
+  /**
+   * Unbind this transport (close the server channel).
+   *
+   * @throws Exception if an error occurs unbinding this transport.
+   */
+  void unbind() throws Exception;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -12,34 +12,32 @@ package org.eclipse.milo.opcua.sdk.server.util;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
-
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrowseResultMask;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 
 public class UaEnumUtil {
 
-    public static EnumSet<NodeClass> nodeClasses(long mask) {
-        var list = new ArrayList<NodeClass>();
+  public static EnumSet<NodeClass> nodeClasses(long mask) {
+    var list = new ArrayList<NodeClass>();
 
-        for (NodeClass nc : NodeClass.values()) {
-            if ((mask & nc.getValue()) == nc.getValue()) {
-                list.add(nc);
-            }
-        }
-
-        return EnumSet.copyOf(list);
+    for (NodeClass nc : NodeClass.values()) {
+      if ((mask & nc.getValue()) == nc.getValue()) {
+        list.add(nc);
+      }
     }
 
-    public static EnumSet<BrowseResultMask> browseResultMasks(long mask) {
-        var list = new ArrayList<BrowseResultMask>();
+    return EnumSet.copyOf(list);
+  }
 
-        for (BrowseResultMask brm : BrowseResultMask.values()) {
-            if ((mask & brm.getValue()) == brm.getValue()) {
-                list.add(brm);
-            }
-        }
+  public static EnumSet<BrowseResultMask> browseResultMasks(long mask) {
+    var list = new ArrayList<BrowseResultMask>();
 
-        return EnumSet.copyOf(list);
+    for (BrowseResultMask brm : BrowseResultMask.values()) {
+      if ((mask & brm.getValue()) == brm.getValue()) {
+        list.add(brm);
+      }
     }
 
+    return EnumSet.copyOf(list);
+  }
 }

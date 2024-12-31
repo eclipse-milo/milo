@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -10,8 +10,10 @@
 
 package org.eclipse.milo.opcua.sdk.server.nodes.filters;
 
-import java.util.concurrent.atomic.AtomicBoolean;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
 import org.eclipse.milo.opcua.sdk.server.NodeManager;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
@@ -29,59 +31,56 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.testng.annotations.Test;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
-
 public class AttributeFilterChainTest {
 
-    private final UaNodeManager nodeManager = new UaNodeManager();
+  private final UaNodeManager nodeManager = new UaNodeManager();
 
-    private final UaNodeContext context = new UaNodeContext() {
+  private final UaNodeContext context =
+      new UaNodeContext() {
         @Override
         public OpcUaServer getServer() {
-            return null;
+          return null;
         }
 
         @Override
         public NodeManager<UaNode> getNodeManager() {
-            return nodeManager;
+          return nodeManager;
         }
 
         @Override
         public NamespaceTable getNamespaceTable() {
-            return new NamespaceTable();
+          return new NamespaceTable();
         }
-    };
+      };
 
-    @Test
-    public void testAddFirst() {
-        AttributeFilterChain chain = new AttributeFilterChain();
+  @Test
+  public void testAddFirst() {
+    AttributeFilterChain chain = new AttributeFilterChain();
 
-        chain.addFirst(
-            AttributeFilters.getValue(ctx -> new DataValue(new Variant("A"))),
-            AttributeFilters.getValue(ctx -> new DataValue(new Variant("B")))
-        );
+    chain.addFirst(
+        AttributeFilters.getValue(ctx -> new DataValue(new Variant("A"))),
+        AttributeFilters.getValue(ctx -> new DataValue(new Variant("B"))));
 
-        DataValue value = (DataValue) chain.getAttribute(null, AttributeId.Value);
-        assertEquals(value.getValue().getValue(), "B");
-    }
+    DataValue value = (DataValue) chain.getAttribute(null, AttributeId.Value);
+    assertEquals(value.getValue().getValue(), "B");
+  }
 
-    @Test
-    public void testAddLast() {
-        AttributeFilterChain chain = new AttributeFilterChain();
+  @Test
+  public void testAddLast() {
+    AttributeFilterChain chain = new AttributeFilterChain();
 
-        chain.addLast(
-            AttributeFilters.getValue(ctx -> (DataValue) ctx.getAttribute(AttributeId.Value)),
-            AttributeFilters.getValue(ctx -> new DataValue(new Variant("Last")))
-        );
+    chain.addLast(
+        AttributeFilters.getValue(ctx -> (DataValue) ctx.getAttribute(AttributeId.Value)),
+        AttributeFilters.getValue(ctx -> new DataValue(new Variant("Last"))));
 
-        DataValue value = (DataValue) chain.getAttribute(null, AttributeId.Value);
-        assertEquals(value.getValue().getValue(), "Last");
-    }
+    DataValue value = (DataValue) chain.getAttribute(null, AttributeId.Value);
+    assertEquals(value.getValue().getValue(), "Last");
+  }
 
-    @Test
-    public void testEmptyChain() {
-        UaVariableNode node = new UaVariableNode.UaVariableNodeBuilder(context)
+  @Test
+  public void testEmptyChain() {
+    UaVariableNode node =
+        new UaVariableNode.UaVariableNodeBuilder(context)
             .setNodeId(NodeId.NULL_VALUE)
             .setAccessLevel(AccessLevel.READ_WRITE)
             .setBrowseName(QualifiedName.NULL_VALUE)
@@ -90,17 +89,18 @@ public class AttributeFilterChainTest {
             .setTypeDefinition(NodeIds.BaseDataVariableType)
             .build();
 
-        node.setValue(new DataValue(new Variant("foo")));
+    node.setValue(new DataValue(new Variant("foo")));
 
-        DataValue value = (DataValue) node.getFilterChain().getAttribute(node, AttributeId.Value);
-        assertEquals(value.getValue().getValue(), "foo");
-    }
+    DataValue value = (DataValue) node.getFilterChain().getAttribute(node, AttributeId.Value);
+    assertEquals(value.getValue().getValue(), "foo");
+  }
 
-    @Test
-    public void testObservable() {
-        final AtomicBoolean observed = new AtomicBoolean(false);
+  @Test
+  public void testObservable() {
+    final AtomicBoolean observed = new AtomicBoolean(false);
 
-        UaVariableNode node = new UaVariableNode.UaVariableNodeBuilder(context)
+    UaVariableNode node =
+        new UaVariableNode.UaVariableNodeBuilder(context)
             .setNodeId(NodeId.NULL_VALUE)
             .setAccessLevel(AccessLevel.READ_WRITE)
             .setBrowseName(QualifiedName.NULL_VALUE)
@@ -109,24 +109,22 @@ public class AttributeFilterChainTest {
             .setTypeDefinition(NodeIds.BaseDataVariableType)
             .build();
 
-        node.addAttributeObserver((node1, attributeId, value) -> {
-            observed.set(true);
+    node.addAttributeObserver(
+        (node1, attributeId, value) -> {
+          observed.set(true);
         });
 
-        node.getFilterChain().addLast(
+    node.getFilterChain()
+        .addLast(
             AttributeFilters.getValue(
                 ctx -> {
-                    ctx.setObservable(true);
-                    
-                    return new DataValue(new Variant("foo"));
-                }
-            )
-        );
+                  ctx.setObservable(true);
 
-        assertEquals(node.getValue().getValue().getValue(), "foo");
+                  return new DataValue(new Variant("foo"));
+                }));
 
-        assertTrue(observed.get());
-    }
+    assertEquals(node.getValue().getValue().getValue(), "foo");
 
-
+    assertTrue(observed.get());
+  }
 }

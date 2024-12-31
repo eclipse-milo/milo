@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -14,22 +14,21 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ServiceFault;
 
 public class UaServiceFaultException extends UaException {
 
-    private final ServiceFault serviceFault;
+  private final ServiceFault serviceFault;
 
-    public UaServiceFaultException(ServiceFault serviceFault) {
-        super(serviceFault.getResponseHeader().getServiceResult());
+  public UaServiceFaultException(ServiceFault serviceFault) {
+    super(serviceFault.getResponseHeader().getServiceResult());
 
-        this.serviceFault = serviceFault;
-    }
+    this.serviceFault = serviceFault;
+  }
 
-    public UaServiceFaultException(ServiceFault serviceFault, String message) {
-        super(serviceFault.getResponseHeader().getServiceResult(), message);
+  public UaServiceFaultException(ServiceFault serviceFault, String message) {
+    super(serviceFault.getResponseHeader().getServiceResult(), message);
 
-        this.serviceFault = serviceFault;
-    }
+    this.serviceFault = serviceFault;
+  }
 
-    public ServiceFault getServiceFault() {
-        return serviceFault;
-    }
-
+  public ServiceFault getServiceFault() {
+    return serviceFault;
+  }
 }

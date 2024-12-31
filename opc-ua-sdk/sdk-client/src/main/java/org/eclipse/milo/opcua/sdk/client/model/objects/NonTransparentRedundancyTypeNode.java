@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -12,7 +12,6 @@ package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
@@ -32,76 +31,97 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 
-public class NonTransparentRedundancyTypeNode extends ServerRedundancyTypeNode implements NonTransparentRedundancyType {
-    public NonTransparentRedundancyTypeNode(OpcUaClient client, NodeId nodeId, NodeClass nodeClass,
-                                            QualifiedName browseName, LocalizedText displayName, LocalizedText description,
-                                            UInteger writeMask, UInteger userWriteMask, RolePermissionType[] rolePermissions,
-                                            RolePermissionType[] userRolePermissions, AccessRestrictionType accessRestrictions,
-                                            UByte eventNotifier) {
-        super(client, nodeId, nodeClass, browseName, displayName, description, writeMask, userWriteMask, rolePermissions, userRolePermissions, accessRestrictions, eventNotifier);
-    }
+public class NonTransparentRedundancyTypeNode extends ServerRedundancyTypeNode
+    implements NonTransparentRedundancyType {
+  public NonTransparentRedundancyTypeNode(
+      OpcUaClient client,
+      NodeId nodeId,
+      NodeClass nodeClass,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType[] rolePermissions,
+      RolePermissionType[] userRolePermissions,
+      AccessRestrictionType accessRestrictions,
+      UByte eventNotifier) {
+    super(
+        client,
+        nodeId,
+        nodeClass,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions,
+        eventNotifier);
+  }
 
-    @Override
-    public String[] getServerUriArray() throws UaException {
-        PropertyTypeNode node = getServerUriArrayNode();
-        return (String[]) node.getValue().getValue().getValue();
-    }
+  @Override
+  public String[] getServerUriArray() throws UaException {
+    PropertyTypeNode node = getServerUriArrayNode();
+    return (String[]) node.getValue().getValue().getValue();
+  }
 
-    @Override
-    public void setServerUriArray(String[] value) throws UaException {
-        PropertyTypeNode node = getServerUriArrayNode();
-        node.setValue(new Variant(value));
-    }
+  @Override
+  public void setServerUriArray(String[] value) throws UaException {
+    PropertyTypeNode node = getServerUriArrayNode();
+    node.setValue(new Variant(value));
+  }
 
-    @Override
-    public String[] readServerUriArray() throws UaException {
-        try {
-            return readServerUriArrayAsync().get();
-        } catch (ExecutionException | InterruptedException e) {
-            throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
-        }
+  @Override
+  public String[] readServerUriArray() throws UaException {
+    try {
+      return readServerUriArrayAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
     }
+  }
 
-    @Override
-    public void writeServerUriArray(String[] value) throws UaException {
-        try {
-            writeServerUriArrayAsync(value).get();
-        } catch (ExecutionException | InterruptedException e) {
-            throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
-        }
+  @Override
+  public void writeServerUriArray(String[] value) throws UaException {
+    try {
+      writeServerUriArrayAsync(value).get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
     }
+  }
 
-    @Override
-    public CompletableFuture<? extends String[]> readServerUriArrayAsync() {
-        return getServerUriArrayNodeAsync()
-            .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-            .thenApply(v -> (String[]) v.getValue().getValue());
+  @Override
+  public CompletableFuture<? extends String[]> readServerUriArrayAsync() {
+    return getServerUriArrayNodeAsync()
+        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
+        .thenApply(v -> (String[]) v.getValue().getValue());
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeServerUriArrayAsync(String[] serverUriArray) {
+    DataValue value = DataValue.valueOnly(new Variant(serverUriArray));
+    return getServerUriArrayNodeAsync()
+        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  }
+
+  @Override
+  public PropertyTypeNode getServerUriArrayNode() throws UaException {
+    try {
+      return getServerUriArrayNodeAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
     }
+  }
 
-    @Override
-    public CompletableFuture<StatusCode> writeServerUriArrayAsync(String[] serverUriArray) {
-        DataValue value = DataValue.valueOnly(new Variant(serverUriArray));
-        return getServerUriArrayNodeAsync()
-            .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-    }
-
-    @Override
-    public PropertyTypeNode getServerUriArrayNode() throws UaException {
-        try {
-            return getServerUriArrayNodeAsync().get();
-        } catch (ExecutionException | InterruptedException e) {
-            throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
-        }
-    }
-
-    @Override
-    public CompletableFuture<? extends PropertyTypeNode> getServerUriArrayNodeAsync() {
-        CompletableFuture<UaNode> future = getMemberNodeAsync(
+  @Override
+  public CompletableFuture<? extends PropertyTypeNode> getServerUriArrayNodeAsync() {
+    CompletableFuture<UaNode> future =
+        getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ServerUriArray",
             ExpandedNodeId.parse("ns=0;i=46"),
-            false
-        );
-        return future.thenApply(node -> (PropertyTypeNode) node);
-    }
+            false);
+    return future.thenApply(node -> (PropertyTypeNode) node);
+  }
 }

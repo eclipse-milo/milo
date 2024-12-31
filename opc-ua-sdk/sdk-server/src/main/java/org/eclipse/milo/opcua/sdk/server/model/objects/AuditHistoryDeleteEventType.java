@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -16,20 +16,21 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.6.5">https://reference.opcfoundation.org/v105/Core/docs/Part11/5.6.5</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.6.5">https://reference.opcfoundation.org/v105/Core/docs/Part11/5.6.5</a>
  */
 public interface AuditHistoryDeleteEventType extends AuditHistoryUpdateEventType {
-    QualifiedProperty<NodeId> UPDATED_NODE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "UpdatedNode",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-        -1,
-        NodeId.class
-    );
+  QualifiedProperty<NodeId> UPDATED_NODE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "UpdatedNode",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
+          -1,
+          NodeId.class);
 
-    NodeId getUpdatedNode();
+  NodeId getUpdatedNode();
 
-    void setUpdatedNode(NodeId value);
+  void setUpdatedNode(NodeId value);
 
-    PropertyType getUpdatedNodeNode();
+  PropertyType getUpdatedNodeNode();
 }

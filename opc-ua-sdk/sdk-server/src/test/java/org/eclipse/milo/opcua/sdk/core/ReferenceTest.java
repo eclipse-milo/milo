@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -10,33 +10,31 @@
 
 package org.eclipse.milo.opcua.sdk.core;
 
-import java.util.UUID;
+import static org.testng.Assert.assertEquals;
 
+import java.util.UUID;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.testng.annotations.Test;
 
-import static org.testng.Assert.assertEquals;
-
 public class ReferenceTest {
 
-    @Test
-    public void testEquality() {
-        Reference reference1 = new Reference(
+  @Test
+  public void testEquality() {
+    Reference reference1 =
+        new Reference(
             new NodeId(1, UUID.randomUUID()),
             NodeIds.HasComponent,
             new NodeId(1, UUID.randomUUID()).expanded(),
-            Reference.Direction.FORWARD
-        );
+            Reference.Direction.FORWARD);
 
-        Reference reference2 = new Reference(
+    Reference reference2 =
+        new Reference(
             reference1.getSourceNodeId(),
             reference1.getReferenceTypeId(),
             reference1.getTargetNodeId(),
-            reference1.getDirection()
-        );
+            reference1.getDirection());
 
-        assertEquals(reference1, reference2);
-    }
-
+    assertEquals(reference1, reference2);
+  }
 }

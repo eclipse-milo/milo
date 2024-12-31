@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -17,143 +17,143 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.structured.StatusResult;
 
 public interface ProgramDiagnosticType extends BaseDataVariableType {
-    QualifiedProperty<NodeId> CREATE_SESSION_ID = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "CreateSessionId",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-        -1,
-        NodeId.class
-    );
+  QualifiedProperty<NodeId> CREATE_SESSION_ID =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "CreateSessionId",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
+          -1,
+          NodeId.class);
 
-    QualifiedProperty<String> CREATE_CLIENT_NAME = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "CreateClientName",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-        -1,
-        String.class
-    );
+  QualifiedProperty<String> CREATE_CLIENT_NAME =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "CreateClientName",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          -1,
+          String.class);
 
-    QualifiedProperty<DateTime> INVOCATION_CREATION_TIME = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "InvocationCreationTime",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-        -1,
-        DateTime.class
-    );
+  QualifiedProperty<DateTime> INVOCATION_CREATION_TIME =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "InvocationCreationTime",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
+          -1,
+          DateTime.class);
 
-    QualifiedProperty<DateTime> LAST_TRANSITION_TIME = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "LastTransitionTime",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-        -1,
-        DateTime.class
-    );
+  QualifiedProperty<DateTime> LAST_TRANSITION_TIME =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "LastTransitionTime",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
+          -1,
+          DateTime.class);
 
-    QualifiedProperty<String> LAST_METHOD_CALL = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "LastMethodCall",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-        -1,
-        String.class
-    );
+  QualifiedProperty<String> LAST_METHOD_CALL =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "LastMethodCall",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          -1,
+          String.class);
 
-    QualifiedProperty<NodeId> LAST_METHOD_SESSION_ID = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "LastMethodSessionId",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-        -1,
-        NodeId.class
-    );
+  QualifiedProperty<NodeId> LAST_METHOD_SESSION_ID =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "LastMethodSessionId",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
+          -1,
+          NodeId.class);
 
-    QualifiedProperty<Object[]> LAST_METHOD_INPUT_ARGUMENTS = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "LastMethodInputArguments",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
-        1,
-        Object[].class
-    );
+  QualifiedProperty<Object[]> LAST_METHOD_INPUT_ARGUMENTS =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "LastMethodInputArguments",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
+          1,
+          Object[].class);
 
-    QualifiedProperty<Object[]> LAST_METHOD_OUTPUT_ARGUMENTS = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "LastMethodOutputArguments",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
-        1,
-        Object[].class
-    );
+  QualifiedProperty<Object[]> LAST_METHOD_OUTPUT_ARGUMENTS =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "LastMethodOutputArguments",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
+          1,
+          Object[].class);
 
-    QualifiedProperty<DateTime> LAST_METHOD_CALL_TIME = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "LastMethodCallTime",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-        -1,
-        DateTime.class
-    );
+  QualifiedProperty<DateTime> LAST_METHOD_CALL_TIME =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "LastMethodCallTime",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
+          -1,
+          DateTime.class);
 
-    QualifiedProperty<StatusResult> LAST_METHOD_RETURN_STATUS = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "LastMethodReturnStatus",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=299"),
-        -1,
-        StatusResult.class
-    );
+  QualifiedProperty<StatusResult> LAST_METHOD_RETURN_STATUS =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "LastMethodReturnStatus",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=299"),
+          -1,
+          StatusResult.class);
 
-    NodeId getCreateSessionId();
+  NodeId getCreateSessionId();
 
-    void setCreateSessionId(NodeId value);
+  void setCreateSessionId(NodeId value);
 
-    PropertyType getCreateSessionIdNode();
+  PropertyType getCreateSessionIdNode();
 
-    String getCreateClientName();
+  String getCreateClientName();
 
-    void setCreateClientName(String value);
+  void setCreateClientName(String value);
 
-    PropertyType getCreateClientNameNode();
+  PropertyType getCreateClientNameNode();
 
-    DateTime getInvocationCreationTime();
+  DateTime getInvocationCreationTime();
 
-    void setInvocationCreationTime(DateTime value);
+  void setInvocationCreationTime(DateTime value);
 
-    PropertyType getInvocationCreationTimeNode();
+  PropertyType getInvocationCreationTimeNode();
 
-    DateTime getLastTransitionTime();
+  DateTime getLastTransitionTime();
 
-    void setLastTransitionTime(DateTime value);
+  void setLastTransitionTime(DateTime value);
 
-    PropertyType getLastTransitionTimeNode();
+  PropertyType getLastTransitionTimeNode();
 
-    String getLastMethodCall();
+  String getLastMethodCall();
 
-    void setLastMethodCall(String value);
+  void setLastMethodCall(String value);
 
-    PropertyType getLastMethodCallNode();
+  PropertyType getLastMethodCallNode();
 
-    NodeId getLastMethodSessionId();
+  NodeId getLastMethodSessionId();
 
-    void setLastMethodSessionId(NodeId value);
+  void setLastMethodSessionId(NodeId value);
 
-    PropertyType getLastMethodSessionIdNode();
+  PropertyType getLastMethodSessionIdNode();
 
-    Object[] getLastMethodInputArguments();
+  Object[] getLastMethodInputArguments();
 
-    void setLastMethodInputArguments(Object[] value);
+  void setLastMethodInputArguments(Object[] value);
 
-    PropertyType getLastMethodInputArgumentsNode();
+  PropertyType getLastMethodInputArgumentsNode();
 
-    Object[] getLastMethodOutputArguments();
+  Object[] getLastMethodOutputArguments();
 
-    void setLastMethodOutputArguments(Object[] value);
+  void setLastMethodOutputArguments(Object[] value);
 
-    PropertyType getLastMethodOutputArgumentsNode();
+  PropertyType getLastMethodOutputArgumentsNode();
 
-    DateTime getLastMethodCallTime();
+  DateTime getLastMethodCallTime();
 
-    void setLastMethodCallTime(DateTime value);
+  void setLastMethodCallTime(DateTime value);
 
-    PropertyType getLastMethodCallTimeNode();
+  PropertyType getLastMethodCallTimeNode();
 
-    StatusResult getLastMethodReturnStatus();
+  StatusResult getLastMethodReturnStatus();
 
-    void setLastMethodReturnStatus(StatusResult value);
+  void setLastMethodReturnStatus(StatusResult value);
 
-    PropertyType getLastMethodReturnStatusNode();
+  PropertyType getLastMethodReturnStatusNode();
 }

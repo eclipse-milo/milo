@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -22,132 +22,135 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.4.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/8.4.1</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.4.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/8.4.1</a>
  */
 public interface SecurityGroupType extends BaseObjectType {
-    QualifiedProperty<String> SECURITY_GROUP_ID = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "SecurityGroupId",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-        -1,
-        String.class
-    );
+  QualifiedProperty<String> SECURITY_GROUP_ID =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "SecurityGroupId",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          -1,
+          String.class);
 
-    QualifiedProperty<Double> KEY_LIFETIME = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "KeyLifetime",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-        -1,
-        Double.class
-    );
+  QualifiedProperty<Double> KEY_LIFETIME =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "KeyLifetime",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
+          -1,
+          Double.class);
 
-    QualifiedProperty<String> SECURITY_POLICY_URI = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "SecurityPolicyUri",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-        -1,
-        String.class
-    );
+  QualifiedProperty<String> SECURITY_POLICY_URI =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "SecurityPolicyUri",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          -1,
+          String.class);
 
-    QualifiedProperty<UInteger> MAX_FUTURE_KEY_COUNT = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "MaxFutureKeyCount",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-        -1,
-        UInteger.class
-    );
+  QualifiedProperty<UInteger> MAX_FUTURE_KEY_COUNT =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "MaxFutureKeyCount",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          -1,
+          UInteger.class);
 
-    QualifiedProperty<UInteger> MAX_PAST_KEY_COUNT = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "MaxPastKeyCount",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-        -1,
-        UInteger.class
-    );
+  QualifiedProperty<UInteger> MAX_PAST_KEY_COUNT =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "MaxPastKeyCount",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          -1,
+          UInteger.class);
 
-    String getSecurityGroupId();
+  String getSecurityGroupId();
 
-    void setSecurityGroupId(String value);
+  void setSecurityGroupId(String value);
 
-    PropertyType getSecurityGroupIdNode();
+  PropertyType getSecurityGroupIdNode();
 
-    Double getKeyLifetime();
+  Double getKeyLifetime();
 
-    void setKeyLifetime(Double value);
+  void setKeyLifetime(Double value);
 
-    PropertyType getKeyLifetimeNode();
+  PropertyType getKeyLifetimeNode();
 
-    String getSecurityPolicyUri();
+  String getSecurityPolicyUri();
 
-    void setSecurityPolicyUri(String value);
+  void setSecurityPolicyUri(String value);
 
-    PropertyType getSecurityPolicyUriNode();
+  PropertyType getSecurityPolicyUriNode();
 
-    UInteger getMaxFutureKeyCount();
+  UInteger getMaxFutureKeyCount();
 
-    void setMaxFutureKeyCount(UInteger value);
+  void setMaxFutureKeyCount(UInteger value);
 
-    PropertyType getMaxFutureKeyCountNode();
+  PropertyType getMaxFutureKeyCountNode();
 
-    UInteger getMaxPastKeyCount();
+  UInteger getMaxPastKeyCount();
 
-    void setMaxPastKeyCount(UInteger value);
+  void setMaxPastKeyCount(UInteger value);
 
-    PropertyType getMaxPastKeyCountNode();
+  PropertyType getMaxPastKeyCountNode();
 
-    MethodNode getInvalidateKeysMethodNode();
+  MethodNode getInvalidateKeysMethodNode();
 
-    MethodNode getForceKeyRotationMethodNode();
+  MethodNode getForceKeyRotationMethodNode();
 
-    abstract class InvalidateKeysMethod extends AbstractMethodInvocationHandler {
-        public InvalidateKeysMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            invoke(context);
-            return new Variant[]{};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context) throws
-            UaException;
+  abstract class InvalidateKeysMethod extends AbstractMethodInvocationHandler {
+    public InvalidateKeysMethod(UaMethodNode node) {
+      super(node);
     }
 
-    abstract class ForceKeyRotationMethod extends AbstractMethodInvocationHandler {
-        public ForceKeyRotationMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            invoke(context);
-            return new Variant[]{};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context) throws
-            UaException;
+    @Override
+    public Argument[] getInputArguments() {
+      return new Argument[] {};
     }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      invoke(context);
+      return new Variant[] {};
+    }
+
+    protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context)
+        throws UaException;
+  }
+
+  abstract class ForceKeyRotationMethod extends AbstractMethodInvocationHandler {
+    public ForceKeyRotationMethod(UaMethodNode node) {
+      super(node);
+    }
+
+    @Override
+    public Argument[] getInputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      invoke(context);
+      return new Variant[] {};
+    }
+
+    protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context)
+        throws UaException;
+  }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -15,18 +15,19 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.14">https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.14</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.14">https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.14</a>
  */
 public interface IIeeeTsnVlanTagType extends BaseInterfaceType {
-    BaseDataVariableType getVlanIdNode();
+  BaseDataVariableType getVlanIdNode();
 
-    UShort getVlanId();
+  UShort getVlanId();
 
-    void setVlanId(UShort value);
+  void setVlanId(UShort value);
 
-    BaseDataVariableType getPriorityCodePointNode();
+  BaseDataVariableType getPriorityCodePointNode();
 
-    UByte getPriorityCodePoint();
+  UByte getPriorityCodePoint();
 
-    void setPriorityCodePoint(UByte value);
+  void setPriorityCodePoint(UByte value);
 }

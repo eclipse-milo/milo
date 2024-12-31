@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -18,66 +18,65 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
 
 public interface VariableNode extends Node {
 
-    DataValue getValue();
+  DataValue getValue();
 
-    NodeId getDataType();
+  NodeId getDataType();
 
-    Integer getValueRank();
+  Integer getValueRank();
 
-    UInteger[] getArrayDimensions();
+  UInteger[] getArrayDimensions();
 
-    UByte getAccessLevel();
+  UByte getAccessLevel();
 
-    UByte getUserAccessLevel();
+  UByte getUserAccessLevel();
 
-    Double getMinimumSamplingInterval();
+  Double getMinimumSamplingInterval();
 
-    Boolean getHistorizing();
+  Boolean getHistorizing();
 
-    /**
-     * Get the AccessLevelEx attribute.
-     * <p>
-     * The AccessLevelEx Attribute is used to indicate how the Value of a Variable can be accessed
-     * (read/write), and if it contains current and/or historic data and its atomicity.
-     * <p>
-     * See OPC UA Part 3, section 5.6.2.
-     *
-     * @return if this attribute is present, the AccessLevelEx ({@link AccessLevelExType}).
-     */
-    AccessLevelExType getAccessLevelEx();
+  /**
+   * Get the AccessLevelEx attribute.
+   *
+   * <p>The AccessLevelEx Attribute is used to indicate how the Value of a Variable can be accessed
+   * (read/write), and if it contains current and/or historic data and its atomicity.
+   *
+   * <p>See OPC UA Part 3, section 5.6.2.
+   *
+   * @return if this attribute is present, the AccessLevelEx ({@link AccessLevelExType}).
+   */
+  AccessLevelExType getAccessLevelEx();
 
-    /**
-     * Set the Value attribute of this Node.
-     *
-     * @param value the Value to set.
-     */
-    void setValue(DataValue value);
+  /**
+   * Set the Value attribute of this Node.
+   *
+   * @param value the Value to set.
+   */
+  void setValue(DataValue value);
 
-    /**
-     * Set the DataType attribute of this Node.
-     *
-     * @param dataType the DataType to set.
-     */
-    void setDataType(NodeId dataType);
+  /**
+   * Set the DataType attribute of this Node.
+   *
+   * @param dataType the DataType to set.
+   */
+  void setDataType(NodeId dataType);
 
-    void setValueRank(Integer valueRank);
+  void setValueRank(Integer valueRank);
 
-    void setArrayDimensions(UInteger[] arrayDimensions);
+  void setArrayDimensions(UInteger[] arrayDimensions);
 
-    void setAccessLevel(UByte accessLevel);
+  void setAccessLevel(UByte accessLevel);
 
-    void setUserAccessLevel(UByte userAccessLevel);
+  void setUserAccessLevel(UByte userAccessLevel);
 
-    void setMinimumSamplingInterval(Double minimumSamplingInterval);
+  void setMinimumSamplingInterval(Double minimumSamplingInterval);
 
-    void setHistorizing(Boolean historizing);
+  void setHistorizing(Boolean historizing);
 
-    /**
-     * Set the AccessLevelEx attribute.
-     *
-     * @param accessLevelEx the AccessLevelEx to set.
-     * @see #getAccessLevelEx()
-     */
-    void setAccessLevelEx(AccessLevelExType accessLevelEx);
-
+  /**
+   * Set the AccessLevelEx attribute.
+   *
+   * @param accessLevelEx the AccessLevelEx to set.
+   * @see #getAccessLevelEx()
+   */
+  void setAccessLevelEx(AccessLevelExType accessLevelEx);
 }

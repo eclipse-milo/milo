@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -17,62 +17,63 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpDataSetMessageContentMask;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.2.1/#9.2.1.2">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.2.1/#9.2.1.2</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.2.1/#9.2.1.2">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.2.1/#9.2.1.2</a>
  */
 public interface UadpDataSetWriterMessageType extends DataSetWriterMessageType {
-    QualifiedProperty<UadpDataSetMessageContentMask> DATA_SET_MESSAGE_CONTENT_MASK = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "DataSetMessageContentMask",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15646"),
-        -1,
-        UadpDataSetMessageContentMask.class
-    );
+  QualifiedProperty<UadpDataSetMessageContentMask> DATA_SET_MESSAGE_CONTENT_MASK =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "DataSetMessageContentMask",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15646"),
+          -1,
+          UadpDataSetMessageContentMask.class);
 
-    QualifiedProperty<UShort> CONFIGURED_SIZE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ConfiguredSize",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-        -1,
-        UShort.class
-    );
+  QualifiedProperty<UShort> CONFIGURED_SIZE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ConfiguredSize",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
+          -1,
+          UShort.class);
 
-    QualifiedProperty<UShort> NETWORK_MESSAGE_NUMBER = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "NetworkMessageNumber",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-        -1,
-        UShort.class
-    );
+  QualifiedProperty<UShort> NETWORK_MESSAGE_NUMBER =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "NetworkMessageNumber",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
+          -1,
+          UShort.class);
 
-    QualifiedProperty<UShort> DATA_SET_OFFSET = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "DataSetOffset",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-        -1,
-        UShort.class
-    );
+  QualifiedProperty<UShort> DATA_SET_OFFSET =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "DataSetOffset",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
+          -1,
+          UShort.class);
 
-    UadpDataSetMessageContentMask getDataSetMessageContentMask();
+  UadpDataSetMessageContentMask getDataSetMessageContentMask();
 
-    void setDataSetMessageContentMask(UadpDataSetMessageContentMask value);
+  void setDataSetMessageContentMask(UadpDataSetMessageContentMask value);
 
-    PropertyType getDataSetMessageContentMaskNode();
+  PropertyType getDataSetMessageContentMaskNode();
 
-    UShort getConfiguredSize();
+  UShort getConfiguredSize();
 
-    void setConfiguredSize(UShort value);
+  void setConfiguredSize(UShort value);
 
-    PropertyType getConfiguredSizeNode();
+  PropertyType getConfiguredSizeNode();
 
-    UShort getNetworkMessageNumber();
+  UShort getNetworkMessageNumber();
 
-    void setNetworkMessageNumber(UShort value);
+  void setNetworkMessageNumber(UShort value);
 
-    PropertyType getNetworkMessageNumberNode();
+  PropertyType getNetworkMessageNumberNode();
 
-    UShort getDataSetOffset();
+  UShort getDataSetOffset();
 
-    void setDataSetOffset(UShort value);
+  void setDataSetOffset(UShort value);
 
-    PropertyType getDataSetOffsetNode();
+  PropertyType getDataSetOffsetNode();
 }

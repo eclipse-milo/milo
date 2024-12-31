@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -14,12 +14,13 @@ import org.eclipse.milo.opcua.sdk.server.model.variables.BaseDataVariableType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NegotiationStatus;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.3">https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.3</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.3">https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.3</a>
  */
 public interface IIeeeAutoNegotiationStatusType extends BaseInterfaceType {
-    BaseDataVariableType getNegotiationStatusNode();
+  BaseDataVariableType getNegotiationStatusNode();
 
-    NegotiationStatus getNegotiationStatus();
+  NegotiationStatus getNegotiationStatus();
 
-    void setNegotiationStatus(NegotiationStatus value);
+  void setNegotiationStatus(NegotiationStatus value);
 }

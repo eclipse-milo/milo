@@ -1,4 +1,4 @@
-///*
+/// *
 // * Copyright (c) 2019 the Eclipse Milo Authors
 // *
 // * This program and the accompanying materials are made
@@ -8,25 +8,25 @@
 // * SPDX-License-Identifier: EPL-2.0
 // */
 //
-//package org.eclipse.milo.opcua.stack;
+// package org.eclipse.milo.opcua.stack;
 //
-//import java.security.cert.X509Certificate;
-//import java.util.List;
-//import java.util.concurrent.CountDownLatch;
-//import java.util.concurrent.TimeUnit;
+// import java.security.cert.X509Certificate;
+// import java.util.List;
+// import java.util.concurrent.CountDownLatch;
+// import java.util.concurrent.TimeUnit;
 //
-//import org.eclipse.milo.opcua.stack.client.UaStackClientConfigBuilder;
-//import org.eclipse.milo.opcua.stack.client.security.ClientCertificateValidator;
-//import org.eclipse.milo.opcua.stack.core.UaException;
-//import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
-//import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
-//import org.slf4j.Logger;
-//import org.slf4j.LoggerFactory;
-//import org.testng.annotations.Test;
+// import org.eclipse.milo.opcua.stack.client.UaStackClientConfigBuilder;
+// import org.eclipse.milo.opcua.stack.client.security.ClientCertificateValidator;
+// import org.eclipse.milo.opcua.stack.core.UaException;
+// import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
+// import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
+// import org.slf4j.Logger;
+// import org.slf4j.LoggerFactory;
+// import org.testng.annotations.Test;
 //
-//import static org.testng.Assert.assertTrue;
+// import static org.testng.Assert.assertTrue;
 //
-//public class ClientCertificateValidatorIT extends StackIntegrationTest {
+// public class ClientCertificateValidatorIT extends StackIntegrationTest {
 //
 //    private final Logger logger = LoggerFactory.getLogger(getClass());
 //
@@ -35,7 +35,8 @@
 //    private final ClientCertificateValidator validator = new ClientCertificateValidator() {
 //
 //        @Override
-//        public void validateCertificateChain(List<X509Certificate> certificateChain) throws UaException {
+//        public void validateCertificateChain(List<X509Certificate> certificateChain) throws
+// UaException {
 //            X509Certificate certificate = certificateChain.get(0);
 //            logger.info("verifyTrustChain: {}", certificate.getSubjectX500Principal());
 //            latch.countDown();
@@ -73,4 +74,4 @@
 //            .orElseThrow(() -> new RuntimeException("no secure endpoint found!"));
 //    }
 //
-//}
+// }

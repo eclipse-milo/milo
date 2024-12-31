@@ -31,299 +31,350 @@ import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.util.Lazy;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.5.2">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.5.2</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.5.2">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.5.2</a>
  */
 public interface ConditionType extends BaseEventType {
-    QualifiedProperty<NodeId> CONDITION_CLASS_ID = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ConditionClassId",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-        -1,
-        NodeId.class
-    );
+  QualifiedProperty<NodeId> CONDITION_CLASS_ID =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ConditionClassId",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
+          -1,
+          NodeId.class);
 
-    QualifiedProperty<LocalizedText> CONDITION_CLASS_NAME = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ConditionClassName",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
-        -1,
-        LocalizedText.class
-    );
+  QualifiedProperty<LocalizedText> CONDITION_CLASS_NAME =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ConditionClassName",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
+          -1,
+          LocalizedText.class);
 
-    QualifiedProperty<String> CONDITION_NAME = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ConditionName",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-        -1,
-        String.class
-    );
+  QualifiedProperty<String> CONDITION_NAME =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ConditionName",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          -1,
+          String.class);
 
-    QualifiedProperty<NodeId> BRANCH_ID = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "BranchId",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-        -1,
-        NodeId.class
-    );
+  QualifiedProperty<NodeId> BRANCH_ID =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "BranchId",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
+          -1,
+          NodeId.class);
 
-    QualifiedProperty<Boolean> RETAIN = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "Retain",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-        -1,
-        Boolean.class
-    );
+  QualifiedProperty<Boolean> RETAIN =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "Retain",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          -1,
+          Boolean.class);
 
-    QualifiedProperty<Boolean> SUPPORTS_FILTERED_RETAIN = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "SupportsFilteredRetain",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-        -1,
-        Boolean.class
-    );
+  QualifiedProperty<Boolean> SUPPORTS_FILTERED_RETAIN =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "SupportsFilteredRetain",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          -1,
+          Boolean.class);
 
-    QualifiedProperty<String> CLIENT_USER_ID = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ClientUserId",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-        -1,
-        String.class
-    );
+  QualifiedProperty<String> CLIENT_USER_ID =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ClientUserId",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          -1,
+          String.class);
 
-    NodeId getConditionClassId();
+  NodeId getConditionClassId();
 
-    void setConditionClassId(NodeId value);
+  void setConditionClassId(NodeId value);
 
-    PropertyType getConditionClassIdNode();
+  PropertyType getConditionClassIdNode();
 
-    LocalizedText getConditionClassName();
+  LocalizedText getConditionClassName();
 
-    void setConditionClassName(LocalizedText value);
+  void setConditionClassName(LocalizedText value);
 
-    PropertyType getConditionClassNameNode();
+  PropertyType getConditionClassNameNode();
 
-    String getConditionName();
+  String getConditionName();
 
-    void setConditionName(String value);
+  void setConditionName(String value);
 
-    PropertyType getConditionNameNode();
+  PropertyType getConditionNameNode();
 
-    NodeId getBranchId();
+  NodeId getBranchId();
 
-    void setBranchId(NodeId value);
+  void setBranchId(NodeId value);
 
-    PropertyType getBranchIdNode();
+  PropertyType getBranchIdNode();
 
-    Boolean getRetain();
+  Boolean getRetain();
 
-    void setRetain(Boolean value);
+  void setRetain(Boolean value);
 
-    PropertyType getRetainNode();
+  PropertyType getRetainNode();
 
-    Boolean getSupportsFilteredRetain();
+  Boolean getSupportsFilteredRetain();
 
-    void setSupportsFilteredRetain(Boolean value);
+  void setSupportsFilteredRetain(Boolean value);
 
-    PropertyType getSupportsFilteredRetainNode();
+  PropertyType getSupportsFilteredRetainNode();
 
-    String getClientUserId();
+  String getClientUserId();
 
-    void setClientUserId(String value);
+  void setClientUserId(String value);
 
-    PropertyType getClientUserIdNode();
+  PropertyType getClientUserIdNode();
 
-    TwoStateVariableType getEnabledStateNode();
+  TwoStateVariableType getEnabledStateNode();
 
-    LocalizedText getEnabledState();
+  LocalizedText getEnabledState();
 
-    void setEnabledState(LocalizedText value);
+  void setEnabledState(LocalizedText value);
 
-    ConditionVariableType getQualityNode();
+  ConditionVariableType getQualityNode();
 
-    StatusCode getQuality();
+  StatusCode getQuality();
 
-    void setQuality(StatusCode value);
+  void setQuality(StatusCode value);
 
-    ConditionVariableType getLastSeverityNode();
+  ConditionVariableType getLastSeverityNode();
 
-    UShort getLastSeverity();
+  UShort getLastSeverity();
 
-    void setLastSeverity(UShort value);
+  void setLastSeverity(UShort value);
 
-    ConditionVariableType getCommentNode();
+  ConditionVariableType getCommentNode();
 
-    LocalizedText getComment();
+  LocalizedText getComment();
 
-    void setComment(LocalizedText value);
+  void setComment(LocalizedText value);
 
-    MethodNode getDisableMethodNode();
+  MethodNode getDisableMethodNode();
 
-    MethodNode getEnableMethodNode();
+  MethodNode getEnableMethodNode();
 
-    MethodNode getAddCommentMethodNode();
+  MethodNode getAddCommentMethodNode();
 
-    MethodNode getConditionRefreshMethodNode();
+  MethodNode getConditionRefreshMethodNode();
 
-    MethodNode getConditionRefresh2MethodNode();
+  MethodNode getConditionRefresh2MethodNode();
 
-    abstract class DisableMethod extends AbstractMethodInvocationHandler {
-        public DisableMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            invoke(context);
-            return new Variant[]{};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context) throws
-            UaException;
+  abstract class DisableMethod extends AbstractMethodInvocationHandler {
+    public DisableMethod(UaMethodNode node) {
+      super(node);
     }
 
-    abstract class EnableMethod extends AbstractMethodInvocationHandler {
-        public EnableMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            invoke(context);
-            return new Variant[]{};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context) throws
-            UaException;
+    @Override
+    public Argument[] getInputArguments() {
+      return new Argument[] {};
     }
 
-    abstract class AddCommentMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-        public AddCommentMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("EventId", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "The identifier for the event to comment.")),
-                    new Argument("Comment", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "The comment to add to the condition."))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            ByteString eventId = (ByteString) inputValues[0].getValue();
-            LocalizedText comment = (LocalizedText) inputValues[1].getValue();
-            invoke(context, eventId, comment);
-            return new Variant[]{};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       ByteString eventId, LocalizedText comment) throws UaException;
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[] {};
     }
 
-    abstract class ConditionRefreshMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-        public ConditionRefreshMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("SubscriptionId", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=288").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "The identifier for the subscription to refresh."))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            UInteger subscriptionId = (UInteger) inputValues[0].getValue();
-            invoke(context, subscriptionId);
-            return new Variant[]{};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       UInteger subscriptionId) throws UaException;
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      invoke(context);
+      return new Variant[] {};
     }
 
-    abstract class ConditionRefresh2Method extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
+    protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context)
+        throws UaException;
+  }
 
-        public ConditionRefresh2Method(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("SubscriptionId", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=288").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "The identifier for the subscription to refresh.")),
-                    new Argument("MonitoredItemId", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=288").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "The identifier for the monitored item to refresh."))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            UInteger subscriptionId = (UInteger) inputValues[0].getValue();
-            UInteger monitoredItemId = (UInteger) inputValues[1].getValue();
-            invoke(context, subscriptionId, monitoredItemId);
-            return new Variant[]{};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       UInteger subscriptionId, UInteger monitoredItemId) throws UaException;
+  abstract class EnableMethod extends AbstractMethodInvocationHandler {
+    public EnableMethod(UaMethodNode node) {
+      super(node);
     }
+
+    @Override
+    public Argument[] getInputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      invoke(context);
+      return new Variant[] {};
+    }
+
+    protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context)
+        throws UaException;
+  }
+
+  abstract class AddCommentMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+
+    public AddCommentMethod(UaMethodNode node) {
+      super(node);
+    }
+
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "EventId",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "The identifier for the event to comment.")),
+              new Argument(
+                  "Comment",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "The comment to add to the condition."))
+            };
+          });
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      ByteString eventId = (ByteString) inputValues[0].getValue();
+      LocalizedText comment = (LocalizedText) inputValues[1].getValue();
+      invoke(context, eventId, comment);
+      return new Variant[] {};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        ByteString eventId,
+        LocalizedText comment)
+        throws UaException;
+  }
+
+  abstract class ConditionRefreshMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+
+    public ConditionRefreshMethod(UaMethodNode node) {
+      super(node);
+    }
+
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "SubscriptionId",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=288")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "The identifier for the subscription to refresh."))
+            };
+          });
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      UInteger subscriptionId = (UInteger) inputValues[0].getValue();
+      invoke(context, subscriptionId);
+      return new Variant[] {};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, UInteger subscriptionId)
+        throws UaException;
+  }
+
+  abstract class ConditionRefresh2Method extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+
+    public ConditionRefresh2Method(UaMethodNode node) {
+      super(node);
+    }
+
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "SubscriptionId",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=288")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "The identifier for the subscription to refresh.")),
+              new Argument(
+                  "MonitoredItemId",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=288")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "The identifier for the monitored item to refresh."))
+            };
+          });
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      UInteger subscriptionId = (UInteger) inputValues[0].getValue();
+      UInteger monitoredItemId = (UInteger) inputValues[1].getValue();
+      invoke(context, subscriptionId, monitoredItemId);
+      return new Variant[] {};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        UInteger subscriptionId,
+        UInteger monitoredItemId)
+        throws UaException;
+  }
 }

@@ -10,38 +10,37 @@
 
 package org.eclipse.milo.opcua.sdk.client;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class OperationLimitsTest extends AbstractClientServerTest {
 
-    @Test
-    void readOperationLimits() throws UaException {
-        OperationLimits operationLimits = client.readOperationLimits();
+  @Test
+  void readOperationLimits() throws UaException {
+    OperationLimits operationLimits = client.readOperationLimits();
 
-        assertTrue(operationLimits.maxNodesPerRead().isPresent());
-        assertTrue(operationLimits.maxNodesPerHistoryReadData().isPresent());
-        assertTrue(operationLimits.maxNodesPerHistoryReadEvents().isPresent());
-        assertTrue(operationLimits.maxNodesPerWrite().isPresent());
-        assertTrue(operationLimits.maxNodesPerHistoryUpdateData().isPresent());
-        assertTrue(operationLimits.maxNodesPerHistoryUpdateEvents().isPresent());
-        assertTrue(operationLimits.maxNodesPerMethodCall().isPresent());
-        assertTrue(operationLimits.maxNodesPerBrowse().isPresent());
-        assertTrue(operationLimits.maxNodesPerRegisterNodes().isPresent());
-        assertTrue(operationLimits.maxNodesPerTranslateBrowsePathsToNodeIds().isPresent());
-        assertTrue(operationLimits.maxNodesPerNodeManagement().isPresent());
-        assertTrue(operationLimits.maxMonitoredItemsPerCall().isPresent());
-    }
+    assertTrue(operationLimits.maxNodesPerRead().isPresent());
+    assertTrue(operationLimits.maxNodesPerHistoryReadData().isPresent());
+    assertTrue(operationLimits.maxNodesPerHistoryReadEvents().isPresent());
+    assertTrue(operationLimits.maxNodesPerWrite().isPresent());
+    assertTrue(operationLimits.maxNodesPerHistoryUpdateData().isPresent());
+    assertTrue(operationLimits.maxNodesPerHistoryUpdateEvents().isPresent());
+    assertTrue(operationLimits.maxNodesPerMethodCall().isPresent());
+    assertTrue(operationLimits.maxNodesPerBrowse().isPresent());
+    assertTrue(operationLimits.maxNodesPerRegisterNodes().isPresent());
+    assertTrue(operationLimits.maxNodesPerTranslateBrowsePathsToNodeIds().isPresent());
+    assertTrue(operationLimits.maxNodesPerNodeManagement().isPresent());
+    assertTrue(operationLimits.maxMonitoredItemsPerCall().isPresent());
+  }
 
-    @Test
-    void readThrowsWhenDisconnected() throws UaException {
-        client.disconnect();
+  @Test
+  void readThrowsWhenDisconnected() throws UaException {
+    client.disconnect();
 
-        assertThrows(UaException.class, () -> client.readOperationLimits());
-    }
-
+    assertThrows(UaException.class, () -> client.readOperationLimits());
+  }
 }

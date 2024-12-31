@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -10,57 +10,54 @@
 
 package org.eclipse.milo.opcua.stack.core.types.builtin;
 
-import java.util.Objects;
-
 import com.google.common.base.MoreObjects;
+import java.util.Objects;
 
 public final class XmlElement {
 
-    private final String fragment;
+  private final String fragment;
 
-    public XmlElement(String fragment) {
-        this.fragment = fragment;
-    }
+  public XmlElement(String fragment) {
+    this.fragment = fragment;
+  }
 
-    public String getFragment() {
-        return fragment;
-    }
+  public String getFragment() {
+    return fragment;
+  }
 
-    public String getFragmentOrEmpty() {
-        return fragment != null ? fragment : "";
-    }
+  public String getFragmentOrEmpty() {
+    return fragment != null ? fragment : "";
+  }
 
-    public static XmlElement of(String fragment) {
-        return new XmlElement(fragment);
-    }
+  public static XmlElement of(String fragment) {
+    return new XmlElement(fragment);
+  }
 
-    public boolean isNull() {
-        return fragment == null;
-    }
+  public boolean isNull() {
+    return fragment == null;
+  }
 
-    public boolean isNotNull() {
-        return !isNull();
-    }
+  public boolean isNotNull() {
+    return !isNull();
+  }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
 
-        XmlElement that = (XmlElement) o;
+    XmlElement that = (XmlElement) o;
 
-        return Objects.equals(fragment, that.fragment);
+    return Objects.equals(fragment, that.fragment);
+  }
 
-    }
+  @Override
+  public int hashCode() {
+    return fragment != null ? fragment.hashCode() : 0;
+  }
 
-    @Override
-    public int hashCode() {
-        return fragment != null ? fragment.hashCode() : 0;
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this).add("fragment", fragment).toString();
-    }
-
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper(this).add("fragment", fragment).toString();
+  }
 }

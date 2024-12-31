@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -18,86 +18,87 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part10/5.2.9">https://reference.opcfoundation.org/v105/Core/docs/Part10/5.2.9</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part10/5.2.9">https://reference.opcfoundation.org/v105/Core/docs/Part10/5.2.9</a>
  */
 public interface ProgramDiagnostic2Type extends BaseDataVariableType {
-    QualifiedProperty<DateTime> LAST_TRANSITION_TIME = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "LastTransitionTime",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-        -1,
-        DateTime.class
-    );
+  QualifiedProperty<DateTime> LAST_TRANSITION_TIME =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "LastTransitionTime",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
+          -1,
+          DateTime.class);
 
-    DateTime getLastTransitionTime();
+  DateTime getLastTransitionTime();
 
-    void setLastTransitionTime(DateTime value);
+  void setLastTransitionTime(DateTime value);
 
-    PropertyType getLastTransitionTimeNode();
+  PropertyType getLastTransitionTimeNode();
 
-    BaseDataVariableType getCreateSessionIdNode();
+  BaseDataVariableType getCreateSessionIdNode();
 
-    NodeId getCreateSessionId();
+  NodeId getCreateSessionId();
 
-    void setCreateSessionId(NodeId value);
+  void setCreateSessionId(NodeId value);
 
-    BaseDataVariableType getCreateClientNameNode();
+  BaseDataVariableType getCreateClientNameNode();
 
-    String getCreateClientName();
+  String getCreateClientName();
 
-    void setCreateClientName(String value);
+  void setCreateClientName(String value);
 
-    BaseDataVariableType getInvocationCreationTimeNode();
+  BaseDataVariableType getInvocationCreationTimeNode();
 
-    DateTime getInvocationCreationTime();
+  DateTime getInvocationCreationTime();
 
-    void setInvocationCreationTime(DateTime value);
+  void setInvocationCreationTime(DateTime value);
 
-    BaseDataVariableType getLastMethodCallNode();
+  BaseDataVariableType getLastMethodCallNode();
 
-    String getLastMethodCall();
+  String getLastMethodCall();
 
-    void setLastMethodCall(String value);
+  void setLastMethodCall(String value);
 
-    BaseDataVariableType getLastMethodSessionIdNode();
+  BaseDataVariableType getLastMethodSessionIdNode();
 
-    NodeId getLastMethodSessionId();
+  NodeId getLastMethodSessionId();
 
-    void setLastMethodSessionId(NodeId value);
+  void setLastMethodSessionId(NodeId value);
 
-    BaseDataVariableType getLastMethodInputArgumentsNode();
+  BaseDataVariableType getLastMethodInputArgumentsNode();
 
-    Argument[] getLastMethodInputArguments();
+  Argument[] getLastMethodInputArguments();
 
-    void setLastMethodInputArguments(Argument[] value);
+  void setLastMethodInputArguments(Argument[] value);
 
-    BaseDataVariableType getLastMethodOutputArgumentsNode();
+  BaseDataVariableType getLastMethodOutputArgumentsNode();
 
-    Argument[] getLastMethodOutputArguments();
+  Argument[] getLastMethodOutputArguments();
 
-    void setLastMethodOutputArguments(Argument[] value);
+  void setLastMethodOutputArguments(Argument[] value);
 
-    BaseDataVariableType getLastMethodInputValuesNode();
+  BaseDataVariableType getLastMethodInputValuesNode();
 
-    Object[] getLastMethodInputValues();
+  Object[] getLastMethodInputValues();
 
-    void setLastMethodInputValues(Object[] value);
+  void setLastMethodInputValues(Object[] value);
 
-    BaseDataVariableType getLastMethodOutputValuesNode();
+  BaseDataVariableType getLastMethodOutputValuesNode();
 
-    Object[] getLastMethodOutputValues();
+  Object[] getLastMethodOutputValues();
 
-    void setLastMethodOutputValues(Object[] value);
+  void setLastMethodOutputValues(Object[] value);
 
-    BaseDataVariableType getLastMethodCallTimeNode();
+  BaseDataVariableType getLastMethodCallTimeNode();
 
-    DateTime getLastMethodCallTime();
+  DateTime getLastMethodCallTime();
 
-    void setLastMethodCallTime(DateTime value);
+  void setLastMethodCallTime(DateTime value);
 
-    BaseDataVariableType getLastMethodReturnStatusNode();
+  BaseDataVariableType getLastMethodReturnStatusNode();
 
-    StatusCode getLastMethodReturnStatus();
+  StatusCode getLastMethodReturnStatus();
 
-    void setLastMethodReturnStatus(StatusCode value);
+  void setLastMethodReturnStatus(StatusCode value);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -16,48 +16,49 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.25">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.25</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.25">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.25</a>
  */
 public interface DiscrepancyAlarmType extends AlarmConditionType {
-    QualifiedProperty<NodeId> TARGET_VALUE_NODE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "TargetValueNode",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-        -1,
-        NodeId.class
-    );
+  QualifiedProperty<NodeId> TARGET_VALUE_NODE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "TargetValueNode",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
+          -1,
+          NodeId.class);
 
-    QualifiedProperty<Double> EXPECTED_TIME = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ExpectedTime",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-        -1,
-        Double.class
-    );
+  QualifiedProperty<Double> EXPECTED_TIME =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ExpectedTime",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
+          -1,
+          Double.class);
 
-    QualifiedProperty<Double> TOLERANCE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "Tolerance",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-        -1,
-        Double.class
-    );
+  QualifiedProperty<Double> TOLERANCE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "Tolerance",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
+          -1,
+          Double.class);
 
-    NodeId getTargetValueNode();
+  NodeId getTargetValueNode();
 
-    void setTargetValueNode(NodeId value);
+  void setTargetValueNode(NodeId value);
 
-    PropertyType getTargetValueNodeNode();
+  PropertyType getTargetValueNodeNode();
 
-    Double getExpectedTime();
+  Double getExpectedTime();
 
-    void setExpectedTime(Double value);
+  void setExpectedTime(Double value);
 
-    PropertyType getExpectedTimeNode();
+  PropertyType getExpectedTimeNode();
 
-    Double getTolerance();
+  Double getTolerance();
 
-    void setTolerance(Double value);
+  void setTolerance(Double value);
 
-    PropertyType getToleranceNode();
+  PropertyType getToleranceNode();
 }

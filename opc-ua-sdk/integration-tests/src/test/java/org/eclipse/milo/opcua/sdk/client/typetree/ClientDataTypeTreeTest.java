@@ -16,9 +16,8 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 
 public class ClientDataTypeTreeTest extends AbstractDataTypeTreeTest {
 
-    @Override
-    protected DataTypeTree getDataTypeTree() throws UaException {
-        return client.getDataTypeTree();
-    }
-
+  @Override
+  protected DataTypeTree getDataTypeTree() throws UaException {
+    return client.getDataTypeTree();
+  }
 }

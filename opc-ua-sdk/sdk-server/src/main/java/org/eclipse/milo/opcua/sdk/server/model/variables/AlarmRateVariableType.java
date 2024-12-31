@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -15,20 +15,21 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/9.3">https://reference.opcfoundation.org/v105/Core/docs/Part9/9.3</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/9.3">https://reference.opcfoundation.org/v105/Core/docs/Part9/9.3</a>
  */
 public interface AlarmRateVariableType extends BaseDataVariableType {
-    QualifiedProperty<UShort> RATE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "Rate",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-        -1,
-        UShort.class
-    );
+  QualifiedProperty<UShort> RATE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "Rate",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
+          -1,
+          UShort.class);
 
-    UShort getRate();
+  UShort getRate();
 
-    void setRate(UShort value);
+  void setRate(UShort value);
 
-    PropertyType getRateNode();
+  PropertyType getRateNode();
 }

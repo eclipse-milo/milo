@@ -32,224 +32,320 @@ import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConnectionDataTy
 import org.eclipse.milo.opcua.stack.core.util.Lazy;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.3/#9.1.3.2">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.3/#9.1.3.2</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.3/#9.1.3.2">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.3/#9.1.3.2</a>
  */
 public interface PublishSubscribeType extends PubSubKeyServiceType {
-    QualifiedProperty<String[]> SUPPORTED_TRANSPORT_PROFILES = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "SupportedTransportProfiles",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-        1,
-        String[].class
-    );
+  QualifiedProperty<String[]> SUPPORTED_TRANSPORT_PROFILES =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "SupportedTransportProfiles",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          1,
+          String[].class);
 
-    QualifiedProperty<ULong> DEFAULT_DATAGRAM_PUBLISHER_ID = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "DefaultDatagramPublisherId",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=9"),
-        -1,
-        ULong.class
-    );
+  QualifiedProperty<ULong> DEFAULT_DATAGRAM_PUBLISHER_ID =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "DefaultDatagramPublisherId",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=9"),
+          -1,
+          ULong.class);
 
-    QualifiedProperty<UInteger> CONFIGURATION_VERSION = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ConfigurationVersion",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=20998"),
-        -1,
-        UInteger.class
-    );
+  QualifiedProperty<UInteger> CONFIGURATION_VERSION =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ConfigurationVersion",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=20998"),
+          -1,
+          UInteger.class);
 
-    QualifiedProperty<EndpointDescription[]> DEFAULT_SECURITY_KEY_SERVICES = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "DefaultSecurityKeyServices",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=312"),
-        1,
-        EndpointDescription[].class
-    );
+  QualifiedProperty<EndpointDescription[]> DEFAULT_SECURITY_KEY_SERVICES =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "DefaultSecurityKeyServices",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=312"),
+          1,
+          EndpointDescription[].class);
 
-    QualifiedProperty<KeyValuePair[]> CONFIGURATION_PROPERTIES = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ConfigurationProperties",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14533"),
-        1,
-        KeyValuePair[].class
-    );
+  QualifiedProperty<KeyValuePair[]> CONFIGURATION_PROPERTIES =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ConfigurationProperties",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14533"),
+          1,
+          KeyValuePair[].class);
 
-    String[] getSupportedTransportProfiles();
+  String[] getSupportedTransportProfiles();
 
-    void setSupportedTransportProfiles(String[] value);
+  void setSupportedTransportProfiles(String[] value);
 
-    PropertyType getSupportedTransportProfilesNode();
+  PropertyType getSupportedTransportProfilesNode();
 
-    ULong getDefaultDatagramPublisherId();
+  ULong getDefaultDatagramPublisherId();
 
-    void setDefaultDatagramPublisherId(ULong value);
+  void setDefaultDatagramPublisherId(ULong value);
 
-    PropertyType getDefaultDatagramPublisherIdNode();
+  PropertyType getDefaultDatagramPublisherIdNode();
 
-    UInteger getConfigurationVersion();
+  UInteger getConfigurationVersion();
 
-    void setConfigurationVersion(UInteger value);
+  void setConfigurationVersion(UInteger value);
 
-    PropertyType getConfigurationVersionNode();
+  PropertyType getConfigurationVersionNode();
 
-    EndpointDescription[] getDefaultSecurityKeyServices();
+  EndpointDescription[] getDefaultSecurityKeyServices();
 
-    void setDefaultSecurityKeyServices(EndpointDescription[] value);
+  void setDefaultSecurityKeyServices(EndpointDescription[] value);
 
-    PropertyType getDefaultSecurityKeyServicesNode();
+  PropertyType getDefaultSecurityKeyServicesNode();
 
-    KeyValuePair[] getConfigurationProperties();
+  KeyValuePair[] getConfigurationProperties();
 
-    void setConfigurationProperties(KeyValuePair[] value);
+  void setConfigurationProperties(KeyValuePair[] value);
 
-    PropertyType getConfigurationPropertiesNode();
+  PropertyType getConfigurationPropertiesNode();
 
-    MethodNode getSetSecurityKeysMethodNode();
+  MethodNode getSetSecurityKeysMethodNode();
 
-    MethodNode getAddConnectionMethodNode();
+  MethodNode getAddConnectionMethodNode();
 
-    MethodNode getRemoveConnectionMethodNode();
+  MethodNode getRemoveConnectionMethodNode();
 
-    DataSetFolderType getPublishedDataSetsNode();
+  DataSetFolderType getPublishedDataSetsNode();
 
-    SubscribedDataSetFolderType getSubscribedDataSetsNode();
+  SubscribedDataSetFolderType getSubscribedDataSetsNode();
 
-    PubSubConfigurationType getPubSubConfigurationNode();
+  PubSubConfigurationType getPubSubConfigurationNode();
 
-    PubSubStatusType getStatusNode();
+  PubSubStatusType getStatusNode();
 
-    PubSubDiagnosticsRootType getDiagnosticsNode();
+  PubSubDiagnosticsRootType getDiagnosticsNode();
 
-    PubSubCapabilitiesType getPubSubCapablitiesNode();
+  PubSubCapabilitiesType getPubSubCapablitiesNode();
 
-    FolderType getDataSetClassesNode();
+  FolderType getDataSetClassesNode();
 
-    abstract class SetSecurityKeysMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  abstract class SetSecurityKeysMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
 
-        public SetSecurityKeysMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("SecurityGroupId", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "")),
-                    new Argument("SecurityPolicyUri", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "")),
-                    new Argument("CurrentTokenId", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=288").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "")),
-                    new Argument("CurrentKey", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "")),
-                    new Argument("FutureKeys", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15").toNodeId(namespaceTable).orElseThrow(), 1, new UInteger[]{UInteger.valueOf(0)}, new LocalizedText("", "")),
-                    new Argument("TimeToNextKey", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "")),
-                    new Argument("KeyLifetime", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            String securityGroupId = (String) inputValues[0].getValue();
-            String securityPolicyUri = (String) inputValues[1].getValue();
-            UInteger currentTokenId = (UInteger) inputValues[2].getValue();
-            ByteString currentKey = (ByteString) inputValues[3].getValue();
-            ByteString[] futureKeys = (ByteString[]) inputValues[4].getValue();
-            Double timeToNextKey = (Double) inputValues[5].getValue();
-            Double keyLifetime = (Double) inputValues[6].getValue();
-            invoke(context, securityGroupId, securityPolicyUri, currentTokenId, currentKey, futureKeys, timeToNextKey, keyLifetime);
-            return new Variant[]{};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       String securityGroupId, String securityPolicyUri, UInteger currentTokenId,
-                                       ByteString currentKey, ByteString[] futureKeys, Double timeToNextKey, Double keyLifetime)
-            throws UaException;
+    public SetSecurityKeysMethod(UaMethodNode node) {
+      super(node);
     }
 
-    abstract class AddConnectionMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
 
-        private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-        public AddConnectionMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("Configuration", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15617").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return outputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("ConnectionId", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            PubSubConnectionDataType configuration = (PubSubConnectionDataType) inputValues[0].getValue();
-            Out<NodeId> connectionId = new Out<>();
-            invoke(context, configuration, connectionId);
-            return new Variant[]{new Variant(connectionId.get())};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       PubSubConnectionDataType configuration, Out<NodeId> connectionId) throws UaException;
+            return new Argument[] {
+              new Argument(
+                  "SecurityGroupId",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "SecurityPolicyUri",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "CurrentTokenId",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=288")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "CurrentKey",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "FutureKeys",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  1,
+                  new UInteger[] {UInteger.valueOf(0)},
+                  new LocalizedText("", "")),
+              new Argument(
+                  "TimeToNextKey",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "KeyLifetime",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
     }
 
-    abstract class RemoveConnectionMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-        public RemoveConnectionMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("ConnectionId", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            NodeId connectionId = (NodeId) inputValues[0].getValue();
-            invoke(context, connectionId);
-            return new Variant[]{};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       NodeId connectionId) throws UaException;
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[] {};
     }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      String securityGroupId = (String) inputValues[0].getValue();
+      String securityPolicyUri = (String) inputValues[1].getValue();
+      UInteger currentTokenId = (UInteger) inputValues[2].getValue();
+      ByteString currentKey = (ByteString) inputValues[3].getValue();
+      ByteString[] futureKeys = (ByteString[]) inputValues[4].getValue();
+      Double timeToNextKey = (Double) inputValues[5].getValue();
+      Double keyLifetime = (Double) inputValues[6].getValue();
+      invoke(
+          context,
+          securityGroupId,
+          securityPolicyUri,
+          currentTokenId,
+          currentKey,
+          futureKeys,
+          timeToNextKey,
+          keyLifetime);
+      return new Variant[] {};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        String securityGroupId,
+        String securityPolicyUri,
+        UInteger currentTokenId,
+        ByteString currentKey,
+        ByteString[] futureKeys,
+        Double timeToNextKey,
+        Double keyLifetime)
+        throws UaException;
+  }
+
+  abstract class AddConnectionMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+
+    private final Lazy<Argument[]> outputArguments = new Lazy<>();
+
+    public AddConnectionMethod(UaMethodNode node) {
+      super(node);
+    }
+
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "Configuration",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15617")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return outputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "ConnectionId",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      PubSubConnectionDataType configuration = (PubSubConnectionDataType) inputValues[0].getValue();
+      Out<NodeId> connectionId = new Out<>();
+      invoke(context, configuration, connectionId);
+      return new Variant[] {new Variant(connectionId.get())};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        PubSubConnectionDataType configuration,
+        Out<NodeId> connectionId)
+        throws UaException;
+  }
+
+  abstract class RemoveConnectionMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+
+    public RemoveConnectionMethod(UaMethodNode node) {
+      super(node);
+    }
+
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "ConnectionId",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      NodeId connectionId = (NodeId) inputValues[0].getValue();
+      invoke(context, connectionId);
+      return new Variant[] {};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, NodeId connectionId)
+        throws UaException;
+  }
 }

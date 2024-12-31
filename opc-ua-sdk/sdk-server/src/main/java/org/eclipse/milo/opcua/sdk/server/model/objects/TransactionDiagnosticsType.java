@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -19,90 +19,91 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.structured.TransactionErrorType;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.11">https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.11</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.11">https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.11</a>
  */
 public interface TransactionDiagnosticsType extends BaseObjectType {
-    QualifiedProperty<DateTime> START_TIME = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "StartTime",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-        -1,
-        DateTime.class
-    );
+  QualifiedProperty<DateTime> START_TIME =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "StartTime",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
+          -1,
+          DateTime.class);
 
-    QualifiedProperty<DateTime> END_TIME = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "EndTime",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-        -1,
-        DateTime.class
-    );
+  QualifiedProperty<DateTime> END_TIME =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "EndTime",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
+          -1,
+          DateTime.class);
 
-    QualifiedProperty<StatusCode> RESULT = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "Result",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19"),
-        -1,
-        StatusCode.class
-    );
+  QualifiedProperty<StatusCode> RESULT =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "Result",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19"),
+          -1,
+          StatusCode.class);
 
-    QualifiedProperty<NodeId[]> AFFECTED_TRUST_LISTS = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "AffectedTrustLists",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-        1,
-        NodeId[].class
-    );
+  QualifiedProperty<NodeId[]> AFFECTED_TRUST_LISTS =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "AffectedTrustLists",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
+          1,
+          NodeId[].class);
 
-    QualifiedProperty<NodeId[]> AFFECTED_CERTIFICATE_GROUPS = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "AffectedCertificateGroups",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-        1,
-        NodeId[].class
-    );
+  QualifiedProperty<NodeId[]> AFFECTED_CERTIFICATE_GROUPS =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "AffectedCertificateGroups",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
+          1,
+          NodeId[].class);
 
-    QualifiedProperty<TransactionErrorType[]> ERRORS = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "Errors",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=32285"),
-        1,
-        TransactionErrorType[].class
-    );
+  QualifiedProperty<TransactionErrorType[]> ERRORS =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "Errors",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=32285"),
+          1,
+          TransactionErrorType[].class);
 
-    DateTime getStartTime();
+  DateTime getStartTime();
 
-    void setStartTime(DateTime value);
+  void setStartTime(DateTime value);
 
-    PropertyType getStartTimeNode();
+  PropertyType getStartTimeNode();
 
-    DateTime getEndTime();
+  DateTime getEndTime();
 
-    void setEndTime(DateTime value);
+  void setEndTime(DateTime value);
 
-    PropertyType getEndTimeNode();
+  PropertyType getEndTimeNode();
 
-    StatusCode getResult();
+  StatusCode getResult();
 
-    void setResult(StatusCode value);
+  void setResult(StatusCode value);
 
-    PropertyType getResultNode();
+  PropertyType getResultNode();
 
-    NodeId[] getAffectedTrustLists();
+  NodeId[] getAffectedTrustLists();
 
-    void setAffectedTrustLists(NodeId[] value);
+  void setAffectedTrustLists(NodeId[] value);
 
-    PropertyType getAffectedTrustListsNode();
+  PropertyType getAffectedTrustListsNode();
 
-    NodeId[] getAffectedCertificateGroups();
+  NodeId[] getAffectedCertificateGroups();
 
-    void setAffectedCertificateGroups(NodeId[] value);
+  void setAffectedCertificateGroups(NodeId[] value);
 
-    PropertyType getAffectedCertificateGroupsNode();
+  PropertyType getAffectedCertificateGroupsNode();
 
-    TransactionErrorType[] getErrors();
+  TransactionErrorType[] getErrors();
 
-    void setErrors(TransactionErrorType[] value);
+  void setErrors(TransactionErrorType[] value);
 
-    PropertyType getErrorsNode();
+  PropertyType getErrorsNode();
 }

@@ -1,68 +1,79 @@
 <?xml version="1.0"?>
+<!--
+  ~ Copyright (c) 2024 the Eclipse Milo Authors
+  ~
+  ~ This program and the accompanying materials are made
+  ~ available under the terms of the Eclipse Public License 2.0
+  ~ which is available at https://www.eclipse.org/legal/epl-2.0/
+  ~
+  ~ SPDX-License-Identifier: EPL-2.0
+  -->
+
 <opc:TypeDictionary DefaultByteOrder="LittleEndian"
-                    TargetNamespace="https://github.com/eclipse/milo"
-                    xmlns:opc="http://opcfoundation.org/BinarySchema/"
-                    xmlns:ua="http://opcfoundation.org/UA/"
-                    xmlns:tns="https://github.com/eclipse/milo">
+  TargetNamespace="https://github.com/eclipse/milo"
+  xmlns:opc="http://opcfoundation.org/BinarySchema/"
+  xmlns:ua="http://opcfoundation.org/UA/"
+  xmlns:tns="https://github.com/eclipse/milo">
 
-    <opc:StructuredType Name="Foo">
-        <opc:Field Name="Bar" TypeName="opc:Int32"/>
-        <opc:Field Name="Baz" TypeName="opc:String"/>
-    </opc:StructuredType>
+  <opc:StructuredType Name="Foo">
+    <opc:Field Name="Bar" TypeName="opc:Int32"/>
+    <opc:Field Name="Baz" TypeName="opc:String"/>
+  </opc:StructuredType>
 
-    <opc:StructuredType Name="Optionals">
-        <opc:Field Name="OptionalInt32Specified" TypeName="opc:Bit"/>
-        <opc:Field Name="OptionalStringSpecified" TypeName="opc:Bit"/>
-        <opc:Field Name="Reserved1" TypeName="opc:Bit" Length="30"/>
+  <opc:StructuredType Name="Optionals">
+    <opc:Field Name="OptionalInt32Specified" TypeName="opc:Bit"/>
+    <opc:Field Name="OptionalStringSpecified" TypeName="opc:Bit"/>
+    <opc:Field Name="Reserved1" TypeName="opc:Bit" Length="30"/>
 
-        <opc:Field Name="OptionalInt32" TypeName="opc:Int32" SwitchField="OptionalInt32Specified"/>
-        <opc:Field Name="OptionalString" TypeName="opc:String" SwitchField="OptionalStringSpecified"/>
-    </opc:StructuredType>
+    <opc:Field Name="OptionalInt32" TypeName="opc:Int32" SwitchField="OptionalInt32Specified"/>
+    <opc:Field Name="OptionalString" TypeName="opc:String" SwitchField="OptionalStringSpecified"/>
+  </opc:StructuredType>
 
-    <opc:StructuredType Name="ArrayContainer">
-        <opc:Field Name="IntArrayLen" TypeName="opc:Int32"/>
-        <opc:Field Name="IntArray" TypeName="opc:Int32" LengthField="IntArrayLen"/>
+  <opc:StructuredType Name="ArrayContainer">
+    <opc:Field Name="IntArrayLen" TypeName="opc:Int32"/>
+    <opc:Field Name="IntArray" TypeName="opc:Int32" LengthField="IntArrayLen"/>
 
-        <opc:Field Name="BitField" TypeName="opc:Bit" Length="8"/>
+    <opc:Field Name="BitField" TypeName="opc:Bit" Length="8"/>
 
-        <opc:Field Name="StringArrayLen" TypeName="opc:Int32"/>
-        <opc:Field Name="StringArray" TypeName="opc:String" LengthField="StringArrayLen"/>
-    </opc:StructuredType>
+    <opc:Field Name="StringArrayLen" TypeName="opc:Int32"/>
+    <opc:Field Name="StringArray" TypeName="opc:String" LengthField="StringArrayLen"/>
+  </opc:StructuredType>
 
-    <opc:StructuredType Name="Bar">
-        <opc:Field Name="Foo" TypeName="tns:Foo"/>
-        <opc:Field Name="Int" TypeName="opc:Int32"/>
-        <opc:Field Name="Str" TypeName="opc:String"/>
-    </opc:StructuredType>
+  <opc:StructuredType Name="Bar">
+    <opc:Field Name="Foo" TypeName="tns:Foo"/>
+    <opc:Field Name="Int" TypeName="opc:Int32"/>
+    <opc:Field Name="Str" TypeName="opc:String"/>
+  </opc:StructuredType>
 
-    <opc:StructuredType Name="ProfilePointStruct">
-        <opc:Field TypeName="opc:Bit" Name="rangeXSpecified"/>
-        <opc:Field TypeName="opc:Bit" Name="rangeYSpecified"/>
-        <opc:Field Length="30" TypeName="opc:Bit" Name="Reserved1"/>
-        <opc:Field TypeName="opc:Double" Name="x"/>
-        <opc:Field TypeName="opc:Double" Name="y"/>
-        <opc:Field SwitchField="rangeXSpecified" TypeName="ua:Range" Name="rangeX"/>
-        <opc:Field SwitchField="rangeYSpecified" TypeName="ua:Range" Name="rangeY"/>
-    </opc:StructuredType>
+  <opc:StructuredType Name="ProfilePointStruct">
+    <opc:Field TypeName="opc:Bit" Name="rangeXSpecified"/>
+    <opc:Field TypeName="opc:Bit" Name="rangeYSpecified"/>
+    <opc:Field Length="30" TypeName="opc:Bit" Name="Reserved1"/>
+    <opc:Field TypeName="opc:Double" Name="x"/>
+    <opc:Field TypeName="opc:Double" Name="y"/>
+    <opc:Field SwitchField="rangeXSpecified" TypeName="ua:Range" Name="rangeX"/>
+    <opc:Field SwitchField="rangeYSpecified" TypeName="ua:Range" Name="rangeY"/>
+  </opc:StructuredType>
 
-    <opc:EnumeratedType LengthInBits="32" Name="LocationTypeEnumeration">
-        <opc:EnumeratedValue Name="NMEA" Value="0"/>
-        <opc:EnumeratedValue Name="UTM" Value="1"/>
-        <opc:EnumeratedValue Name="LOCAL" Value="2"/>
-        <opc:EnumeratedValue Name="LOCAL_1D" Value="3"/>
-        <opc:EnumeratedValue Name="WGS84" Value="4"/>
-        <opc:EnumeratedValue Name="NAME" Value="5"/>
-        <opc:EnumeratedValue Name="LCI_DHCP" Value="6"/>
-        <opc:EnumeratedValue Name="Civic_Address" Value="7"/>
-    </opc:EnumeratedType>
+  <opc:EnumeratedType LengthInBits="32" Name="LocationTypeEnumeration">
+    <opc:EnumeratedValue Name="NMEA" Value="0"/>
+    <opc:EnumeratedValue Name="UTM" Value="1"/>
+    <opc:EnumeratedValue Name="LOCAL" Value="2"/>
+    <opc:EnumeratedValue Name="LOCAL_1D" Value="3"/>
+    <opc:EnumeratedValue Name="WGS84" Value="4"/>
+    <opc:EnumeratedValue Name="NAME" Value="5"/>
+    <opc:EnumeratedValue Name="LCI_DHCP" Value="6"/>
+    <opc:EnumeratedValue Name="Civic_Address" Value="7"/>
+  </opc:EnumeratedType>
 
-    <opc:StructuredType BaseType="ua:ExtensionObject" Name="ScanSettings">
-        <opc:Field TypeName="opc:Bit" Name="LocationTypeSpecified"/>
-        <opc:Field Length="31" TypeName="opc:Bit" Name="Reserved1"/>
-        <opc:Field TypeName="opc:Double" Name="Duration"/>
-        <opc:Field TypeName="opc:Int32" Name="Cycles"/>
-        <opc:Field TypeName="opc:Boolean" Name="DataAvailable"/>
-        <opc:Field SwitchField="LocationTypeSpecified" TypeName="tns:LocationTypeEnumeration" Name="LocationType"/>
-    </opc:StructuredType>
+  <opc:StructuredType BaseType="ua:ExtensionObject" Name="ScanSettings">
+    <opc:Field TypeName="opc:Bit" Name="LocationTypeSpecified"/>
+    <opc:Field Length="31" TypeName="opc:Bit" Name="Reserved1"/>
+    <opc:Field TypeName="opc:Double" Name="Duration"/>
+    <opc:Field TypeName="opc:Int32" Name="Cycles"/>
+    <opc:Field TypeName="opc:Boolean" Name="DataAvailable"/>
+    <opc:Field SwitchField="LocationTypeSpecified" TypeName="tns:LocationTypeEnumeration"
+      Name="LocationType"/>
+  </opc:StructuredType>
 
 </opc:TypeDictionary>

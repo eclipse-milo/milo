@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -17,7 +17,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
-
 import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.ValueRanks;
 import org.eclipse.milo.opcua.sdk.core.nodes.Node;
@@ -60,516 +59,508 @@ import org.eclipse.milo.opcua.stack.core.types.structured.EventFilterResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.FilterOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.LiteralOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class EventContentFilter {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(EventContentFilter.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(EventContentFilter.class);
 
-    public static EventFilterResult validate(FilterContext context, EventFilter filter) throws UaException {
-        SimpleAttributeOperand[] selectClauses = filter.getSelectClauses();
+  public static EventFilterResult validate(FilterContext context, EventFilter filter)
+      throws UaException {
+    SimpleAttributeOperand[] selectClauses = filter.getSelectClauses();
 
-        if (selectClauses == null || selectClauses.length == 0) {
-            // A valid filter has at least one select clause
-            throw new UaException(StatusCodes.Bad_EventFilterInvalid);
-        }
-
-        SelectClauseValidationResult selectClauseResults = validateSelectClauses(context, selectClauses);
-
-        ContentFilterResult whereClauseResult = validateWhereClause(context, filter.getWhereClause());
-
-        return new EventFilterResult(
-            selectClauseResults.statusCodes,
-            selectClauseResults.diagnosticInfos,
-            whereClauseResult
-        );
+    if (selectClauses == null || selectClauses.length == 0) {
+      // A valid filter has at least one select clause
+      throw new UaException(StatusCodes.Bad_EventFilterInvalid);
     }
 
-    private static SelectClauseValidationResult validateSelectClauses(
-        FilterContext context,
-        SimpleAttributeOperand[] selectClauses) {
+    SelectClauseValidationResult selectClauseResults =
+        validateSelectClauses(context, selectClauses);
 
-        List<StatusCode> statusCodes = new ArrayList<>();
-        List<DiagnosticInfo> diagnosticInfos = new ArrayList<>();
+    ContentFilterResult whereClauseResult = validateWhereClause(context, filter.getWhereClause());
 
-        for (SimpleAttributeOperand select : selectClauses) {
-            try {
-                validateSimpleOperand(context, select);
+    return new EventFilterResult(
+        selectClauseResults.statusCodes, selectClauseResults.diagnosticInfos, whereClauseResult);
+  }
 
-                statusCodes.add(StatusCode.GOOD);
-                diagnosticInfos.add(DiagnosticInfo.NULL_VALUE);
-            } catch (ValidationException e) {
-                statusCodes.add(e.getStatusCode());
-                diagnosticInfos.add(e.getDiagnosticInfo());
-            } catch (Throwable t) {
-                LOGGER.error("Unexpected error validating operand: {}", select, t);
-                statusCodes.add(new StatusCode(StatusCodes.Bad_InternalError));
-                diagnosticInfos.add(DiagnosticInfo.NULL_VALUE);
-            }
-        }
+  private static SelectClauseValidationResult validateSelectClauses(
+      FilterContext context, SimpleAttributeOperand[] selectClauses) {
 
-        return new SelectClauseValidationResult(
-            statusCodes.toArray(new StatusCode[0]),
-            diagnosticInfos.toArray(new DiagnosticInfo[0])
-        );
+    List<StatusCode> statusCodes = new ArrayList<>();
+    List<DiagnosticInfo> diagnosticInfos = new ArrayList<>();
+
+    for (SimpleAttributeOperand select : selectClauses) {
+      try {
+        validateSimpleOperand(context, select);
+
+        statusCodes.add(StatusCode.GOOD);
+        diagnosticInfos.add(DiagnosticInfo.NULL_VALUE);
+      } catch (ValidationException e) {
+        statusCodes.add(e.getStatusCode());
+        diagnosticInfos.add(e.getDiagnosticInfo());
+      } catch (Throwable t) {
+        LOGGER.error("Unexpected error validating operand: {}", select, t);
+        statusCodes.add(new StatusCode(StatusCodes.Bad_InternalError));
+        diagnosticInfos.add(DiagnosticInfo.NULL_VALUE);
+      }
     }
 
-    private static void validateSimpleOperand(
-        FilterContext context,
-        SimpleAttributeOperand select) throws ValidationException {
+    return new SelectClauseValidationResult(
+        statusCodes.toArray(new StatusCode[0]), diagnosticInfos.toArray(new DiagnosticInfo[0]));
+  }
 
-        NodeId eventTypeId = select.getTypeDefinitionId();
+  private static void validateSimpleOperand(FilterContext context, SimpleAttributeOperand select)
+      throws ValidationException {
 
-        if (eventTypeId != null && !eventTypeId.equals(NodeIds.BaseEventType)) {
-            UaNode node = context.getServer().getAddressSpaceManager().getManagedNode(eventTypeId).orElse(null);
+    NodeId eventTypeId = select.getTypeDefinitionId();
 
-            if (node == null || node.getNodeClass() != NodeClass.ObjectType) {
-                throw new ValidationException(StatusCodes.Bad_TypeDefinitionInvalid);
-            }
+    if (eventTypeId != null && !eventTypeId.equals(NodeIds.BaseEventType)) {
+      UaNode node =
+          context.getServer().getAddressSpaceManager().getManagedNode(eventTypeId).orElse(null);
 
-            QualifiedName[] browsePath = select.getBrowsePath();
+      if (node == null || node.getNodeClass() != NodeClass.ObjectType) {
+        throw new ValidationException(StatusCodes.Bad_TypeDefinitionInvalid);
+      }
 
-            if (browsePath == null || Arrays.stream(browsePath).anyMatch(Objects::isNull)) {
-                throw new ValidationException(StatusCodes.Bad_BrowseNameInvalid);
-            }
+      QualifiedName[] browsePath = select.getBrowsePath();
 
-            Node relativeNode = getRelativeNode(context, node, browsePath);
+      if (browsePath == null || Arrays.stream(browsePath).anyMatch(Objects::isNull)) {
+        throw new ValidationException(StatusCodes.Bad_BrowseNameInvalid);
+      }
 
-            if (relativeNode == null) {
-                throw new ValidationException(StatusCodes.Bad_NodeIdUnknown);
-            }
+      Node relativeNode = getRelativeNode(context, node, browsePath);
 
-            UInteger attributeId = select.getAttributeId();
+      if (relativeNode == null) {
+        throw new ValidationException(StatusCodes.Bad_NodeIdUnknown);
+      }
 
-            Set<AttributeId> validAttributes =
-                AttributeId.getAttributes(relativeNode.getNodeClass());
+      UInteger attributeId = select.getAttributeId();
 
-            boolean validAttribute = AttributeId.from(attributeId)
-                .map(validAttributes::contains)
-                .orElse(false);
+      Set<AttributeId> validAttributes = AttributeId.getAttributes(relativeNode.getNodeClass());
 
-            if (!validAttribute) {
-                throw new ValidationException(StatusCodes.Bad_AttributeIdInvalid);
-            }
+      boolean validAttribute =
+          AttributeId.from(attributeId).map(validAttributes::contains).orElse(false);
 
-            String indexRange = select.getIndexRange();
-            if (indexRange != null && !indexRange.isEmpty()) {
-                if (relativeNode instanceof VariableNode) {
-                    int valueRank = ((VariableNode) relativeNode).getValueRank();
+      if (!validAttribute) {
+        throw new ValidationException(StatusCodes.Bad_AttributeIdInvalid);
+      }
 
-                    if (valueRank == ValueRanks.Scalar) {
-                        throw new ValidationException(StatusCodes.Bad_IndexRangeInvalid);
-                    }
-                } else {
-                    throw new ValidationException(StatusCodes.Bad_IndexRangeInvalid);
-                }
-            }
+      String indexRange = select.getIndexRange();
+      if (indexRange != null && !indexRange.isEmpty()) {
+        if (relativeNode instanceof VariableNode) {
+          int valueRank = ((VariableNode) relativeNode).getValueRank();
+
+          if (valueRank == ValueRanks.Scalar) {
+            throw new ValidationException(StatusCodes.Bad_IndexRangeInvalid);
+          }
+        } else {
+          throw new ValidationException(StatusCodes.Bad_IndexRangeInvalid);
         }
+      }
+    }
+  }
+
+  @Nullable
+  private static Node getRelativeNode(
+      FilterContext context, @NonNull UaNode startingNode, @NonNull QualifiedName[] browsePath) {
+
+    UaNode relativeNode = startingNode;
+
+    Predicate<UaNode> nodePredicate =
+        n -> n.getNodeClass() == NodeClass.Object || n.getNodeClass() == NodeClass.Variable;
+
+    ReferenceTypeTree referenceTypeTree =
+        startingNode.getNodeContext().getServer().getReferenceTypeTree();
+
+    Predicate<Reference> referencePredicate =
+        r ->
+            r.isForward()
+                && referenceTypeTree.isSubtypeOf(
+                    r.getReferenceTypeId(), NodeIds.HierarchicalReferences);
+
+    // find the Node relative to eventNode using browsePath.
+    for (QualifiedName targetBrowsePath : browsePath) {
+      relativeNode =
+          relativeNode.findNode(targetBrowsePath, nodePredicate, referencePredicate).orElse(null);
+
+      if (relativeNode == null) break;
     }
 
-    @Nullable
-    private static Node getRelativeNode(
-        FilterContext context,
-        @NotNull UaNode startingNode,
-        @NotNull QualifiedName[] browsePath) {
+    return relativeNode;
+  }
 
-        UaNode relativeNode = startingNode;
+  private static ContentFilterResult validateWhereClause(
+      FilterContext context, ContentFilter whereClause) {
 
-        Predicate<UaNode> nodePredicate = n ->
-            n.getNodeClass() == NodeClass.Object || n.getNodeClass() == NodeClass.Variable;
+    ContentFilterElement[] filterElements = whereClause.getElements();
 
-        ReferenceTypeTree referenceTypeTree = startingNode.getNodeContext().getServer().getReferenceTypeTree();
-
-        Predicate<Reference> referencePredicate = r ->
-            r.isForward() &&
-                referenceTypeTree.isSubtypeOf(r.getReferenceTypeId(), NodeIds.HierarchicalReferences);
-
-        // find the Node relative to eventNode using browsePath.
-        for (QualifiedName targetBrowsePath : browsePath) {
-            relativeNode = relativeNode
-                .findNode(targetBrowsePath, nodePredicate, referencePredicate)
-                .orElse(null);
-
-            if (relativeNode == null) break;
-        }
-
-        return relativeNode;
+    if (filterElements == null) {
+      return new ContentFilterResult(new ContentFilterElementResult[0], new DiagnosticInfo[0]);
     }
 
-    private static ContentFilterResult validateWhereClause(
-        FilterContext context,
-        ContentFilter whereClause) {
-
-        ContentFilterElement[] filterElements = whereClause.getElements();
-
-        if (filterElements == null) {
-            return new ContentFilterResult(new ContentFilterElementResult[0], new DiagnosticInfo[0]);
-        }
-
-        ContentFilterElementResult[] elementResults = Arrays.stream(filterElements)
+    ContentFilterElementResult[] elementResults =
+        Arrays.stream(filterElements)
             .map(e -> validateFilterElement(context, e))
             .toArray(ContentFilterElementResult[]::new);
 
-        return new ContentFilterResult(elementResults, new DiagnosticInfo[0]);
+    return new ContentFilterResult(elementResults, new DiagnosticInfo[0]);
+  }
+
+  private static ContentFilterElementResult validateFilterElement(
+      @NonNull FilterContext context, @NonNull ContentFilterElement filterElement) {
+
+    FilterOperator filterOperator = filterElement.getFilterOperator();
+
+    if (!Operators.SUPPORTED_OPERATORS.contains(filterOperator)) {
+      return new ContentFilterElementResult(
+          new StatusCode(StatusCodes.Bad_FilterOperatorUnsupported),
+          new StatusCode[0],
+          new DiagnosticInfo[0]);
     }
 
-    private static ContentFilterElementResult validateFilterElement(
-        @NotNull FilterContext context,
-        @NotNull ContentFilterElement filterElement) {
+    ExtensionObject[] xos = filterElement.getFilterOperands();
 
-        FilterOperator filterOperator = filterElement.getFilterOperator();
-
-        if (!Operators.SUPPORTED_OPERATORS.contains(filterOperator)) {
-            return new ContentFilterElementResult(
-                new StatusCode(StatusCodes.Bad_FilterOperatorUnsupported),
-                new StatusCode[0],
-                new DiagnosticInfo[0]
-            );
-        }
-
-        ExtensionObject[] xos = filterElement.getFilterOperands();
-
-        if (xos == null || xos.length == 0) {
-            return new ContentFilterElementResult(
-                new StatusCode(StatusCodes.Bad_FilterOperandCountMismatch),
-                new StatusCode[0],
-                new DiagnosticInfo[0]
-            );
-        }
-
-        FilterOperand[] operands = new FilterOperand[xos.length];
-        StatusCode[] operandStatusCodes = new StatusCode[xos.length];
-
-        for (int i = 0; i < xos.length; i++) {
-            Object operand = xos[i].decodeOrNull(context.getServer().getEncodingContext());
-
-            if (operand instanceof FilterOperand) {
-                operands[i] = (FilterOperand) operand;
-
-                if (operand instanceof SimpleAttributeOperand) {
-                    try {
-                        validateSimpleOperand(context, (SimpleAttributeOperand) operand);
-
-                        operandStatusCodes[i] = StatusCode.GOOD;
-                    } catch (ValidationException e) {
-                        operandStatusCodes[i] = e.getStatusCode();
-                    }
-                } else if (operand instanceof ElementOperand) {
-                    operandStatusCodes[i] = StatusCode.GOOD;
-                } else if (operand instanceof LiteralOperand) {
-                    operandStatusCodes[i] = StatusCode.GOOD;
-                } else {
-                    // includes AttributeOperand and any unknown/unhandle subclasses
-                    operandStatusCodes[i] = new StatusCode(StatusCodes.Bad_FilterOperandInvalid);
-                }
-            } else {
-                operandStatusCodes[i] = new StatusCode(StatusCodes.Bad_FilterOperandInvalid);
-            }
-        }
-
-        StatusCode operatorStatus = StatusCode.GOOD;
-
-        try {
-            Operator<?> operator = getOperator(filterOperator);
-            operator.validate(context, operands);
-        } catch (ValidationException e) {
-            operatorStatus = e.getStatusCode();
-        }
-
-        return new ContentFilterElementResult(
-            operatorStatus,
-            operandStatusCodes,
-            new DiagnosticInfo[0]
-        );
+    if (xos == null || xos.length == 0) {
+      return new ContentFilterElementResult(
+          new StatusCode(StatusCodes.Bad_FilterOperandCountMismatch),
+          new StatusCode[0],
+          new DiagnosticInfo[0]);
     }
 
-    public static Variant[] select(
-        @NotNull FilterContext context,
-        @NotNull SimpleAttributeOperand[] selectClauses,
-        @NotNull BaseEventTypeNode eventNode) {
+    FilterOperand[] operands = new FilterOperand[xos.length];
+    StatusCode[] operandStatusCodes = new StatusCode[xos.length];
 
-        return Arrays.stream(selectClauses).map(operand -> {
-            try {
-                return new Variant(getSimpleAttribute(context, operand, eventNode));
-            } catch (UaException e) {
-                return Variant.NULL_VALUE;
-            }
-        }).toArray(Variant[]::new);
-    }
+    for (int i = 0; i < xos.length; i++) {
+      Object operand = xos[i].decodeOrNull(context.getServer().getEncodingContext());
 
-    public static boolean evaluate(
-        @NotNull FilterContext context,
-        @NotNull ContentFilter whereClause,
-        @NotNull BaseEventTypeNode eventNode) throws UaException {
+      if (operand instanceof FilterOperand) {
+        operands[i] = (FilterOperand) operand;
 
-        if (whereClause.getElements() == null || whereClause.getElements().length == 0) {
-            return true;
-        }
+        if (operand instanceof SimpleAttributeOperand) {
+          try {
+            validateSimpleOperand(context, (SimpleAttributeOperand) operand);
 
-        ContentFilterElement[] elements = whereClause.getElements();
-
-        OperatorContext operatorContext = new DefaultOperatorContext(context, elements);
-
-        Object result = evaluate(operatorContext, eventNode, elements[0]);
-
-        if (result == null) {
-            return false;
-        } else if (result instanceof Boolean) {
-            return (Boolean) result;
+            operandStatusCodes[i] = StatusCode.GOOD;
+          } catch (ValidationException e) {
+            operandStatusCodes[i] = e.getStatusCode();
+          }
+        } else if (operand instanceof ElementOperand) {
+          operandStatusCodes[i] = StatusCode.GOOD;
+        } else if (operand instanceof LiteralOperand) {
+          operandStatusCodes[i] = StatusCode.GOOD;
         } else {
-            throw new UaException(StatusCodes.Bad_ContentFilterInvalid);
+          // includes AttributeOperand and any unknown/unhandle subclasses
+          operandStatusCodes[i] = new StatusCode(StatusCodes.Bad_FilterOperandInvalid);
         }
+      } else {
+        operandStatusCodes[i] = new StatusCode(StatusCodes.Bad_FilterOperandInvalid);
+      }
+    }
+
+    StatusCode operatorStatus = StatusCode.GOOD;
+
+    try {
+      Operator<?> operator = getOperator(filterOperator);
+      operator.validate(context, operands);
+    } catch (ValidationException e) {
+      operatorStatus = e.getStatusCode();
+    }
+
+    return new ContentFilterElementResult(
+        operatorStatus, operandStatusCodes, new DiagnosticInfo[0]);
+  }
+
+  public static Variant[] select(
+      @NonNull FilterContext context,
+      @NonNull SimpleAttributeOperand[] selectClauses,
+      @NonNull BaseEventTypeNode eventNode) {
+
+    return Arrays.stream(selectClauses)
+        .map(
+            operand -> {
+              try {
+                return new Variant(getSimpleAttribute(context, operand, eventNode));
+              } catch (UaException e) {
+                return Variant.NULL_VALUE;
+              }
+            })
+        .toArray(Variant[]::new);
+  }
+
+  public static boolean evaluate(
+      @NonNull FilterContext context,
+      @NonNull ContentFilter whereClause,
+      @NonNull BaseEventTypeNode eventNode)
+      throws UaException {
+
+    if (whereClause.getElements() == null || whereClause.getElements().length == 0) {
+      return true;
+    }
+
+    ContentFilterElement[] elements = whereClause.getElements();
+
+    OperatorContext operatorContext = new DefaultOperatorContext(context, elements);
+
+    Object result = evaluate(operatorContext, eventNode, elements[0]);
+
+    if (result == null) {
+      return false;
+    } else if (result instanceof Boolean) {
+      return (Boolean) result;
+    } else {
+      throw new UaException(StatusCodes.Bad_ContentFilterInvalid);
+    }
+  }
+
+  @Nullable
+  private static Object evaluate(
+      @NonNull OperatorContext context,
+      @NonNull BaseEventTypeNode eventNode,
+      @NonNull ContentFilterElement element)
+      throws UaException {
+
+    FilterOperator filterOperator = element.getFilterOperator();
+    if (filterOperator == null) {
+      throw new UaException(StatusCodes.Bad_FilterOperatorInvalid);
+    }
+
+    FilterOperand[] filterOperands =
+        decodeOperands(context.getServer().getEncodingContext(), element.getFilterOperands());
+
+    Operator<?> operator = getOperator(filterOperator);
+
+    return operator.apply(context, eventNode, filterOperands);
+  }
+
+  @NonNull
+  private static FilterOperand[] decodeOperands(
+      EncodingContext context, ExtensionObject @Nullable [] operandXos) {
+
+    if (operandXos == null) {
+      return new FilterOperand[0];
+    } else {
+      return Arrays.stream(operandXos)
+          .map(xo -> (FilterOperand) xo.decode(context))
+          .toArray(FilterOperand[]::new);
+    }
+  }
+
+  @NonNull
+  private static Operator<?> getOperator(@NonNull FilterOperator filterOperator) {
+    // @formatter:off
+    switch (filterOperator) {
+      // Basic FilterOperators
+      case Equals:
+        return Operators.EQUALS;
+      case IsNull:
+        return Operators.IS_NULL;
+      case GreaterThan:
+        return Operators.GREATER_THAN;
+      case LessThan:
+        return Operators.LESS_THAN;
+      case GreaterThanOrEqual:
+        return Operators.GREATER_THAN_OR_EQUAL;
+      case LessThanOrEqual:
+        return Operators.LESS_THAN_OR_EQUAL;
+      case Like:
+        return Operators.UNSUPPORTED;
+      case Not:
+        return Operators.NOT;
+      case Between:
+        return Operators.UNSUPPORTED;
+      case InList:
+        return Operators.UNSUPPORTED;
+      case And:
+        return Operators.UNSUPPORTED;
+      case Or:
+        return Operators.UNSUPPORTED;
+      case Cast:
+        return Operators.CAST;
+      case BitwiseAnd:
+        return Operators.UNSUPPORTED;
+      case BitwiseOr:
+        return Operators.UNSUPPORTED;
+
+      // Complex FilterOperators
+      case InView:
+        return Operators.UNSUPPORTED;
+      case OfType:
+        return Operators.OF_TYPE;
+      case RelatedTo:
+        return Operators.UNSUPPORTED;
+      default:
+        return Operators.UNSUPPORTED;
+    }
+    // @formatter:on
+  }
+
+  @SuppressWarnings("unused")
+  private static Object getAttribute(
+      @NonNull FilterContext context,
+      @NonNull AttributeOperand operand,
+      @NonNull BaseEventTypeNode eventNode)
+      throws UaException {
+
+    // AttributeOperand is not allowed to be used in EventFilters... it's for the Query services.
+    // Right now Query services are unsupported and this class exists to handle the application
+    // of the whereClause of a ContentFilter to an event.
+    throw new UaException(StatusCodes.Bad_EventFilterInvalid);
+  }
+
+  private static Object getSimpleAttribute(
+      @NonNull FilterContext context,
+      @NonNull SimpleAttributeOperand operand,
+      @NonNull BaseEventTypeNode eventNode)
+      throws UaException {
+
+    NodeId typeDefinitionId = operand.getTypeDefinitionId();
+
+    if (typeDefinitionId != null && !typeDefinitionId.equals(NodeIds.BaseEventType)) {
+      NodeId eventTypeDefinitionId = eventNode.getTypeDefinitionNode().getNodeId();
+
+      boolean sameOrSubtype =
+          typeDefinitionId.equals(eventTypeDefinitionId)
+              || subtypeOf(eventTypeDefinitionId, typeDefinitionId, context.getServer());
+
+      if (!sameOrSubtype) {
+        return null;
+      }
+    }
+
+    QualifiedName[] browsePath = operand.getBrowsePath();
+
+    UaNode targetNode = eventNode;
+
+    if (browsePath != null) {
+      Predicate<UaNode> nodePredicate =
+          n -> n.getNodeClass() == NodeClass.Object || n.getNodeClass() == NodeClass.Variable;
+
+      ReferenceTypeTree referenceTypeTree =
+          eventNode.getNodeContext().getServer().getReferenceTypeTree();
+
+      Predicate<Reference> referencePredicate =
+          r ->
+              r.isForward()
+                  && referenceTypeTree.isSubtypeOf(
+                      r.getReferenceTypeId(), NodeIds.HierarchicalReferences);
+
+      // find the Node relative to eventNode using browsePath.
+      for (QualifiedName targetBrowsePath : browsePath) {
+        targetNode =
+            targetNode.findNode(targetBrowsePath, nodePredicate, referencePredicate).orElse(null);
+
+        if (targetNode == null) break;
+      }
+    }
+
+    if (targetNode != null) {
+      // read the attribute
+      AttributeId attributeId =
+          AttributeId.from(operand.getAttributeId())
+              .orElseThrow(() -> new UaException(StatusCodes.Bad_AttributeIdInvalid));
+
+      String indexRange = operand.getIndexRange();
+
+      DataValue value =
+          AttributeReader.readAttribute(
+              context,
+              targetNode,
+              attributeId,
+              TimestampsToReturn.Neither,
+              indexRange,
+              QualifiedName.NULL_VALUE);
+
+      return value.getValue().getValue();
+    } else {
+      return null;
+    }
+  }
+
+  public static boolean subtypeOf(NodeId typeId, NodeId superTypeId, OpcUaServer server) {
+    UaNode node = server.getAddressSpaceManager().getManagedNode(typeId).orElse(null);
+
+    if (node instanceof ObjectTypeNode) {
+      return getParentTypeDefinition(node, server)
+          .map(Node::getNodeId)
+          .map(id -> id.equals(superTypeId) || subtypeOf(id, superTypeId, server))
+          .orElse(false);
+    } else {
+      return false;
+    }
+  }
+
+  private static Optional<UaNode> getParentTypeDefinition(UaNode node, OpcUaServer server) {
+    AddressSpaceManager addressSpaceManager = server.getAddressSpaceManager();
+    NamespaceTable namespaceTable = server.getNamespaceTable();
+
+    return addressSpaceManager.getManagedReferences(node.getNodeId()).stream()
+        .filter(Reference.SUBTYPE_OF)
+        .flatMap(r -> r.getTargetNodeId().toNodeId(namespaceTable).stream())
+        .findFirst()
+        .flatMap(addressSpaceManager::getManagedNode);
+  }
+
+  static class DefaultOperatorContext implements OperatorContext {
+
+    private final FilterContext filterContext;
+    private final ContentFilterElement[] elements;
+
+    DefaultOperatorContext(FilterContext filterContext, ContentFilterElement[] elements) {
+      this.filterContext = filterContext;
+      this.elements = elements;
+    }
+
+    @Override
+    public Optional<Session> getSession() {
+      return filterContext.getSession();
+    }
+
+    @Override
+    public OpcUaServer getServer() {
+      return filterContext.getServer();
+    }
+
+    @Override
+    public ContentFilterElement[] getElements() {
+      return elements;
     }
 
     @Nullable
-    private static Object evaluate(
-        @NotNull OperatorContext context,
-        @NotNull BaseEventTypeNode eventNode,
-        @NotNull ContentFilterElement element) throws UaException {
+    @Override
+    public Object resolve(FilterOperand operand, BaseEventTypeNode eventNode) throws UaException {
+      if (operand instanceof LiteralOperand) {
+        return ((LiteralOperand) operand).getValue().getValue();
+      } else if (operand instanceof ElementOperand) {
+        UInteger index = ((ElementOperand) operand).getIndex();
 
-        FilterOperator filterOperator = element.getFilterOperator();
-        if (filterOperator == null) {
-            throw new UaException(StatusCodes.Bad_FilterOperatorInvalid);
-        }
+        ContentFilterElement element = elements[index.intValue()];
 
-        FilterOperand[] filterOperands = decodeOperands(
-            context.getServer().getEncodingContext(),
-            element.getFilterOperands()
-        );
+        return evaluate(this, eventNode, element);
+      } else if (operand instanceof AttributeOperand) {
+        AttributeOperand ao = (AttributeOperand) operand;
 
-        Operator<?> operator = getOperator(filterOperator);
+        return getAttribute(filterContext, ao, eventNode);
+      } else if (operand instanceof SimpleAttributeOperand) {
+        SimpleAttributeOperand sao = (SimpleAttributeOperand) operand;
 
-        return operator.apply(context, eventNode, filterOperands);
+        return getSimpleAttribute(filterContext, sao, eventNode);
+      } else {
+        throw new UaException(StatusCodes.Bad_FilterOperandInvalid);
+      }
     }
+  }
 
-    @NotNull
-    private static FilterOperand[] decodeOperands(
-        EncodingContext context,
-        ExtensionObject @Nullable [] operandXos
-    ) {
+  static class SelectClauseValidationResult {
+    private final StatusCode[] statusCodes;
+    private final DiagnosticInfo[] diagnosticInfos;
 
-        if (operandXos == null) {
-            return new FilterOperand[0];
-        } else {
-            return Arrays.stream(operandXos)
-                .map(xo -> (FilterOperand) xo.decode(context))
-                .toArray(FilterOperand[]::new);
-        }
+    public SelectClauseValidationResult(
+        StatusCode[] statusCodes, DiagnosticInfo[] diagnosticInfos) {
+      this.statusCodes = statusCodes;
+      this.diagnosticInfos = diagnosticInfos;
     }
-
-    @NotNull
-    private static Operator<?> getOperator(@NotNull FilterOperator filterOperator) {
-        //@formatter:off
-        switch (filterOperator) {
-            // Basic FilterOperators
-            case Equals:
-                return Operators.EQUALS;
-            case IsNull:
-                return Operators.IS_NULL;
-            case GreaterThan:
-                return Operators.GREATER_THAN;
-            case LessThan:
-                return Operators.LESS_THAN;
-            case GreaterThanOrEqual:
-                return Operators.GREATER_THAN_OR_EQUAL;
-            case LessThanOrEqual:
-                return Operators.LESS_THAN_OR_EQUAL;
-            case Like:
-                return Operators.UNSUPPORTED;
-            case Not:
-                return Operators.NOT;
-            case Between:
-                return Operators.UNSUPPORTED;
-            case InList:
-                return Operators.UNSUPPORTED;
-            case And:
-                return Operators.UNSUPPORTED;
-            case Or:
-                return Operators.UNSUPPORTED;
-            case Cast:
-                return Operators.CAST;
-            case BitwiseAnd:
-                return Operators.UNSUPPORTED;
-            case BitwiseOr:
-                return Operators.UNSUPPORTED;
-
-            // Complex FilterOperators
-            case InView:
-                return Operators.UNSUPPORTED;
-            case OfType:
-                return Operators.OF_TYPE;
-            case RelatedTo:
-                return Operators.UNSUPPORTED;
-            default:
-                return Operators.UNSUPPORTED;
-        }
-        //@formatter:on
-    }
-
-    @SuppressWarnings("unused")
-    private static Object getAttribute(
-        @NotNull FilterContext context,
-        @NotNull AttributeOperand operand,
-        @NotNull BaseEventTypeNode eventNode) throws UaException {
-
-        // AttributeOperand is not allowed to be used in EventFilters... it's for the Query services.
-        // Right now Query services are unsupported and this class exists to handle the application
-        // of the whereClause of a ContentFilter to an event.
-        throw new UaException(StatusCodes.Bad_EventFilterInvalid);
-    }
-
-    private static Object getSimpleAttribute(
-        @NotNull FilterContext context,
-        @NotNull SimpleAttributeOperand operand,
-        @NotNull BaseEventTypeNode eventNode
-    ) throws UaException {
-
-        NodeId typeDefinitionId = operand.getTypeDefinitionId();
-
-        if (typeDefinitionId != null && !typeDefinitionId.equals(NodeIds.BaseEventType)) {
-            NodeId eventTypeDefinitionId = eventNode.getTypeDefinitionNode().getNodeId();
-
-            boolean sameOrSubtype = typeDefinitionId.equals(eventTypeDefinitionId) ||
-                subtypeOf(eventTypeDefinitionId, typeDefinitionId, context.getServer());
-
-            if (!sameOrSubtype) {
-                return null;
-            }
-        }
-
-        QualifiedName[] browsePath = operand.getBrowsePath();
-
-        UaNode targetNode = eventNode;
-
-        if (browsePath != null) {
-            Predicate<UaNode> nodePredicate = n ->
-                n.getNodeClass() == NodeClass.Object || n.getNodeClass() == NodeClass.Variable;
-
-            ReferenceTypeTree referenceTypeTree = eventNode.getNodeContext().getServer().getReferenceTypeTree();
-
-            Predicate<Reference> referencePredicate = r ->
-                r.isForward() &&
-                    referenceTypeTree.isSubtypeOf(r.getReferenceTypeId(), NodeIds.HierarchicalReferences);
-
-            // find the Node relative to eventNode using browsePath.
-            for (QualifiedName targetBrowsePath : browsePath) {
-                targetNode = targetNode
-                    .findNode(targetBrowsePath, nodePredicate, referencePredicate)
-                    .orElse(null);
-
-                if (targetNode == null) break;
-            }
-        }
-
-        if (targetNode != null) {
-            // read the attribute
-            AttributeId attributeId = AttributeId.from(operand.getAttributeId())
-                .orElseThrow(() -> new UaException(StatusCodes.Bad_AttributeIdInvalid));
-
-            String indexRange = operand.getIndexRange();
-
-            DataValue value = AttributeReader.readAttribute(
-                context,
-                targetNode,
-                attributeId,
-                TimestampsToReturn.Neither,
-                indexRange,
-                QualifiedName.NULL_VALUE
-            );
-
-            return value.getValue().getValue();
-        } else {
-            return null;
-        }
-    }
-
-    public static boolean subtypeOf(NodeId typeId, NodeId superTypeId, OpcUaServer server) {
-        UaNode node = server.getAddressSpaceManager().getManagedNode(typeId).orElse(null);
-
-        if (node instanceof ObjectTypeNode) {
-            return getParentTypeDefinition(node, server)
-                .map(Node::getNodeId)
-                .map(id -> id.equals(superTypeId) || subtypeOf(id, superTypeId, server))
-                .orElse(false);
-        } else {
-            return false;
-        }
-    }
-
-    private static Optional<UaNode> getParentTypeDefinition(UaNode node, OpcUaServer server) {
-        AddressSpaceManager addressSpaceManager = server.getAddressSpaceManager();
-        NamespaceTable namespaceTable = server.getNamespaceTable();
-
-        return addressSpaceManager.getManagedReferences(node.getNodeId())
-            .stream()
-            .filter(Reference.SUBTYPE_OF)
-            .flatMap(r -> r.getTargetNodeId().toNodeId(namespaceTable).stream())
-            .findFirst()
-            .flatMap(addressSpaceManager::getManagedNode);
-    }
-
-    static class DefaultOperatorContext implements OperatorContext {
-
-        private final FilterContext filterContext;
-        private final ContentFilterElement[] elements;
-
-        DefaultOperatorContext(FilterContext filterContext, ContentFilterElement[] elements) {
-            this.filterContext = filterContext;
-            this.elements = elements;
-        }
-
-        @Override
-        public Optional<Session> getSession() {
-            return filterContext.getSession();
-        }
-
-        @Override
-        public OpcUaServer getServer() {
-            return filterContext.getServer();
-        }
-
-        @Override
-        public ContentFilterElement[] getElements() {
-            return elements;
-        }
-
-        @Nullable
-        @Override
-        public Object resolve(FilterOperand operand, BaseEventTypeNode eventNode) throws UaException {
-            if (operand instanceof LiteralOperand) {
-                return ((LiteralOperand) operand).getValue().getValue();
-            } else if (operand instanceof ElementOperand) {
-                UInteger index = ((ElementOperand) operand).getIndex();
-
-                ContentFilterElement element = elements[index.intValue()];
-
-                return evaluate(this, eventNode, element);
-            } else if (operand instanceof AttributeOperand) {
-                AttributeOperand ao = (AttributeOperand) operand;
-
-                return getAttribute(filterContext, ao, eventNode);
-            } else if (operand instanceof SimpleAttributeOperand) {
-                SimpleAttributeOperand sao = (SimpleAttributeOperand) operand;
-
-                return getSimpleAttribute(filterContext, sao, eventNode);
-            } else {
-                throw new UaException(StatusCodes.Bad_FilterOperandInvalid);
-            }
-        }
-
-    }
-
-    static class SelectClauseValidationResult {
-        private final StatusCode[] statusCodes;
-        private final DiagnosticInfo[] diagnosticInfos;
-
-        public SelectClauseValidationResult(StatusCode[] statusCodes, DiagnosticInfo[] diagnosticInfos) {
-            this.statusCodes = statusCodes;
-            this.diagnosticInfos = diagnosticInfos;
-        }
-    }
-
+  }
 }

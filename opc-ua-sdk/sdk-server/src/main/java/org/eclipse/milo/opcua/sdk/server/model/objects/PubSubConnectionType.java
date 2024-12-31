@@ -30,177 +30,228 @@ import org.eclipse.milo.opcua.stack.core.types.structured.WriterGroupDataType;
 import org.eclipse.milo.opcua.stack.core.util.Lazy;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.2">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.2</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.2">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.5/#9.1.5.2</a>
  */
 public interface PubSubConnectionType extends BaseObjectType {
-    QualifiedProperty<Object> PUBLISHER_ID = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "PublisherId",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
-        -1,
-        Object.class
-    );
+  QualifiedProperty<Object> PUBLISHER_ID =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "PublisherId",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
+          -1,
+          Object.class);
 
-    QualifiedProperty<KeyValuePair[]> CONNECTION_PROPERTIES = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ConnectionProperties",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14533"),
-        1,
-        KeyValuePair[].class
-    );
+  QualifiedProperty<KeyValuePair[]> CONNECTION_PROPERTIES =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ConnectionProperties",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14533"),
+          1,
+          KeyValuePair[].class);
 
-    Object getPublisherId();
+  Object getPublisherId();
 
-    void setPublisherId(Object value);
+  void setPublisherId(Object value);
 
-    PropertyType getPublisherIdNode();
+  PropertyType getPublisherIdNode();
 
-    KeyValuePair[] getConnectionProperties();
+  KeyValuePair[] getConnectionProperties();
 
-    void setConnectionProperties(KeyValuePair[] value);
+  void setConnectionProperties(KeyValuePair[] value);
 
-    PropertyType getConnectionPropertiesNode();
+  PropertyType getConnectionPropertiesNode();
 
-    SelectionListType getTransportProfileUriNode();
+  SelectionListType getTransportProfileUriNode();
 
-    String getTransportProfileUri();
+  String getTransportProfileUri();
 
-    void setTransportProfileUri(String value);
+  void setTransportProfileUri(String value);
 
-    NetworkAddressType getAddressNode();
+  NetworkAddressType getAddressNode();
 
-    ConnectionTransportType getTransportSettingsNode();
+  ConnectionTransportType getTransportSettingsNode();
 
-    PubSubStatusType getStatusNode();
+  PubSubStatusType getStatusNode();
 
-    PubSubDiagnosticsConnectionType getDiagnosticsNode();
+  PubSubDiagnosticsConnectionType getDiagnosticsNode();
 
-    MethodNode getAddWriterGroupMethodNode();
+  MethodNode getAddWriterGroupMethodNode();
 
-    MethodNode getAddReaderGroupMethodNode();
+  MethodNode getAddReaderGroupMethodNode();
 
-    MethodNode getRemoveGroupMethodNode();
+  MethodNode getRemoveGroupMethodNode();
 
-    abstract class AddWriterGroupMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  abstract class AddWriterGroupMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
 
-        private final Lazy<Argument[]> outputArguments = new Lazy<>();
+    private final Lazy<Argument[]> outputArguments = new Lazy<>();
 
-        public AddWriterGroupMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("Configuration", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15480").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return outputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("GroupId", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            WriterGroupDataType configuration = (WriterGroupDataType) inputValues[0].getValue();
-            Out<NodeId> groupId = new Out<>();
-            invoke(context, configuration, groupId);
-            return new Variant[]{new Variant(groupId.get())};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       WriterGroupDataType configuration, Out<NodeId> groupId) throws UaException;
+    public AddWriterGroupMethod(UaMethodNode node) {
+      super(node);
     }
 
-    abstract class AddReaderGroupMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
 
-        private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-        public AddReaderGroupMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("Configuration", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15520").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return outputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("GroupId", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            ReaderGroupDataType configuration = (ReaderGroupDataType) inputValues[0].getValue();
-            Out<NodeId> groupId = new Out<>();
-            invoke(context, configuration, groupId);
-            return new Variant[]{new Variant(groupId.get())};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       ReaderGroupDataType configuration, Out<NodeId> groupId) throws UaException;
+            return new Argument[] {
+              new Argument(
+                  "Configuration",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15480")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
     }
 
-    abstract class RemoveGroupMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
+    @Override
+    public Argument[] getOutputArguments() {
+      return outputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
 
-        public RemoveGroupMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("GroupId", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            NodeId groupId = (NodeId) inputValues[0].getValue();
-            invoke(context, groupId);
-            return new Variant[]{};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       NodeId groupId) throws UaException;
+            return new Argument[] {
+              new Argument(
+                  "GroupId",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
     }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      WriterGroupDataType configuration = (WriterGroupDataType) inputValues[0].getValue();
+      Out<NodeId> groupId = new Out<>();
+      invoke(context, configuration, groupId);
+      return new Variant[] {new Variant(groupId.get())};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        WriterGroupDataType configuration,
+        Out<NodeId> groupId)
+        throws UaException;
+  }
+
+  abstract class AddReaderGroupMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+
+    private final Lazy<Argument[]> outputArguments = new Lazy<>();
+
+    public AddReaderGroupMethod(UaMethodNode node) {
+      super(node);
+    }
+
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "Configuration",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15520")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return outputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "GroupId",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      ReaderGroupDataType configuration = (ReaderGroupDataType) inputValues[0].getValue();
+      Out<NodeId> groupId = new Out<>();
+      invoke(context, configuration, groupId);
+      return new Variant[] {new Variant(groupId.get())};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        ReaderGroupDataType configuration,
+        Out<NodeId> groupId)
+        throws UaException;
+  }
+
+  abstract class RemoveGroupMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+
+    public RemoveGroupMethod(UaMethodNode node) {
+      super(node);
+    }
+
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "GroupId",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      NodeId groupId = (NodeId) inputValues[0].getValue();
+      invoke(context, groupId);
+      return new Variant[] {};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, NodeId groupId)
+        throws UaException;
+  }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -16,20 +16,21 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.12">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.12</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.12">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.12</a>
  */
 public interface AuditCertificateEventType extends AuditSecurityEventType {
-    QualifiedProperty<ByteString> CERTIFICATE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "Certificate",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15"),
-        -1,
-        ByteString.class
-    );
+  QualifiedProperty<ByteString> CERTIFICATE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "Certificate",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15"),
+          -1,
+          ByteString.class);
 
-    ByteString getCertificate();
+  ByteString getCertificate();
 
-    void setCertificate(ByteString value);
+  void setCertificate(ByteString value);
 
-    PropertyType getCertificateNode();
+  PropertyType getCertificateNode();
 }

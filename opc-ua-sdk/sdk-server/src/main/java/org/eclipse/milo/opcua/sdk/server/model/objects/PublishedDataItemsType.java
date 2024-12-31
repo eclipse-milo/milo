@@ -29,129 +29,228 @@ import org.eclipse.milo.opcua.stack.core.types.structured.PublishedVariableDataT
 import org.eclipse.milo.opcua.stack.core.util.Lazy;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.3.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.3.1</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.3.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.3.1</a>
  */
 public interface PublishedDataItemsType extends PublishedDataSetType {
-    QualifiedProperty<PublishedVariableDataType[]> PUBLISHED_DATA = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "PublishedData",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14273"),
-        1,
-        PublishedVariableDataType[].class
-    );
+  QualifiedProperty<PublishedVariableDataType[]> PUBLISHED_DATA =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "PublishedData",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14273"),
+          1,
+          PublishedVariableDataType[].class);
 
-    PublishedVariableDataType[] getPublishedData();
+  PublishedVariableDataType[] getPublishedData();
 
-    void setPublishedData(PublishedVariableDataType[] value);
+  void setPublishedData(PublishedVariableDataType[] value);
 
-    PropertyType getPublishedDataNode();
+  PropertyType getPublishedDataNode();
 
-    MethodNode getAddVariablesMethodNode();
+  MethodNode getAddVariablesMethodNode();
 
-    MethodNode getRemoveVariablesMethodNode();
+  MethodNode getRemoveVariablesMethodNode();
 
-    abstract class AddVariablesMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  abstract class AddVariablesMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
 
-        private final Lazy<Argument[]> outputArguments = new Lazy<>();
+    private final Lazy<Argument[]> outputArguments = new Lazy<>();
 
-        public AddVariablesMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("ConfigurationVersion", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14593").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "")),
-                    new Argument("FieldNameAliases", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12").toNodeId(namespaceTable).orElseThrow(), 1, new UInteger[]{UInteger.valueOf(0)}, new LocalizedText("", "")),
-                    new Argument("PromotedFields", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1").toNodeId(namespaceTable).orElseThrow(), 1, new UInteger[]{UInteger.valueOf(0)}, new LocalizedText("", "")),
-                    new Argument("VariablesToAdd", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14273").toNodeId(namespaceTable).orElseThrow(), 1, new UInteger[]{UInteger.valueOf(0)}, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return outputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("NewConfigurationVersion", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14593").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "")),
-                    new Argument("AddResults", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19").toNodeId(namespaceTable).orElseThrow(), 1, new UInteger[]{UInteger.valueOf(0)}, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            ConfigurationVersionDataType configurationVersion = (ConfigurationVersionDataType) inputValues[0].getValue();
-            String[] fieldNameAliases = (String[]) inputValues[1].getValue();
-            Boolean[] promotedFields = (Boolean[]) inputValues[2].getValue();
-            PublishedVariableDataType[] variablesToAdd = (PublishedVariableDataType[]) inputValues[3].getValue();
-            Out<ConfigurationVersionDataType> newConfigurationVersion = new Out<>();
-            Out<StatusCode[]> addResults = new Out<>();
-            invoke(context, configurationVersion, fieldNameAliases, promotedFields, variablesToAdd, newConfigurationVersion, addResults);
-            return new Variant[]{new Variant(newConfigurationVersion.get()), new Variant(addResults.get())};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       ConfigurationVersionDataType configurationVersion, String[] fieldNameAliases,
-                                       Boolean[] promotedFields, PublishedVariableDataType[] variablesToAdd,
-                                       Out<ConfigurationVersionDataType> newConfigurationVersion, Out<StatusCode[]> addResults)
-            throws UaException;
+    public AddVariablesMethod(UaMethodNode node) {
+      super(node);
     }
 
-    abstract class RemoveVariablesMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
 
-        private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-        public RemoveVariablesMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("ConfigurationVersion", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14593").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "")),
-                    new Argument("VariablesToRemove", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7").toNodeId(namespaceTable).orElseThrow(), 1, new UInteger[]{UInteger.valueOf(0)}, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return outputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("NewConfigurationVersion", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14593").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "")),
-                    new Argument("RemoveResults", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19").toNodeId(namespaceTable).orElseThrow(), 1, new UInteger[]{UInteger.valueOf(0)}, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            ConfigurationVersionDataType configurationVersion = (ConfigurationVersionDataType) inputValues[0].getValue();
-            UInteger[] variablesToRemove = (UInteger[]) inputValues[1].getValue();
-            Out<ConfigurationVersionDataType> newConfigurationVersion = new Out<>();
-            Out<StatusCode[]> removeResults = new Out<>();
-            invoke(context, configurationVersion, variablesToRemove, newConfigurationVersion, removeResults);
-            return new Variant[]{new Variant(newConfigurationVersion.get()), new Variant(removeResults.get())};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       ConfigurationVersionDataType configurationVersion, UInteger[] variablesToRemove,
-                                       Out<ConfigurationVersionDataType> newConfigurationVersion, Out<StatusCode[]> removeResults)
-            throws UaException;
+            return new Argument[] {
+              new Argument(
+                  "ConfigurationVersion",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14593")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "FieldNameAliases",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  1,
+                  new UInteger[] {UInteger.valueOf(0)},
+                  new LocalizedText("", "")),
+              new Argument(
+                  "PromotedFields",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  1,
+                  new UInteger[] {UInteger.valueOf(0)},
+                  new LocalizedText("", "")),
+              new Argument(
+                  "VariablesToAdd",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14273")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  1,
+                  new UInteger[] {UInteger.valueOf(0)},
+                  new LocalizedText("", ""))
+            };
+          });
     }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return outputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "NewConfigurationVersion",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14593")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "AddResults",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  1,
+                  new UInteger[] {UInteger.valueOf(0)},
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      ConfigurationVersionDataType configurationVersion =
+          (ConfigurationVersionDataType) inputValues[0].getValue();
+      String[] fieldNameAliases = (String[]) inputValues[1].getValue();
+      Boolean[] promotedFields = (Boolean[]) inputValues[2].getValue();
+      PublishedVariableDataType[] variablesToAdd =
+          (PublishedVariableDataType[]) inputValues[3].getValue();
+      Out<ConfigurationVersionDataType> newConfigurationVersion = new Out<>();
+      Out<StatusCode[]> addResults = new Out<>();
+      invoke(
+          context,
+          configurationVersion,
+          fieldNameAliases,
+          promotedFields,
+          variablesToAdd,
+          newConfigurationVersion,
+          addResults);
+      return new Variant[] {
+        new Variant(newConfigurationVersion.get()), new Variant(addResults.get())
+      };
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        ConfigurationVersionDataType configurationVersion,
+        String[] fieldNameAliases,
+        Boolean[] promotedFields,
+        PublishedVariableDataType[] variablesToAdd,
+        Out<ConfigurationVersionDataType> newConfigurationVersion,
+        Out<StatusCode[]> addResults)
+        throws UaException;
+  }
+
+  abstract class RemoveVariablesMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+
+    private final Lazy<Argument[]> outputArguments = new Lazy<>();
+
+    public RemoveVariablesMethod(UaMethodNode node) {
+      super(node);
+    }
+
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "ConfigurationVersion",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14593")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "VariablesToRemove",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  1,
+                  new UInteger[] {UInteger.valueOf(0)},
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return outputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "NewConfigurationVersion",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14593")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "RemoveResults",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  1,
+                  new UInteger[] {UInteger.valueOf(0)},
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      ConfigurationVersionDataType configurationVersion =
+          (ConfigurationVersionDataType) inputValues[0].getValue();
+      UInteger[] variablesToRemove = (UInteger[]) inputValues[1].getValue();
+      Out<ConfigurationVersionDataType> newConfigurationVersion = new Out<>();
+      Out<StatusCode[]> removeResults = new Out<>();
+      invoke(
+          context, configurationVersion, variablesToRemove, newConfigurationVersion, removeResults);
+      return new Variant[] {
+        new Variant(newConfigurationVersion.get()), new Variant(removeResults.get())
+      };
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        ConfigurationVersionDataType configurationVersion,
+        UInteger[] variablesToRemove,
+        Out<ConfigurationVersionDataType> newConfigurationVersion,
+        Out<StatusCode[]> removeResults)
+        throws UaException;
+  }
 }

@@ -30,102 +30,153 @@ import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand
 import org.eclipse.milo.opcua.stack.core.util.Lazy;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.4.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.4.1</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.4.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.4.1</a>
  */
 public interface PublishedEventsType extends PublishedDataSetType {
-    QualifiedProperty<NodeId> PUB_SUB_EVENT_NOTIFIER = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "EventNotifier",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-        -1,
-        NodeId.class
-    );
+  QualifiedProperty<NodeId> PUB_SUB_EVENT_NOTIFIER =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "EventNotifier",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
+          -1,
+          NodeId.class);
 
-    QualifiedProperty<SimpleAttributeOperand[]> SELECTED_FIELDS = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "SelectedFields",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=601"),
-        1,
-        SimpleAttributeOperand[].class
-    );
+  QualifiedProperty<SimpleAttributeOperand[]> SELECTED_FIELDS =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "SelectedFields",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=601"),
+          1,
+          SimpleAttributeOperand[].class);
 
-    QualifiedProperty<ContentFilter> FILTER = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "Filter",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=586"),
-        -1,
-        ContentFilter.class
-    );
+  QualifiedProperty<ContentFilter> FILTER =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "Filter",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=586"),
+          -1,
+          ContentFilter.class);
 
-    NodeId getPubSubEventNotifier();
+  NodeId getPubSubEventNotifier();
 
-    void setPubSubEventNotifier(NodeId value);
+  void setPubSubEventNotifier(NodeId value);
 
-    PropertyType getPubSubEventNotifierNode();
+  PropertyType getPubSubEventNotifierNode();
 
-    SimpleAttributeOperand[] getSelectedFields();
+  SimpleAttributeOperand[] getSelectedFields();
 
-    void setSelectedFields(SimpleAttributeOperand[] value);
+  void setSelectedFields(SimpleAttributeOperand[] value);
 
-    PropertyType getSelectedFieldsNode();
+  PropertyType getSelectedFieldsNode();
 
-    ContentFilter getFilter();
+  ContentFilter getFilter();
 
-    void setFilter(ContentFilter value);
+  void setFilter(ContentFilter value);
 
-    PropertyType getFilterNode();
+  PropertyType getFilterNode();
 
-    MethodNode getModifyFieldSelectionMethodNode();
+  MethodNode getModifyFieldSelectionMethodNode();
 
-    abstract class ModifyFieldSelectionMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  abstract class ModifyFieldSelectionMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
 
-        private final Lazy<Argument[]> outputArguments = new Lazy<>();
+    private final Lazy<Argument[]> outputArguments = new Lazy<>();
 
-        public ModifyFieldSelectionMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("ConfigurationVersion", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14593").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "")),
-                    new Argument("FieldNameAliases", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12").toNodeId(namespaceTable).orElseThrow(), 1, new UInteger[]{UInteger.valueOf(0)}, new LocalizedText("", "")),
-                    new Argument("PromotedFields", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1").toNodeId(namespaceTable).orElseThrow(), 1, new UInteger[]{UInteger.valueOf(0)}, new LocalizedText("", "")),
-                    new Argument("SelectedFields", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=601").toNodeId(namespaceTable).orElseThrow(), 1, new UInteger[]{UInteger.valueOf(0)}, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return outputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("NewConfigurationVersion", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14593").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            ConfigurationVersionDataType configurationVersion = (ConfigurationVersionDataType) inputValues[0].getValue();
-            String[] fieldNameAliases = (String[]) inputValues[1].getValue();
-            Boolean[] promotedFields = (Boolean[]) inputValues[2].getValue();
-            SimpleAttributeOperand[] selectedFields = (SimpleAttributeOperand[]) inputValues[3].getValue();
-            Out<ConfigurationVersionDataType> newConfigurationVersion = new Out<>();
-            invoke(context, configurationVersion, fieldNameAliases, promotedFields, selectedFields, newConfigurationVersion);
-            return new Variant[]{new Variant(newConfigurationVersion.get())};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       ConfigurationVersionDataType configurationVersion, String[] fieldNameAliases,
-                                       Boolean[] promotedFields, SimpleAttributeOperand[] selectedFields,
-                                       Out<ConfigurationVersionDataType> newConfigurationVersion) throws UaException;
+    public ModifyFieldSelectionMethod(UaMethodNode node) {
+      super(node);
     }
+
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "ConfigurationVersion",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14593")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "FieldNameAliases",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  1,
+                  new UInteger[] {UInteger.valueOf(0)},
+                  new LocalizedText("", "")),
+              new Argument(
+                  "PromotedFields",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  1,
+                  new UInteger[] {UInteger.valueOf(0)},
+                  new LocalizedText("", "")),
+              new Argument(
+                  "SelectedFields",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=601")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  1,
+                  new UInteger[] {UInteger.valueOf(0)},
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return outputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "NewConfigurationVersion",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14593")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      ConfigurationVersionDataType configurationVersion =
+          (ConfigurationVersionDataType) inputValues[0].getValue();
+      String[] fieldNameAliases = (String[]) inputValues[1].getValue();
+      Boolean[] promotedFields = (Boolean[]) inputValues[2].getValue();
+      SimpleAttributeOperand[] selectedFields =
+          (SimpleAttributeOperand[]) inputValues[3].getValue();
+      Out<ConfigurationVersionDataType> newConfigurationVersion = new Out<>();
+      invoke(
+          context,
+          configurationVersion,
+          fieldNameAliases,
+          promotedFields,
+          selectedFields,
+          newConfigurationVersion);
+      return new Variant[] {new Variant(newConfigurationVersion.get())};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        ConfigurationVersionDataType configurationVersion,
+        String[] fieldNameAliases,
+        Boolean[] promotedFields,
+        SimpleAttributeOperand[] selectedFields,
+        Out<ConfigurationVersionDataType> newConfigurationVersion)
+        throws UaException;
+  }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -14,20 +14,19 @@ import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
 
 public final class UascRequest {
 
-    private final long requestId;
-    private final UaRequestMessageType requestMessage;
+  private final long requestId;
+  private final UaRequestMessageType requestMessage;
 
-    public UascRequest(long requestId, UaRequestMessageType requestMessage) {
-        this.requestId = requestId;
-        this.requestMessage = requestMessage;
-    }
+  public UascRequest(long requestId, UaRequestMessageType requestMessage) {
+    this.requestId = requestId;
+    this.requestMessage = requestMessage;
+  }
 
-    public long getRequestId() {
-        return requestId;
-    }
+  public long getRequestId() {
+    return requestId;
+  }
 
-    public UaRequestMessageType getRequestMessage() {
-        return requestMessage;
-    }
-
+  public UaRequestMessageType getRequestMessage() {
+    return requestMessage;
+  }
 }

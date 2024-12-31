@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -12,15 +12,15 @@ package org.eclipse.milo.opcua.stack.core.types.builtin;
 
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 
-public abstract class OptionSetUI8<F extends Enum<F> & OptionSetUInteger.BitIndex> extends OptionSetUInteger<F> {
+public abstract class OptionSetUI8<F extends Enum<F> & OptionSetUInteger.BitIndex>
+    extends OptionSetUInteger<F> {
 
-    public OptionSetUI8(UByte value) {
-        super(value);
-    }
+  public OptionSetUI8(UByte value) {
+    super(value);
+  }
 
-    @Override
-    public UByte getValue() {
-        return (UByte) value;
-    }
-
+  @Override
+  public UByte getValue() {
+    return (UByte) value;
+  }
 }

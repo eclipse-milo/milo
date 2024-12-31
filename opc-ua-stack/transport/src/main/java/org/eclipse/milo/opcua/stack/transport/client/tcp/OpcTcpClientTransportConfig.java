@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -16,20 +16,19 @@ import org.eclipse.milo.opcua.stack.transport.client.uasc.UascClientConfig;
 
 public interface OpcTcpClientTransportConfig extends OpcClientTransportConfig, UascClientConfig {
 
-    /**
-     * Get the TCP socket connect timeout, in milliseconds.
-     *
-     * @return the TCP socket connect timeout, in milliseconds.
-     */
-    UInteger getConnectTimeout();
+  /**
+   * Get the TCP socket connect timeout, in milliseconds.
+   *
+   * @return the TCP socket connect timeout, in milliseconds.
+   */
+  UInteger getConnectTimeout();
 
-    /**
-     * Create a new {@link OpcTcpClientTransportConfigBuilder}.
-     *
-     * @return a new {@link OpcTcpClientTransportConfigBuilder}.
-     */
-    static OpcTcpClientTransportConfigBuilder newBuilder() {
-        return new OpcTcpClientTransportConfigBuilder();
-    }
-
+  /**
+   * Create a new {@link OpcTcpClientTransportConfigBuilder}.
+   *
+   * @return a new {@link OpcTcpClientTransportConfigBuilder}.
+   */
+  static OpcTcpClientTransportConfigBuilder newBuilder() {
+    return new OpcTcpClientTransportConfigBuilder();
+  }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -16,36 +16,37 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TsnStreamState;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.7">https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.7</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.7">https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.7</a>
  */
 public interface IIeeeBaseTsnStreamType extends BaseInterfaceType {
-    BaseDataVariableType getStreamIdNode();
+  BaseDataVariableType getStreamIdNode();
 
-    UByte[] getStreamId();
+  UByte[] getStreamId();
 
-    void setStreamId(UByte[] value);
+  void setStreamId(UByte[] value);
 
-    BaseDataVariableType getStreamNameNode();
+  BaseDataVariableType getStreamNameNode();
 
-    String getStreamName();
+  String getStreamName();
 
-    void setStreamName(String value);
+  void setStreamName(String value);
 
-    BaseDataVariableType getStateNode();
+  BaseDataVariableType getStateNode();
 
-    TsnStreamState getState();
+  TsnStreamState getState();
 
-    void setState(TsnStreamState value);
+  void setState(TsnStreamState value);
 
-    BaseDataVariableType getAccumulatedLatencyNode();
+  BaseDataVariableType getAccumulatedLatencyNode();
 
-    UInteger getAccumulatedLatency();
+  UInteger getAccumulatedLatency();
 
-    void setAccumulatedLatency(UInteger value);
+  void setAccumulatedLatency(UInteger value);
 
-    BaseDataVariableType getSrClassIdNode();
+  BaseDataVariableType getSrClassIdNode();
 
-    UByte getSrClassId();
+  UByte getSrClassId();
 
-    void setSrClassId(UByte value);
+  void setSrClassId(UByte value);
 }

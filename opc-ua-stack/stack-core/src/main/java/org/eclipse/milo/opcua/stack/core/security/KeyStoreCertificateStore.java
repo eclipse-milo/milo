@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.slf4j.Logger;
@@ -41,321 +40,304 @@ import org.slf4j.LoggerFactory;
 
 public class KeyStoreCertificateStore implements CertificateStore, Closeable {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final AtomicBoolean initialized = new AtomicBoolean(false);
+  private final AtomicBoolean initialized = new AtomicBoolean(false);
 
-    private final ReentrantLock keyStoreLock = new ReentrantLock(true);
+  private final ReentrantLock keyStoreLock = new ReentrantLock(true);
 
-    private final Map<String, Entry> entries = new HashMap<>();
+  private final Map<String, Entry> entries = new HashMap<>();
 
-    private KeyStore keyStore;
-    private Thread watchThread;
-    private WatchService watchService;
+  private KeyStore keyStore;
+  private Thread watchThread;
+  private WatchService watchService;
 
-    private final Settings settings;
+  private final Settings settings;
 
-    public KeyStoreCertificateStore(Settings settings) {
-        this.settings = settings;
-    }
+  public KeyStoreCertificateStore(Settings settings) {
+    this.settings = settings;
+  }
 
-    public void initialize() throws Exception {
-        if (initialized.compareAndSet(false, true)) {
-            logger.info("Loading KeyStore at {}", settings.keyStorePath);
+  public void initialize() throws Exception {
+    if (initialized.compareAndSet(false, true)) {
+      logger.info("Loading KeyStore at {}", settings.keyStorePath);
 
-            keyStore = KeyStore.getInstance("pkcs12");
+      keyStore = KeyStore.getInstance("pkcs12");
 
-            File keyStoreFile = settings.keyStorePath.toFile();
+      File keyStoreFile = settings.keyStorePath.toFile();
 
-            if (keyStoreFile.exists()) {
-                keyStore.load(
-                    new FileInputStream(keyStoreFile),
-                    settings.getKeyStorePassword.get()
-                );
-
-                try {
-                    keyStoreLock.lock();
-
-                    loadEntries();
-                } finally {
-                    keyStoreLock.unlock();
-                }
-            } else {
-                keyStore.load(
-                    null,
-                    settings.getKeyStorePassword.get()
-                );
-
-                keyStore.store(
-                    new FileOutputStream(keyStoreFile),
-                    settings.getKeyStorePassword.get()
-                );
-            }
-
-            if (settings.watchForChanges) {
-                configureWatchService(keyStoreFile);
-            }
-        }
-    }
-
-    @Override
-    public void close() throws IOException {
-        if (watchService != null) {
-            watchService.close();
-        }
-
-        if (watchThread != null) {
-            try {
-                watchThread.join(5000);
-            } catch (InterruptedException e) {
-                throw new IOException(e);
-            }
-        }
-    }
-
-    @Override
-    public boolean contains(NodeId certificateTypeId) throws Exception {
-        if (!initialized.get()) {
-            throw new IllegalStateException("not initialized");
-        }
-        try {
-            keyStoreLock.lock();
-
-            String alias = getAlias(certificateTypeId);
-
-            return alias != null && (entries.containsKey(alias) || keyStore.containsAlias(alias));
-        } finally {
-            keyStoreLock.unlock();
-        }
-    }
-
-    @Override
-    public Entry get(NodeId certificateTypeId) throws Exception {
-        if (!initialized.get()) {
-            throw new IllegalStateException("not initialized");
-        }
+      if (keyStoreFile.exists()) {
+        keyStore.load(new FileInputStream(keyStoreFile), settings.getKeyStorePassword.get());
 
         try {
-            keyStoreLock.lock();
+          keyStoreLock.lock();
 
-            String alias = getAlias(certificateTypeId);
-
-            if (alias != null) {
-                if (entries.containsKey(alias)) {
-                    return entries.get(alias);
-                }
-
-                Key key = keyStore.getKey(alias, settings.getAliasPassword.apply(alias));
-                Certificate[] certificateChain = keyStore.getCertificateChain(alias);
-
-                if (key instanceof PrivateKey && certificateChain != null) {
-                    X509Certificate[] x509CertificateChain = Arrays.stream(certificateChain)
-                        .map(c -> (X509Certificate) c)
-                        .toArray(X509Certificate[]::new);
-
-                    var entry = new Entry((PrivateKey) key, x509CertificateChain);
-
-                    entries.putIfAbsent(alias, entry);
-
-                    return entry;
-                } else {
-                    return null;
-                }
-            } else {
-                return null;
-            }
+          loadEntries();
         } finally {
-            keyStoreLock.unlock();
+          keyStoreLock.unlock();
         }
+      } else {
+        keyStore.load(null, settings.getKeyStorePassword.get());
+
+        keyStore.store(new FileOutputStream(keyStoreFile), settings.getKeyStorePassword.get());
+      }
+
+      if (settings.watchForChanges) {
+        configureWatchService(keyStoreFile);
+      }
+    }
+  }
+
+  @Override
+  public void close() throws IOException {
+    if (watchService != null) {
+      watchService.close();
     }
 
-    @Override
-    public synchronized Entry remove(NodeId certificateTypeId) throws Exception {
-        if (!initialized.get()) {
-            throw new IllegalStateException("not initialized");
-        }
+    if (watchThread != null) {
+      try {
+        watchThread.join(5000);
+      } catch (InterruptedException e) {
+        throw new IOException(e);
+      }
+    }
+  }
 
-        try {
-            keyStoreLock.lock();
+  @Override
+  public boolean contains(NodeId certificateTypeId) throws Exception {
+    if (!initialized.get()) {
+      throw new IllegalStateException("not initialized");
+    }
+    try {
+      keyStoreLock.lock();
 
-            String alias = getAlias(certificateTypeId);
+      String alias = getAlias(certificateTypeId);
 
-            if (alias != null) {
-                KeyStore.Entry entry = keyStore.getEntry(
-                    alias,
-                    new KeyStore.PasswordProtection(settings.getAliasPassword.apply(alias))
-                );
+      return alias != null && (entries.containsKey(alias) || keyStore.containsAlias(alias));
+    } finally {
+      keyStoreLock.unlock();
+    }
+  }
 
-                if (entry instanceof KeyStore.PrivateKeyEntry) {
-                    KeyStore.PrivateKeyEntry privateKeyEntry = (KeyStore.PrivateKeyEntry) entry;
-                    keyStore.deleteEntry(alias);
-                    entries.remove(alias);
-
-                    keyStore.store(
-                        new FileOutputStream(settings.keyStorePath.toFile()),
-                        settings.getKeyStorePassword.get()
-                    );
-
-                    return new Entry(
-                        privateKeyEntry.getPrivateKey(),
-                        (X509Certificate[]) privateKeyEntry.getCertificateChain()
-                    );
-                } else {
-                    return null;
-                }
-            } else {
-                return null;
-            }
-        } finally {
-            keyStoreLock.unlock();
-        }
+  @Override
+  public Entry get(NodeId certificateTypeId) throws Exception {
+    if (!initialized.get()) {
+      throw new IllegalStateException("not initialized");
     }
 
-    @Override
-    public void set(NodeId certificateTypeId, Entry entry) throws Exception {
-        if (!initialized.get()) {
-            throw new IllegalStateException("not initialized");
+    try {
+      keyStoreLock.lock();
+
+      String alias = getAlias(certificateTypeId);
+
+      if (alias != null) {
+        if (entries.containsKey(alias)) {
+          return entries.get(alias);
         }
 
-        try {
-            keyStoreLock.lock();
+        Key key = keyStore.getKey(alias, settings.getAliasPassword.apply(alias));
+        Certificate[] certificateChain = keyStore.getCertificateChain(alias);
 
-            String alias = getAlias(certificateTypeId);
+        if (key instanceof PrivateKey && certificateChain != null) {
+          X509Certificate[] x509CertificateChain =
+              Arrays.stream(certificateChain)
+                  .map(c -> (X509Certificate) c)
+                  .toArray(X509Certificate[]::new);
 
-            keyStore.setKeyEntry(
-                alias,
-                entry.privateKey,
-                settings.getAliasPassword.apply(alias),
-                entry.certificateChain
-            );
+          var entry = new Entry((PrivateKey) key, x509CertificateChain);
 
-            keyStore.store(
-                new FileOutputStream(settings.keyStorePath.toFile()),
-                settings.getKeyStorePassword.get()
-            );
+          entries.putIfAbsent(alias, entry);
 
-            entries.put(alias, entry);
-        } finally {
-            keyStoreLock.unlock();
-        }
-    }
-
-    /**
-     * Get the alias to use when accessing certificates of type {@code certificateTypeId}.
-     *
-     * @param certificateTypeId the {@link NodeId} of the certificate type.
-     * @return the alias to use when accessing certificates of type {@code certificateTypeId}.
-     */
-    protected String getAlias(NodeId certificateTypeId) {
-        if (certificateTypeId.equals(NodeIds.RsaSha256ApplicationCertificateType)) {
-            return "server-rsa-sha256";
+          return entry;
         } else {
-            return certificateTypeId.toParseableString();
+          return null;
         }
+      } else {
+        return null;
+      }
+    } finally {
+      keyStoreLock.unlock();
+    }
+  }
+
+  @Override
+  public synchronized Entry remove(NodeId certificateTypeId) throws Exception {
+    if (!initialized.get()) {
+      throw new IllegalStateException("not initialized");
     }
 
-    /**
-     * Call {@link #get(NodeId)} for each of the supported certificate types to pre-emptively
-     * load them into memory.
-     *
-     * @throws Exception if an error occurs while loading the entries.
-     */
-    protected void loadEntries() throws Exception {
-        // Try to get each of the certificate types we support, pre-emptively loading them into
-        // `cache` for faster subsequent access.
+    try {
+      keyStoreLock.lock();
 
-        get(NodeIds.RsaSha256ApplicationCertificateType);
+      String alias = getAlias(certificateTypeId);
+
+      if (alias != null) {
+        KeyStore.Entry entry =
+            keyStore.getEntry(
+                alias, new KeyStore.PasswordProtection(settings.getAliasPassword.apply(alias)));
+
+        if (entry instanceof KeyStore.PrivateKeyEntry) {
+          KeyStore.PrivateKeyEntry privateKeyEntry = (KeyStore.PrivateKeyEntry) entry;
+          keyStore.deleteEntry(alias);
+          entries.remove(alias);
+
+          keyStore.store(
+              new FileOutputStream(settings.keyStorePath.toFile()),
+              settings.getKeyStorePassword.get());
+
+          return new Entry(
+              privateKeyEntry.getPrivateKey(),
+              (X509Certificate[]) privateKeyEntry.getCertificateChain());
+        } else {
+          return null;
+        }
+      } else {
+        return null;
+      }
+    } finally {
+      keyStoreLock.unlock();
+    }
+  }
+
+  @Override
+  public void set(NodeId certificateTypeId, Entry entry) throws Exception {
+    if (!initialized.get()) {
+      throw new IllegalStateException("not initialized");
     }
 
-    private void configureWatchService(File keyStoreFile) throws IOException {
-        watchService = FileSystems.getDefault().newWatchService();
+    try {
+      keyStoreLock.lock();
 
-        WatchKey watchKey = keyStoreFile.toPath().getParent().register(
-            watchService,
-            StandardWatchEventKinds.ENTRY_MODIFY
-        );
+      String alias = getAlias(certificateTypeId);
 
-        watchThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
+      keyStore.setKeyEntry(
+          alias, entry.privateKey, settings.getAliasPassword.apply(alias), entry.certificateChain);
+
+      keyStore.store(
+          new FileOutputStream(settings.keyStorePath.toFile()), settings.getKeyStorePassword.get());
+
+      entries.put(alias, entry);
+    } finally {
+      keyStoreLock.unlock();
+    }
+  }
+
+  /**
+   * Get the alias to use when accessing certificates of type {@code certificateTypeId}.
+   *
+   * @param certificateTypeId the {@link NodeId} of the certificate type.
+   * @return the alias to use when accessing certificates of type {@code certificateTypeId}.
+   */
+  protected String getAlias(NodeId certificateTypeId) {
+    if (certificateTypeId.equals(NodeIds.RsaSha256ApplicationCertificateType)) {
+      return "server-rsa-sha256";
+    } else {
+      return certificateTypeId.toParseableString();
+    }
+  }
+
+  /**
+   * Call {@link #get(NodeId)} for each of the supported certificate types to pre-emptively load
+   * them into memory.
+   *
+   * @throws Exception if an error occurs while loading the entries.
+   */
+  protected void loadEntries() throws Exception {
+    // Try to get each of the certificate types we support, pre-emptively loading them into
+    // `cache` for faster subsequent access.
+
+    get(NodeIds.RsaSha256ApplicationCertificateType);
+  }
+
+  private void configureWatchService(File keyStoreFile) throws IOException {
+    watchService = FileSystems.getDefault().newWatchService();
+
+    WatchKey watchKey =
+        keyStoreFile
+            .toPath()
+            .getParent()
+            .register(watchService, StandardWatchEventKinds.ENTRY_MODIFY);
+
+    watchThread =
+        new Thread(
+            new Runnable() {
+              @Override
+              public void run() {
                 while (true) {
+                  try {
+                    WatchKey key = watchService.take();
+                    if (key == watchKey) {
+                      key.pollEvents().forEach(this::processWatchEvent);
+                    }
+                  } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                  }
+                }
+              }
+
+              private void processWatchEvent(WatchEvent<?> event) {
+                if (event.kind() == StandardWatchEventKinds.ENTRY_MODIFY
+                    && event.context() instanceof Path) {
+
+                  Path p = (Path) event.context();
+                  if (p.toAbsolutePath().equals(keyStoreFile.toPath().toAbsolutePath())) {
                     try {
-                        WatchKey key = watchService.take();
-                        if (key == watchKey) {
-                            key.pollEvents().forEach(this::processWatchEvent);
-                        }
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
+                      keyStoreLock.lock();
+
+                      entries.clear();
+                      loadEntries();
+                    } catch (Exception ignored) {
+                      // ignored
+                    } finally {
+                      keyStoreLock.unlock();
                     }
+                  }
                 }
-            }
+              }
+            });
 
-            private void processWatchEvent(WatchEvent<?> event) {
-                if (event.kind() == StandardWatchEventKinds.ENTRY_MODIFY &&
-                    event.context() instanceof Path) {
+    watchThread.setName("milo-key-store-watcher");
+    watchThread.setDaemon(true);
+    watchThread.start();
+  }
 
-                    Path p = (Path) event.context();
-                    if (p.toAbsolutePath().equals(keyStoreFile.toPath().toAbsolutePath())) {
-                        try {
-                            keyStoreLock.lock();
+  /**
+   * Create and {@link #initialize()} a new {@link KeyStoreCertificateStore} instance.
+   *
+   * @param settings the {@link Settings} to use.
+   * @return an initialized {@link KeyStoreCertificateStore} instance.
+   * @throws Exception if an error occurs while initializing the {@link KeyStoreCertificateStore}.
+   */
+  public static KeyStoreCertificateStore createAndInitialize(Settings settings) throws Exception {
+    var store = new KeyStoreCertificateStore(settings);
+    store.initialize();
+    return store;
+  }
 
-                            entries.clear();
-                            loadEntries();
-                        } catch (Exception ignored) {
-                            // ignored
-                        } finally {
-                            keyStoreLock.unlock();
-                        }
-                    }
-                }
-            }
-        });
+  public static class Settings {
+    public final Path keyStorePath;
+    public final Supplier<char[]> getKeyStorePassword;
+    public final Function<String, char[]> getAliasPassword;
+    public final boolean watchForChanges;
 
-        watchThread.setName("milo-key-store-watcher");
-        watchThread.setDaemon(true);
-        watchThread.start();
+    public Settings(
+        Path keyStorePath,
+        Supplier<char[]> getKeyStorePassword,
+        Function<String, char[]> getAliasPassword) {
+
+      this(keyStorePath, getKeyStorePassword, getAliasPassword, false);
     }
 
-    /**
-     * Create and {@link #initialize()} a new {@link KeyStoreCertificateStore} instance.
-     *
-     * @param settings the {@link Settings} to use.
-     * @return an initialized {@link KeyStoreCertificateStore} instance.
-     * @throws Exception if an error occurs while initializing the {@link KeyStoreCertificateStore}.
-     */
-    public static KeyStoreCertificateStore createAndInitialize(Settings settings) throws Exception {
-        var store = new KeyStoreCertificateStore(settings);
-        store.initialize();
-        return store;
+    public Settings(
+        Path keyStorePath,
+        Supplier<char[]> getKeyStorePassword,
+        Function<String, char[]> getAliasPassword,
+        boolean watchForChanges) {
+
+      this.keyStorePath = keyStorePath;
+      this.getKeyStorePassword = getKeyStorePassword;
+      this.getAliasPassword = getAliasPassword;
+      this.watchForChanges = watchForChanges;
     }
-
-    public static class Settings {
-        public final Path keyStorePath;
-        public final Supplier<char[]> getKeyStorePassword;
-        public final Function<String, char[]> getAliasPassword;
-        public final boolean watchForChanges;
-
-        public Settings(
-            Path keyStorePath,
-            Supplier<char[]> getKeyStorePassword,
-            Function<String, char[]> getAliasPassword
-        ) {
-
-            this(keyStorePath, getKeyStorePassword, getAliasPassword, false);
-        }
-
-        public Settings(
-            Path keyStorePath,
-            Supplier<char[]> getKeyStorePassword,
-            Function<String, char[]> getAliasPassword,
-            boolean watchForChanges
-        ) {
-
-            this.keyStorePath = keyStorePath;
-            this.getKeyStorePassword = getKeyStorePassword;
-            this.getAliasPassword = getAliasPassword;
-            this.watchForChanges = watchForChanges;
-        }
-    }
-
+  }
 }

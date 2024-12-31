@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -19,50 +19,49 @@ import java.security.cert.X509Certificate;
 
 public class KeyStoreLoader {
 
-    private static final String CLIENT_ALIAS = "client-ai";
-    private static final String SERVER_ALIAS = "server-ai";
-    private static final char[] PASSWORD = "password".toCharArray();
+  private static final String CLIENT_ALIAS = "client-ai";
+  private static final String SERVER_ALIAS = "server-ai";
+  private static final char[] PASSWORD = "password".toCharArray();
 
-    private X509Certificate clientCertificate;
-    private KeyPair clientKeyPair;
-    private X509Certificate serverCertificate;
-    private KeyPair serverKeyPair;
+  private X509Certificate clientCertificate;
+  private KeyPair clientKeyPair;
+  private X509Certificate serverCertificate;
+  private KeyPair serverKeyPair;
 
-    public KeyStoreLoader load() throws Exception {
-        KeyStore keyStore = KeyStore.getInstance("PKCS12");
-        keyStore.load(getClass().getClassLoader().getResourceAsStream("example-certs.pfx"), PASSWORD);
+  public KeyStoreLoader load() throws Exception {
+    KeyStore keyStore = KeyStore.getInstance("PKCS12");
+    keyStore.load(getClass().getClassLoader().getResourceAsStream("example-certs.pfx"), PASSWORD);
 
-        Key clientPrivateKey = keyStore.getKey(CLIENT_ALIAS, PASSWORD);
-        if (clientPrivateKey instanceof PrivateKey) {
-            clientCertificate = (X509Certificate) keyStore.getCertificate(CLIENT_ALIAS);
-            PublicKey clientPublicKey = clientCertificate.getPublicKey();
-            clientKeyPair = new KeyPair(clientPublicKey, (PrivateKey) clientPrivateKey);
-        }
-
-        Key serverPrivateKey = keyStore.getKey(SERVER_ALIAS, PASSWORD);
-        if (serverPrivateKey instanceof PrivateKey) {
-            serverCertificate = (X509Certificate) keyStore.getCertificate(SERVER_ALIAS);
-            PublicKey serverPublicKey = serverCertificate.getPublicKey();
-            serverKeyPair = new KeyPair(serverPublicKey, (PrivateKey) serverPrivateKey);
-        }
-
-        return this;
+    Key clientPrivateKey = keyStore.getKey(CLIENT_ALIAS, PASSWORD);
+    if (clientPrivateKey instanceof PrivateKey) {
+      clientCertificate = (X509Certificate) keyStore.getCertificate(CLIENT_ALIAS);
+      PublicKey clientPublicKey = clientCertificate.getPublicKey();
+      clientKeyPair = new KeyPair(clientPublicKey, (PrivateKey) clientPrivateKey);
     }
 
-    public X509Certificate getClientCertificate() {
-        return clientCertificate;
+    Key serverPrivateKey = keyStore.getKey(SERVER_ALIAS, PASSWORD);
+    if (serverPrivateKey instanceof PrivateKey) {
+      serverCertificate = (X509Certificate) keyStore.getCertificate(SERVER_ALIAS);
+      PublicKey serverPublicKey = serverCertificate.getPublicKey();
+      serverKeyPair = new KeyPair(serverPublicKey, (PrivateKey) serverPrivateKey);
     }
 
-    public KeyPair getClientKeyPair() {
-        return clientKeyPair;
-    }
+    return this;
+  }
 
-    public X509Certificate getServerCertificate() {
-        return serverCertificate;
-    }
+  public X509Certificate getClientCertificate() {
+    return clientCertificate;
+  }
 
-    public KeyPair getServerKeyPair() {
-        return serverKeyPair;
-    }
+  public KeyPair getClientKeyPair() {
+    return clientKeyPair;
+  }
 
+  public X509Certificate getServerCertificate() {
+    return serverCertificate;
+  }
+
+  public KeyPair getServerKeyPair() {
+    return serverKeyPair;
+  }
 }

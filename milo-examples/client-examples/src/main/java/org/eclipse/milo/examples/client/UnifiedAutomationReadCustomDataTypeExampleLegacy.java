@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -12,7 +12,6 @@ package org.eclipse.milo.examples.client;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.dtd.LegacyDataTypeManagerInitializer;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -26,74 +25,75 @@ import org.slf4j.LoggerFactory;
 
 /**
  * An example that shows reading the value of a node whose DataType is a custom structure type.
- * <p>
- * Requires the Unified Automation CPP Demo server be running and the endpoint URL be pointing to it.
+ *
+ * <p>Requires the Unified Automation CPP Demo server be running and the endpoint URL be pointing to
+ * it.
  */
 public class UnifiedAutomationReadCustomDataTypeExampleLegacy implements ClientExample {
 
-    public static void main(String[] args) throws Exception {
-        var example = new UnifiedAutomationReadCustomDataTypeExampleLegacy();
+  public static void main(String[] args) throws Exception {
+    var example = new UnifiedAutomationReadCustomDataTypeExampleLegacy();
 
-        new ClientExampleRunner(example, false).run();
-    }
+    new ClientExampleRunner(example, false).run();
+  }
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Override
-    public void run(OpcUaClient client, CompletableFuture<OpcUaClient> future) throws Exception {
-        client.connect();
+  @Override
+  public void run(OpcUaClient client, CompletableFuture<OpcUaClient> future) throws Exception {
+    client.connect();
 
-        // Decoding a struct with custom DataType requires a DataTypeManager
-        // that has the codec registered with it.
-        // LegacyDataTypeManagerInitializer will read any DataTypeDictionary nodes present in the
-        // server then dynamically generate and register codecs for custom structures.
-        client.setDataTypeManagerInitializer(new LegacyDataTypeManagerInitializer(client));
+    // Decoding a struct with custom DataType requires a DataTypeManager
+    // that has the codec registered with it.
+    // LegacyDataTypeManagerInitializer will read any DataTypeDictionary nodes present in the
+    // server then dynamically generate and register codecs for custom structures.
+    client.setDataTypeManagerInitializer(new LegacyDataTypeManagerInitializer(client));
 
-        readPerson(client);
-        readWorkOrder(client);
+    readPerson(client);
+    readWorkOrder(client);
 
-        future.complete(client);
-    }
+    future.complete(client);
+  }
 
-    private void readPerson(OpcUaClient client) throws UaException {
-        DataValue dataValue = client.readValues(
-            0.0,
-            TimestampsToReturn.Neither,
-            List.of(NodeId.parse("ns=3;s=Person1"))
-        ).get(0);
+  private void readPerson(OpcUaClient client) throws UaException {
+    DataValue dataValue =
+        client
+            .readValues(0.0, TimestampsToReturn.Neither, List.of(NodeId.parse("ns=3;s=Person1")))
+            .get(0);
 
-        ExtensionObject xo = (ExtensionObject) dataValue.getValue().getValue();
-        assert xo != null;
+    ExtensionObject xo = (ExtensionObject) dataValue.getValue().getValue();
+    assert xo != null;
 
-        Object value = xo.decode(client.getDynamicEncodingContext());
+    Object value = xo.decode(client.getDynamicEncodingContext());
 
-        logger.info("value: {}", value);
-    }
+    logger.info("value: {}", value);
+  }
 
-    private void readWorkOrder(OpcUaClient client) throws UaException {
-        DataValue dataValue = client.readValues(
-            0.0,
-            TimestampsToReturn.Neither,
-            List.of(NodeId.parse("ns=3;s=Demo.Static.Scalar.WorkOrder"))
-        ).get(0);
+  private void readWorkOrder(OpcUaClient client) throws UaException {
+    DataValue dataValue =
+        client
+            .readValues(
+                0.0,
+                TimestampsToReturn.Neither,
+                List.of(NodeId.parse("ns=3;s=Demo.Static.Scalar.WorkOrder")))
+            .get(0);
 
-        ExtensionObject xo = (ExtensionObject) dataValue.getValue().getValue();
-        assert xo != null;
+    ExtensionObject xo = (ExtensionObject) dataValue.getValue().getValue();
+    assert xo != null;
 
-        Object value = xo.decode(client.getDynamicEncodingContext());
+    Object value = xo.decode(client.getDynamicEncodingContext());
 
-        logger.info("value: {}", value);
-    }
+    logger.info("value: {}", value);
+  }
 
-    @Override
-    public String getEndpointUrl() {
-        // Change this if UaCPPServer is running somewhere other than localhost.
-        return "opc.tcp://localhost:48010";
-    }
+  @Override
+  public String getEndpointUrl() {
+    // Change this if UaCPPServer is running somewhere other than localhost.
+    return "opc.tcp://localhost:48010";
+  }
 
-    @Override
-    public SecurityPolicy getSecurityPolicy() {
-        return SecurityPolicy.None;
-    }
-
+  @Override
+  public SecurityPolicy getSecurityPolicy() {
+    return SecurityPolicy.None;
+  }
 }

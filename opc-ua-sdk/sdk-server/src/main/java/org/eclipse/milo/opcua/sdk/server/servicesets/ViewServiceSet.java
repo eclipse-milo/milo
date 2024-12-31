@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -25,20 +25,18 @@ import org.eclipse.milo.opcua.stack.transport.server.ServiceRequestContext;
 
 public interface ViewServiceSet {
 
-    BrowseResponse onBrowse(
-        ServiceRequestContext context, BrowseRequest request) throws UaException;
+  BrowseResponse onBrowse(ServiceRequestContext context, BrowseRequest request) throws UaException;
 
-    BrowseNextResponse onBrowseNext(
-        ServiceRequestContext context, BrowseNextRequest request) throws UaException;
+  BrowseNextResponse onBrowseNext(ServiceRequestContext context, BrowseNextRequest request)
+      throws UaException;
 
-    TranslateBrowsePathsToNodeIdsResponse onTranslateBrowsePaths(
-        ServiceRequestContext context,
-        TranslateBrowsePathsToNodeIdsRequest request) throws UaException;
+  TranslateBrowsePathsToNodeIdsResponse onTranslateBrowsePaths(
+      ServiceRequestContext context, TranslateBrowsePathsToNodeIdsRequest request)
+      throws UaException;
 
-    RegisterNodesResponse onRegisterNodes(
-        ServiceRequestContext context, RegisterNodesRequest request) throws UaException;
+  RegisterNodesResponse onRegisterNodes(ServiceRequestContext context, RegisterNodesRequest request)
+      throws UaException;
 
-    UnregisterNodesResponse onUnregisterNodes(
-        ServiceRequestContext context, UnregisterNodesRequest request) throws UaException;
-
+  UnregisterNodesResponse onUnregisterNodes(
+      ServiceRequestContext context, UnregisterNodesRequest request) throws UaException;
 }

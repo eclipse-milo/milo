@@ -11,7 +11,6 @@
 package org.eclipse.milo.opcua.sdk.client.dtd;
 
 import java.util.List;
-
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.core.dtd.generic.StructCodec;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
@@ -22,40 +21,35 @@ import org.eclipse.milo.opcua.stack.core.types.DataTypeManager;
 
 public class LegacyDataTypeManagerInitializer implements OpcUaClient.DataTypeManagerInitializer {
 
-    private final OpcUaClient client;
-    private final BinaryCodecFactory codecFactory;
+  private final OpcUaClient client;
+  private final BinaryCodecFactory codecFactory;
 
-    public LegacyDataTypeManagerInitializer(OpcUaClient client) {
-        this(client, StructCodec::new);
+  public LegacyDataTypeManagerInitializer(OpcUaClient client) {
+    this(client, StructCodec::new);
+  }
+
+  public LegacyDataTypeManagerInitializer(OpcUaClient client, BinaryCodecFactory codecFactory) {
+    this.client = client;
+    this.codecFactory = codecFactory;
+  }
+
+  @Override
+  public void initialize(
+      NamespaceTable namespaceTable, DataTypeTree dataTypeTree, DataTypeManager dataTypeManager)
+      throws UaException {
+
+    List<DataTypeDictionary> dataTypeDictionaries =
+        new BinaryDataTypeDictionaryReader(client).readDataTypeDictionaries(codecFactory);
+
+    for (DataTypeDictionary dictionary : dataTypeDictionaries) {
+      dataTypeManager.registerTypeDictionary(dictionary);
+
+      dictionary
+          .getTypes()
+          .forEach(
+              type ->
+                  dataTypeManager.registerType(
+                      type.getDataTypeId(), type.getCodec(), type.getEncodingId(), null, null));
     }
-
-    public LegacyDataTypeManagerInitializer(OpcUaClient client, BinaryCodecFactory codecFactory) {
-        this.client = client;
-        this.codecFactory = codecFactory;
-    }
-
-    @Override
-    public void initialize(
-        NamespaceTable namespaceTable,
-        DataTypeTree dataTypeTree,
-        DataTypeManager dataTypeManager
-    ) throws UaException {
-        
-        List<DataTypeDictionary> dataTypeDictionaries =
-            new BinaryDataTypeDictionaryReader(client)
-                .readDataTypeDictionaries(codecFactory);
-
-        for (DataTypeDictionary dictionary : dataTypeDictionaries) {
-            dataTypeManager.registerTypeDictionary(dictionary);
-
-            dictionary.getTypes().forEach(type ->
-                dataTypeManager.registerType(
-                    type.getDataTypeId(),
-                    type.getCodec(),
-                    type.getEncodingId(), null, null
-                )
-            );
-        }
-    }
-
+  }
 }

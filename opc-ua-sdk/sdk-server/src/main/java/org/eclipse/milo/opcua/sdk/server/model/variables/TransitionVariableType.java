@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -17,76 +17,77 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part16/4.4.4">https://reference.opcfoundation.org/v105/Core/docs/Part16/4.4.4</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part16/4.4.4">https://reference.opcfoundation.org/v105/Core/docs/Part16/4.4.4</a>
  */
 public interface TransitionVariableType extends BaseDataVariableType {
-    QualifiedProperty<Object> ID = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "Id",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
-        -1,
-        Object.class
-    );
+  QualifiedProperty<Object> ID =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "Id",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
+          -1,
+          Object.class);
 
-    QualifiedProperty<QualifiedName> NAME = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "Name",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=20"),
-        -1,
-        QualifiedName.class
-    );
+  QualifiedProperty<QualifiedName> NAME =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "Name",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=20"),
+          -1,
+          QualifiedName.class);
 
-    QualifiedProperty<UInteger> NUMBER = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "Number",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-        -1,
-        UInteger.class
-    );
+  QualifiedProperty<UInteger> NUMBER =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "Number",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          -1,
+          UInteger.class);
 
-    QualifiedProperty<DateTime> TRANSITION_TIME = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "TransitionTime",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-        -1,
-        DateTime.class
-    );
+  QualifiedProperty<DateTime> TRANSITION_TIME =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "TransitionTime",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
+          -1,
+          DateTime.class);
 
-    QualifiedProperty<DateTime> EFFECTIVE_TRANSITION_TIME = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "EffectiveTransitionTime",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-        -1,
-        DateTime.class
-    );
+  QualifiedProperty<DateTime> EFFECTIVE_TRANSITION_TIME =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "EffectiveTransitionTime",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
+          -1,
+          DateTime.class);
 
-    Object getId();
+  Object getId();
 
-    void setId(Object value);
+  void setId(Object value);
 
-    PropertyType getIdNode();
+  PropertyType getIdNode();
 
-    QualifiedName getName();
+  QualifiedName getName();
 
-    void setName(QualifiedName value);
+  void setName(QualifiedName value);
 
-    PropertyType getNameNode();
+  PropertyType getNameNode();
 
-    UInteger getNumber();
+  UInteger getNumber();
 
-    void setNumber(UInteger value);
+  void setNumber(UInteger value);
 
-    PropertyType getNumberNode();
+  PropertyType getNumberNode();
 
-    DateTime getTransitionTime();
+  DateTime getTransitionTime();
 
-    void setTransitionTime(DateTime value);
+  void setTransitionTime(DateTime value);
 
-    PropertyType getTransitionTimeNode();
+  PropertyType getTransitionTimeNode();
 
-    DateTime getEffectiveTransitionTime();
+  DateTime getEffectiveTransitionTime();
 
-    void setEffectiveTransitionTime(DateTime value);
+  void setEffectiveTransitionTime(DateTime value);
 
-    PropertyType getEffectiveTransitionTimeNode();
+  PropertyType getEffectiveTransitionTimeNode();
 }

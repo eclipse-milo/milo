@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -13,78 +13,79 @@ package org.eclipse.milo.opcua.sdk.server.model.variables;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.8">https://reference.opcfoundation.org/v105/Core/docs/Part5/7.8</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.8">https://reference.opcfoundation.org/v105/Core/docs/Part5/7.8</a>
  */
 public interface ServerDiagnosticsSummaryType extends BaseDataVariableType {
-    BaseDataVariableType getServerViewCountNode();
+  BaseDataVariableType getServerViewCountNode();
 
-    UInteger getServerViewCount();
+  UInteger getServerViewCount();
 
-    void setServerViewCount(UInteger value);
+  void setServerViewCount(UInteger value);
 
-    BaseDataVariableType getCurrentSessionCountNode();
+  BaseDataVariableType getCurrentSessionCountNode();
 
-    UInteger getCurrentSessionCount();
+  UInteger getCurrentSessionCount();
 
-    void setCurrentSessionCount(UInteger value);
+  void setCurrentSessionCount(UInteger value);
 
-    BaseDataVariableType getCumulatedSessionCountNode();
+  BaseDataVariableType getCumulatedSessionCountNode();
 
-    UInteger getCumulatedSessionCount();
+  UInteger getCumulatedSessionCount();
 
-    void setCumulatedSessionCount(UInteger value);
+  void setCumulatedSessionCount(UInteger value);
 
-    BaseDataVariableType getSecurityRejectedSessionCountNode();
+  BaseDataVariableType getSecurityRejectedSessionCountNode();
 
-    UInteger getSecurityRejectedSessionCount();
+  UInteger getSecurityRejectedSessionCount();
 
-    void setSecurityRejectedSessionCount(UInteger value);
+  void setSecurityRejectedSessionCount(UInteger value);
 
-    BaseDataVariableType getRejectedSessionCountNode();
+  BaseDataVariableType getRejectedSessionCountNode();
 
-    UInteger getRejectedSessionCount();
+  UInteger getRejectedSessionCount();
 
-    void setRejectedSessionCount(UInteger value);
+  void setRejectedSessionCount(UInteger value);
 
-    BaseDataVariableType getSessionTimeoutCountNode();
+  BaseDataVariableType getSessionTimeoutCountNode();
 
-    UInteger getSessionTimeoutCount();
+  UInteger getSessionTimeoutCount();
 
-    void setSessionTimeoutCount(UInteger value);
+  void setSessionTimeoutCount(UInteger value);
 
-    BaseDataVariableType getSessionAbortCountNode();
+  BaseDataVariableType getSessionAbortCountNode();
 
-    UInteger getSessionAbortCount();
+  UInteger getSessionAbortCount();
 
-    void setSessionAbortCount(UInteger value);
+  void setSessionAbortCount(UInteger value);
 
-    BaseDataVariableType getPublishingIntervalCountNode();
+  BaseDataVariableType getPublishingIntervalCountNode();
 
-    UInteger getPublishingIntervalCount();
+  UInteger getPublishingIntervalCount();
 
-    void setPublishingIntervalCount(UInteger value);
+  void setPublishingIntervalCount(UInteger value);
 
-    BaseDataVariableType getCurrentSubscriptionCountNode();
+  BaseDataVariableType getCurrentSubscriptionCountNode();
 
-    UInteger getCurrentSubscriptionCount();
+  UInteger getCurrentSubscriptionCount();
 
-    void setCurrentSubscriptionCount(UInteger value);
+  void setCurrentSubscriptionCount(UInteger value);
 
-    BaseDataVariableType getCumulatedSubscriptionCountNode();
+  BaseDataVariableType getCumulatedSubscriptionCountNode();
 
-    UInteger getCumulatedSubscriptionCount();
+  UInteger getCumulatedSubscriptionCount();
 
-    void setCumulatedSubscriptionCount(UInteger value);
+  void setCumulatedSubscriptionCount(UInteger value);
 
-    BaseDataVariableType getSecurityRejectedRequestsCountNode();
+  BaseDataVariableType getSecurityRejectedRequestsCountNode();
 
-    UInteger getSecurityRejectedRequestsCount();
+  UInteger getSecurityRejectedRequestsCount();
 
-    void setSecurityRejectedRequestsCount(UInteger value);
+  void setSecurityRejectedRequestsCount(UInteger value);
 
-    BaseDataVariableType getRejectedRequestsCountNode();
+  BaseDataVariableType getRejectedRequestsCountNode();
 
-    UInteger getRejectedRequestsCount();
+  UInteger getRejectedRequestsCount();
 
-    void setRejectedRequestsCount(UInteger value);
+  void setRejectedRequestsCount(UInteger value);
 }

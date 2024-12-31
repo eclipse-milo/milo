@@ -11,7 +11,6 @@
 package org.eclipse.milo.opcua.sdk.server;
 
 import java.util.List;
-
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
 import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
@@ -26,8 +25,7 @@ import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
  */
 public record ContinuationPoint(ByteString id, List<ReferenceDescription> references, int max) {
 
-    public ContinuationPoint(List<ReferenceDescription> references, int max) {
-        this(NonceUtil.generateNonce(16), references, max);
-    }
-
+  public ContinuationPoint(List<ReferenceDescription> references, int max) {
+    this(NonceUtil.generateNonce(16), references, max);
+  }
 }

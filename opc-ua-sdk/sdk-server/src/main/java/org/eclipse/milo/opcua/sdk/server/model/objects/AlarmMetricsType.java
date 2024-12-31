@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -22,82 +22,84 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/9.2">https://reference.opcfoundation.org/v105/Core/docs/Part9/9.2</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/9.2">https://reference.opcfoundation.org/v105/Core/docs/Part9/9.2</a>
  */
 public interface AlarmMetricsType extends BaseObjectType {
-    BaseDataVariableType getAlarmCountNode();
+  BaseDataVariableType getAlarmCountNode();
 
-    UInteger getAlarmCount();
+  UInteger getAlarmCount();
 
-    void setAlarmCount(UInteger value);
+  void setAlarmCount(UInteger value);
 
-    BaseDataVariableType getStartTimeNode();
+  BaseDataVariableType getStartTimeNode();
 
-    DateTime getStartTime();
+  DateTime getStartTime();
 
-    void setStartTime(DateTime value);
+  void setStartTime(DateTime value);
 
-    BaseDataVariableType getMaximumActiveStateNode();
+  BaseDataVariableType getMaximumActiveStateNode();
 
-    Double getMaximumActiveState();
+  Double getMaximumActiveState();
 
-    void setMaximumActiveState(Double value);
+  void setMaximumActiveState(Double value);
 
-    BaseDataVariableType getMaximumUnAckNode();
+  BaseDataVariableType getMaximumUnAckNode();
 
-    Double getMaximumUnAck();
+  Double getMaximumUnAck();
 
-    void setMaximumUnAck(Double value);
+  void setMaximumUnAck(Double value);
 
-    AlarmRateVariableType getCurrentAlarmRateNode();
+  AlarmRateVariableType getCurrentAlarmRateNode();
 
-    Double getCurrentAlarmRate();
+  Double getCurrentAlarmRate();
 
-    void setCurrentAlarmRate(Double value);
+  void setCurrentAlarmRate(Double value);
 
-    AlarmRateVariableType getMaximumAlarmRateNode();
+  AlarmRateVariableType getMaximumAlarmRateNode();
 
-    Double getMaximumAlarmRate();
+  Double getMaximumAlarmRate();
 
-    void setMaximumAlarmRate(Double value);
+  void setMaximumAlarmRate(Double value);
 
-    BaseDataVariableType getMaximumReAlarmCountNode();
+  BaseDataVariableType getMaximumReAlarmCountNode();
 
-    UInteger getMaximumReAlarmCount();
+  UInteger getMaximumReAlarmCount();
 
-    void setMaximumReAlarmCount(UInteger value);
+  void setMaximumReAlarmCount(UInteger value);
 
-    AlarmRateVariableType getAverageAlarmRateNode();
+  AlarmRateVariableType getAverageAlarmRateNode();
 
-    Double getAverageAlarmRate();
+  Double getAverageAlarmRate();
 
-    void setAverageAlarmRate(Double value);
+  void setAverageAlarmRate(Double value);
 
-    MethodNode getResetMethodNode();
+  MethodNode getResetMethodNode();
 
-    abstract class ResetMethod extends AbstractMethodInvocationHandler {
-        public ResetMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            invoke(context);
-            return new Variant[]{};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context) throws
-            UaException;
+  abstract class ResetMethod extends AbstractMethodInvocationHandler {
+    public ResetMethod(UaMethodNode node) {
+      super(node);
     }
+
+    @Override
+    public Argument[] getInputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      invoke(context);
+      return new Variant[] {};
+    }
+
+    protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context)
+        throws UaException;
+  }
 }

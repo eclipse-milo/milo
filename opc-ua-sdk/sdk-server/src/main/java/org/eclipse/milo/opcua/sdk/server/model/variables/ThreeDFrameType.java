@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -14,18 +14,19 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ThreeDCartesianCoordin
 import org.eclipse.milo.opcua.stack.core.types.structured.ThreeDOrientation;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.28">https://reference.opcfoundation.org/v105/Core/docs/Part5/7.28</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.28">https://reference.opcfoundation.org/v105/Core/docs/Part5/7.28</a>
  */
 public interface ThreeDFrameType extends FrameType {
-    ThreeDCartesianCoordinatesType getCartesianCoordinatesNode();
+  ThreeDCartesianCoordinatesType getCartesianCoordinatesNode();
 
-    ThreeDCartesianCoordinates getCartesianCoordinates();
+  ThreeDCartesianCoordinates getCartesianCoordinates();
 
-    void setCartesianCoordinates(ThreeDCartesianCoordinates value);
+  void setCartesianCoordinates(ThreeDCartesianCoordinates value);
 
-    ThreeDOrientationType getOrientationNode();
+  ThreeDOrientationType getOrientationNode();
 
-    ThreeDOrientation getOrientation();
+  ThreeDOrientation getOrientation();
 
-    void setOrientation(ThreeDOrientation value);
+  void setOrientation(ThreeDOrientation value);
 }

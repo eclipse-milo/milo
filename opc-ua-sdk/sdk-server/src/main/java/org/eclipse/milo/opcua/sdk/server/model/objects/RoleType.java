@@ -26,312 +26,373 @@ import org.eclipse.milo.opcua.stack.core.types.structured.IdentityMappingRuleTyp
 import org.eclipse.milo.opcua.stack.core.util.Lazy;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part18/4.4.1">https://reference.opcfoundation.org/v105/Core/docs/Part18/4.4.1</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part18/4.4.1">https://reference.opcfoundation.org/v105/Core/docs/Part18/4.4.1</a>
  */
 public interface RoleType extends BaseObjectType {
-    QualifiedProperty<IdentityMappingRuleType[]> IDENTITIES = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "Identities",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15634"),
-        1,
-        IdentityMappingRuleType[].class
-    );
+  QualifiedProperty<IdentityMappingRuleType[]> IDENTITIES =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "Identities",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15634"),
+          1,
+          IdentityMappingRuleType[].class);
 
-    QualifiedProperty<Boolean> APPLICATIONS_EXCLUDE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ApplicationsExclude",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-        -1,
-        Boolean.class
-    );
+  QualifiedProperty<Boolean> APPLICATIONS_EXCLUDE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ApplicationsExclude",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          -1,
+          Boolean.class);
 
-    QualifiedProperty<String[]> APPLICATIONS = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "Applications",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-        1,
-        String[].class
-    );
+  QualifiedProperty<String[]> APPLICATIONS =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "Applications",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          1,
+          String[].class);
 
-    QualifiedProperty<Boolean> ENDPOINTS_EXCLUDE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "EndpointsExclude",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-        -1,
-        Boolean.class
-    );
+  QualifiedProperty<Boolean> ENDPOINTS_EXCLUDE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "EndpointsExclude",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          -1,
+          Boolean.class);
 
-    QualifiedProperty<EndpointType[]> ENDPOINTS = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "Endpoints",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15528"),
-        1,
-        EndpointType[].class
-    );
+  QualifiedProperty<EndpointType[]> ENDPOINTS =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "Endpoints",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15528"),
+          1,
+          EndpointType[].class);
 
-    QualifiedProperty<Boolean> CUSTOM_CONFIGURATION = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "CustomConfiguration",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-        -1,
-        Boolean.class
-    );
+  QualifiedProperty<Boolean> CUSTOM_CONFIGURATION =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "CustomConfiguration",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          -1,
+          Boolean.class);
 
-    IdentityMappingRuleType[] getIdentities();
+  IdentityMappingRuleType[] getIdentities();
 
-    void setIdentities(IdentityMappingRuleType[] value);
+  void setIdentities(IdentityMappingRuleType[] value);
 
-    PropertyType getIdentitiesNode();
+  PropertyType getIdentitiesNode();
 
-    Boolean getApplicationsExclude();
+  Boolean getApplicationsExclude();
 
-    void setApplicationsExclude(Boolean value);
+  void setApplicationsExclude(Boolean value);
 
-    PropertyType getApplicationsExcludeNode();
+  PropertyType getApplicationsExcludeNode();
 
-    String[] getApplications();
+  String[] getApplications();
 
-    void setApplications(String[] value);
+  void setApplications(String[] value);
 
-    PropertyType getApplicationsNode();
+  PropertyType getApplicationsNode();
 
-    Boolean getEndpointsExclude();
+  Boolean getEndpointsExclude();
 
-    void setEndpointsExclude(Boolean value);
+  void setEndpointsExclude(Boolean value);
 
-    PropertyType getEndpointsExcludeNode();
+  PropertyType getEndpointsExcludeNode();
 
-    EndpointType[] getEndpoints();
+  EndpointType[] getEndpoints();
 
-    void setEndpoints(EndpointType[] value);
+  void setEndpoints(EndpointType[] value);
 
-    PropertyType getEndpointsNode();
+  PropertyType getEndpointsNode();
 
-    Boolean getCustomConfiguration();
+  Boolean getCustomConfiguration();
 
-    void setCustomConfiguration(Boolean value);
+  void setCustomConfiguration(Boolean value);
 
-    PropertyType getCustomConfigurationNode();
+  PropertyType getCustomConfigurationNode();
 
-    MethodNode getAddIdentityMethodNode();
+  MethodNode getAddIdentityMethodNode();
 
-    MethodNode getRemoveIdentityMethodNode();
+  MethodNode getRemoveIdentityMethodNode();
 
-    MethodNode getAddApplicationMethodNode();
+  MethodNode getAddApplicationMethodNode();
 
-    MethodNode getRemoveApplicationMethodNode();
+  MethodNode getRemoveApplicationMethodNode();
 
-    MethodNode getAddEndpointMethodNode();
+  MethodNode getAddEndpointMethodNode();
 
-    MethodNode getRemoveEndpointMethodNode();
+  MethodNode getRemoveEndpointMethodNode();
 
-    abstract class AddIdentityMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  abstract class AddIdentityMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
 
-        public AddIdentityMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("Rule", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15634").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            IdentityMappingRuleType rule = (IdentityMappingRuleType) inputValues[0].getValue();
-            invoke(context, rule);
-            return new Variant[]{};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       IdentityMappingRuleType rule) throws UaException;
+    public AddIdentityMethod(UaMethodNode node) {
+      super(node);
     }
 
-    abstract class RemoveIdentityMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
 
-        public RemoveIdentityMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("Rule", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15634").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            IdentityMappingRuleType rule = (IdentityMappingRuleType) inputValues[0].getValue();
-            invoke(context, rule);
-            return new Variant[]{};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       IdentityMappingRuleType rule) throws UaException;
+            return new Argument[] {
+              new Argument(
+                  "Rule",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15634")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
     }
 
-    abstract class AddApplicationMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-        public AddApplicationMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("ApplicationUri", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            String applicationUri = (String) inputValues[0].getValue();
-            invoke(context, applicationUri);
-            return new Variant[]{};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       String applicationUri) throws UaException;
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[] {};
     }
 
-    abstract class RemoveApplicationMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-        public RemoveApplicationMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("ApplicationUri", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            String applicationUri = (String) inputValues[0].getValue();
-            invoke(context, applicationUri);
-            return new Variant[]{};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       String applicationUri) throws UaException;
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      IdentityMappingRuleType rule = (IdentityMappingRuleType) inputValues[0].getValue();
+      invoke(context, rule);
+      return new Variant[] {};
     }
 
-    abstract class AddEndpointMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, IdentityMappingRuleType rule)
+        throws UaException;
+  }
 
-        public AddEndpointMethod(UaMethodNode node) {
-            super(node);
-        }
+  abstract class RemoveIdentityMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
 
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("Endpoint", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15528").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            EndpointType endpoint = (EndpointType) inputValues[0].getValue();
-            invoke(context, endpoint);
-            return new Variant[]{};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       EndpointType endpoint) throws UaException;
+    public RemoveIdentityMethod(UaMethodNode node) {
+      super(node);
     }
 
-    abstract class RemoveEndpointMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
 
-        public RemoveEndpointMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("Endpoint", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15528").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            EndpointType endpoint = (EndpointType) inputValues[0].getValue();
-            invoke(context, endpoint);
-            return new Variant[]{};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       EndpointType endpoint) throws UaException;
+            return new Argument[] {
+              new Argument(
+                  "Rule",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15634")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
     }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      IdentityMappingRuleType rule = (IdentityMappingRuleType) inputValues[0].getValue();
+      invoke(context, rule);
+      return new Variant[] {};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, IdentityMappingRuleType rule)
+        throws UaException;
+  }
+
+  abstract class AddApplicationMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+
+    public AddApplicationMethod(UaMethodNode node) {
+      super(node);
+    }
+
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "ApplicationUri",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      String applicationUri = (String) inputValues[0].getValue();
+      invoke(context, applicationUri);
+      return new Variant[] {};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, String applicationUri)
+        throws UaException;
+  }
+
+  abstract class RemoveApplicationMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+
+    public RemoveApplicationMethod(UaMethodNode node) {
+      super(node);
+    }
+
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "ApplicationUri",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      String applicationUri = (String) inputValues[0].getValue();
+      invoke(context, applicationUri);
+      return new Variant[] {};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, String applicationUri)
+        throws UaException;
+  }
+
+  abstract class AddEndpointMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+
+    public AddEndpointMethod(UaMethodNode node) {
+      super(node);
+    }
+
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "Endpoint",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15528")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      EndpointType endpoint = (EndpointType) inputValues[0].getValue();
+      invoke(context, endpoint);
+      return new Variant[] {};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, EndpointType endpoint)
+        throws UaException;
+  }
+
+  abstract class RemoveEndpointMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+
+    public RemoveEndpointMethod(UaMethodNode node) {
+      super(node);
+    }
+
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "Endpoint",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15528")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      EndpointType endpoint = (EndpointType) inputValues[0].getValue();
+      invoke(context, endpoint);
+      return new Variant[] {};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, EndpointType endpoint)
+        throws UaException;
+  }
 }

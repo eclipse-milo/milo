@@ -16,13 +16,12 @@ import org.eclipse.milo.opcua.stack.core.encoding.DataTypeCodec;
 
 public interface CodecFactory {
 
-    /**
-     * Create a {@link DataTypeCodec} instance for {@code dataType}.
-     *
-     * @param dataType the {@link DataType} to create the codec for.
-     * @param dataTypeTree the {@link DataTypeTree}.
-     * @return a {@link DataTypeCodec} for {@code dataType}.
-     */
-    DataTypeCodec create(DataType dataType, DataTypeTree dataTypeTree);
-
+  /**
+   * Create a {@link DataTypeCodec} instance for {@code dataType}.
+   *
+   * @param dataType the {@link DataType} to create the codec for.
+   * @param dataTypeTree the {@link DataTypeTree}.
+   * @return a {@link DataTypeCodec} for {@code dataType}.
+   */
+  DataTypeCodec create(DataType dataType, DataTypeTree dataTypeTree);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -19,70 +19,71 @@ import org.eclipse.milo.opcua.stack.core.types.structured.DataSetFieldContentMas
 import org.eclipse.milo.opcua.stack.core.types.structured.KeyValuePair;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.7/#9.1.7.2">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.7/#9.1.7.2</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.7/#9.1.7.2">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.7/#9.1.7.2</a>
  */
 public interface DataSetWriterType extends BaseObjectType {
-    QualifiedProperty<UShort> DATA_SET_WRITER_ID = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "DataSetWriterId",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
-        -1,
-        UShort.class
-    );
+  QualifiedProperty<UShort> DATA_SET_WRITER_ID =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "DataSetWriterId",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
+          -1,
+          UShort.class);
 
-    QualifiedProperty<DataSetFieldContentMask> DATA_SET_FIELD_CONTENT_MASK = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "DataSetFieldContentMask",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15583"),
-        -1,
-        DataSetFieldContentMask.class
-    );
+  QualifiedProperty<DataSetFieldContentMask> DATA_SET_FIELD_CONTENT_MASK =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "DataSetFieldContentMask",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15583"),
+          -1,
+          DataSetFieldContentMask.class);
 
-    QualifiedProperty<UInteger> KEY_FRAME_COUNT = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "KeyFrameCount",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-        -1,
-        UInteger.class
-    );
+  QualifiedProperty<UInteger> KEY_FRAME_COUNT =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "KeyFrameCount",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          -1,
+          UInteger.class);
 
-    QualifiedProperty<KeyValuePair[]> DATA_SET_WRITER_PROPERTIES = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "DataSetWriterProperties",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14533"),
-        1,
-        KeyValuePair[].class
-    );
+  QualifiedProperty<KeyValuePair[]> DATA_SET_WRITER_PROPERTIES =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "DataSetWriterProperties",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14533"),
+          1,
+          KeyValuePair[].class);
 
-    UShort getDataSetWriterId();
+  UShort getDataSetWriterId();
 
-    void setDataSetWriterId(UShort value);
+  void setDataSetWriterId(UShort value);
 
-    PropertyType getDataSetWriterIdNode();
+  PropertyType getDataSetWriterIdNode();
 
-    DataSetFieldContentMask getDataSetFieldContentMask();
+  DataSetFieldContentMask getDataSetFieldContentMask();
 
-    void setDataSetFieldContentMask(DataSetFieldContentMask value);
+  void setDataSetFieldContentMask(DataSetFieldContentMask value);
 
-    PropertyType getDataSetFieldContentMaskNode();
+  PropertyType getDataSetFieldContentMaskNode();
 
-    UInteger getKeyFrameCount();
+  UInteger getKeyFrameCount();
 
-    void setKeyFrameCount(UInteger value);
+  void setKeyFrameCount(UInteger value);
 
-    PropertyType getKeyFrameCountNode();
+  PropertyType getKeyFrameCountNode();
 
-    KeyValuePair[] getDataSetWriterProperties();
+  KeyValuePair[] getDataSetWriterProperties();
 
-    void setDataSetWriterProperties(KeyValuePair[] value);
+  void setDataSetWriterProperties(KeyValuePair[] value);
 
-    PropertyType getDataSetWriterPropertiesNode();
+  PropertyType getDataSetWriterPropertiesNode();
 
-    DataSetWriterTransportType getTransportSettingsNode();
+  DataSetWriterTransportType getTransportSettingsNode();
 
-    DataSetWriterMessageType getMessageSettingsNode();
+  DataSetWriterMessageType getMessageSettingsNode();
 
-    PubSubStatusType getStatusNode();
+  PubSubStatusType getStatusNode();
 
-    PubSubDiagnosticsDataSetWriterType getDiagnosticsNode();
+  PubSubDiagnosticsDataSetWriterType getDiagnosticsNode();
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -17,34 +17,35 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.10.6">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.10.6</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.10.6">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.10.6</a>
  */
 public interface AuditConditionAcknowledgeEventType extends AuditConditionEventType {
-    QualifiedProperty<ByteString> CONDITION_EVENT_ID = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ConditionEventId",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15"),
-        -1,
-        ByteString.class
-    );
+  QualifiedProperty<ByteString> CONDITION_EVENT_ID =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ConditionEventId",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15"),
+          -1,
+          ByteString.class);
 
-    QualifiedProperty<LocalizedText> COMMENT = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "Comment",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
-        -1,
-        LocalizedText.class
-    );
+  QualifiedProperty<LocalizedText> COMMENT =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "Comment",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
+          -1,
+          LocalizedText.class);
 
-    ByteString getConditionEventId();
+  ByteString getConditionEventId();
 
-    void setConditionEventId(ByteString value);
+  void setConditionEventId(ByteString value);
 
-    PropertyType getConditionEventIdNode();
+  PropertyType getConditionEventIdNode();
 
-    LocalizedText getComment();
+  LocalizedText getComment();
 
-    void setComment(LocalizedText value);
+  void setComment(LocalizedText value);
 
-    PropertyType getCommentNode();
+  PropertyType getCommentNode();
 }

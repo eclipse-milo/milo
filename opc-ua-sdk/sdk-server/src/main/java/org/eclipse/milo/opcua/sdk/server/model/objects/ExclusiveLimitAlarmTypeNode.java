@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -11,7 +11,6 @@
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
 import java.util.Optional;
-
 import org.eclipse.milo.opcua.sdk.core.nodes.ObjectNode;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.TwoStateVariableTypeNode;
@@ -26,42 +25,84 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 
-public class ExclusiveLimitAlarmTypeNode extends LimitAlarmTypeNode implements ExclusiveLimitAlarmType {
-    public ExclusiveLimitAlarmTypeNode(UaNodeContext context, NodeId nodeId, QualifiedName browseName,
-                                       LocalizedText displayName, LocalizedText description, UInteger writeMask,
-                                       UInteger userWriteMask, RolePermissionType[] rolePermissions,
-                                       RolePermissionType[] userRolePermissions, AccessRestrictionType accessRestrictions,
-                                       UByte eventNotifier) {
-        super(context, nodeId, browseName, displayName, description, writeMask, userWriteMask, rolePermissions, userRolePermissions, accessRestrictions, eventNotifier);
-    }
+public class ExclusiveLimitAlarmTypeNode extends LimitAlarmTypeNode
+    implements ExclusiveLimitAlarmType {
+  public ExclusiveLimitAlarmTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType[] rolePermissions,
+      RolePermissionType[] userRolePermissions,
+      AccessRestrictionType accessRestrictions,
+      UByte eventNotifier) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions,
+        eventNotifier);
+  }
 
-    public ExclusiveLimitAlarmTypeNode(UaNodeContext context, NodeId nodeId, QualifiedName browseName,
-                                       LocalizedText displayName, LocalizedText description, UInteger writeMask,
-                                       UInteger userWriteMask, RolePermissionType[] rolePermissions,
-                                       RolePermissionType[] userRolePermissions, AccessRestrictionType accessRestrictions) {
-        super(context, nodeId, browseName, displayName, description, writeMask, userWriteMask, rolePermissions, userRolePermissions, accessRestrictions);
-    }
+  public ExclusiveLimitAlarmTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType[] rolePermissions,
+      RolePermissionType[] userRolePermissions,
+      AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
 
-    @Override
-    public TwoStateVariableTypeNode getActiveStateNode() {
-        Optional<VariableNode> component = getVariableComponent("http://opcfoundation.org/UA/", "ActiveState");
-        return (TwoStateVariableTypeNode) component.orElse(null);
-    }
+  @Override
+  public TwoStateVariableTypeNode getActiveStateNode() {
+    Optional<VariableNode> component =
+        getVariableComponent("http://opcfoundation.org/UA/", "ActiveState");
+    return (TwoStateVariableTypeNode) component.orElse(null);
+  }
 
-    @Override
-    public LocalizedText getActiveState() {
-        Optional<VariableNode> component = getVariableComponent("http://opcfoundation.org/UA/", "ActiveState");
-        return component.map(node -> (LocalizedText) node.getValue().getValue().getValue()).orElse(null);
-    }
+  @Override
+  public LocalizedText getActiveState() {
+    Optional<VariableNode> component =
+        getVariableComponent("http://opcfoundation.org/UA/", "ActiveState");
+    return component
+        .map(node -> (LocalizedText) node.getValue().getValue().getValue())
+        .orElse(null);
+  }
 
-    @Override
-    public void setActiveState(LocalizedText value) {
-        getVariableComponent("http://opcfoundation.org/UA/", "ActiveState").ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-    }
+  @Override
+  public void setActiveState(LocalizedText value) {
+    getVariableComponent("http://opcfoundation.org/UA/", "ActiveState")
+        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  }
 
-    @Override
-    public ExclusiveLimitStateMachineTypeNode getLimitStateNode() {
-        Optional<ObjectNode> component = getObjectComponent("http://opcfoundation.org/UA/", "LimitState");
-        return (ExclusiveLimitStateMachineTypeNode) component.orElse(null);
-    }
+  @Override
+  public ExclusiveLimitStateMachineTypeNode getLimitStateNode() {
+    Optional<ObjectNode> component =
+        getObjectComponent("http://opcfoundation.org/UA/", "LimitState");
+    return (ExclusiveLimitStateMachineTypeNode) component.orElse(null);
+  }
 }

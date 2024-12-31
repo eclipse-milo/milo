@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -15,20 +15,21 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceListEntryDataType;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part23/5.3.1">https://reference.opcfoundation.org/v105/Core/docs/Part23/5.3.1</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part23/5.3.1">https://reference.opcfoundation.org/v105/Core/docs/Part23/5.3.1</a>
  */
 public interface ReferenceDescriptionVariableType extends BaseDataVariableType {
-    QualifiedProperty<ReferenceListEntryDataType[]> REFERENCE_REFINEMENT = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ReferenceRefinement",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=32660"),
-        1,
-        ReferenceListEntryDataType[].class
-    );
+  QualifiedProperty<ReferenceListEntryDataType[]> REFERENCE_REFINEMENT =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ReferenceRefinement",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=32660"),
+          1,
+          ReferenceListEntryDataType[].class);
 
-    ReferenceListEntryDataType[] getReferenceRefinement();
+  ReferenceListEntryDataType[] getReferenceRefinement();
 
-    void setReferenceRefinement(ReferenceListEntryDataType[] value);
+  void setReferenceRefinement(ReferenceListEntryDataType[] value);
 
-    PropertyType getReferenceRefinementNode();
+  PropertyType getReferenceRefinementNode();
 }

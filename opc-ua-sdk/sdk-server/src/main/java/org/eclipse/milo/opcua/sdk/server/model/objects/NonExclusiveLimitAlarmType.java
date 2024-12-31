@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -14,36 +14,37 @@ import org.eclipse.milo.opcua.sdk.server.model.variables.TwoStateVariableType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.20">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.20</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.20">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.20</a>
  */
 public interface NonExclusiveLimitAlarmType extends LimitAlarmType {
-    TwoStateVariableType getActiveStateNode();
+  TwoStateVariableType getActiveStateNode();
 
-    LocalizedText getActiveState();
+  LocalizedText getActiveState();
 
-    void setActiveState(LocalizedText value);
+  void setActiveState(LocalizedText value);
 
-    TwoStateVariableType getHighHighStateNode();
+  TwoStateVariableType getHighHighStateNode();
 
-    LocalizedText getHighHighState();
+  LocalizedText getHighHighState();
 
-    void setHighHighState(LocalizedText value);
+  void setHighHighState(LocalizedText value);
 
-    TwoStateVariableType getHighStateNode();
+  TwoStateVariableType getHighStateNode();
 
-    LocalizedText getHighState();
+  LocalizedText getHighState();
 
-    void setHighState(LocalizedText value);
+  void setHighState(LocalizedText value);
 
-    TwoStateVariableType getLowStateNode();
+  TwoStateVariableType getLowStateNode();
 
-    LocalizedText getLowState();
+  LocalizedText getLowState();
 
-    void setLowState(LocalizedText value);
+  void setLowState(LocalizedText value);
 
-    TwoStateVariableType getLowLowStateNode();
+  TwoStateVariableType getLowLowStateNode();
 
-    LocalizedText getLowLowState();
+  LocalizedText getLowLowState();
 
-    void setLowLowState(LocalizedText value);
+  void setLowLowState(LocalizedText value);
 }

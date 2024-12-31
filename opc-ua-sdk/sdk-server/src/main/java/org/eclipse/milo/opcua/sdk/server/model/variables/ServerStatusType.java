@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -17,42 +17,43 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.ServerState;
 import org.eclipse.milo.opcua.stack.core.types.structured.BuildInfo;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.6">https://reference.opcfoundation.org/v105/Core/docs/Part5/7.6</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.6">https://reference.opcfoundation.org/v105/Core/docs/Part5/7.6</a>
  */
 public interface ServerStatusType extends BaseDataVariableType {
-    BaseDataVariableType getStartTimeNode();
+  BaseDataVariableType getStartTimeNode();
 
-    DateTime getStartTime();
+  DateTime getStartTime();
 
-    void setStartTime(DateTime value);
+  void setStartTime(DateTime value);
 
-    BaseDataVariableType getCurrentTimeNode();
+  BaseDataVariableType getCurrentTimeNode();
 
-    DateTime getCurrentTime();
+  DateTime getCurrentTime();
 
-    void setCurrentTime(DateTime value);
+  void setCurrentTime(DateTime value);
 
-    BaseDataVariableType getStateNode();
+  BaseDataVariableType getStateNode();
 
-    ServerState getState();
+  ServerState getState();
 
-    void setState(ServerState value);
+  void setState(ServerState value);
 
-    BuildInfoType getBuildInfoNode();
+  BuildInfoType getBuildInfoNode();
 
-    BuildInfo getBuildInfo();
+  BuildInfo getBuildInfo();
 
-    void setBuildInfo(BuildInfo value);
+  void setBuildInfo(BuildInfo value);
 
-    BaseDataVariableType getSecondsTillShutdownNode();
+  BaseDataVariableType getSecondsTillShutdownNode();
 
-    UInteger getSecondsTillShutdown();
+  UInteger getSecondsTillShutdown();
 
-    void setSecondsTillShutdown(UInteger value);
+  void setSecondsTillShutdown(UInteger value);
 
-    BaseDataVariableType getShutdownReasonNode();
+  BaseDataVariableType getShutdownReasonNode();
 
-    LocalizedText getShutdownReason();
+  LocalizedText getShutdownReason();
 
-    void setShutdownReason(LocalizedText value);
+  void setShutdownReason(LocalizedText value);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -17,24 +17,25 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.Duplex;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.2</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.2</a>
  */
 public interface IIeeeBaseEthernetPortType extends BaseInterfaceType {
-    AnalogUnitType getSpeedNode();
+  AnalogUnitType getSpeedNode();
 
-    ULong getSpeed();
+  ULong getSpeed();
 
-    void setSpeed(ULong value);
+  void setSpeed(ULong value);
 
-    BaseDataVariableType getDuplexNode();
+  BaseDataVariableType getDuplexNode();
 
-    Duplex getDuplex();
+  Duplex getDuplex();
 
-    void setDuplex(Duplex value);
+  void setDuplex(Duplex value);
 
-    BaseDataVariableType getMaxFrameLengthNode();
+  BaseDataVariableType getMaxFrameLengthNode();
 
-    UShort getMaxFrameLength();
+  UShort getMaxFrameLength();
 
-    void setMaxFrameLength(UShort value);
+  void setMaxFrameLength(UShort value);
 }

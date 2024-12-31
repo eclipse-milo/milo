@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -14,9 +14,9 @@ import org.eclipse.milo.opcua.sdk.server.model.variables.FiniteTransitionVariabl
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 
 public interface ProgramTransitionAuditEventType extends AuditUpdateStateEventType {
-    FiniteTransitionVariableType getTransitionNode();
+  FiniteTransitionVariableType getTransitionNode();
 
-    LocalizedText getTransition();
+  LocalizedText getTransition();
 
-    void setTransition(LocalizedText value);
+  void setTransition(LocalizedText value);
 }

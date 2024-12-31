@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -15,20 +15,21 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.structured.EUInformation;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.25">https://reference.opcfoundation.org/v105/Core/docs/Part5/7.25</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.25">https://reference.opcfoundation.org/v105/Core/docs/Part5/7.25</a>
  */
 public interface OrientationType extends BaseDataVariableType {
-    QualifiedProperty<EUInformation> ANGLE_UNIT = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "AngleUnit",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=887"),
-        -1,
-        EUInformation.class
-    );
+  QualifiedProperty<EUInformation> ANGLE_UNIT =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "AngleUnit",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=887"),
+          -1,
+          EUInformation.class);
 
-    EUInformation getAngleUnit();
+  EUInformation getAngleUnit();
 
-    void setAngleUnit(EUInformation value);
+  void setAngleUnit(EUInformation value);
 
-    PropertyType getAngleUnitNode();
+  PropertyType getAngleUnitNode();
 }

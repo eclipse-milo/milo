@@ -15,9 +15,8 @@ import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
 
 public class ServerDataTypeTreeTest extends AbstractDataTypeTreeTest {
 
-    @Override
-    protected DataTypeTree getDataTypeTree() {
-        return server.getDataTypeTree();
-    }
-
+  @Override
+  protected DataTypeTree getDataTypeTree() {
+    return server.getDataTypeTree();
+  }
 }

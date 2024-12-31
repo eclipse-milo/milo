@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -17,48 +17,49 @@ import org.eclipse.milo.opcua.stack.core.types.structured.SignedSoftwareCertific
 import org.eclipse.milo.opcua.stack.core.types.structured.UserIdentityToken;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.10">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.10</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.10">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.10</a>
  */
 public interface AuditActivateSessionEventType extends AuditSessionEventType {
-    QualifiedProperty<SignedSoftwareCertificate[]> CLIENT_SOFTWARE_CERTIFICATES = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ClientSoftwareCertificates",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=344"),
-        1,
-        SignedSoftwareCertificate[].class
-    );
+  QualifiedProperty<SignedSoftwareCertificate[]> CLIENT_SOFTWARE_CERTIFICATES =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ClientSoftwareCertificates",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=344"),
+          1,
+          SignedSoftwareCertificate[].class);
 
-    QualifiedProperty<UserIdentityToken> USER_IDENTITY_TOKEN = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "UserIdentityToken",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=316"),
-        -1,
-        UserIdentityToken.class
-    );
+  QualifiedProperty<UserIdentityToken> USER_IDENTITY_TOKEN =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "UserIdentityToken",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=316"),
+          -1,
+          UserIdentityToken.class);
 
-    QualifiedProperty<String> SECURE_CHANNEL_ID = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "SecureChannelId",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-        -1,
-        String.class
-    );
+  QualifiedProperty<String> SECURE_CHANNEL_ID =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "SecureChannelId",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          -1,
+          String.class);
 
-    SignedSoftwareCertificate[] getClientSoftwareCertificates();
+  SignedSoftwareCertificate[] getClientSoftwareCertificates();
 
-    void setClientSoftwareCertificates(SignedSoftwareCertificate[] value);
+  void setClientSoftwareCertificates(SignedSoftwareCertificate[] value);
 
-    PropertyType getClientSoftwareCertificatesNode();
+  PropertyType getClientSoftwareCertificatesNode();
 
-    UserIdentityToken getUserIdentityToken();
+  UserIdentityToken getUserIdentityToken();
 
-    void setUserIdentityToken(UserIdentityToken value);
+  void setUserIdentityToken(UserIdentityToken value);
 
-    PropertyType getUserIdentityTokenNode();
+  PropertyType getUserIdentityTokenNode();
 
-    String getSecureChannelId();
+  String getSecureChannelId();
 
-    void setSecureChannelId(String value);
+  void setSecureChannelId(String value);
 
-    PropertyType getSecureChannelIdNode();
+  PropertyType getSecureChannelIdNode();
 }

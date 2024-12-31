@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -15,192 +15,193 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.12">https://reference.opcfoundation.org/v105/Core/docs/Part5/7.12</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/7.12">https://reference.opcfoundation.org/v105/Core/docs/Part5/7.12</a>
  */
 public interface SubscriptionDiagnosticsType extends BaseDataVariableType {
-    BaseDataVariableType getSessionIdNode();
+  BaseDataVariableType getSessionIdNode();
 
-    NodeId getSessionId();
+  NodeId getSessionId();
 
-    void setSessionId(NodeId value);
+  void setSessionId(NodeId value);
 
-    BaseDataVariableType getSubscriptionIdNode();
+  BaseDataVariableType getSubscriptionIdNode();
 
-    UInteger getSubscriptionId();
+  UInteger getSubscriptionId();
 
-    void setSubscriptionId(UInteger value);
+  void setSubscriptionId(UInteger value);
 
-    BaseDataVariableType getPriorityNode();
+  BaseDataVariableType getPriorityNode();
 
-    UByte getPriority();
+  UByte getPriority();
 
-    void setPriority(UByte value);
+  void setPriority(UByte value);
 
-    BaseDataVariableType getPublishingIntervalNode();
+  BaseDataVariableType getPublishingIntervalNode();
 
-    Double getPublishingInterval();
+  Double getPublishingInterval();
 
-    void setPublishingInterval(Double value);
+  void setPublishingInterval(Double value);
 
-    BaseDataVariableType getMaxKeepAliveCountNode();
+  BaseDataVariableType getMaxKeepAliveCountNode();
 
-    UInteger getMaxKeepAliveCount();
+  UInteger getMaxKeepAliveCount();
 
-    void setMaxKeepAliveCount(UInteger value);
+  void setMaxKeepAliveCount(UInteger value);
 
-    BaseDataVariableType getMaxLifetimeCountNode();
+  BaseDataVariableType getMaxLifetimeCountNode();
 
-    UInteger getMaxLifetimeCount();
+  UInteger getMaxLifetimeCount();
 
-    void setMaxLifetimeCount(UInteger value);
+  void setMaxLifetimeCount(UInteger value);
 
-    BaseDataVariableType getMaxNotificationsPerPublishNode();
+  BaseDataVariableType getMaxNotificationsPerPublishNode();
 
-    UInteger getMaxNotificationsPerPublish();
+  UInteger getMaxNotificationsPerPublish();
 
-    void setMaxNotificationsPerPublish(UInteger value);
+  void setMaxNotificationsPerPublish(UInteger value);
 
-    BaseDataVariableType getPublishingEnabledNode();
+  BaseDataVariableType getPublishingEnabledNode();
 
-    Boolean getPublishingEnabled();
+  Boolean getPublishingEnabled();
 
-    void setPublishingEnabled(Boolean value);
+  void setPublishingEnabled(Boolean value);
 
-    BaseDataVariableType getModifyCountNode();
+  BaseDataVariableType getModifyCountNode();
 
-    UInteger getModifyCount();
+  UInteger getModifyCount();
 
-    void setModifyCount(UInteger value);
+  void setModifyCount(UInteger value);
 
-    BaseDataVariableType getEnableCountNode();
+  BaseDataVariableType getEnableCountNode();
 
-    UInteger getEnableCount();
+  UInteger getEnableCount();
 
-    void setEnableCount(UInteger value);
+  void setEnableCount(UInteger value);
 
-    BaseDataVariableType getDisableCountNode();
+  BaseDataVariableType getDisableCountNode();
 
-    UInteger getDisableCount();
+  UInteger getDisableCount();
 
-    void setDisableCount(UInteger value);
+  void setDisableCount(UInteger value);
 
-    BaseDataVariableType getRepublishRequestCountNode();
+  BaseDataVariableType getRepublishRequestCountNode();
 
-    UInteger getRepublishRequestCount();
+  UInteger getRepublishRequestCount();
 
-    void setRepublishRequestCount(UInteger value);
+  void setRepublishRequestCount(UInteger value);
 
-    BaseDataVariableType getRepublishMessageRequestCountNode();
+  BaseDataVariableType getRepublishMessageRequestCountNode();
 
-    UInteger getRepublishMessageRequestCount();
+  UInteger getRepublishMessageRequestCount();
 
-    void setRepublishMessageRequestCount(UInteger value);
+  void setRepublishMessageRequestCount(UInteger value);
 
-    BaseDataVariableType getRepublishMessageCountNode();
+  BaseDataVariableType getRepublishMessageCountNode();
 
-    UInteger getRepublishMessageCount();
+  UInteger getRepublishMessageCount();
 
-    void setRepublishMessageCount(UInteger value);
+  void setRepublishMessageCount(UInteger value);
 
-    BaseDataVariableType getTransferRequestCountNode();
+  BaseDataVariableType getTransferRequestCountNode();
 
-    UInteger getTransferRequestCount();
+  UInteger getTransferRequestCount();
 
-    void setTransferRequestCount(UInteger value);
+  void setTransferRequestCount(UInteger value);
 
-    BaseDataVariableType getTransferredToAltClientCountNode();
+  BaseDataVariableType getTransferredToAltClientCountNode();
 
-    UInteger getTransferredToAltClientCount();
+  UInteger getTransferredToAltClientCount();
 
-    void setTransferredToAltClientCount(UInteger value);
+  void setTransferredToAltClientCount(UInteger value);
 
-    BaseDataVariableType getTransferredToSameClientCountNode();
+  BaseDataVariableType getTransferredToSameClientCountNode();
 
-    UInteger getTransferredToSameClientCount();
+  UInteger getTransferredToSameClientCount();
 
-    void setTransferredToSameClientCount(UInteger value);
+  void setTransferredToSameClientCount(UInteger value);
 
-    BaseDataVariableType getPublishRequestCountNode();
+  BaseDataVariableType getPublishRequestCountNode();
 
-    UInteger getPublishRequestCount();
+  UInteger getPublishRequestCount();
 
-    void setPublishRequestCount(UInteger value);
+  void setPublishRequestCount(UInteger value);
 
-    BaseDataVariableType getDataChangeNotificationsCountNode();
+  BaseDataVariableType getDataChangeNotificationsCountNode();
 
-    UInteger getDataChangeNotificationsCount();
+  UInteger getDataChangeNotificationsCount();
 
-    void setDataChangeNotificationsCount(UInteger value);
+  void setDataChangeNotificationsCount(UInteger value);
 
-    BaseDataVariableType getEventNotificationsCountNode();
+  BaseDataVariableType getEventNotificationsCountNode();
 
-    UInteger getEventNotificationsCount();
+  UInteger getEventNotificationsCount();
 
-    void setEventNotificationsCount(UInteger value);
+  void setEventNotificationsCount(UInteger value);
 
-    BaseDataVariableType getNotificationsCountNode();
+  BaseDataVariableType getNotificationsCountNode();
 
-    UInteger getNotificationsCount();
+  UInteger getNotificationsCount();
 
-    void setNotificationsCount(UInteger value);
+  void setNotificationsCount(UInteger value);
 
-    BaseDataVariableType getLatePublishRequestCountNode();
+  BaseDataVariableType getLatePublishRequestCountNode();
 
-    UInteger getLatePublishRequestCount();
+  UInteger getLatePublishRequestCount();
 
-    void setLatePublishRequestCount(UInteger value);
+  void setLatePublishRequestCount(UInteger value);
 
-    BaseDataVariableType getCurrentKeepAliveCountNode();
+  BaseDataVariableType getCurrentKeepAliveCountNode();
 
-    UInteger getCurrentKeepAliveCount();
+  UInteger getCurrentKeepAliveCount();
 
-    void setCurrentKeepAliveCount(UInteger value);
+  void setCurrentKeepAliveCount(UInteger value);
 
-    BaseDataVariableType getCurrentLifetimeCountNode();
+  BaseDataVariableType getCurrentLifetimeCountNode();
 
-    UInteger getCurrentLifetimeCount();
+  UInteger getCurrentLifetimeCount();
 
-    void setCurrentLifetimeCount(UInteger value);
+  void setCurrentLifetimeCount(UInteger value);
 
-    BaseDataVariableType getUnacknowledgedMessageCountNode();
+  BaseDataVariableType getUnacknowledgedMessageCountNode();
 
-    UInteger getUnacknowledgedMessageCount();
+  UInteger getUnacknowledgedMessageCount();
 
-    void setUnacknowledgedMessageCount(UInteger value);
+  void setUnacknowledgedMessageCount(UInteger value);
 
-    BaseDataVariableType getDiscardedMessageCountNode();
+  BaseDataVariableType getDiscardedMessageCountNode();
 
-    UInteger getDiscardedMessageCount();
+  UInteger getDiscardedMessageCount();
 
-    void setDiscardedMessageCount(UInteger value);
+  void setDiscardedMessageCount(UInteger value);
 
-    BaseDataVariableType getMonitoredItemCountNode();
+  BaseDataVariableType getMonitoredItemCountNode();
 
-    UInteger getMonitoredItemCount();
+  UInteger getMonitoredItemCount();
 
-    void setMonitoredItemCount(UInteger value);
+  void setMonitoredItemCount(UInteger value);
 
-    BaseDataVariableType getDisabledMonitoredItemCountNode();
+  BaseDataVariableType getDisabledMonitoredItemCountNode();
 
-    UInteger getDisabledMonitoredItemCount();
+  UInteger getDisabledMonitoredItemCount();
 
-    void setDisabledMonitoredItemCount(UInteger value);
+  void setDisabledMonitoredItemCount(UInteger value);
 
-    BaseDataVariableType getMonitoringQueueOverflowCountNode();
+  BaseDataVariableType getMonitoringQueueOverflowCountNode();
 
-    UInteger getMonitoringQueueOverflowCount();
+  UInteger getMonitoringQueueOverflowCount();
 
-    void setMonitoringQueueOverflowCount(UInteger value);
+  void setMonitoringQueueOverflowCount(UInteger value);
 
-    BaseDataVariableType getNextSequenceNumberNode();
+  BaseDataVariableType getNextSequenceNumberNode();
 
-    UInteger getNextSequenceNumber();
+  UInteger getNextSequenceNumber();
 
-    void setNextSequenceNumber(UInteger value);
+  void setNextSequenceNumber(UInteger value);
 
-    BaseDataVariableType getEventQueueOverflowCountNode();
+  BaseDataVariableType getEventQueueOverflowCountNode();
 
-    UInteger getEventQueueOverflowCount();
+  UInteger getEventQueueOverflowCount();
 
-    void setEventQueueOverflowCount(UInteger value);
+  void setEventQueueOverflowCount(UInteger value);
 }

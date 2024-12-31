@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -9,6 +9,8 @@
  */
 
 package org.eclipse.milo.opcua.sdk.server.servicesets.impl;
+
+import static org.eclipse.milo.opcua.sdk.server.servicesets.AbstractServiceSet.createResponseHeader;
 
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.SessionManager;
@@ -26,74 +28,71 @@ import org.eclipse.milo.opcua.stack.core.types.structured.CreateSessionRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CreateSessionResponse;
 import org.eclipse.milo.opcua.stack.transport.server.ServiceRequestContext;
 
-import static org.eclipse.milo.opcua.sdk.server.servicesets.AbstractServiceSet.createResponseHeader;
-
 public class DefaultSessionServiceSet implements SessionServiceSet {
 
-    private final OpcUaServer server;
+  private final OpcUaServer server;
 
-    public DefaultSessionServiceSet(OpcUaServer server) {
-        this.server = server;
+  public DefaultSessionServiceSet(OpcUaServer server) {
+    this.server = server;
+  }
+
+  @Override
+  public CreateSessionResponse onCreateSession(
+      ServiceRequestContext context, CreateSessionRequest request) throws UaException {
+
+    ServerDiagnosticsSummary serverDiagnosticsSummary = server.getDiagnosticsSummary();
+
+    SessionManager sessionManager = server.getSessionManager();
+
+    try {
+      CreateSessionResponse response = sessionManager.createSession(context, request);
+
+      serverDiagnosticsSummary.getCumulatedSessionCount().increment();
+
+      return response;
+    } catch (UaException e) {
+      serverDiagnosticsSummary.getRejectedSessionCount().increment();
+
+      if (e.getStatusCode().isSecurityError()) {
+        serverDiagnosticsSummary.getSecurityRejectedSessionCount().increment();
+      }
+
+      throw e;
     }
+  }
 
-    @Override
-    public CreateSessionResponse onCreateSession(
-        ServiceRequestContext context, CreateSessionRequest request) throws UaException {
+  @Override
+  public ActivateSessionResponse onActivateSession(
+      ServiceRequestContext context, ActivateSessionRequest request) throws UaException {
 
-        ServerDiagnosticsSummary serverDiagnosticsSummary = server.getDiagnosticsSummary();
+    SessionManager sessionManager = server.getSessionManager();
 
-        SessionManager sessionManager = server.getSessionManager();
+    try {
+      return sessionManager.activateSession(context, request);
+    } catch (UaException e) {
+      ServerDiagnosticsSummary serverDiagnosticsSummary = server.getDiagnosticsSummary();
 
-        try {
-            CreateSessionResponse response = sessionManager.createSession(context, request);
+      serverDiagnosticsSummary.getRejectedSessionCount().increment();
 
-            serverDiagnosticsSummary.getCumulatedSessionCount().increment();
+      if (e.getStatusCode().isSecurityError()) {
+        serverDiagnosticsSummary.getSecurityRejectedSessionCount().increment();
+      }
 
-            return response;
-        } catch (UaException e) {
-            serverDiagnosticsSummary.getRejectedSessionCount().increment();
-
-            if (e.getStatusCode().isSecurityError()) {
-                serverDiagnosticsSummary.getSecurityRejectedSessionCount().increment();
-            }
-
-            throw e;
-        }
+      throw e;
     }
+  }
 
-    @Override
-    public ActivateSessionResponse onActivateSession(
-        ServiceRequestContext context, ActivateSessionRequest request) throws UaException {
+  @Override
+  public CloseSessionResponse onCloseSession(
+      ServiceRequestContext context, CloseSessionRequest request) throws UaException {
 
-        SessionManager sessionManager = server.getSessionManager();
+    SessionManager sessionManager = server.getSessionManager();
 
-        try {
-            return sessionManager.activateSession(context, request);
-        } catch (UaException e) {
-            ServerDiagnosticsSummary serverDiagnosticsSummary = server.getDiagnosticsSummary();
+    return sessionManager.closeSession(request, context);
+  }
 
-            serverDiagnosticsSummary.getRejectedSessionCount().increment();
-
-            if (e.getStatusCode().isSecurityError()) {
-                serverDiagnosticsSummary.getSecurityRejectedSessionCount().increment();
-            }
-
-            throw e;
-        }
-    }
-
-    @Override
-    public CloseSessionResponse onCloseSession(
-        ServiceRequestContext context, CloseSessionRequest request) throws UaException {
-
-        SessionManager sessionManager = server.getSessionManager();
-
-        return sessionManager.closeSession(request, context);
-    }
-
-    @Override
-    public CancelResponse onCancel(ServiceRequestContext context, CancelRequest request) {
-        return new CancelResponse(createResponseHeader(request), UInteger.MIN);
-    }
-
+  @Override
+  public CancelResponse onCancel(ServiceRequestContext context, CancelRequest request) {
+    return new CancelResponse(createResponseHeader(request), UInteger.MIN);
+  }
 }

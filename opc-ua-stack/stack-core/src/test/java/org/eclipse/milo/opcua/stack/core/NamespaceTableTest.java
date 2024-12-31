@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -10,18 +10,17 @@
 
 package org.eclipse.milo.opcua.stack.core;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 class NamespaceTableTest {
 
-    @Test
-    public void containsOpcUaNamespace() {
-        NamespaceTable namespaceTable = new NamespaceTable();
+  @Test
+  public void containsOpcUaNamespace() {
+    NamespaceTable namespaceTable = new NamespaceTable();
 
-        assertEquals(Namespaces.OPC_UA, namespaceTable.get(0));
-    }
-
+    assertEquals(Namespaces.OPC_UA, namespaceTable.get(0));
+  }
 }

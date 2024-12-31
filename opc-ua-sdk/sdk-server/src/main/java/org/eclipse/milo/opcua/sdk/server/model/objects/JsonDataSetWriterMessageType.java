@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -16,20 +16,21 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.structured.JsonDataSetMessageContentMask;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.2.2/#9.2.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.2.2/#9.2.2.2</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.2.2/#9.2.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.2.2/#9.2.2.2</a>
  */
 public interface JsonDataSetWriterMessageType extends DataSetWriterMessageType {
-    QualifiedProperty<JsonDataSetMessageContentMask> DATA_SET_MESSAGE_CONTENT_MASK = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "DataSetMessageContentMask",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15658"),
-        -1,
-        JsonDataSetMessageContentMask.class
-    );
+  QualifiedProperty<JsonDataSetMessageContentMask> DATA_SET_MESSAGE_CONTENT_MASK =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "DataSetMessageContentMask",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15658"),
+          -1,
+          JsonDataSetMessageContentMask.class);
 
-    JsonDataSetMessageContentMask getDataSetMessageContentMask();
+  JsonDataSetMessageContentMask getDataSetMessageContentMask();
 
-    void setDataSetMessageContentMask(JsonDataSetMessageContentMask value);
+  void setDataSetMessageContentMask(JsonDataSetMessageContentMask value);
 
-    PropertyType getDataSetMessageContentMaskNode();
+  PropertyType getDataSetMessageContentMaskNode();
 }

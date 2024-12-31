@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -17,48 +17,49 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.PubSubState;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.13/#9.1.13.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.13/#9.1.13.1</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.13/#9.1.13.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.13/#9.1.13.1</a>
  */
 public interface PubSubStatusEventType extends SystemEventType {
-    QualifiedProperty<NodeId> CONNECTION_ID = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ConnectionId",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-        -1,
-        NodeId.class
-    );
+  QualifiedProperty<NodeId> CONNECTION_ID =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ConnectionId",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
+          -1,
+          NodeId.class);
 
-    QualifiedProperty<NodeId> GROUP_ID = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "GroupId",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
-        -1,
-        NodeId.class
-    );
+  QualifiedProperty<NodeId> GROUP_ID =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "GroupId",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
+          -1,
+          NodeId.class);
 
-    QualifiedProperty<PubSubState> STATE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "State",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14647"),
-        -1,
-        PubSubState.class
-    );
+  QualifiedProperty<PubSubState> STATE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "State",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14647"),
+          -1,
+          PubSubState.class);
 
-    NodeId getConnectionId();
+  NodeId getConnectionId();
 
-    void setConnectionId(NodeId value);
+  void setConnectionId(NodeId value);
 
-    PropertyType getConnectionIdNode();
+  PropertyType getConnectionIdNode();
 
-    NodeId getGroupId();
+  NodeId getGroupId();
 
-    void setGroupId(NodeId value);
+  void setGroupId(NodeId value);
 
-    PropertyType getGroupIdNode();
+  PropertyType getGroupIdNode();
 
-    PubSubState getState();
+  PubSubState getState();
 
-    void setState(PubSubState value);
+  void setState(PubSubState value);
 
-    PropertyType getStateNode();
+  PropertyType getStateNode();
 }

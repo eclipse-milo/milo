@@ -18,36 +18,35 @@ import org.eclipse.milo.opcua.stack.core.types.OpcUaDataTypeManager;
 
 public class DefaultEncodingContext implements EncodingContext {
 
-    public final static EncodingContext INSTANCE = new DefaultEncodingContext();
+  public static final EncodingContext INSTANCE = new DefaultEncodingContext();
 
-    public DefaultEncodingContext() {}
+  public DefaultEncodingContext() {}
 
-    private final NamespaceTable namespaceTable = new NamespaceTable();
-    private final ServerTable serverTable = new ServerTable();
+  private final NamespaceTable namespaceTable = new NamespaceTable();
+  private final ServerTable serverTable = new ServerTable();
 
-    @Override
-    public DataTypeManager getDataTypeManager() {
-        return OpcUaDataTypeManager.getInstance();
-    }
+  @Override
+  public DataTypeManager getDataTypeManager() {
+    return OpcUaDataTypeManager.getInstance();
+  }
 
-    @Override
-    public EncodingManager getEncodingManager() {
-        return OpcUaEncodingManager.getInstance();
-    }
+  @Override
+  public EncodingManager getEncodingManager() {
+    return OpcUaEncodingManager.getInstance();
+  }
 
-    @Override
-    public EncodingLimits getEncodingLimits() {
-        return EncodingLimits.DEFAULT;
-    }
+  @Override
+  public EncodingLimits getEncodingLimits() {
+    return EncodingLimits.DEFAULT;
+  }
 
-    @Override
-    public NamespaceTable getNamespaceTable() {
-        return namespaceTable;
-    }
+  @Override
+  public NamespaceTable getNamespaceTable() {
+    return namespaceTable;
+  }
 
-    @Override
-    public ServerTable getServerTable() {
-        return serverTable;
-    }
-
+  @Override
+  public ServerTable getServerTable() {
+    return serverTable;
+  }
 }

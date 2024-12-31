@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -17,28 +17,27 @@ import io.netty.buffer.PooledByteBufAllocator;
 
 public class BufferUtil {
 
-    private static final ByteBufAllocator allocator = PooledByteBufAllocator.DEFAULT;
+  private static final ByteBufAllocator allocator = PooledByteBufAllocator.DEFAULT;
 
-    /**
-     * @return a pooled {@link CompositeByteBuf}.
-     */
-    public static CompositeByteBuf compositeBuffer() {
-        return allocator.compositeBuffer();
-    }
+  /**
+   * @return a pooled {@link CompositeByteBuf}.
+   */
+  public static CompositeByteBuf compositeBuffer() {
+    return allocator.compositeBuffer();
+  }
 
-    /**
-     * @return a pooled {@link ByteBuf} in <b>BIG ENDIAN</b> byte order.
-     */
-    public static ByteBuf pooledBuffer() {
-        return allocator.buffer();
-    }
+  /**
+   * @return a pooled {@link ByteBuf} in <b>BIG ENDIAN</b> byte order.
+   */
+  public static ByteBuf pooledBuffer() {
+    return allocator.buffer();
+  }
 
-    /**
-     * @return a pooled {@link ByteBuf} in <b>BIG ENDIAN</b> byte order, with an initial capacity of
-     * {@code initialCapacity}.
-     */
-    public static ByteBuf pooledBuffer(int initialCapacity) {
-        return allocator.buffer(initialCapacity);
-    }
-
+  /**
+   * @return a pooled {@link ByteBuf} in <b>BIG ENDIAN</b> byte order, with an initial capacity of
+   *     {@code initialCapacity}.
+   */
+  public static ByteBuf pooledBuffer(int initialCapacity) {
+    return allocator.buffer(initialCapacity);
+  }
 }

@@ -10,8 +10,11 @@
 
 package org.eclipse.milo.opcua.sdk.server.methods;
 
-import java.util.List;
+import static java.util.Objects.requireNonNull;
+import static org.eclipse.milo.opcua.stack.core.StatusCodes.Bad_SubscriptionIdInvalid;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.List;
 import org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -23,24 +26,19 @@ import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallResponse;
 import org.junit.jupiter.api.Test;
 
-import static java.util.Objects.requireNonNull;
-import static org.eclipse.milo.opcua.stack.core.StatusCodes.Bad_SubscriptionIdInvalid;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 public class ConditionRefreshMethodTest extends AbstractClientServerTest {
 
-    @Test
-    void subscriptionIdInvalid() throws UaException {
-        var request = new CallMethodRequest(
+  @Test
+  void subscriptionIdInvalid() throws UaException {
+    var request =
+        new CallMethodRequest(
             NodeIds.ConditionType,
             NodeIds.ConditionType_ConditionRefresh,
-            new Variant[]{new Variant(UInteger.valueOf(0))}
-        );
+            new Variant[] {new Variant(UInteger.valueOf(0))});
 
-        CallResponse response = client.call(List.of(request));
-        CallMethodResult result = requireNonNull(response.getResults())[0];
+    CallResponse response = client.call(List.of(request));
+    CallMethodResult result = requireNonNull(response.getResults())[0];
 
-        assertEquals(StatusCode.of(Bad_SubscriptionIdInvalid), result.getStatusCode());
-    }
-
+    assertEquals(StatusCode.of(Bad_SubscriptionIdInvalid), result.getStatusCode());
+  }
 }

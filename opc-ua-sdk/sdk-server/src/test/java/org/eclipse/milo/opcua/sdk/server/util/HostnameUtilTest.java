@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -10,23 +10,22 @@
 
 package org.eclipse.milo.opcua.sdk.server.util;
 
-import java.util.Set;
-
-import org.testng.annotations.Test;
-
 import static org.testng.Assert.assertNotEquals;
+
+import java.util.Set;
+import org.testng.annotations.Test;
 
 public class HostnameUtilTest {
 
-    @Test
-    public void testGetHostnames_ExcludeLocal() throws Exception {
-        Set<String> hostnames = HostnameUtil.getHostnames("0.0.0.0", false);
+  @Test
+  public void testGetHostnames_ExcludeLocal() throws Exception {
+    Set<String> hostnames = HostnameUtil.getHostnames("0.0.0.0", false);
 
-        hostnames.forEach(hostname -> {
-            assertNotEquals(hostname, "127.0.0.1");
-            assertNotEquals(hostname, "localhost");
-            System.out.println(hostname);
+    hostnames.forEach(
+        hostname -> {
+          assertNotEquals(hostname, "127.0.0.1");
+          assertNotEquals(hostname, "localhost");
+          System.out.println(hostname);
         });
-    }
-
+  }
 }

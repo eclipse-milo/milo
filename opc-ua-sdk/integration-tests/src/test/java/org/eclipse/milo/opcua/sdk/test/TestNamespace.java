@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -10,10 +10,13 @@
 
 package org.eclipse.milo.opcua.sdk.test;
 
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
+
 import java.util.List;
 import java.util.UUID;
 import java.util.function.BiConsumer;
-
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
 import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.ValueRanks;
@@ -61,82 +64,90 @@ import org.eclipse.milo.opcua.stack.core.types.structured.XVType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
-import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
-import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
-
 public class TestNamespace extends ManagedNamespaceWithLifecycle {
 
-    public static final String NAMESPACE_URI = "urn:eclipse:milo:test";
+  public static final String NAMESPACE_URI = "urn:eclipse:milo:test";
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private volatile Thread eventThread;
-    private volatile boolean keepPostingEvents = true;
+  private volatile Thread eventThread;
+  private volatile boolean keepPostingEvents = true;
 
-    public TestNamespace(OpcUaServer server) {
-        super(server, NAMESPACE_URI);
+  public TestNamespace(OpcUaServer server) {
+    super(server, NAMESPACE_URI);
 
-        getLifecycleManager().addLifecycle(new Lifecycle() {
-            @Override
-            public void startup() {
+    getLifecycleManager()
+        .addLifecycle(
+            new Lifecycle() {
+              @Override
+              public void startup() {
                 startBogusEventNotifier();
-            }
+              }
 
-            @Override
-            public void shutdown() {
+              @Override
+              public void shutdown() {
                 try {
-                    keepPostingEvents = false;
-                    eventThread.interrupt();
-                    eventThread.join();
+                  keepPostingEvents = false;
+                  eventThread.interrupt();
+                  eventThread.join();
                 } catch (InterruptedException ignored) {
-                    // ignored
+                  // ignored
                 }
-            }
-        });
+              }
+            });
 
-        getLifecycleManager().addStartupTask(() -> {
-            UaVariableNode testInt32Node = new UaVariableNode.UaVariableNodeBuilder(getNodeContext())
-                .setNodeId(newNodeId("TestInt32"))
-                .setAccessLevel(AccessLevel.READ_WRITE)
-                .setUserAccessLevel(AccessLevel.READ_WRITE)
-                .setBrowseName(newQualifiedName("TestInt32"))
-                .setDisplayName(LocalizedText.english("TestInt32"))
-                .setDataType(NodeIds.Int32)
-                .setTypeDefinition(NodeIds.BaseDataVariableType)
-                .setRolePermissions(new RolePermissionType[]{
-                    new RolePermissionType(newNodeId("roleId"), new PermissionType(uint(0)))
-                })
-                .setUserRolePermissions(new RolePermissionType[]{
-                    new RolePermissionType(newNodeId("roleId"), new PermissionType(uint(0)))
-                })
-                .setAccessRestrictions(new AccessRestrictionType(ushort(0)))
-                .build();
+    getLifecycleManager()
+        .addStartupTask(
+            () -> {
+              UaVariableNode testInt32Node =
+                  new UaVariableNode.UaVariableNodeBuilder(getNodeContext())
+                      .setNodeId(newNodeId("TestInt32"))
+                      .setAccessLevel(AccessLevel.READ_WRITE)
+                      .setUserAccessLevel(AccessLevel.READ_WRITE)
+                      .setBrowseName(newQualifiedName("TestInt32"))
+                      .setDisplayName(LocalizedText.english("TestInt32"))
+                      .setDataType(NodeIds.Int32)
+                      .setTypeDefinition(NodeIds.BaseDataVariableType)
+                      .setRolePermissions(
+                          new RolePermissionType[] {
+                            new RolePermissionType(newNodeId("roleId"), new PermissionType(uint(0)))
+                          })
+                      .setUserRolePermissions(
+                          new RolePermissionType[] {
+                            new RolePermissionType(newNodeId("roleId"), new PermissionType(uint(0)))
+                          })
+                      .setAccessRestrictions(new AccessRestrictionType(ushort(0)))
+                      .build();
 
-            testInt32Node.setValue(new DataValue(new Variant(0)));
+              testInt32Node.setValue(new DataValue(new Variant(0)));
 
-            testInt32Node.addReference(new Reference(
-                testInt32Node.getNodeId(),
-                NodeIds.HasComponent,
-                NodeIds.ObjectsFolder.expanded(),
-                Reference.Direction.INVERSE
-            ));
+              testInt32Node.addReference(
+                  new Reference(
+                      testInt32Node.getNodeId(),
+                      NodeIds.HasComponent,
+                      NodeIds.ObjectsFolder.expanded(),
+                      Reference.Direction.INVERSE));
 
-            getNodeManager().addNode(testInt32Node);
-        });
+              getNodeManager().addNode(testInt32Node);
+            });
 
-        getLifecycleManager().addStartupTask(() -> {
-            try {
-                AnalogItemTypeNode node = (AnalogItemTypeNode) getNodeFactory().createNode(
-                    newNodeId("TestAnalogValue"),
-                    NodeIds.AnalogItemType,
-                    new NodeFactory.InstantiationCallback() {
-                        @Override
-                        public boolean includeOptionalNode(NodeId typeDefinitionId, QualifiedName browseName) {
-                            return true;
-                        }
-                    }
-                );
+    getLifecycleManager()
+        .addStartupTask(
+            () -> {
+              try {
+                AnalogItemTypeNode node =
+                    (AnalogItemTypeNode)
+                        getNodeFactory()
+                            .createNode(
+                                newNodeId("TestAnalogValue"),
+                                NodeIds.AnalogItemType,
+                                new NodeFactory.InstantiationCallback() {
+                                  @Override
+                                  public boolean includeOptionalNode(
+                                      NodeId typeDefinitionId, QualifiedName browseName) {
+                                    return true;
+                                  }
+                                });
 
                 node.setBrowseName(newQualifiedName("TestAnalogValue"));
                 node.setDisplayName(LocalizedText.english("TestAnalogValue"));
@@ -146,336 +157,371 @@ public class TestNamespace extends ManagedNamespaceWithLifecycle {
                 node.setEuRange(new Range(0.0, 100.0));
 
                 getNodeManager().addNode(node);
-            } catch (UaException e) {
+              } catch (UaException e) {
                 throw new RuntimeException(e);
-            }
-        });
-
-        getLifecycleManager().addStartupTask(() -> {
-            UaMethodNode.build(getNodeContext(), b -> {
-                b.setNodeId(newNodeId("sqrt(x)"));
-                b.setBrowseName(newQualifiedName("sqrt(x)"));
-                b.setDisplayName(LocalizedText.english("sqrt(x)"));
-
-                b.addReference(new Reference(
-                    b.getNodeId(),
-                    NodeIds.HasComponent,
-                    NodeIds.ObjectsFolder.expanded(),
-                    Reference.Direction.INVERSE
-                ));
-
-                UaMethodNode methodNode = b.buildAndAdd();
-
-                SqrtMethod sqrtMethod = new SqrtMethod(methodNode);
-                methodNode.setInputArguments(sqrtMethod.getInputArguments());
-                methodNode.setOutputArguments(sqrtMethod.getOutputArguments());
-                methodNode.setInvocationHandler(sqrtMethod);
-
-                return methodNode;
+              }
             });
 
-            UaMethodNode.build(getNodeContext(), b -> {
-                b.setNodeId(newNodeId("sqrt2(x)"));
-                b.setBrowseName(newQualifiedName("sqrt2(x)"));
-                b.setDisplayName(LocalizedText.english("sqrt2(x)"));
+    getLifecycleManager()
+        .addStartupTask(
+            () -> {
+              UaMethodNode.build(
+                  getNodeContext(),
+                  b -> {
+                    b.setNodeId(newNodeId("sqrt(x)"));
+                    b.setBrowseName(newQualifiedName("sqrt(x)"));
+                    b.setDisplayName(LocalizedText.english("sqrt(x)"));
 
-                b.addReference(new Reference(
-                    b.getNodeId(),
-                    NodeIds.HasOrderedComponent,
-                    NodeIds.ObjectsFolder.expanded(),
-                    Reference.Direction.INVERSE
-                ));
+                    b.addReference(
+                        new Reference(
+                            b.getNodeId(),
+                            NodeIds.HasComponent,
+                            NodeIds.ObjectsFolder.expanded(),
+                            Reference.Direction.INVERSE));
 
-                UaMethodNode methodNode = b.buildAndAdd();
+                    UaMethodNode methodNode = b.buildAndAdd();
 
-                SqrtMethod sqrtMethod = new SqrtMethod(methodNode);
-                methodNode.setInputArguments(sqrtMethod.getInputArguments());
-                methodNode.setOutputArguments(sqrtMethod.getOutputArguments());
-                methodNode.setInvocationHandler(sqrtMethod);
+                    SqrtMethod sqrtMethod = new SqrtMethod(methodNode);
+                    methodNode.setInputArguments(sqrtMethod.getInputArguments());
+                    methodNode.setOutputArguments(sqrtMethod.getOutputArguments());
+                    methodNode.setInvocationHandler(sqrtMethod);
 
-                return methodNode;
-            });
+                    return methodNode;
+                  });
 
-            UaMethodNode.build(getNodeContext(), b -> {
-                b.setNodeId(newNodeId("hasNoInputsOrOutputs()"));
-                b.setBrowseName(newQualifiedName("hasNoInputsOrOutputs()"));
-                b.setDisplayName(LocalizedText.english("hasNoInputsOrOutputs()"));
+              UaMethodNode.build(
+                  getNodeContext(),
+                  b -> {
+                    b.setNodeId(newNodeId("sqrt2(x)"));
+                    b.setBrowseName(newQualifiedName("sqrt2(x)"));
+                    b.setDisplayName(LocalizedText.english("sqrt2(x)"));
 
-                b.addReference(new Reference(
-                    b.getNodeId(),
-                    NodeIds.HasOrderedComponent,
-                    NodeIds.ObjectsFolder.expanded(),
-                    Reference.Direction.INVERSE
-                ));
+                    b.addReference(
+                        new Reference(
+                            b.getNodeId(),
+                            NodeIds.HasOrderedComponent,
+                            NodeIds.ObjectsFolder.expanded(),
+                            Reference.Direction.INVERSE));
 
-                UaMethodNode methodNode = b.buildAndAdd();
+                    UaMethodNode methodNode = b.buildAndAdd();
 
-                methodNode.setInvocationHandler(new AbstractMethodInvocationHandler(methodNode) {
-                    @Override
-                    public Argument[] getInputArguments() {
-                        return new Argument[0];
-                    }
+                    SqrtMethod sqrtMethod = new SqrtMethod(methodNode);
+                    methodNode.setInputArguments(sqrtMethod.getInputArguments());
+                    methodNode.setOutputArguments(sqrtMethod.getOutputArguments());
+                    methodNode.setInvocationHandler(sqrtMethod);
 
-                    @Override
-                    public Argument[] getOutputArguments() {
-                        return new Argument[0];
-                    }
+                    return methodNode;
+                  });
 
-                    @Override
-                    protected Variant[] invoke(InvocationContext invocationContext, Variant[] inputValues) {
-                        return new Variant[0];
-                    }
-                });
+              UaMethodNode.build(
+                  getNodeContext(),
+                  b -> {
+                    b.setNodeId(newNodeId("hasNoInputsOrOutputs()"));
+                    b.setBrowseName(newQualifiedName("hasNoInputsOrOutputs()"));
+                    b.setDisplayName(LocalizedText.english("hasNoInputsOrOutputs()"));
 
-                return methodNode;
-            });
+                    b.addReference(
+                        new Reference(
+                            b.getNodeId(),
+                            NodeIds.HasOrderedComponent,
+                            NodeIds.ObjectsFolder.expanded(),
+                            Reference.Direction.INVERSE));
 
-            UaMethodNode.build(getNodeContext(), b -> {
-                b.setNodeId(newNodeId("onlyAcceptsPositiveInputs()"));
-                b.setBrowseName(newQualifiedName("onlyAcceptsPositiveInputs()"));
-                b.setDisplayName(LocalizedText.english("onlyAcceptsPositiveInputs()"));
+                    UaMethodNode methodNode = b.buildAndAdd();
 
-                b.addReference(new Reference(
-                    b.getNodeId(),
-                    NodeIds.HasOrderedComponent,
-                    NodeIds.ObjectsFolder.expanded(),
-                    Reference.Direction.INVERSE
-                ));
+                    methodNode.setInvocationHandler(
+                        new AbstractMethodInvocationHandler(methodNode) {
+                          @Override
+                          public Argument[] getInputArguments() {
+                            return new Argument[0];
+                          }
 
-                UaMethodNode methodNode = b.buildAndAdd();
+                          @Override
+                          public Argument[] getOutputArguments() {
+                            return new Argument[0];
+                          }
 
-                methodNode.setInvocationHandler(new AbstractMethodInvocationHandler(methodNode) {
-                    @Override
-                    public Argument[] getInputArguments() {
-                        return new Argument[]{
-                            new Argument(
-                                "i",
-                                NodeIds.Int32,
-                                ValueRanks.Scalar,
-                                null,
-                                LocalizedText.NULL_VALUE)
-                        };
-                    }
+                          @Override
+                          protected Variant[] invoke(
+                              InvocationContext invocationContext, Variant[] inputValues) {
+                            return new Variant[0];
+                          }
+                        });
 
-                    @Override
-                    public Argument[] getOutputArguments() {
-                        return new Argument[0];
-                    }
+                    return methodNode;
+                  });
 
-                    @Override
-                    protected void validateInputArgumentValues(
-                        Variant[] inputArgumentValues
-                    ) throws InvalidArgumentException {
+              UaMethodNode.build(
+                  getNodeContext(),
+                  b -> {
+                    b.setNodeId(newNodeId("onlyAcceptsPositiveInputs()"));
+                    b.setBrowseName(newQualifiedName("onlyAcceptsPositiveInputs()"));
+                    b.setDisplayName(LocalizedText.english("onlyAcceptsPositiveInputs()"));
 
-                        int i = (int) inputArgumentValues[0].getValue();
+                    b.addReference(
+                        new Reference(
+                            b.getNodeId(),
+                            NodeIds.HasOrderedComponent,
+                            NodeIds.ObjectsFolder.expanded(),
+                            Reference.Direction.INVERSE));
 
-                        if (i < 0) {
-                            StatusCode[] inputArgumentResults = {
-                                new StatusCode(StatusCodes.Bad_OutOfRange)
+                    UaMethodNode methodNode = b.buildAndAdd();
+
+                    methodNode.setInvocationHandler(
+                        new AbstractMethodInvocationHandler(methodNode) {
+                          @Override
+                          public Argument[] getInputArguments() {
+                            return new Argument[] {
+                              new Argument(
+                                  "i",
+                                  NodeIds.Int32,
+                                  ValueRanks.Scalar,
+                                  null,
+                                  LocalizedText.NULL_VALUE)
                             };
+                          }
 
-                            throw new InvalidArgumentException(inputArgumentResults);
-                        }
-                    }
+                          @Override
+                          public Argument[] getOutputArguments() {
+                            return new Argument[0];
+                          }
 
-                    @Override
-                    protected Variant[] invoke(InvocationContext invocationContext, Variant[] inputValues) {
-                        return new Variant[0];
-                    }
-                });
+                          @Override
+                          protected void validateInputArgumentValues(Variant[] inputArgumentValues)
+                              throws InvalidArgumentException {
 
-                return methodNode;
+                            int i = (int) inputArgumentValues[0].getValue();
+
+                            if (i < 0) {
+                              StatusCode[] inputArgumentResults = {
+                                new StatusCode(StatusCodes.Bad_OutOfRange)
+                              };
+
+                              throw new InvalidArgumentException(inputArgumentResults);
+                            }
+                          }
+
+                          @Override
+                          protected Variant[] invoke(
+                              InvocationContext invocationContext, Variant[] inputValues) {
+                            return new Variant[0];
+                          }
+                        });
+
+                    return methodNode;
+                  });
+
+              UaMethodNode.build(
+                  getNodeContext(),
+                  b -> {
+                    b.setNodeId(newNodeId("scalarAbstractTypeEcho()"));
+                    b.setBrowseName(newQualifiedName("scalarAbstractTypeEcho()"));
+                    b.setDisplayName(LocalizedText.english("scalarAbstractTypeEcho()"));
+
+                    b.addReference(
+                        new Reference(
+                            b.getNodeId(),
+                            NodeIds.HasOrderedComponent,
+                            NodeIds.ObjectsFolder.expanded(),
+                            Reference.Direction.INVERSE));
+
+                    UaMethodNode methodNode = b.buildAndAdd();
+                    methodNode.setInvocationHandler(new ScalarAbstractTypeMethod(methodNode));
+
+                    return methodNode;
+                  });
+
+              UaMethodNode.build(
+                  getNodeContext(),
+                  b -> {
+                    b.setNodeId(newNodeId("scalarSimpleTypeEcho()"));
+                    b.setBrowseName(newQualifiedName("scalarSimpleTypeEcho()"));
+                    b.setDisplayName(LocalizedText.english("scalarSimpleTypeEcho()"));
+
+                    b.addReference(
+                        new Reference(
+                            b.getNodeId(),
+                            NodeIds.HasOrderedComponent,
+                            NodeIds.ObjectsFolder.expanded(),
+                            Reference.Direction.INVERSE));
+
+                    UaMethodNode methodNode = b.buildAndAdd();
+                    methodNode.setInvocationHandler(new ScalarSimpleTypeMethod(methodNode));
+
+                    return methodNode;
+                  });
+
+              UaMethodNode.build(
+                  getNodeContext(),
+                  b -> {
+                    b.setNodeId(newNodeId("scalarStructureEcho()"));
+                    b.setBrowseName(newQualifiedName("scalarStructureEcho()"));
+                    b.setDisplayName(LocalizedText.english("scalarStructureEcho()"));
+
+                    b.addReference(
+                        new Reference(
+                            b.getNodeId(),
+                            NodeIds.HasOrderedComponent,
+                            NodeIds.ObjectsFolder.expanded(),
+                            Reference.Direction.INVERSE));
+
+                    UaMethodNode methodNode = b.buildAndAdd();
+                    methodNode.setInvocationHandler(new ScalarStructureMethod(methodNode));
+
+                    return methodNode;
+                  });
+
+              UaMethodNode.build(
+                  getNodeContext(),
+                  b -> {
+                    b.setNodeId(newNodeId("scalarAbstractStructureEcho()"));
+                    b.setBrowseName(newQualifiedName("scalarAbstractStructureEcho()"));
+                    b.setDisplayName(LocalizedText.english("scalarAbstractStructureEcho()"));
+
+                    b.addReference(
+                        new Reference(
+                            b.getNodeId(),
+                            NodeIds.HasOrderedComponent,
+                            NodeIds.ObjectsFolder.expanded(),
+                            Reference.Direction.INVERSE));
+
+                    UaMethodNode methodNode = b.buildAndAdd();
+                    methodNode.setInvocationHandler(new ScalarAbstractStructureMethod(methodNode));
+
+                    return methodNode;
+                  });
             });
 
-            UaMethodNode.build(getNodeContext(), b -> {
-                b.setNodeId(newNodeId("scalarAbstractTypeEcho()"));
-                b.setBrowseName(newQualifiedName("scalarAbstractTypeEcho()"));
-                b.setDisplayName(LocalizedText.english("scalarAbstractTypeEcho()"));
-
-                b.addReference(new Reference(
-                    b.getNodeId(),
-                    NodeIds.HasOrderedComponent,
-                    NodeIds.ObjectsFolder.expanded(),
-                    Reference.Direction.INVERSE
-                ));
-
-                UaMethodNode methodNode = b.buildAndAdd();
-                methodNode.setInvocationHandler(new ScalarAbstractTypeMethod(methodNode));
-
-                return methodNode;
-            });
-
-            UaMethodNode.build(getNodeContext(), b -> {
-                b.setNodeId(newNodeId("scalarSimpleTypeEcho()"));
-                b.setBrowseName(newQualifiedName("scalarSimpleTypeEcho()"));
-                b.setDisplayName(LocalizedText.english("scalarSimpleTypeEcho()"));
-
-                b.addReference(new Reference(
-                    b.getNodeId(),
-                    NodeIds.HasOrderedComponent,
-                    NodeIds.ObjectsFolder.expanded(),
-                    Reference.Direction.INVERSE
-                ));
-
-                UaMethodNode methodNode = b.buildAndAdd();
-                methodNode.setInvocationHandler(new ScalarSimpleTypeMethod(methodNode));
-
-                return methodNode;
-            });
-
-            UaMethodNode.build(getNodeContext(), b -> {
-                b.setNodeId(newNodeId("scalarStructureEcho()"));
-                b.setBrowseName(newQualifiedName("scalarStructureEcho()"));
-                b.setDisplayName(LocalizedText.english("scalarStructureEcho()"));
-
-                b.addReference(new Reference(
-                    b.getNodeId(),
-                    NodeIds.HasOrderedComponent,
-                    NodeIds.ObjectsFolder.expanded(),
-                    Reference.Direction.INVERSE
-                ));
-
-                UaMethodNode methodNode = b.buildAndAdd();
-                methodNode.setInvocationHandler(new ScalarStructureMethod(methodNode));
-
-                return methodNode;
-            });
-
-            UaMethodNode.build(getNodeContext(), b -> {
-                b.setNodeId(newNodeId("scalarAbstractStructureEcho()"));
-                b.setBrowseName(newQualifiedName("scalarAbstractStructureEcho()"));
-                b.setDisplayName(LocalizedText.english("scalarAbstractStructureEcho()"));
-
-                b.addReference(new Reference(
-                    b.getNodeId(),
-                    NodeIds.HasOrderedComponent,
-                    NodeIds.ObjectsFolder.expanded(),
-                    Reference.Direction.INVERSE
-                ));
-
-                UaMethodNode methodNode = b.buildAndAdd();
-                methodNode.setInvocationHandler(new ScalarAbstractStructureMethod(methodNode));
-
-                return methodNode;
-            });
-        });
-
-        getLifecycleManager().addStartupTask(() -> {
-            try {
+    getLifecycleManager()
+        .addStartupTask(
+            () -> {
+              try {
                 registerMatrixTestType();
 
-                UaVariableNode node = new UaVariableNode.UaVariableNodeBuilder(getNodeContext())
-                    .setNodeId(newNodeId("MatrixTestTypeValue"))
-                    .setAccessLevel(AccessLevel.READ_WRITE)
-                    .setUserAccessLevel(AccessLevel.READ_WRITE)
-                    .setBrowseName(newQualifiedName("MatrixTestTypeValue"))
-                    .setDisplayName(LocalizedText.english("MatrixTestTypeValue"))
-                    .setDataType(MatrixTestType.TYPE_ID.toNodeIdOrThrow(server.getNamespaceTable()))
-                    .setTypeDefinition(NodeIds.BaseDataVariableType)
-                    .setRolePermissions(new RolePermissionType[]{
-                        new RolePermissionType(newNodeId("roleId"), new PermissionType(uint(0)))
-                    })
-                    .setUserRolePermissions(new RolePermissionType[]{
-                        new RolePermissionType(newNodeId("roleId"), new PermissionType(uint(0)))
-                    })
-                    .setAccessRestrictions(new AccessRestrictionType(ushort(0)))
-                    .build();
+                UaVariableNode node =
+                    new UaVariableNode.UaVariableNodeBuilder(getNodeContext())
+                        .setNodeId(newNodeId("MatrixTestTypeValue"))
+                        .setAccessLevel(AccessLevel.READ_WRITE)
+                        .setUserAccessLevel(AccessLevel.READ_WRITE)
+                        .setBrowseName(newQualifiedName("MatrixTestTypeValue"))
+                        .setDisplayName(LocalizedText.english("MatrixTestTypeValue"))
+                        .setDataType(
+                            MatrixTestType.TYPE_ID.toNodeIdOrThrow(server.getNamespaceTable()))
+                        .setTypeDefinition(NodeIds.BaseDataVariableType)
+                        .setRolePermissions(
+                            new RolePermissionType[] {
+                              new RolePermissionType(
+                                  newNodeId("roleId"), new PermissionType(uint(0)))
+                            })
+                        .setUserRolePermissions(
+                            new RolePermissionType[] {
+                              new RolePermissionType(
+                                  newNodeId("roleId"), new PermissionType(uint(0)))
+                            })
+                        .setAccessRestrictions(new AccessRestrictionType(ushort(0)))
+                        .build();
 
-                MatrixTestType value = new MatrixTestType(
-                    new Integer[][]{
-                        new Integer[]{0, 1},
-                        new Integer[]{2, 3}
-                    },
-                    new ApplicationType[][]{
-                        new ApplicationType[]{ApplicationType.Server, ApplicationType.Client},
-                        new ApplicationType[]{ApplicationType.ClientAndServer, ApplicationType.DiscoveryServer}
-                    },
-                    new XVType[][]{
-                        new XVType[]{new XVType(0.0d, 1.0f), new XVType(2.0d, 3.0f)},
-                        new XVType[]{new XVType(4.0d, 5.0f), new XVType(6.0d, 7.0f)}
-                    }
-                );
+                MatrixTestType value =
+                    new MatrixTestType(
+                        new Integer[][] {
+                          new Integer[] {0, 1},
+                          new Integer[] {2, 3}
+                        },
+                        new ApplicationType[][] {
+                          new ApplicationType[] {ApplicationType.Server, ApplicationType.Client},
+                          new ApplicationType[] {
+                            ApplicationType.ClientAndServer, ApplicationType.DiscoveryServer
+                          }
+                        },
+                        new XVType[][] {
+                          new XVType[] {new XVType(0.0d, 1.0f), new XVType(2.0d, 3.0f)},
+                          new XVType[] {new XVType(4.0d, 5.0f), new XVType(6.0d, 7.0f)}
+                        });
 
                 node.setValue(new DataValue(new Variant(value)));
 
-                node.addReference(new Reference(
-                    node.getNodeId(),
-                    NodeIds.HasComponent,
-                    NodeIds.ObjectsFolder.expanded(),
-                    Reference.Direction.INVERSE
-                ));
+                node.addReference(
+                    new Reference(
+                        node.getNodeId(),
+                        NodeIds.HasComponent,
+                        NodeIds.ObjectsFolder.expanded(),
+                        Reference.Direction.INVERSE));
 
                 getNodeManager().addNode(node);
-            } catch (Exception e) {
+              } catch (Exception e) {
                 throw new RuntimeException(e);
-            }
-        });
-    }
+              }
+            });
+  }
 
-    private void startBogusEventNotifier() {
-        // Set the EventNotifier bit on Server Node for Events.
-        UaNode serverNode = getServer()
-            .getAddressSpaceManager()
-            .getManagedNode(NodeIds.Server)
-            .orElse(null);
+  private void startBogusEventNotifier() {
+    // Set the EventNotifier bit on Server Node for Events.
+    UaNode serverNode =
+        getServer().getAddressSpaceManager().getManagedNode(NodeIds.Server).orElse(null);
 
-        if (serverNode instanceof ServerTypeNode) {
-            ((ServerTypeNode) serverNode).setEventNotifier(ubyte(1));
+    if (serverNode instanceof ServerTypeNode) {
+      ((ServerTypeNode) serverNode).setEventNotifier(ubyte(1));
 
-            // Post a bogus Event every couple seconds
-            eventThread = new Thread(() -> {
+      // Post a bogus Event every couple seconds
+      eventThread =
+          new Thread(
+              () -> {
                 try {
-                    Thread.sleep(2_000);
+                  Thread.sleep(2_000);
                 } catch (InterruptedException ignored) {
-                    // ignored
+                  // ignored
                 }
 
                 while (keepPostingEvents) {
-                    try {
-                        BaseEventTypeNode eventNode = getServer().getEventFactory().createEvent(
-                            newNodeId(UUID.randomUUID()),
-                            NodeIds.BaseEventType
-                        );
+                  try {
+                    BaseEventTypeNode eventNode =
+                        getServer()
+                            .getEventFactory()
+                            .createEvent(newNodeId(UUID.randomUUID()), NodeIds.BaseEventType);
 
-                        eventNode.setBrowseName(new QualifiedName(1, "foo"));
-                        eventNode.setDisplayName(LocalizedText.english("foo"));
-                        eventNode.setEventId(ByteString.of(new byte[]{0, 1, 2, 3}));
-                        eventNode.setEventType(NodeIds.BaseEventType);
-                        eventNode.setSourceNode(serverNode.getNodeId());
-                        eventNode.setSourceName(serverNode.getDisplayName().getText());
-                        eventNode.setTime(DateTime.now());
-                        eventNode.setReceiveTime(DateTime.NULL_VALUE);
-                        eventNode.setMessage(LocalizedText.english("event message!"));
-                        eventNode.setSeverity(ushort(2));
+                    eventNode.setBrowseName(new QualifiedName(1, "foo"));
+                    eventNode.setDisplayName(LocalizedText.english("foo"));
+                    eventNode.setEventId(ByteString.of(new byte[] {0, 1, 2, 3}));
+                    eventNode.setEventType(NodeIds.BaseEventType);
+                    eventNode.setSourceNode(serverNode.getNodeId());
+                    eventNode.setSourceName(serverNode.getDisplayName().getText());
+                    eventNode.setTime(DateTime.now());
+                    eventNode.setReceiveTime(DateTime.NULL_VALUE);
+                    eventNode.setMessage(LocalizedText.english("event message!"));
+                    eventNode.setSeverity(ushort(2));
 
-                        getServer().getEventNotifier().fire(eventNode);
+                    getServer().getEventNotifier().fire(eventNode);
 
-                        eventNode.delete();
-                    } catch (Throwable e) {
-                        logger.error("Error creating EventNode: {}", e.getMessage(), e);
-                    }
+                    eventNode.delete();
+                  } catch (Throwable e) {
+                    logger.error("Error creating EventNode: {}", e.getMessage(), e);
+                  }
 
-                    try {
-                        //noinspection BusyWait
-                        Thread.sleep(2_000);
-                    } catch (InterruptedException ignored) {
-                        // ignored
-                    }
+                  try {
+                    //noinspection BusyWait
+                    Thread.sleep(2_000);
+                  } catch (InterruptedException ignored) {
+                    // ignored
+                  }
                 }
-            }, "bogus-event-poster");
+              },
+              "bogus-event-poster");
 
-            eventThread.start();
-        }
+      eventThread.start();
     }
+  }
 
-    private void registerMatrixTestType() throws Exception {
-        // Get the NodeId for the DataType and encoding Nodes.
-        NodeId dataTypeId = MatrixTestType.TYPE_ID.toNodeIdOrThrow(getServer().getNamespaceTable());
-        NodeId binaryEncodingId = MatrixTestType.BINARY_ENCODING_ID.toNodeIdOrThrow(getServer().getNamespaceTable());
-        NodeId jsonEncodingId = MatrixTestType.JSON_ENCODING_ID.toNodeIdOrThrow(getServer().getNamespaceTable());
+  private void registerMatrixTestType() throws Exception {
+    // Get the NodeId for the DataType and encoding Nodes.
+    NodeId dataTypeId = MatrixTestType.TYPE_ID.toNodeIdOrThrow(getServer().getNamespaceTable());
+    NodeId binaryEncodingId =
+        MatrixTestType.BINARY_ENCODING_ID.toNodeIdOrThrow(getServer().getNamespaceTable());
+    NodeId jsonEncodingId =
+        MatrixTestType.JSON_ENCODING_ID.toNodeIdOrThrow(getServer().getNamespaceTable());
 
-        // Add a custom DataTypeNode with a SubtypeOf reference to Structure
-        UaDataTypeNode dataTypeNode = new UaDataTypeNode(
+    // Add a custom DataTypeNode with a SubtypeOf reference to Structure
+    UaDataTypeNode dataTypeNode =
+        new UaDataTypeNode(
             getNodeContext(),
             dataTypeId,
             newQualifiedName("MatrixTestType"),
@@ -483,75 +529,68 @@ public class TestNamespace extends ManagedNamespaceWithLifecycle {
             LocalizedText.NULL_VALUE,
             uint(0),
             uint(0),
-            false
-        );
+            false);
 
-        dataTypeNode.addReference(new Reference(
+    dataTypeNode.addReference(
+        new Reference(
             dataTypeId,
             NodeIds.HasSubtype,
             NodeIds.Structure.expanded(),
-            Reference.Direction.INVERSE
-        ));
+            Reference.Direction.INVERSE));
 
-        getNodeManager().addNode(dataTypeNode);
+    getNodeManager().addNode(dataTypeNode);
 
-        // Add encoding nodes
-        addEncodingNode(dataTypeId, binaryEncodingId, DataTypeEncoding.BINARY_ENCODING_NAME);
-        addEncodingNode(dataTypeId, jsonEncodingId, DataTypeEncoding.JSON_ENCODING_NAME);
+    // Add encoding nodes
+    addEncodingNode(dataTypeId, binaryEncodingId, DataTypeEncoding.BINARY_ENCODING_NAME);
+    addEncodingNode(dataTypeId, jsonEncodingId, DataTypeEncoding.JSON_ENCODING_NAME);
 
-        // Define the structure
-        StructureField[] fields = new StructureField[]{
-            new StructureField(
-                "BuiltinMatrix",
-                LocalizedText.NULL_VALUE,
-                NodeIds.Int32,
-                2,
-                new UInteger[]{uint(2), uint(2)},
-                getServer().getConfig().getLimits().getMaxStringLength(),
-                false
-            ),
-            new StructureField(
-                "EnumMatrix",
-                LocalizedText.NULL_VALUE,
-                NodeIds.ApplicationType,
-                2,
-                new UInteger[]{uint(2), uint(2)},
-                getServer().getConfig().getLimits().getMaxStringLength(),
-                false
-            ),
-            new StructureField(
-                "StructMatrix",
-                LocalizedText.NULL_VALUE,
-                NodeIds.XVType,
-                2,
-                new UInteger[]{uint(2), uint(2)},
-                uint(0),
-                false
-            )
+    // Define the structure
+    StructureField[] fields =
+        new StructureField[] {
+          new StructureField(
+              "BuiltinMatrix",
+              LocalizedText.NULL_VALUE,
+              NodeIds.Int32,
+              2,
+              new UInteger[] {uint(2), uint(2)},
+              getServer().getConfig().getLimits().getMaxStringLength(),
+              false),
+          new StructureField(
+              "EnumMatrix",
+              LocalizedText.NULL_VALUE,
+              NodeIds.ApplicationType,
+              2,
+              new UInteger[] {uint(2), uint(2)},
+              getServer().getConfig().getLimits().getMaxStringLength(),
+              false),
+          new StructureField(
+              "StructMatrix",
+              LocalizedText.NULL_VALUE,
+              NodeIds.XVType,
+              2,
+              new UInteger[] {uint(2), uint(2)},
+              uint(0),
+              false)
         };
 
-        StructureDefinition definition = new StructureDefinition(
-            binaryEncodingId,
-            NodeIds.Structure,
-            StructureType.Structure,
-            fields
-        );
+    StructureDefinition definition =
+        new StructureDefinition(
+            binaryEncodingId, NodeIds.Structure, StructureType.Structure, fields);
 
-        // Populate the OPC UA 1.04+ DataTypeDefinition attribute
-        dataTypeNode.setDataTypeDefinition(definition);
+    // Populate the OPC UA 1.04+ DataTypeDefinition attribute
+    dataTypeNode.setDataTypeDefinition(definition);
 
-        // Register Codecs for each supported encoding with DataTypeManager
-        getNodeContext().getServer().getDataTypeManager().registerType(
-            dataTypeId,
-            new MatrixTestType.Codec(),
-            binaryEncodingId,
-            null,
-            jsonEncodingId
-        );
-    }
+    // Register Codecs for each supported encoding with DataTypeManager
+    getNodeContext()
+        .getServer()
+        .getDataTypeManager()
+        .registerType(
+            dataTypeId, new MatrixTestType.Codec(), binaryEncodingId, null, jsonEncodingId);
+  }
 
-    private void addEncodingNode(NodeId dataTypeId, NodeId encodingId, QualifiedName encodingName) {
-        DataTypeEncodingTypeNode dataTypeEncodingNode = new DataTypeEncodingTypeNode(
+  private void addEncodingNode(NodeId dataTypeId, NodeId encodingId, QualifiedName encodingName) {
+    DataTypeEncodingTypeNode dataTypeEncodingNode =
+        new DataTypeEncodingTypeNode(
             getNodeContext(),
             encodingId,
             encodingName,
@@ -561,162 +600,127 @@ public class TestNamespace extends ManagedNamespaceWithLifecycle {
             uint(0),
             null,
             null,
-            null
-        );
+            null);
 
-        dataTypeEncodingNode.addReference(new Reference(
+    dataTypeEncodingNode.addReference(
+        new Reference(
             dataTypeEncodingNode.getNodeId(),
             NodeIds.HasTypeDefinition,
             NodeIds.DataTypeEncodingType.expanded(),
-            Reference.Direction.FORWARD
-        ));
+            Reference.Direction.FORWARD));
 
-        dataTypeEncodingNode.addReference(new Reference(
+    dataTypeEncodingNode.addReference(
+        new Reference(
             dataTypeEncodingNode.getNodeId(),
             NodeIds.HasEncoding,
             dataTypeId.expanded(),
-            Reference.Direction.INVERSE
-        ));
+            Reference.Direction.INVERSE));
 
-        getNodeManager().addNode(dataTypeEncodingNode);
+    getNodeManager().addNode(dataTypeEncodingNode);
+  }
+
+  @Override
+  public void onDataItemsCreated(List<DataItem> dataItems) {}
+
+  @Override
+  public void onDataItemsModified(List<DataItem> dataItems) {}
+
+  @Override
+  public void onDataItemsDeleted(List<DataItem> dataItems) {}
+
+  @Override
+  public void onMonitoringModeChanged(List<MonitoredItem> monitoredItems) {}
+
+  public void configure(BiConsumer<UaNodeContext, UaNodeManager> consumer) {
+    consumer.accept(getNodeContext(), getNodeManager());
+  }
+
+  static class ScalarAbstractTypeMethod extends AbstractEchoMethod {
+
+    public ScalarAbstractTypeMethod(UaMethodNode node) {
+      super(node);
     }
 
     @Override
-    public void onDataItemsCreated(List<DataItem> dataItems) {
+    protected Argument getInputArgument() {
+      return new Argument(
+          "Input", NodeIds.Number, ValueRanks.Scalar, null, LocalizedText.NULL_VALUE);
+    }
+  }
 
+  static class ScalarSimpleTypeMethod extends AbstractEchoMethod {
+
+    public ScalarSimpleTypeMethod(UaMethodNode node) {
+      super(node);
     }
 
     @Override
-    public void onDataItemsModified(List<DataItem> dataItems) {
+    protected Argument getInputArgument() {
+      return new Argument(
+          "Input", NodeIds.Duration, ValueRanks.Scalar, null, LocalizedText.NULL_VALUE);
+    }
+  }
 
+  static class ScalarStructureMethod extends AbstractEchoMethod {
+
+    public ScalarStructureMethod(UaMethodNode node) {
+      super(node);
     }
 
     @Override
-    public void onDataItemsDeleted(List<DataItem> dataItems) {
+    protected Argument getInputArgument() {
+      return new Argument(
+          "Input", NodeIds.XVType, ValueRanks.Scalar, null, LocalizedText.NULL_VALUE);
+    }
+  }
 
+  static class ScalarAbstractStructureMethod extends AbstractEchoMethod {
+
+    public ScalarAbstractStructureMethod(UaMethodNode node) {
+      super(node);
     }
 
     @Override
-    public void onMonitoringModeChanged(List<MonitoredItem> monitoredItems) {
+    protected Argument getInputArgument() {
+      return new Argument(
+          "Input", NodeIds.Structure, ValueRanks.Scalar, null, LocalizedText.NULL_VALUE);
+    }
+  }
 
+  abstract static class AbstractEchoMethod extends AbstractMethodInvocationHandler {
+
+    /**
+     * @param node the {@link UaMethodNode} this handler will be installed on.
+     */
+    public AbstractEchoMethod(UaMethodNode node) {
+      super(node);
     }
 
-    public void configure(BiConsumer<UaNodeContext, UaNodeManager> consumer) {
-        consumer.accept(getNodeContext(), getNodeManager());
+    @Override
+    public Argument[] getInputArguments() {
+      return new Argument[] {getInputArgument()};
     }
 
-    static class ScalarAbstractTypeMethod extends AbstractEchoMethod {
+    @Override
+    public Argument[] getOutputArguments() {
+      Argument inputArgument = getInputArgument();
 
-        public ScalarAbstractTypeMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        protected Argument getInputArgument() {
-            return new Argument(
-                "Input",
-                NodeIds.Number,
-                ValueRanks.Scalar,
-                null,
-                LocalizedText.NULL_VALUE
-            );
-        }
-
+      return new Argument[] {
+        new Argument(
+            "Output",
+            inputArgument.getDataType(),
+            inputArgument.getValueRank(),
+            inputArgument.getArrayDimensions(),
+            LocalizedText.english("Echo of the input argument."))
+      };
     }
 
-    static class ScalarSimpleTypeMethod extends AbstractEchoMethod {
-
-        public ScalarSimpleTypeMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        protected Argument getInputArgument() {
-            return new Argument(
-                "Input",
-                NodeIds.Duration,
-                ValueRanks.Scalar,
-                null,
-                LocalizedText.NULL_VALUE
-            );
-        }
-
+    @Override
+    protected Variant[] invoke(InvocationContext invocationContext, Variant[] inputValues)
+        throws UaException {
+      return new Variant[] {inputValues[0]};
     }
 
-    static class ScalarStructureMethod extends AbstractEchoMethod {
-
-        public ScalarStructureMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        protected Argument getInputArgument() {
-            return new Argument(
-                "Input",
-                NodeIds.XVType,
-                ValueRanks.Scalar,
-                null,
-                LocalizedText.NULL_VALUE
-            );
-        }
-
-    }
-
-    static class ScalarAbstractStructureMethod extends AbstractEchoMethod {
-
-        public ScalarAbstractStructureMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        protected Argument getInputArgument() {
-            return new Argument(
-                "Input",
-                NodeIds.Structure,
-                ValueRanks.Scalar,
-                null,
-                LocalizedText.NULL_VALUE
-            );
-        }
-
-    }
-
-    static abstract class AbstractEchoMethod extends AbstractMethodInvocationHandler {
-
-        /**
-         * @param node the {@link UaMethodNode} this handler will be installed on.
-         */
-        public AbstractEchoMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return new Argument[]{getInputArgument()};
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            Argument inputArgument = getInputArgument();
-
-            return new Argument[]{
-                new Argument(
-                    "Output",
-                    inputArgument.getDataType(),
-                    inputArgument.getValueRank(),
-                    inputArgument.getArrayDimensions(),
-                    LocalizedText.english("Echo of the input argument.")
-                )
-            };
-        }
-
-        @Override
-        protected Variant[] invoke(InvocationContext invocationContext, Variant[] inputValues) throws UaException {
-            return new Variant[]{inputValues[0]};
-        }
-
-        protected abstract Argument getInputArgument();
-
-    }
-
+    protected abstract Argument getInputArgument();
+  }
 }

@@ -10,10 +10,12 @@
 
 package org.eclipse.milo.opcua.sdk.server.servicesets.impl;
 
+import static org.eclipse.milo.opcua.sdk.core.util.GroupMapCollate.groupMapCollate;
+import static org.eclipse.milo.opcua.sdk.server.servicesets.AbstractServiceSet.createResponseHeader;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
 import org.eclipse.milo.opcua.sdk.server.AddressSpace.CallContext;
 import org.eclipse.milo.opcua.sdk.server.DiagnosticsContext;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
@@ -31,79 +33,75 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ResponseHeader;
 import org.eclipse.milo.opcua.stack.core.util.Lists;
 import org.eclipse.milo.opcua.stack.transport.server.ServiceRequestContext;
 
-import static org.eclipse.milo.opcua.sdk.core.util.GroupMapCollate.groupMapCollate;
-import static org.eclipse.milo.opcua.sdk.server.servicesets.AbstractServiceSet.createResponseHeader;
-
 public class DefaultMethodServiceSet implements MethodServiceSet {
 
-    private final OpcUaServer server;
+  private final OpcUaServer server;
 
-    public DefaultMethodServiceSet(OpcUaServer server) {
-        this.server = server;
+  public DefaultMethodServiceSet(OpcUaServer server) {
+    this.server = server;
+  }
+
+  @Override
+  public CallResponse onCall(ServiceRequestContext context, CallRequest request)
+      throws UaException {
+    Session session = server.getSessionManager().getSession(context, request.getRequestHeader());
+
+    try {
+      return call(request, session);
+    } catch (UaException e) {
+      session.getSessionDiagnostics().getCallCount().incrementErrorCount();
+      session.getSessionDiagnostics().getTotalRequestCount().incrementErrorCount();
+
+      throw e;
+    } finally {
+      session.getSessionDiagnostics().getCallCount().incrementTotalCount();
+      session.getSessionDiagnostics().getTotalRequestCount().incrementTotalCount();
+    }
+  }
+
+  private CallResponse call(CallRequest request, Session session) throws UaException {
+    List<CallMethodRequest> methodsToCall = Lists.ofNullable(request.getMethodsToCall());
+
+    if (methodsToCall.isEmpty()) {
+      throw new UaException(StatusCodes.Bad_NothingToDo);
     }
 
-    @Override
-    public CallResponse onCall(ServiceRequestContext context, CallRequest request) throws UaException {
-        Session session = server.getSessionManager()
-            .getSession(context, request.getRequestHeader());
-
-        try {
-            return call(request, session);
-        } catch (UaException e) {
-            session.getSessionDiagnostics().getCallCount().incrementErrorCount();
-            session.getSessionDiagnostics().getTotalRequestCount().incrementErrorCount();
-
-            throw e;
-        } finally {
-            session.getSessionDiagnostics().getCallCount().incrementTotalCount();
-            session.getSessionDiagnostics().getTotalRequestCount().incrementTotalCount();
-        }
+    if (methodsToCall.size()
+        > server.getConfig().getLimits().getMaxNodesPerMethodCall().longValue()) {
+      throw new UaException(StatusCodes.Bad_TooManyOperations);
     }
 
-    private CallResponse call(CallRequest request, Session session) throws UaException {
-        List<CallMethodRequest> methodsToCall = Lists.ofNullable(request.getMethodsToCall());
+    Map<CallMethodRequest, AccessResult> accessResults =
+        server.getAccessController().checkCallAccess(session, methodsToCall);
 
-        if (methodsToCall.isEmpty()) {
-            throw new UaException(StatusCodes.Bad_NothingToDo);
-        }
-
-        if (methodsToCall.size() > server.getConfig().getLimits().getMaxNodesPerMethodCall().longValue()) {
-            throw new UaException(StatusCodes.Bad_TooManyOperations);
-        }
-
-        Map<CallMethodRequest, AccessResult> accessResults =
-            server.getAccessController().checkCallAccess(session, methodsToCall);
-
-        List<CallMethodResult> results = groupMapCollate(
+    List<CallMethodResult> results =
+        groupMapCollate(
             methodsToCall,
             accessResults::get,
-            accessResult -> group -> {
-                if (accessResult instanceof AccessResult.Denied denied) {
-                    var result = new CallMethodResult(
-                        denied.statusCode(),
-                        null, null, null
-                    );
+            accessResult ->
+                group -> {
+                  if (accessResult instanceof AccessResult.Denied denied) {
+                    var result = new CallMethodResult(denied.statusCode(), null, null, null);
                     return Collections.nCopies(group.size(), result);
-                } else {
+                  } else {
                     var diagnosticsContext = new DiagnosticsContext<CallMethodRequest>();
 
-                    var callContext = new CallContext(
-                        server,
-                        session,
-                        diagnosticsContext,
-                        request.getRequestHeader().getAuditEntryId(),
-                        request.getRequestHeader().getTimeoutHint(),
-                        request.getRequestHeader().getAdditionalHeader()
-                    );
+                    var callContext =
+                        new CallContext(
+                            server,
+                            session,
+                            diagnosticsContext,
+                            request.getRequestHeader().getAuditEntryId(),
+                            request.getRequestHeader().getTimeoutHint(),
+                            request.getRequestHeader().getAdditionalHeader());
 
                     return server.getAddressSpaceManager().call(callContext, methodsToCall);
-                }
-            }
-        );
+                  }
+                });
 
-        ResponseHeader header = createResponseHeader(request);
+    ResponseHeader header = createResponseHeader(request);
 
-        return new CallResponse(header, results.toArray(CallMethodResult[]::new), new DiagnosticInfo[0]);
-    }
-
+    return new CallResponse(
+        header, results.toArray(CallMethodResult[]::new), new DiagnosticInfo[0]);
+  }
 }

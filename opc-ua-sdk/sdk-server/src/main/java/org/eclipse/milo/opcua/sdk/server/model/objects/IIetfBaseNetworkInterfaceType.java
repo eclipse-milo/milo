@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -17,30 +17,31 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.InterfaceAdminStatus;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.InterfaceOperStatus;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.1">https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.1</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.1">https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.1</a>
  */
 public interface IIetfBaseNetworkInterfaceType extends BaseInterfaceType {
-    BaseDataVariableType getAdminStatusNode();
+  BaseDataVariableType getAdminStatusNode();
 
-    InterfaceAdminStatus getAdminStatus();
+  InterfaceAdminStatus getAdminStatus();
 
-    void setAdminStatus(InterfaceAdminStatus value);
+  void setAdminStatus(InterfaceAdminStatus value);
 
-    BaseDataVariableType getOperStatusNode();
+  BaseDataVariableType getOperStatusNode();
 
-    InterfaceOperStatus getOperStatus();
+  InterfaceOperStatus getOperStatus();
 
-    void setOperStatus(InterfaceOperStatus value);
+  void setOperStatus(InterfaceOperStatus value);
 
-    BaseDataVariableType getPhysAddressNode();
+  BaseDataVariableType getPhysAddressNode();
 
-    String getPhysAddress();
+  String getPhysAddress();
 
-    void setPhysAddress(String value);
+  void setPhysAddress(String value);
 
-    AnalogUnitType getSpeedNode();
+  AnalogUnitType getSpeedNode();
 
-    ULong getSpeed();
+  ULong getSpeed();
 
-    void setSpeed(ULong value);
+  void setSpeed(ULong value);
 }

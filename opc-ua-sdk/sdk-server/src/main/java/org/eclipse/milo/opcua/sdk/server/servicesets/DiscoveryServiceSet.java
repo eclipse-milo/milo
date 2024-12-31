@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -25,19 +25,18 @@ import org.eclipse.milo.opcua.stack.transport.server.ServiceRequestContext;
 
 public interface DiscoveryServiceSet {
 
-    FindServersResponse onFindServers(
-        ServiceRequestContext context, FindServersRequest request) throws UaException;
+  FindServersResponse onFindServers(ServiceRequestContext context, FindServersRequest request)
+      throws UaException;
 
-    FindServersOnNetworkResponse onFindServersOnNetwork(
-        ServiceRequestContext context, FindServersOnNetworkRequest request) throws UaException;
+  FindServersOnNetworkResponse onFindServersOnNetwork(
+      ServiceRequestContext context, FindServersOnNetworkRequest request) throws UaException;
 
-    GetEndpointsResponse onGetEndpoints(
-        ServiceRequestContext context, GetEndpointsRequest request) throws UaException;
+  GetEndpointsResponse onGetEndpoints(ServiceRequestContext context, GetEndpointsRequest request)
+      throws UaException;
 
-    RegisterServerResponse onRegisterServer(
-        ServiceRequestContext context, RegisterServerRequest request) throws UaException;
+  RegisterServerResponse onRegisterServer(
+      ServiceRequestContext context, RegisterServerRequest request) throws UaException;
 
-    RegisterServer2Response onRegisterServer2(
-        ServiceRequestContext context, RegisterServer2Request request) throws UaException;
-
+  RegisterServer2Response onRegisterServer2(
+      ServiceRequestContext context, RegisterServer2Request request) throws UaException;
 }

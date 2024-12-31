@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -15,30 +15,31 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.15">https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.15</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.15">https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.15</a>
  */
 public interface IPriorityMappingEntryType extends BaseInterfaceType {
-    BaseDataVariableType getMappingUriNode();
+  BaseDataVariableType getMappingUriNode();
 
-    String getMappingUri();
+  String getMappingUri();
 
-    void setMappingUri(String value);
+  void setMappingUri(String value);
 
-    BaseDataVariableType getPriorityLabelNode();
+  BaseDataVariableType getPriorityLabelNode();
 
-    String getPriorityLabel();
+  String getPriorityLabel();
 
-    void setPriorityLabel(String value);
+  void setPriorityLabel(String value);
 
-    BaseDataVariableType getPriorityValue_PCPNode();
+  BaseDataVariableType getPriorityValue_PCPNode();
 
-    UByte getPriorityValuePcp();
+  UByte getPriorityValuePcp();
 
-    void setPriorityValuePcp(UByte value);
+  void setPriorityValuePcp(UByte value);
 
-    BaseDataVariableType getPriorityValue_DSCPNode();
+  BaseDataVariableType getPriorityValue_DSCPNode();
 
-    UInteger getPriorityValueDscp();
+  UInteger getPriorityValueDscp();
 
-    void setPriorityValueDscp(UInteger value);
+  void setPriorityValueDscp(UInteger value);
 }

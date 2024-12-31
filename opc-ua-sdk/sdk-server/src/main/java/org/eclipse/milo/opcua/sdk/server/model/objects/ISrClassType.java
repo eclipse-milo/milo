@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -15,24 +15,25 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.6">https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.6</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.6">https://reference.opcfoundation.org/v105/Core/docs/Part22/5.2.6</a>
  */
 public interface ISrClassType extends BaseInterfaceType {
-    BaseDataVariableType getIdNode();
+  BaseDataVariableType getIdNode();
 
-    UByte getId();
+  UByte getId();
 
-    void setId(UByte value);
+  void setId(UByte value);
 
-    BaseDataVariableType getPriorityNode();
+  BaseDataVariableType getPriorityNode();
 
-    UByte getPriority();
+  UByte getPriority();
 
-    void setPriority(UByte value);
+  void setPriority(UByte value);
 
-    BaseDataVariableType getVidNode();
+  BaseDataVariableType getVidNode();
 
-    UShort getVid();
+  UShort getVid();
 
-    void setVid(UShort value);
+  void setVid(UShort value);
 }

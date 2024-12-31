@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -17,62 +17,63 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.6.6">https://reference.opcfoundation.org/v105/Core/docs/Part11/5.6.6</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.6.6">https://reference.opcfoundation.org/v105/Core/docs/Part11/5.6.6</a>
  */
 public interface AuditHistoryRawModifyDeleteEventType extends AuditHistoryDeleteEventType {
-    QualifiedProperty<Boolean> IS_DELETE_MODIFIED = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "IsDeleteModified",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-        -1,
-        Boolean.class
-    );
+  QualifiedProperty<Boolean> IS_DELETE_MODIFIED =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "IsDeleteModified",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          -1,
+          Boolean.class);
 
-    QualifiedProperty<DateTime> START_TIME = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "StartTime",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-        -1,
-        DateTime.class
-    );
+  QualifiedProperty<DateTime> START_TIME =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "StartTime",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
+          -1,
+          DateTime.class);
 
-    QualifiedProperty<DateTime> END_TIME = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "EndTime",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-        -1,
-        DateTime.class
-    );
+  QualifiedProperty<DateTime> END_TIME =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "EndTime",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
+          -1,
+          DateTime.class);
 
-    QualifiedProperty<DataValue[]> OLD_VALUES = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "OldValues",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=23"),
-        1,
-        DataValue[].class
-    );
+  QualifiedProperty<DataValue[]> OLD_VALUES =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "OldValues",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=23"),
+          1,
+          DataValue[].class);
 
-    Boolean getIsDeleteModified();
+  Boolean getIsDeleteModified();
 
-    void setIsDeleteModified(Boolean value);
+  void setIsDeleteModified(Boolean value);
 
-    PropertyType getIsDeleteModifiedNode();
+  PropertyType getIsDeleteModifiedNode();
 
-    DateTime getStartTime();
+  DateTime getStartTime();
 
-    void setStartTime(DateTime value);
+  void setStartTime(DateTime value);
 
-    PropertyType getStartTimeNode();
+  PropertyType getStartTimeNode();
 
-    DateTime getEndTime();
+  DateTime getEndTime();
 
-    void setEndTime(DateTime value);
+  void setEndTime(DateTime value);
 
-    PropertyType getEndTimeNode();
+  PropertyType getEndTimeNode();
 
-    DataValue[] getOldValues();
+  DataValue[] getOldValues();
 
-    void setOldValues(DataValue[] value);
+  void setOldValues(DataValue[] value);
 
-    PropertyType getOldValuesNode();
+  PropertyType getOldValuesNode();
 }

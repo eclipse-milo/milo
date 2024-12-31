@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -21,40 +21,41 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ServerDiagnosticsSumma
 import org.eclipse.milo.opcua.stack.core.types.structured.SubscriptionDiagnosticsDataType;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.3">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.3</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.3">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.3</a>
  */
 public interface ServerDiagnosticsType extends BaseObjectType {
-    QualifiedProperty<Boolean> ENABLED_FLAG = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "EnabledFlag",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-        -1,
-        Boolean.class
-    );
+  QualifiedProperty<Boolean> ENABLED_FLAG =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "EnabledFlag",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          -1,
+          Boolean.class);
 
-    Boolean getEnabledFlag();
+  Boolean getEnabledFlag();
 
-    void setEnabledFlag(Boolean value);
+  void setEnabledFlag(Boolean value);
 
-    PropertyType getEnabledFlagNode();
+  PropertyType getEnabledFlagNode();
 
-    ServerDiagnosticsSummaryType getServerDiagnosticsSummaryNode();
+  ServerDiagnosticsSummaryType getServerDiagnosticsSummaryNode();
 
-    ServerDiagnosticsSummaryDataType getServerDiagnosticsSummary();
+  ServerDiagnosticsSummaryDataType getServerDiagnosticsSummary();
 
-    void setServerDiagnosticsSummary(ServerDiagnosticsSummaryDataType value);
+  void setServerDiagnosticsSummary(ServerDiagnosticsSummaryDataType value);
 
-    SamplingIntervalDiagnosticsArrayType getSamplingIntervalDiagnosticsArrayNode();
+  SamplingIntervalDiagnosticsArrayType getSamplingIntervalDiagnosticsArrayNode();
 
-    SamplingIntervalDiagnosticsDataType[] getSamplingIntervalDiagnosticsArray();
+  SamplingIntervalDiagnosticsDataType[] getSamplingIntervalDiagnosticsArray();
 
-    void setSamplingIntervalDiagnosticsArray(SamplingIntervalDiagnosticsDataType[] value);
+  void setSamplingIntervalDiagnosticsArray(SamplingIntervalDiagnosticsDataType[] value);
 
-    SubscriptionDiagnosticsArrayType getSubscriptionDiagnosticsArrayNode();
+  SubscriptionDiagnosticsArrayType getSubscriptionDiagnosticsArrayNode();
 
-    SubscriptionDiagnosticsDataType[] getSubscriptionDiagnosticsArray();
+  SubscriptionDiagnosticsDataType[] getSubscriptionDiagnosticsArray();
 
-    void setSubscriptionDiagnosticsArray(SubscriptionDiagnosticsDataType[] value);
+  void setSubscriptionDiagnosticsArray(SubscriptionDiagnosticsDataType[] value);
 
-    SessionsDiagnosticsSummaryType getSessionsDiagnosticsSummaryNode();
+  SessionsDiagnosticsSummaryType getSessionsDiagnosticsSummaryNode();
 }

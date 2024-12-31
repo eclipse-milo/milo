@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.CertificateGroup.Entry;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
@@ -26,75 +25,77 @@ import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 
 public class DefaultCertificateManager implements CertificateManager {
 
-    private final Map<NodeId, CertificateGroup> certificateGroups = new ConcurrentHashMap<>();
+  private final Map<NodeId, CertificateGroup> certificateGroups = new ConcurrentHashMap<>();
 
-    private final CertificateQuarantine certificateQuarantine;
+  private final CertificateQuarantine certificateQuarantine;
 
-    public DefaultCertificateManager(CertificateQuarantine certificateQuarantine) {
-        this.certificateQuarantine = certificateQuarantine;
-    }
+  public DefaultCertificateManager(CertificateQuarantine certificateQuarantine) {
+    this.certificateQuarantine = certificateQuarantine;
+  }
 
-    public DefaultCertificateManager(CertificateQuarantine certificateQuarantine, CertificateGroup group) {
-        this(certificateQuarantine, List.of(group));
-    }
+  public DefaultCertificateManager(
+      CertificateQuarantine certificateQuarantine, CertificateGroup group) {
+    this(certificateQuarantine, List.of(group));
+  }
 
-    public DefaultCertificateManager(CertificateQuarantine certificateQuarantine, Collection<CertificateGroup> groups) {
-        this.certificateQuarantine = certificateQuarantine;
+  public DefaultCertificateManager(
+      CertificateQuarantine certificateQuarantine, Collection<CertificateGroup> groups) {
+    this.certificateQuarantine = certificateQuarantine;
 
-        groups.forEach(g -> certificateGroups.put(g.getCertificateGroupId(), g));
-    }
+    groups.forEach(g -> certificateGroups.put(g.getCertificateGroupId(), g));
+  }
 
-    @Override
-    public Optional<KeyPair> getKeyPair(ByteString thumbprint) {
-        return firstMatchingEntry(thumbprint).flatMap(entry -> {
-            Optional<CertificateGroup> group = getCertificateGroup(entry.certificateGroupId);
-            return group.flatMap(g -> g.getKeyPair(entry.certificateTypeId));
-        });
-    }
+  @Override
+  public Optional<KeyPair> getKeyPair(ByteString thumbprint) {
+    return firstMatchingEntry(thumbprint)
+        .flatMap(
+            entry -> {
+              Optional<CertificateGroup> group = getCertificateGroup(entry.certificateGroupId);
+              return group.flatMap(g -> g.getKeyPair(entry.certificateTypeId));
+            });
+  }
 
-    @Override
-    public Optional<X509Certificate> getCertificate(ByteString thumbprint) {
-        return firstMatchingEntry(thumbprint).map(e -> e.certificateChain[0]);
-    }
+  @Override
+  public Optional<X509Certificate> getCertificate(ByteString thumbprint) {
+    return firstMatchingEntry(thumbprint).map(e -> e.certificateChain[0]);
+  }
 
-    @Override
-    public Optional<X509Certificate[]> getCertificateChain(ByteString thumbprint) {
-        return firstMatchingEntry(thumbprint).map(e -> e.certificateChain);
-    }
+  @Override
+  public Optional<X509Certificate[]> getCertificateChain(ByteString thumbprint) {
+    return firstMatchingEntry(thumbprint).map(e -> e.certificateChain);
+  }
 
-    @Override
-    public Optional<CertificateGroup> getCertificateGroup(ByteString thumbprint) {
-        return firstMatchingEntry(thumbprint)
-            .flatMap(r -> getCertificateGroup(r.certificateGroupId));
-    }
+  @Override
+  public Optional<CertificateGroup> getCertificateGroup(ByteString thumbprint) {
+    return firstMatchingEntry(thumbprint).flatMap(r -> getCertificateGroup(r.certificateGroupId));
+  }
 
-    @Override
-    public Optional<CertificateGroup> getCertificateGroup(NodeId certificateGroupId) {
-        return Optional.ofNullable(certificateGroups.get(certificateGroupId));
-    }
+  @Override
+  public Optional<CertificateGroup> getCertificateGroup(NodeId certificateGroupId) {
+    return Optional.ofNullable(certificateGroups.get(certificateGroupId));
+  }
 
-    @Override
-    public List<CertificateGroup> getCertificateGroups() {
-        return List.copyOf(certificateGroups.values());
-    }
+  @Override
+  public List<CertificateGroup> getCertificateGroups() {
+    return List.copyOf(certificateGroups.values());
+  }
 
-    @Override
-    public CertificateQuarantine getCertificateQuarantine() {
-        return certificateQuarantine;
-    }
+  @Override
+  public CertificateQuarantine getCertificateQuarantine() {
+    return certificateQuarantine;
+  }
 
-    private Optional<Entry> firstMatchingEntry(ByteString thumbprint) {
-        return certificateGroups.values()
-            .stream()
-            .flatMap(group -> group.getCertificateEntries().stream())
-            .filter(entry -> {
-                try {
-                    return CertificateUtil.thumbprint(entry.certificateChain[0]).equals(thumbprint);
-                } catch (UaException e) {
-                    return false;
-                }
+  private Optional<Entry> firstMatchingEntry(ByteString thumbprint) {
+    return certificateGroups.values().stream()
+        .flatMap(group -> group.getCertificateEntries().stream())
+        .filter(
+            entry -> {
+              try {
+                return CertificateUtil.thumbprint(entry.certificateChain[0]).equals(thumbprint);
+              } catch (UaException e) {
+                return false;
+              }
             })
-            .findFirst();
-    }
-
+        .findFirst();
+  }
 }

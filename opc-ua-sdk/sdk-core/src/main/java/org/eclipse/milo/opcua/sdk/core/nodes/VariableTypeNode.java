@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -16,24 +16,23 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 
 public interface VariableTypeNode extends Node {
 
-    DataValue getValue();
+  DataValue getValue();
 
-    NodeId getDataType();
+  NodeId getDataType();
 
-    Integer getValueRank();
+  Integer getValueRank();
 
-    UInteger[] getArrayDimensions();
+  UInteger[] getArrayDimensions();
 
-    Boolean getIsAbstract();
+  Boolean getIsAbstract();
 
-    void setValue(DataValue value);
+  void setValue(DataValue value);
 
-    void setDataType(NodeId dataType);
+  void setDataType(NodeId dataType);
 
-    void setValueRank(Integer valueRank);
+  void setValueRank(Integer valueRank);
 
-    void setArrayDimensions(UInteger[] arrayDimensions);
+  void setArrayDimensions(UInteger[] arrayDimensions);
 
-    void setIsAbstract(Boolean isAbstract);
-
+  void setIsAbstract(Boolean isAbstract);
 }

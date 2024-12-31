@@ -1,4 +1,4 @@
-///*
+/// *
 // * Copyright (c) 2022 the Eclipse Milo Authors
 // *
 // * This program and the accompanying materials are made
@@ -8,39 +8,39 @@
 // * SPDX-License-Identifier: EPL-2.0
 // */
 //
-//package org.eclipse.milo.opcua.stack;
+// package org.eclipse.milo.opcua.stack;
 //
-//import java.security.Security;
-//import java.util.ArrayList;
-//import java.util.LinkedHashSet;
-//import java.util.List;
-//import java.util.Random;
-//import java.util.Set;
+// import java.security.Security;
+// import java.util.ArrayList;
+// import java.util.LinkedHashSet;
+// import java.util.List;
+// import java.util.Random;
+// import java.util.Set;
 //
-//import org.bouncycastle.jce.provider.BouncyCastleProvider;
-//import org.eclipse.milo.opcua.stack.client.DiscoveryClient;
-//import org.eclipse.milo.opcua.stack.client.UaStackClient;
-//import org.eclipse.milo.opcua.stack.client.UaStackClientConfig;
-//import org.eclipse.milo.opcua.stack.client.UaStackClientConfigBuilder;
-//import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
-//import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
-//import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
-//import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
-//import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
-//import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
-//import org.eclipse.milo.opcua.stack.server.EndpointConfiguration;
-//import org.eclipse.milo.opcua.stack.server.UaStackServer;
-//import org.eclipse.milo.opcua.stack.server.UaStackServerConfig;
-//import org.eclipse.milo.opcua.stack.server.UaStackServerConfigBuilder;
-//import org.slf4j.Logger;
-//import org.slf4j.LoggerFactory;
-//import org.testng.annotations.AfterSuite;
-//import org.testng.annotations.BeforeSuite;
-//import org.testng.annotations.Test;
+// import org.bouncycastle.jce.provider.BouncyCastleProvider;
+// import org.eclipse.milo.opcua.stack.client.DiscoveryClient;
+// import org.eclipse.milo.opcua.stack.client.UaStackClient;
+// import org.eclipse.milo.opcua.stack.client.UaStackClientConfig;
+// import org.eclipse.milo.opcua.stack.client.UaStackClientConfigBuilder;
+// import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
+// import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
+// import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
+// import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
+// import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
+// import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
+// import org.eclipse.milo.opcua.stack.server.EndpointConfiguration;
+// import org.eclipse.milo.opcua.stack.server.UaStackServer;
+// import org.eclipse.milo.opcua.stack.server.UaStackServerConfig;
+// import org.eclipse.milo.opcua.stack.server.UaStackServerConfigBuilder;
+// import org.slf4j.Logger;
+// import org.slf4j.LoggerFactory;
+// import org.testng.annotations.AfterSuite;
+// import org.testng.annotations.BeforeSuite;
+// import org.testng.annotations.Test;
 //
-//import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
+// import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 //
-//public abstract class StackIntegrationTest extends SecurityFixture {
+// public abstract class StackIntegrationTest extends SecurityFixture {
 //
 //    static {
 //        Security.addProvider(new BouncyCastleProvider());
@@ -173,4 +173,4 @@
 //
 //    }
 //
-//}
+// }

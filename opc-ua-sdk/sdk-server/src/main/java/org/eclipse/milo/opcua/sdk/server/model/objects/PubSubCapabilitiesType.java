@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -16,160 +16,161 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.12">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.12</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.12">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.12</a>
  */
 public interface PubSubCapabilitiesType extends BaseObjectType {
-    QualifiedProperty<UInteger> MAX_PUB_SUB_CONNECTIONS = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "MaxPubSubConnections",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-        -1,
-        UInteger.class
-    );
+  QualifiedProperty<UInteger> MAX_PUB_SUB_CONNECTIONS =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "MaxPubSubConnections",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          -1,
+          UInteger.class);
 
-    QualifiedProperty<UInteger> MAX_WRITER_GROUPS = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "MaxWriterGroups",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-        -1,
-        UInteger.class
-    );
+  QualifiedProperty<UInteger> MAX_WRITER_GROUPS =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "MaxWriterGroups",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          -1,
+          UInteger.class);
 
-    QualifiedProperty<UInteger> MAX_READER_GROUPS = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "MaxReaderGroups",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-        -1,
-        UInteger.class
-    );
+  QualifiedProperty<UInteger> MAX_READER_GROUPS =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "MaxReaderGroups",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          -1,
+          UInteger.class);
 
-    QualifiedProperty<UInteger> MAX_DATA_SET_WRITERS = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "MaxDataSetWriters",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-        -1,
-        UInteger.class
-    );
+  QualifiedProperty<UInteger> MAX_DATA_SET_WRITERS =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "MaxDataSetWriters",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          -1,
+          UInteger.class);
 
-    QualifiedProperty<UInteger> MAX_DATA_SET_READERS = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "MaxDataSetReaders",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-        -1,
-        UInteger.class
-    );
+  QualifiedProperty<UInteger> MAX_DATA_SET_READERS =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "MaxDataSetReaders",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          -1,
+          UInteger.class);
 
-    QualifiedProperty<UInteger> MAX_FIELDS_PER_DATA_SET = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "MaxFieldsPerDataSet",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-        -1,
-        UInteger.class
-    );
+  QualifiedProperty<UInteger> MAX_FIELDS_PER_DATA_SET =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "MaxFieldsPerDataSet",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          -1,
+          UInteger.class);
 
-    QualifiedProperty<UInteger> MAX_DATA_SET_WRITERS_PER_GROUP = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "MaxDataSetWritersPerGroup",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-        -1,
-        UInteger.class
-    );
+  QualifiedProperty<UInteger> MAX_DATA_SET_WRITERS_PER_GROUP =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "MaxDataSetWritersPerGroup",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          -1,
+          UInteger.class);
 
-    QualifiedProperty<UInteger> MAX_NETWORK_MESSAGE_SIZE_DATAGRAM = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "MaxNetworkMessageSizeDatagram",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-        -1,
-        UInteger.class
-    );
+  QualifiedProperty<UInteger> MAX_NETWORK_MESSAGE_SIZE_DATAGRAM =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "MaxNetworkMessageSizeDatagram",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          -1,
+          UInteger.class);
 
-    QualifiedProperty<UInteger> MAX_NETWORK_MESSAGE_SIZE_BROKER = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "MaxNetworkMessageSizeBroker",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-        -1,
-        UInteger.class
-    );
+  QualifiedProperty<UInteger> MAX_NETWORK_MESSAGE_SIZE_BROKER =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "MaxNetworkMessageSizeBroker",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          -1,
+          UInteger.class);
 
-    QualifiedProperty<Boolean> SUPPORT_SECURITY_KEY_PULL = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "SupportSecurityKeyPull",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-        -1,
-        Boolean.class
-    );
+  QualifiedProperty<Boolean> SUPPORT_SECURITY_KEY_PULL =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "SupportSecurityKeyPull",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          -1,
+          Boolean.class);
 
-    QualifiedProperty<Boolean> SUPPORT_SECURITY_KEY_PUSH = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "SupportSecurityKeyPush",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-        -1,
-        Boolean.class
-    );
+  QualifiedProperty<Boolean> SUPPORT_SECURITY_KEY_PUSH =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "SupportSecurityKeyPush",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          -1,
+          Boolean.class);
 
-    UInteger getMaxPubSubConnections();
+  UInteger getMaxPubSubConnections();
 
-    void setMaxPubSubConnections(UInteger value);
+  void setMaxPubSubConnections(UInteger value);
 
-    PropertyType getMaxPubSubConnectionsNode();
+  PropertyType getMaxPubSubConnectionsNode();
 
-    UInteger getMaxWriterGroups();
+  UInteger getMaxWriterGroups();
 
-    void setMaxWriterGroups(UInteger value);
+  void setMaxWriterGroups(UInteger value);
 
-    PropertyType getMaxWriterGroupsNode();
+  PropertyType getMaxWriterGroupsNode();
 
-    UInteger getMaxReaderGroups();
+  UInteger getMaxReaderGroups();
 
-    void setMaxReaderGroups(UInteger value);
+  void setMaxReaderGroups(UInteger value);
 
-    PropertyType getMaxReaderGroupsNode();
+  PropertyType getMaxReaderGroupsNode();
 
-    UInteger getMaxDataSetWriters();
+  UInteger getMaxDataSetWriters();
 
-    void setMaxDataSetWriters(UInteger value);
+  void setMaxDataSetWriters(UInteger value);
 
-    PropertyType getMaxDataSetWritersNode();
+  PropertyType getMaxDataSetWritersNode();
 
-    UInteger getMaxDataSetReaders();
+  UInteger getMaxDataSetReaders();
 
-    void setMaxDataSetReaders(UInteger value);
+  void setMaxDataSetReaders(UInteger value);
 
-    PropertyType getMaxDataSetReadersNode();
+  PropertyType getMaxDataSetReadersNode();
 
-    UInteger getMaxFieldsPerDataSet();
+  UInteger getMaxFieldsPerDataSet();
 
-    void setMaxFieldsPerDataSet(UInteger value);
+  void setMaxFieldsPerDataSet(UInteger value);
 
-    PropertyType getMaxFieldsPerDataSetNode();
+  PropertyType getMaxFieldsPerDataSetNode();
 
-    UInteger getMaxDataSetWritersPerGroup();
+  UInteger getMaxDataSetWritersPerGroup();
 
-    void setMaxDataSetWritersPerGroup(UInteger value);
+  void setMaxDataSetWritersPerGroup(UInteger value);
 
-    PropertyType getMaxDataSetWritersPerGroupNode();
+  PropertyType getMaxDataSetWritersPerGroupNode();
 
-    UInteger getMaxNetworkMessageSizeDatagram();
+  UInteger getMaxNetworkMessageSizeDatagram();
 
-    void setMaxNetworkMessageSizeDatagram(UInteger value);
+  void setMaxNetworkMessageSizeDatagram(UInteger value);
 
-    PropertyType getMaxNetworkMessageSizeDatagramNode();
+  PropertyType getMaxNetworkMessageSizeDatagramNode();
 
-    UInteger getMaxNetworkMessageSizeBroker();
+  UInteger getMaxNetworkMessageSizeBroker();
 
-    void setMaxNetworkMessageSizeBroker(UInteger value);
+  void setMaxNetworkMessageSizeBroker(UInteger value);
 
-    PropertyType getMaxNetworkMessageSizeBrokerNode();
+  PropertyType getMaxNetworkMessageSizeBrokerNode();
 
-    Boolean getSupportSecurityKeyPull();
+  Boolean getSupportSecurityKeyPull();
 
-    void setSupportSecurityKeyPull(Boolean value);
+  void setSupportSecurityKeyPull(Boolean value);
 
-    PropertyType getSupportSecurityKeyPullNode();
+  PropertyType getSupportSecurityKeyPullNode();
 
-    Boolean getSupportSecurityKeyPush();
+  Boolean getSupportSecurityKeyPush();
 
-    void setSupportSecurityKeyPush(Boolean value);
+  void setSupportSecurityKeyPush(Boolean value);
 
-    PropertyType getSupportSecurityKeyPushNode();
+  PropertyType getSupportSecurityKeyPushNode();
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -16,20 +16,21 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.structured.DeleteReferencesItem;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.23">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.23</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.23">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.23</a>
  */
 public interface AuditDeleteReferencesEventType extends AuditNodeManagementEventType {
-    QualifiedProperty<DeleteReferencesItem[]> REFERENCES_TO_DELETE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ReferencesToDelete",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=385"),
-        1,
-        DeleteReferencesItem[].class
-    );
+  QualifiedProperty<DeleteReferencesItem[]> REFERENCES_TO_DELETE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ReferencesToDelete",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=385"),
+          1,
+          DeleteReferencesItem[].class);
 
-    DeleteReferencesItem[] getReferencesToDelete();
+  DeleteReferencesItem[] getReferencesToDelete();
 
-    void setReferencesToDelete(DeleteReferencesItem[] value);
+  void setReferencesToDelete(DeleteReferencesItem[] value);
 
-    PropertyType getReferencesToDeleteNode();
+  PropertyType getReferencesToDeleteNode();
 }

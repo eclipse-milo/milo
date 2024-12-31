@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -10,8 +10,9 @@
 
 package org.eclipse.milo.examples.client;
 
-import java.util.concurrent.CompletableFuture;
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
+import java.util.concurrent.CompletableFuture;
 import org.eclipse.milo.examples.server.types.CustomEnumType;
 import org.eclipse.milo.examples.server.types.CustomStructType;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
@@ -24,95 +25,87 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
-
 public class ReadWriteCustomDataTypeNodeExample implements ClientExample {
 
-    public static void main(String[] args) throws Exception {
-        ReadWriteCustomDataTypeNodeExample example = new ReadWriteCustomDataTypeNodeExample();
+  public static void main(String[] args) throws Exception {
+    ReadWriteCustomDataTypeNodeExample example = new ReadWriteCustomDataTypeNodeExample();
 
-        new ClientExampleRunner(example).run();
-    }
+    new ClientExampleRunner(example).run();
+  }
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Override
-    public void run(OpcUaClient client, CompletableFuture<OpcUaClient> future) throws Exception {
-        client.connect();
+  @Override
+  public void run(OpcUaClient client, CompletableFuture<OpcUaClient> future) throws Exception {
+    client.connect();
 
-        registerCustomCodec(client);
+    registerCustomCodec(client);
 
-        // synchronous read request via VariableNode
-        UaVariableNode node = client.getAddressSpace().getVariableNode(
-            new NodeId(2, "HelloWorld/CustomStructTypeVariable")
-        );
+    // synchronous read request via VariableNode
+    UaVariableNode node =
+        client
+            .getAddressSpace()
+            .getVariableNode(new NodeId(2, "HelloWorld/CustomStructTypeVariable"));
 
-        logger.info("DataType={}", node.getDataType());
+    logger.info("DataType={}", node.getDataType());
 
-        // Read the current value
-        DataValue value = node.readValue();
-        logger.info("Value={}", value);
+    // Read the current value
+    DataValue value = node.readValue();
+    logger.info("Value={}", value);
 
-        Variant variant = value.getValue();
-        ExtensionObject xo = (ExtensionObject) variant.getValue();
-        assert xo != null;
+    Variant variant = value.getValue();
+    ExtensionObject xo = (ExtensionObject) variant.getValue();
+    assert xo != null;
 
-        CustomStructType decoded = (CustomStructType) xo.decode(
-            client.getStaticEncodingContext()
-        );
-        logger.info("Decoded={}", decoded);
+    CustomStructType decoded = (CustomStructType) xo.decode(client.getStaticEncodingContext());
+    logger.info("Decoded={}", decoded);
 
-        // Write a modified value
-        CustomStructType modified = new CustomStructType(
+    // Write a modified value
+    CustomStructType modified =
+        new CustomStructType(
             decoded.getFoo() + "bar",
             uint(decoded.getBar().intValue() + 1),
             !decoded.isBaz(),
-            CustomEnumType.Field1
-        );
-        ExtensionObject modifiedXo = ExtensionObject.encode(
+            CustomEnumType.Field1);
+    ExtensionObject modifiedXo =
+        ExtensionObject.encode(
             client.getStaticEncodingContext(),
             modified,
             xo.getEncodingId(),
-            OpcUaDefaultBinaryEncoding.getInstance()
-        );
+            OpcUaDefaultBinaryEncoding.getInstance());
 
-        node.writeValue(new DataValue(new Variant(modifiedXo)));
+    node.writeValue(new DataValue(new Variant(modifiedXo)));
 
-        // Read the modified value back
-        value = node.readValue();
-        logger.info("Value={}", value);
+    // Read the modified value back
+    value = node.readValue();
+    logger.info("Value={}", value);
 
-        variant = value.getValue();
-        xo = (ExtensionObject) variant.getValue();
-        assert xo != null;
+    variant = value.getValue();
+    xo = (ExtensionObject) variant.getValue();
+    assert xo != null;
 
-        decoded = (CustomStructType) xo.decode(
-            client.getStaticEncodingContext()
-        );
-        logger.info("Decoded={}", decoded);
+    decoded = (CustomStructType) xo.decode(client.getStaticEncodingContext());
+    logger.info("Decoded={}", decoded);
 
-        future.complete(client);
-    }
+    future.complete(client);
+  }
 
-    private void registerCustomCodec(OpcUaClient client) {
-        NodeId dataTypeId = CustomStructType.TYPE_ID
+  private void registerCustomCodec(OpcUaClient client) {
+    NodeId dataTypeId =
+        CustomStructType.TYPE_ID
             .toNodeId(client.getNamespaceTable())
             .orElseThrow(() -> new IllegalStateException("namespace not found"));
 
-        NodeId binaryEncodingId = CustomStructType.BINARY_ENCODING_ID
+    NodeId binaryEncodingId =
+        CustomStructType.BINARY_ENCODING_ID
             .toNodeId(client.getNamespaceTable())
             .orElseThrow(() -> new IllegalStateException("namespace not found"));
 
-        // Register codec with the client's DataTypeManager instance.
-        // We need to register it by both its encodingId and its dataTypeId because it may be
-        // looked up by either depending on the context.
-        client.getStaticDataTypeManager().registerType(
-            dataTypeId,
-            new CustomStructType.Codec(),
-            binaryEncodingId,
-            null,
-            null
-        );
-    }
-
+    // Register codec with the client's DataTypeManager instance.
+    // We need to register it by both its encodingId and its dataTypeId because it may be
+    // looked up by either depending on the context.
+    client
+        .getStaticDataTypeManager()
+        .registerType(dataTypeId, new CustomStructType.Codec(), binaryEncodingId, null, null);
+  }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -20,58 +20,56 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class MemoryCertificateQuarantine implements CertificateQuarantine {
 
-    static final int DEFAULT_MAX_REJECTED_CERTIFICATES = 128;
+  static final int DEFAULT_MAX_REJECTED_CERTIFICATES = 128;
 
-    private final ReadWriteLock lock = new ReentrantReadWriteLock(true);
+  private final ReadWriteLock lock = new ReentrantReadWriteLock(true);
 
-    private final Deque<X509Certificate> certificates = new ArrayDeque<>();
+  private final Deque<X509Certificate> certificates = new ArrayDeque<>();
 
-    public MemoryCertificateQuarantine() {
-        this(DEFAULT_MAX_REJECTED_CERTIFICATES);
+  public MemoryCertificateQuarantine() {
+    this(DEFAULT_MAX_REJECTED_CERTIFICATES);
+  }
+
+  public MemoryCertificateQuarantine(int maxRejectedCertificates) {
+    this.maxRejectedCertificates = maxRejectedCertificates;
+  }
+
+  private final int maxRejectedCertificates;
+
+  @Override
+  public List<X509Certificate> getRejectedCertificates() {
+    try {
+      lock.readLock().lock();
+
+      return List.copyOf(certificates);
+    } finally {
+      lock.readLock().unlock();
     }
+  }
 
-    public MemoryCertificateQuarantine(int maxRejectedCertificates) {
-        this.maxRejectedCertificates = maxRejectedCertificates;
+  @Override
+  public void addRejectedCertificate(X509Certificate certificate) {
+    try {
+      lock.writeLock().lock();
+
+      certificates.add(certificate);
+
+      while (certificates.size() > maxRejectedCertificates) {
+        certificates.removeFirst();
+      }
+    } finally {
+      lock.writeLock().unlock();
     }
+  }
 
-    private final int maxRejectedCertificates;
+  @Override
+  public void removeRejectedCertificate(X509Certificate certificate) {
+    try {
+      lock.writeLock().lock();
 
-
-    @Override
-    public List<X509Certificate> getRejectedCertificates() {
-        try {
-            lock.readLock().lock();
-
-            return List.copyOf(certificates);
-        } finally {
-            lock.readLock().unlock();
-        }
+      certificates.removeIf(c -> Objects.equals(c, certificate));
+    } finally {
+      lock.writeLock().unlock();
     }
-
-    @Override
-    public void addRejectedCertificate(X509Certificate certificate) {
-        try {
-            lock.writeLock().lock();
-
-            certificates.add(certificate);
-
-            while (certificates.size() > maxRejectedCertificates) {
-                certificates.removeFirst();
-            }
-        } finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    @Override
-    public void removeRejectedCertificate(X509Certificate certificate) {
-        try {
-            lock.writeLock().lock();
-
-            certificates.removeIf(c -> Objects.equals(c, certificate));
-        } finally {
-            lock.writeLock().unlock();
-        }
-    }
-
+  }
 }

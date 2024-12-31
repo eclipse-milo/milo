@@ -27,185 +27,259 @@ import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.util.Lazy;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part12/8.6.4">https://reference.opcfoundation.org/v105/Core/docs/Part12/8.6.4</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/8.6.4">https://reference.opcfoundation.org/v105/Core/docs/Part12/8.6.4</a>
  */
 public interface KeyCredentialConfigurationType extends BaseObjectType {
-    QualifiedProperty<String> RESOURCE_URI = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ResourceUri",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-        -1,
-        String.class
-    );
+  QualifiedProperty<String> RESOURCE_URI =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ResourceUri",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          -1,
+          String.class);
 
-    QualifiedProperty<String> PROFILE_URI = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ProfileUri",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-        -1,
-        String.class
-    );
+  QualifiedProperty<String> PROFILE_URI =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ProfileUri",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          -1,
+          String.class);
 
-    QualifiedProperty<String[]> ENDPOINT_URLS = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "EndpointUrls",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-        1,
-        String[].class
-    );
+  QualifiedProperty<String[]> ENDPOINT_URLS =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "EndpointUrls",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          1,
+          String[].class);
 
-    QualifiedProperty<StatusCode> SERVICE_STATUS = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ServiceStatus",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19"),
-        -1,
-        StatusCode.class
-    );
+  QualifiedProperty<StatusCode> SERVICE_STATUS =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ServiceStatus",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19"),
+          -1,
+          StatusCode.class);
 
-    String getResourceUri();
+  String getResourceUri();
 
-    void setResourceUri(String value);
+  void setResourceUri(String value);
 
-    PropertyType getResourceUriNode();
+  PropertyType getResourceUriNode();
 
-    String getProfileUri();
+  String getProfileUri();
 
-    void setProfileUri(String value);
+  void setProfileUri(String value);
 
-    PropertyType getProfileUriNode();
+  PropertyType getProfileUriNode();
 
-    String[] getEndpointUrls();
+  String[] getEndpointUrls();
 
-    void setEndpointUrls(String[] value);
+  void setEndpointUrls(String[] value);
 
-    PropertyType getEndpointUrlsNode();
+  PropertyType getEndpointUrlsNode();
 
-    StatusCode getServiceStatus();
+  StatusCode getServiceStatus();
 
-    void setServiceStatus(StatusCode value);
+  void setServiceStatus(StatusCode value);
 
-    PropertyType getServiceStatusNode();
+  PropertyType getServiceStatusNode();
 
-    MethodNode getGetEncryptingKeyMethodNode();
+  MethodNode getGetEncryptingKeyMethodNode();
 
-    MethodNode getUpdateCredentialMethodNode();
+  MethodNode getUpdateCredentialMethodNode();
 
-    MethodNode getDeleteCredentialMethodNode();
+  MethodNode getDeleteCredentialMethodNode();
 
-    abstract class GetEncryptingKeyMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  abstract class GetEncryptingKeyMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
 
-        private final Lazy<Argument[]> outputArguments = new Lazy<>();
+    private final Lazy<Argument[]> outputArguments = new Lazy<>();
 
-        public GetEncryptingKeyMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("CredentialId", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "")),
-                    new Argument("RequestedSecurityPolicyUri", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return outputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("PublicKey", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "")),
-                    new Argument("RevisedSecurityPolicyUri", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            String credentialId = (String) inputValues[0].getValue();
-            String requestedSecurityPolicyUri = (String) inputValues[1].getValue();
-            Out<ByteString> publicKey = new Out<>();
-            Out<String> revisedSecurityPolicyUri = new Out<>();
-            invoke(context, credentialId, requestedSecurityPolicyUri, publicKey, revisedSecurityPolicyUri);
-            return new Variant[]{new Variant(publicKey.get()), new Variant(revisedSecurityPolicyUri.get())};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       String credentialId, String requestedSecurityPolicyUri, Out<ByteString> publicKey,
-                                       Out<String> revisedSecurityPolicyUri) throws UaException;
+    public GetEncryptingKeyMethod(UaMethodNode node) {
+      super(node);
     }
 
-    abstract class UpdateCredentialMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
 
-        public UpdateCredentialMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("CredentialId", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "")),
-                    new Argument("CredentialSecret", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "")),
-                    new Argument("CertificateThumbprint", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "")),
-                    new Argument("SecurityPolicyUri", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            String credentialId = (String) inputValues[0].getValue();
-            ByteString credentialSecret = (ByteString) inputValues[1].getValue();
-            String certificateThumbprint = (String) inputValues[2].getValue();
-            String securityPolicyUri = (String) inputValues[3].getValue();
-            invoke(context, credentialId, credentialSecret, certificateThumbprint, securityPolicyUri);
-            return new Variant[]{};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       String credentialId, ByteString credentialSecret, String certificateThumbprint,
-                                       String securityPolicyUri) throws UaException;
+            return new Argument[] {
+              new Argument(
+                  "CredentialId",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "RequestedSecurityPolicyUri",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
     }
 
-    abstract class DeleteCredentialMethod extends AbstractMethodInvocationHandler {
-        public DeleteCredentialMethod(UaMethodNode node) {
-            super(node);
-        }
+    @Override
+    public Argument[] getOutputArguments() {
+      return outputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
 
-        @Override
-        public Argument[] getInputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            invoke(context);
-            return new Variant[]{};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context) throws
-            UaException;
+            return new Argument[] {
+              new Argument(
+                  "PublicKey",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "RevisedSecurityPolicyUri",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
     }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      String credentialId = (String) inputValues[0].getValue();
+      String requestedSecurityPolicyUri = (String) inputValues[1].getValue();
+      Out<ByteString> publicKey = new Out<>();
+      Out<String> revisedSecurityPolicyUri = new Out<>();
+      invoke(
+          context, credentialId, requestedSecurityPolicyUri, publicKey, revisedSecurityPolicyUri);
+      return new Variant[] {
+        new Variant(publicKey.get()), new Variant(revisedSecurityPolicyUri.get())
+      };
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        String credentialId,
+        String requestedSecurityPolicyUri,
+        Out<ByteString> publicKey,
+        Out<String> revisedSecurityPolicyUri)
+        throws UaException;
+  }
+
+  abstract class UpdateCredentialMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+
+    public UpdateCredentialMethod(UaMethodNode node) {
+      super(node);
+    }
+
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "CredentialId",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "CredentialSecret",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "CertificateThumbprint",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "SecurityPolicyUri",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      String credentialId = (String) inputValues[0].getValue();
+      ByteString credentialSecret = (ByteString) inputValues[1].getValue();
+      String certificateThumbprint = (String) inputValues[2].getValue();
+      String securityPolicyUri = (String) inputValues[3].getValue();
+      invoke(context, credentialId, credentialSecret, certificateThumbprint, securityPolicyUri);
+      return new Variant[] {};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        String credentialId,
+        ByteString credentialSecret,
+        String certificateThumbprint,
+        String securityPolicyUri)
+        throws UaException;
+  }
+
+  abstract class DeleteCredentialMethod extends AbstractMethodInvocationHandler {
+    public DeleteCredentialMethod(UaMethodNode node) {
+      super(node);
+    }
+
+    @Override
+    public Argument[] getInputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      invoke(context);
+      return new Variant[] {};
+    }
+
+    protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context)
+        throws UaException;
+  }
 }

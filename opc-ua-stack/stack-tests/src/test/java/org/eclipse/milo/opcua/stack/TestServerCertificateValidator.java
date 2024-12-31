@@ -15,30 +15,26 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 
 public class TestServerCertificateValidator implements CertificateValidator {
 
-    private final Set<X509Certificate> trustedCertificates = ConcurrentHashMap.newKeySet();
+  private final Set<X509Certificate> trustedCertificates = ConcurrentHashMap.newKeySet();
 
-    public TestServerCertificateValidator(X509Certificate certificate) {
-        trustedCertificates.add(certificate);
-    }
+  public TestServerCertificateValidator(X509Certificate certificate) {
+    trustedCertificates.add(certificate);
+  }
 
-    public TestServerCertificateValidator(X509Certificate... certificates) {
-        Collections.addAll(trustedCertificates, certificates);
-    }
+  public TestServerCertificateValidator(X509Certificate... certificates) {
+    Collections.addAll(trustedCertificates, certificates);
+  }
 
-    @Override
-    public void validateCertificateChain(
-        List<X509Certificate> certificateChain,
-        String applicationUri,
-        String[] validHostnames
-    ) throws UaException {
+  @Override
+  public void validateCertificateChain(
+      List<X509Certificate> certificateChain, String applicationUri, String[] validHostnames)
+      throws UaException {
 
-        // noop
-    }
-
+    // noop
+  }
 }

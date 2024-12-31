@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -18,62 +18,64 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.4.6">https://reference.opcfoundation.org/v105/Core/docs/Part20/4.4.6</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.4.6">https://reference.opcfoundation.org/v105/Core/docs/Part20/4.4.6</a>
  */
 public interface FileTransferStateMachineType extends FiniteStateMachineType {
-    InitialStateType getIdleNode();
+  InitialStateType getIdleNode();
 
-    StateType getReadPrepareNode();
+  StateType getReadPrepareNode();
 
-    StateType getReadTransferNode();
+  StateType getReadTransferNode();
 
-    StateType getApplyWriteNode();
+  StateType getApplyWriteNode();
 
-    StateType getErrorNode();
+  StateType getErrorNode();
 
-    TransitionType getIdleToReadPrepareNode();
+  TransitionType getIdleToReadPrepareNode();
 
-    TransitionType getReadPrepareToReadTransferNode();
+  TransitionType getReadPrepareToReadTransferNode();
 
-    TransitionType getReadTransferToIdleNode();
+  TransitionType getReadTransferToIdleNode();
 
-    TransitionType getIdleToApplyWriteNode();
+  TransitionType getIdleToApplyWriteNode();
 
-    TransitionType getApplyWriteToIdleNode();
+  TransitionType getApplyWriteToIdleNode();
 
-    TransitionType getReadPrepareToErrorNode();
+  TransitionType getReadPrepareToErrorNode();
 
-    TransitionType getReadTransferToErrorNode();
+  TransitionType getReadTransferToErrorNode();
 
-    TransitionType getApplyWriteToErrorNode();
+  TransitionType getApplyWriteToErrorNode();
 
-    TransitionType getErrorToIdleNode();
+  TransitionType getErrorToIdleNode();
 
-    MethodNode getResetMethodNode();
+  MethodNode getResetMethodNode();
 
-    abstract class ResetMethod extends AbstractMethodInvocationHandler {
-        public ResetMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            invoke(context);
-            return new Variant[]{};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context) throws
-            UaException;
+  abstract class ResetMethod extends AbstractMethodInvocationHandler {
+    public ResetMethod(UaMethodNode node) {
+      super(node);
     }
+
+    @Override
+    public Argument[] getInputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      invoke(context);
+      return new Variant[] {};
+    }
+
+    protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context)
+        throws UaException;
+  }
 }

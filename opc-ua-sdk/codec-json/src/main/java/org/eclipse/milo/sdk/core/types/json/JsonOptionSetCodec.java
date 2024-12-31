@@ -22,36 +22,37 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 
 public class JsonOptionSetCodec extends GenericDataTypeCodec<JsonStruct> {
 
-    private final DataType dataType;
+  private final DataType dataType;
 
-    public JsonOptionSetCodec(DataType dataType) {
-        this.dataType = dataType;
-    }
+  public JsonOptionSetCodec(DataType dataType) {
+    this.dataType = dataType;
+  }
 
-    @Override
-    public Class<JsonStruct> getType() {
-        return JsonStruct.class;
-    }
+  @Override
+  public Class<JsonStruct> getType() {
+    return JsonStruct.class;
+  }
 
-    @Override
-    public JsonStruct decodeType(EncodingContext context, UaDecoder decoder) throws UaSerializationException {
-        ByteString value = decoder.decodeByteString("Value");
-        ByteString validBits = decoder.decodeByteString("ValidBits");
+  @Override
+  public JsonStruct decodeType(EncodingContext context, UaDecoder decoder)
+      throws UaSerializationException {
+    ByteString value = decoder.decodeByteString("Value");
+    ByteString validBits = decoder.decodeByteString("ValidBits");
 
-        var jsonObject = new JsonObject();
-        jsonObject.add("Value", JsonConversions.fromByteString(value));
-        jsonObject.add("ValidBits", JsonConversions.fromByteString(validBits));
+    var jsonObject = new JsonObject();
+    jsonObject.add("Value", JsonConversions.fromByteString(value));
+    jsonObject.add("ValidBits", JsonConversions.fromByteString(validBits));
 
-        return new JsonStruct(dataType, jsonObject);
-    }
+    return new JsonStruct(dataType, jsonObject);
+  }
 
-    @Override
-    public void encodeType(EncodingContext context, UaEncoder encoder, JsonStruct value) throws UaSerializationException {
-        JsonElement valueElement = value.getJsonObject().get("Value");
-        JsonElement validBitsElement = value.getJsonObject().get("ValidBits");
+  @Override
+  public void encodeType(EncodingContext context, UaEncoder encoder, JsonStruct value)
+      throws UaSerializationException {
+    JsonElement valueElement = value.getJsonObject().get("Value");
+    JsonElement validBitsElement = value.getJsonObject().get("ValidBits");
 
-        encoder.encodeByteString("Value", JsonConversions.toByteString(valueElement));
-        encoder.encodeByteString("ValidBits", JsonConversions.toByteString(validBitsElement));
-    }
-
+    encoder.encodeByteString("Value", JsonConversions.toByteString(valueElement));
+    encoder.encodeByteString("ValidBits", JsonConversions.toByteString(validBitsElement));
+  }
 }

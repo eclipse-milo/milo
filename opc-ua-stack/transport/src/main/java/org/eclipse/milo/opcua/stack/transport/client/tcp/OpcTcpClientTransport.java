@@ -10,11 +10,7 @@
 
 package org.eclipse.milo.opcua.stack.transport.client.tcp;
 
-import java.net.ConnectException;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
 import com.digitalpetri.fsm.FsmContext;
 import com.digitalpetri.netty.fsm.ChannelActions;
@@ -37,6 +33,11 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
+import java.net.ConnectException;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -53,26 +54,26 @@ import org.eclipse.milo.opcua.stack.transport.client.uasc.UascClientAcknowledgeH
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
-
 public class OpcTcpClientTransport extends AbstractUascClientTransport {
 
-    private static final FsmContext.Key<ClientApplicationContext> KEY_CLIENT_APPLICATION =
-        new FsmContext.Key<>("clientApplication", ClientApplicationContext.class);
+  private static final FsmContext.Key<ClientApplicationContext> KEY_CLIENT_APPLICATION =
+      new FsmContext.Key<>("clientApplication", ClientApplicationContext.class);
 
-    private static final String CHANNEL_FSM_LOGGER_NAME = "org.eclipse.milo.opcua.stack.client.ChannelFsm";
-    private static final AtomicLong INSTANCE_ID = new AtomicLong();
+  private static final String CHANNEL_FSM_LOGGER_NAME =
+      "org.eclipse.milo.opcua.stack.client.ChannelFsm";
+  private static final AtomicLong INSTANCE_ID = new AtomicLong();
 
-    private final ChannelFsm channelFsm;
+  private final ChannelFsm channelFsm;
 
-    private final OpcTcpClientTransportConfig config;
+  private final OpcTcpClientTransportConfig config;
 
-    public OpcTcpClientTransport(OpcTcpClientTransportConfig config) {
-        super(config);
+  public OpcTcpClientTransport(OpcTcpClientTransportConfig config) {
+    super(config);
 
-        this.config = config;
+    this.config = config;
 
-        ChannelFsmConfig fsmConfig = ChannelFsmConfig.newBuilder()
+    ChannelFsmConfig fsmConfig =
+        ChannelFsmConfig.newBuilder()
             .setLazy(false) // reconnect immediately
             .setMaxIdleSeconds(0) // keep alive handled by SessionFsm
             .setMaxReconnectDelaySeconds(16)
@@ -84,150 +85,142 @@ public class OpcTcpClientTransport extends AbstractUascClientTransport {
             .setLoggingContext(Map.of("instance-id", String.valueOf(INSTANCE_ID.incrementAndGet())))
             .build();
 
-        var factory = new ChannelFsmFactory(fsmConfig);
+    var factory = new ChannelFsmFactory(fsmConfig);
 
-        channelFsm = factory.newChannelFsm();
-    }
+    channelFsm = factory.newChannelFsm();
+  }
+
+  @Override
+  public OpcTcpClientTransportConfig getConfig() {
+    return config;
+  }
+
+  @Override
+  public CompletableFuture<Unit> connect(ClientApplicationContext applicationContext) {
+    channelFsm.getFsm().withContext(ctx -> ctx.set(KEY_CLIENT_APPLICATION, applicationContext));
+
+    return channelFsm.connect().thenApply(c -> Unit.VALUE);
+  }
+
+  @Override
+  public CompletableFuture<Unit> disconnect() {
+    return channelFsm.disconnect().thenApply(v -> Unit.VALUE);
+  }
+
+  @Override
+  protected CompletableFuture<Channel> getChannel() {
+    return channelFsm.getChannel();
+  }
+
+  public ChannelFsm getChannelFsm() {
+    return channelFsm;
+  }
+
+  private class ClientChannelActions implements ChannelActions {
+
+    private final Logger logger = LoggerFactory.getLogger(CHANNEL_FSM_LOGGER_NAME);
 
     @Override
-    public OpcTcpClientTransportConfig getConfig() {
-        return config;
-    }
+    public CompletableFuture<Channel> connect(FsmContext<State, Event> ctx) {
+      ClientApplicationContext application =
+          (ClientApplicationContext) ctx.get(KEY_CLIENT_APPLICATION);
 
-    @Override
-    public CompletableFuture<Unit> connect(ClientApplicationContext applicationContext) {
-        channelFsm.getFsm().withContext(
-            ctx ->
-                ctx.set(KEY_CLIENT_APPLICATION, applicationContext)
-        );
+      var handshakeFuture = new CompletableFuture<ClientSecureChannel>();
 
-        return channelFsm.connect().thenApply(c -> Unit.VALUE);
-    }
+      var bootstrap = new Bootstrap();
 
-    @Override
-    public CompletableFuture<Unit> disconnect() {
-        return channelFsm.disconnect().thenApply(v -> Unit.VALUE);
-    }
+      bootstrap
+          .channel(NioSocketChannel.class)
+          .group(OpcTcpClientTransport.this.config.getEventLoop())
+          .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+          .option(
+              ChannelOption.CONNECT_TIMEOUT_MILLIS,
+              OpcTcpClientTransport.this.config.getConnectTimeout().intValue())
+          .option(ChannelOption.TCP_NODELAY, true)
+          .handler(
+              new ChannelInitializer<SocketChannel>() {
+                @Override
+                protected void initChannel(SocketChannel ch) {
+                  var acknowledgeHandler =
+                      new UascClientAcknowledgeHandler(
+                          config, application, requestId::getAndIncrement, handshakeFuture);
 
-    @Override
-    protected CompletableFuture<Channel> getChannel() {
-        return channelFsm.getChannel();
-    }
+                  ch.pipeline()
+                      .addLast(new DelegatingUascResponseHandler(OpcTcpClientTransport.this));
+                  ch.pipeline().addLast(acknowledgeHandler);
 
-    public ChannelFsm getChannelFsm() {
-        return channelFsm;
-    }
-
-    private class ClientChannelActions implements ChannelActions {
-
-        private final Logger logger = LoggerFactory.getLogger(CHANNEL_FSM_LOGGER_NAME);
-
-        @Override
-        public CompletableFuture<Channel> connect(FsmContext<State, Event> ctx) {
-            ClientApplicationContext application = (ClientApplicationContext) ctx.get(KEY_CLIENT_APPLICATION);
-
-            var handshakeFuture = new CompletableFuture<ClientSecureChannel>();
-
-            var bootstrap = new Bootstrap();
-
-            bootstrap.channel(NioSocketChannel.class)
-                .group(OpcTcpClientTransport.this.config.getEventLoop())
-                .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS,
-                    OpcTcpClientTransport.this.config.getConnectTimeout().intValue())
-                .option(ChannelOption.TCP_NODELAY, true)
-                .handler(new ChannelInitializer<SocketChannel>() {
-                    @Override
-                    protected void initChannel(SocketChannel ch) {
-                        var acknowledgeHandler = new UascClientAcknowledgeHandler(
-                            config,
-                            application,
-                            requestId::getAndIncrement,
-                            handshakeFuture
-                        );
-
-                        ch.pipeline().addLast(new DelegatingUascResponseHandler(OpcTcpClientTransport.this));
-                        ch.pipeline().addLast(acknowledgeHandler);
-
-                        config.getChannelPipelineCustomizer().accept(ch.pipeline());
-                    }
-                });
-
-            config.getBootstrapCustomizer().accept(bootstrap);
-
-            String endpointUrl = application.getEndpoint().getEndpointUrl();
-
-            String host = EndpointUtil.getHost(endpointUrl);
-            assert host != null;
-
-            int port = EndpointUtil.getPort(endpointUrl);
-
-            bootstrap.connect(host, port).addListener((ChannelFuture f) -> {
-                if (!f.isSuccess()) {
-                    Throwable cause = f.cause();
-
-                    if (cause instanceof ConnectTimeoutException) {
-                        handshakeFuture.completeExceptionally(
-                            new UaException(StatusCodes.Bad_Timeout, f.cause())
-                        );
-                    } else if (cause instanceof ConnectException) {
-                        handshakeFuture.completeExceptionally(
-                            new UaException(StatusCodes.Bad_ConnectionRejected, f.cause())
-                        );
-                    } else {
-                        handshakeFuture.completeExceptionally(cause);
-                    }
+                  config.getChannelPipelineCustomizer().accept(ch.pipeline());
                 }
-            });
+              });
 
-            return handshakeFuture.thenApply(ClientSecureChannel::getChannel);
-        }
+      config.getBootstrapCustomizer().accept(bootstrap);
 
-        @Override
-        public CompletableFuture<Void> disconnect(FsmContext<State, Event> ctx, Channel channel) {
-            var disconnectFuture = new CompletableFuture<Void>();
+      String endpointUrl = application.getEndpoint().getEndpointUrl();
 
-            TimerTask onTimeout = t -> channel.close().addListener(
-                (ChannelFutureListener) channelFuture ->
-                    disconnectFuture.complete(null)
-            );
+      String host = EndpointUtil.getHost(endpointUrl);
+      assert host != null;
 
-            Timeout timeout = config.getWheelTimer().newTimeout(
-                onTimeout,
-                5,
-                TimeUnit.SECONDS
-            );
+      int port = EndpointUtil.getPort(endpointUrl);
 
-            channel.pipeline().addFirst(new ChannelInboundHandlerAdapter() {
+      bootstrap
+          .connect(host, port)
+          .addListener(
+              (ChannelFuture f) -> {
+                if (!f.isSuccess()) {
+                  Throwable cause = f.cause();
+
+                  if (cause instanceof ConnectTimeoutException) {
+                    handshakeFuture.completeExceptionally(
+                        new UaException(StatusCodes.Bad_Timeout, f.cause()));
+                  } else if (cause instanceof ConnectException) {
+                    handshakeFuture.completeExceptionally(
+                        new UaException(StatusCodes.Bad_ConnectionRejected, f.cause()));
+                  } else {
+                    handshakeFuture.completeExceptionally(cause);
+                  }
+                }
+              });
+
+      return handshakeFuture.thenApply(ClientSecureChannel::getChannel);
+    }
+
+    @Override
+    public CompletableFuture<Void> disconnect(FsmContext<State, Event> ctx, Channel channel) {
+      var disconnectFuture = new CompletableFuture<Void>();
+
+      TimerTask onTimeout =
+          t ->
+              channel
+                  .close()
+                  .addListener(
+                      (ChannelFutureListener) channelFuture -> disconnectFuture.complete(null));
+
+      Timeout timeout = config.getWheelTimer().newTimeout(onTimeout, 5, TimeUnit.SECONDS);
+
+      channel
+          .pipeline()
+          .addFirst(
+              new ChannelInboundHandlerAdapter() {
                 @Override
                 public void channelInactive(ChannelHandlerContext channelContext) throws Exception {
-                    // TODO MDC?
-                    logger.debug("channelInactive() disconnect complete");
-                    timeout.cancel();
-                    disconnectFuture.complete(null);
-                    super.channelInactive(channelContext);
+                  // TODO MDC?
+                  logger.debug("channelInactive() disconnect complete");
+                  timeout.cancel();
+                  disconnectFuture.complete(null);
+                  super.channelInactive(channelContext);
                 }
-            });
+              });
 
-            var requestHeader = new RequestHeader(
-                NodeId.NULL_VALUE,
-                DateTime.now(),
-                uint(0),
-                uint(0),
-                null,
-                uint(0),
-                null
-            );
+      var requestHeader =
+          new RequestHeader(
+              NodeId.NULL_VALUE, DateTime.now(), uint(0), uint(0), null, uint(0), null);
 
-            // TODO MDC?
-            logger.debug("Sending CloseSecureChannelRequest...");
+      // TODO MDC?
+      logger.debug("Sending CloseSecureChannelRequest...");
 
-            channel.pipeline().fireUserEventTriggered(new CloseSecureChannelRequest(requestHeader));
+      channel.pipeline().fireUserEventTriggered(new CloseSecureChannelRequest(requestHeader));
 
-            return disconnectFuture;
-        }
-
+      return disconnectFuture;
     }
-
-
+  }
 }

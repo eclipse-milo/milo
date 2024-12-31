@@ -27,198 +27,307 @@ import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.util.Lazy;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.5.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/8.5.1</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.5.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/8.5.1</a>
  */
 public interface SecurityGroupFolderType extends FolderType {
-    QualifiedProperty<String[]> SUPPORTED_SECURITY_POLICY_URIS = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "SupportedSecurityPolicyUris",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-        1,
-        String[].class
-    );
+  QualifiedProperty<String[]> SUPPORTED_SECURITY_POLICY_URIS =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "SupportedSecurityPolicyUris",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          1,
+          String[].class);
 
-    String[] getSupportedSecurityPolicyUris();
+  String[] getSupportedSecurityPolicyUris();
 
-    void setSupportedSecurityPolicyUris(String[] value);
+  void setSupportedSecurityPolicyUris(String[] value);
 
-    PropertyType getSupportedSecurityPolicyUrisNode();
+  PropertyType getSupportedSecurityPolicyUrisNode();
 
-    MethodNode getAddSecurityGroupMethodNode();
+  MethodNode getAddSecurityGroupMethodNode();
 
-    MethodNode getRemoveSecurityGroupMethodNode();
+  MethodNode getRemoveSecurityGroupMethodNode();
 
-    MethodNode getAddSecurityGroupFolderMethodNode();
+  MethodNode getAddSecurityGroupFolderMethodNode();
 
-    MethodNode getRemoveSecurityGroupFolderMethodNode();
+  MethodNode getRemoveSecurityGroupFolderMethodNode();
 
-    abstract class AddSecurityGroupMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
+  abstract class AddSecurityGroupMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
 
-        private final Lazy<Argument[]> outputArguments = new Lazy<>();
+    private final Lazy<Argument[]> outputArguments = new Lazy<>();
 
-        public AddSecurityGroupMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("SecurityGroupName", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "")),
-                    new Argument("KeyLifetime", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "")),
-                    new Argument("SecurityPolicyUri", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "")),
-                    new Argument("MaxFutureKeyCount", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "")),
-                    new Argument("MaxPastKeyCount", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return outputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("SecurityGroupId", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", "")),
-                    new Argument("SecurityGroupNodeId", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            String securityGroupName = (String) inputValues[0].getValue();
-            Double keyLifetime = (Double) inputValues[1].getValue();
-            String securityPolicyUri = (String) inputValues[2].getValue();
-            UInteger maxFutureKeyCount = (UInteger) inputValues[3].getValue();
-            UInteger maxPastKeyCount = (UInteger) inputValues[4].getValue();
-            Out<String> securityGroupId = new Out<>();
-            Out<NodeId> securityGroupNodeId = new Out<>();
-            invoke(context, securityGroupName, keyLifetime, securityPolicyUri, maxFutureKeyCount, maxPastKeyCount, securityGroupId, securityGroupNodeId);
-            return new Variant[]{new Variant(securityGroupId.get()), new Variant(securityGroupNodeId.get())};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       String securityGroupName, Double keyLifetime, String securityPolicyUri,
-                                       UInteger maxFutureKeyCount, UInteger maxPastKeyCount, Out<String> securityGroupId,
-                                       Out<NodeId> securityGroupNodeId) throws UaException;
+    public AddSecurityGroupMethod(UaMethodNode node) {
+      super(node);
     }
 
-    abstract class RemoveSecurityGroupMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
 
-        public RemoveSecurityGroupMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("SecurityGroupNodeId", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            NodeId securityGroupNodeId = (NodeId) inputValues[0].getValue();
-            invoke(context, securityGroupNodeId);
-            return new Variant[]{};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       NodeId securityGroupNodeId) throws UaException;
+            return new Argument[] {
+              new Argument(
+                  "SecurityGroupName",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "KeyLifetime",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "SecurityPolicyUri",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "MaxFutureKeyCount",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "MaxPastKeyCount",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
     }
 
-    abstract class AddSecurityGroupFolderMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
+    @Override
+    public Argument[] getOutputArguments() {
+      return outputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
 
-        private final Lazy<Argument[]> outputArguments = new Lazy<>();
-
-        public AddSecurityGroupFolderMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("Name", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return outputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("SecurityGroupFolderNodeId", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            String name = (String) inputValues[0].getValue();
-            Out<NodeId> securityGroupFolderNodeId = new Out<>();
-            invoke(context, name, securityGroupFolderNodeId);
-            return new Variant[]{new Variant(securityGroupFolderNodeId.get())};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       String name, Out<NodeId> securityGroupFolderNodeId) throws UaException;
+            return new Argument[] {
+              new Argument(
+                  "SecurityGroupId",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "SecurityGroupNodeId",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
     }
 
-    abstract class RemoveSecurityGroupFolderMethod extends AbstractMethodInvocationHandler {
-        private final Lazy<Argument[]> inputArguments = new Lazy<>();
-
-        public RemoveSecurityGroupFolderMethod(UaMethodNode node) {
-            super(node);
-        }
-
-        @Override
-        public Argument[] getInputArguments() {
-            return inputArguments.get(() -> {
-                NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
-
-                return new Argument[]{
-                    new Argument("SecurityGroupFolderNodeId", ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17").toNodeId(namespaceTable).orElseThrow(), -1, null, new LocalizedText("", ""))
-                };
-            });
-        }
-
-        @Override
-        public Argument[] getOutputArguments() {
-            return new Argument[]{};
-        }
-
-        @Override
-        protected Variant[] invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                   Variant[] inputValues) throws UaException {
-            NodeId securityGroupFolderNodeId = (NodeId) inputValues[0].getValue();
-            invoke(context, securityGroupFolderNodeId);
-            return new Variant[]{};
-        }
-
-        protected abstract void invoke(AbstractMethodInvocationHandler.InvocationContext context,
-                                       NodeId securityGroupFolderNodeId) throws UaException;
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      String securityGroupName = (String) inputValues[0].getValue();
+      Double keyLifetime = (Double) inputValues[1].getValue();
+      String securityPolicyUri = (String) inputValues[2].getValue();
+      UInteger maxFutureKeyCount = (UInteger) inputValues[3].getValue();
+      UInteger maxPastKeyCount = (UInteger) inputValues[4].getValue();
+      Out<String> securityGroupId = new Out<>();
+      Out<NodeId> securityGroupNodeId = new Out<>();
+      invoke(
+          context,
+          securityGroupName,
+          keyLifetime,
+          securityPolicyUri,
+          maxFutureKeyCount,
+          maxPastKeyCount,
+          securityGroupId,
+          securityGroupNodeId);
+      return new Variant[] {
+        new Variant(securityGroupId.get()), new Variant(securityGroupNodeId.get())
+      };
     }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        String securityGroupName,
+        Double keyLifetime,
+        String securityPolicyUri,
+        UInteger maxFutureKeyCount,
+        UInteger maxPastKeyCount,
+        Out<String> securityGroupId,
+        Out<NodeId> securityGroupNodeId)
+        throws UaException;
+  }
+
+  abstract class RemoveSecurityGroupMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+
+    public RemoveSecurityGroupMethod(UaMethodNode node) {
+      super(node);
+    }
+
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "SecurityGroupNodeId",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      NodeId securityGroupNodeId = (NodeId) inputValues[0].getValue();
+      invoke(context, securityGroupNodeId);
+      return new Variant[] {};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, NodeId securityGroupNodeId)
+        throws UaException;
+  }
+
+  abstract class AddSecurityGroupFolderMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+
+    private final Lazy<Argument[]> outputArguments = new Lazy<>();
+
+    public AddSecurityGroupFolderMethod(UaMethodNode node) {
+      super(node);
+    }
+
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "Name",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return outputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "SecurityGroupFolderNodeId",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      String name = (String) inputValues[0].getValue();
+      Out<NodeId> securityGroupFolderNodeId = new Out<>();
+      invoke(context, name, securityGroupFolderNodeId);
+      return new Variant[] {new Variant(securityGroupFolderNodeId.get())};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        String name,
+        Out<NodeId> securityGroupFolderNodeId)
+        throws UaException;
+  }
+
+  abstract class RemoveSecurityGroupFolderMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+
+    public RemoveSecurityGroupFolderMethod(UaMethodNode node) {
+      super(node);
+    }
+
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "SecurityGroupFolderNodeId",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      NodeId securityGroupFolderNodeId = (NodeId) inputValues[0].getValue();
+      invoke(context, securityGroupFolderNodeId);
+      return new Variant[] {};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, NodeId securityGroupFolderNodeId)
+        throws UaException;
+  }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -12,11 +12,11 @@ package org.eclipse.milo.opcua.sdk.server.identity;
 
 import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
 
-public class DefaultAnonymousIdentity extends AbstractIdentity implements Identity.AnonymousIdentity {
+public class DefaultAnonymousIdentity extends AbstractIdentity
+    implements Identity.AnonymousIdentity {
 
-    @Override
-    public UserTokenType getUserTokenType() {
-        return UserTokenType.Anonymous;
-    }
-
+  @Override
+  public UserTokenType getUserTokenType() {
+    return UserTokenType.Anonymous;
+  }
 }

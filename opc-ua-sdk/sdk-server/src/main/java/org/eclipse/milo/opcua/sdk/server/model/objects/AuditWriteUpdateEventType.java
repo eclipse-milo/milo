@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -16,62 +16,63 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.25">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.25</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.25">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.25</a>
  */
 public interface AuditWriteUpdateEventType extends AuditUpdateEventType {
-    QualifiedProperty<UInteger> ATTRIBUTE_ID = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "AttributeId",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-        -1,
-        UInteger.class
-    );
+  QualifiedProperty<UInteger> ATTRIBUTE_ID =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "AttributeId",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          -1,
+          UInteger.class);
 
-    QualifiedProperty<String> INDEX_RANGE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "IndexRange",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=291"),
-        -1,
-        String.class
-    );
+  QualifiedProperty<String> INDEX_RANGE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "IndexRange",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=291"),
+          -1,
+          String.class);
 
-    QualifiedProperty<Object> OLD_VALUE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "OldValue",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
-        -1,
-        Object.class
-    );
+  QualifiedProperty<Object> OLD_VALUE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "OldValue",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
+          -1,
+          Object.class);
 
-    QualifiedProperty<Object> NEW_VALUE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "NewValue",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
-        -1,
-        Object.class
-    );
+  QualifiedProperty<Object> NEW_VALUE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "NewValue",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
+          -1,
+          Object.class);
 
-    UInteger getAttributeId();
+  UInteger getAttributeId();
 
-    void setAttributeId(UInteger value);
+  void setAttributeId(UInteger value);
 
-    PropertyType getAttributeIdNode();
+  PropertyType getAttributeIdNode();
 
-    String getIndexRange();
+  String getIndexRange();
 
-    void setIndexRange(String value);
+  void setIndexRange(String value);
 
-    PropertyType getIndexRangeNode();
+  PropertyType getIndexRangeNode();
 
-    Object getOldValue();
+  Object getOldValue();
 
-    void setOldValue(Object value);
+  void setOldValue(Object value);
 
-    PropertyType getOldValueNode();
+  PropertyType getOldValueNode();
 
-    Object getNewValue();
+  Object getNewValue();
 
-    void setNewValue(Object value);
+  void setNewValue(Object value);
 
-    PropertyType getNewValueNode();
+  PropertyType getNewValueNode();
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -19,78 +19,79 @@ import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.KeyValuePair;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.2">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.2</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.2">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.2</a>
  */
 public interface PubSubGroupType extends BaseObjectType {
-    QualifiedProperty<MessageSecurityMode> SECURITY_MODE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "SecurityMode",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=302"),
-        -1,
-        MessageSecurityMode.class
-    );
+  QualifiedProperty<MessageSecurityMode> SECURITY_MODE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "SecurityMode",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=302"),
+          -1,
+          MessageSecurityMode.class);
 
-    QualifiedProperty<String> SECURITY_GROUP_ID = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "SecurityGroupId",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-        -1,
-        String.class
-    );
+  QualifiedProperty<String> SECURITY_GROUP_ID =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "SecurityGroupId",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          -1,
+          String.class);
 
-    QualifiedProperty<EndpointDescription[]> SECURITY_KEY_SERVICES = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "SecurityKeyServices",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=312"),
-        1,
-        EndpointDescription[].class
-    );
+  QualifiedProperty<EndpointDescription[]> SECURITY_KEY_SERVICES =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "SecurityKeyServices",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=312"),
+          1,
+          EndpointDescription[].class);
 
-    QualifiedProperty<UInteger> MAX_NETWORK_MESSAGE_SIZE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "MaxNetworkMessageSize",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
-        -1,
-        UInteger.class
-    );
+  QualifiedProperty<UInteger> MAX_NETWORK_MESSAGE_SIZE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "MaxNetworkMessageSize",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          -1,
+          UInteger.class);
 
-    QualifiedProperty<KeyValuePair[]> GROUP_PROPERTIES = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "GroupProperties",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14533"),
-        1,
-        KeyValuePair[].class
-    );
+  QualifiedProperty<KeyValuePair[]> GROUP_PROPERTIES =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "GroupProperties",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=14533"),
+          1,
+          KeyValuePair[].class);
 
-    MessageSecurityMode getSecurityMode();
+  MessageSecurityMode getSecurityMode();
 
-    void setSecurityMode(MessageSecurityMode value);
+  void setSecurityMode(MessageSecurityMode value);
 
-    PropertyType getSecurityModeNode();
+  PropertyType getSecurityModeNode();
 
-    String getSecurityGroupId();
+  String getSecurityGroupId();
 
-    void setSecurityGroupId(String value);
+  void setSecurityGroupId(String value);
 
-    PropertyType getSecurityGroupIdNode();
+  PropertyType getSecurityGroupIdNode();
 
-    EndpointDescription[] getSecurityKeyServices();
+  EndpointDescription[] getSecurityKeyServices();
 
-    void setSecurityKeyServices(EndpointDescription[] value);
+  void setSecurityKeyServices(EndpointDescription[] value);
 
-    PropertyType getSecurityKeyServicesNode();
+  PropertyType getSecurityKeyServicesNode();
 
-    UInteger getMaxNetworkMessageSize();
+  UInteger getMaxNetworkMessageSize();
 
-    void setMaxNetworkMessageSize(UInteger value);
+  void setMaxNetworkMessageSize(UInteger value);
 
-    PropertyType getMaxNetworkMessageSizeNode();
+  PropertyType getMaxNetworkMessageSizeNode();
 
-    KeyValuePair[] getGroupProperties();
+  KeyValuePair[] getGroupProperties();
 
-    void setGroupProperties(KeyValuePair[] value);
+  void setGroupProperties(KeyValuePair[] value);
 
-    PropertyType getGroupPropertiesNode();
+  PropertyType getGroupPropertiesNode();
 
-    PubSubStatusType getStatusNode();
+  PubSubStatusType getStatusNode();
 }

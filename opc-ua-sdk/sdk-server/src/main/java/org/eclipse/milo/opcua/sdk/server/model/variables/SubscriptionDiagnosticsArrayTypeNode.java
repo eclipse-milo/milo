@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -11,7 +11,6 @@
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
 import java.util.Optional;
-
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
@@ -26,39 +25,101 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SubscriptionDiagnosticsDataType;
 
-public class SubscriptionDiagnosticsArrayTypeNode extends BaseDataVariableTypeNode implements SubscriptionDiagnosticsArrayType {
-    public SubscriptionDiagnosticsArrayTypeNode(UaNodeContext context, NodeId nodeId,
-                                                QualifiedName browseName, LocalizedText displayName, LocalizedText description,
-                                                UInteger writeMask, UInteger userWriteMask, RolePermissionType[] rolePermissions,
-                                                RolePermissionType[] userRolePermissions, AccessRestrictionType accessRestrictions,
-                                                DataValue value, NodeId dataType, Integer valueRank, UInteger[] arrayDimensions,
-                                                UByte accessLevel, UByte userAccessLevel, Double minimumSamplingInterval, boolean historizing,
-                                                AccessLevelExType accessLevelEx) {
-        super(context, nodeId, browseName, displayName, description, writeMask, userWriteMask, rolePermissions, userRolePermissions, accessRestrictions, value, dataType, valueRank, arrayDimensions, accessLevel, userAccessLevel, minimumSamplingInterval, historizing, accessLevelEx);
-    }
+public class SubscriptionDiagnosticsArrayTypeNode extends BaseDataVariableTypeNode
+    implements SubscriptionDiagnosticsArrayType {
+  public SubscriptionDiagnosticsArrayTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType[] rolePermissions,
+      RolePermissionType[] userRolePermissions,
+      AccessRestrictionType accessRestrictions,
+      DataValue value,
+      NodeId dataType,
+      Integer valueRank,
+      UInteger[] arrayDimensions,
+      UByte accessLevel,
+      UByte userAccessLevel,
+      Double minimumSamplingInterval,
+      boolean historizing,
+      AccessLevelExType accessLevelEx) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions,
+        value,
+        dataType,
+        valueRank,
+        arrayDimensions,
+        accessLevel,
+        userAccessLevel,
+        minimumSamplingInterval,
+        historizing,
+        accessLevelEx);
+  }
 
-    public SubscriptionDiagnosticsArrayTypeNode(UaNodeContext context, NodeId nodeId,
-                                                QualifiedName browseName, LocalizedText displayName, LocalizedText description,
-                                                UInteger writeMask, UInteger userWriteMask, RolePermissionType[] rolePermissions,
-                                                RolePermissionType[] userRolePermissions, AccessRestrictionType accessRestrictions,
-                                                DataValue value, NodeId dataType, Integer valueRank, UInteger[] arrayDimensions) {
-        super(context, nodeId, browseName, displayName, description, writeMask, userWriteMask, rolePermissions, userRolePermissions, accessRestrictions, value, dataType, valueRank, arrayDimensions);
-    }
+  public SubscriptionDiagnosticsArrayTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType[] rolePermissions,
+      RolePermissionType[] userRolePermissions,
+      AccessRestrictionType accessRestrictions,
+      DataValue value,
+      NodeId dataType,
+      Integer valueRank,
+      UInteger[] arrayDimensions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions,
+        value,
+        dataType,
+        valueRank,
+        arrayDimensions);
+  }
 
-    @Override
-    public SubscriptionDiagnosticsTypeNode getSubscriptionDiagnosticsNode() {
-        Optional<VariableNode> component = getVariableComponent("http://opcfoundation.org/UA/", "SubscriptionDiagnostics");
-        return (SubscriptionDiagnosticsTypeNode) component.orElse(null);
-    }
+  @Override
+  public SubscriptionDiagnosticsTypeNode getSubscriptionDiagnosticsNode() {
+    Optional<VariableNode> component =
+        getVariableComponent("http://opcfoundation.org/UA/", "SubscriptionDiagnostics");
+    return (SubscriptionDiagnosticsTypeNode) component.orElse(null);
+  }
 
-    @Override
-    public SubscriptionDiagnosticsDataType getSubscriptionDiagnostics() {
-        Optional<VariableNode> component = getVariableComponent("http://opcfoundation.org/UA/", "SubscriptionDiagnostics");
-        return component.map(node -> (SubscriptionDiagnosticsDataType) node.getValue().getValue().getValue()).orElse(null);
-    }
+  @Override
+  public SubscriptionDiagnosticsDataType getSubscriptionDiagnostics() {
+    Optional<VariableNode> component =
+        getVariableComponent("http://opcfoundation.org/UA/", "SubscriptionDiagnostics");
+    return component
+        .map(node -> (SubscriptionDiagnosticsDataType) node.getValue().getValue().getValue())
+        .orElse(null);
+  }
 
-    @Override
-    public void setSubscriptionDiagnostics(SubscriptionDiagnosticsDataType value) {
-        getVariableComponent("http://opcfoundation.org/UA/", "SubscriptionDiagnostics").ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
-    }
+  @Override
+  public void setSubscriptionDiagnostics(SubscriptionDiagnosticsDataType value) {
+    getVariableComponent("http://opcfoundation.org/UA/", "SubscriptionDiagnostics")
+        .ifPresent(n -> n.setValue(new DataValue(new Variant(value))));
+  }
 }

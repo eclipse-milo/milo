@@ -13,7 +13,6 @@ package org.eclipse.milo.examples.client;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
-
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.EventFilterBuilder;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaMonitoredItem;
@@ -27,49 +26,52 @@ import org.slf4j.LoggerFactory;
 
 public class SubscriptionEventExample implements ClientExample {
 
-    public static void main(String[] args) throws Exception {
-        var example = new SubscriptionEventExample();
+  public static void main(String[] args) throws Exception {
+    var example = new SubscriptionEventExample();
 
-        new ClientExampleRunner(example).run();
-    }
+    new ClientExampleRunner(example).run();
+  }
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Override
-    public void run(OpcUaClient client, CompletableFuture<OpcUaClient> future) throws Exception {
-        client.connect();
+  @Override
+  public void run(OpcUaClient client, CompletableFuture<OpcUaClient> future) throws Exception {
+    client.connect();
 
-        final CountDownLatch eventLatch = new CountDownLatch(3);
+    final CountDownLatch eventLatch = new CountDownLatch(3);
 
-        var subscription = new OpcUaSubscription(client);
+    var subscription = new OpcUaSubscription(client);
 
-        // Set a listener for data changes at the subscription level.
-        subscription.setSubscriptionListener(new OpcUaSubscription.SubscriptionListener() {
-            @Override
-            public void onEventReceived(
-                OpcUaSubscription subscription,
-                List<OpcUaMonitoredItem> items, List<Variant[]> fields
-            ) {
+    // Set a listener for data changes at the subscription level.
+    subscription.setSubscriptionListener(
+        new OpcUaSubscription.SubscriptionListener() {
+          @Override
+          public void onEventReceived(
+              OpcUaSubscription subscription,
+              List<OpcUaMonitoredItem> items,
+              List<Variant[]> fields) {
 
-                for (int i = 0; i < items.size(); i++) {
-                    Variant[] variants = fields.get(i);
+            for (int i = 0; i < items.size(); i++) {
+              Variant[] variants = fields.get(i);
 
-                    for (int j = 0; j < variants.length; j++) {
-                        logger.info(
-                            "subscription onEventReceived: nodeId={}, field[{}]={}",
-                            items.get(i).getReadValueId().getNodeId(), j, variants[j].getValue()
-                        );
-                    }
-                }
-
-                eventLatch.countDown();
+              for (int j = 0; j < variants.length; j++) {
+                logger.info(
+                    "subscription onEventReceived: nodeId={}, field[{}]={}",
+                    items.get(i).getReadValueId().getNodeId(),
+                    j,
+                    variants[j].getValue());
+              }
             }
+
+            eventLatch.countDown();
+          }
         });
 
-        // Create the subscription on the server.
-        subscription.create();
+    // Create the subscription on the server.
+    subscription.create();
 
-        EventFilter eventFilter = new EventFilterBuilder()
+    EventFilter eventFilter =
+        new EventFilterBuilder()
             .select(NodeIds.BaseEventType, new QualifiedName(0, "EventId"))
             .select(NodeIds.BaseEventType, new QualifiedName(0, "EventType"))
             .select(NodeIds.BaseEventType, new QualifiedName(0, "Severity"))
@@ -77,19 +79,18 @@ public class SubscriptionEventExample implements ClientExample {
             .select(NodeIds.BaseEventType, new QualifiedName(0, "Message"))
             .build();
 
-        var monitoredItem = OpcUaMonitoredItem.newEventItem(NodeIds.Server, eventFilter);
+    var monitoredItem = OpcUaMonitoredItem.newEventItem(NodeIds.Server, eventFilter);
 
-        subscription.addMonitoredItem(monitoredItem);
-        subscription.synchronizeMonitoredItems();
+    subscription.addMonitoredItem(monitoredItem);
+    subscription.synchronizeMonitoredItems();
 
-        // wait for some events to arrive before completing
-        eventLatch.await();
+    // wait for some events to arrive before completing
+    eventLatch.await();
 
-        subscription.removeMonitoredItem(monitoredItem);
-        subscription.synchronizeMonitoredItems();
-        subscription.delete();
+    subscription.removeMonitoredItem(monitoredItem);
+    subscription.synchronizeMonitoredItems();
+    subscription.delete();
 
-        future.complete(client);
-    }
-
+    future.complete(client);
+  }
 }

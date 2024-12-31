@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -20,21 +20,23 @@ import org.junit.jupiter.api.TestInstance;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class ReferenceTypeTreeBuilderTest {
 
-    private ReferenceTypeTree referenceTypeTree;
+  private ReferenceTypeTree referenceTypeTree;
 
-    @BeforeAll
-    public void buildReferenceTypeTree() throws Exception {
-        referenceTypeTree = ReferenceTypeTreeBuilder.build(TestServer.create());
-    }
+  @BeforeAll
+  public void buildReferenceTypeTree() throws Exception {
+    referenceTypeTree = ReferenceTypeTreeBuilder.build(TestServer.create());
+  }
 
-    @Test
-    void traverseFromRoot() {
-        referenceTypeTree.getRoot().traverseWithDepth((dataType, depth) -> {
-            for (int i = 0; i < depth; i++) {
+  @Test
+  void traverseFromRoot() {
+    referenceTypeTree
+        .getRoot()
+        .traverseWithDepth(
+            (dataType, depth) -> {
+              for (int i = 0; i < depth; i++) {
                 System.out.print("\t");
-            }
-            System.out.println(dataType.getBrowseName().toParseableString());
-        });
-    }
-
+              }
+              System.out.println(dataType.getBrowseName().toParseableString());
+            });
+  }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -17,136 +17,137 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ExceptionDeviationFormat;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part11/5.2.2</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part11/5.2.2</a>
  */
 public interface HistoricalDataConfigurationType extends BaseObjectType {
-    QualifiedProperty<Boolean> STEPPED = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "Stepped",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-        -1,
-        Boolean.class
-    );
+  QualifiedProperty<Boolean> STEPPED =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "Stepped",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          -1,
+          Boolean.class);
 
-    QualifiedProperty<String> DEFINITION = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "Definition",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
-        -1,
-        String.class
-    );
+  QualifiedProperty<String> DEFINITION =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "Definition",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          -1,
+          String.class);
 
-    QualifiedProperty<Double> MAX_TIME_INTERVAL = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "MaxTimeInterval",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-        -1,
-        Double.class
-    );
+  QualifiedProperty<Double> MAX_TIME_INTERVAL =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "MaxTimeInterval",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
+          -1,
+          Double.class);
 
-    QualifiedProperty<Double> MIN_TIME_INTERVAL = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "MinTimeInterval",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
-        -1,
-        Double.class
-    );
+  QualifiedProperty<Double> MIN_TIME_INTERVAL =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "MinTimeInterval",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
+          -1,
+          Double.class);
 
-    QualifiedProperty<Double> EXCEPTION_DEVIATION = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ExceptionDeviation",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
-        -1,
-        Double.class
-    );
+  QualifiedProperty<Double> EXCEPTION_DEVIATION =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ExceptionDeviation",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=11"),
+          -1,
+          Double.class);
 
-    QualifiedProperty<ExceptionDeviationFormat> EXCEPTION_DEVIATION_FORMAT = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ExceptionDeviationFormat",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=890"),
-        -1,
-        ExceptionDeviationFormat.class
-    );
+  QualifiedProperty<ExceptionDeviationFormat> EXCEPTION_DEVIATION_FORMAT =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ExceptionDeviationFormat",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=890"),
+          -1,
+          ExceptionDeviationFormat.class);
 
-    QualifiedProperty<DateTime> START_OF_ARCHIVE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "StartOfArchive",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-        -1,
-        DateTime.class
-    );
+  QualifiedProperty<DateTime> START_OF_ARCHIVE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "StartOfArchive",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
+          -1,
+          DateTime.class);
 
-    QualifiedProperty<DateTime> START_OF_ONLINE_ARCHIVE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "StartOfOnlineArchive",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
-        -1,
-        DateTime.class
-    );
+  QualifiedProperty<DateTime> START_OF_ONLINE_ARCHIVE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "StartOfOnlineArchive",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=294"),
+          -1,
+          DateTime.class);
 
-    QualifiedProperty<Boolean> SERVER_TIMESTAMP_SUPPORTED = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "ServerTimestampSupported",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
-        -1,
-        Boolean.class
-    );
+  QualifiedProperty<Boolean> SERVER_TIMESTAMP_SUPPORTED =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ServerTimestampSupported",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          -1,
+          Boolean.class);
 
-    Boolean getStepped();
+  Boolean getStepped();
 
-    void setStepped(Boolean value);
+  void setStepped(Boolean value);
 
-    PropertyType getSteppedNode();
+  PropertyType getSteppedNode();
 
-    String getDefinition();
+  String getDefinition();
 
-    void setDefinition(String value);
+  void setDefinition(String value);
 
-    PropertyType getDefinitionNode();
+  PropertyType getDefinitionNode();
 
-    Double getMaxTimeInterval();
+  Double getMaxTimeInterval();
 
-    void setMaxTimeInterval(Double value);
+  void setMaxTimeInterval(Double value);
 
-    PropertyType getMaxTimeIntervalNode();
+  PropertyType getMaxTimeIntervalNode();
 
-    Double getMinTimeInterval();
+  Double getMinTimeInterval();
 
-    void setMinTimeInterval(Double value);
+  void setMinTimeInterval(Double value);
 
-    PropertyType getMinTimeIntervalNode();
+  PropertyType getMinTimeIntervalNode();
 
-    Double getExceptionDeviation();
+  Double getExceptionDeviation();
 
-    void setExceptionDeviation(Double value);
+  void setExceptionDeviation(Double value);
 
-    PropertyType getExceptionDeviationNode();
+  PropertyType getExceptionDeviationNode();
 
-    ExceptionDeviationFormat getExceptionDeviationFormat();
+  ExceptionDeviationFormat getExceptionDeviationFormat();
 
-    void setExceptionDeviationFormat(ExceptionDeviationFormat value);
+  void setExceptionDeviationFormat(ExceptionDeviationFormat value);
 
-    PropertyType getExceptionDeviationFormatNode();
+  PropertyType getExceptionDeviationFormatNode();
 
-    DateTime getStartOfArchive();
+  DateTime getStartOfArchive();
 
-    void setStartOfArchive(DateTime value);
+  void setStartOfArchive(DateTime value);
 
-    PropertyType getStartOfArchiveNode();
+  PropertyType getStartOfArchiveNode();
 
-    DateTime getStartOfOnlineArchive();
+  DateTime getStartOfOnlineArchive();
 
-    void setStartOfOnlineArchive(DateTime value);
+  void setStartOfOnlineArchive(DateTime value);
 
-    PropertyType getStartOfOnlineArchiveNode();
+  PropertyType getStartOfOnlineArchiveNode();
 
-    Boolean getServerTimestampSupported();
+  Boolean getServerTimestampSupported();
 
-    void setServerTimestampSupported(Boolean value);
+  void setServerTimestampSupported(Boolean value);
 
-    PropertyType getServerTimestampSupportedNode();
+  PropertyType getServerTimestampSupportedNode();
 
-    AggregateConfigurationType getAggregateConfigurationNode();
+  AggregateConfigurationType getAggregateConfigurationNode();
 
-    FolderType getAggregateFunctionsNode();
+  FolderType getAggregateFunctionsNode();
 }

@@ -11,7 +11,6 @@
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
-
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
@@ -27,113 +26,127 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.EqualsBuilder;
 import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.6.2">https://reference.opcfoundation.org/v105/Core/docs/Part8/5.6.2</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.6.2">https://reference.opcfoundation.org/v105/Core/docs/Part8/5.6.2</a>
  */
 public class Range extends Structure implements UaStructuredType {
-    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=884");
+  public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=884");
 
-    public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=886");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=886");
 
-    public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=885");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=885");
 
-    public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15375");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15375");
 
-    private final Double low;
+  private final Double low;
 
-    private final Double high;
+  private final Double high;
 
-    public Range(Double low, Double high) {
-        this.low = low;
-        this.high = high;
+  public Range(Double low, Double high) {
+    this.low = low;
+    this.high = high;
+  }
+
+  @Override
+  public ExpandedNodeId getTypeId() {
+    return TYPE_ID;
+  }
+
+  @Override
+  public ExpandedNodeId getBinaryEncodingId() {
+    return BINARY_ENCODING_ID;
+  }
+
+  @Override
+  public ExpandedNodeId getXmlEncodingId() {
+    return XML_ENCODING_ID;
+  }
+
+  @Override
+  public ExpandedNodeId getJsonEncodingId() {
+    return JSON_ENCODING_ID;
+  }
+
+  public Double getLow() {
+    return low;
+  }
+
+  public Double getHigh() {
+    return high;
+  }
+
+  @Override
+  public boolean equals(Object object) {
+    if (this == object) {
+      return true;
+    } else if (object == null || getClass() != object.getClass()) {
+      return false;
+    }
+    Range that = (Range) object;
+    var eqb = new EqualsBuilder();
+    eqb.append(getLow(), that.getLow());
+    eqb.append(getHigh(), that.getHigh());
+    return eqb.build();
+  }
+
+  @Override
+  public int hashCode() {
+    var hcb = new HashCodeBuilder();
+    hcb.append(getLow());
+    hcb.append(getHigh());
+    return hcb.build();
+  }
+
+  @Override
+  public String toString() {
+    var joiner = new StringJoiner(", ", Range.class.getSimpleName() + "[", "]");
+    joiner.add("low=" + getLow());
+    joiner.add("high=" + getHigh());
+    return joiner.toString();
+  }
+
+  public static StructureDefinition definition(NamespaceTable namespaceTable) {
+    return new StructureDefinition(
+        new NodeId(0, 886),
+        new NodeId(0, 22),
+        StructureType.Structure,
+        new StructureField[] {
+          new StructureField(
+              "Low",
+              LocalizedText.NULL_VALUE,
+              new NodeId(0, 11),
+              -1,
+              null,
+              UInteger.valueOf(0),
+              false),
+          new StructureField(
+              "High",
+              LocalizedText.NULL_VALUE,
+              new NodeId(0, 11),
+              -1,
+              null,
+              UInteger.valueOf(0),
+              false)
+        });
+  }
+
+  public static final class Codec extends GenericDataTypeCodec<Range> {
+    @Override
+    public Class<Range> getType() {
+      return Range.class;
     }
 
     @Override
-    public ExpandedNodeId getTypeId() {
-        return TYPE_ID;
+    public Range decodeType(EncodingContext context, UaDecoder decoder) {
+      Double low = decoder.decodeDouble("Low");
+      Double high = decoder.decodeDouble("High");
+      return new Range(low, high);
     }
 
     @Override
-    public ExpandedNodeId getBinaryEncodingId() {
-        return BINARY_ENCODING_ID;
+    public void encodeType(EncodingContext context, UaEncoder encoder, Range value) {
+      encoder.encodeDouble("Low", value.getLow());
+      encoder.encodeDouble("High", value.getHigh());
     }
-
-    @Override
-    public ExpandedNodeId getXmlEncodingId() {
-        return XML_ENCODING_ID;
-    }
-
-    @Override
-    public ExpandedNodeId getJsonEncodingId() {
-        return JSON_ENCODING_ID;
-    }
-
-    public Double getLow() {
-        return low;
-    }
-
-    public Double getHigh() {
-        return high;
-    }
-
-    @Override
-    public boolean equals(Object object) {
-        if (this == object) {
-            return true;
-        } else if (object == null || getClass() != object.getClass()) {
-            return false;
-        }
-        Range that = (Range) object;
-        var eqb = new EqualsBuilder();
-        eqb.append(getLow(), that.getLow());
-        eqb.append(getHigh(), that.getHigh());
-        return eqb.build();
-    }
-
-    @Override
-    public int hashCode() {
-        var hcb = new HashCodeBuilder();
-        hcb.append(getLow());
-        hcb.append(getHigh());
-        return hcb.build();
-    }
-
-    @Override
-    public String toString() {
-        var joiner = new StringJoiner(", ", Range.class.getSimpleName() + "[", "]");
-        joiner.add("low=" + getLow());
-        joiner.add("high=" + getHigh());
-        return joiner.toString();
-    }
-
-    public static StructureDefinition definition(NamespaceTable namespaceTable) {
-        return new StructureDefinition(
-            new NodeId(0, 886),
-            new NodeId(0, 22),
-            StructureType.Structure,
-            new StructureField[]{
-                new StructureField("Low", LocalizedText.NULL_VALUE, new NodeId(0, 11), -1, null, UInteger.valueOf(0), false),
-                new StructureField("High", LocalizedText.NULL_VALUE, new NodeId(0, 11), -1, null, UInteger.valueOf(0), false)
-            }
-        );
-    }
-
-    public static final class Codec extends GenericDataTypeCodec<Range> {
-        @Override
-        public Class<Range> getType() {
-            return Range.class;
-        }
-
-        @Override
-        public Range decodeType(EncodingContext context, UaDecoder decoder) {
-            Double low = decoder.decodeDouble("Low");
-            Double high = decoder.decodeDouble("High");
-            return new Range(low, high);
-        }
-
-        @Override
-        public void encodeType(EncodingContext context, UaEncoder encoder, Range value) {
-            encoder.encodeDouble("Low", value.getLow());
-            encoder.encodeDouble("High", value.getHigh());
-        }
-    }
+  }
 }

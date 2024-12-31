@@ -12,7 +12,6 @@ package org.eclipse.milo.examples.client;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaMonitoredItem;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaSubscription;
@@ -28,78 +27,76 @@ import org.slf4j.LoggerFactory;
 
 public class EventSubscriptionExample implements ClientExample {
 
-    public static void main(String[] args) throws Exception {
-        var example = new EventSubscriptionExample();
+  public static void main(String[] args) throws Exception {
+    var example = new EventSubscriptionExample();
 
-        new ClientExampleRunner(example, true).run();
-    }
+    new ClientExampleRunner(example, true).run();
+  }
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Override
-    public void run(OpcUaClient client, CompletableFuture<OpcUaClient> future) throws Exception {
-        client.connect();
+  @Override
+  public void run(OpcUaClient client, CompletableFuture<OpcUaClient> future) throws Exception {
+    client.connect();
 
-        // create a subscription and a monitored item
-        final var subscription = new OpcUaSubscription(client);
-        subscription.create();
+    // create a subscription and a monitored item
+    final var subscription = new OpcUaSubscription(client);
+    subscription.create();
 
-        EventFilter eventFilter = new EventFilter(
-            new SimpleAttributeOperand[]{
-                new SimpleAttributeOperand(
-                    NodeIds.BaseEventType,
-                    new QualifiedName[]{new QualifiedName(0, "EventId")},
-                    AttributeId.Value.uid(),
-                    null),
-                new SimpleAttributeOperand(
-                    NodeIds.BaseEventType,
-                    new QualifiedName[]{new QualifiedName(0, "EventType")},
-                    AttributeId.Value.uid(),
-                    null),
-                new SimpleAttributeOperand(
-                    NodeIds.BaseEventType,
-                    new QualifiedName[]{new QualifiedName(0, "Severity")},
-                    AttributeId.Value.uid(),
-                    null),
-                new SimpleAttributeOperand(
-                    NodeIds.BaseEventType,
-                    new QualifiedName[]{new QualifiedName(0, "Time")},
-                    AttributeId.Value.uid(),
-                    null),
-                new SimpleAttributeOperand(
-                    NodeIds.BaseEventType,
-                    new QualifiedName[]{new QualifiedName(0, "Message")},
-                    AttributeId.Value.uid(),
-                    null)
+    EventFilter eventFilter =
+        new EventFilter(
+            new SimpleAttributeOperand[] {
+              new SimpleAttributeOperand(
+                  NodeIds.BaseEventType,
+                  new QualifiedName[] {new QualifiedName(0, "EventId")},
+                  AttributeId.Value.uid(),
+                  null),
+              new SimpleAttributeOperand(
+                  NodeIds.BaseEventType,
+                  new QualifiedName[] {new QualifiedName(0, "EventType")},
+                  AttributeId.Value.uid(),
+                  null),
+              new SimpleAttributeOperand(
+                  NodeIds.BaseEventType,
+                  new QualifiedName[] {new QualifiedName(0, "Severity")},
+                  AttributeId.Value.uid(),
+                  null),
+              new SimpleAttributeOperand(
+                  NodeIds.BaseEventType,
+                  new QualifiedName[] {new QualifiedName(0, "Time")},
+                  AttributeId.Value.uid(),
+                  null),
+              new SimpleAttributeOperand(
+                  NodeIds.BaseEventType,
+                  new QualifiedName[] {new QualifiedName(0, "Message")},
+                  AttributeId.Value.uid(),
+                  null)
             },
-            new ContentFilter(null)
-        );
+            new ContentFilter(null));
 
-        final AtomicInteger eventCount = new AtomicInteger(0);
+    final AtomicInteger eventCount = new AtomicInteger(0);
 
-        var monitoredItem = OpcUaMonitoredItem.newEventItem(NodeIds.Server, eventFilter);
+    var monitoredItem = OpcUaMonitoredItem.newEventItem(NodeIds.Server, eventFilter);
 
-        monitoredItem.setEventValueListener((item, vs) -> {
-            logger.info(
-                "Event Received from {}",
-                item.getReadValueId().getNodeId());
+    monitoredItem.setEventValueListener(
+        (item, vs) -> {
+          logger.info("Event Received from {}", item.getReadValueId().getNodeId());
 
-            for (int i = 0; i < vs.length; i++) {
-                logger.info("\tvariant[{}]: {}", i, vs[i].getValue());
+          for (int i = 0; i < vs.length; i++) {
+            logger.info("\tvariant[{}]: {}", i, vs[i].getValue());
+          }
+
+          if (eventCount.incrementAndGet() == 3) {
+            try {
+              subscription.delete();
+            } catch (UaException e) {
+              throw new RuntimeException(e);
             }
-
-            if (eventCount.incrementAndGet() == 3) {
-                try {
-                    subscription.delete();
-                } catch (UaException e) {
-                    throw new RuntimeException(e);
-                }
-                future.complete(client);
-            }
+            future.complete(client);
+          }
         });
 
-        subscription.addMonitoredItem(monitoredItem);
-        subscription.synchronizeMonitoredItems();
-    }
-
+    subscription.addMonitoredItem(monitoredItem);
+    subscription.synchronizeMonitoredItems();
+  }
 }

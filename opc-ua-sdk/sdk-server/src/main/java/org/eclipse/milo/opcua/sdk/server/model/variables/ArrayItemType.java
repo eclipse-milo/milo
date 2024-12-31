@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -18,76 +18,77 @@ import org.eclipse.milo.opcua.stack.core.types.structured.EUInformation;
 import org.eclipse.milo.opcua.stack.core.types.structured.Range;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.4/#5.3.4.1">https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.4/#5.3.4.1</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.4/#5.3.4.1">https://reference.opcfoundation.org/v105/Core/docs/Part8/5.3.4/#5.3.4.1</a>
  */
 public interface ArrayItemType extends DataItemType {
-    QualifiedProperty<Range> INSTRUMENT_RANGE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "InstrumentRange",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=884"),
-        -1,
-        Range.class
-    );
+  QualifiedProperty<Range> INSTRUMENT_RANGE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "InstrumentRange",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=884"),
+          -1,
+          Range.class);
 
-    QualifiedProperty<Range> EU_RANGE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "EURange",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=884"),
-        -1,
-        Range.class
-    );
+  QualifiedProperty<Range> EU_RANGE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "EURange",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=884"),
+          -1,
+          Range.class);
 
-    QualifiedProperty<EUInformation> ENGINEERING_UNITS = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "EngineeringUnits",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=887"),
-        -1,
-        EUInformation.class
-    );
+  QualifiedProperty<EUInformation> ENGINEERING_UNITS =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "EngineeringUnits",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=887"),
+          -1,
+          EUInformation.class);
 
-    QualifiedProperty<LocalizedText> TITLE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "Title",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
-        -1,
-        LocalizedText.class
-    );
+  QualifiedProperty<LocalizedText> TITLE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "Title",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
+          -1,
+          LocalizedText.class);
 
-    QualifiedProperty<AxisScaleEnumeration> AXIS_SCALE_TYPE = new QualifiedProperty<>(
-        "http://opcfoundation.org/UA/",
-        "AxisScaleType",
-        ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12077"),
-        -1,
-        AxisScaleEnumeration.class
-    );
+  QualifiedProperty<AxisScaleEnumeration> AXIS_SCALE_TYPE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "AxisScaleType",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12077"),
+          -1,
+          AxisScaleEnumeration.class);
 
-    Range getInstrumentRange();
+  Range getInstrumentRange();
 
-    void setInstrumentRange(Range value);
+  void setInstrumentRange(Range value);
 
-    PropertyType getInstrumentRangeNode();
+  PropertyType getInstrumentRangeNode();
 
-    Range getEuRange();
+  Range getEuRange();
 
-    void setEuRange(Range value);
+  void setEuRange(Range value);
 
-    PropertyType getEuRangeNode();
+  PropertyType getEuRangeNode();
 
-    EUInformation getEngineeringUnits();
+  EUInformation getEngineeringUnits();
 
-    void setEngineeringUnits(EUInformation value);
+  void setEngineeringUnits(EUInformation value);
 
-    PropertyType getEngineeringUnitsNode();
+  PropertyType getEngineeringUnitsNode();
 
-    LocalizedText getTitle();
+  LocalizedText getTitle();
 
-    void setTitle(LocalizedText value);
+  void setTitle(LocalizedText value);
 
-    PropertyType getTitleNode();
+  PropertyType getTitleNode();
 
-    AxisScaleEnumeration getAxisScaleType();
+  AxisScaleEnumeration getAxisScaleType();
 
-    void setAxisScaleType(AxisScaleEnumeration value);
+  void setAxisScaleType(AxisScaleEnumeration value);
 
-    PropertyType getAxisScaleTypeNode();
+  PropertyType getAxisScaleTypeNode();
 }

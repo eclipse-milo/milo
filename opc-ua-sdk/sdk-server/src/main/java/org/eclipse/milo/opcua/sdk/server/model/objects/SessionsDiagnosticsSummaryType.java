@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -16,18 +16,19 @@ import org.eclipse.milo.opcua.stack.core.types.structured.SessionDiagnosticsData
 import org.eclipse.milo.opcua.stack.core.types.structured.SessionSecurityDiagnosticsDataType;
 
 /**
- * @see <a href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.4">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.4</a>
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.4">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.3.4</a>
  */
 public interface SessionsDiagnosticsSummaryType extends BaseObjectType {
-    SessionDiagnosticsArrayType getSessionDiagnosticsArrayNode();
+  SessionDiagnosticsArrayType getSessionDiagnosticsArrayNode();
 
-    SessionDiagnosticsDataType[] getSessionDiagnosticsArray();
+  SessionDiagnosticsDataType[] getSessionDiagnosticsArray();
 
-    void setSessionDiagnosticsArray(SessionDiagnosticsDataType[] value);
+  void setSessionDiagnosticsArray(SessionDiagnosticsDataType[] value);
 
-    SessionSecurityDiagnosticsArrayType getSessionSecurityDiagnosticsArrayNode();
+  SessionSecurityDiagnosticsArrayType getSessionSecurityDiagnosticsArrayNode();
 
-    SessionSecurityDiagnosticsDataType[] getSessionSecurityDiagnosticsArray();
+  SessionSecurityDiagnosticsDataType[] getSessionSecurityDiagnosticsArray();
 
-    void setSessionSecurityDiagnosticsArray(SessionSecurityDiagnosticsDataType[] value);
+  void setSessionSecurityDiagnosticsArray(SessionSecurityDiagnosticsDataType[] value);
 }
