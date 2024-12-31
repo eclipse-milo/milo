@@ -286,20 +286,20 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
           JsonConversions.fromExtensionObject(decoder.decodeExtensionObject(fieldName));
       case DataValue -> JsonConversions.fromDataValue(decoder.decodeDataValue(fieldName));
       case Variant -> {
-                Variant variant = decoder.decodeVariant(fieldName);
+        Variant variant = decoder.decodeVariant(fieldName);
 
-                if (variant.getValue() instanceof ExtensionObject xo) {
-                    try {
-                        JsonStruct jsonStruct = (JsonStruct) xo.decode(decoder.getEncodingContext());
+        if (variant.getValue() instanceof ExtensionObject xo) {
+          try {
+            JsonStruct jsonStruct = (JsonStruct) xo.decode(decoder.getEncodingContext());
 
-                        yield jsonStruct.getJsonObject();
-                    } catch (Exception e) {
-                        yield JsonConversions.fromVariant(variant);
-                    }
-                } else {
-                    yield JsonConversions.fromVariant(variant);
-                }
-            }
+            yield jsonStruct.getJsonObject();
+          } catch (Exception e) {
+            yield JsonConversions.fromVariant(variant);
+          }
+        } else {
+          yield JsonConversions.fromVariant(variant);
+        }
+      }
       default -> JsonNull.INSTANCE;
     };
   }
@@ -476,38 +476,41 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
           return array;
         }
       case ExtensionObject:
-        {        var array = new JsonArray();
-                for (ExtensionObject value : decoder.decodeExtensionObjectArray(fieldName)) {
-                    array.add(JsonConversions.fromExtensionObject(value));
-                }
-                return array;
-            }
-            case DataValue: {
-                var array = new JsonArray();
-                for (DataValue value : decoder.decodeDataValueArray(fieldName)) {
-                    array.add(JsonConversions.fromDataValue(value));
-                }
-                return array;
-            }
-            case Variant: {
-                var array = new JsonArray();
+        {
+          var array = new JsonArray();
+          for (ExtensionObject value : decoder.decodeExtensionObjectArray(fieldName)) {
+            array.add(JsonConversions.fromExtensionObject(value));
+          }
+          return array;
+        }
+      case DataValue:
+        {
+          var array = new JsonArray();
+          for (DataValue value : decoder.decodeDataValueArray(fieldName)) {
+            array.add(JsonConversions.fromDataValue(value));
+          }
+          return array;
+        }
+      case Variant:
+        {
+          var array = new JsonArray();
 
-                for (Variant variant : decoder.decodeVariantArray(fieldName)) {
-                    if (variant.getValue() instanceof ExtensionObject xo) {
-                        try {
-                            JsonStruct jsonStruct = (JsonStruct) xo.decode(decoder.getEncodingContext());
+          for (Variant variant : decoder.decodeVariantArray(fieldName)) {
+            if (variant.getValue() instanceof ExtensionObject xo) {
+              try {
+                JsonStruct jsonStruct = (JsonStruct) xo.decode(decoder.getEncodingContext());
 
-                            array.add(jsonStruct.getJsonObject());
-                        } catch (Exception e) {
-                            array.add(JsonConversions.fromVariant(variant));
-                        }
-                    } else {
-                        array.add(JsonConversions.fromVariant(variant));
-                    }
-                }
-
-                return array;
+                array.add(jsonStruct.getJsonObject());
+              } catch (Exception e) {
+                array.add(JsonConversions.fromVariant(variant));
+              }
+            } else {
+              array.add(JsonConversions.fromVariant(variant));
             }
+          }
+
+          return array;
+        }
       case DiagnosticInfo:
       default:
         return JsonNull.INSTANCE;
@@ -515,42 +518,43 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
   }
 
   static JsonElement decodeBuiltinDataTypeMatrix(EncodingContext context, Matrix matrix) {
-        return matrix.getBuiltinDataType()
-            .map(dataType ->
-                decodeBuiltinDataTypeMatrix(context, matrix.getElements(), dataType, matrix.getDimensions(), 0)
-            )
-            .orElse(JsonNull.INSTANCE);
-    }
+    return matrix
+        .getBuiltinDataType()
+        .map(
+            dataType ->
+                decodeBuiltinDataTypeMatrix(
+                    context, matrix.getElements(), dataType, matrix.getDimensions(), 0))
+        .orElse(JsonNull.INSTANCE);
+  }
 
-    private static JsonElement decodeBuiltinDataTypeMatrix(
-        EncodingContext context,
-        Object flatArray,
-        BuiltinDataType dataType,
-        int[] dimensions,
-        int offset
-    ) {
+  private static JsonElement decodeBuiltinDataTypeMatrix(
+      EncodingContext context,
+      Object flatArray,
+      BuiltinDataType dataType,
+      int[] dimensions,
+      int offset) {
 
-        var jsonArray = new JsonArray();
+    var jsonArray = new JsonArray();
 
     if (dimensions.length == 1) {
       for (int i = 0; i < dimensions[0]; i++) {
         if (dataType == BuiltinDataType.Variant) {
-                    try {
-                        Variant variant = (Variant) Array.get(flatArray, offset + i);
+          try {
+            Variant variant = (Variant) Array.get(flatArray, offset + i);
 
-                        if (variant.getValue() instanceof ExtensionObject xo) {
-                            JsonStruct jsonStruct = (JsonStruct) xo.decode(context);
+            if (variant.getValue() instanceof ExtensionObject xo) {
+              JsonStruct jsonStruct = (JsonStruct) xo.decode(context);
 
-                            jsonArray.add(jsonStruct.getJsonObject());
-                        } else {
-                            jsonArray.add(JsonConversions.fromVariant(variant));
-                        }
-                    } catch (Exception e) {
-                        jsonArray.add(JsonConversions.from(Array.get(flatArray, offset + i), dataType));
-                    }
-                } else {
-                    jsonArray.add(JsonConversions.from(Array.get(flatArray, offset + i), dataType));
-                }
+              jsonArray.add(jsonStruct.getJsonObject());
+            } else {
+              jsonArray.add(JsonConversions.fromVariant(variant));
+            }
+          } catch (Exception e) {
+            jsonArray.add(JsonConversions.from(Array.get(flatArray, offset + i), dataType));
+          }
+        } else {
+          jsonArray.add(JsonConversions.from(Array.get(flatArray, offset + i), dataType));
+        }
       }
     } else {
       int[] dimensionsTail = Arrays.copyOfRange(dimensions, 1, dimensions.length);
@@ -559,10 +563,10 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
         JsonElement e =
             decodeBuiltinDataTypeMatrix(
                 context,
-                    flatArray,
-                    dataType,
-                    dimensionsTail,
-                    offset + i * Arrays.stream(dimensionsTail).reduce(1, (a, b) -> a * b));
+                flatArray,
+                dataType,
+                dimensionsTail,
+                offset + i * Arrays.stream(dimensionsTail).reduce(1, (a, b) -> a * b));
         jsonArray.add(e);
       }
     }
@@ -571,8 +575,9 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
   }
 
   static JsonElement decodeEnumMatrix(EncodingContext context, Matrix matrix) {
-        return decodeBuiltinDataTypeMatrix(context, matrix.getElements(), BuiltinDataType.Int32, matrix.getDimensions(), 0);
-    }
+    return decodeBuiltinDataTypeMatrix(
+        context, matrix.getElements(), BuiltinDataType.Int32, matrix.getDimensions(), 0);
+  }
 
   static JsonElement decodeStructMatrix(EncodingContext context, Matrix matrix, boolean subtyped) {
     return decodeStructMatrix(context, matrix.getElements(), subtyped, matrix.getDimensions(), 0);
