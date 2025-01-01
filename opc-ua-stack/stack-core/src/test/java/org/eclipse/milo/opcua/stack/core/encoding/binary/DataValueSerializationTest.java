@@ -11,7 +11,7 @@
 package org.eclipse.milo.opcua.stack.core.encoding.binary;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
-import static org.testng.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.netty.buffer.ByteBuf;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
@@ -20,8 +20,9 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.util.BufferUtil;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class DataValueSerializationTest {
 
@@ -30,7 +31,8 @@ public class DataValueSerializationTest {
   private final OpcUaBinaryDecoder decoder =
       new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE);
 
-  @Test(dataProvider = "getValues")
+  @ParameterizedTest
+  @MethodSource("getValues")
   public void testDataValueRoundTrip(DataValue value) {
     ByteBuf buffer = BufferUtil.pooledBuffer();
     encoder.setBuffer(buffer);
@@ -42,8 +44,7 @@ public class DataValueSerializationTest {
     assertEquals(decodedValue, value);
   }
 
-  @DataProvider
-  public Object[][] getValues() {
+  public static Object[][] getValues() {
     return new Object[][] {
       {
         new DataValue(

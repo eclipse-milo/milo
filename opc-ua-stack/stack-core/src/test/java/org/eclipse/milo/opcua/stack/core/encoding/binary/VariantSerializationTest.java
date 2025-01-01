@@ -11,9 +11,10 @@
 package org.eclipse.milo.opcua.stack.core.encoding.binary;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -24,14 +25,14 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.ServiceCounterDataType;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class VariantSerializationTest extends BinarySerializationFixture {
 
-  @DataProvider(name = "VariantProvider")
-  public Object[][] getVariants() {
+  public static Object[][] getVariants() {
     return new Object[][] {
       {new Variant(null)},
       {new Variant("hello, world")},
@@ -46,7 +47,8 @@ public class VariantSerializationTest extends BinarySerializationFixture {
     };
   }
 
-  @Test(dataProvider = "VariantProvider")
+  @ParameterizedTest
+  @MethodSource("getVariants")
   public void testVariantRoundTrip(Variant variant) {
     writer.encodeVariant(variant);
     Variant decoded = reader.decodeVariant();
@@ -66,12 +68,11 @@ public class VariantSerializationTest extends BinarySerializationFixture {
     ServiceCounterDataType sc2 =
         (ServiceCounterDataType) extensionObject.decode(DefaultEncodingContext.INSTANCE);
 
-    Assert.assertEquals(sc1.getTotalCount(), sc2.getTotalCount());
-    Assert.assertEquals(sc1.getErrorCount(), sc2.getErrorCount());
+    assertEquals(sc1.getTotalCount(), sc2.getTotalCount());
+    assertEquals(sc1.getErrorCount(), sc2.getErrorCount());
   }
 
-  @DataProvider(name = "PrimitiveArrayVariantProvider")
-  public Object[][] getPrimitiveArrayVariants() {
+  public static Object[][] getPrimitiveArrayVariants() {
     return new Object[][] {
       {new Variant(new int[] {0, 1, 2, 3}), new Variant(new Integer[] {0, 1, 2, 3})},
       {
@@ -86,11 +87,9 @@ public class VariantSerializationTest extends BinarySerializationFixture {
     };
   }
 
-  @Test(
-      dataProvider = "PrimitiveArrayVariantProvider",
-      description =
-          "Test that after primitive array types given to variants come out as expected after"
-              + " encoding/decoding.")
+  @ParameterizedTest
+  @MethodSource("getPrimitiveArrayVariants")
+  @DisplayName("Test that after primitive array types given to variants come out as expected after encoding/decoding.")
   public void testPrimitiveArrayVariantRoundTrip(Variant variant, Variant expected) {
     writer.encodeVariant(variant);
     Variant decoded = reader.decodeVariant();
@@ -98,10 +97,8 @@ public class VariantSerializationTest extends BinarySerializationFixture {
     assertEquals(decoded, expected);
   }
 
-  @Test(
-      description =
-          "Test that a Variant containing a null array encoded with a negative array size to"
-              + " indicate a null value decodes properly.")
+  @Test
+  @DisplayName( "Test that a Variant containing a null array encoded with a negative array size to indicate a null value decodes properly.")
   public void testNullArrayEncodedWithNegativeArraySize() {
     ByteBuf buffer = Unpooled.buffer();
 

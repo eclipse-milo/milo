@@ -10,28 +10,28 @@
 
 package org.eclipse.milo.opcua.stack.core.encoding.binary;
 
-import static org.testng.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.XmlElement;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class ExtensionObjectSerializationTest extends BinarySerializationFixture {
 
-  @DataProvider
-  public Object[][] getExtensionObjects() {
+  public static Object[][] getExtensionObjects() {
     return new Object[][] {
       {new ExtensionObject(ByteString.of(new byte[] {1, 2, 3, 4}), new NodeId(1, 2))},
       {new ExtensionObject(XmlElement.of("<a>hello</a>"), new NodeId(1, 2))},
     };
   }
 
-  @Test(
-      dataProvider = "getExtensionObjects",
-      description = "ExtensionObject is round-trip serializable.")
+  @ParameterizedTest
+  @MethodSource("getExtensionObjects")
+  @DisplayName("ExtensionObject is round-trip serializable.")
   public void testExtensionObjectRoundTrip(ExtensionObject xo) throws Exception {
     writer.encodeExtensionObject(xo);
     ExtensionObject decoded = reader.decodeExtensionObject();

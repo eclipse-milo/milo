@@ -10,22 +10,24 @@
 
 package org.eclipse.milo.opcua.stack.core.encoding.binary;
 
-import static org.testng.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.eclipse.milo.opcua.stack.core.types.builtin.XmlElement;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class XmlElementSerializationTest extends BinarySerializationFixture {
 
-  @DataProvider(name = "XmlElementProvider")
-  public Object[][] getXmlElements() {
+  public static Object[][] getXmlElements() {
     return new Object[][] {
       {new XmlElement(null)}, {new XmlElement("<tag>hello, world</tag>")},
     };
   }
 
-  @Test(dataProvider = "XmlElementProvider", description = "XmlElement is round-trip serializable.")
+  @ParameterizedTest
+  @MethodSource("getXmlElements")
+  @DisplayName("XmlElement is round-trip serializable.")
   public void testXmlElementRoundTrip(XmlElement element) throws Exception {
     writer.encodeXmlElement(element);
     XmlElement decoded = reader.decodeXmlElement();

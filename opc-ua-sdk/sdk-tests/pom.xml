@@ -29,13 +29,13 @@
     <dependencies>
         <dependency>
             <groupId>org.eclipse.milo</groupId>
-            <artifactId>sdk-client</artifactId>
+            <artifactId>milo-sdk-client</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.eclipse.milo</groupId>
-            <artifactId>sdk-server</artifactId>
+            <artifactId>milo-sdk-server</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>

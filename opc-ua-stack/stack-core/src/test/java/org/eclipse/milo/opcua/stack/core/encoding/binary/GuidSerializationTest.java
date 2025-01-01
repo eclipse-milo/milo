@@ -10,16 +10,17 @@
 
 package org.eclipse.milo.opcua.stack.core.encoding.binary;
 
-import static org.testng.Assert.assertEquals;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.UUID;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
 
 public class GuidSerializationTest extends BinarySerializationFixture {
 
-  @DataProvider(name = "GuidProvider")
-  public Object[][] getGuids() {
+  public static Object[][] getGuids() {
     return new Object[][] {
       {UUID.fromString("C496578A-0DFE-4b8f-870A-745238C6AEAE")},
       {UUID.fromString("72962B91-FA75-4ae6-8D28-B404DC7DAF63")},
@@ -29,7 +30,9 @@ public class GuidSerializationTest extends BinarySerializationFixture {
     };
   }
 
-  @Test(dataProvider = "GuidProvider", description = "Guid is round-trip serializable.")
+  @ParameterizedTest
+  @MethodSource("getGuids")
+  @DisplayName("Guid is round-trip serializable.")
   public void testGuidRoundTrip(UUID uuid) throws Exception {
     writer.encodeGuid(uuid);
     UUID decoded = reader.decodeGuid();

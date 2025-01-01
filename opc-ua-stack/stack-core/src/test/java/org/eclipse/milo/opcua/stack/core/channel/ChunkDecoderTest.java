@@ -17,9 +17,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.junit.jupiter.api.Test;
 
-import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
-import org.testng.annotations.Test;
-
 public class ChunkDecoderTest {
 
   @Test

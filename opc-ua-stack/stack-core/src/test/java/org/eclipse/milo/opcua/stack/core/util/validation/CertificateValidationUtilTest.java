@@ -45,7 +45,7 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class CertificateValidationUtilTest {
@@ -67,9 +67,9 @@ public class CertificateValidationUtilTest {
   private X509Certificate leafIntermediateSigned;
   private X509Certificate uriWithSpaces;
 
-    @BeforeAll
-    public void loadKeyStore() throws Exception {
-        keyStore = KeyStore.getInstance("PKCS12");
+  @BeforeEach
+  public void loadKeyStore() throws Exception {
+    keyStore = KeyStore.getInstance("PKCS12");
 
     InputStream inputStream = getClass().getResourceAsStream("validation-certs.pfx");
 

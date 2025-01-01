@@ -52,7 +52,7 @@ public class NonceUtilTest {
   public void testShortNonceThrows() {
     ByteString nonce = NonceUtil.generateNonce(NonceUtil.MINIMUM_NONCE_LENGTH - 1);
 
-    assertThrows(() -> NonceUtil.validateNonce(nonce));
+    assertThrows(UaException.class,() -> NonceUtil.validateNonce(nonce));
   }
 
   @Test

@@ -79,13 +79,13 @@ public class CertificateUtilTest {
     @Test
     public void testGetSanDnsNames() {
         List<String> sanDnsNames = CertificateUtil.getSanDnsNames(certificate);
-        assertEquals(newArrayList("localhost", "hostname"), sanDnsNames);
+        assertEquals(List.of("localhost", "hostname"), sanDnsNames);
     }
 
     @Test
     public void testGetSanIpAddresses() {
         List<String> sanDnsNames = CertificateUtil.getSanIpAddresses(certificate);
-        assertEquals(newArrayList("127.0.0.1", "127.0.0.2"), sanDnsNames);
+        assertEquals(List.of("127.0.0.1", "127.0.0.2"), sanDnsNames);
     }
 
 }
