@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -9,6 +9,8 @@
  */
 
 package org.eclipse.milo.opcua.sdk.client;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.EnumSet;
 import java.util.List;
@@ -26,8 +28,6 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrowseDirection;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 public class AddressSpaceTest extends AbstractClientServerTest {
 
@@ -48,8 +48,7 @@ public class AddressSpaceTest extends AbstractClientServerTest {
                   n.getNodeClass()));
 
           if (n instanceof UaVariableNode) {
-            System.out.println(
-                "└─ value = " + ((UaVariableNode) n).getValue().getValue());
+            System.out.println("└─ value = " + ((UaVariableNode) n).getValue().getValue());
           }
         });
   }
@@ -65,9 +64,9 @@ public class AddressSpaceTest extends AbstractClientServerTest {
 
       List<? extends UaNode> nodes = addressSpace.browseNodes(serverNode, browseOptions);
 
-            assertEquals(1,nodes.size());
-            assertTrue(nodes.stream().anyMatch(n -> n.getNodeId().equals(NodeIds.ObjectsFolder)));
-        }
+      assertEquals(1, nodes.size());
+      assertTrue(nodes.stream().anyMatch(n -> n.getNodeId().equals(NodeIds.ObjectsFolder)));
+    }
 
     {
       UaNode objectsFolderNode = addressSpace.getNode(NodeIds.ObjectsFolder);
@@ -99,7 +98,8 @@ public class AddressSpaceTest extends AbstractClientServerTest {
     assertTrue(nodes.stream().anyMatch(n -> n.getNodeId().equals(NodeIds.Server_NamespaceArray)));
     assertTrue(nodes.stream().anyMatch(n -> n.getNodeId().equals(NodeIds.Server_ServiceLevel)));
     assertTrue(nodes.stream().anyMatch(n -> n.getNodeId().equals(NodeIds.Server_Auditing)));
-    assertTrue(nodes.stream().anyMatch(n -> n.getNodeId().equals(NodeIds.Server_EstimatedReturnTime)));
+    assertTrue(
+        nodes.stream().anyMatch(n -> n.getNodeId().equals(NodeIds.Server_EstimatedReturnTime)));
     assertTrue(nodes.stream().anyMatch(n -> n.getNodeId().equals(NodeIds.Server_UrisVersion)));
     assertTrue(nodes.stream().anyMatch(n -> n.getNodeId().equals(NodeIds.Server_LocalTime)));
   }
@@ -197,8 +197,8 @@ public class AddressSpaceTest extends AbstractClientServerTest {
     AddressSpace addressSpace = client.getAddressSpace();
     ServerTypeNode serverNode = (ServerTypeNode) addressSpace.getObjectNode(NodeIds.Server);
 
-        assertNotNull(serverNode);
-        assertEquals(serverNode.getNodeId(), NodeIds.Server);
+    assertNotNull(serverNode);
+    assertEquals(serverNode.getNodeId(), NodeIds.Server);
 
     // should be cached now, check instance equality
     assertSame(serverNode, addressSpace.getObjectNode(NodeIds.Server));
@@ -238,8 +238,8 @@ public class AddressSpaceTest extends AbstractClientServerTest {
             UaException.class,
             () -> client.getAddressSpace().getNode(NodeId.parse("ns=2;s=DoesNotExist")));
 
-        assertEquals(exception.getStatusCode().getValue(), StatusCodes.Bad_NodeIdUnknown);
-    }
+    assertEquals(exception.getStatusCode().getValue(), StatusCodes.Bad_NodeIdUnknown);
+  }
 
   @Test
   public void getObjectsFolderNode() throws UaException {

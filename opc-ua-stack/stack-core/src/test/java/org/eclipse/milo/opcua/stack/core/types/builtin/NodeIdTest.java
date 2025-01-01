@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -37,9 +37,9 @@ public class NodeIdTest {
     long i = Integer.MAX_VALUE + 1L;
     NodeId nodeId = NodeId.parse("ns=1;i=" + i);
 
-        assertNotNull(nodeId);
-        assertEquals(nodeId.getIdentifier(), uint(i));
-    }
+    assertNotNull(nodeId);
+    assertEquals(nodeId.getIdentifier(), uint(i));
+  }
 
   @Test
   public void testParseInvalid() {
@@ -58,15 +58,15 @@ public class NodeIdTest {
     assertThrows(UaRuntimeException.class, () -> NodeId.parse("ns=0;i=" + -1));
   }
 
-    @Test
-    public void testParseNamespaceIndex() {
-        for (int i = 0; i < UShort.MAX_VALUE; i++) {
-            NodeId nodeId = NodeId.parseOrNull("ns=" + i + ";i=" + i);
-            assertNotNull(nodeId);
-            assertEquals(nodeId.getNamespaceIndex(), ushort(i));
-            assertEquals(nodeId.getIdentifier(), uint(i));
-        }
+  @Test
+  public void testParseNamespaceIndex() {
+    for (int i = 0; i < UShort.MAX_VALUE; i++) {
+      NodeId nodeId = NodeId.parseOrNull("ns=" + i + ";i=" + i);
+      assertNotNull(nodeId);
+      assertEquals(nodeId.getNamespaceIndex(), ushort(i));
+      assertEquals(nodeId.getIdentifier(), uint(i));
     }
+  }
 
   @Test
   public void testParseInt() {
@@ -86,22 +86,22 @@ public class NodeIdTest {
     assertNotNull(NodeId.parseOrNull("ns=0;s=foo"));
   }
 
-    @Test
-    public void testParseGuid() {
-        for (int i = 0; i < 100; i++) {
-            UUID uuid = UUID.randomUUID();
-            {
-                NodeId nodeId = NodeId.parseOrNull("g=" + uuid.toString());
-                assertNotNull(nodeId);
-                assertEquals(nodeId.getIdentifier(), uuid);
-            }
-            {
-                NodeId nodeId = NodeId.parseOrNull("ns=0;g=" + uuid.toString());
-                assertNotNull(nodeId);
-                assertEquals(nodeId.getIdentifier(), uuid);
-            }
-        }
+  @Test
+  public void testParseGuid() {
+    for (int i = 0; i < 100; i++) {
+      UUID uuid = UUID.randomUUID();
+      {
+        NodeId nodeId = NodeId.parseOrNull("g=" + uuid.toString());
+        assertNotNull(nodeId);
+        assertEquals(nodeId.getIdentifier(), uuid);
+      }
+      {
+        NodeId nodeId = NodeId.parseOrNull("ns=0;g=" + uuid.toString());
+        assertNotNull(nodeId);
+        assertEquals(nodeId.getIdentifier(), uuid);
+      }
     }
+  }
 
   @Test
   public void testParseByteString() {
@@ -112,18 +112,18 @@ public class NodeIdTest {
       r.nextBytes(bs);
       String bss = Base64.getEncoder().encodeToString(bs);
 
-            {
-                NodeId nodeId = NodeId.parseOrNull("b=" + bss);
-                assertNotNull(nodeId);
-                assertEquals(nodeId.getIdentifier(), ByteString.of(bs));
-            }
-            {
-                NodeId nodeId = NodeId.parseOrNull("ns=0;b=" + bss);
-                assertNotNull(nodeId);
-                assertEquals(nodeId.getIdentifier(), ByteString.of(bs));
-            }
-        }
+      {
+        NodeId nodeId = NodeId.parseOrNull("b=" + bss);
+        assertNotNull(nodeId);
+        assertEquals(nodeId.getIdentifier(), ByteString.of(bs));
+      }
+      {
+        NodeId nodeId = NodeId.parseOrNull("ns=0;b=" + bss);
+        assertNotNull(nodeId);
+        assertEquals(nodeId.getIdentifier(), ByteString.of(bs));
+      }
     }
+  }
 
   @Test
   public void testEqualityWithExpandedNodeId() {
@@ -179,15 +179,14 @@ public class NodeIdTest {
     NodeId nodeId = new NodeId(1, "foo");
     ExpandedNodeId xni = nodeId.expanded(namespaceTable);
 
-        assertEquals("urn:test", xni.getNamespaceUri());
-    }
+    assertEquals("urn:test", xni.getNamespaceUri());
+  }
 
   @Test
   public void parseIdentifierContainingSemiColons() {
     NodeId nodeId = NodeId.parse("ns=14;s=O=::/#pc;B=::/#pc;S=pc;");
 
-        assertEquals(ushort(14), nodeId.getNamespaceIndex());
-        assertEquals("O=::/#pc;B=::/#pc;S=pc;", nodeId.getIdentifier());
-    }
-
+    assertEquals(ushort(14), nodeId.getNamespaceIndex());
+    assertEquals("O=::/#pc;B=::/#pc;S=pc;", nodeId.getIdentifier());
+  }
 }

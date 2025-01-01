@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -25,14 +25,13 @@ public class NodeIdConversionsTest {
     NodeId nodeId = new NodeId(0, "foo");
     ExpandedNodeId expanded = nodeId.expanded();
 
-        assertEquals(nodeIdToExpandedNodeId(nodeId), expanded);
-    }
+    assertEquals(nodeIdToExpandedNodeId(nodeId), expanded);
+  }
 
   @Test
   public void testNodeIdToString() {
     NodeId nodeId = new NodeId(0, "foo");
 
-        assertEquals(nodeIdToString(nodeId), nodeId.toParseableString());
-    }
-
+    assertEquals(nodeIdToString(nodeId), nodeId.toParseableString());
+  }
 }

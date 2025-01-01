@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -35,11 +35,11 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.util.BufferUtil;
 import org.eclipse.milo.opcua.stack.core.util.LongSequence;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.ClientSecureChannel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ChunkSerializationTest extends SecureChannelFixture {
 
@@ -231,12 +231,11 @@ public class ChunkSerializationTest extends SecureChannelFixture {
     }
   }
 
-
-    @ParameterizedTest
-    @MethodSource("getAsymmetricSecurityParameters")
-    public void testAsymmetricMessage(SecurityPolicy securityPolicy,
-                                      MessageSecurityMode messageSecurity,
-                                      int messageSize) throws Exception {
+  @ParameterizedTest
+  @MethodSource("getAsymmetricSecurityParameters")
+  public void testAsymmetricMessage(
+      SecurityPolicy securityPolicy, MessageSecurityMode messageSecurity, int messageSize)
+      throws Exception {
 
     logger.info(
         "Asymmetric chunk serialization, securityPolicy={}, messageSecurityMode={}, messageSize={}",
@@ -317,10 +316,10 @@ public class ChunkSerializationTest extends SecureChannelFixture {
     };
   }
 
-    @ParameterizedTest
-    @MethodSource("getSymmetricSecurityParameters")
-    public void testSymmetricMessage(SecurityPolicy securityPolicy,
-                                     MessageSecurityMode messageSecurity) throws Exception {
+  @ParameterizedTest
+  @MethodSource("getSymmetricSecurityParameters")
+  public void testSymmetricMessage(
+      SecurityPolicy securityPolicy, MessageSecurityMode messageSecurity) throws Exception {
 
     logger.info(
         "Symmetric chunk serialization, " + "securityPolicy={}, messageSecurityMode={}",

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -23,11 +23,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 public class NumericRangeTest {
 
-    @ParameterizedTest
-    @MethodSource("getArray1dRanges")
-    public void testArray1d(String range, int[] expected) throws UaException {
-        NumericRange nr = NumericRange.parse(range);
-        Variant value = new Variant(array1d);
+  @ParameterizedTest
+  @MethodSource("getArray1dRanges")
+  public void testArray1d(String range, int[] expected) throws UaException {
+    NumericRange nr = NumericRange.parse(range);
+    Variant value = new Variant(array1d);
 
     Object result = NumericRange.readFromValueAtRange(value, nr);
 
@@ -35,11 +35,11 @@ public class NumericRangeTest {
     assertTrue(Arrays.equals(expected, (int[]) result));
   }
 
-    @ParameterizedTest
-    @MethodSource("getArray2dRanges")
-    public void testArray2d(String range, int[][] expected) throws UaException {
-        NumericRange nr = NumericRange.parse(range);
-        Variant value = new Variant(array2d);
+  @ParameterizedTest
+  @MethodSource("getArray2dRanges")
+  public void testArray2d(String range, int[][] expected) throws UaException {
+    NumericRange nr = NumericRange.parse(range);
+    Variant value = new Variant(array2d);
 
     Object result = NumericRange.readFromValueAtRange(value, nr);
 
@@ -47,11 +47,11 @@ public class NumericRangeTest {
     assertTrue(Arrays.deepEquals(expected, (int[][]) result));
   }
 
-    @ParameterizedTest
-    @MethodSource("getArray3dRanges")
-    public void testArray3d(String range, int[][][] expected) throws UaException {
-        NumericRange nr = NumericRange.parse(range);
-        Variant value = new Variant(array3d);
+  @ParameterizedTest
+  @MethodSource("getArray3dRanges")
+  public void testArray3d(String range, int[][][] expected) throws UaException {
+    NumericRange nr = NumericRange.parse(range);
+    Variant value = new Variant(array3d);
 
     Object result = NumericRange.readFromValueAtRange(value, nr);
 
@@ -124,8 +124,8 @@ public class NumericRangeTest {
     Object result = NumericRange.readFromValueAtRange(value, nr);
 
     assertTrue(result instanceof ByteString);
-    assertEquals(new ByteString(new byte[]{2, 3}), result);
-    }
+    assertEquals(new ByteString(new byte[] {2, 3}), result);
+  }
 
   @Test
   public void testByteString2d() throws UaException {
@@ -157,8 +157,8 @@ public class NumericRangeTest {
     assertEquals(result, byteString);
   }
 
-    @ParameterizedTest
-    @MethodSource("getInvalidRanges")
+  @ParameterizedTest
+  @MethodSource("getInvalidRanges")
   public void testInvalidRange(String indexRange) throws UaException {
     NumericRange.parse(indexRange);
   }
@@ -185,7 +185,7 @@ public class NumericRangeTest {
 
     assertTrue(updated instanceof String);
     assertEquals("aZzZzZg", updated);
-    }
+  }
 
   @Test
   public void testWriteByteString() throws UaException {
@@ -196,36 +196,30 @@ public class NumericRangeTest {
     Object updated = NumericRange.writeToValueAtRange(current, update, range);
 
     assertTrue(updated instanceof ByteString);
-    assertEquals(new ByteString(new byte[]{0, 2, 4, 3}), updated);
-    }
+    assertEquals(new ByteString(new byte[] {0, 2, 4, 3}), updated);
+  }
 
-    private static Object[][] getInvalidRanges() {
-        return new Object[][]{
-            {"0:0"},
-            {"1:1"},
-            {"-4:0"},
-            {"0:-4"},
-            {"3:1"},
-            {"abc,def"},
-            {"1:2,3:1"},
-        };
-    }
+  private static Object[][] getInvalidRanges() {
+    return new Object[][] {
+      {"0:0"}, {"1:1"}, {"-4:0"}, {"0:-4"}, {"3:1"}, {"abc,def"}, {"1:2,3:1"},
+    };
+  }
 
   private static final int[] array1d = new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-    public static Object[][] getArray1dRanges() {
-        return new Object[][]{
-            {"0:3", new int[]{0, 1, 2, 3}},
-            {"4:9", new int[]{4, 5, 6, 7, 8, 9}},
-            {"1:4", new int[]{1, 2, 3, 4}},
-            {"5:8", new int[]{5, 6, 7, 8}},
-            {"0:10", new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}},
-            {"5:15", new int[]{5, 6, 7, 8, 9}},
-            {"0", new int[]{0}},
-            {"5", new int[]{5}},
-            {"9", new int[]{9}}
-        };
-    }
+  public static Object[][] getArray1dRanges() {
+    return new Object[][] {
+      {"0:3", new int[] {0, 1, 2, 3}},
+      {"4:9", new int[] {4, 5, 6, 7, 8, 9}},
+      {"1:4", new int[] {1, 2, 3, 4}},
+      {"5:8", new int[] {5, 6, 7, 8}},
+      {"0:10", new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}},
+      {"5:15", new int[] {5, 6, 7, 8, 9}},
+      {"0", new int[] {0}},
+      {"5", new int[] {5}},
+      {"9", new int[] {9}}
+    };
+  }
 
   private static final int[][] array2d =
       new int[][] {
@@ -235,14 +229,14 @@ public class NumericRangeTest {
         {12, 13, 14, 15}
       };
 
-    public static Object[][] getArray2dRanges() {
-        return new Object[][]{
-            {"0:1,0:1", new int[][]{{0, 1}, {4, 5}}},
-            {"1:2,1:3", new int[][]{{5, 6, 7}, {9, 10, 11}}},
-            {"2:5,2:5", new int[][]{{10, 11}, {14, 15}}},
-            {"3,3", new int[][]{{15}}}
-        };
-    }
+  public static Object[][] getArray2dRanges() {
+    return new Object[][] {
+      {"0:1,0:1", new int[][] {{0, 1}, {4, 5}}},
+      {"1:2,1:3", new int[][] {{5, 6, 7}, {9, 10, 11}}},
+      {"2:5,2:5", new int[][] {{10, 11}, {14, 15}}},
+      {"3,3", new int[][] {{15}}}
+    };
+  }
 
   private static final int[][][] array3d =
       new int[][][] {
@@ -252,20 +246,23 @@ public class NumericRangeTest {
         {{20, 21}, {22, 23}, {24, 25}, {26, 27}}
       };
 
-    public static Object[][] getArray3dRanges() {
-        return new Object[][]{
-            {"0:1,0:1,0:1", new int[][][]{
-                {{0, 1}, {2, 3}},
-                {{6, 7}, {8, 9}}}
-            },
-            {"1:2,1:2,0:1", new int[][][]{
-                {{8, 9}, {10, 11}},
-                {{14, 15}, {16, 17}}}
-            },
-            {"3,2,0", new int[][][]{
-                {{24}}}
-            }
-        };
-    }
-
+  public static Object[][] getArray3dRanges() {
+    return new Object[][] {
+      {
+        "0:1,0:1,0:1",
+        new int[][][] {
+          {{0, 1}, {2, 3}},
+          {{6, 7}, {8, 9}}
+        }
+      },
+      {
+        "1:2,1:2,0:1",
+        new int[][][] {
+          {{8, 9}, {10, 11}},
+          {{14, 15}, {16, 17}}
+        }
+      },
+      {"3,2,0", new int[][][] {{{24}}}}
+    };
+  }
 }

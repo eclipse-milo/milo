@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -126,15 +126,9 @@ public class CertificateValidationUtilTest {
   public void testBuildTrustedCertPath_LeafSelfSigned_NotTrusted() {
     List<X509Certificate> certificateChain = List.of(leafSelfSigned);
 
-        assertThrows(
-            UaException.class,
-            () -> buildTrustedCertPath(
-                certificateChain,
-                emptySet(),
-                emptySet()
-            )
-        );
-    }
+    assertThrows(
+        UaException.class, () -> buildTrustedCertPath(certificateChain, emptySet(), emptySet()));
+  }
 
   @Test
   public void testBuildTrustedCertPath_LeafIntermediateSigned() throws Exception {
@@ -232,8 +226,8 @@ public class CertificateValidationUtilTest {
                     false);
               });
 
-            assertEquals(new StatusCode(StatusCodes.Bad_CertificateRevoked), e.getStatusCode());
-        }
+      assertEquals(new StatusCode(StatusCodes.Bad_CertificateRevoked), e.getStatusCode());
+    }
 
     // chain: leaf
     // trusted: ca-intermediate
@@ -271,9 +265,9 @@ public class CertificateValidationUtilTest {
                     false);
               });
 
-            assertEquals(new StatusCode(StatusCodes.Bad_CertificateIssuerRevoked), e.getStatusCode());
-        }
+      assertEquals(new StatusCode(StatusCodes.Bad_CertificateIssuerRevoked), e.getStatusCode());
     }
+  }
 
   @Test
   public void testBuildTrustedCertPath_NoTrusted_NoIssuers() {
@@ -367,9 +361,9 @@ public class CertificateValidationUtilTest {
                     false);
               });
 
-            assertEquals(new StatusCode(StatusCodes.Bad_CertificateIssuerRevoked), e.getStatusCode());
-        }
+      assertEquals(new StatusCode(StatusCodes.Bad_CertificateIssuerRevoked), e.getStatusCode());
     }
+  }
 
   @Test
   public void testCertificateIsCa() throws KeyStoreException {

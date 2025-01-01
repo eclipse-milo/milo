@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -52,9 +52,9 @@ public class NodeFactoryTest {
   private UaNodeManager nodeManager;
   private NodeFactory nodeFactory;
 
-    @BeforeEach
-    public void setup() throws Exception {
-        server = Mockito.mock(OpcUaServer.class);
+  @BeforeEach
+  public void setup() throws Exception {
+    server = Mockito.mock(OpcUaServer.class);
 
     NamespaceTable namespaceTable = new NamespaceTable();
     Mockito.when(server.getNamespaceTable()).thenReturn(namespaceTable);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -15,9 +15,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
-import org.junit.jupiter.api.Test;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.junit.jupiter.api.Test;
 
 abstract class AbstractConversionTest<S> {
 
@@ -43,8 +43,8 @@ abstract class AbstractConversionTest<S> {
 
         System.out.println(String.format("%s -> %s [%s]", sourceType, targetType, conversionType));
 
-                for (Conversion conversion : conversions) {
-                    assertEquals(conversion.targetType, targetType);
+        for (Conversion conversion : conversions) {
+          assertEquals(conversion.targetType, targetType);
 
           S fromValue = getSourceClass().cast(conversion.fromValue);
           Object targetValue = conversion.targetValue;
@@ -55,17 +55,18 @@ abstract class AbstractConversionTest<S> {
           System.out.println(
               String.format("\tfromValue=%s targetValue=%s", fromValue, targetValue));
 
-                    assertEquals(targetValue, convertedValue);
-                }
-            } else {
-                if (conversions.length != 0) {
-                    fail(String.format(
-                        "conversions defined for %s -> %s " +
-                            "but no ConversionType is defined", sourceType, targetType));
-                }
-            }
+          assertEquals(targetValue, convertedValue);
         }
+      } else {
+        if (conversions.length != 0) {
+          fail(
+              String.format(
+                  "conversions defined for %s -> %s " + "but no ConversionType is defined",
+                  sourceType, targetType));
+        }
+      }
     }
+  }
 
   @Test
   public void testExplicitConversionsCalledImplicitlyAreNull() {
@@ -104,11 +105,11 @@ abstract class AbstractConversionTest<S> {
                   "[%s] fromValue=%s targetType=%s targetValue=%s",
                   conversionType, fromValue, targetType, conversion.targetValue));
 
-                    assertEquals(conversion.targetValue, convertedValue);
-                }
-            }
+          assertEquals(conversion.targetValue, convertedValue);
         }
+      }
     }
+  }
 
   protected Conversion c(@NonNull S fromValue, @NonNull Object targetValue) {
     Conversion c = new Conversion();

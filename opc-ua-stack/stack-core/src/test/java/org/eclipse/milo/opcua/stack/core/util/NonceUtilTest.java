@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -26,33 +26,33 @@ public class NonceUtilTest {
     for (SecurityPolicy securityPolicy : SecurityPolicy.values()) {
       ByteString nonce = NonceUtil.generateNonce(securityPolicy);
 
-            switch (securityPolicy) {
-                case None:
-                    assertEquals(0, nonce.length());
-                    break;
-                case Basic128Rsa15:
-                    assertEquals(16, nonce.length());
-                    break;
-                default:
-                    assertEquals(32, nonce.length());
-            }
-        }
+      switch (securityPolicy) {
+        case None:
+          assertEquals(0, nonce.length());
+          break;
+        case Basic128Rsa15:
+          assertEquals(16, nonce.length());
+          break;
+        default:
+          assertEquals(32, nonce.length());
+      }
     }
+  }
 
-    @Test
-    public void testNonceGeneration() throws UaException {
-        for (int i = 32; i < 256; i++) {
-            ByteString nonce = NonceUtil.generateNonce(i);
-            assertEquals(nonce.length(), i);
-            NonceUtil.validateNonce(nonce);
-        }
+  @Test
+  public void testNonceGeneration() throws UaException {
+    for (int i = 32; i < 256; i++) {
+      ByteString nonce = NonceUtil.generateNonce(i);
+      assertEquals(nonce.length(), i);
+      NonceUtil.validateNonce(nonce);
     }
+  }
 
   @Test
   public void testShortNonceThrows() {
     ByteString nonce = NonceUtil.generateNonce(NonceUtil.MINIMUM_NONCE_LENGTH - 1);
 
-    assertThrows(UaException.class,() -> NonceUtil.validateNonce(nonce));
+    assertThrows(UaException.class, () -> NonceUtil.validateNonce(nonce));
   }
 
   @Test

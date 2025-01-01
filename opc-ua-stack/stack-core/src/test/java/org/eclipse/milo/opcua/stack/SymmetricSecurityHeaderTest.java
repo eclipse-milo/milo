@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -18,21 +18,21 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 public class SymmetricSecurityHeaderTest extends SerializationFixture2 {
 
-    public static Object[][] getParameters() {
-        return new Object[][]{
-                {0},
-                {Integer.MAX_VALUE - 1},
-                {Integer.MAX_VALUE},
-                {Integer.MAX_VALUE + 1L},
-                {UInteger.MAX_VALUE}
-        };
-    }
+  public static Object[][] getParameters() {
+    return new Object[][] {
+      {0},
+      {Integer.MAX_VALUE - 1},
+      {Integer.MAX_VALUE},
+      {Integer.MAX_VALUE + 1L},
+      {UInteger.MAX_VALUE}
+    };
+  }
 
-    @ParameterizedTest
-    @MethodSource("getParameters")
-    @DisplayName("SymmetricSecurityHeader is serializable.")
-    public void testSerialization(long value) {
-        SymmetricSecurityHeader header = new SymmetricSecurityHeader(value);
+  @ParameterizedTest
+  @MethodSource("getParameters")
+  @DisplayName("SymmetricSecurityHeader is serializable.")
+  public void testSerialization(long value) {
+    SymmetricSecurityHeader header = new SymmetricSecurityHeader(value);
 
     assertSerializable(header, SymmetricSecurityHeader::encode, SymmetricSecurityHeader::decode);
   }

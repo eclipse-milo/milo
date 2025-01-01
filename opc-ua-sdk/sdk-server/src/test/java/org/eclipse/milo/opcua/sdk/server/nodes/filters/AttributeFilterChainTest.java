@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -61,9 +61,9 @@ public class AttributeFilterChainTest {
         AttributeFilters.getValue(ctx -> new DataValue(new Variant("A"))),
         AttributeFilters.getValue(ctx -> new DataValue(new Variant("B"))));
 
-        DataValue value = (DataValue) chain.getAttribute(null, AttributeId.Value);
-        assertEquals("B", value.getValue().getValue());
-    }
+    DataValue value = (DataValue) chain.getAttribute(null, AttributeId.Value);
+    assertEquals("B", value.getValue().getValue());
+  }
 
   @Test
   public void testAddLast() {
@@ -73,9 +73,9 @@ public class AttributeFilterChainTest {
         AttributeFilters.getValue(ctx -> (DataValue) ctx.getAttribute(AttributeId.Value)),
         AttributeFilters.getValue(ctx -> new DataValue(new Variant("Last"))));
 
-        DataValue value = (DataValue) chain.getAttribute(null, AttributeId.Value);
-        assertEquals("Last", value.getValue().getValue());
-    }
+    DataValue value = (DataValue) chain.getAttribute(null, AttributeId.Value);
+    assertEquals("Last", value.getValue().getValue());
+  }
 
   @Test
   public void testEmptyChain() {
@@ -91,9 +91,9 @@ public class AttributeFilterChainTest {
 
     node.setValue(new DataValue(new Variant("foo")));
 
-        DataValue value = (DataValue) node.getFilterChain().getAttribute(node, AttributeId.Value);
-        assertEquals("foo", value.getValue().getValue());
-    }
+    DataValue value = (DataValue) node.getFilterChain().getAttribute(node, AttributeId.Value);
+    assertEquals("foo", value.getValue().getValue());
+  }
 
   @Test
   public void testObservable() {
@@ -123,7 +123,7 @@ public class AttributeFilterChainTest {
                   return new DataValue(new Variant("foo"));
                 }));
 
-        assertEquals("foo", node.getValue().getValue().getValue());
+    assertEquals("foo", node.getValue().getValue().getValue());
 
     assertTrue(observed.get());
   }

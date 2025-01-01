@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -17,13 +17,13 @@ import org.junit.jupiter.api.Test;
 
 public class AccessLevelTest {
 
-    @Test
-    public void testToValue() {
-        for (AccessLevel accessLevel : AccessLevel.values()) {
-            assertEquals(ubyte(accessLevel.getValue()), AccessLevel.toValue(accessLevel));
-        }
+  @Test
+  public void testToValue() {
+    for (AccessLevel accessLevel : AccessLevel.values()) {
+      assertEquals(ubyte(accessLevel.getValue()), AccessLevel.toValue(accessLevel));
+    }
 
-        assertEquals(ubyte(0), AccessLevel.toValue(AccessLevel.NONE));
+    assertEquals(ubyte(0), AccessLevel.toValue(AccessLevel.NONE));
 
     assertEquals(
         AccessLevel.toValue(AccessLevel.READ_ONLY).intValue(), AccessLevel.CurrentRead.getValue());
@@ -41,9 +41,9 @@ public class AccessLevelTest {
         AccessLevel.HistoryRead.getValue() | AccessLevel.HistoryWrite.getValue());
   }
 
-    @Test
-    public void testFromValue() {
-        assertEquals(AccessLevel.NONE, AccessLevel.fromValue(0));
+  @Test
+  public void testFromValue() {
+    assertEquals(AccessLevel.NONE, AccessLevel.fromValue(0));
 
     assertEquals(AccessLevel.fromValue(AccessLevel.CurrentRead.getValue()), AccessLevel.READ_ONLY);
 

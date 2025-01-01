@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -30,14 +30,14 @@ public class ByteStringConversionsTest {
 
     UUID uuid = new UUID(msb, lsb);
 
-        assertEquals(ByteStringConversions.byteStringToGuid(bs), uuid);
-    }
+    assertEquals(ByteStringConversions.byteStringToGuid(bs), uuid);
+  }
 
   @Test
   public void testByteStringToString() {
     ByteString bs = ByteString.of(new byte[] {0x01, 0x02, 0x03});
 
-        assertEquals(ByteStringConversions.byteStringToString(bs), ByteBufUtil.hexDump(bs.bytesOrEmpty()));
-    }
-
+    assertEquals(
+        ByteStringConversions.byteStringToString(bs), ByteBufUtil.hexDump(bs.bytesOrEmpty()));
+  }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -11,10 +11,9 @@
 package org.eclipse.milo.opcua.stack.core.encoding.binary;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -89,7 +88,9 @@ public class VariantSerializationTest extends BinarySerializationFixture {
 
   @ParameterizedTest
   @MethodSource("getPrimitiveArrayVariants")
-  @DisplayName("Test that after primitive array types given to variants come out as expected after encoding/decoding.")
+  @DisplayName(
+      "Test that after primitive array types given to variants come out as expected after"
+          + " encoding/decoding.")
   public void testPrimitiveArrayVariantRoundTrip(Variant variant, Variant expected) {
     writer.encodeVariant(variant);
     Variant decoded = reader.decodeVariant();
@@ -98,7 +99,9 @@ public class VariantSerializationTest extends BinarySerializationFixture {
   }
 
   @Test
-  @DisplayName( "Test that a Variant containing a null array encoded with a negative array size to indicate a null value decodes properly.")
+  @DisplayName(
+      "Test that a Variant containing a null array encoded with a negative array size to indicate a"
+          + " null value decodes properly.")
   public void testNullArrayEncodedWithNegativeArraySize() {
     ByteBuf buffer = Unpooled.buffer();
 

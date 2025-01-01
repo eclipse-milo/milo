@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -35,25 +35,25 @@ public class ArrayUtilTest {
     };
   }
 
-    @ParameterizedTest
-    @MethodSource("getArrays")
-    public void testRoundTrip(Object array) throws Exception {
-        Object flattened = ArrayUtil.flatten(array);
-        Object unflattened = ArrayUtil.unflatten(flattened, ArrayUtil.getDimensions(array));
-        if (array instanceof Object[]) {
-            assertArrayEquals((Object[]) array, (Object[]) unflattened);
-        } else if (array instanceof int[]){
-            assertArrayEquals((int[]) array, (int[]) unflattened);
-        }
+  @ParameterizedTest
+  @MethodSource("getArrays")
+  public void testRoundTrip(Object array) throws Exception {
+    Object flattened = ArrayUtil.flatten(array);
+    Object unflattened = ArrayUtil.unflatten(flattened, ArrayUtil.getDimensions(array));
+    if (array instanceof Object[]) {
+      assertArrayEquals((Object[]) array, (Object[]) unflattened);
+    } else if (array instanceof int[]) {
+      assertArrayEquals((int[]) array, (int[]) unflattened);
     }
+  }
 
-    @ParameterizedTest
-    @MethodSource("getArrays")
-    public void testFlatten(Object array) throws Exception {
+  @ParameterizedTest
+  @MethodSource("getArrays")
+  public void testFlatten(Object array) throws Exception {
     Object flattened = ArrayUtil.flatten(array);
 
     for (int i = 0; i < Array.getLength(flattened); i++) {
-      assertEquals(i,Array.get(flattened, i));
+      assertEquals(i, Array.get(flattened, i));
     }
   }
 
@@ -68,11 +68,11 @@ public class ArrayUtilTest {
     };
   }
 
-    @ParameterizedTest
-    @MethodSource("getDimensions")
-    public void testGetDimensions(Object array, int[] dimensions) throws Exception {
-        assertArrayEquals(dimensions, ArrayUtil.getDimensions(array));
-    }
+  @ParameterizedTest
+  @MethodSource("getDimensions")
+  public void testGetDimensions(Object array, int[] dimensions) throws Exception {
+    assertArrayEquals(dimensions, ArrayUtil.getDimensions(array));
+  }
 
   public static Object[][] getTypedArrays() {
     return new Object[][] {
@@ -88,10 +88,9 @@ public class ArrayUtilTest {
     };
   }
 
-    @ParameterizedTest
-    @MethodSource("getTypedArrays")
-    public void testGetType(Object array, Class<?> type) throws Exception {
-        assertEquals(type, ArrayUtil.getType(array));
-    }
-
+  @ParameterizedTest
+  @MethodSource("getTypedArrays")
+  public void testGetType(Object array, Class<?> type) throws Exception {
+    assertEquals(type, ArrayUtil.getType(array));
+  }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -113,18 +113,19 @@ public class ExpandedNodeIdTest {
     }
   }
 
-    @Test
-    public void testToParseableString() {
-        String withoutNamespaceUri = new ExpandedNodeId(ushort(1), null, uint(0)).toParseableString();
-        assertEquals("ns=1;i=0", withoutNamespaceUri);
+  @Test
+  public void testToParseableString() {
+    String withoutNamespaceUri = new ExpandedNodeId(ushort(1), null, uint(0)).toParseableString();
+    assertEquals("ns=1;i=0", withoutNamespaceUri);
 
-        String withNamespaceUri = new ExpandedNodeId(ushort(0), "urn:test", uint(0)).toParseableString();
-        assertEquals("nsu=urn:test;i=0", withNamespaceUri);
+    String withNamespaceUri =
+        new ExpandedNodeId(ushort(0), "urn:test", uint(0)).toParseableString();
+    assertEquals("nsu=urn:test;i=0", withNamespaceUri);
 
-        String withServerIndex =
-            new ExpandedNodeId(ushort(0), "urn:test", uint(0), uint(1)).toParseableString();
-        assertEquals("svr=1;nsu=urn:test;i=0", withServerIndex);
-    }
+    String withServerIndex =
+        new ExpandedNodeId(ushort(0), "urn:test", uint(0), uint(1)).toParseableString();
+    assertEquals("svr=1;nsu=urn:test;i=0", withServerIndex);
+  }
 
   @Test
   public void absolute() {
@@ -151,9 +152,9 @@ public class ExpandedNodeIdTest {
   public void parseImplicitNamespaceZero() {
     ExpandedNodeId xni = ExpandedNodeId.parse("i=2256");
 
-        assertNotNull(xni);
-        assertEquals(ushort(0), xni.getNamespaceIndex());
-    }
+    assertNotNull(xni);
+    assertEquals(ushort(0), xni.getNamespaceIndex());
+  }
 
   @Test
   public void toParseableExplicitNamespaceZero() {
@@ -172,16 +173,16 @@ public class ExpandedNodeIdTest {
         xni.getNamespaceUri(),
         "http://softing.com/dataFEEDSIS/nsuri?conn=Demo&uri=http://opcfoundation.org/UA/");
 
-        assertEquals(uint(85), xni.getIdentifier());
-    }
+    assertEquals(uint(85), xni.getIdentifier());
+  }
 
   @Test
   public void parseIdentifierContainingSemiColons() {
     ExpandedNodeId xni = ExpandedNodeId.parse("nsu=http://foo.com/bar;s=O=::/#pc;B=::/#pc;S=pc;");
 
-        assertEquals("http://foo.com/bar", xni.getNamespaceUri());
-        assertEquals("O=::/#pc;B=::/#pc;S=pc;", xni.getIdentifier());
-    }
+    assertEquals("http://foo.com/bar", xni.getNamespaceUri());
+    assertEquals("O=::/#pc;B=::/#pc;S=pc;", xni.getIdentifier());
+  }
 
   @Test
   public void reindex() {

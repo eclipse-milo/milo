@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -24,8 +24,8 @@ public class QualifiedNameConversionsTest {
   public void testQualifiedNameToString() {
     QualifiedName name = new QualifiedName(0, "foo");
 
-        assertEquals("foo", qualifiedNameToString(name));
-    }
+    assertEquals("foo", qualifiedNameToString(name));
+  }
 
   @Test
   public void testQualifiedNameToLocalizedText() {
@@ -33,8 +33,7 @@ public class QualifiedNameConversionsTest {
 
     LocalizedText text = qualifiedNameToLocalizedText(name);
 
-        assertEquals("", text.getLocale());
-        assertEquals("foo", text.getText());
-    }
-
+    assertEquals("", text.getLocale());
+    assertEquals("foo", text.getText());
+  }
 }

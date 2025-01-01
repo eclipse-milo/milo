@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -22,7 +22,6 @@ public class LocalizedTextConversionsTest {
   public void testLocalizedTextToString() {
     LocalizedText text = new LocalizedText("en-us", "foo");
 
-        assertEquals("foo", localizedTextToString(text));
-    }
-
+    assertEquals("foo", localizedTextToString(text));
+  }
 }

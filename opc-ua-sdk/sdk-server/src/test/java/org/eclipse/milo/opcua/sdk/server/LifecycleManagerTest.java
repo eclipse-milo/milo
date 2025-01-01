@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -44,9 +44,9 @@ public class LifecycleManagerTest {
     manager.startup();
     manager.shutdown();
 
-        assertEquals(2, startupCount.get());
-        assertEquals(2, shutdownCount.get());
-    }
+    assertEquals(2, startupCount.get());
+    assertEquals(2, shutdownCount.get());
+  }
 
   @Test
   public void testRemove() {
@@ -77,18 +77,18 @@ public class LifecycleManagerTest {
     Lifecycle shutdown = manager.addShutdownTask(shutdownCount::incrementAndGet);
     manager.removeLifecycle(shutdown);
 
-        assertEquals(0, startupCount.get());
-        assertEquals(0, shutdownCount.get());
-    }
+    assertEquals(0, startupCount.get());
+    assertEquals(0, shutdownCount.get());
+  }
 
   @Test
   public void testStartupOrder() {
     LifecycleManager manager = new LifecycleManager();
 
-        AtomicInteger i = new AtomicInteger(0);
-        manager.addStartupTask(() -> assertEquals(0, i.getAndIncrement()));
-        manager.addStartupTask(() -> assertEquals(1, i.getAndIncrement()));
-        manager.addStartupTask(() -> assertEquals(2, i.getAndIncrement()));
+    AtomicInteger i = new AtomicInteger(0);
+    manager.addStartupTask(() -> assertEquals(0, i.getAndIncrement()));
+    manager.addStartupTask(() -> assertEquals(1, i.getAndIncrement()));
+    manager.addStartupTask(() -> assertEquals(2, i.getAndIncrement()));
 
     manager.startup();
     manager.shutdown();
@@ -98,10 +98,10 @@ public class LifecycleManagerTest {
   public void testShutdownOrderLinear() {
     LifecycleManager manager = new LifecycleManager();
 
-        AtomicInteger i = new AtomicInteger(0);
-        manager.addShutdownTask(() -> assertEquals(0, i.getAndIncrement()));
-        manager.addShutdownTask(() -> assertEquals(1, i.getAndIncrement()));
-        manager.addShutdownTask(() -> assertEquals(2, i.getAndIncrement()));
+    AtomicInteger i = new AtomicInteger(0);
+    manager.addShutdownTask(() -> assertEquals(0, i.getAndIncrement()));
+    manager.addShutdownTask(() -> assertEquals(1, i.getAndIncrement()));
+    manager.addShutdownTask(() -> assertEquals(2, i.getAndIncrement()));
 
     manager.startup();
     manager.shutdown();
@@ -111,10 +111,10 @@ public class LifecycleManagerTest {
   public void testShutdownOrderInverse() {
     LifecycleManager manager = new LifecycleManager(LifecycleManager.ShutdownOrder.INVERSE);
 
-        AtomicInteger i = new AtomicInteger(0);
-        manager.addShutdownTask(() -> assertEquals(2, i.getAndIncrement()));
-        manager.addShutdownTask(() -> assertEquals(1, i.getAndIncrement()));
-        manager.addShutdownTask(() -> assertEquals(0, i.getAndIncrement()));
+    AtomicInteger i = new AtomicInteger(0);
+    manager.addShutdownTask(() -> assertEquals(2, i.getAndIncrement()));
+    manager.addShutdownTask(() -> assertEquals(1, i.getAndIncrement()));
+    manager.addShutdownTask(() -> assertEquals(0, i.getAndIncrement()));
 
     manager.startup();
     manager.shutdown();

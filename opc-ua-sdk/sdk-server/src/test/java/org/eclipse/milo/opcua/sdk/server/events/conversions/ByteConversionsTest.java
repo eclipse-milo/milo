@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -34,7 +34,6 @@ import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.junit.jupiter.api.Test;
 
-
 public class ByteConversionsTest {
 
   public static final Object[][] CONVERSIONS =
@@ -56,75 +55,74 @@ public class ByteConversionsTest {
 
       assertNotNull(targetType);
 
-            assertEquals(expected, explicitConversion(b, targetType));
-        }
+      assertEquals(expected, explicitConversion(b, targetType));
     }
+  }
 
-    @Test
-    public void testByteToBoolean() {
-        assertEquals(Boolean.FALSE, byteToBoolean(ubyte(0)));
-        assertEquals(Boolean.TRUE, byteToBoolean(ubyte(1)));
-    }
+  @Test
+  public void testByteToBoolean() {
+    assertEquals(Boolean.FALSE, byteToBoolean(ubyte(0)));
+    assertEquals(Boolean.TRUE, byteToBoolean(ubyte(1)));
+  }
 
-    @Test
-    public void testByteToDouble() {
-        assertEquals(0.0d, byteToDouble(ubyte(0)));
-        assertEquals(1.0d, byteToDouble(ubyte(1)));
-    }
+  @Test
+  public void testByteToDouble() {
+    assertEquals(0.0d, byteToDouble(ubyte(0)));
+    assertEquals(1.0d, byteToDouble(ubyte(1)));
+  }
 
-    @Test
-    public void testByteToFloat() {
-        assertEquals(0.0f, byteToFloat(ubyte(0)));
-        assertEquals(1.0f, byteToFloat(ubyte(1)));
-    }
+  @Test
+  public void testByteToFloat() {
+    assertEquals(0.0f, byteToFloat(ubyte(0)));
+    assertEquals(1.0f, byteToFloat(ubyte(1)));
+  }
 
-    @Test
-    public void testByteToInt16() {
-        assertEquals(Short.valueOf((short) 0), byteToInt16(ubyte(0)));
-        assertEquals(Short.valueOf((short) 1), byteToInt16(ubyte(1)));
-    }
+  @Test
+  public void testByteToInt16() {
+    assertEquals(Short.valueOf((short) 0), byteToInt16(ubyte(0)));
+    assertEquals(Short.valueOf((short) 1), byteToInt16(ubyte(1)));
+  }
 
-    @Test
-    public void testByteToInt32() {
-        assertEquals(Integer.valueOf(0), byteToInt32(ubyte(0)));
-        assertEquals(Integer.valueOf(1), byteToInt32(ubyte(1)));
-    }
+  @Test
+  public void testByteToInt32() {
+    assertEquals(Integer.valueOf(0), byteToInt32(ubyte(0)));
+    assertEquals(Integer.valueOf(1), byteToInt32(ubyte(1)));
+  }
 
-    @Test
-    public void testByteToInt64() {
-        assertEquals(Long.valueOf(0), byteToInt64(ubyte(0)));
-        assertEquals(Long.valueOf(1), byteToInt64(ubyte(1)));
-    }
+  @Test
+  public void testByteToInt64() {
+    assertEquals(Long.valueOf(0), byteToInt64(ubyte(0)));
+    assertEquals(Long.valueOf(1), byteToInt64(ubyte(1)));
+  }
 
-    @Test
-    public void testByteToSByte() {
-        assertEquals(Byte.valueOf((byte) 0), byteToSByte(ubyte(0)));
-        assertEquals(Byte.valueOf(Byte.MAX_VALUE), byteToSByte(ubyte(Byte.MAX_VALUE)));
-        assertNull(byteToSByte(ubyte(Byte.MAX_VALUE + 1)));
-    }
+  @Test
+  public void testByteToSByte() {
+    assertEquals(Byte.valueOf((byte) 0), byteToSByte(ubyte(0)));
+    assertEquals(Byte.valueOf(Byte.MAX_VALUE), byteToSByte(ubyte(Byte.MAX_VALUE)));
+    assertNull(byteToSByte(ubyte(Byte.MAX_VALUE + 1)));
+  }
 
-    @Test
-    public void testByteToString() {
-        assertEquals("0", byteToString(ubyte(0)));
-        assertEquals("1", byteToString(ubyte(1)));
-    }
+  @Test
+  public void testByteToString() {
+    assertEquals("0", byteToString(ubyte(0)));
+    assertEquals("1", byteToString(ubyte(1)));
+  }
 
-    @Test
-    public void testByteToUInt16() {
-        assertEquals(ushort(UByte.MIN_VALUE), byteToUInt16(UByte.MIN));
-        assertEquals(ushort(UByte.MAX_VALUE), byteToUInt16(UByte.MAX));
-    }
+  @Test
+  public void testByteToUInt16() {
+    assertEquals(ushort(UByte.MIN_VALUE), byteToUInt16(UByte.MIN));
+    assertEquals(ushort(UByte.MAX_VALUE), byteToUInt16(UByte.MAX));
+  }
 
-    @Test
-    public void testByteToUInt32() {
-        assertEquals(uint(UByte.MIN_VALUE), byteToUInt32(UByte.MIN));
-        assertEquals(uint(UByte.MAX_VALUE), byteToUInt32(UByte.MAX));
-    }
+  @Test
+  public void testByteToUInt32() {
+    assertEquals(uint(UByte.MIN_VALUE), byteToUInt32(UByte.MIN));
+    assertEquals(uint(UByte.MAX_VALUE), byteToUInt32(UByte.MAX));
+  }
 
-    @Test
-    public void testByteToUInt64() {
-        assertEquals(ulong(UByte.MIN_VALUE), byteToUInt64(UByte.MIN));
-        assertEquals(ulong(UByte.MAX_VALUE), byteToUInt64(UByte.MAX));
-    }
-
+  @Test
+  public void testByteToUInt64() {
+    assertEquals(ulong(UByte.MIN_VALUE), byteToUInt64(UByte.MIN));
+    assertEquals(ulong(UByte.MAX_VALUE), byteToUInt64(UByte.MAX));
+  }
 }

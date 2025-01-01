@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -10,12 +10,12 @@
 
 package org.eclipse.milo.opcua.stack.core;
 
-import java.util.ArrayList;
-import org.junit.jupiter.api.Test;
-
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.ArrayList;
+import org.junit.jupiter.api.Test;
 
 public class AttributeIdTest {
 
@@ -24,8 +24,8 @@ public class AttributeIdTest {
     for (AttributeId attributeId : AttributeId.values()) {
       int id = attributeId.id();
 
-            assertEquals(AttributeId.from(id).orElseThrow(), attributeId);
-        }
+      assertEquals(AttributeId.from(id).orElseThrow(), attributeId);
+    }
 
     assertFalse(AttributeId.from(-1).isPresent());
     assertFalse(AttributeId.from(0).isPresent());
