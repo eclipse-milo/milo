@@ -85,9 +85,9 @@ public class LifecycleManagerTest {
         LifecycleManager manager = new LifecycleManager();
 
         AtomicInteger i = new AtomicInteger(0);
-        manager.addStartupTask(() -> assertEquals(0), i.getAndIncrement());
-        manager.addStartupTask(() -> assertEquals(1), i.getAndIncrement());
-        manager.addStartupTask(() -> assertEquals(2), i.getAndIncrement());
+        manager.addStartupTask(() -> assertEquals(0, i.getAndIncrement()));
+        manager.addStartupTask(() -> assertEquals(1, i.getAndIncrement()));
+        manager.addStartupTask(() -> assertEquals(2, i.getAndIncrement()));
 
         manager.startup();
         manager.shutdown();
@@ -98,9 +98,9 @@ public class LifecycleManagerTest {
         LifecycleManager manager = new LifecycleManager();
 
         AtomicInteger i = new AtomicInteger(0);
-        manager.addShutdownTask(() -> assertEquals(0), i.getAndIncrement());
-        manager.addShutdownTask(() -> assertEquals(1), i.getAndIncrement());
-        manager.addShutdownTask(() -> assertEquals(2), i.getAndIncrement());
+        manager.addShutdownTask(() -> assertEquals(0, i.getAndIncrement()));
+        manager.addShutdownTask(() -> assertEquals(1, i.getAndIncrement()));
+        manager.addShutdownTask(() -> assertEquals(2, i.getAndIncrement()));
 
         manager.startup();
         manager.shutdown();
@@ -111,9 +111,9 @@ public class LifecycleManagerTest {
         LifecycleManager manager = new LifecycleManager(LifecycleManager.ShutdownOrder.INVERSE);
 
         AtomicInteger i = new AtomicInteger(0);
-        manager.addShutdownTask(() -> assertEquals(2), i.getAndIncrement());
-        manager.addShutdownTask(() -> assertEquals(1), i.getAndIncrement());
-        manager.addShutdownTask(() -> assertEquals(0), i.getAndIncrement());
+        manager.addShutdownTask(() -> assertEquals(2, i.getAndIncrement()));
+        manager.addShutdownTask(() -> assertEquals(1, i.getAndIncrement()));
+        manager.addShutdownTask(() -> assertEquals(0, i.getAndIncrement()));
 
         manager.startup();
         manager.shutdown();

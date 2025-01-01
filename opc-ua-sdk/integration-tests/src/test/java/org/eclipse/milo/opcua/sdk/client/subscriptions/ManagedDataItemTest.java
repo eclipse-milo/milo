@@ -85,7 +85,7 @@ public class ManagedDataItemTest extends AbstractManagedItemTest {
 
             futures.forEach(f -> {
                 assertTrue(f.isDone() && !f.isCompletedExceptionally());
-                f.thenAccept(v -> assertEquals(v), 5000.0);
+                f.thenAccept(v -> assertEquals(v, 5000.0));
             });
 
             subscription.getDataItems().forEach(
