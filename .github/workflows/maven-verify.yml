@@ -1,4 +1,4 @@
-name: Run `maven verify` on JDK 17
+name: Run `mvn verify` on JDK 17
 
 on:
   pull_request:
