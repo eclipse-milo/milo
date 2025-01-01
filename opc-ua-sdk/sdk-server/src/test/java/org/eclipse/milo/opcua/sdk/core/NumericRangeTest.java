@@ -10,7 +10,10 @@
 
 package org.eclipse.milo.opcua.sdk.core;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
@@ -67,8 +70,8 @@ public class NumericRangeTest {
 
     Object result = NumericRange.readFromValueAtRange(value, nr);
 
-    assertTrue(result instanceof int[]);
-    assertEquals(result, array);
+    assertInstanceOf(int[].class, result);
+    assertArrayEquals(array, (int[]) result);
   }
 
   @Test
@@ -160,7 +163,7 @@ public class NumericRangeTest {
   @ParameterizedTest
   @MethodSource("getInvalidRanges")
   public void testInvalidRange(String indexRange) throws UaException {
-    NumericRange.parse(indexRange);
+    assertThrows(UaException.class, () -> NumericRange.parse(indexRange));
   }
 
   @Test
