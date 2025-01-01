@@ -10,11 +10,11 @@
 
 package org.eclipse.milo.opcua.sdk.server.identity;
 
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 public class DefaultIssuedIdentityTest {
 

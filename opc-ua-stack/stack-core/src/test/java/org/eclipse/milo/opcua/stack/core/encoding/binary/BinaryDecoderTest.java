@@ -65,6 +65,6 @@ public class BinaryDecoderTest extends BinarySerializationFixture {
     ApplicationType[] decoded =
         Arrays.stream(decodedValues).map(ApplicationType::from).toArray(ApplicationType[]::new);
 
-    assertEquals(decoded, array);
+    assertEquals(array,decoded);
   }
 }

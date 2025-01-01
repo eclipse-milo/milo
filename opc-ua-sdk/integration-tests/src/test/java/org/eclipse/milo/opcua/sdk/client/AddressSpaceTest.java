@@ -10,13 +10,6 @@
 
 package org.eclipse.milo.opcua.sdk.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.util.EnumSet;
 import java.util.List;
 import org.eclipse.milo.opcua.sdk.client.AddressSpace.BrowseOptions;
@@ -33,6 +26,8 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrowseDirection;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class AddressSpaceTest extends AbstractClientServerTest {
 
@@ -54,7 +49,7 @@ public class AddressSpaceTest extends AbstractClientServerTest {
 
           if (n instanceof UaVariableNode) {
             System.out.println(
-                "\u2514\u2500 value = " + ((UaVariableNode) n).getValue().getValue());
+                "└─ value = " + ((UaVariableNode) n).getValue().getValue());
           }
         });
   }
@@ -70,7 +65,7 @@ public class AddressSpaceTest extends AbstractClientServerTest {
 
       List<? extends UaNode> nodes = addressSpace.browseNodes(serverNode, browseOptions);
 
-            assertEquals(nodes.size(), 1);
+            assertEquals(1,nodes.size());
             assertTrue(nodes.stream().anyMatch(n -> n.getNodeId().equals(NodeIds.ObjectsFolder)));
         }
 
@@ -81,7 +76,7 @@ public class AddressSpaceTest extends AbstractClientServerTest {
 
       List<? extends UaNode> nodes = addressSpace.browseNodes(objectsFolderNode, browseOptions);
 
-      assertEquals(nodes.size(), 7);
+      assertEquals(7, nodes.size());
       assertTrue(nodes.stream().anyMatch(n -> n.getNodeId().equals(NodeIds.RootFolder)));
       assertTrue(nodes.stream().anyMatch(n -> n.getNodeId().equals(NodeIds.Server)));
       assertTrue(nodes.stream().anyMatch(n -> n.getNodeId().equals(NodeIds.Aliases)));
@@ -99,7 +94,7 @@ public class AddressSpaceTest extends AbstractClientServerTest {
 
     List<? extends UaNode> nodes = addressSpace.browseNodes(serverNode, browseOptions);
 
-    assertEquals(nodes.size(), 7);
+    assertEquals(7, nodes.size());
     assertTrue(nodes.stream().anyMatch(n -> n.getNodeId().equals(NodeIds.Server_ServerArray)));
     assertTrue(nodes.stream().anyMatch(n -> n.getNodeId().equals(NodeIds.Server_NamespaceArray)));
     assertTrue(nodes.stream().anyMatch(n -> n.getNodeId().equals(NodeIds.Server_ServiceLevel)));
@@ -190,11 +185,11 @@ public class AddressSpaceTest extends AbstractClientServerTest {
 
     UaNode serverNode = addressSpace.getNode(NodeIds.Server);
     assertNotNull(serverNode);
-    assertTrue(serverNode instanceof ServerTypeNode);
+    assertInstanceOf(ServerTypeNode.class, serverNode);
 
     UaNode serverStatusNode = addressSpace.getNode(NodeIds.Server_ServerStatus);
     assertNotNull(serverStatusNode);
-    assertTrue(serverStatusNode instanceof ServerStatusTypeNode);
+    assertInstanceOf(ServerStatusTypeNode.class, serverStatusNode);
   }
 
   @Test
@@ -203,7 +198,7 @@ public class AddressSpaceTest extends AbstractClientServerTest {
     ServerTypeNode serverNode = (ServerTypeNode) addressSpace.getObjectNode(NodeIds.Server);
 
         assertNotNull(serverNode);
-        assertEquals(serverNode.getNodeId(), Identifiers.Server);
+        assertEquals(serverNode.getNodeId(), NodeIds.Server);
 
     // should be cached now, check instance equality
     assertSame(serverNode, addressSpace.getObjectNode(NodeIds.Server));
@@ -222,8 +217,8 @@ public class AddressSpaceTest extends AbstractClientServerTest {
     ServerStatusTypeNode serverNode =
         (ServerStatusTypeNode) addressSpace.getVariableNode(NodeIds.Server_ServerStatus);
 
-        assertNotNull(serverNode);
-        assertEquals(serverNode.getNodeId(), Identifiers.Server_ServerStatus);
+    assertNotNull(serverNode);
+    assertEquals(serverNode.getNodeId(), NodeIds.Server_ServerStatus);
 
     // should be cached now, check instance equality
     assertSame(serverNode, addressSpace.getVariableNode(NodeIds.Server_ServerStatus));

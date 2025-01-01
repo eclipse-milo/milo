@@ -10,21 +10,21 @@
 
 package org.eclipse.milo.opcua.sdk.server;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.expectThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 public class EndpointConfigTest {
 
   @Test
   public void securityMismatchThrows() {
-    expectThrows(
+    assertThrows(
         IllegalArgumentException.class,
         () ->
             // mismatch between securityPolicy and securityMode
@@ -33,7 +33,7 @@ public class EndpointConfigTest {
                 .setSecurityMode(MessageSecurityMode.None)
                 .build());
 
-    expectThrows(
+    assertThrows(
         IllegalArgumentException.class,
         () ->
             // mismatch between securityPolicy and securityMode
@@ -45,7 +45,7 @@ public class EndpointConfigTest {
 
   @Test
   public void missingCertificateThrows() {
-    expectThrows(
+    assertThrows(
         IllegalStateException.class,
         () ->
             // missing certificate
@@ -57,21 +57,21 @@ public class EndpointConfigTest {
 
   @Test
   public void unsupportedTransportThrows() {
-    expectThrows(
+    assertThrows(
         IllegalArgumentException.class,
         () ->
             EndpointConfig.newBuilder().setTransportProfile(TransportProfile.HTTPS_UAXML).build());
 
-    expectThrows(
+    assertThrows(
         IllegalArgumentException.class,
         () ->
             EndpointConfig.newBuilder().setTransportProfile(TransportProfile.HTTPS_UAJSON).build());
 
-    expectThrows(
+    assertThrows(
         IllegalArgumentException.class,
         () -> EndpointConfig.newBuilder().setTransportProfile(TransportProfile.WSS_UAJSON).build());
 
-    expectThrows(
+    assertThrows(
         IllegalArgumentException.class,
         () ->
             EndpointConfig.newBuilder()
@@ -84,7 +84,7 @@ public class EndpointConfigTest {
     EndpointConfig endpointConfig = EndpointConfig.newBuilder().build();
 
     List<UserTokenPolicy> tokenPolicies = endpointConfig.getTokenPolicies();
-    assertEquals(tokenPolicies.size(), 1);
-    assertEquals(tokenPolicies.get(0), EndpointConfig.Builder.USER_TOKEN_POLICY_ANONYMOUS);
+    assertEquals(1, tokenPolicies.size());
+    assertEquals(EndpointConfig.Builder.USER_TOKEN_POLICY_ANONYMOUS, tokenPolicies.get(0));
   }
 }

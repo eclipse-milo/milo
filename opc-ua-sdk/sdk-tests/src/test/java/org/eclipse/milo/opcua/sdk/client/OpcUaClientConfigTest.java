@@ -11,15 +11,15 @@
 package org.eclipse.milo.opcua.sdk.client;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import org.eclipse.milo.opcua.sdk.client.identity.AnonymousProvider;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 public class OpcUaClientConfigTest {
 
@@ -93,12 +93,12 @@ public class OpcUaClientConfigTest {
     assertNotEquals(copy.getIdentityProvider(), original.getIdentityProvider());
     assertNotEquals(copy.getSessionLocaleIds(), original.getSessionLocaleIds());
 
-    assertEquals(copy.getSessionTimeout(), uint(0));
-    assertEquals(copy.getMaxResponseMessageSize(), uint(0));
-    assertEquals(copy.getMaxPendingPublishRequests(), uint(0));
-    assertEquals(copy.getKeepAliveFailuresAllowed(), uint(2));
-    assertEquals(copy.getKeepAliveInterval(), uint(10000));
-    assertEquals(copy.getKeepAliveTimeout(), uint(15000));
-    assertEquals(copy.getSessionLocaleIds(), new String[] {"en", "es"});
+    assertEquals(uint(0), copy.getSessionTimeout());
+    assertEquals(uint(0), copy.getMaxResponseMessageSize());
+    assertEquals(uint(0), copy.getMaxPendingPublishRequests());
+    assertEquals(uint(2), copy.getKeepAliveFailuresAllowed());
+    assertEquals(uint(10000), copy.getKeepAliveInterval());
+    assertEquals(uint(15000), copy.getKeepAliveTimeout());
+    assertEquals(new String[] {"en", "es"}, copy.getSessionLocaleIds());
   }
 }

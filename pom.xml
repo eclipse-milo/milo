@@ -91,7 +91,6 @@
     <!-- Test Dependency Versions -->
     <junit.version>5.10.2</junit.version>
     <mockito.version>2.25.1</mockito.version>
-    <testng.version>6.9.10</testng.version>
   </properties>
 
   <profiles>

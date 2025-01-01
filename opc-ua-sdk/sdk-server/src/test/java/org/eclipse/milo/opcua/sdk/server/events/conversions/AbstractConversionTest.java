@@ -16,10 +16,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
 import org.junit.jupiter.api.Test;
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.testng.annotations.Test;
 
 abstract class AbstractConversionTest<S> {
 
