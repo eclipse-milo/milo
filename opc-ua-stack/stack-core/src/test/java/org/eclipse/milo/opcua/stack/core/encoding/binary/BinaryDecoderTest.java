@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.stack.core.encoding.binary;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -64,6 +65,6 @@ public class BinaryDecoderTest extends BinarySerializationFixture {
     ApplicationType[] decoded =
         Arrays.stream(decodedValues).map(ApplicationType::from).toArray(ApplicationType[]::new);
 
-    assertEquals(array, decoded);
+    assertArrayEquals(array, decoded);
   }
 }
