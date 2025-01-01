@@ -203,6 +203,9 @@ public class CertificateValidationUtilTest {
                 Set<X509CRL> x509CRLS =
                     Set.of(
                         generateCrl(
+                            caRoot,
+                            (PrivateKey) keyStore.getKey(ALIAS_CA_ROOT, "password".toCharArray())),
+                        generateCrl(
                             caIntermediate,
                             (PrivateKey)
                                 keyStore.getKey(ALIAS_CA_INTERMEDIATE, "password".toCharArray()),
@@ -245,7 +248,11 @@ public class CertificateValidationUtilTest {
                         generateCrl(
                             caRoot,
                             (PrivateKey) keyStore.getKey(ALIAS_CA_ROOT, "password".toCharArray()),
-                            caIntermediate));
+                            caIntermediate),
+                        generateCrl(
+                            caIntermediate,
+                            (PrivateKey)
+                                keyStore.getKey(ALIAS_CA_INTERMEDIATE, "password".toCharArray())));
 
                 PKIXCertPathBuilderResult pathBuilderResult =
                     buildTrustedCertPath(certificateChain, Set.of(caIntermediate), Set.of(caRoot));
