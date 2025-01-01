@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -11,75 +11,68 @@
 package org.eclipse.milo.opcua.stack.core.channel;
 
 import java.util.concurrent.ExecutorService;
-
-import org.eclipse.milo.opcua.stack.core.serialization.OpcUaBinaryStreamDecoder;
-import org.eclipse.milo.opcua.stack.core.serialization.OpcUaBinaryStreamEncoder;
-import org.eclipse.milo.opcua.stack.core.serialization.SerializationContext;
+import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
+import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaBinaryDecoder;
+import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaBinaryEncoder;
 import org.eclipse.milo.opcua.stack.core.util.TaskQueue;
 
 public class SerializationQueue {
 
-    private static final int MAX_QUEUE_SIZE =
-        Integer.getInteger("milo.stack.serialization.maxQueueSize", 256);
+  private static final int MAX_QUEUE_SIZE =
+      Integer.getInteger("milo.stack.serialization.maxQueueSize", 256);
 
-    private final OpcUaBinaryStreamEncoder binaryEncoder;
-    private final OpcUaBinaryStreamDecoder binaryDecoder;
+  private final OpcUaBinaryEncoder binaryEncoder;
+  private final OpcUaBinaryDecoder binaryDecoder;
 
-    private final ChunkEncoder chunkEncoder;
-    private final ChunkDecoder chunkDecoder;
+  private final ChunkEncoder chunkEncoder;
+  private final ChunkDecoder chunkDecoder;
 
-    private final TaskQueue encodingQueue;
-    private final TaskQueue decodingQueue;
+  private final TaskQueue encodingQueue;
+  private final TaskQueue decodingQueue;
 
-    private final ChannelParameters parameters;
+  private final ChannelParameters parameters;
 
-    public SerializationQueue(
-        ExecutorService executor,
-        ChannelParameters parameters,
-        SerializationContext context
-    ) {
+  public SerializationQueue(
+      ExecutorService executor, ChannelParameters parameters, EncodingContext context) {
 
-        this.parameters = parameters;
+    this.parameters = parameters;
 
-        chunkEncoder = new ChunkEncoder(parameters);
-        chunkDecoder = new ChunkDecoder(parameters, context.getEncodingLimits());
+    chunkEncoder = new ChunkEncoder(parameters);
+    chunkDecoder = new ChunkDecoder(parameters, context.getEncodingLimits());
 
-        binaryEncoder = new OpcUaBinaryStreamEncoder(context);
-        binaryDecoder = new OpcUaBinaryStreamDecoder(context);
+    binaryEncoder = new OpcUaBinaryEncoder(context);
+    binaryDecoder = new OpcUaBinaryDecoder(context);
 
-        encodingQueue = new TaskQueue(executor);
+    encodingQueue = new TaskQueue(executor);
 
-        decodingQueue = TaskQueue.newBuilder()
-            .setExecutor(executor)
-            .setMaxQueueSize(MAX_QUEUE_SIZE)
-            .build();
-    }
+    decodingQueue =
+        TaskQueue.newBuilder().setExecutor(executor).setMaxQueueSize(MAX_QUEUE_SIZE).build();
+  }
 
-    public boolean encode(Encoder encoder) {
-        return encodingQueue.execute(() -> encoder.encode(binaryEncoder, chunkEncoder));
-    }
+  public boolean encode(Encoder encoder) {
+    return encodingQueue.execute(() -> encoder.encode(binaryEncoder, chunkEncoder));
+  }
 
-    public boolean decode(Decoder decoder) {
-        return decodingQueue.execute(() -> decoder.decode(binaryDecoder, chunkDecoder));
-    }
+  public boolean decode(Decoder decoder) {
+    return decodingQueue.execute(() -> decoder.decode(binaryDecoder, chunkDecoder));
+  }
 
-    public void pause() {
-        encodingQueue.pause();
-        decodingQueue.pause();
-    }
+  public void pause() {
+    encodingQueue.pause();
+    decodingQueue.pause();
+  }
 
-    public ChannelParameters getParameters() {
-        return parameters;
-    }
+  public ChannelParameters getParameters() {
+    return parameters;
+  }
 
-    @FunctionalInterface
-    public interface Decoder {
-        void decode(OpcUaBinaryStreamDecoder binaryDecoder, ChunkDecoder chunkDecoder);
-    }
+  @FunctionalInterface
+  public interface Decoder {
+    void decode(OpcUaBinaryDecoder binaryDecoder, ChunkDecoder chunkDecoder);
+  }
 
-    @FunctionalInterface
-    public interface Encoder {
-        void encode(OpcUaBinaryStreamEncoder binaryEncoder, ChunkEncoder chunkEncoder);
-    }
-
+  @FunctionalInterface
+  public interface Encoder {
+    void encode(OpcUaBinaryEncoder binaryEncoder, ChunkEncoder chunkEncoder);
+  }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -11,213 +11,1537 @@
 package org.eclipse.milo.opcua.sdk.server.namespaces.loader;
 
 import org.eclipse.milo.opcua.sdk.core.Reference;
-import org.eclipse.milo.opcua.sdk.server.api.NodeManager;
+import org.eclipse.milo.opcua.sdk.server.NodeManager;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaReferenceTypeNode;
-import org.eclipse.milo.opcua.stack.core.Identifiers;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 
 class ReferenceTypeNodeLoader {
-    private final UaNodeContext context;
+  private final UaNodeContext context;
 
-    private final NodeManager<UaNode> nodeManager;
+  private final NodeManager<UaNode> nodeManager;
 
-    ReferenceTypeNodeLoader(UaNodeContext context, NodeManager<UaNode> nodeManager) {
-        this.context = context;
-        this.nodeManager = nodeManager;
-    }
+  ReferenceTypeNodeLoader(UaNodeContext context, NodeManager<UaNode> nodeManager) {
+    this.context = context;
+    this.nodeManager = nodeManager;
+  }
 
-    private void loadNode0() {
-        UaReferenceTypeNode node = new UaReferenceTypeNode(this.context, Identifiers.References, new QualifiedName(0, "References"), new LocalizedText("en", "References"), LocalizedText.NULL_VALUE, UInteger.valueOf(0), UInteger.valueOf(0), true, true, LocalizedText.NULL_VALUE);
-        this.nodeManager.addNode(node);
-    }
+  void loadNode0() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 31),
+            new QualifiedName(0, "References"),
+            new LocalizedText("", "References"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true,
+            null);
+    this.nodeManager.addNode(node);
+  }
 
-    private void loadNode1() {
-        UaReferenceTypeNode node = new UaReferenceTypeNode(this.context, Identifiers.NonHierarchicalReferences, new QualifiedName(0, "NonHierarchicalReferences"), new LocalizedText("en", "NonHierarchicalReferences"), LocalizedText.NULL_VALUE, UInteger.valueOf(0), UInteger.valueOf(0), true, false, new LocalizedText("en", "NonHierarchicalReferences"));
-        node.addReference(new Reference(Identifiers.NonHierarchicalReferences, Identifiers.HasSubtype, Identifiers.References.expanded(), false));
-        this.nodeManager.addNode(node);
-    }
+  void loadNode1() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 32),
+            new QualifiedName(0, "NonHierarchicalReferences"),
+            new LocalizedText("", "NonHierarchicalReferences"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true,
+            null);
+    node.addReference(
+        new Reference(new NodeId(0, 32), new NodeId(0, 45), new NodeId(0, 31).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
 
-    private void loadNode2() {
-        UaReferenceTypeNode node = new UaReferenceTypeNode(this.context, Identifiers.HierarchicalReferences, new QualifiedName(0, "HierarchicalReferences"), new LocalizedText("en", "HierarchicalReferences"), LocalizedText.NULL_VALUE, UInteger.valueOf(0), UInteger.valueOf(0), true, false, new LocalizedText("en", "HierarchicalReferences"));
-        node.addReference(new Reference(Identifiers.HierarchicalReferences, Identifiers.HasSubtype, Identifiers.References.expanded(), false));
-        this.nodeManager.addNode(node);
-    }
+  void loadNode2() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 33),
+            new QualifiedName(0, "HierarchicalReferences"),
+            new LocalizedText("", "HierarchicalReferences"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            false,
+            new LocalizedText("", "InverseHierarchicalReferences"));
+    node.addReference(
+        new Reference(new NodeId(0, 33), new NodeId(0, 45), new NodeId(0, 31).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
 
-    private void loadNode3() {
-        UaReferenceTypeNode node = new UaReferenceTypeNode(this.context, Identifiers.HasChild, new QualifiedName(0, "HasChild"), new LocalizedText("en", "HasChild"), LocalizedText.NULL_VALUE, UInteger.valueOf(0), UInteger.valueOf(0), false, false, new LocalizedText("en", "ChildOf"));
-        node.addReference(new Reference(Identifiers.HasChild, Identifiers.HasSubtype, Identifiers.HierarchicalReferences.expanded(), false));
-        this.nodeManager.addNode(node);
-    }
+  void loadNode3() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 34),
+            new QualifiedName(0, "HasChild"),
+            new LocalizedText("", "HasChild"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            false,
+            new LocalizedText("", "ChildOf"));
+    node.addReference(
+        new Reference(new NodeId(0, 34), new NodeId(0, 45), new NodeId(0, 33).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
 
-    private void loadNode4() {
-        UaReferenceTypeNode node = new UaReferenceTypeNode(this.context, Identifiers.Organizes, new QualifiedName(0, "Organizes"), new LocalizedText("en", "Organizes"), LocalizedText.NULL_VALUE, UInteger.valueOf(0), UInteger.valueOf(0), false, false, new LocalizedText("en", "OrganizedBy"));
-        node.addReference(new Reference(Identifiers.Organizes, Identifiers.HasSubtype, Identifiers.HierarchicalReferences.expanded(), false));
-        this.nodeManager.addNode(node);
-    }
+  void loadNode4() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 35),
+            new QualifiedName(0, "Organizes"),
+            new LocalizedText("", "Organizes"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "OrganizedBy"));
+    node.addReference(
+        new Reference(new NodeId(0, 35), new NodeId(0, 45), new NodeId(0, 33).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
 
-    private void loadNode5() {
-        UaReferenceTypeNode node = new UaReferenceTypeNode(this.context, Identifiers.HasEventSource, new QualifiedName(0, "HasEventSource"), new LocalizedText("en", "HasEventSource"), LocalizedText.NULL_VALUE, UInteger.valueOf(0), UInteger.valueOf(0), false, false, new LocalizedText("en", "EventSourceOf"));
-        node.addReference(new Reference(Identifiers.HasEventSource, Identifiers.HasSubtype, Identifiers.HierarchicalReferences.expanded(), false));
-        this.nodeManager.addNode(node);
-    }
+  void loadNode5() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 36),
+            new QualifiedName(0, "HasEventSource"),
+            new LocalizedText("", "HasEventSource"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "EventSourceOf"));
+    node.addReference(
+        new Reference(new NodeId(0, 36), new NodeId(0, 45), new NodeId(0, 33).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
 
-    private void loadNode6() {
-        UaReferenceTypeNode node = new UaReferenceTypeNode(this.context, Identifiers.HasModellingRule, new QualifiedName(0, "HasModellingRule"), new LocalizedText("en", "HasModellingRule"), LocalizedText.NULL_VALUE, UInteger.valueOf(0), UInteger.valueOf(0), false, false, new LocalizedText("en", "ModellingRuleOf"));
-        node.addReference(new Reference(Identifiers.HasModellingRule, Identifiers.HasSubtype, Identifiers.NonHierarchicalReferences.expanded(), false));
-        this.nodeManager.addNode(node);
-    }
+  void loadNode6() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 37),
+            new QualifiedName(0, "HasModellingRule"),
+            new LocalizedText("", "HasModellingRule"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "ModellingRuleOf"));
+    node.addReference(
+        new Reference(new NodeId(0, 37), new NodeId(0, 45), new NodeId(0, 32).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
 
-    private void loadNode7() {
-        UaReferenceTypeNode node = new UaReferenceTypeNode(this.context, Identifiers.HasEncoding, new QualifiedName(0, "HasEncoding"), new LocalizedText("en", "HasEncoding"), LocalizedText.NULL_VALUE, UInteger.valueOf(0), UInteger.valueOf(0), false, false, new LocalizedText("en", "EncodingOf"));
-        node.addReference(new Reference(Identifiers.HasEncoding, Identifiers.HasSubtype, Identifiers.NonHierarchicalReferences.expanded(), false));
-        this.nodeManager.addNode(node);
-    }
+  void loadNode7() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 38),
+            new QualifiedName(0, "HasEncoding"),
+            new LocalizedText("", "HasEncoding"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "EncodingOf"));
+    node.addReference(
+        new Reference(new NodeId(0, 38), new NodeId(0, 45), new NodeId(0, 32).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
 
-    private void loadNode8() {
-        UaReferenceTypeNode node = new UaReferenceTypeNode(this.context, Identifiers.HasDescription, new QualifiedName(0, "HasDescription"), new LocalizedText("en", "HasDescription"), LocalizedText.NULL_VALUE, UInteger.valueOf(0), UInteger.valueOf(0), false, false, new LocalizedText("en", "DescriptionOf"));
-        node.addReference(new Reference(Identifiers.HasDescription, Identifiers.HasSubtype, Identifiers.NonHierarchicalReferences.expanded(), false));
-        this.nodeManager.addNode(node);
-    }
+  void loadNode8() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 39),
+            new QualifiedName(0, "HasDescription"),
+            new LocalizedText("", "HasDescription"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "DescriptionOf"));
+    node.addReference(
+        new Reference(new NodeId(0, 39), new NodeId(0, 45), new NodeId(0, 32).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
 
-    private void loadNode9() {
-        UaReferenceTypeNode node = new UaReferenceTypeNode(this.context, Identifiers.HasTypeDefinition, new QualifiedName(0, "HasTypeDefinition"), new LocalizedText("en", "HasTypeDefinition"), LocalizedText.NULL_VALUE, UInteger.valueOf(0), UInteger.valueOf(0), false, false, new LocalizedText("en", "TypeDefinitionOf"));
-        node.addReference(new Reference(Identifiers.HasTypeDefinition, Identifiers.HasSubtype, Identifiers.NonHierarchicalReferences.expanded(), false));
-        this.nodeManager.addNode(node);
-    }
+  void loadNode9() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 40),
+            new QualifiedName(0, "HasTypeDefinition"),
+            new LocalizedText("", "HasTypeDefinition"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "TypeDefinitionOf"));
+    node.addReference(
+        new Reference(new NodeId(0, 40), new NodeId(0, 45), new NodeId(0, 32).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
 
-    private void loadNode10() {
-        UaReferenceTypeNode node = new UaReferenceTypeNode(this.context, Identifiers.GeneratesEvent, new QualifiedName(0, "GeneratesEvent"), new LocalizedText("en", "GeneratesEvent"), LocalizedText.NULL_VALUE, UInteger.valueOf(0), UInteger.valueOf(0), false, false, new LocalizedText("en", "GeneratesEvent"));
-        node.addReference(new Reference(Identifiers.GeneratesEvent, Identifiers.HasSubtype, Identifiers.NonHierarchicalReferences.expanded(), false));
-        this.nodeManager.addNode(node);
-    }
+  void loadNode10() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 41),
+            new QualifiedName(0, "GeneratesEvent"),
+            new LocalizedText("", "GeneratesEvent"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "GeneratedBy"));
+    node.addReference(
+        new Reference(new NodeId(0, 41), new NodeId(0, 45), new NodeId(0, 32).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
 
-    private void loadNode11() {
-        UaReferenceTypeNode node = new UaReferenceTypeNode(this.context, Identifiers.Aggregates, new QualifiedName(0, "Aggregates"), new LocalizedText("en", "Aggregates"), LocalizedText.NULL_VALUE, UInteger.valueOf(0), UInteger.valueOf(0), false, false, new LocalizedText("en", "AggregatedBy"));
-        node.addReference(new Reference(Identifiers.Aggregates, Identifiers.HasSubtype, Identifiers.HasChild.expanded(), false));
-        this.nodeManager.addNode(node);
-    }
+  void loadNode11() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 3065),
+            new QualifiedName(0, "AlwaysGeneratesEvent"),
+            new LocalizedText("", "AlwaysGeneratesEvent"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "AlwaysGeneratedBy"));
+    node.addReference(
+        new Reference(new NodeId(0, 3065), new NodeId(0, 45), new NodeId(0, 41).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
 
-    private void loadNode12() {
-        UaReferenceTypeNode node = new UaReferenceTypeNode(this.context, Identifiers.HasSubtype, new QualifiedName(0, "HasSubtype"), new LocalizedText("en", "HasSubtype"), LocalizedText.NULL_VALUE, UInteger.valueOf(0), UInteger.valueOf(0), false, false, new LocalizedText("en", "SubtypeOf"));
-        node.addReference(new Reference(Identifiers.HasSubtype, Identifiers.HasSubtype, Identifiers.HasChild.expanded(), false));
-        this.nodeManager.addNode(node);
-    }
+  void loadNode12() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 44),
+            new QualifiedName(0, "Aggregates"),
+            new LocalizedText("", "Aggregates"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            false,
+            new LocalizedText("", "AggregatedBy"));
+    node.addReference(
+        new Reference(new NodeId(0, 44), new NodeId(0, 45), new NodeId(0, 34).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
 
-    private void loadNode13() {
-        UaReferenceTypeNode node = new UaReferenceTypeNode(this.context, Identifiers.HasProperty, new QualifiedName(0, "HasProperty"), new LocalizedText("en", "HasProperty"), LocalizedText.NULL_VALUE, UInteger.valueOf(0), UInteger.valueOf(0), false, false, new LocalizedText("en", "PropertyOf"));
-        node.addReference(new Reference(Identifiers.HasProperty, Identifiers.HasSubtype, Identifiers.Aggregates.expanded(), false));
-        this.nodeManager.addNode(node);
-    }
+  void loadNode13() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 45),
+            new QualifiedName(0, "HasSubtype"),
+            new LocalizedText("", "HasSubtype"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "SubtypeOf"));
+    node.addReference(
+        new Reference(new NodeId(0, 45), new NodeId(0, 45), new NodeId(0, 34).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
 
-    private void loadNode14() {
-        UaReferenceTypeNode node = new UaReferenceTypeNode(this.context, Identifiers.HasComponent, new QualifiedName(0, "HasComponent"), new LocalizedText("en", "HasComponent"), LocalizedText.NULL_VALUE, UInteger.valueOf(0), UInteger.valueOf(0), false, false, new LocalizedText("en", "ComponentOf"));
-        node.addReference(new Reference(Identifiers.HasComponent, Identifiers.HasSubtype, Identifiers.Aggregates.expanded(), false));
-        this.nodeManager.addNode(node);
-    }
+  void loadNode14() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 46),
+            new QualifiedName(0, "HasProperty"),
+            new LocalizedText("", "HasProperty"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "PropertyOf"));
+    node.addReference(
+        new Reference(new NodeId(0, 46), new NodeId(0, 45), new NodeId(0, 44).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
 
-    private void loadNode15() {
-        UaReferenceTypeNode node = new UaReferenceTypeNode(this.context, Identifiers.HasNotifier, new QualifiedName(0, "HasNotifier"), new LocalizedText("en", "HasNotifier"), LocalizedText.NULL_VALUE, UInteger.valueOf(0), UInteger.valueOf(0), false, false, new LocalizedText("en", "NotifierOf"));
-        node.addReference(new Reference(Identifiers.HasNotifier, Identifiers.HasSubtype, Identifiers.HasEventSource.expanded(), false));
-        this.nodeManager.addNode(node);
-    }
+  void loadNode15() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 47),
+            new QualifiedName(0, "HasComponent"),
+            new LocalizedText("", "HasComponent"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "ComponentOf"));
+    node.addReference(
+        new Reference(new NodeId(0, 47), new NodeId(0, 45), new NodeId(0, 44).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
 
-    private void loadNode16() {
-        UaReferenceTypeNode node = new UaReferenceTypeNode(this.context, Identifiers.HasOrderedComponent, new QualifiedName(0, "HasOrderedComponent"), new LocalizedText("en", "HasOrderedComponent"), LocalizedText.NULL_VALUE, UInteger.valueOf(0), UInteger.valueOf(0), false, false, new LocalizedText("en", "OrderedComponentOf"));
-        node.addReference(new Reference(Identifiers.HasOrderedComponent, Identifiers.HasSubtype, Identifiers.HasComponent.expanded(), false));
-        this.nodeManager.addNode(node);
-    }
+  void loadNode16() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 48),
+            new QualifiedName(0, "HasNotifier"),
+            new LocalizedText("", "HasNotifier"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "NotifierOf"));
+    node.addReference(
+        new Reference(new NodeId(0, 48), new NodeId(0, 45), new NodeId(0, 36).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
 
-    private void loadNode17() {
-        UaReferenceTypeNode node = new UaReferenceTypeNode(this.context, Identifiers.FromState, new QualifiedName(0, "FromState"), new LocalizedText("en", "FromState"), LocalizedText.NULL_VALUE, UInteger.valueOf(0), UInteger.valueOf(0), false, false, new LocalizedText("en", "ToTransition"));
-        node.addReference(new Reference(Identifiers.FromState, Identifiers.HasSubtype, Identifiers.NonHierarchicalReferences.expanded(), false));
-        this.nodeManager.addNode(node);
-    }
+  void loadNode17() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 49),
+            new QualifiedName(0, "HasOrderedComponent"),
+            new LocalizedText("", "HasOrderedComponent"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "OrderedComponentOf"));
+    node.addReference(
+        new Reference(new NodeId(0, 49), new NodeId(0, 45), new NodeId(0, 47).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
 
-    private void loadNode18() {
-        UaReferenceTypeNode node = new UaReferenceTypeNode(this.context, Identifiers.ToState, new QualifiedName(0, "ToState"), new LocalizedText("en", "ToState"), LocalizedText.NULL_VALUE, UInteger.valueOf(0), UInteger.valueOf(0), false, false, new LocalizedText("en", "FromTransition"));
-        node.addReference(new Reference(Identifiers.ToState, Identifiers.HasSubtype, Identifiers.NonHierarchicalReferences.expanded(), false));
-        this.nodeManager.addNode(node);
-    }
+  void loadNode18() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 51),
+            new QualifiedName(0, "FromState"),
+            new LocalizedText("", "FromState"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "ToTransition"));
+    node.addReference(
+        new Reference(new NodeId(0, 51), new NodeId(0, 45), new NodeId(0, 32).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
 
-    private void loadNode19() {
-        UaReferenceTypeNode node = new UaReferenceTypeNode(this.context, Identifiers.HasCause, new QualifiedName(0, "HasCause"), new LocalizedText("en", "HasCause"), LocalizedText.NULL_VALUE, UInteger.valueOf(0), UInteger.valueOf(0), false, false, new LocalizedText("en", "MayBeCausedBy"));
-        node.addReference(new Reference(Identifiers.HasCause, Identifiers.HasSubtype, Identifiers.NonHierarchicalReferences.expanded(), false));
-        this.nodeManager.addNode(node);
-    }
+  void loadNode19() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 52),
+            new QualifiedName(0, "ToState"),
+            new LocalizedText("", "ToState"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "FromTransition"));
+    node.addReference(
+        new Reference(new NodeId(0, 52), new NodeId(0, 45), new NodeId(0, 32).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
 
-    private void loadNode20() {
-        UaReferenceTypeNode node = new UaReferenceTypeNode(this.context, Identifiers.HasEffect, new QualifiedName(0, "HasEffect"), new LocalizedText("en", "HasEffect"), LocalizedText.NULL_VALUE, UInteger.valueOf(0), UInteger.valueOf(0), false, false, new LocalizedText("en", "MayBeEffectedBy"));
-        node.addReference(new Reference(Identifiers.HasEffect, Identifiers.HasSubtype, Identifiers.NonHierarchicalReferences.expanded(), false));
-        this.nodeManager.addNode(node);
-    }
+  void loadNode20() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 53),
+            new QualifiedName(0, "HasCause"),
+            new LocalizedText("", "HasCause"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "MayBeCausedBy"));
+    node.addReference(
+        new Reference(new NodeId(0, 53), new NodeId(0, 45), new NodeId(0, 32).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
 
-    private void loadNode21() {
-        UaReferenceTypeNode node = new UaReferenceTypeNode(this.context, Identifiers.HasHistoricalConfiguration, new QualifiedName(0, "HasHistoricalConfiguration"), new LocalizedText("en", "HasHistoricalConfiguration"), LocalizedText.NULL_VALUE, UInteger.valueOf(0), UInteger.valueOf(0), false, false, new LocalizedText("en", "HistoricalConfigurationOf"));
-        node.addReference(new Reference(Identifiers.HasHistoricalConfiguration, Identifiers.HasSubtype, Identifiers.Aggregates.expanded(), false));
-        this.nodeManager.addNode(node);
-    }
+  void loadNode21() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 54),
+            new QualifiedName(0, "HasEffect"),
+            new LocalizedText("", "HasEffect"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "MayBeEffectedBy"));
+    node.addReference(
+        new Reference(new NodeId(0, 54), new NodeId(0, 45), new NodeId(0, 32).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
 
-    private void loadNode22() {
-        UaReferenceTypeNode node = new UaReferenceTypeNode(this.context, Identifiers.HasSubStateMachine, new QualifiedName(0, "HasSubStateMachine"), new LocalizedText("en", "HasSubStateMachine"), LocalizedText.NULL_VALUE, UInteger.valueOf(0), UInteger.valueOf(0), false, false, new LocalizedText("en", "SubStateMachineOf"));
-        node.addReference(new Reference(Identifiers.HasSubStateMachine, Identifiers.HasSubtype, Identifiers.NonHierarchicalReferences.expanded(), false));
-        this.nodeManager.addNode(node);
-    }
+  void loadNode22() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 117),
+            new QualifiedName(0, "HasSubStateMachine"),
+            new LocalizedText("", "HasSubStateMachine"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "SubStateMachineOf"));
+    node.addReference(
+        new Reference(new NodeId(0, 117), new NodeId(0, 45), new NodeId(0, 32).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
 
-    private void loadNode23() {
-        UaReferenceTypeNode node = new UaReferenceTypeNode(this.context, Identifiers.HasTrueSubState, new QualifiedName(0, "HasTrueSubState"), new LocalizedText("en", "HasTrueSubState"), LocalizedText.NULL_VALUE, UInteger.valueOf(0), UInteger.valueOf(0), false, false, new LocalizedText("en", "IsTrueSubStateOf"));
-        node.addReference(new Reference(Identifiers.HasTrueSubState, Identifiers.HasSubtype, Identifiers.NonHierarchicalReferences.expanded(), false));
-        this.nodeManager.addNode(node);
-    }
+  void loadNode23() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 56),
+            new QualifiedName(0, "HasHistoricalConfiguration"),
+            new LocalizedText("", "HasHistoricalConfiguration"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "HistoricalConfigurationOf"));
+    node.addReference(
+        new Reference(new NodeId(0, 56), new NodeId(0, 45), new NodeId(0, 44).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
 
-    private void loadNode24() {
-        UaReferenceTypeNode node = new UaReferenceTypeNode(this.context, Identifiers.HasFalseSubState, new QualifiedName(0, "HasFalseSubState"), new LocalizedText("en", "HasFalseSubState"), LocalizedText.NULL_VALUE, UInteger.valueOf(0), UInteger.valueOf(0), false, false, new LocalizedText("en", "IsFalseSubStateOf"));
-        node.addReference(new Reference(Identifiers.HasFalseSubState, Identifiers.HasSubtype, Identifiers.NonHierarchicalReferences.expanded(), false));
-        this.nodeManager.addNode(node);
-    }
+  void loadNode24() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 24136),
+            new QualifiedName(0, "HasStructuredComponent"),
+            new LocalizedText("", "HasStructuredComponent"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "IsStructuredComponentOf"));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 24136), new NodeId(0, 45), new NodeId(0, 47).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
 
-    private void loadNode25() {
-        UaReferenceTypeNode node = new UaReferenceTypeNode(this.context, Identifiers.HasCondition, new QualifiedName(0, "HasCondition"), new LocalizedText("en", "HasCondition"), LocalizedText.NULL_VALUE, UInteger.valueOf(0), UInteger.valueOf(0), false, false, new LocalizedText("en", "IsConditionOf"));
-        node.addReference(new Reference(Identifiers.HasCondition, Identifiers.HasSubtype, Identifiers.NonHierarchicalReferences.expanded(), false));
-        this.nodeManager.addNode(node);
-    }
+  void loadNode25() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 24137),
+            new QualifiedName(0, "AssociatedWith"),
+            new LocalizedText("", "AssociatedWith"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            true,
+            null);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 24137), new NodeId(0, 45), new NodeId(0, 32).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
 
-    private void loadNode26() {
-        UaReferenceTypeNode node = new UaReferenceTypeNode(this.context, Identifiers.AlwaysGeneratesEvent, new QualifiedName(0, "AlwaysGeneratesEvent"), new LocalizedText("en", "AlwaysGeneratesEvent"), LocalizedText.NULL_VALUE, UInteger.valueOf(0), UInteger.valueOf(0), false, false, new LocalizedText("en", "AlwaysGeneratesEvent"));
-        node.addReference(new Reference(Identifiers.AlwaysGeneratesEvent, Identifiers.HasSubtype, Identifiers.GeneratesEvent.expanded(), false));
-        this.nodeManager.addNode(node);
-    }
+  void loadNode26() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 129),
+            new QualifiedName(0, "HasArgumentDescription"),
+            new LocalizedText("", "HasArgumentDescription"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "ArgumentDescriptionOf"));
+    node.addReference(
+        new Reference(new NodeId(0, 129), new NodeId(0, 45), new NodeId(0, 47).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
 
-    public void loadAllNodes() {
-        loadNode0();
-        loadNode1();
-        loadNode2();
-        loadNode3();
-        loadNode4();
-        loadNode5();
-        loadNode6();
-        loadNode7();
-        loadNode8();
-        loadNode9();
-        loadNode10();
-        loadNode11();
-        loadNode12();
-        loadNode13();
-        loadNode14();
-        loadNode15();
-        loadNode16();
-        loadNode17();
-        loadNode18();
-        loadNode19();
-        loadNode20();
-        loadNode21();
-        loadNode22();
-        loadNode23();
-        loadNode24();
-        loadNode25();
-        loadNode26();
-    }
+  void loadNode27() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 131),
+            new QualifiedName(0, "HasOptionalInputArgumentDescription"),
+            new LocalizedText("", "HasOptionalInputArgumentDescription"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "OptionalInputArgumentDescriptionOf"));
+    node.addReference(
+        new Reference(new NodeId(0, 131), new NodeId(0, 45), new NodeId(0, 129).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode28() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 23562),
+            new QualifiedName(0, "IsDeprecated"),
+            new LocalizedText("", "IsDeprecated"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "Deprecates"));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 23562), new NodeId(0, 45), new NodeId(0, 32).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode29() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 15112),
+            new QualifiedName(0, "HasGuard"),
+            new LocalizedText("", "HasGuard"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "GuardOf"));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15112), new NodeId(0, 45), new NodeId(0, 47).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode30() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 17597),
+            new QualifiedName(0, "HasDictionaryEntry"),
+            new LocalizedText("", "HasDictionaryEntry"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "DictionaryEntryOf"));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 17597), new NodeId(0, 45), new NodeId(0, 32).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode31() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 17603),
+            new QualifiedName(0, "HasInterface"),
+            new LocalizedText("", "HasInterface"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "InterfaceOf"));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 17603), new NodeId(0, 45), new NodeId(0, 32).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode32() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 17604),
+            new QualifiedName(0, "HasAddIn"),
+            new LocalizedText("", "HasAddIn"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "AddInOf"));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 17604), new NodeId(0, 45), new NodeId(0, 47).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode33() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 9004),
+            new QualifiedName(0, "HasTrueSubState"),
+            new LocalizedText("", "HasTrueSubState"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "IsTrueSubStateOf"));
+    node.addReference(
+        new Reference(new NodeId(0, 9004), new NodeId(0, 45), new NodeId(0, 32).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode34() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 9005),
+            new QualifiedName(0, "HasFalseSubState"),
+            new LocalizedText("", "HasFalseSubState"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "IsFalseSubStateOf"));
+    node.addReference(
+        new Reference(new NodeId(0, 9005), new NodeId(0, 45), new NodeId(0, 32).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode35() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 16361),
+            new QualifiedName(0, "HasAlarmSuppressionGroup"),
+            new LocalizedText("", "HasAlarmSuppressionGroup"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "IsAlarmSuppressionGroupOf"));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16361), new NodeId(0, 45), new NodeId(0, 47).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode36() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 16362),
+            new QualifiedName(0, "AlarmGroupMember"),
+            new LocalizedText("", "AlarmGroupMember"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "MemberOfAlarmGroup"));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16362), new NodeId(0, 45), new NodeId(0, 35).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode37() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 32059),
+            new QualifiedName(0, "AlarmSuppressionGroupMember"),
+            new LocalizedText("", "AlarmSuppressionGroupMember"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "MemberOfAlarmSuppressionGroup"));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32059), new NodeId(0, 45), new NodeId(0, 16362).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode38() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 9006),
+            new QualifiedName(0, "HasCondition"),
+            new LocalizedText("", "HasCondition"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "IsConditionOf"));
+    node.addReference(
+        new Reference(new NodeId(0, 9006), new NodeId(0, 45), new NodeId(0, 32).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode39() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 17276),
+            new QualifiedName(0, "HasEffectDisable"),
+            new LocalizedText("", "HasEffectDisable"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "MayBeDisabledBy"));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 17276), new NodeId(0, 45), new NodeId(0, 54).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode40() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 17983),
+            new QualifiedName(0, "HasEffectEnable"),
+            new LocalizedText("", "HasEffectEnable"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "MayBeEnabledBy"));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 17983), new NodeId(0, 45), new NodeId(0, 54).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode41() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 17984),
+            new QualifiedName(0, "HasEffectSuppressed"),
+            new LocalizedText("", "HasEffectSuppressed"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "MayBeSuppressedBy"));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 17984), new NodeId(0, 45), new NodeId(0, 54).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode42() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 17985),
+            new QualifiedName(0, "HasEffectUnsuppressed"),
+            new LocalizedText("", "HasEffectUnsuppressed"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "MayBeUnsuppressedBy"));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 17985), new NodeId(0, 45), new NodeId(0, 54).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode43() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 25345),
+            new QualifiedName(0, "HasPushedSecurityGroup"),
+            new LocalizedText("", "HasPushedSecurityGroup"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "HasPushTarget"));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25345), new NodeId(0, 45), new NodeId(0, 33).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode44() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 14476),
+            new QualifiedName(0, "HasPubSubConnection"),
+            new LocalizedText("", "HasPubSubConnection"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "PubSubConnectionOf"));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 14476), new NodeId(0, 45), new NodeId(0, 47).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode45() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 14936),
+            new QualifiedName(0, "DataSetToWriter"),
+            new LocalizedText("", "DataSetToWriter"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "WriterToDataSet"));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 14936), new NodeId(0, 45), new NodeId(0, 33).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode46() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 15296),
+            new QualifiedName(0, "HasDataSetWriter"),
+            new LocalizedText("", "HasDataSetWriter"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "IsWriterInGroup"));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15296), new NodeId(0, 45), new NodeId(0, 47).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode47() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 18804),
+            new QualifiedName(0, "HasWriterGroup"),
+            new LocalizedText("", "HasWriterGroup"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "IsWriterGroupOf"));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18804), new NodeId(0, 45), new NodeId(0, 47).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode48() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 15297),
+            new QualifiedName(0, "HasDataSetReader"),
+            new LocalizedText("", "HasDataSetReader"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "IsReaderInGroup"));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15297), new NodeId(0, 45), new NodeId(0, 47).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode49() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 18805),
+            new QualifiedName(0, "HasReaderGroup"),
+            new LocalizedText("", "HasReaderGroup"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "IsReaderGroupOf"));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18805), new NodeId(0, 45), new NodeId(0, 47).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode50() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 23469),
+            new QualifiedName(0, "AliasFor"),
+            new LocalizedText("", "AliasFor"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "HasAlias"));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 23469), new NodeId(0, 45), new NodeId(0, 32).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode51() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 25237),
+            new QualifiedName(0, "UsesPriorityMappingTable"),
+            new LocalizedText("", "UsesPriorityMappingTable"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "UsedByNetworkInterface"));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25237), new NodeId(0, 45), new NodeId(0, 32).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode52() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 25238),
+            new QualifiedName(0, "HasLowerLayerInterface"),
+            new LocalizedText("", "HasLowerLayerInterface"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "HasHigherLayerInterface"));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25238), new NodeId(0, 45), new NodeId(0, 33).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode53() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 25253),
+            new QualifiedName(0, "IsExecutableOn"),
+            new LocalizedText("", "IsExecutableOn"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "CanExecute"));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25253), new NodeId(0, 45), new NodeId(0, 32).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode54() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 25254),
+            new QualifiedName(0, "Controls"),
+            new LocalizedText("", "Controls"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "IsControlledBy"));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25254), new NodeId(0, 45), new NodeId(0, 33).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode55() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 25255),
+            new QualifiedName(0, "Utilizes"),
+            new LocalizedText("", "Utilizes"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "IsUtilizedBy"));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25255), new NodeId(0, 45), new NodeId(0, 32).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode56() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 25265),
+            new QualifiedName(0, "IsExecutingOn"),
+            new LocalizedText("", "IsExecutingOn"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "Executes"));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25265), new NodeId(0, 45), new NodeId(0, 25255).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode57() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 25256),
+            new QualifiedName(0, "Requires"),
+            new LocalizedText("", "Requires"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "IsRequiredBy"));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25256), new NodeId(0, 45), new NodeId(0, 33).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode58() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 25257),
+            new QualifiedName(0, "IsPhysicallyConnectedTo"),
+            new LocalizedText("", "IsPhysicallyConnectedTo"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            true,
+            null);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25257), new NodeId(0, 45), new NodeId(0, 32).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode59() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 25258),
+            new QualifiedName(0, "RepresentsSameEntityAs"),
+            new LocalizedText("", "RepresentsSameEntityAs"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            true,
+            null);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25258), new NodeId(0, 45), new NodeId(0, 32).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode60() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 25259),
+            new QualifiedName(0, "RepresentsSameHardwareAs"),
+            new LocalizedText("", "RepresentsSameHardwareAs"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            true,
+            null);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25259), new NodeId(0, 45), new NodeId(0, 25258).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode61() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 25260),
+            new QualifiedName(0, "RepresentsSameFunctionalityAs"),
+            new LocalizedText("", "RepresentsSameFunctionalityAs"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            true,
+            null);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25260), new NodeId(0, 45), new NodeId(0, 25258).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode62() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 25261),
+            new QualifiedName(0, "IsHostedBy"),
+            new LocalizedText("", "IsHostedBy"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "Hosts"));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25261), new NodeId(0, 45), new NodeId(0, 25255).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode63() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 25262),
+            new QualifiedName(0, "HasPhysicalComponent"),
+            new LocalizedText("", "HasPhysicalComponent"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "PhysicalComponentOf"));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25262), new NodeId(0, 45), new NodeId(0, 47).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode64() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 25263),
+            new QualifiedName(0, "HasContainedComponent"),
+            new LocalizedText("", "HasContainedComponent"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "ContainedComponentOf"));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25263), new NodeId(0, 45), new NodeId(0, 25262).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode65() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 25264),
+            new QualifiedName(0, "HasAttachedComponent"),
+            new LocalizedText("", "HasAttachedComponent"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "AttachedComponentOf"));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25264), new NodeId(0, 45), new NodeId(0, 25262).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode66() {
+    var node =
+        new UaReferenceTypeNode(
+            this.context,
+            new NodeId(0, 32679),
+            new QualifiedName(0, "HasReferenceDescription"),
+            new LocalizedText("", "HasReferenceDescription"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            false,
+            new LocalizedText("", "ReferenceDescriptionOf"));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32679), new NodeId(0, 45), new NodeId(0, 34).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void load() throws Exception {
+    loadNode0();
+    loadNode1();
+    loadNode2();
+    loadNode3();
+    loadNode4();
+    loadNode5();
+    loadNode6();
+    loadNode7();
+    loadNode8();
+    loadNode9();
+    loadNode10();
+    loadNode11();
+    loadNode12();
+    loadNode13();
+    loadNode14();
+    loadNode15();
+    loadNode16();
+    loadNode17();
+    loadNode18();
+    loadNode19();
+    loadNode20();
+    loadNode21();
+    loadNode22();
+    loadNode23();
+    loadNode24();
+    loadNode25();
+    loadNode26();
+    loadNode27();
+    loadNode28();
+    loadNode29();
+    loadNode30();
+    loadNode31();
+    loadNode32();
+    loadNode33();
+    loadNode34();
+    loadNode35();
+    loadNode36();
+    loadNode37();
+    loadNode38();
+    loadNode39();
+    loadNode40();
+    loadNode41();
+    loadNode42();
+    loadNode43();
+    loadNode44();
+    loadNode45();
+    loadNode46();
+    loadNode47();
+    loadNode48();
+    loadNode49();
+    loadNode50();
+    loadNode51();
+    loadNode52();
+    loadNode53();
+    loadNode54();
+    loadNode55();
+    loadNode56();
+    loadNode57();
+    loadNode58();
+    loadNode59();
+    loadNode60();
+    loadNode61();
+    loadNode62();
+    loadNode63();
+    loadNode64();
+    loadNode65();
+    loadNode66();
+  }
 }

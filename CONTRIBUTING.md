@@ -48,6 +48,7 @@ You can find all the details in the [Contributing via Git](http://wiki.eclipse.o
 * Make sure you include test cases for non-trivial features
 * Make sure the test suite passes after your changes
 * Make sure checkstyle passes after your changes
+* Apply `google-java-format` (see https://github.com/google/google-java-format) 
 * Commit your changes into that branch
 * Use descriptive and meaningful commit messages
 * If you have a lot of commits squash them into a single commit
@@ -68,7 +69,7 @@ Please make sure new source files have license header like this:
 
 ````
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0

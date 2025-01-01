@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -19,16 +19,14 @@ import java.math.BigInteger;
  */
 public abstract class UNumber extends Number {
 
-    /**
-     * Generated UID
-     */
-    private static final long serialVersionUID = -7666221938815339843L;
+  /** Generated UID */
+  private static final long serialVersionUID = -7666221938815339843L;
 
-    /**
-     * Get this number as a {@link BigInteger}. This is a convenience method for
-     * calling <code>new BigInteger(toString())</code>
-     */
-    public BigInteger toBigInteger() {
-        return new BigInteger(toString());
-    }
+  /**
+   * Get this number as a {@link BigInteger}. This is a convenience method for calling <code>
+   * new BigInteger(toString())</code>
+   */
+  public BigInteger toBigInteger() {
+    return new BigInteger(toString());
+  }
 }

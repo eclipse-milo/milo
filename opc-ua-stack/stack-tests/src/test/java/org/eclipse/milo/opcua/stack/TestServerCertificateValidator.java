@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -14,30 +14,27 @@ import java.security.cert.X509Certificate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 
-import com.google.common.collect.Sets;
-import org.eclipse.milo.opcua.stack.server.security.ServerCertificateValidator;
+public class TestServerCertificateValidator implements CertificateValidator {
 
-public class TestServerCertificateValidator implements ServerCertificateValidator {
+  private final Set<X509Certificate> trustedCertificates = ConcurrentHashMap.newKeySet();
 
-    private final Set<X509Certificate> trustedCertificates = Sets.newConcurrentHashSet();
+  public TestServerCertificateValidator(X509Certificate certificate) {
+    trustedCertificates.add(certificate);
+  }
 
-    public TestServerCertificateValidator(X509Certificate certificate) {
-        trustedCertificates.add(certificate);
-    }
+  public TestServerCertificateValidator(X509Certificate... certificates) {
+    Collections.addAll(trustedCertificates, certificates);
+  }
 
-    public TestServerCertificateValidator(X509Certificate... certificates) {
-        Collections.addAll(trustedCertificates, certificates);
-    }
+  @Override
+  public void validateCertificateChain(
+      List<X509Certificate> certificateChain, String applicationUri, String[] validHostnames)
+      throws UaException {
 
-    @Override
-    public void validateCertificateChain(List<X509Certificate> certificateChain) {
-        // noop
-    }
-
-    @Override
-    public void validateCertificateChain(List<X509Certificate> certificateChain, String applicationUri) {
-        // noop
-    }
-
+    // noop
+  }
 }

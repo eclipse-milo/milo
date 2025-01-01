@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -10,15 +10,11 @@
 
 package org.eclipse.milo.opcua.stack.core.util;
 
-/**
- * A once-inhabited alternative to {@link java.lang.Void}.
- */
+/** A once-inhabited alternative to {@link java.lang.Void}. */
 public enum Unit {
+  VALUE;
 
-    VALUE;
-
-    public static Unit unit() {
-        return VALUE;
-    }
-
+  public static Unit unit() {
+    return VALUE;
+  }
 }

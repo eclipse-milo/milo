@@ -1,94 +1,68 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+<!--
+  ~ Copyright (c) 2024 the Eclipse Milo Authors
+  ~
+  ~ This program and the accompanying materials are made
+  ~ available under the terms of the Eclipse Public License 2.0
+  ~ which is available at https://www.eclipse.org/legal/epl-2.0/
+  ~
+  ~ SPDX-License-Identifier: EPL-2.0
+  -->
 
-    <parent>
-        <groupId>org.eclipse.milo</groupId>
-        <artifactId>milo-examples</artifactId>
-        <version>0.6.13-SNAPSHOT</version>
-    </parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>server-examples</artifactId>
+  <parent>
+    <groupId>org.eclipse.milo</groupId>
+    <artifactId>milo-examples</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
 
-    <properties>
-        <javaModuleName>org.eclipse.milo.examples.server</javaModuleName>
-    </properties>
+  <artifactId>milo-server-examples</artifactId>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.eclipse.milo</groupId>
-            <artifactId>sdk-server</artifactId>
-            <version>0.6.13-SNAPSHOT</version>
-        </dependency>
+  <properties>
+    <javaModuleName>org.eclipse.milo.examples.server</javaModuleName>
+  </properties>
 
-        <dependency>
-            <groupId>org.eclipse.milo</groupId>
-            <artifactId>dictionary-manager</artifactId>
-            <version>0.6.13-SNAPSHOT</version>
-        </dependency>
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.milo</groupId>
+      <artifactId>milo-sdk-server</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.milo</groupId>
+      <artifactId>milo-dtd-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.milo</groupId>
+      <artifactId>milo-dtd-manager</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+  </dependencies>
 
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.2.12</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-api</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.jetbrains</groupId>
-            <artifactId>annotations</artifactId>
-            <version>22.0.0</version>
-            <scope>provided</scope>
-        </dependency>
-    </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.2.2</version>
-                <configuration>
-                    <filters>
-                        <filter>
-                            <artifact>*:*</artifact>
-                            <excludes>
-                                <exclude>META-INF/*.SF</exclude>
-                                <exclude>META-INF/*.DSA</exclude>
-                                <exclude>META-INF/*.RSA</exclude>
-                            </excludes>
-                        </filter>
-                    </filters>
-                </configuration>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>org.eclipse.milo.examples.server.ExampleServer</mainClass>
-                                </transformer>
-                            </transformers>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
 
 </project>

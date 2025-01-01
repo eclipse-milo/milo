@@ -1,91 +1,139 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+<!--
+  ~ Copyright (c) 2024 the Eclipse Milo Authors
+  ~
+  ~ This program and the accompanying materials are made
+  ~ available under the terms of the Eclipse Public License 2.0
+  ~ which is available at https://www.eclipse.org/legal/epl-2.0/
+  ~
+  ~ SPDX-License-Identifier: EPL-2.0
+  -->
 
-    <parent>
-        <groupId>org.eclipse.milo</groupId>
-        <artifactId>milo</artifactId>
-        <version>0.6.13-SNAPSHOT</version>
-    </parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>opc-ua-sdk</artifactId>
-    <packaging>pom</packaging>
+  <parent>
+    <groupId>org.eclipse.milo</groupId>
+    <artifactId>milo</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
 
-    <properties>
-        <annotations.version>22.0.0</annotations.version>
-        <slf4j.version>1.7.32</slf4j.version>
-        <mockito.version>2.25.1</mockito.version>
-    </properties>
+  <artifactId>milo-opc-ua-sdk</artifactId>
+  <packaging>pom</packaging>
 
-    <modules>
-        <module>dictionary-manager</module>
-        <module>dictionary-reader</module>
-        <module>sdk-client</module>
-        <module>sdk-core</module>
-        <module>sdk-server</module>
-        <module>sdk-tests</module>
-        <module>integration-tests</module>
-    </modules>
+  <modules>
+    <module>codec-json</module>
+    <module>dtd-core</module>
+    <module>dtd-manager</module>
+    <module>dtd-reader</module>
+    <module>sdk-client</module>
+    <module>sdk-core</module>
+    <module>sdk-server</module>
+    <module>sdk-tests</module>
+    <module>integration-tests</module>
+  </modules>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <!-- configuration inherited from pluginManagement -->
-            </plugin>
+  <dependencies>
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+      <version>${jspecify.version}</version>
+    </dependency>
+  </dependencies>
 
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-release-plugin</artifactId>
-                <!-- configuration inherited from pluginManagement -->
-            </plugin>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <!-- configuration inherited from pluginManagement -->
+      </plugin>
 
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <!-- configuration inherited from pluginManagement -->
-            </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-release-plugin</artifactId>
+        <!-- configuration inherited from pluginManagement -->
+      </plugin>
 
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <configuration>
-                    <archive>
-                        <manifest>
-                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-                        </manifest>
-                        <manifestEntries>
-                            <X-SDK-Version>${project.version}</X-SDK-Version>
-                        </manifestEntries>
-                        <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
-                    </archive>
-                </configuration>
-            </plugin>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <!-- configuration inherited from pluginManagement -->
+      </plugin>
 
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>findbugs-maven-plugin</artifactId>
-                <version>3.0.5</version>
-                <configuration>
-                    <excludeFilterFile>${basedir}/../findbugs-exclude.xml</excludeFilterFile>
-                </configuration>
-            </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifest>
+              <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+            </manifest>
+            <manifestEntries>
+              <X-SDK-Version>${project.version}</X-SDK-Version>
+            </manifestEntries>
+            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+          </archive>
+        </configuration>
+      </plugin>
 
-        </plugins>
-    </build>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>findbugs-maven-plugin</artifactId>
+        <version>3.0.5</version>
+        <configuration>
+          <excludeFilterFile>${basedir}/../findbugs-exclude.xml</excludeFilterFile>
+        </configuration>
+      </plugin>
+    </plugins>
 
-    <pluginRepositories>
-        <pluginRepository>
-            <id>sonatype-oss-snapshots</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </pluginRepository>
-    </pluginRepositories>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>${maven-shade-plugin.version}</version>
+          <executions>
+            <execution>
+              <goals>
+                <goal>shade</goal>
+              </goals>
+              <configuration>
+                <artifactSet>
+                  <includes>
+                    <include>org.eclipse.milo:${project.artifactId}</include>
+                  </includes>
+                  <excludes>
+                    <exclude>org.eclipse.milo:milo-guava-dependencies</exclude>
+                  </excludes>
+                </artifactSet>
+                <relocations>
+                  <relocation>
+                    <pattern>com.google.common</pattern>
+                    <shadedPattern>org.eclipse.milo.shaded.com.google.common</shadedPattern>
+                  </relocation>
+                </relocations>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+  <pluginRepositories>
+    <pluginRepository>
+      <id>sonatype-oss-snapshots</id>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </pluginRepository>
+  </pluginRepositories>
 
 </project>

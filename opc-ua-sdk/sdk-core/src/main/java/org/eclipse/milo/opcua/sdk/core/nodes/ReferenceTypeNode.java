@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -14,16 +14,15 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 
 public interface ReferenceTypeNode extends Node {
 
-    Boolean getIsAbstract();
+  Boolean getIsAbstract();
 
-    Boolean getSymmetric();
+  Boolean getSymmetric();
 
-    LocalizedText getInverseName();
+  LocalizedText getInverseName();
 
-    void setIsAbstract(Boolean isAbstract);
+  void setIsAbstract(Boolean isAbstract);
 
-    void setSymmetric(Boolean symmetric);
+  void setSymmetric(Boolean symmetric);
 
-    void setInverseName(LocalizedText inverseName);
-
+  void setInverseName(LocalizedText inverseName);
 }

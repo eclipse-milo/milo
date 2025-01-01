@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -10,23 +10,26 @@
 
 package org.eclipse.milo.opcua.sdk.server.items;
 
+import static java.util.Objects.requireNonNullElse;
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
+
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
-
+import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
-import org.eclipse.milo.opcua.sdk.server.api.EventItem;
 import org.eclipse.milo.opcua.sdk.server.events.EventContentFilter;
 import org.eclipse.milo.opcua.sdk.server.events.FilterContext;
-import org.eclipse.milo.opcua.sdk.server.model.nodes.objects.BaseEventTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.BaseEventTypeNode;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.Subscription;
-import org.eclipse.milo.opcua.stack.core.Identifiers;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.serialization.UaStructure;
+import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
@@ -46,215 +49,218 @@ import org.eclipse.milo.opcua.stack.core.types.structured.EventFilterResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.MonitoringFilter;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
-import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
-import static org.eclipse.milo.opcua.stack.core.util.ConversionUtil.l;
-
 public class MonitoredEventItem extends BaseMonitoredItem<Variant[]> implements EventItem {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private volatile EventFilter filter;
-    private volatile EventFilterResult filterResult;
-    private volatile boolean filterResultGood;
+  private volatile EventFilter filter;
+  private volatile EventFilterResult filterResult;
+  private volatile boolean filterResultGood;
 
-    private final AtomicBoolean eventOverflow = new AtomicBoolean(false);
+  private final AtomicBoolean eventOverflow = new AtomicBoolean(false);
 
-    private final FilterContext filterContext;
+  private final FilterContext filterContext;
 
-    public MonitoredEventItem(
-        OpcUaServer server,
-        Session session,
-        UInteger id,
-        UInteger subscriptionId,
-        ReadValueId readValueId,
-        MonitoringMode monitoringMode,
-        TimestampsToReturn timestamps,
-        UInteger clientHandle,
-        double samplingInterval,
-        UInteger queueSize,
-        boolean discardOldest
-    ) {
+  public MonitoredEventItem(
+      OpcUaServer server,
+      Session session,
+      UInteger id,
+      UInteger subscriptionId,
+      ReadValueId readValueId,
+      MonitoringMode monitoringMode,
+      TimestampsToReturn timestamps,
+      UInteger clientHandle,
+      double samplingInterval,
+      UInteger queueSize,
+      boolean discardOldest) {
 
-        super(server, session, id, subscriptionId, readValueId, monitoringMode,
-            timestamps, clientHandle, samplingInterval, queueSize, discardOldest);
+    super(
+        server,
+        session,
+        id,
+        subscriptionId,
+        readValueId,
+        monitoringMode,
+        timestamps,
+        clientHandle,
+        samplingInterval,
+        queueSize,
+        discardOldest);
 
-        filterContext = new FilterContext() {
-            @Override
-            public OpcUaServer getServer() {
-                return server;
-            }
+    filterContext =
+        new FilterContext() {
+          @Override
+          public OpcUaServer getServer() {
+            return server;
+          }
 
-            @Override
-            public Optional<Session> getSession() {
-                return Optional.of(session);
-            }
+          @Override
+          public Optional<Session> getSession() {
+            return Optional.of(session);
+          }
         };
-    }
+  }
 
-    @Override
-    public void onEvent(BaseEventTypeNode eventNode) {
-        try {
-            if (filterResultGood) {
-                ContentFilter whereClause = filter.getWhereClause();
+  @Override
+  public void onEvent(BaseEventTypeNode eventNode) {
+    try {
+      if (filterResultGood) {
+        ContentFilter whereClause = filter.getWhereClause();
 
-                boolean matches = EventContentFilter.evaluate(
-                    filterContext,
-                    whereClause,
-                    eventNode
-                );
+        boolean matches = EventContentFilter.evaluate(filterContext, whereClause, eventNode);
 
-                if (matches) {
-                    enqueue(selectEventFields(eventNode));
-                }
-            }
-        } catch (UaException e) {
-            logger.error("Filter evaluation failed: {}", e.getMessage(), e);
+        if (matches) {
+          enqueue(selectEventFields(eventNode));
         }
+      }
+    } catch (UaException e) {
+      logger.error("Filter evaluation failed: {}", e.getMessage(), e);
     }
+  }
 
+  @NonNull
+  private Variant[] selectEventFields(BaseEventTypeNode eventNode) {
+    SimpleAttributeOperand[] selectClauses = filter.getSelectClauses();
 
-    @NotNull
-    private Variant[] selectEventFields(BaseEventTypeNode eventNode) {
-        SimpleAttributeOperand[] selectClauses = filter.getSelectClauses();
+    if (selectClauses != null) {
+      return EventContentFilter.select(filterContext, selectClauses, eventNode);
+    } else {
+      return new Variant[0];
+    }
+  }
 
-        if (selectClauses != null) {
-            return EventContentFilter.select(
-                filterContext,
-                selectClauses,
-                eventNode
-            );
-        } else {
-            return new Variant[0];
+  @Override
+  protected synchronized void enqueue(Variant[] value) {
+    if (queue.size() < queue.maxSize()) {
+      queue.add(value);
+    } else {
+      if (getQueueSize() > 1) {
+        eventOverflow.set(true);
+
+        Subscription subscription =
+            session.getSubscriptionManager().getSubscription(subscriptionId);
+
+        if (subscription != null) {
+          subscription.getSubscriptionDiagnostics().getEventQueueOverflowCount().increment();
         }
+      }
+
+      if (discardOldest) {
+        queue.add(value);
+      } else {
+        queue.set(queue.maxSize() - 1, value);
+      }
     }
+  }
 
-    @Override
-    protected synchronized void enqueue(Variant[] value) {
-        if (queue.size() < queue.maxSize()) {
-            queue.add(value);
-        } else {
-            if (getQueueSize() > 1) {
-                eventOverflow.set(true);
+  @Override
+  public synchronized boolean getNotifications(List<UaStructuredType> notifications, int max) {
+    if (eventOverflow.compareAndSet(true, false)) {
+      Variant[] eventFields = generateOverflowEventFields();
 
-                Subscription subscription = session.getSubscriptionManager().getSubscription(subscriptionId);
+      if (discardOldest) {
+        // insert overflow event at beginning
+        notifications.add(wrapQueueValue(eventFields));
 
-                if (subscription != null) {
-                    subscription.getSubscriptionDiagnostics().getEventQueueOverflowCount().increment();
-                }
-            }
+        return super.getNotifications(notifications, max);
+      } else {
+        // insert overflow event at end
+        boolean more = super.getNotifications(notifications, max);
+        notifications.add(wrapQueueValue(eventFields));
 
-            if (discardOldest) {
-                queue.add(value);
-            } else {
-                queue.set(queue.maxSize() - 1, value);
-            }
-        }
+        return more;
+      }
+    } else {
+      return super.getNotifications(notifications, max);
     }
+  }
 
-    @Override
-    public synchronized boolean getNotifications(List<UaStructure> notifications, int max) {
-        if (eventOverflow.compareAndSet(true, false)) {
-            Variant[] eventFields = generateOverflowEventFields();
+  @NonNull
+  private Variant[] generateOverflowEventFields() {
+    BaseEventTypeNode overflowEvent = null;
 
-            if (discardOldest) {
-                // insert overflow event at beginning
-                notifications.add(wrapQueueValue(eventFields));
+    try {
+      UUID eventId = UUID.randomUUID();
 
-                return super.getNotifications(notifications, max);
-            } else {
-                // insert overflow event at end
-                boolean more = super.getNotifications(notifications, max);
-                notifications.add(wrapQueueValue(eventFields));
+      overflowEvent =
+          server
+              .getEventFactory()
+              .createEvent(new NodeId(1, eventId), NodeIds.EventQueueOverflowEventType);
 
-                return more;
-            }
-        } else {
-            return super.getNotifications(notifications, max);
-        }
+      overflowEvent.setBrowseName(new QualifiedName(1, "EventQueueOverflow"));
+      overflowEvent.setDisplayName(LocalizedText.english("EventQueueOverflow"));
+
+      ByteBuffer buffer = ByteBuffer.allocate(64);
+      buffer.putLong(eventId.getMostSignificantBits());
+      buffer.putLong(eventId.getLeastSignificantBits());
+
+      overflowEvent.setEventId(ByteString.of(buffer.array()));
+      overflowEvent.setEventType(NodeIds.EventQueueOverflowEventType);
+      overflowEvent.setSourceNode(NodeIds.Server);
+      overflowEvent.setSourceName("Server");
+      overflowEvent.setTime(DateTime.now());
+      overflowEvent.setReceiveTime(DateTime.NULL_VALUE);
+      overflowEvent.setMessage(LocalizedText.english("Event Queue Overflow"));
+      overflowEvent.setSeverity(ushort(0));
+
+      return selectEventFields(overflowEvent);
+    } catch (UaException e) {
+      logger.error("Error creating overflow event: {}", e.getMessage(), e);
+
+      return new Variant[0];
+    } finally {
+      if (overflowEvent != null) {
+        overflowEvent.delete();
+      }
     }
+  }
 
-    @NotNull
-    private Variant[] generateOverflowEventFields() {
-        BaseEventTypeNode overflowEvent = null;
+  @Override
+  public ExtensionObject getFilterResult() {
+    return ExtensionObject.encode(server.getEncodingContext(), filterResult);
+  }
 
-        try {
-            UUID eventId = UUID.randomUUID();
+  @Override
+  public void installFilter(MonitoringFilter filter) throws UaException {
+    if (filter instanceof EventFilter) {
+      this.filter = (EventFilter) filter;
 
-            overflowEvent = server.getEventFactory().createEvent(
-                new NodeId(1, eventId),
-                Identifiers.EventQueueOverflowEventType
-            );
+      filterResult = EventContentFilter.validate(filterContext, this.filter);
 
-            overflowEvent.setBrowseName(new QualifiedName(1, "EventQueueOverflow"));
-            overflowEvent.setDisplayName(LocalizedText.english("EventQueueOverflow"));
+      StatusCode[] selectClauseResults =
+          requireNonNullElse(filterResult.getSelectClauseResults(), new StatusCode[0]);
 
-            ByteBuffer buffer = ByteBuffer.allocate(64);
-            buffer.putLong(eventId.getMostSignificantBits());
-            buffer.putLong(eventId.getLeastSignificantBits());
+      boolean selectClauseGood = Stream.of(selectClauseResults).allMatch(StatusCode::isGood);
 
-            overflowEvent.setEventId(ByteString.of(buffer.array()));
-            overflowEvent.setEventType(Identifiers.EventQueueOverflowEventType);
-            overflowEvent.setSourceNode(Identifiers.Server);
-            overflowEvent.setSourceName("Server");
-            overflowEvent.setTime(DateTime.now());
-            overflowEvent.setReceiveTime(DateTime.NULL_VALUE);
-            overflowEvent.setMessage(LocalizedText.english("Event Queue Overflow"));
-            overflowEvent.setSeverity(ushort(0));
+      ContentFilterElementResult[] elementResults =
+          requireNonNullElse(
+              filterResult.getWhereClauseResult().getElementResults(),
+              new ContentFilterElementResult[0]);
 
-            return selectEventFields(overflowEvent);
-        } catch (UaException e) {
-            logger.error("Error creating overflow event: {}", e.getMessage(), e);
+      boolean whereClauseGood =
+          Stream.of(elementResults)
+              .map(ContentFilterElementResult::getStatusCode)
+              .allMatch(StatusCode::isGood);
 
-            return new Variant[0];
-        } finally {
-            if (overflowEvent != null) {
-                overflowEvent.delete();
-            }
-        }
+      filterResultGood = selectClauseGood && whereClauseGood;
+    } else {
+      filterResultGood = false;
+
+      throw new UaException(StatusCodes.Bad_MonitoredItemFilterUnsupported);
     }
+  }
 
-    @Override
-    public ExtensionObject getFilterResult() {
-        return ExtensionObject.encode(server.getSerializationContext(), filterResult);
-    }
+  @Override
+  protected EventFieldList wrapQueueValue(Variant[] value) {
+    return new EventFieldList(uint(getClientHandle()), value);
+  }
 
-    @Override
-    public void installFilter(MonitoringFilter filter) throws UaException {
-        if (filter instanceof EventFilter) {
-            this.filter = (EventFilter) filter;
-
-            filterResult = EventContentFilter.validate(filterContext, this.filter);
-
-            boolean selectClauseGood = l(filterResult.getSelectClauseResults())
-                .stream()
-                .allMatch(StatusCode::isGood);
-
-            boolean whereClauseGood = l(filterResult.getWhereClauseResult().getElementResults())
-                .stream()
-                .map(ContentFilterElementResult::getStatusCode)
-                .allMatch(StatusCode::isGood);
-
-            filterResultGood = selectClauseGood && whereClauseGood;
-        } else {
-            filterResultGood = false;
-
-            throw new UaException(StatusCodes.Bad_MonitoredItemFilterUnsupported);
-        }
-    }
-    
-    @Override
-    protected EventFieldList wrapQueueValue(Variant[] value) {
-        return new EventFieldList(uint(getClientHandle()), value);
-    }
-
-    @Override
-    public boolean isSamplingEnabled() {
-        return getMonitoringMode() != MonitoringMode.Disabled;
-    }
-
+  @Override
+  public boolean isSamplingEnabled() {
+    return getMonitoringMode() != MonitoringMode.Disabled;
+  }
 }

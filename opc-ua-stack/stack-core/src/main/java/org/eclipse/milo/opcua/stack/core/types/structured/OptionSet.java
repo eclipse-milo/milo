@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -10,80 +10,120 @@
 
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-import lombok.experimental.SuperBuilder;
-import org.eclipse.milo.opcua.stack.core.serialization.SerializationContext;
-import org.eclipse.milo.opcua.stack.core.serialization.UaDecoder;
-import org.eclipse.milo.opcua.stack.core.serialization.UaEncoder;
-import org.eclipse.milo.opcua.stack.core.serialization.UaStructure;
-import org.eclipse.milo.opcua.stack.core.serialization.codecs.GenericDataTypeCodec;
+import java.util.StringJoiner;
+import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.StructureType;
+import org.eclipse.milo.opcua.stack.core.util.codegen.EqualsBuilder;
+import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 
-@EqualsAndHashCode(
-    callSuper = false
-)
-@SuperBuilder(
-    toBuilder = true
-)
-@ToString
-public class OptionSet extends Structure implements UaStructure {
-    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12755");
+/**
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/12.2.12/#12.2.12.8">https://reference.opcfoundation.org/v105/Core/docs/Part5/12.2.12/#12.2.12.8</a>
+ */
+public abstract class OptionSet extends Structure implements UaStructuredType {
+  public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=12755");
 
-    public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12757");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=12765");
 
-    public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12765");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=12757");
 
-    private final ByteString value;
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15084");
 
-    private final ByteString validBits;
+  private final ByteString value;
 
-    public OptionSet(ByteString value, ByteString validBits) {
-        this.value = value;
-        this.validBits = validBits;
+  private final ByteString validBits;
+
+  public OptionSet(ByteString value, ByteString validBits) {
+    this.value = value;
+    this.validBits = validBits;
+  }
+
+  @Override
+  public ExpandedNodeId getTypeId() {
+    return TYPE_ID;
+  }
+
+  @Override
+  public ExpandedNodeId getBinaryEncodingId() {
+    return BINARY_ENCODING_ID;
+  }
+
+  @Override
+  public ExpandedNodeId getXmlEncodingId() {
+    return XML_ENCODING_ID;
+  }
+
+  @Override
+  public ExpandedNodeId getJsonEncodingId() {
+    return JSON_ENCODING_ID;
+  }
+
+  public ByteString getValue() {
+    return value;
+  }
+
+  public ByteString getValidBits() {
+    return validBits;
+  }
+
+  @Override
+  public boolean equals(Object object) {
+    if (this == object) {
+      return true;
+    } else if (object == null || getClass() != object.getClass()) {
+      return false;
     }
+    OptionSet that = (OptionSet) object;
+    var eqb = new EqualsBuilder();
+    eqb.append(getValue(), that.getValue());
+    eqb.append(getValidBits(), that.getValidBits());
+    return eqb.build();
+  }
 
-    @Override
-    public ExpandedNodeId getTypeId() {
-        return TYPE_ID;
-    }
+  @Override
+  public int hashCode() {
+    var hcb = new HashCodeBuilder();
+    hcb.append(getValue());
+    hcb.append(getValidBits());
+    return hcb.build();
+  }
 
-    @Override
-    public ExpandedNodeId getXmlEncodingId() {
-        return XML_ENCODING_ID;
-    }
+  @Override
+  public String toString() {
+    var joiner = new StringJoiner(", ", OptionSet.class.getSimpleName() + "[", "]");
+    joiner.add("value=" + getValue());
+    joiner.add("validBits=" + getValidBits());
+    return joiner.toString();
+  }
 
-    @Override
-    public ExpandedNodeId getBinaryEncodingId() {
-        return BINARY_ENCODING_ID;
-    }
-
-    public ByteString getValue() {
-        return value;
-    }
-
-    public ByteString getValidBits() {
-        return validBits;
-    }
-
-    public static final class Codec extends GenericDataTypeCodec<OptionSet> {
-        @Override
-        public Class<OptionSet> getType() {
-            return OptionSet.class;
-        }
-
-        @Override
-        public OptionSet decode(SerializationContext context, UaDecoder decoder) {
-            ByteString value = decoder.readByteString("Value");
-            ByteString validBits = decoder.readByteString("ValidBits");
-            return new OptionSet(value, validBits);
-        }
-
-        @Override
-        public void encode(SerializationContext context, UaEncoder encoder, OptionSet value) {
-            encoder.writeByteString("Value", value.getValue());
-            encoder.writeByteString("ValidBits", value.getValidBits());
-        }
-    }
+  public static StructureDefinition definition(NamespaceTable namespaceTable) {
+    return new StructureDefinition(
+        new NodeId(0, 12765),
+        new NodeId(0, 22),
+        StructureType.Structure,
+        new StructureField[] {
+          new StructureField(
+              "Value",
+              LocalizedText.NULL_VALUE,
+              new NodeId(0, 15),
+              -1,
+              null,
+              UInteger.valueOf(0),
+              false),
+          new StructureField(
+              "ValidBits",
+              LocalizedText.NULL_VALUE,
+              new NodeId(0, 15),
+              -1,
+              null,
+              UInteger.valueOf(0),
+              false)
+        });
+  }
 }

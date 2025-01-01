@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -11,65 +11,55 @@
 package org.eclipse.milo.opcua.sdk.server.identity;
 
 import java.util.function.Predicate;
-
 import org.eclipse.milo.opcua.sdk.server.Session;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
-public class UsernameIdentityValidator extends AbstractUsernameIdentityValidator<String> {
+public class UsernameIdentityValidator extends AbstractUsernameIdentityValidator {
 
-    private final boolean anonymousAccessAllowed;
-    private final Predicate<AuthenticationChallenge> predicate;
+  private final boolean anonymousAccessAllowed;
+  private final Predicate<AuthenticationChallenge> predicate;
 
-    public UsernameIdentityValidator(
-        boolean anonymousAccessAllowed,
-        Predicate<AuthenticationChallenge> predicate
-    ) {
+  public UsernameIdentityValidator(
+      boolean anonymousAccessAllowed, Predicate<AuthenticationChallenge> predicate) {
 
-        this.anonymousAccessAllowed = anonymousAccessAllowed;
-        this.predicate = predicate;
+    this.anonymousAccessAllowed = anonymousAccessAllowed;
+    this.predicate = predicate;
+  }
+
+  @Override
+  protected Identity.@Nullable AnonymousIdentity authenticateAnonymous(Session session) {
+    if (anonymousAccessAllowed) {
+      return new DefaultAnonymousIdentity();
+    } else {
+      return null;
+    }
+  }
+
+  @Override
+  protected Identity.@Nullable UsernameIdentity authenticateUsernamePassword(
+      Session session, String username, String password) {
+
+    var challenge = new AuthenticationChallenge(username, password);
+
+    return predicate.test(challenge) ? new DefaultUsernameIdentity(username) : null;
+  }
+
+  public static final class AuthenticationChallenge {
+
+    private final String username;
+    private final String password;
+
+    AuthenticationChallenge(String username, String password) {
+      this.username = username;
+      this.password = password;
     }
 
-    @Nullable
-    @Override
-    protected String authenticateAnonymous(Session session) {
-        if (anonymousAccessAllowed) {
-            return String.format(
-                "anonymous_%s_%s",
-                session.getSessionName(),
-                session.getSessionId().toParseableString()
-            );
-        } else {
-            return null;
-        }
+    public String getUsername() {
+      return username;
     }
 
-    @Nullable
-    @Override
-    protected String authenticateUsernamePassword(Session session, String username, String password) {
-        AuthenticationChallenge challenge =
-            new AuthenticationChallenge(username, password);
-
-        return predicate.test(challenge) ? username : null;
+    public String getPassword() {
+      return password;
     }
-
-    public static final class AuthenticationChallenge {
-
-        private final String username;
-        private final String password;
-
-        AuthenticationChallenge(String username, String password) {
-            this.username = username;
-            this.password = password;
-        }
-
-        public String getUsername() {
-            return username;
-        }
-
-        public String getPassword() {
-            return password;
-        }
-
-    }
-
+  }
 }

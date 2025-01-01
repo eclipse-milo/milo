@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -10,56 +10,69 @@
 
 package org.eclipse.milo.opcua.sdk.client.subscriptions;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
-import org.eclipse.milo.opcua.sdk.client.api.subscriptions.UaSubscription;
-import org.eclipse.milo.opcua.sdk.client.api.subscriptions.UaSubscriptionManager.SubscriptionListener;
-import org.eclipse.milo.opcua.stack.core.Identifiers;
-import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
-
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class SubscriptionWatchdogTimerTest extends AbstractSubscriptionTest {
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.junit.jupiter.api.Test;
 
-    @Disabled("run this test manually")
-    @Test
-    public void testSubscriptionWatchdogTimer() throws UaException, InterruptedException {
-        ManagedDataItem dataItem = subscription.createDataItem(
-            Identifiers.Server_ServerStatus_State
-        );
+public class SubscriptionWatchdogTimerTest extends AbstractClientServerTest {
 
-        assertTrue(dataItem.getStatusCode().isGood());
+  @Test
+  void subscriptionWatchdogTimerCallback() throws UaException, InterruptedException {
+    var subscription = new OpcUaSubscription(client);
+    subscription.setTargetKeepAliveInterval(2000.0);
+    subscription.setWatchdogMultiplier(1.5);
+    subscription.create();
 
-        CountDownLatch latch = new CountDownLatch(2);
+    var monitoredItem = OpcUaMonitoredItem.newDataItem(NodeIds.Server_ServerStatus_State);
+    subscription.addMonitoredItem(monitoredItem);
+    subscription.synchronizeMonitoredItems();
 
-        subscription.addStatusListener(new ManagedSubscription.StatusListener() {
-            @Override
-            public void onSubscriptionWatchdogTimerElapsed(ManagedSubscription subscription) {
-                System.out.println("onWatchdogTimerElapsed() id=" + subscription.getSubscription().getSubscriptionId());
-                latch.countDown();
-            }
+    var latch = new CountDownLatch(2);
+    var start = new AtomicLong(0);
+
+    subscription.setSubscriptionListener(
+        new OpcUaSubscription.SubscriptionListener() {
+          @Override
+          public void onDataReceived(
+              OpcUaSubscription subscription,
+              List<OpcUaMonitoredItem> items,
+              List<DataValue> values) {
+
+            System.out.println(
+                "onDataReceived() id=" + subscription.getSubscriptionId().orElseThrow());
+
+            // kill the subscription after the first notification is received
+            UInteger subscriptionId = subscription.getSubscriptionId().orElseThrow();
+            server.getSubscriptions().get(subscriptionId).deleteSubscription();
+
+            latch.countDown();
+
+            start.set(System.currentTimeMillis());
+          }
+
+          @Override
+          public void onWatchdogTimerElapsed(OpcUaSubscription subscription) {
+            var elapsed = System.currentTimeMillis() - start.get();
+
+            System.out.printf(
+                "onWatchdogTimerElapsed() id=%s, elapsed=%sms%n",
+                subscription.getSubscriptionId().orElseThrow(), elapsed);
+
+            latch.countDown();
+          }
         });
 
-        client.getSubscriptionManager().addSubscriptionListener(new SubscriptionListener() {
-            @Override
-            public void onSubscriptionWatchdogTimerElapsed(UaSubscription subscription) {
-                System.out.println("onWatchdogTimerElapsed() id=" + subscription.getSubscriptionId());
-                latch.countDown();
-            }
-        });
+    assertTrue(latch.await(10, TimeUnit.SECONDS));
 
-        UInteger subscriptionId = subscription.getSubscription().getSubscriptionId();
-        server.getSubscriptions().get(subscriptionId).deleteSubscription();
-        System.out.printf("deleted subscription id=%s on server...%n", subscriptionId);
-
-        System.out.println("waiting for watchdog timer to elapse...");
-        assertTrue(latch.await(15, TimeUnit.SECONDS));
-    }
-
+    subscription.delete();
+  }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -15,19 +15,18 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
 
 public class ValidationException extends UaException {
 
-    private final DiagnosticInfo diagnosticInfo;
+  private final DiagnosticInfo diagnosticInfo;
 
-    public ValidationException(long statusCode) {
-        this(statusCode, DiagnosticInfo.NULL_VALUE);
-    }
+  public ValidationException(long statusCode) {
+    this(statusCode, DiagnosticInfo.NULL_VALUE);
+  }
 
-    public ValidationException(long statusCode, DiagnosticInfo diagnosticInfo) {
-        super(statusCode);
-        this.diagnosticInfo = diagnosticInfo;
-    }
+  public ValidationException(long statusCode, DiagnosticInfo diagnosticInfo) {
+    super(statusCode);
+    this.diagnosticInfo = diagnosticInfo;
+  }
 
-    public DiagnosticInfo getDiagnosticInfo() {
-        return diagnosticInfo;
-    }
-
+  public DiagnosticInfo getDiagnosticInfo() {
+    return diagnosticInfo;
+  }
 }

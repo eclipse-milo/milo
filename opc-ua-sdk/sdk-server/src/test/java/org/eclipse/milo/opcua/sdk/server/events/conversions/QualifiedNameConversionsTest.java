@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -20,18 +20,18 @@ import org.junit.jupiter.api.Test;
 
 public class QualifiedNameConversionsTest {
 
-    @Test
-    public void testQualifiedNameToString() {
-        QualifiedName name = new QualifiedName(0, "foo");
+  @Test
+  public void testQualifiedNameToString() {
+    QualifiedName name = new QualifiedName(0, "foo");
 
         assertEquals("foo", qualifiedNameToString(name));
     }
 
-    @Test
-    public void testQualifiedNameToLocalizedText() {
-        QualifiedName name = new QualifiedName(0, "foo");
+  @Test
+  public void testQualifiedNameToLocalizedText() {
+    QualifiedName name = new QualifiedName(0, "foo");
 
-        LocalizedText text = qualifiedNameToLocalizedText(name);
+    LocalizedText text = qualifiedNameToLocalizedText(name);
 
         assertEquals("", text.getLocale());
         assertEquals("foo", text.getText());

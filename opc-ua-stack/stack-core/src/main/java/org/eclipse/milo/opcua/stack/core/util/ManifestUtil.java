@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.stack.core.util;
 
+import com.google.common.collect.Maps;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.Enumeration;
@@ -18,60 +19,56 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
-
-import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ManifestUtil {
 
-    private static final Logger logger = LoggerFactory.getLogger(ManifestUtil.class);
-    private static final Map<String, String> ATTRIBUTES = readAttributes();
+  private static final Logger logger = LoggerFactory.getLogger(ManifestUtil.class);
+  private static final Map<String, String> ATTRIBUTES = readAttributes();
 
-    public static Optional<String> read(String name) {
-        return Optional.ofNullable(ATTRIBUTES.get(name));
+  public static Optional<String> read(String name) {
+    return Optional.ofNullable(ATTRIBUTES.get(name));
+  }
+
+  public static boolean exists(String name) {
+    return ATTRIBUTES.containsKey(name);
+  }
+
+  private static Map<String, String> readAttributes() {
+    Map<String, String> attributes = Maps.newConcurrentMap();
+
+    try {
+      Enumeration<URL> resources =
+          ManifestUtil.class.getClassLoader().getResources("META-INF/MANIFEST.MF");
+
+      while (resources.hasMoreElements()) {
+        URL url = resources.nextElement();
+
+        attributes.putAll(readAttributes(url));
+      }
+    } catch (Throwable t) {
+      logger.error("readAttributes() failed", t);
     }
 
-    public static boolean exists(String name) {
-        return ATTRIBUTES.containsKey(name);
+    return attributes;
+  }
+
+  private static Map<String, String> readAttributes(URL url) {
+    Map<String, String> props = new HashMap<>();
+
+    try (InputStream stream = url.openStream()) {
+      Manifest manifest = new Manifest(stream);
+      Attributes attributes = manifest.getMainAttributes();
+
+      for (Object key : attributes.keySet()) {
+        String value = attributes.getValue((Attributes.Name) key);
+        props.put(key.toString(), value);
+      }
+    } catch (Throwable t) {
+      logger.error("readAttributes(): '{}' failed", url, t);
     }
 
-    private static Map<String, String> readAttributes() {
-        Map<String, String> attributes = Maps.newConcurrentMap();
-
-        try {
-            Enumeration<URL> resources = ManifestUtil.class
-                .getClassLoader()
-                .getResources("META-INF/MANIFEST.MF");
-
-            while (resources.hasMoreElements()) {
-                URL url = resources.nextElement();
-
-                attributes.putAll(readAttributes(url));
-            }
-        } catch (Throwable t) {
-            logger.error("readAttributes() failed", t);
-        }
-
-        return attributes;
-    }
-
-    private static Map<String, String> readAttributes(URL url) {
-        Map<String, String> props = new HashMap<>();
-
-        try (InputStream stream = url.openStream()) {
-            Manifest manifest = new Manifest(stream);
-            Attributes attributes = manifest.getMainAttributes();
-
-            for (Object key : attributes.keySet()) {
-                String value = attributes.getValue((Attributes.Name) key);
-                props.put(key.toString(), value);
-            }
-        } catch (Throwable t) {
-            logger.error("readAttributes(): '{}' failed", url, t);
-        }
-
-        return props;
-    }
-
+    return props;
+  }
 }

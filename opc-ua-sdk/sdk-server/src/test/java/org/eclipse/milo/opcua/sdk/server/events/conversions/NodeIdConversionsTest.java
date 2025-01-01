@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -20,19 +20,19 @@ import org.junit.jupiter.api.Test;
 
 public class NodeIdConversionsTest {
 
-    @Test
-    public void testNodeIdToExpandedNodeId() {
-        NodeId nodeId = new NodeId(0, "foo");
-        ExpandedNodeId expanded = nodeId.expanded();
+  @Test
+  public void testNodeIdToExpandedNodeId() {
+    NodeId nodeId = new NodeId(0, "foo");
+    ExpandedNodeId expanded = nodeId.expanded();
 
-        assertEquals(expanded, nodeIdToExpandedNodeId(nodeId));
+        assertEquals(nodeIdToExpandedNodeId(nodeId), expanded);
     }
 
-    @Test
-    public void testNodeIdToString() {
-        NodeId nodeId = new NodeId(0, "foo");
+  @Test
+  public void testNodeIdToString() {
+    NodeId nodeId = new NodeId(0, "foo");
 
-        assertEquals(nodeId.toParseableString(), nodeIdToString(nodeId));
+        assertEquals(nodeIdToString(nodeId), nodeId.toParseableString());
     }
 
 }

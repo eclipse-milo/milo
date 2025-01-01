@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (c) 2024 the Eclipse Milo Authors
+  ~
+  ~ This program and the accompanying materials are made
+  ~ available under the terms of the Eclipse Public License 2.0
+  ~ which is available at https://www.eclipse.org/legal/epl-2.0/
+  ~
+  ~ SPDX-License-Identifier: EPL-2.0
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.eclipse.milo</groupId>
+    <artifactId>milo-opc-ua-stack</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>milo-guava-dependencies</artifactId>
+
+  <properties>
+    <javaModuleName>org.eclipse.milo.guava</javaModuleName>
+    <maven.compiler.source>11</maven.compiler.source>
+    <maven.compiler.target>11</maven.compiler.target>
+  </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <version>${maven-deploy-plugin.version}</version>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>${maven-shade-plugin.version}</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration combine.self="override">
+              <!-- Include only classes referenced in this module and their
+              dependencies. To add a Guava class, add it
+              to org.eclipse.milo.shaded.GuavaClasses. -->
+              <minimizeJar>true</minimizeJar>
+              <artifactSet>
+                <includes>
+                  <include>com.google.guava:guava</include>
+                  <include>com.google.guava:failureaccess</include>
+                </includes>
+              </artifactSet>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>${guava.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>com.google.code.findbugs</groupId>
+          <artifactId>jsr305</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.checkerframework</groupId>
+          <artifactId>checker-qual</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.google.errorprone</groupId>
+          <artifactId>error_prone_annotations</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.google.j2objc</groupId>
+          <artifactId>j2objc-annotations</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>animal-sniffer-annotations</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+  </dependencies>
+
+</project>

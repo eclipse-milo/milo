@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -10,11 +10,10 @@
 
 package org.eclipse.milo.opcua.sdk.client.session;
 
-import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
-import org.eclipse.milo.opcua.sdk.client.api.config.OpcUaClientConfig;
+import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfig;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
@@ -24,29 +23,28 @@ import org.junit.jupiter.api.Test;
 
 public class SessionFsmTest {
 
-    @Test
-    public void testCloseSessionWhileInactive() throws Exception {
-        OpcUaClientConfig clientConfig = OpcUaClientConfig.builder()
-            .setEndpoint(new EndpointDescription(
-                "opc.tcp://localhost:12685",
-                null,
-                null,
-                MessageSecurityMode.None,
-                SecurityPolicy.None.getUri(),
-                null,
-                TransportProfile.TCP_UASC_UABINARY.getUri(),
-                null
-            ))
+  @Test
+  public void testCloseSessionWhileInactive() throws Exception {
+    OpcUaClientConfig clientConfig =
+        OpcUaClientConfig.builder()
+            .setEndpoint(
+                new EndpointDescription(
+                    "opc.tcp://localhost:12685",
+                    null,
+                    null,
+                    MessageSecurityMode.None,
+                    SecurityPolicy.None.getUri(),
+                    null,
+                    TransportProfile.TCP_UASC_UABINARY.getUri(),
+                    null))
             .setApplicationName(LocalizedText.english("Eclipse Milo Test Client"))
             .setApplicationUri("urn:eclipse:milo:examples:client")
-            .setRequestTimeout(uint(60000))
             .build();
 
-        OpcUaClient client = OpcUaClient.create(clientConfig);
+    OpcUaClient client = OpcUaClient.create(clientConfig);
 
-        SessionFsm sessionFsm = SessionFsmFactory.newSessionFsm(client);
+    SessionFsm sessionFsm = SessionFsmFactory.newSessionFsm(client);
 
-        assertNotNull(sessionFsm.closeSession().get());
-    }
-
+    assertNotNull(sessionFsm.closeSession().get());
+  }
 }

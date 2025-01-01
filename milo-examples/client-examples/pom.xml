@@ -1,65 +1,74 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+<!--
+  ~ Copyright (c) 2024 the Eclipse Milo Authors
+  ~
+  ~ This program and the accompanying materials are made
+  ~ available under the terms of the Eclipse Public License 2.0
+  ~ which is available at https://www.eclipse.org/legal/epl-2.0/
+  ~
+  ~ SPDX-License-Identifier: EPL-2.0
+  -->
 
-    <parent>
-        <groupId>org.eclipse.milo</groupId>
-        <artifactId>milo-examples</artifactId>
-        <version>0.6.13-SNAPSHOT</version>
-    </parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>client-examples</artifactId>
+  <parent>
+    <groupId>org.eclipse.milo</groupId>
+    <artifactId>milo-examples</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
 
-    <properties>
-        <javaModuleName>org.eclipse.milo.examples.client</javaModuleName>
-    </properties>
+  <artifactId>milo-client-examples</artifactId>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.eclipse.milo</groupId>
-            <artifactId>sdk-client</artifactId>
-            <version>0.6.13-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.milo</groupId>
-            <artifactId>dictionary-reader</artifactId>
-            <version>0.6.13-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.milo</groupId>
-            <artifactId>server-examples</artifactId>
-            <version>0.6.13-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.2.12</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-api</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.jetbrains</groupId>
-            <artifactId>annotations</artifactId>
-            <version>22.0.0</version>
-            <scope>provided</scope>
-        </dependency>
-    </dependencies>
+  <properties>
+    <javaModuleName>org.eclipse.milo.examples.client</javaModuleName>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.milo</groupId>
+      <artifactId>milo-sdk-client</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.milo</groupId>
+      <artifactId>milo-codec-json</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.milo</groupId>
+      <artifactId>milo-dtd-reader</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.milo</groupId>
+      <artifactId>milo-server-examples</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+  </dependencies>
 
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
 
 </project>

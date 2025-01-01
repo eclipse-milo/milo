@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (c) 2024 the Eclipse Milo Authors
+  ~
+  ~ This program and the accompanying materials are made
+  ~ available under the terms of the Eclipse Public License 2.0
+  ~ which is available at https://www.eclipse.org/legal/epl-2.0/
+  ~
+  ~ SPDX-License-Identifier: EPL-2.0
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.eclipse.milo</groupId>
+    <artifactId>milo-opc-ua-sdk</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>milo-dtd-core</artifactId>
+
+  <properties>
+    <javaModuleName>org.eclipse.milo.opcua.sdk.dtd.core</javaModuleName>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.milo</groupId>
+      <artifactId>milo-sdk-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.sun.activation</groupId>
+      <artifactId>jakarta.activation</artifactId>
+      <version>${jakarta-activation.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.jaxb</groupId>
+      <artifactId>jaxb-runtime</artifactId>
+      <version>${jaxb.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <version>${gson.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!-- JAXB xjc plugin that invokes the xjc compiler to compile XML schema into Java classes.-->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>jaxb2-maven-plugin</artifactId>
+        <version>${jaxb2-maven-plugin.version}</version>
+        <executions>
+          <execution>
+            <phase>generate-sources</phase>
+            <id>xjc</id>
+            <goals>
+              <goal>xjc</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <!-- The package in which the source files will be generated. -->
+          <packageName>org.opcfoundation.opcua.binaryschema</packageName>
+
+          <sources>
+            <source>${basedir}/src/main/resources/schemas</source>
+          </sources>
+
+          <!-- The working directory to create the generated java source files. -->
+          <outputDirectory>${basedir}/target/generated-sources/jaxb2</outputDirectory>
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>org.glassfish.jaxb</groupId>
+            <artifactId>jaxb-xjc</artifactId>
+            <version>${jaxb.version}</version>
+          </dependency>
+          <dependency>
+            <groupId>jakarta.xml.bind</groupId>
+            <artifactId>jakarta.xml.bind-api</artifactId>
+            <version>${jakarta-xml-bind-api.version}</version>
+          </dependency>
+        </dependencies>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -34,28 +34,27 @@ import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.junit.jupiter.api.Test;
 
+
 public class ByteConversionsTest {
 
-    public static final Object[][] CONVERSIONS = new Object[][]{
+  public static final Object[][] CONVERSIONS =
+      new Object[][] {
         {ubyte(0), Boolean.FALSE},
         {ubyte(1), Boolean.TRUE},
-
         {ubyte(0), 0.0d},
         {ubyte(1), 1.0d},
-
         {ubyte(0), 0.0f},
         {ubyte(1), 1.0f}
-    };
+      };
 
-    @Test
-    public void testConversions() {
-        for (Object[] conversion : CONVERSIONS) {
-            UByte b = (UByte) conversion[0];
-            Object expected = conversion[1];
-            BuiltinDataType targetType = BuiltinDataType
-                .fromBackingClass(expected.getClass());
+  @Test
+  public void testConversions() {
+    for (Object[] conversion : CONVERSIONS) {
+      UByte b = (UByte) conversion[0];
+      Object expected = conversion[1];
+      BuiltinDataType targetType = BuiltinDataType.fromBackingClass(expected.getClass());
 
-            assertNotNull(targetType);
+      assertNotNull(targetType);
 
             assertEquals(expected, explicitConversion(b, targetType));
         }

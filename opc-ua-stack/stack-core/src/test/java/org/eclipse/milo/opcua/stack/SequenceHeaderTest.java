@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -35,7 +35,6 @@ public class SequenceHeaderTest extends SerializationFixture2 {
     public void testSerialization(long sequenceNumber, long requestId) {
         SequenceHeader header = new SequenceHeader(sequenceNumber, requestId);
 
-        assertSerializable(header, SequenceHeader::encode, SequenceHeader::decode);
-    }
-
+    assertSerializable(header, SequenceHeader::encode, SequenceHeader::decode);
+  }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -24,24 +24,22 @@ import org.junit.jupiter.api.Test;
 
 public class ExpandedNodeIdConversionsTest {
 
-    @Test
-    public void testExpandedNodeIdToNodeId() {
-        assertNull(
-            expandedNodeIdToNodeId(
-                new ExpandedNodeId(ushort(0), Namespaces.OPC_UA, "foo", uint(2))));
+  @Test
+  public void testExpandedNodeIdToNodeId() {
+    assertNull(
+        expandedNodeIdToNodeId(new ExpandedNodeId(ushort(0), Namespaces.OPC_UA, "foo", uint(2))));
 
-        NodeId nodeId = new NodeId(0, "bar");
+    NodeId nodeId = new NodeId(0, "bar");
 
         assertEquals(nodeId, expandedNodeIdToNodeId(nodeId.expanded()));
     }
 
-    @Test
-    public void testExpandedNodeIdToString() {
-        ExpandedNodeId e1 = new ExpandedNodeId(ushort(0), Namespaces.OPC_UA, "foo", uint(2));
-        ExpandedNodeId e2 = new NodeId(1, "bar").expanded();
+  @Test
+  public void testExpandedNodeIdToString() {
+    ExpandedNodeId e1 = new ExpandedNodeId(ushort(0), Namespaces.OPC_UA, "foo", uint(2));
+    ExpandedNodeId e2 = new NodeId(1, "bar").expanded();
 
-        assertEquals(e1.toParseableString(), expandedNodeIdToString(e1));
-        assertEquals(e2.toParseableString(), expandedNodeIdToString(e2));
-    }
-
+    assertEquals(expandedNodeIdToString(e1), e1.toParseableString());
+    assertEquals(expandedNodeIdToString(e2), e2.toParseableString());
+  }
 }

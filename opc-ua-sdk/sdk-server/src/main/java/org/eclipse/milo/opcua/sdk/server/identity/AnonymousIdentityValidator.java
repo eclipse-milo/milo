@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -15,25 +15,18 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AnonymousIdentityToken
 import org.eclipse.milo.opcua.stack.core.types.structured.SignatureData;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 
-public final class AnonymousIdentityValidator extends AbstractIdentityValidator<String> {
+public final class AnonymousIdentityValidator extends AbstractIdentityValidator {
 
-    /**
-     * A static instance implementing AnonymousIdentityValidator
-     */
-    public static final IdentityValidator<String> INSTANCE = new AnonymousIdentityValidator();
+  /** A static instance implementing AnonymousIdentityValidator */
+  public static final AnonymousIdentityValidator INSTANCE = new AnonymousIdentityValidator();
 
-    @Override
-    public String validateAnonymousToken(
-        Session session,
-        AnonymousIdentityToken token,
-        UserTokenPolicy tokenPolicy,
-        SignatureData tokenSignature
-    ) {
+  @Override
+  public Identity.AnonymousIdentity validateAnonymousToken(
+      Session session,
+      AnonymousIdentityToken token,
+      UserTokenPolicy policy,
+      SignatureData signature) {
 
-        return String.format("anonymous_%s_%s",
-            session.getSessionName(),
-            session.getSessionId().toParseableString()
-        );
-    }
-
+    return new DefaultAnonymousIdentity();
+  }
 }

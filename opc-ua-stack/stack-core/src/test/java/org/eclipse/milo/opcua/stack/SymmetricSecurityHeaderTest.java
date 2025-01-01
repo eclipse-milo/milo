@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2024 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -11,11 +11,10 @@
 package org.eclipse.milo.opcua.stack;
 
 import org.eclipse.milo.opcua.stack.core.channel.headers.SymmetricSecurityHeader;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import com.google.common.primitives.UnsignedInteger;
 
 public class SymmetricSecurityHeaderTest extends SerializationFixture2 {
 
@@ -25,7 +24,7 @@ public class SymmetricSecurityHeaderTest extends SerializationFixture2 {
                 {Integer.MAX_VALUE - 1},
                 {Integer.MAX_VALUE},
                 {Integer.MAX_VALUE + 1L},
-                {UnsignedInteger.MAX_VALUE.longValue()}
+                {UInteger.MAX_VALUE}
         };
     }
 
@@ -35,7 +34,6 @@ public class SymmetricSecurityHeaderTest extends SerializationFixture2 {
     public void testSerialization(long value) {
         SymmetricSecurityHeader header = new SymmetricSecurityHeader(value);
 
-        assertSerializable(header, SymmetricSecurityHeader::encode, SymmetricSecurityHeader::decode);
-    }
-
+    assertSerializable(header, SymmetricSecurityHeader::encode, SymmetricSecurityHeader::decode);
+  }
 }

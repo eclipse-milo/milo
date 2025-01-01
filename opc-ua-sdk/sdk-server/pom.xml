@@ -1,73 +1,81 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+<!--
+  ~ Copyright (c) 2024 the Eclipse Milo Authors
+  ~
+  ~ This program and the accompanying materials are made
+  ~ available under the terms of the Eclipse Public License 2.0
+  ~ which is available at https://www.eclipse.org/legal/epl-2.0/
+  ~
+  ~ SPDX-License-Identifier: EPL-2.0
+  -->
 
-    <parent>
-        <groupId>org.eclipse.milo</groupId>
-        <artifactId>opc-ua-sdk</artifactId>
-        <version>0.6.13-SNAPSHOT</version>
-    </parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>sdk-server</artifactId>
+  <parent>
+    <groupId>org.eclipse.milo</groupId>
+    <artifactId>milo-opc-ua-sdk</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
 
-    <properties>
-        <javaModuleName>org.eclipse.milo.opcua.sdk.server</javaModuleName>
-    </properties>
+  <artifactId>milo-sdk-server</artifactId>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.eclipse.milo</groupId>
-            <artifactId>stack-core</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+  <properties>
+    <javaModuleName>org.eclipse.milo.opcua.sdk.server</javaModuleName>
+  </properties>
 
-        <dependency>
-            <groupId>org.eclipse.milo</groupId>
-            <artifactId>stack-server</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.milo</groupId>
+      <artifactId>milo-stack-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.milo</groupId>
+      <artifactId>milo-transport</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.milo</groupId>
+      <artifactId>milo-sdk-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
 
-        <dependency>
-            <groupId>org.eclipse.milo</groupId>
-            <artifactId>bsd-generator</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>${mockito.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>${slf4j.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
 
-        <dependency>
-            <groupId>org.eclipse.milo</groupId>
-            <artifactId>sdk-core</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.jetbrains</groupId>
-            <artifactId>annotations</artifactId>
-            <version>${annotations.version}</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-params</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <version>${mockito.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <version>${slf4j.version}</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
 
 </project>

@@ -1,37 +1,82 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+<!--
+  ~ Copyright (c) 2024 the Eclipse Milo Authors
+  ~
+  ~ This program and the accompanying materials are made
+  ~ available under the terms of the Eclipse Public License 2.0
+  ~ which is available at https://www.eclipse.org/legal/epl-2.0/
+  ~
+  ~ SPDX-License-Identifier: EPL-2.0
+  -->
 
-    <parent>
-        <groupId>org.eclipse.milo</groupId>
-        <artifactId>milo</artifactId>
-        <version>0.6.13-SNAPSHOT</version>
-    </parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>milo-examples</artifactId>
-    <packaging>pom</packaging>
+  <parent>
+    <groupId>org.eclipse.milo</groupId>
+    <artifactId>milo</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
 
-    <modules>
-        <module>client-examples</module>
-        <module>server-examples</module>
-    </modules>
+  <artifactId>milo-examples</artifactId>
+  <packaging>pom</packaging>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <!-- configuration inherited from pluginManagement -->
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <version>3.0.0-M1</version>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+  <modules>
+    <module>client-examples</module>
+    <module>server-examples</module>
+  </modules>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <!-- configuration inherited from pluginManagement -->
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <version>${maven-deploy-plugin.version}</version>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+    </plugins>
+
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>${maven-shade-plugin.version}</version>
+          <executions>
+            <execution>
+              <goals>
+                <goal>shade</goal>
+              </goals>
+              <configuration>
+                <artifactSet>
+                  <includes>
+                    <include>org.eclipse.milo:${project.artifactId}</include>
+                  </includes>
+                  <excludes>
+                    <exclude>org.eclipse.milo:milo-guava-dependencies</exclude>
+                  </excludes>
+                </artifactSet>
+                <relocations>
+                  <relocation>
+                    <pattern>com.google.common</pattern>
+                    <shadedPattern>org.eclipse.milo.shaded.com.google.common</shadedPattern>
+                  </relocation>
+                </relocations>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
 
 </project>
