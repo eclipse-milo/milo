@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -34,12 +34,13 @@ public class DateTimeTest {
 
     ZonedDateTime outputZdt = ZonedDateTime.ofInstant(outputInstant, ZoneId.systemDefault());
 
-    assertEquals(outputZdt.getYear(), inputZdt.getYear());
-    assertEquals(outputZdt.getMonth(), inputZdt.getMonth());
-    assertEquals(outputZdt.getDayOfMonth(), inputZdt.getDayOfMonth());
-    assertEquals(outputZdt.getHour(), inputZdt.getHour());
-    assertEquals(outputZdt.getMinute(), inputZdt.getMinute());
-    assertEquals(outputZdt.getSecond(), inputZdt.getSecond());
-    assertEquals(outputZdt.getNano(), 123_456_789);
+    assertEquals(inputZdt.getYear(), outputZdt.getYear());
+    assertEquals(inputZdt.getMonth(), outputZdt.getMonth());
+    assertEquals(inputZdt.getDayOfMonth(), outputZdt.getDayOfMonth());
+    assertEquals(inputZdt.getHour(), outputZdt.getHour());
+    assertEquals(inputZdt.getMinute(), outputZdt.getMinute());
+    assertEquals(inputZdt.getSecond(), outputZdt.getSecond());
+    // we lose precision here because DateTime uses 100-nanosecond intervals
+    assertEquals(123_456_700, outputZdt.getNano());
   }
 }
