@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -11,6 +11,7 @@
 package org.eclipse.milo.opcua.sdk.client;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
@@ -99,6 +100,6 @@ public class OpcUaClientConfigTest {
     assertEquals(uint(2), copy.getKeepAliveFailuresAllowed());
     assertEquals(uint(10000), copy.getKeepAliveInterval());
     assertEquals(uint(15000), copy.getKeepAliveTimeout());
-    assertEquals(new String[] {"en", "es"}, copy.getSessionLocaleIds());
+    assertArrayEquals(new String[] {"en", "es"}, copy.getSessionLocaleIds());
   }
 }
