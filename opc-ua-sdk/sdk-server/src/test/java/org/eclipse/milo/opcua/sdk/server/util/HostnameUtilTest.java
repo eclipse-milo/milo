@@ -23,8 +23,8 @@ public class HostnameUtilTest {
 
     hostnames.forEach(
         hostname -> {
-          assertNotEquals(hostname, "127.0.0.1");
-          assertNotEquals(hostname, "localhost");
+          assertNotEquals("127.0.0.1",hostname);
+          assertNotEquals("localhost", hostname);
           System.out.println(hostname);
         });
   }
