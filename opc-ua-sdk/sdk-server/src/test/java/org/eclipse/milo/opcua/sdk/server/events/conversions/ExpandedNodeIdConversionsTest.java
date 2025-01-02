@@ -39,7 +39,7 @@ public class ExpandedNodeIdConversionsTest {
     ExpandedNodeId e1 = new ExpandedNodeId(ushort(0), Namespaces.OPC_UA, "foo", uint(2));
     ExpandedNodeId e2 = new NodeId(1, "bar").expanded();
 
-    assertEquals(expandedNodeIdToString(e1), e1.toParseableString());
-    assertEquals(expandedNodeIdToString(e2), e2.toParseableString());
+    assertEquals(e1.toParseableString(), expandedNodeIdToString(e1));
+    assertEquals(e2.toParseableString(), expandedNodeIdToString(e2));
   }
 }

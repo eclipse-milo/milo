@@ -115,8 +115,8 @@ public class NumericRangeTest {
 
     Object result = NumericRange.readFromValueAtRange(value, nr);
 
-    assertTrue(result instanceof String);
-    assertEquals(result, string);
+    assertInstanceOf(String.class, result);
+    assertEquals(string, result);
   }
 
   @Test
@@ -126,7 +126,7 @@ public class NumericRangeTest {
 
     Object result = NumericRange.readFromValueAtRange(value, nr);
 
-    assertTrue(result instanceof ByteString);
+    assertInstanceOf(ByteString.class, result);
     assertEquals(new ByteString(new byte[] {2, 3}), result);
   }
 
@@ -156,8 +156,8 @@ public class NumericRangeTest {
 
     Object result = NumericRange.readFromValueAtRange(value, nr);
 
-    assertTrue(result instanceof ByteString);
-    assertEquals(result, byteString);
+    assertInstanceOf(ByteString.class, result);
+    assertEquals(byteString, result);
   }
 
   @ParameterizedTest
@@ -186,7 +186,7 @@ public class NumericRangeTest {
 
     Object updated = NumericRange.writeToValueAtRange(current, update, range);
 
-    assertTrue(updated instanceof String);
+    assertInstanceOf(String.class, updated);
     assertEquals("aZzZzZg", updated);
   }
 
@@ -198,7 +198,7 @@ public class NumericRangeTest {
 
     Object updated = NumericRange.writeToValueAtRange(current, update, range);
 
-    assertTrue(updated instanceof ByteString);
+    assertInstanceOf(ByteString.class, updated);
     assertEquals(new ByteString(new byte[] {0, 2, 4, 3}), updated);
   }
 

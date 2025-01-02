@@ -170,8 +170,8 @@ public class ExpandedNodeIdTest {
             "nsu=http://softing.com/dataFEEDSIS/nsuri?conn=Demo&uri=http://opcfoundation.org/UA/;i=85");
 
     assertEquals(
-        xni.getNamespaceUri(),
-        "http://softing.com/dataFEEDSIS/nsuri?conn=Demo&uri=http://opcfoundation.org/UA/");
+        "http://softing.com/dataFEEDSIS/nsuri?conn=Demo&uri=http://opcfoundation.org/UA/",
+        xni.getNamespaceUri());
 
     assertEquals(uint(85), xni.getIdentifier());
   }

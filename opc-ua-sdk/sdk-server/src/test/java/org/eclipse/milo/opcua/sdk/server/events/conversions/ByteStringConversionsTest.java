@@ -30,7 +30,7 @@ public class ByteStringConversionsTest {
 
     UUID uuid = new UUID(msb, lsb);
 
-    assertEquals(ByteStringConversions.byteStringToGuid(bs), uuid);
+    assertEquals(uuid, ByteStringConversions.byteStringToGuid(bs));
   }
 
   @Test
@@ -38,6 +38,7 @@ public class ByteStringConversionsTest {
     ByteString bs = ByteString.of(new byte[] {0x01, 0x02, 0x03});
 
     assertEquals(
-        ByteStringConversions.byteStringToString(bs), ByteBufUtil.hexDump(bs.bytesOrEmpty()));
+            ByteBufUtil.hexDump(bs.bytesOrEmpty()),
+            ByteStringConversions.byteStringToString(bs));
   }
 }

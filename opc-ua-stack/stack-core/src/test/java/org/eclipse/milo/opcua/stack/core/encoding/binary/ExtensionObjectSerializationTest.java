@@ -36,6 +36,6 @@ public class ExtensionObjectSerializationTest extends BinarySerializationFixture
     writer.encodeExtensionObject(xo);
     ExtensionObject decoded = reader.decodeExtensionObject();
 
-    assertEquals(decoded, xo);
+    assertEquals(xo, decoded);
   }
 }

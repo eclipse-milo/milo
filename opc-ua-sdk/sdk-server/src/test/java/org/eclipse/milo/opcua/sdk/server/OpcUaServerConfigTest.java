@@ -39,9 +39,9 @@ public class OpcUaServerConfigTest {
 
     OpcUaServerConfig copy = OpcUaServerConfig.copy(original).build();
 
-    assertEquals(copy.getIdentityValidator(), original.getIdentityValidator());
-    assertEquals(copy.getBuildInfo(), original.getBuildInfo());
-    assertEquals(copy.getLimits(), original.getLimits());
-    assertEquals(copy.getScheduledExecutorService(), original.getScheduledExecutorService());
+    assertEquals(original.getIdentityValidator(), copy.getIdentityValidator());
+    assertEquals(original.getBuildInfo(), copy.getBuildInfo());
+    assertEquals(original.getLimits(), copy.getLimits());
+    assertEquals(original.getScheduledExecutorService(), copy.getScheduledExecutorService());
   }
 }

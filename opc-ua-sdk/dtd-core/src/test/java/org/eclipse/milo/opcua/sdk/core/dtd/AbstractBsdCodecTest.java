@@ -151,7 +151,7 @@ public abstract class AbstractBsdCodecTest {
     System.out.println("encodedValue:\t" + ByteBufUtil.hexDump(encodedValue));
 
     Object decodedValue = codec.decode(context, new OpcUaBinaryDecoder(context).setBuffer(buffer));
-    assertEquals(decodedValue.toString(), originalValue.toString());
+    assertEquals(originalValue.toString(), decodedValue.toString());
     System.out.println("decodedValue:\t" + decodedValue);
   }
 }

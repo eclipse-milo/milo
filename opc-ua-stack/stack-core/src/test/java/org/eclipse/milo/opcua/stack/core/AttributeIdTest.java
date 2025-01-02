@@ -24,7 +24,7 @@ public class AttributeIdTest {
     for (AttributeId attributeId : AttributeId.values()) {
       int id = attributeId.id();
 
-      assertEquals(AttributeId.from(id).orElseThrow(), attributeId);
+      assertEquals(attributeId, AttributeId.from(id).orElseThrow());
     }
 
     assertFalse(AttributeId.from(-1).isPresent());
@@ -49,45 +49,44 @@ public class AttributeIdTest {
   public void testDataTypeAttributes() {
     var attributes = new ArrayList<>(AttributeId.DATA_TYPE_ATTRIBUTES);
 
-    assertEquals(attributes.get(0), AttributeId.NodeId);
-    assertEquals(attributes.get(1), AttributeId.NodeClass);
-    assertEquals(attributes.get(2), AttributeId.BrowseName);
-    assertEquals(attributes.get(3), AttributeId.DisplayName);
-    assertEquals(attributes.get(4), AttributeId.Description);
-    assertEquals(attributes.get(5), AttributeId.WriteMask);
-    assertEquals(attributes.get(6), AttributeId.UserWriteMask);
-    assertEquals(attributes.get(7), AttributeId.RolePermissions);
-    assertEquals(attributes.get(8), AttributeId.UserRolePermissions);
-    assertEquals(attributes.get(9), AttributeId.AccessRestrictions);
-
-    assertEquals(attributes.get(10), AttributeId.IsAbstract);
-    assertEquals(attributes.get(11), AttributeId.DataTypeDefinition);
+    assertEquals(AttributeId.NodeId, attributes.get(0));
+    assertEquals(AttributeId.NodeClass, attributes.get(1));
+    assertEquals(AttributeId.BrowseName, attributes.get(2));
+    assertEquals(AttributeId.DisplayName, attributes.get(3));
+    assertEquals(AttributeId.Description, attributes.get(4));
+    assertEquals(AttributeId.WriteMask, attributes.get(5));
+    assertEquals(AttributeId.UserWriteMask, attributes.get(6));
+    assertEquals(AttributeId.RolePermissions, attributes.get(7));
+    assertEquals(AttributeId.UserRolePermissions, attributes.get(8));
+    assertEquals(AttributeId.AccessRestrictions, attributes.get(9));
+    assertEquals(AttributeId.IsAbstract, attributes.get(10));
+    assertEquals(AttributeId.DataTypeDefinition, attributes.get(11));
   }
 
   @Test
   public void testVariableAttributes() {
     var attributes = new ArrayList<>(AttributeId.VARIABLE_ATTRIBUTES);
 
-    assertEquals(attributes.get(0), AttributeId.NodeId);
-    assertEquals(attributes.get(1), AttributeId.NodeClass);
-    assertEquals(attributes.get(2), AttributeId.BrowseName);
-    assertEquals(attributes.get(3), AttributeId.DisplayName);
-    assertEquals(attributes.get(4), AttributeId.Description);
-    assertEquals(attributes.get(5), AttributeId.WriteMask);
-    assertEquals(attributes.get(6), AttributeId.UserWriteMask);
-    assertEquals(attributes.get(7), AttributeId.RolePermissions);
-    assertEquals(attributes.get(8), AttributeId.UserRolePermissions);
-    assertEquals(attributes.get(9), AttributeId.AccessRestrictions);
+    assertEquals(AttributeId.NodeId, attributes.get(0));
+    assertEquals(AttributeId.NodeClass, attributes.get(1));
+    assertEquals(AttributeId.BrowseName, attributes.get(2));
+    assertEquals(AttributeId.DisplayName, attributes.get(3));
+    assertEquals(AttributeId.Description, attributes.get(4));
+    assertEquals(AttributeId.WriteMask, attributes.get(5));
+    assertEquals(AttributeId.UserWriteMask, attributes.get(6));
+    assertEquals(AttributeId.RolePermissions, attributes.get(7));
+    assertEquals(AttributeId.UserRolePermissions, attributes.get(8));
+    assertEquals(AttributeId.AccessRestrictions, attributes.get(9));
 
-    assertEquals(attributes.get(10), AttributeId.Value);
-    assertEquals(attributes.get(11), AttributeId.DataType);
-    assertEquals(attributes.get(12), AttributeId.ValueRank);
-    assertEquals(attributes.get(13), AttributeId.ArrayDimensions);
-    assertEquals(attributes.get(14), AttributeId.AccessLevel);
-    assertEquals(attributes.get(15), AttributeId.UserAccessLevel);
-    assertEquals(attributes.get(16), AttributeId.MinimumSamplingInterval);
-    assertEquals(attributes.get(17), AttributeId.Historizing);
-    assertEquals(attributes.get(18), AttributeId.AccessLevelEx);
+    assertEquals(AttributeId.Value, attributes.get(10));
+    assertEquals(AttributeId.DataType, attributes.get(11));
+    assertEquals(AttributeId.ValueRank, attributes.get(12));
+    assertEquals(AttributeId.ArrayDimensions, attributes.get(13));
+    assertEquals(AttributeId.AccessLevel, attributes.get(14));
+    assertEquals(AttributeId.UserAccessLevel, attributes.get(15));
+    assertEquals(AttributeId.MinimumSamplingInterval, attributes.get(16));
+    assertEquals(AttributeId.Historizing, attributes.get(17));
+    assertEquals(AttributeId.AccessLevelEx, attributes.get(18));
   }
 
   @Test

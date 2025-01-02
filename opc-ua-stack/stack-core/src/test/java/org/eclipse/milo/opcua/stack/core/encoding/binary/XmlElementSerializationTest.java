@@ -32,6 +32,6 @@ public class XmlElementSerializationTest extends BinarySerializationFixture {
     writer.encodeXmlElement(element);
     XmlElement decoded = reader.decodeXmlElement();
 
-    assertEquals(decoded, element);
+    assertEquals(element, decoded);
   }
 }

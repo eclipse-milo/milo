@@ -43,7 +43,7 @@ public class NonceUtilTest {
   public void testNonceGeneration() throws UaException {
     for (int i = 32; i < 256; i++) {
       ByteString nonce = NonceUtil.generateNonce(i);
-      assertEquals(nonce.length(), i);
+      assertEquals(i, nonce.length());
       NonceUtil.validateNonce(nonce);
     }
   }

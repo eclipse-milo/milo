@@ -43,11 +43,11 @@ public class DateTimeConversionsTest {
     Calendar c2 = Calendar.getInstance();
     c2.setTime(now.getJavaDate());
 
-    assertEquals(c1.get(Calendar.YEAR), c2.get(Calendar.YEAR));
-    assertEquals(c1.get(Calendar.MONTH), c2.get(Calendar.MONTH));
-    assertEquals(c1.get(Calendar.DAY_OF_MONTH), c2.get(Calendar.DAY_OF_MONTH));
-    assertEquals(c1.get(Calendar.HOUR_OF_DAY), c2.get(Calendar.HOUR_OF_DAY));
-    assertEquals(c1.get(Calendar.MINUTE), c2.get(Calendar.MINUTE));
-    assertEquals(c1.get(Calendar.SECOND), c2.get(Calendar.SECOND));
+    assertEquals(c2.get(Calendar.YEAR), c1.get(Calendar.YEAR));
+    assertEquals(c2.get(Calendar.MONTH), c1.get(Calendar.MONTH));
+    assertEquals(c2.get(Calendar.DAY_OF_MONTH), c1.get(Calendar.DAY_OF_MONTH));
+    assertEquals(c2.get(Calendar.HOUR_OF_DAY), c1.get(Calendar.HOUR_OF_DAY));
+    assertEquals(c2.get(Calendar.MINUTE), c1.get(Calendar.MINUTE));
+    assertEquals(c2.get(Calendar.SECOND), c1.get(Calendar.SECOND));
   }
 }

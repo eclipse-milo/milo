@@ -40,7 +40,7 @@ public class AnonymousProviderTest {
 
     SignedIdentityToken signedIdentityToken = p.getIdentityToken(endpoint, ByteString.NULL_VALUE);
 
-    assertEquals(signedIdentityToken.getToken().getPolicyId(), "anonymous");
+    assertEquals("anonymous", signedIdentityToken.getToken().getPolicyId());
     assertInstanceOf(AnonymousIdentityToken.class, signedIdentityToken.getToken());
   }
 
@@ -63,7 +63,7 @@ public class AnonymousProviderTest {
 
     SignedIdentityToken signedIdentityToken = p.getIdentityToken(endpoint, ByteString.NULL_VALUE);
 
-    assertEquals(signedIdentityToken.getToken().getPolicyId(), "");
+    assertEquals("", signedIdentityToken.getToken().getPolicyId());
     assertInstanceOf(AnonymousIdentityToken.class, signedIdentityToken.getToken());
   }
 

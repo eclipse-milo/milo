@@ -52,15 +52,15 @@ public class OpcUaClientConfigTest {
 
     OpcUaClientConfig copy = OpcUaClientConfig.copy(original).build();
 
-    assertEquals(copy.getSessionName(), original.getSessionName());
-    assertEquals(copy.getSessionTimeout(), original.getSessionTimeout());
-    assertEquals(copy.getMaxResponseMessageSize(), original.getMaxResponseMessageSize());
-    assertEquals(copy.getMaxPendingPublishRequests(), original.getMaxPendingPublishRequests());
-    assertEquals(copy.getIdentityProvider(), original.getIdentityProvider());
-    assertEquals(copy.getKeepAliveFailuresAllowed(), original.getKeepAliveFailuresAllowed());
-    assertEquals(copy.getKeepAliveInterval(), original.getKeepAliveInterval());
-    assertEquals(copy.getKeepAliveTimeout(), original.getKeepAliveTimeout());
-    assertEquals(copy.getSessionLocaleIds(), original.getSessionLocaleIds());
+    assertEquals(original.getSessionName(), copy.getSessionName());
+    assertEquals(original.getSessionTimeout(), copy.getSessionTimeout());
+    assertEquals(original.getMaxResponseMessageSize(), copy.getMaxResponseMessageSize());
+    assertEquals(original.getMaxPendingPublishRequests(), copy.getMaxPendingPublishRequests());
+    assertEquals(original.getIdentityProvider(), copy.getIdentityProvider());
+    assertEquals(original.getKeepAliveFailuresAllowed(), copy.getKeepAliveFailuresAllowed());
+    assertEquals(original.getKeepAliveInterval(), copy.getKeepAliveInterval());
+    assertEquals(original.getKeepAliveTimeout(), copy.getKeepAliveTimeout());
+    assertEquals(original.getSessionLocaleIds(), copy.getSessionLocaleIds());
   }
 
   @Test
@@ -90,9 +90,9 @@ public class OpcUaClientConfigTest {
                     .setKeepAliveTimeout(uint(15000))
                     .setSessionLocaleIds(new String[] {"en", "es"}));
 
-    assertNotEquals(copy.getSessionName(), original.getSessionName());
-    assertNotEquals(copy.getIdentityProvider(), original.getIdentityProvider());
-    assertNotEquals(copy.getSessionLocaleIds(), original.getSessionLocaleIds());
+    assertNotEquals(original.getSessionName(), copy.getSessionName());
+    assertNotEquals(original.getIdentityProvider(), copy.getIdentityProvider());
+    assertNotEquals(original.getSessionLocaleIds(), copy.getSessionLocaleIds());
 
     assertEquals(uint(0), copy.getSessionTimeout());
     assertEquals(uint(0), copy.getMaxResponseMessageSize());

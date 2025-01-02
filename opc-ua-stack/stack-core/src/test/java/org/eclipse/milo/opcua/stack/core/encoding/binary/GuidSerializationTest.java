@@ -36,6 +36,6 @@ public class GuidSerializationTest extends BinarySerializationFixture {
     writer.encodeGuid(uuid);
     UUID decoded = reader.decodeGuid();
 
-    assertEquals(decoded, uuid);
+    assertEquals(uuid, decoded);
   }
 }

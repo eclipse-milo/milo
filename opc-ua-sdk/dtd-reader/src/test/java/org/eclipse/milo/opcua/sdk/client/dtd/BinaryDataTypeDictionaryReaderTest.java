@@ -130,6 +130,6 @@ class BinaryDataTypeDictionaryReaderTest {
     ByteString typeDictionaryBs =
         dictionaryReader.readDataTypeDictionaryBytes(NodeId.NULL_VALUE, fragmentSize).get();
 
-    Assertions.assertEquals(typeDictionaryBs, dictionary);
+    Assertions.assertEquals(dictionary, typeDictionaryBs);
   }
 }

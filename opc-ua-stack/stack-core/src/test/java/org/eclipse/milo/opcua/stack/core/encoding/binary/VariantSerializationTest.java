@@ -52,7 +52,7 @@ public class VariantSerializationTest extends BinarySerializationFixture {
     writer.encodeVariant(variant);
     Variant decoded = reader.decodeVariant();
 
-    assertEquals(decoded, variant);
+    assertEquals(variant, decoded);
   }
 
   @Test
@@ -95,7 +95,7 @@ public class VariantSerializationTest extends BinarySerializationFixture {
     writer.encodeVariant(variant);
     Variant decoded = reader.decodeVariant();
 
-    assertEquals(decoded, expected);
+    assertEquals(expected, decoded);
   }
 
   @Test

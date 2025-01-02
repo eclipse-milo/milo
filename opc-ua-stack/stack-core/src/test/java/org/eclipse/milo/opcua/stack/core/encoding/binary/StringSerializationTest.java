@@ -27,6 +27,6 @@ public class StringSerializationTest extends BinarySerializationFixture {
     writer.encodeString(value);
     String decoded = reader.decodeString();
 
-    assertEquals(decoded, value);
+    assertEquals(value, decoded);
   }
 }

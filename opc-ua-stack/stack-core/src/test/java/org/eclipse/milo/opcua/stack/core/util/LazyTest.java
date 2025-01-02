@@ -49,10 +49,10 @@ public class LazyTest {
     Object instance = new Object();
 
     Object o1 = lazy.get(() -> instance);
-    assertEquals(o1, instance);
+    assertEquals(instance, o1);
 
     Object o2 = lazy.get(() -> instance);
-    assertEquals(o2, instance);
+    assertEquals(instance, o2);
   }
 
   @Test
@@ -85,10 +85,10 @@ public class LazyTest {
         };
 
     Object o1 = lazy.get(supplier);
-    assertEquals(o1, instance);
+    assertEquals(instance, o1);
 
     Object o2 = lazy.get(supplier);
-    assertEquals(o2, instance);
+    assertEquals(instance, o2);
   }
 
   @Test
@@ -115,12 +115,12 @@ public class LazyTest {
         };
 
     Object o1 = lazy.get(supplier);
-    assertEquals(o1, instance1);
+    assertEquals(instance1, o1);
 
     lazy.reset();
 
     Object o2 = lazy.get(supplier);
-    assertEquals(o2, instance2);
+    assertEquals(instance2, o2);
   }
 
   @Test
@@ -131,6 +131,6 @@ public class LazyTest {
 
     var instance = new Object();
     lazy.set(instance);
-    assertEquals(lazy.get(() -> null), instance);
+    assertEquals(instance, lazy.get(() -> null));
   }
 }

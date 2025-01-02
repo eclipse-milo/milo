@@ -63,9 +63,8 @@ class StatusCodesTest {
   void infoBitsDataValue() {
     StatusCode statusCode = StatusCode.GOOD.withDataValueInfoType();
     assertSame(statusCode.getInfoType(), InfoType.DataValue);
-    assertEquals(
-        statusCode.getDataValueInfoBits().map(StatusCode.DataValueInfoBits::getBits).orElseThrow(),
-        0);
+    assertEquals(0,
+        statusCode.getDataValueInfoBits().map(StatusCode.DataValueInfoBits::getBits).orElseThrow());
 
     assertSame(statusCode.withoutDataValueInfoType().getInfoType(), InfoType.NotUsed);
   }
