@@ -2,7 +2,7 @@
 [![Jenkins](https://img.shields.io/jenkins/build/https/ci.eclipse.org/milo/job/Milo_Deploy.svg)](https://ci.eclipse.org/milo/)
 [![Maven Central](https://img.shields.io/maven-central/v/org.eclipse.milo/milo.svg)](https://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22org.eclipse.milo%22%20AND%20a%3A%22milo%22)
 
-Milo is an open-source implementation of OPC UA (currently targeting 1.03). It includes a high-performance stack (channels, serialization, data structures, security) as well as client and server SDKs built on top of the stack.
+Milo is an open-source implementation of OPC UA (currently targeting 1.05). It includes a high-performance stack (channels, serialization, data structures, security) as well as client and server SDKs built on top of the stack.
 
 Stack Overflow tag: [milo](http://stackoverflow.com/questions/tagged/milo)
 
@@ -27,7 +27,7 @@ Releases are published to Maven Central and snapshots to Sonatype.
 <dependency>
     <groupId>org.eclipse.milo</groupId>
     <artifactId>milo-sdk-client</artifactId>
-    <version>0.6.10</version>
+    <version>1.0.0</version>
 </dependency>
 ```
 
@@ -37,7 +37,7 @@ Releases are published to Maven Central and snapshots to Sonatype.
 <dependency>
     <groupId>org.eclipse.milo</groupId>
     <artifactId>milo-sdk-server</artifactId>
-    <version>0.6.10</version>
+    <version>1.0.0</version>
 </dependency>
 ```
 
