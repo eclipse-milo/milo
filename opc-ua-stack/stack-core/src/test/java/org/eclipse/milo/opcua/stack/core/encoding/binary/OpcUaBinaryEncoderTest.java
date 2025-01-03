@@ -43,7 +43,7 @@ public class OpcUaBinaryEncoderTest {
       writer.encodeBit(0);
       writer.encodeBit(0);
       writer.encodeBit(0);
-      assertEquals(0b00001111,buffer.readUnsignedByte());
+      assertEquals(0b00001111, buffer.readUnsignedByte());
     }
     {
       writer.encodeBit(0);
@@ -54,7 +54,7 @@ public class OpcUaBinaryEncoderTest {
       writer.encodeBit(1);
       writer.encodeBit(1);
       writer.encodeBit(1);
-      assertEquals(0b11110000,buffer.readUnsignedByte());
+      assertEquals(0b11110000, buffer.readUnsignedByte());
     }
     {
       writer.encodeBit(0);
@@ -65,7 +65,7 @@ public class OpcUaBinaryEncoderTest {
       writer.encodeBit(1);
       writer.encodeBit(0);
       writer.encodeBit(1);
-      assertEquals(0b10101010,buffer.readUnsignedByte());
+      assertEquals(0b10101010, buffer.readUnsignedByte());
     }
     {
       writer.encodeBit(1);
@@ -76,7 +76,7 @@ public class OpcUaBinaryEncoderTest {
       writer.encodeBit(0);
       writer.encodeBit(1);
       writer.encodeBit(0);
-      assertEquals(0b01010101,buffer.readUnsignedByte());
+      assertEquals(0b01010101, buffer.readUnsignedByte());
     }
   }
 

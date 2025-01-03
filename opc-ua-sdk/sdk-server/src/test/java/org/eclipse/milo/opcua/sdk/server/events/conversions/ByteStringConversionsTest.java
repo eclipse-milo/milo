@@ -38,7 +38,6 @@ public class ByteStringConversionsTest {
     ByteString bs = ByteString.of(new byte[] {0x01, 0x02, 0x03});
 
     assertEquals(
-            ByteBufUtil.hexDump(bs.bytesOrEmpty()),
-            ByteStringConversions.byteStringToString(bs));
+        ByteBufUtil.hexDump(bs.bytesOrEmpty()), ByteStringConversions.byteStringToString(bs));
   }
 }

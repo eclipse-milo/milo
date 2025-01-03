@@ -73,47 +73,39 @@ public class EndpointUtilTest {
 
   private void testReplaceUrlHostnameWithScheme(String scheme) {
     assertEquals(
-            scheme + "://localhost2:4840",
-        updateUrl(scheme + "://localhost:4840", "localhost2"));
+        scheme + "://localhost2:4840", updateUrl(scheme + "://localhost:4840", "localhost2"));
 
     assertEquals(
-            scheme + "://localhost2:4840/",
-        updateUrl(scheme + "://localhost:4840/", "localhost2"));
+        scheme + "://localhost2:4840/", updateUrl(scheme + "://localhost:4840/", "localhost2"));
 
     assertEquals(
-            scheme + "://localhost2:4840/foo",
-        updateUrl(scheme + "://localhost:4840/foo", "localhost2")
-        );
+        scheme + "://localhost2:4840/foo",
+        updateUrl(scheme + "://localhost:4840/foo", "localhost2"));
 
     assertEquals(
-            scheme + "://localhost2:4840/foo/bar",
-        updateUrl(scheme + "://localhost:4840/foo/bar", "localhost2")
-        );
+        scheme + "://localhost2:4840/foo/bar",
+        updateUrl(scheme + "://localhost:4840/foo/bar", "localhost2"));
 
     assertEquals(scheme + "://localhost2", updateUrl(scheme + "://localhost", "localhost2"));
 
     assertEquals(scheme + "://localhost2/", updateUrl(scheme + "://localhost/", "localhost2"));
 
     assertEquals(
-            scheme + "://localhost2/foo",
-        updateUrl(scheme + "://localhost/foo", "localhost2"));
+        scheme + "://localhost2/foo", updateUrl(scheme + "://localhost/foo", "localhost2"));
 
     assertEquals(
-            scheme + "://localhost2/foo/bar",
-        updateUrl(scheme + "://localhost/foo/bar", "localhost2"));
+        scheme + "://localhost2/foo/bar", updateUrl(scheme + "://localhost/foo/bar", "localhost2"));
 
     assertEquals(scheme + "://example2.com", updateUrl(scheme + "://example.com", "example2.com"));
 
     assertEquals(
-            scheme + "://example2.com/",
-        updateUrl(scheme + "://example.com/", "example2.com"));
+        scheme + "://example2.com/", updateUrl(scheme + "://example.com/", "example2.com"));
 
     assertEquals(
-            scheme + "://example2.com/foo",
-        updateUrl(scheme + "://example.com/foo", "example2.com"));
+        scheme + "://example2.com/foo", updateUrl(scheme + "://example.com/foo", "example2.com"));
 
     assertEquals(
-            scheme + "://example2.com/foo/bar",
+        scheme + "://example2.com/foo/bar",
         updateUrl(scheme + "://example.com/foo/bar", "example2.com"));
 
     assertEquals(scheme + "://192.168.0.1", updateUrl(scheme + "://127.0.0.1", "192.168.0.1"));
@@ -121,39 +113,34 @@ public class EndpointUtilTest {
     assertEquals(scheme + "://192.168.0.1/", updateUrl(scheme + "://127.0.0.1/", "192.168.0.1"));
 
     assertEquals(
-            scheme + "://192.168.0.1/foo",
-        updateUrl(scheme + "://127.0.0.1/foo", "192.168.0.1"));
+        scheme + "://192.168.0.1/foo", updateUrl(scheme + "://127.0.0.1/foo", "192.168.0.1"));
 
     assertEquals(
-            scheme + "://192.168.0.1/foo/bar",
+        scheme + "://192.168.0.1/foo/bar",
         updateUrl(scheme + "://127.0.0.1/foo/bar", "192.168.0.1"));
 
     assertEquals(
-            scheme + "://192.168.0.1:4840",
-        updateUrl(scheme + "://127.0.0.1:4840", "192.168.0.1"));
+        scheme + "://192.168.0.1:4840", updateUrl(scheme + "://127.0.0.1:4840", "192.168.0.1"));
 
     assertEquals(
-            scheme + "://192.168.0.1:4840/",
-        updateUrl(scheme + "://127.0.0.1:4840/", "192.168.0.1"));
+        scheme + "://192.168.0.1:4840/", updateUrl(scheme + "://127.0.0.1:4840/", "192.168.0.1"));
 
     assertEquals(
-            scheme + "://192.168.0.1:4840/foo",
+        scheme + "://192.168.0.1:4840/foo",
         updateUrl(scheme + "://127.0.0.1:4840/foo", "192.168.0.1"));
 
     assertEquals(
-            scheme + "://192.168.0.1:4840/foo/bar",
+        scheme + "://192.168.0.1:4840/foo/bar",
         updateUrl(scheme + "://127.0.0.1:4840/foo/bar", "192.168.0.1"));
   }
 
   private void testReplaceUrlPortWithScheme(String scheme) {
     assertEquals(
-            scheme + "://localhost:12685",
-        updateUrl(scheme + "://localhost:4840", "localhost", 12685));
+        scheme + "://localhost:12685", updateUrl(scheme + "://localhost:4840", "localhost", 12685));
 
     assertEquals(
-            scheme + "://localhost:12685",
-        updateUrl(scheme + "://localhost:4840", null, 12685));
+        scheme + "://localhost:12685", updateUrl(scheme + "://localhost:4840", null, 12685));
 
-    assertEquals( scheme + "://localhost:4840", updateUrl(scheme + "://localhost:4840", null, -1));
+    assertEquals(scheme + "://localhost:4840", updateUrl(scheme + "://localhost:4840", null, -1));
   }
 }

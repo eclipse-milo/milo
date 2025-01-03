@@ -53,13 +53,11 @@ public class AccessLevelTest {
             AccessLevel.CurrentRead.getValue() | AccessLevel.CurrentWrite.getValue()));
 
     assertEquals(
-        AccessLevel.HISTORY_READ_ONLY,
-        AccessLevel.fromValue(AccessLevel.HistoryRead.getValue()));
+        AccessLevel.HISTORY_READ_ONLY, AccessLevel.fromValue(AccessLevel.HistoryRead.getValue()));
 
     assertEquals(
         AccessLevel.HISTORY_READ_WRITE,
         AccessLevel.fromValue(
-            AccessLevel.HistoryRead.getValue() | AccessLevel.HistoryWrite.getValue())
-        );
+            AccessLevel.HistoryRead.getValue() | AccessLevel.HistoryWrite.getValue()));
   }
 }
