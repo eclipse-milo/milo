@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright (c) 2022 the Eclipse Milo Authors
+  ~ Copyright (c) 2025 the Eclipse Milo Authors
   ~
   ~ This program and the accompanying materials are made
   ~ available under the terms of the Eclipse Public License 2.0
@@ -33,7 +33,7 @@
         <dependency>
             <groupId>com.digitalpetri.netty</groupId>
             <artifactId>netty-channel-fsm</artifactId>
-            <version>0.9</version>
+            <version>1.0.0</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>

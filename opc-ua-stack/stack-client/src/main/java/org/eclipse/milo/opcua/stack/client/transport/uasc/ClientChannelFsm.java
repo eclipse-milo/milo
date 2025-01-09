@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -14,13 +14,13 @@ import java.net.ConnectException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
+import com.digitalpetri.fsm.FsmContext;
 import com.digitalpetri.netty.fsm.ChannelActions;
 import com.digitalpetri.netty.fsm.ChannelFsm;
 import com.digitalpetri.netty.fsm.ChannelFsmConfig;
 import com.digitalpetri.netty.fsm.ChannelFsmFactory;
 import com.digitalpetri.netty.fsm.Event;
 import com.digitalpetri.netty.fsm.State;
-import com.digitalpetri.strictmachine.FsmContext;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
@@ -160,7 +160,7 @@ public class ClientChannelFsm {
             channel.pipeline().addFirst(new ChannelInboundHandlerAdapter() {
                 @Override
                 public void channelInactive(ChannelHandlerContext channelContext) throws Exception {
-                    LOGGER.debug("[{}] channelInactive() disconnect complete", ctx.getInstanceId());
+                    LOGGER.debug("channelInactive() disconnect complete");
                     timeout.cancel();
                     disconnectFuture.complete(null);
                     super.channelInactive(channelContext);
@@ -177,7 +177,7 @@ public class ClientChannelFsm {
                 null
             );
 
-            LOGGER.debug("[{}] Sending CloseSecureChannelRequest...", ctx.getInstanceId());
+            LOGGER.debug("Sending CloseSecureChannelRequest...");
 
             channel.pipeline().fireUserEventTriggered(
                 new CloseSecureChannelRequest(requestHeader)
