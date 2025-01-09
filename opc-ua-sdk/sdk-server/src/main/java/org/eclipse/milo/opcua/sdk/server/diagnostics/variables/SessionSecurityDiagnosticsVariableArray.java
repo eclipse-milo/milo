@@ -214,11 +214,9 @@ public class SessionSecurityDiagnosticsVariableArray extends AbstractLifecycle {
     protected void onShutdown() {
         AttributeObserver observer = attributeObserver;
         if (observer != null) {
-            ServerDiagnosticsTypeNode diagnosticsNode = (ServerDiagnosticsTypeNode) server.getAddressSpaceManager()
-                .getManagedNode(Identifiers.Server_ServerDiagnostics)
-                .orElseThrow(() -> new NoSuchElementException("NodeId: " + Identifiers.Server_ServerDiagnostics));
-
-            diagnosticsNode.getEnabledFlagNode().removeAttributeObserver(observer);
+            server.getAddressSpaceManager().getManagedNode(Identifiers.Server_ServerDiagnostics)
+                    .map(ServerDiagnosticsTypeNode.class::cast).map(ServerDiagnosticsTypeNode::getEnabledFlagNode)
+                    .ifPresent(enabledFlagNode -> enabledFlagNode.removeAttributeObserver(observer));
             attributeObserver = null;
         }
 
