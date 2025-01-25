@@ -16,6 +16,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.LinkedHashMap;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.core.types.util.DynamicEncodingContext;
@@ -101,6 +102,34 @@ class DynamicStructCodecTest {
     var encoded2 = ExtensionObject.encode(new DynamicEncodingContext(), decoded);
 
     assertEquals(encoded1, encoded2);
+
+    var members = new LinkedHashMap<String, Object>();
+    members.put("Boolean", struct.getBoolean());
+    members.put("SByte", struct.getSByte());
+    members.put("Byte", struct.getByte());
+    members.put("Int16", struct.getInt16());
+    members.put("UInt16", struct.getUInt16());
+    members.put("Int32", struct.getInt32());
+    members.put("UInt32", struct.getUInt32());
+    members.put("Int64", struct.getInt64());
+    members.put("UInt64", struct.getUInt64());
+    members.put("Float", struct.getFloat());
+    members.put("Double", struct.getDouble());
+    members.put("String", struct.getString());
+    members.put("DateTime", struct.getDateTime());
+    members.put("Guid", struct.getGuid());
+    members.put("ByteString", struct.getByteString());
+    members.put("XmlElement", struct.getXmlElement());
+    members.put("NodeId", struct.getNodeId());
+    members.put("ExpandedNodeId", struct.getExpandedNodeId());
+    members.put("StatusCode", struct.getStatusCode());
+    members.put("QualifiedName", struct.getQualifiedName());
+    members.put("LocalizedText", struct.getLocalizedText());
+    members.put("DataValue", struct.getDataValue());
+    members.put("Variant", struct.getVariant());
+    DynamicStruct expected = new DynamicStruct(decoded.getDataType(), members);
+
+    assertEquals(expected, decoded);
   }
 
   @Test

@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.sdk.core.types;
 
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
@@ -58,6 +59,18 @@ public class DynamicStruct implements UaStructuredType {
   public ExpandedNodeId getJsonEncodingId() {
     NodeId jsonEncodingId = dataType.getJsonEncodingId();
     return jsonEncodingId != null ? jsonEncodingId.expanded() : ExpandedNodeId.NULL_VALUE;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == null || getClass() != o.getClass()) return false;
+    DynamicStruct that = (DynamicStruct) o;
+    return Objects.equals(dataType, that.dataType) && Objects.equals(members, that.members);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(dataType, members);
   }
 
   @Override
