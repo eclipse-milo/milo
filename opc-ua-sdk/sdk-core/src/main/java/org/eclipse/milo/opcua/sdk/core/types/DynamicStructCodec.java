@@ -331,7 +331,18 @@ public class DynamicStructCodec extends GenericDataTypeCodec<DynamicStruct> {
               break;
             }
           case STRUCT:
-            value = decoder.decodeStructMatrix(fieldName, dataTypeId);
+            if (dataTypeId.equals(NodeIds.Structure) || fieldAllowsSubtyping(field)) {
+              Matrix matrix = decoder.decodeMatrix(fieldName, BuiltinDataType.ExtensionObject);
+
+              value =
+                  matrix.transform(
+                      o -> {
+                        ExtensionObject xo = (ExtensionObject) o;
+                        return xo.decode(decoder.getEncodingContext());
+                      });
+            } else {
+              value = decoder.decodeStructMatrix(fieldName, dataTypeId);
+            }
             break;
           default:
             throw new RuntimeException("codecType: " + typeHint);
@@ -419,7 +430,18 @@ public class DynamicStructCodec extends GenericDataTypeCodec<DynamicStruct> {
             encoder.encodeEnumMatrix(fieldName, matrix);
             break;
           case STRUCT:
-            encoder.encodeStructMatrix(fieldName, matrix, dataTypeId);
+            if (dataTypeId.equals(NodeIds.Structure) || fieldAllowsSubtyping(field)) {
+              Matrix xoMatrix =
+                  matrix.transform(
+                      o -> {
+                        DynamicStruct structValue = (DynamicStruct) o;
+                        return ExtensionObject.encode(encoder.getEncodingContext(), structValue);
+                      });
+
+              encoder.encodeMatrix(fieldName, xoMatrix);
+            } else {
+              encoder.encodeStructMatrix(fieldName, matrix, dataTypeId);
+            }
             break;
           default:
             throw new RuntimeException("codecType: " + typeHint);
