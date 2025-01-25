@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.core.types;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
 import java.util.Arrays;
@@ -131,8 +132,6 @@ public class DynamicStructCodec extends GenericDataTypeCodec<DynamicStruct> {
   }
 
   private @NonNull DynamicStruct decodeStruct(UaDecoder decoder) {
-    StructureField[] fields = requireNonNullElse(definition.getFields(), new StructureField[0]);
-
     LinkedHashMap<String, Object> members = new LinkedHashMap<>();
 
     long switchField = 0xFFFFFFFFL;
@@ -140,10 +139,19 @@ public class DynamicStructCodec extends GenericDataTypeCodec<DynamicStruct> {
       switchField = decoder.decodeUInt32("SwitchField").longValue();
     }
 
-    for (int i = 0; i < fields.length; i++) {
-      StructureField field = fields[i];
+    StructureField[] fields = requireNonNullElse(definition.getFields(), new StructureField[0]);
 
-      if (!field.getIsOptional() || ((switchField >>> i) & 1) == 1) {
+    if (definition.getStructureType() == StructureType.StructureWithOptionalFields) {
+      int optionalFieldIndex = 0;
+      for (StructureField field : fields) {
+        if (!field.getIsOptional() || (switchField >>> optionalFieldIndex++ & 1L) == 1L) {
+          Object value = decodeFieldValue(decoder, field);
+
+          members.put(field.getName(), value);
+        }
+      }
+    } else {
+      for (StructureField field : fields) {
         Object value = decodeFieldValue(decoder, field);
 
         members.put(field.getName(), value);
@@ -175,26 +183,29 @@ public class DynamicStructCodec extends GenericDataTypeCodec<DynamicStruct> {
   private void encodeStruct(UaEncoder encoder, DynamicStruct struct) {
     StructureField[] fields = requireNonNullElse(definition.getFields(), new StructureField[0]);
 
-    long switchField = 0xFFFFFFFFL;
+    var switchField = 0L;
     if (definition.getStructureType() == StructureType.StructureWithOptionalFields) {
-      switchField = 0L;
-      for (int i = 0; i < fields.length; i++) {
-        StructureField field = fields[i];
-        if (!field.getIsOptional()
-            || (field.getIsOptional() && struct.getMembers().containsKey(field.getName()))) {
-
-          switchField |= (1L << i);
+      int optionalFieldIndex = 0;
+      for (StructureField field : fields) {
+        if (field.getIsOptional()
+            && struct.getMembers().containsKey(requireNonNull(field.getName()))) {
+          switchField = switchField | (1L << optionalFieldIndex++);
         }
       }
       encoder.encodeUInt32("SwitchField", UInteger.valueOf(switchField));
     }
 
-    for (int i = 0; i < fields.length; i++) {
-      StructureField field = fields[i];
-
-      if (!field.getIsOptional() || ((switchField >>> i) & 1) == 1) {
+    if (definition.getStructureType() == StructureType.StructureWithOptionalFields) {
+      int optionalFieldIndex = 0;
+      for (StructureField field : fields) {
+        if (!field.getIsOptional() || ((switchField >>> optionalFieldIndex++) & 1L) == 1L) {
+          Object value = struct.getMembers().get(field.getName());
+          encodeFieldValue(encoder, field, value);
+        }
+      }
+    } else {
+      for (StructureField field : fields) {
         Object value = struct.getMembers().get(field.getName());
-
         encodeFieldValue(encoder, field, value);
       }
     }
