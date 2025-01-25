@@ -176,6 +176,49 @@ class DynamicStructCodecTest {
     var encoded2 = ExtensionObject.encode(new DynamicEncodingContext(), decoded);
 
     assertEquals(encoded1, encoded2);
+
+    var members = new LinkedHashMap<String, Object>();
+    members.put("Boolean", struct.getBoolean());
+    members.put("SByte", struct.getSByte());
+    members.put("Byte", struct.getByte());
+    members.put("Int16", struct.getInt16());
+    members.put("UInt16", struct.getUInt16());
+    members.put("Int32", struct.getInt32());
+    members.put("UInt32", struct.getUInt32());
+    members.put("Int64", struct.getInt64());
+    members.put("UInt64", struct.getUInt64());
+    members.put("Float", struct.getFloat());
+    members.put("Double", struct.getDouble());
+    members.put("String", struct.getString());
+    members.put("DateTime", struct.getDateTime());
+    members.put("Guid", struct.getGuid());
+    members.put("ByteString", struct.getByteString());
+    members.put("XmlElement", struct.getXmlElement());
+    members.put("NodeId", struct.getNodeId());
+    members.put("ExpandedNodeId", struct.getExpandedNodeId());
+    members.put("StatusCode", struct.getStatusCode());
+    members.put("QualifiedName", struct.getQualifiedName());
+    members.put("LocalizedText", struct.getLocalizedText());
+    members.put("DataValue", struct.getDataValue());
+    members.put("Variant", struct.getVariant());
+    members.put("Duration", struct.getDuration());
+    // Ideally we wouldn't just grab the same value decoded since it's the object we're testing but
+    // these are difficult to construct right now without easy access to a corresponding DataType
+    // for each field.
+    members.put("ApplicationType", decoded.getMembers().get("ApplicationType"));
+    members.put("TestEnumType", decoded.getMembers().get("TestEnumType"));
+    members.put("XVType", decoded.getMembers().get("XVType"));
+    members.put("ConcreteTestType", decoded.getMembers().get("ConcreteTestType"));
+    members.put("UnionOfScalar", decoded.getMembers().get("UnionOfScalar"));
+    members.put("UnionOfArray", decoded.getMembers().get("UnionOfArray"));
+    members.put("OptionSetUI8", decoded.getMembers().get("OptionSetUI8"));
+    members.put("OptionSetUI16", decoded.getMembers().get("OptionSetUI16"));
+    members.put("OptionSetUI32", decoded.getMembers().get("OptionSetUI32"));
+    members.put("OptionSetUI64", decoded.getMembers().get("OptionSetUI64"));
+
+    DynamicStruct expected = new DynamicStruct(decoded.getDataType(), members);
+
+    assertEquals(expected, decoded);
   }
 
   @Test

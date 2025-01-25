@@ -10,7 +10,6 @@
 
 package org.eclipse.milo.opcua.test.types;
 
-import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
@@ -30,13 +29,17 @@ import org.eclipse.milo.opcua.stack.core.types.structured.StructureField;
 import org.eclipse.milo.opcua.stack.core.types.structured.Union;
 
 public class UnionOfArray extends Union {
-  public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=1;i=3023");
+  public static final ExpandedNodeId TYPE_ID =
+      ExpandedNodeId.parse("nsu=https://github.com/eclipse/milo/DataTypeTest;i=3023");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=1;i=5032");
+  public static final ExpandedNodeId BINARY_ENCODING_ID =
+      ExpandedNodeId.parse("nsu=https://github.com/eclipse/milo/DataTypeTest;i=5032");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=1;i=5034");
+  public static final ExpandedNodeId XML_ENCODING_ID =
+      ExpandedNodeId.parse("nsu=https://github.com/eclipse/milo/DataTypeTest;i=5033");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=1;i=5033");
+  public static final ExpandedNodeId JSON_ENCODING_ID =
+      ExpandedNodeId.parse("nsu=https://github.com/eclipse/milo/DataTypeTest;i=5034");
 
   private final Type type;
 
@@ -100,11 +103,12 @@ public class UnionOfArray extends Union {
 
   @Override
   public String toString() {
-    var joiner = new StringJoiner(", ", UnionOfArray.class.getSimpleName() + "[", "]");
-    joiner.add("_boolean=" + java.util.Arrays.toString(getBoolean()));
-    joiner.add("sByte=" + java.util.Arrays.toString(getSByte()));
-    joiner.add("_byte=" + java.util.Arrays.toString(getByte()));
-    return joiner.toString();
+    return switch (type) {
+      case NULL -> "UnionOfArray[null]";
+      case Boolean -> "UnionOfArray[Boolean=" + value + "]";
+      case SByte -> "UnionOfArray[SByte=" + value + "]";
+      case Byte -> "UnionOfArray[Byte=" + value + "]";
+    };
   }
 
   public static UnionOfArray ofNull() {
