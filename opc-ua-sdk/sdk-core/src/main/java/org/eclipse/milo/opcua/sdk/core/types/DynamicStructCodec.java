@@ -22,6 +22,7 @@ import java.util.function.Function;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
 import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
@@ -263,7 +264,12 @@ public class DynamicStructCodec extends GenericDataTypeCodec<DynamicStruct> {
               break;
             }
           case STRUCT:
-            value = decoder.decodeStruct(fieldName, dataTypeId);
+            if (dataTypeId.equals(NodeIds.Structure) || fieldAllowsSubtyping(field)) {
+              ExtensionObject xo = decoder.decodeExtensionObject(fieldName);
+              value = xo.decode(decoder.getEncodingContext());
+            } else {
+              value = decoder.decodeStruct(fieldName, dataTypeId);
+            }
             break;
           default:
             throw new RuntimeException("codecType: " + typeHint);
@@ -356,7 +362,14 @@ public class DynamicStructCodec extends GenericDataTypeCodec<DynamicStruct> {
             encoder.encodeEnum(fieldName, (UaEnumeratedType) value);
             break;
           case STRUCT:
-            encoder.encodeStruct(fieldName, value, dataTypeId);
+            if (dataTypeId.equals(NodeIds.Structure) || fieldAllowsSubtyping(field)) {
+              DynamicStruct structValue = (DynamicStruct) value;
+              ExtensionObject xo =
+                  ExtensionObject.encode(encoder.getEncodingContext(), structValue);
+              encoder.encodeExtensionObject(fieldName, xo);
+            } else {
+              encoder.encodeStruct(fieldName, value, dataTypeId);
+            }
             break;
           default:
             throw new RuntimeException("codecType: " + typeHint);
@@ -404,6 +417,20 @@ public class DynamicStructCodec extends GenericDataTypeCodec<DynamicStruct> {
       throw new UaSerializationException(
           StatusCodes.Bad_EncodingError, "illegal ValueRank: " + valueRank);
     }
+  }
+
+  /**
+   * Check if the field allows subtyping.
+   *
+   * <p>In Structures and Unions this means the field is encoded as an ExtensionObject.
+   *
+   * @param field the {@link StructureField} to check.
+   * @return {@code true} if the field allows subtyping.
+   */
+  private boolean fieldAllowsSubtyping(StructureField field) {
+    return field.getIsOptional()
+        && (definition.getStructureType() == StructureType.StructureWithSubtypedValues
+            || definition.getStructureType() == StructureType.UnionWithSubtypedValues);
   }
 
   private static Object decodeBuiltinDataType(
