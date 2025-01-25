@@ -289,7 +289,16 @@ public class DynamicStructCodec extends GenericDataTypeCodec<DynamicStruct> {
               break;
             }
           case STRUCT:
-            value = decoder.decodeStructArray(fieldName, dataTypeId);
+            if (dataTypeId.equals(NodeIds.Structure) || fieldAllowsSubtyping(field)) {
+              ExtensionObject[] xoArray = decoder.decodeExtensionObjectArray(fieldName);
+
+              value =
+                  Arrays.stream(xoArray)
+                      .map(xo -> (DynamicStruct) xo.decode(decoder.getEncodingContext()))
+                      .toArray(DynamicStruct[]::new);
+            } else {
+              value = decoder.decodeStructArray(fieldName, dataTypeId);
+            }
             break;
           default:
             throw new RuntimeException("codecType: " + typeHint);
@@ -379,7 +388,18 @@ public class DynamicStructCodec extends GenericDataTypeCodec<DynamicStruct> {
             encoder.encodeEnumArray(fieldName, (UaEnumeratedType[]) value);
             break;
           case STRUCT:
-            encoder.encodeStructArray(fieldName, (Object[]) value, dataTypeId);
+            if (dataTypeId.equals(NodeIds.Structure) || fieldAllowsSubtyping(field)) {
+              DynamicStruct[] structArray = (DynamicStruct[]) value;
+
+              ExtensionObject[] xoArray =
+                  Arrays.stream(structArray)
+                      .map(s -> ExtensionObject.encode(encoder.getEncodingContext(), s))
+                      .toArray(ExtensionObject[]::new);
+
+              encoder.encodeExtensionObjectArray(fieldName, xoArray);
+            } else {
+              encoder.encodeStructArray(fieldName, (Object[]) value, dataTypeId);
+            }
             break;
           default:
             throw new RuntimeException("codecType: " + typeHint);
