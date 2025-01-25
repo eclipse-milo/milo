@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -15,10 +15,11 @@ import java.util.LinkedHashMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
-import org.eclipse.milo.opcua.stack.core.types.UaDataType;
+import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 
-public class DynamicStruct implements UaDataType {
+public class DynamicStruct implements UaStructuredType {
 
   private final DataType dataType;
   private final LinkedHashMap<String, Object> members;
@@ -39,6 +40,24 @@ public class DynamicStruct implements UaDataType {
   @Override
   public ExpandedNodeId getTypeId() {
     return dataType.getNodeId().expanded();
+  }
+
+  @Override
+  public ExpandedNodeId getBinaryEncodingId() {
+    NodeId binaryEncodingId = dataType.getBinaryEncodingId();
+    return binaryEncodingId != null ? binaryEncodingId.expanded() : ExpandedNodeId.NULL_VALUE;
+  }
+
+  @Override
+  public ExpandedNodeId getXmlEncodingId() {
+    NodeId xmlEncodingId = dataType.getXmlEncodingId();
+    return xmlEncodingId != null ? xmlEncodingId.expanded() : ExpandedNodeId.NULL_VALUE;
+  }
+
+  @Override
+  public ExpandedNodeId getJsonEncodingId() {
+    NodeId jsonEncodingId = dataType.getJsonEncodingId();
+    return jsonEncodingId != null ? jsonEncodingId.expanded() : ExpandedNodeId.NULL_VALUE;
   }
 
   @Override
