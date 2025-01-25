@@ -98,18 +98,12 @@ public class DynamicStructCodec extends GenericDataTypeCodec<DynamicStruct> {
   @Override
   public DynamicStruct decodeType(EncodingContext context, UaDecoder decoder)
       throws UaSerializationException {
-    switch (definition.getStructureType()) {
-      case Structure:
-      case StructureWithOptionalFields:
-      case StructureWithSubtypedValues:
-        return decodeStruct(decoder);
-      case Union:
-      case UnionWithSubtypedValues:
-        return decodeUnion(decoder);
-      default:
-        throw new IllegalArgumentException(
-            "unhandled StructureType: " + definition.getStructureType());
-    }
+
+    return switch (definition.getStructureType()) {
+      case Structure, StructureWithOptionalFields, StructureWithSubtypedValues ->
+          decodeStruct(decoder);
+      case Union, UnionWithSubtypedValues -> decodeUnion(decoder);
+    };
   }
 
   @Override
@@ -307,9 +301,7 @@ public class DynamicStructCodec extends GenericDataTypeCodec<DynamicStruct> {
       Object value;
 
       Object hint = fieldHints.get(field);
-      if (hint instanceof BuiltinDataType) {
-        BuiltinDataType builtinDataType = (BuiltinDataType) hint;
-
+      if (hint instanceof BuiltinDataType builtinDataType) {
         value = decoder.decodeMatrix(fieldName, builtinDataType);
       } else {
         TypeHint typeHint = (TypeHint) hint;
@@ -436,121 +428,65 @@ public class DynamicStructCodec extends GenericDataTypeCodec<DynamicStruct> {
   private static Object decodeBuiltinDataType(
       UaDecoder decoder, String fieldName, BuiltinDataType builtinDataType) {
 
-    switch (builtinDataType) {
-      case Boolean:
-        return decoder.decodeBoolean(fieldName);
-      case SByte:
-        return decoder.decodeSByte(fieldName);
-      case Byte:
-        return decoder.decodeByte(fieldName);
-      case Int16:
-        return decoder.decodeInt16(fieldName);
-      case UInt16:
-        return decoder.decodeUInt16(fieldName);
-      case Int32:
-        return decoder.decodeInt32(fieldName);
-      case UInt32:
-        return decoder.decodeUInt32(fieldName);
-      case Int64:
-        return decoder.decodeInt64(fieldName);
-      case UInt64:
-        return decoder.decodeUInt64(fieldName);
-      case Float:
-        return decoder.decodeFloat(fieldName);
-      case Double:
-        return decoder.decodeDouble(fieldName);
-      case String:
-        return decoder.decodeString(fieldName);
-      case DateTime:
-        return decoder.decodeDateTime(fieldName);
-      case Guid:
-        return decoder.decodeGuid(fieldName);
-      case ByteString:
-        return decoder.decodeByteString(fieldName);
-      case XmlElement:
-        return decoder.decodeXmlElement(fieldName);
-      case NodeId:
-        return decoder.decodeNodeId(fieldName);
-      case ExpandedNodeId:
-        return decoder.decodeExpandedNodeId(fieldName);
-      case StatusCode:
-        return decoder.decodeStatusCode(fieldName);
-      case QualifiedName:
-        return decoder.decodeQualifiedName(fieldName);
-      case LocalizedText:
-        return decoder.decodeLocalizedText(fieldName);
-      case ExtensionObject:
-        return decoder.decodeExtensionObject(fieldName);
-      case DataValue:
-        return decoder.decodeDataValue(fieldName);
-      case Variant:
-        return decoder.decodeVariant(fieldName);
-      case DiagnosticInfo:
-        return decoder.decodeDiagnosticInfo(fieldName);
-      default:
-        // Shouldn't happen
-        throw new RuntimeException("unhandled BuiltinDataType: " + builtinDataType);
-    }
+    return switch (builtinDataType) {
+      case Boolean -> decoder.decodeBoolean(fieldName);
+      case SByte -> decoder.decodeSByte(fieldName);
+      case Byte -> decoder.decodeByte(fieldName);
+      case Int16 -> decoder.decodeInt16(fieldName);
+      case UInt16 -> decoder.decodeUInt16(fieldName);
+      case Int32 -> decoder.decodeInt32(fieldName);
+      case UInt32 -> decoder.decodeUInt32(fieldName);
+      case Int64 -> decoder.decodeInt64(fieldName);
+      case UInt64 -> decoder.decodeUInt64(fieldName);
+      case Float -> decoder.decodeFloat(fieldName);
+      case Double -> decoder.decodeDouble(fieldName);
+      case String -> decoder.decodeString(fieldName);
+      case DateTime -> decoder.decodeDateTime(fieldName);
+      case Guid -> decoder.decodeGuid(fieldName);
+      case ByteString -> decoder.decodeByteString(fieldName);
+      case XmlElement -> decoder.decodeXmlElement(fieldName);
+      case NodeId -> decoder.decodeNodeId(fieldName);
+      case ExpandedNodeId -> decoder.decodeExpandedNodeId(fieldName);
+      case StatusCode -> decoder.decodeStatusCode(fieldName);
+      case QualifiedName -> decoder.decodeQualifiedName(fieldName);
+      case LocalizedText -> decoder.decodeLocalizedText(fieldName);
+      case ExtensionObject -> decoder.decodeExtensionObject(fieldName);
+      case DataValue -> decoder.decodeDataValue(fieldName);
+      case Variant -> decoder.decodeVariant(fieldName);
+      case DiagnosticInfo -> decoder.decodeDiagnosticInfo(fieldName);
+    };
   }
 
   private static Object decodeBuiltinDataTypeArray(
       UaDecoder decoder, String fieldName, BuiltinDataType builtinDataType) {
 
-    switch (builtinDataType) {
-      case Boolean:
-        return decoder.decodeBooleanArray(fieldName);
-      case SByte:
-        return decoder.decodeSByteArray(fieldName);
-      case Byte:
-        return decoder.decodeByteArray(fieldName);
-      case Int16:
-        return decoder.decodeInt16Array(fieldName);
-      case UInt16:
-        return decoder.decodeUInt16Array(fieldName);
-      case Int32:
-        return decoder.decodeInt32Array(fieldName);
-      case UInt32:
-        return decoder.decodeUInt32Array(fieldName);
-      case Int64:
-        return decoder.decodeInt64Array(fieldName);
-      case UInt64:
-        return decoder.decodeUInt64Array(fieldName);
-      case Float:
-        return decoder.decodeFloatArray(fieldName);
-      case Double:
-        return decoder.decodeDoubleArray(fieldName);
-      case String:
-        return decoder.decodeStringArray(fieldName);
-      case DateTime:
-        return decoder.decodeDateTimeArray(fieldName);
-      case Guid:
-        return decoder.decodeGuidArray(fieldName);
-      case ByteString:
-        return decoder.decodeByteStringArray(fieldName);
-      case XmlElement:
-        return decoder.decodeXmlElementArray(fieldName);
-      case NodeId:
-        return decoder.decodeNodeIdArray(fieldName);
-      case ExpandedNodeId:
-        return decoder.decodeExpandedNodeIdArray(fieldName);
-      case StatusCode:
-        return decoder.decodeStatusCodeArray(fieldName);
-      case QualifiedName:
-        return decoder.decodeQualifiedNameArray(fieldName);
-      case LocalizedText:
-        return decoder.decodeLocalizedTextArray(fieldName);
-      case ExtensionObject:
-        return decoder.decodeExtensionObjectArray(fieldName);
-      case DataValue:
-        return decoder.decodeDataValueArray(fieldName);
-      case Variant:
-        return decoder.decodeVariantArray(fieldName);
-      case DiagnosticInfo:
-        return decoder.decodeDiagnosticInfoArray(fieldName);
-      default:
-        // Shouldn't happen
-        throw new RuntimeException("unhandled BuiltinDataType: " + builtinDataType);
-    }
+    return switch (builtinDataType) {
+      case Boolean -> decoder.decodeBooleanArray(fieldName);
+      case SByte -> decoder.decodeSByteArray(fieldName);
+      case Byte -> decoder.decodeByteArray(fieldName);
+      case Int16 -> decoder.decodeInt16Array(fieldName);
+      case UInt16 -> decoder.decodeUInt16Array(fieldName);
+      case Int32 -> decoder.decodeInt32Array(fieldName);
+      case UInt32 -> decoder.decodeUInt32Array(fieldName);
+      case Int64 -> decoder.decodeInt64Array(fieldName);
+      case UInt64 -> decoder.decodeUInt64Array(fieldName);
+      case Float -> decoder.decodeFloatArray(fieldName);
+      case Double -> decoder.decodeDoubleArray(fieldName);
+      case String -> decoder.decodeStringArray(fieldName);
+      case DateTime -> decoder.decodeDateTimeArray(fieldName);
+      case Guid -> decoder.decodeGuidArray(fieldName);
+      case ByteString -> decoder.decodeByteStringArray(fieldName);
+      case XmlElement -> decoder.decodeXmlElementArray(fieldName);
+      case NodeId -> decoder.decodeNodeIdArray(fieldName);
+      case ExpandedNodeId -> decoder.decodeExpandedNodeIdArray(fieldName);
+      case StatusCode -> decoder.decodeStatusCodeArray(fieldName);
+      case QualifiedName -> decoder.decodeQualifiedNameArray(fieldName);
+      case LocalizedText -> decoder.decodeLocalizedTextArray(fieldName);
+      case ExtensionObject -> decoder.decodeExtensionObjectArray(fieldName);
+      case DataValue -> decoder.decodeDataValueArray(fieldName);
+      case Variant -> decoder.decodeVariantArray(fieldName);
+      case DiagnosticInfo -> decoder.decodeDiagnosticInfoArray(fieldName);
+    };
   }
 
   private static void encodeBuiltinDataType(
