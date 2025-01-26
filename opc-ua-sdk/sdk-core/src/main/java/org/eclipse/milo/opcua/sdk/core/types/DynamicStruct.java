@@ -66,7 +66,8 @@ public class DynamicStruct implements UaStructuredType {
   public boolean equals(Object o) {
     if (o == null || getClass() != o.getClass()) return false;
     DynamicStruct that = (DynamicStruct) o;
-    return Objects.equals(dataType.getNodeId(), that.dataType.getNodeId()) && Objects.equals(members, that.members);
+    return Objects.equals(dataType.getNodeId(), that.dataType.getNodeId())
+        && Objects.equals(members, that.members);
   }
 
   @Override
