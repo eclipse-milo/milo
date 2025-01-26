@@ -10,62 +10,31 @@
 
 package org.eclipse.milo.opcua.sdk.core.types.util;
 
-import org.eclipse.milo.opcua.sdk.core.types.DynamicCodecFactory;
-import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
-import org.eclipse.milo.opcua.stack.core.NodeIds;
-import org.eclipse.milo.opcua.stack.core.encoding.DataTypeCodec;
-import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
-import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
-import org.eclipse.milo.opcua.stack.core.types.structured.XVType;
+import org.eclipse.milo.opcua.sdk.core.types.codec.DynamicCodecFactory;
 import org.mockito.Mockito;
 
 public class DynamicEncodingContext extends AbstractEncodingContext {
 
-  public static final DataType XV_DATA_TYPE =
-      new AbstractDataType(
-          NodeIds.XVType,
-          new QualifiedName(0, "XVType"),
-          XVType.definition(new NamespaceTable()),
-          false) {
-
-        @Override
-        public NodeId getBinaryEncodingId() {
-          return NodeIds.XVType_Encoding_DefaultBinary;
-        }
-
-        @Override
-        public NodeId getXmlEncodingId() {
-          return NodeIds.XVType_Encoding_DefaultXml;
-        }
-
-        @Override
-        public NodeId getJsonEncodingId() {
-          return NodeIds.XVType_Encoding_DefaultJson;
-        }
-      };
-
-  public static final DataType APPLICATION_TYPE_DATA_TYPE =
-      new AbstractDataType(
-          ApplicationType.TypeInfo.TYPE_ID.toNodeId(new NamespaceTable()).orElseThrow(),
-          QualifiedName.NULL_VALUE,
-          ApplicationType.definition(),
-          false) {};
-
   public DynamicEncodingContext() {
     super();
 
-    DataTypeCodec xvDataTypeCodec = DynamicCodecFactory.create(XV_DATA_TYPE, dataTypeTree);
+    Mockito.when(dataTypeTree.getDataType(XV_DATA_TYPE.getNodeId())).thenReturn(XV_DATA_TYPE);
+    Mockito.when(dataTypeTree.getDataType(APPLICATION_TYPE_DATA_TYPE.getNodeId()))
+        .thenReturn(APPLICATION_TYPE_DATA_TYPE);
 
     dataTypeManager.registerType(
         XV_DATA_TYPE.getNodeId(),
-        xvDataTypeCodec,
+        DynamicCodecFactory.create(XV_DATA_TYPE, dataTypeTree),
         XV_DATA_TYPE.getBinaryEncodingId(),
         XV_DATA_TYPE.getXmlEncodingId(),
         XV_DATA_TYPE.getJsonEncodingId());
 
-    Mockito.when(dataTypeTree.getDataType(XV_DATA_TYPE.getNodeId())).thenReturn(XV_DATA_TYPE);
+    dataTypeManager.registerType(
+        APPLICATION_TYPE_DATA_TYPE.getNodeId(),
+        DynamicCodecFactory.create(APPLICATION_TYPE_DATA_TYPE, dataTypeTree),
+        APPLICATION_TYPE_DATA_TYPE.getBinaryEncodingId(),
+        APPLICATION_TYPE_DATA_TYPE.getXmlEncodingId(),
+        APPLICATION_TYPE_DATA_TYPE.getJsonEncodingId());
 
     dataTypeManager.registerType(
         abstractTestType.getNodeId(),

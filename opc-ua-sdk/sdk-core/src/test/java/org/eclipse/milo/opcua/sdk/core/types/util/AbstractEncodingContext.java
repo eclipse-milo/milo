@@ -47,7 +47,6 @@ import org.eclipse.milo.opcua.test.types.TestEnumType;
 import org.eclipse.milo.opcua.test.types.UnionOfArray;
 import org.eclipse.milo.opcua.test.types.UnionOfMatrix;
 import org.eclipse.milo.opcua.test.types.UnionOfScalar;
-import org.jspecify.annotations.Nullable;
 import org.mockito.Mockito;
 
 public abstract class AbstractEncodingContext implements EncodingContext {
@@ -80,23 +79,7 @@ public abstract class AbstractEncodingContext implements EncodingContext {
           NodeIds.ApplicationType,
           new QualifiedName(0, "ApplicationType"),
           ApplicationType.definition(),
-          false) {
-
-        @Override
-        public @Nullable NodeId getBinaryEncodingId() {
-          return null;
-        }
-
-        @Override
-        public @Nullable NodeId getXmlEncodingId() {
-          return null;
-        }
-
-        @Override
-        public @Nullable NodeId getJsonEncodingId() {
-          return null;
-        }
-      };
+          false) {};
 
   public final DataType abstractTestType;
   public final DataType concreteTestType;
@@ -131,6 +114,9 @@ public abstract class AbstractEncodingContext implements EncodingContext {
     namespaceTable.add("https://github.com/eclipse/milo/DataTypeTest");
 
     Mockito.when(dataTypeTree.getDataType(XV_DATA_TYPE.getNodeId())).thenReturn(XV_DATA_TYPE);
+
+    Mockito.when(dataTypeTree.getDataType(APPLICATION_TYPE_DATA_TYPE.getNodeId()))
+        .thenReturn(APPLICATION_TYPE_DATA_TYPE);
 
     dataTypeManager.registerType(
         XV_DATA_TYPE.getNodeId(),

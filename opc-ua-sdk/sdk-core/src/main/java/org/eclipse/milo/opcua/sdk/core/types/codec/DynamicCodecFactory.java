@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -8,8 +8,9 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package org.eclipse.milo.opcua.sdk.core.types;
+package org.eclipse.milo.opcua.sdk.core.types.codec;
 
+import org.eclipse.milo.opcua.sdk.core.types.DynamicStructType;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
 import org.eclipse.milo.opcua.stack.core.encoding.DataTypeCodec;
@@ -19,7 +20,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.StructureDefinition;
 
 /**
  * A {@link DataTypeCodec} factory that creates codecs that decodes and encodes types based on
- * {@link DynamicStruct}.
+ * {@link DynamicStructType}.
  */
 public class DynamicCodecFactory {
 
@@ -31,8 +32,13 @@ public class DynamicCodecFactory {
       // that means it's an OptionSet subclass. True enumerations are encoded/decoded as
       // integers, so they don't have a corresponding codec.
       return new DynamicOptionSetCodec(dataType);
-    } else if (definition instanceof StructureDefinition) {
-      return new DynamicStructCodec(dataType, dataTypeTree);
+    } else if (definition instanceof StructureDefinition structureDefinition) {
+      return switch (structureDefinition.getStructureType()) {
+        case Structure, StructureWithOptionalFields, StructureWithSubtypedValues ->
+          new DynamicStructCodec(dataType, dataTypeTree);
+        case Union, UnionWithSubtypedValues ->
+          new DynamicUnionCodec(dataType, dataTypeTree);
+      };
     } else {
       throw new RuntimeException("unknown DataTypeDefinition: " + definition);
     }

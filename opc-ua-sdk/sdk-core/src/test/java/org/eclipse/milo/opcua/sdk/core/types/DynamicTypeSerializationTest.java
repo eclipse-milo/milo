@@ -21,6 +21,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.core.types.util.DynamicEncodingContext;
 import org.eclipse.milo.opcua.sdk.core.types.util.StaticEncodingContext;
+import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -67,7 +68,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-class DynamicStructCodecTest {
+class DynamicTypeSerializationTest {
 
   private final DynamicEncodingContext dynamicEncodingContext = new DynamicEncodingContext();
   private final StaticEncodingContext staticEncodingContext = new StaticEncodingContext();
@@ -101,7 +102,7 @@ class DynamicStructCodecTest {
             Variant.ofInt32(0));
 
     var encoded1 = ExtensionObject.encode(staticEncodingContext, struct);
-    DynamicStruct decoded = (DynamicStruct) encoded1.decode(dynamicEncodingContext);
+    DynamicStructType decoded = (DynamicStructType) encoded1.decode(dynamicEncodingContext);
     var encoded2 = ExtensionObject.encode(dynamicEncodingContext, decoded);
 
     assertEquals(encoded1, encoded2);
@@ -130,7 +131,7 @@ class DynamicStructCodecTest {
     members.put("LocalizedText", struct.getLocalizedText());
     members.put("DataValue", struct.getDataValue());
     members.put("Variant", struct.getVariant());
-    DynamicStruct expected = new DynamicStruct(decoded.getDataType(), members);
+    DynamicStructType expected = new DynamicStructType(decoded.getDataType(), members);
 
     assertEquals(expected, decoded);
   }
@@ -175,7 +176,7 @@ class DynamicStructCodecTest {
             ulong(0));
 
     var encoded1 = ExtensionObject.encode(staticEncodingContext, struct);
-    DynamicStruct decoded = (DynamicStruct) encoded1.decode(dynamicEncodingContext);
+    DynamicStructType decoded = (DynamicStructType) encoded1.decode(dynamicEncodingContext);
     var encoded2 = ExtensionObject.encode(dynamicEncodingContext, decoded);
 
     assertEquals(encoded1, encoded2);
@@ -211,20 +212,21 @@ class DynamicStructCodecTest {
     // for each field.
     members.put(
         "ApplicationType",
-        new DynamicEnum(
+        new DynamicEnumType(
             DynamicEncodingContext.APPLICATION_TYPE_DATA_TYPE, ApplicationType.Server.getValue()));
-    members.put("TestEnumType", new DynamicEnum(dynamicEncodingContext.testEnumType, 0));
+    members.put("TestEnumType", new DynamicEnumType(dynamicEncodingContext.testEnumType, 0));
     members.put("XVType", decoded.getMembers().get("XVType"));
     members.put("ConcreteTestType", decoded.getMembers().get("ConcreteTestType"));
     members.put(
-        "UnionOfScalar", DynamicUnion.of(dynamicEncodingContext.unionOfScalar, "Boolean", false));
+        "UnionOfScalar",
+        DynamicUnionType.of(dynamicEncodingContext.unionOfScalar, "Boolean", false));
     members.put("UnionOfArray", decoded.getMembers().get("UnionOfArray"));
     members.put("OptionSetUI8", decoded.getMembers().get("OptionSetUI8"));
     members.put("OptionSetUI16", decoded.getMembers().get("OptionSetUI16"));
     members.put("OptionSetUI32", decoded.getMembers().get("OptionSetUI32"));
     members.put("OptionSetUI64", decoded.getMembers().get("OptionSetUI64"));
 
-    DynamicStruct expected = new DynamicStruct(decoded.getDataType(), members);
+    DynamicStructType expected = new DynamicStructType(decoded.getDataType(), members);
 
     assertEquals(expected, decoded);
   }
@@ -264,7 +266,7 @@ class DynamicStructCodecTest {
             new Variant[] {Variant.ofInt32(0), Variant.ofInt32(0)});
 
     var encoded1 = ExtensionObject.encode(staticEncodingContext, struct);
-    DynamicStruct decoded = (DynamicStruct) encoded1.decode(dynamicEncodingContext);
+    DynamicStructType decoded = (DynamicStructType) encoded1.decode(dynamicEncodingContext);
     var encoded2 = ExtensionObject.encode(dynamicEncodingContext, decoded);
 
     assertEquals(encoded1, encoded2);
@@ -322,7 +324,7 @@ class DynamicStructCodecTest {
             new ULong[] {ulong(0L), ulong(0L)});
 
     var encoded1 = ExtensionObject.encode(staticEncodingContext, struct);
-    DynamicStruct decoded = (DynamicStruct) encoded1.decode(dynamicEncodingContext);
+    DynamicStructType decoded = (DynamicStructType) encoded1.decode(dynamicEncodingContext);
     var encoded2 = ExtensionObject.encode(dynamicEncodingContext, decoded);
 
     assertEquals(encoded1, encoded2);
@@ -337,7 +339,7 @@ class DynamicStructCodecTest {
             new ConcreteTestTypeEx((short) 0, 0.0, "", false, uint(0)));
 
     var encoded1 = ExtensionObject.encode(staticEncodingContext, struct);
-    DynamicStruct decoded = (DynamicStruct) encoded1.decode(dynamicEncodingContext);
+    DynamicStructType decoded = (DynamicStructType) encoded1.decode(dynamicEncodingContext);
     var encoded2 = ExtensionObject.encode(dynamicEncodingContext, decoded);
 
     assertEquals(encoded1, encoded2);
@@ -358,7 +360,7 @@ class DynamicStructCodecTest {
             });
 
     var encoded1 = ExtensionObject.encode(staticEncodingContext, struct);
-    DynamicStruct decoded = (DynamicStruct) encoded1.decode(dynamicEncodingContext);
+    DynamicStructType decoded = (DynamicStructType) encoded1.decode(dynamicEncodingContext);
     var encoded2 = ExtensionObject.encode(dynamicEncodingContext, decoded);
 
     assertEquals(encoded1, encoded2);
@@ -393,7 +395,7 @@ class DynamicStructCodecTest {
                 }));
 
     var encoded1 = ExtensionObject.encode(staticEncodingContext, struct);
-    DynamicStruct decoded = (DynamicStruct) encoded1.decode(dynamicEncodingContext);
+    DynamicStructType decoded = (DynamicStructType) encoded1.decode(dynamicEncodingContext);
     var encoded2 = ExtensionObject.encode(dynamicEncodingContext, decoded);
 
     assertEquals(encoded1, encoded2);
@@ -403,7 +405,7 @@ class DynamicStructCodecTest {
   @MethodSource("structWithOptionalScalarFieldsProvider")
   void structWithOptionalScalarFields(StructWithOptionalScalarFields struct) {
     var encoded1 = ExtensionObject.encode(staticEncodingContext, struct);
-    DynamicStruct decoded = (DynamicStruct) encoded1.decode(dynamicEncodingContext);
+    DynamicStructType decoded = (DynamicStructType) encoded1.decode(dynamicEncodingContext);
     var encoded2 = ExtensionObject.encode(dynamicEncodingContext, decoded);
 
     assertEquals(encoded1, encoded2);
@@ -413,7 +415,7 @@ class DynamicStructCodecTest {
   @MethodSource("structWithOptionalArrayFieldsProvider")
   void structWithOptionalArrayFields(StructWithOptionalArrayFields struct) {
     var encoded1 = ExtensionObject.encode(staticEncodingContext, struct);
-    DynamicStruct decoded = (DynamicStruct) encoded1.decode(dynamicEncodingContext);
+    DynamicStructType decoded = (DynamicStructType) encoded1.decode(dynamicEncodingContext);
     var encoded2 = ExtensionObject.encode(dynamicEncodingContext, decoded);
 
     assertEquals(encoded1, encoded2);
@@ -504,7 +506,7 @@ class DynamicStructCodecTest {
                 }));
 
     var encoded1 = ExtensionObject.encode(staticEncodingContext, struct);
-    DynamicStruct decoded = (DynamicStruct) encoded1.decode(dynamicEncodingContext);
+    DynamicStructType decoded = (DynamicStructType) encoded1.decode(dynamicEncodingContext);
     var encoded2 = ExtensionObject.encode(dynamicEncodingContext, decoded);
 
     assertEquals(encoded1, encoded2);
@@ -654,7 +656,7 @@ class DynamicStructCodecTest {
             Matrix.ofUInt64(new ULong[][] {{ulong(0), ulong(0)}, {ulong(0), ulong(0)}}));
 
     var encoded1 = ExtensionObject.encode(staticEncodingContext, struct);
-    DynamicStruct decoded = (DynamicStruct) encoded1.decode(dynamicEncodingContext);
+    DynamicStructType decoded = (DynamicStructType) encoded1.decode(dynamicEncodingContext);
     var encoded2 = ExtensionObject.encode(dynamicEncodingContext, decoded);
 
     assertEquals(encoded1, encoded2);
@@ -671,7 +673,7 @@ class DynamicStructCodecTest {
                 staticEncodingContext, new ConcreteTestTypeEx((short) 0, 0.0, "", false, uint(0))));
 
     var encoded1 = ExtensionObject.encode(staticEncodingContext, struct);
-    DynamicStruct decoded = (DynamicStruct) encoded1.decode(dynamicEncodingContext);
+    DynamicStructType decoded = (DynamicStructType) encoded1.decode(dynamicEncodingContext);
     var encoded2 = ExtensionObject.encode(dynamicEncodingContext, decoded);
 
     assertEquals(encoded1, encoded2);
@@ -693,7 +695,7 @@ class DynamicStructCodecTest {
             new ExtensionObject[] {xo3, xo3});
 
     var encoded1 = ExtensionObject.encode(staticEncodingContext, struct);
-    DynamicStruct decoded = (DynamicStruct) encoded1.decode(dynamicEncodingContext);
+    DynamicStructType decoded = (DynamicStructType) encoded1.decode(dynamicEncodingContext);
     var encoded2 = ExtensionObject.encode(dynamicEncodingContext, decoded);
 
     assertEquals(encoded1, encoded2);
@@ -715,7 +717,7 @@ class DynamicStructCodecTest {
             Matrix.ofExtensionObject(new ExtensionObject[][] {{xo3, xo3}, {xo3, xo3}}));
 
     var encoded1 = ExtensionObject.encode(staticEncodingContext, struct);
-    DynamicStruct decoded = (DynamicStruct) encoded1.decode(dynamicEncodingContext);
+    DynamicStructType decoded = (DynamicStructType) encoded1.decode(dynamicEncodingContext);
     var encoded2 = ExtensionObject.encode(dynamicEncodingContext, decoded);
 
     assertEquals(encoded1, encoded2);
@@ -725,7 +727,7 @@ class DynamicStructCodecTest {
   @MethodSource("unionOfScalarProvider")
   void unionOfScalar(UnionOfScalar union) {
     var encoded1 = ExtensionObject.encode(staticEncodingContext, union);
-    DynamicStruct decoded = (DynamicStruct) encoded1.decode(dynamicEncodingContext);
+    UaStructuredType decoded = (UaStructuredType) encoded1.decode(dynamicEncodingContext);
     var encoded2 = ExtensionObject.encode(dynamicEncodingContext, decoded);
 
     assertEquals(encoded1, encoded2);
@@ -735,7 +737,7 @@ class DynamicStructCodecTest {
   @MethodSource("unionOfArrayProvider")
   void unionOfArray(UnionOfArray union) {
     var encoded1 = ExtensionObject.encode(staticEncodingContext, union);
-    DynamicStruct decoded = (DynamicStruct) encoded1.decode(dynamicEncodingContext);
+    UaStructuredType decoded = (UaStructuredType) encoded1.decode(dynamicEncodingContext);
     var encoded2 = ExtensionObject.encode(dynamicEncodingContext, decoded);
 
     assertEquals(encoded1, encoded2);
@@ -745,7 +747,7 @@ class DynamicStructCodecTest {
   @MethodSource("unionOfMatrixProvider")
   void unionOfMatrix(UnionOfMatrix union) {
     var encoded1 = ExtensionObject.encode(staticEncodingContext, union);
-    DynamicStruct decoded = (DynamicStruct) encoded1.decode(dynamicEncodingContext);
+    UaStructuredType decoded = (UaStructuredType) encoded1.decode(dynamicEncodingContext);
     var encoded2 = ExtensionObject.encode(dynamicEncodingContext, decoded);
 
     assertEquals(encoded1, encoded2);

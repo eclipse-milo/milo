@@ -23,7 +23,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.EnumDefinition;
 import org.eclipse.milo.opcua.stack.core.types.structured.EnumField;
 import org.jspecify.annotations.Nullable;
 
-public class DynamicEnum implements UaEnumeratedType {
+public final class DynamicEnumType extends DynamicType implements UaEnumeratedType {
 
   private final DataType dataType;
   private final String name;
@@ -31,7 +31,7 @@ public class DynamicEnum implements UaEnumeratedType {
   private final LocalizedText displayName;
   private final LocalizedText description;
 
-  public DynamicEnum(DataType dataType, int value) {
+  public DynamicEnumType(DataType dataType, int value) {
     this.dataType = dataType;
 
     EnumDefinition definition = (EnumDefinition) dataType.getDataTypeDefinition();
@@ -53,7 +53,7 @@ public class DynamicEnum implements UaEnumeratedType {
     throw new IllegalArgumentException("value: " + value);
   }
 
-  public DynamicEnum(
+  public DynamicEnumType(
       DataType dataType,
       String name,
       int value,
@@ -76,6 +76,7 @@ public class DynamicEnum implements UaEnumeratedType {
     return value;
   }
 
+  @Override
   public DataType getDataType() {
     return dataType;
   }
@@ -95,7 +96,7 @@ public class DynamicEnum implements UaEnumeratedType {
   @Override
   public boolean equals(Object o) {
     if (o == null || getClass() != o.getClass()) return false;
-    DynamicEnum that = (DynamicEnum) o;
+    DynamicEnumType that = (DynamicEnumType) o;
     return value == that.value
         && Objects.equals(dataType.getNodeId(), that.dataType.getNodeId())
         && Objects.equals(name, that.name);
@@ -108,17 +109,17 @@ public class DynamicEnum implements UaEnumeratedType {
 
   @Override
   public String toString() {
-    return new StringJoiner(", ", DynamicEnum.class.getSimpleName() + "[", "]")
+    return new StringJoiner(", ", DynamicEnumType.class.getSimpleName() + "[", "]")
         .add("name='" + name + "'")
         .add("value=" + value)
         .toString();
   }
 
-  public static DynamicEnum newInstance(DataType dataType, int value) {
-    return new DynamicEnum(dataType, value);
+  public static DynamicEnumType newInstance(DataType dataType, int value) {
+    return new DynamicEnumType(dataType, value);
   }
 
-  public static Function<Integer, DynamicEnum> newInstanceFactory(DataType dataType) {
-    return value -> new DynamicEnum(dataType, value);
+  public static Function<Integer, DynamicEnumType> newInstanceFactory(DataType dataType) {
+    return value -> new DynamicEnumType(dataType, value);
   }
 }

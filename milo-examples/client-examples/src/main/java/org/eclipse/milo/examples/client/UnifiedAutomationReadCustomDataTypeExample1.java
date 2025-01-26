@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -18,9 +18,10 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
-import org.eclipse.milo.opcua.sdk.core.types.DynamicEnum;
-import org.eclipse.milo.opcua.sdk.core.types.DynamicOptionSet;
-import org.eclipse.milo.opcua.sdk.core.types.DynamicStruct;
+import org.eclipse.milo.opcua.sdk.core.types.DynamicEnumType;
+import org.eclipse.milo.opcua.sdk.core.types.DynamicOptionSetType;
+import org.eclipse.milo.opcua.sdk.core.types.DynamicStructType;
+import org.eclipse.milo.opcua.sdk.core.types.DynamicType;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
@@ -64,25 +65,25 @@ public class UnifiedAutomationReadCustomDataTypeExample1 implements ClientExampl
   private void readWriteReadPerson(OpcUaClient client) throws Exception {
     NodeId nodeId = NodeId.parse("ns=3;s=Person1");
 
-    DynamicStruct value = readScalarValue(client, nodeId);
+    DynamicStructType value = (DynamicStructType) readScalarValue(client, nodeId);
     logger.info("Person1: {}", value);
 
     Random r = new Random();
-    DynamicEnum gender = (DynamicEnum) value.getMembers().get("Gender");
+    DynamicEnumType gender = (DynamicEnumType) value.getMembers().get("Gender");
     value.getMembers().put("Name", "Fat Boy" + r.nextInt(100));
-    value.getMembers().put("Gender", new DynamicEnum(gender.getDataType(), r.nextInt(2)));
+    value.getMembers().put("Gender", new DynamicEnumType(gender.getDataType(), r.nextInt(2)));
 
     StatusCode status = writeValue(client, nodeId, value);
     System.out.println("write status: " + status);
 
-    value = readScalarValue(client, nodeId);
+    value = (DynamicStructType) readScalarValue(client, nodeId);
     logger.info("Person1': {}", value);
   }
 
   private void readWriteReadWorkOrder(OpcUaClient client) throws Exception {
     NodeId nodeId = NodeId.parse("ns=3;s=Demo.Static.Scalar.WorkOrder");
 
-    DynamicStruct value = readScalarValue(client, nodeId);
+    DynamicStructType value = (DynamicStructType) readScalarValue(client, nodeId);
     logger.info("WorkOrder: {}", value);
 
     value.getMembers().put("ID", UUID.randomUUID());
@@ -90,14 +91,14 @@ public class UnifiedAutomationReadCustomDataTypeExample1 implements ClientExampl
     StatusCode status = writeValue(client, nodeId, value);
     System.out.println("write status: " + status);
 
-    value = readScalarValue(client, nodeId);
+    value = (DynamicStructType) readScalarValue(client, nodeId);
     logger.info("WorkOrder': {}", value);
   }
 
   private void readWriteCarExtras(OpcUaClient client) throws Exception {
     NodeId nodeId = NodeId.parse("ns=3;s=Demo.Static.Scalar.CarExtras");
 
-    DynamicOptionSet value = (DynamicOptionSet) readScalarValue(client, nodeId);
+    DynamicOptionSetType value = (DynamicOptionSetType) readScalarValue(client, nodeId);
     logger.info("CarExtras: {}", value);
 
     byte b = requireNonNull(value.getValue().bytes())[0];
@@ -106,14 +107,14 @@ public class UnifiedAutomationReadCustomDataTypeExample1 implements ClientExampl
     StatusCode status = writeValue(client, nodeId, value);
     System.out.println("write status: " + status);
 
-    value = (DynamicOptionSet) readScalarValue(client, nodeId);
+    value = (DynamicOptionSetType) readScalarValue(client, nodeId);
     logger.info("CarExtras': {}", value);
   }
 
   private void readWorkOrderArray(OpcUaClient client) throws Exception {
     NodeId nodeId = NodeId.parse("ns=3;s=Demo.Static.Arrays.WorkOrder");
 
-    DynamicStruct[] value = readArrayValue(client, nodeId);
+    DynamicType[] value = readArrayValue(client, nodeId);
 
     logger.info("WorkOrderArray:");
     for (int i = 0; i < value.length; i++) {
@@ -121,18 +122,17 @@ public class UnifiedAutomationReadCustomDataTypeExample1 implements ClientExampl
     }
   }
 
-  private static DynamicStruct readScalarValue(OpcUaClient client, NodeId nodeId) throws Exception {
+  private static DynamicType readScalarValue(OpcUaClient client, NodeId nodeId) throws Exception {
     DataValue dataValue =
         client.readValues(0.0, TimestampsToReturn.Neither, List.of(nodeId)).get(0);
 
     ExtensionObject xo = (ExtensionObject) dataValue.getValue().getValue();
     assert xo != null;
 
-    return (DynamicStruct) xo.decode(client.getDynamicEncodingContext());
+    return (DynamicType) xo.decode(client.getDynamicEncodingContext());
   }
 
-  private static DynamicStruct[] readArrayValue(OpcUaClient client, NodeId nodeId)
-      throws Exception {
+  private static DynamicType[] readArrayValue(OpcUaClient client, NodeId nodeId) throws Exception {
     DataValue dataValue =
         client.readValues(0.0, TimestampsToReturn.Neither, List.of(nodeId)).get(0);
 
@@ -141,13 +141,12 @@ public class UnifiedAutomationReadCustomDataTypeExample1 implements ClientExampl
 
     EncodingContext ctx = client.getDynamicEncodingContext();
 
-    return Arrays.stream(xos)
-        .map(xo -> (DynamicStruct) xo.decode(ctx))
-        .toArray(DynamicStruct[]::new);
+    return Arrays.stream(xos).map(xo -> (DynamicType) xo.decode(ctx)).toArray(DynamicType[]::new);
   }
 
-  private static StatusCode writeValue(OpcUaClient client, NodeId nodeId, DynamicStruct value)
+  private static StatusCode writeValue(OpcUaClient client, NodeId nodeId, DynamicType value)
       throws Exception {
+
     ExtensionObject xo =
         ExtensionObject.encodeDefaultBinary(
             client.getDynamicEncodingContext(), value, value.getDataType().getBinaryEncodingId());
@@ -160,7 +159,7 @@ public class UnifiedAutomationReadCustomDataTypeExample1 implements ClientExampl
   @Override
   public String getEndpointUrl() {
     // Change this if UaCPPServer is running somewhere other than localhost.
-    return "opc.tcp://localhost:48010";
+    return "opc.tcp://192.168.1.66:48010";
   }
 
   @Override

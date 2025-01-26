@@ -14,29 +14,24 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Objects;
 import java.util.StringJoiner;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.jspecify.annotations.Nullable;
 
-public class DynamicStruct implements UaStructuredType {
+public final class DynamicUnionType extends DynamicType implements UaStructuredType {
 
   private final DataType dataType;
   private final LinkedHashMap<String, Object> members;
 
-  public DynamicStruct(DataType dataType, LinkedHashMap<String, Object> members) {
+  public DynamicUnionType(DataType dataType) {
+    this(dataType, new LinkedHashMap<>());
+  }
+
+  public DynamicUnionType(DataType dataType, LinkedHashMap<String, Object> members) {
     this.dataType = dataType;
     this.members = members;
-  }
-
-  public DataType getDataType() {
-    return dataType;
-  }
-
-  public LinkedHashMap<String, Object> getMembers() {
-    return members;
   }
 
   @Override
@@ -63,9 +58,30 @@ public class DynamicStruct implements UaStructuredType {
   }
 
   @Override
+  public DataType getDataType() {
+    return dataType;
+  }
+
+  public LinkedHashMap<String, Object> getMembers() {
+    return members;
+  }
+
+  public @Nullable String getFieldName() {
+    return getMembers().keySet().stream().findFirst().orElse(null);
+  }
+
+  public @Nullable Object getFieldValue() {
+    return getMembers().values().stream().findFirst().orElse(null);
+  }
+
+  public boolean isNull() {
+    return getMembers().isEmpty();
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (o == null || getClass() != o.getClass()) return false;
-    DynamicStruct that = (DynamicStruct) o;
+    DynamicUnionType that = (DynamicUnionType) o;
     return Objects.equals(dataType.getNodeId(), that.dataType.getNodeId())
         && Objects.equals(members, that.members);
   }
@@ -77,14 +93,15 @@ public class DynamicStruct implements UaStructuredType {
 
   @Override
   public String toString() {
-    var joiner = new StringJoiner(", ", DynamicStruct.class.getSimpleName() + "[", "]");
+    var joiner = new StringJoiner(", ", DynamicUnionType.class.getSimpleName() + "[", "]");
     joiner.add("dataType=" + dataType.getNodeId());
-    joiner.add("members=" + joinMembers(members));
+    joiner.add(joinMembers(members));
     return joiner.toString();
   }
 
   private static String joinMembers(LinkedHashMap<String, Object> members) {
     return members.entrySet().stream()
+        .findFirst()
         .map(
             e -> {
               String k = e.getKey();
@@ -95,14 +112,16 @@ public class DynamicStruct implements UaStructuredType {
                 return String.format("%s=%s", k, v);
               }
             })
-        .collect(Collectors.joining(", "));
+        .orElse("null");
   }
 
-  public static DynamicStruct newInstance(DataType dataType) {
-    return new DynamicStruct(dataType, new LinkedHashMap<>());
+  public static DynamicUnionType ofNull(DataType dataType) {
+    return new DynamicUnionType(dataType);
   }
 
-  public static Supplier<DynamicStruct> newInstanceFactory(DataType dataType) {
-    return () -> new DynamicStruct(dataType, new LinkedHashMap<>());
+  public static DynamicUnionType of(DataType dataType, String fieldName, Object fieldValue) {
+    LinkedHashMap<String, Object> members = new LinkedHashMap<>();
+    members.put(fieldName, fieldValue);
+    return new DynamicUnionType(dataType, members);
   }
 }
