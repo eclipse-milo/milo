@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.core.types.codec;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
 import java.util.Map;
@@ -41,7 +42,7 @@ public class DynamicUnionCodec extends GenericDataTypeCodec<DynamicUnionType> {
     this.dataType = dataType;
     this.dataTypeTree = dataTypeTree;
 
-    definition = (StructureDefinition) dataType.getDataTypeDefinition();
+    definition = (StructureDefinition) requireNonNull(dataType.getDataTypeDefinition());
   }
 
   @Override
@@ -83,7 +84,7 @@ public class DynamicUnionCodec extends GenericDataTypeCodec<DynamicUnionType> {
 
       Object value = FieldUtil.decodeFieldValue(decoder, definition, field, getFieldHints());
 
-      return DynamicUnionType.of(dataType, field.getName(), value);
+      return DynamicUnionType.of(dataType, requireNonNull(field.getName()), value);
     } else {
       throw new UaSerializationException(
           StatusCodes.Bad_DecodingError, "invalid Union SwitchField value: " + switchField);

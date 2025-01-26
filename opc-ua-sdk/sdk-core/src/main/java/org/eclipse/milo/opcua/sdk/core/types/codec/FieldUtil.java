@@ -10,6 +10,8 @@
 
 package org.eclipse.milo.opcua.sdk.core.types.codec;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -58,7 +60,7 @@ class FieldUtil {
       StructureField field,
       Map<StructureField, FieldHint> fieldHints) {
 
-    String fieldName = field.getName();
+    String fieldName = requireNonNull(field.getName());
     NodeId dataTypeId = field.getDataType();
 
     FieldHint fieldHint = fieldHints.get(field);
@@ -141,7 +143,7 @@ class FieldUtil {
       Map<StructureField, FieldHint> fieldHints,
       Object value) {
 
-    String fieldName = field.getName();
+    String fieldName = requireNonNull(field.getName());
     NodeId dataTypeId = field.getDataType();
 
     FieldHint fieldHint = fieldHints.get(field);
@@ -241,9 +243,10 @@ class FieldUtil {
 
       FieldHint hint;
       if (BuiltinDataType.isBuiltin(dataTypeId)) {
-        hint = new FieldHint.Builtin(BuiltinDataType.fromNodeId(dataTypeId));
+        BuiltinDataType dataType = requireNonNull(BuiltinDataType.fromNodeId(dataTypeId));
+        hint = new FieldHint.Builtin(dataType);
       } else if (dataTypeTree.isEnumType(dataTypeId)) {
-        DataType dataType = dataTypeTree.getDataType(dataTypeId);
+        DataType dataType = requireNonNull(dataTypeTree.getDataType(dataTypeId));
         hint = new FieldHint.Enum(dataType);
       } else if (dataTypeTree.isStructType(dataTypeId)) {
         hint = new FieldHint.Struct();

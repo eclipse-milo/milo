@@ -43,7 +43,7 @@ public class DynamicStructCodec extends GenericDataTypeCodec<DynamicStructType> 
     this.dataType = dataType;
     this.dataTypeTree = dataTypeTree;
 
-    this.definition = (StructureDefinition) dataType.getDataTypeDefinition();
+    this.definition = (StructureDefinition) requireNonNull(dataType.getDataTypeDefinition());
   }
 
   @Override
@@ -91,14 +91,14 @@ public class DynamicStructCodec extends GenericDataTypeCodec<DynamicStructType> 
         if (!field.getIsOptional() || (switchField >>> optionalFieldIndex++ & 1L) == 1L) {
           Object value = FieldUtil.decodeFieldValue(decoder, definition, field, getFieldHints());
 
-          members.put(field.getName(), value);
+          members.put(requireNonNull(field.getName()), value);
         }
       }
     } else {
       for (StructureField field : fields) {
         Object value = FieldUtil.decodeFieldValue(decoder, definition, field, getFieldHints());
 
-        members.put(field.getName(), value);
+        members.put(requireNonNull(field.getName()), value);
       }
     }
 

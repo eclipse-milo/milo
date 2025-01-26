@@ -21,15 +21,15 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.structured.EnumDefinition;
 import org.eclipse.milo.opcua.stack.core.types.structured.EnumField;
-import org.jspecify.annotations.Nullable;
 
 public final class DynamicEnumType extends DynamicType implements UaEnumeratedType {
 
-  private final DataType dataType;
   private final String name;
-  private final int value;
   private final LocalizedText displayName;
   private final LocalizedText description;
+
+  private final DataType dataType;
+  private final int value;
 
   public DynamicEnumType(DataType dataType, int value) {
     this.dataType = dataType;
@@ -41,29 +41,19 @@ public final class DynamicEnumType extends DynamicType implements UaEnumeratedTy
 
     for (EnumField field : fields) {
       if (field.getValue() == value) {
-        this.name = field.getName();
         this.value = field.getValue().intValue();
-        this.displayName = field.getDisplayName();
-        this.description = field.getDescription();
+
+        this.name = field.getName() != null ? field.getName() : "";
+        this.displayName =
+            field.getDisplayName() != null ? field.getDisplayName() : LocalizedText.NULL_VALUE;
+        this.description =
+            field.getDescription() != null ? field.getDescription() : LocalizedText.NULL_VALUE;
         return;
       }
     }
 
     // if we reach this point the value doesn't match any of the fields
     throw new IllegalArgumentException("value: " + value);
-  }
-
-  public DynamicEnumType(
-      DataType dataType,
-      String name,
-      int value,
-      LocalizedText displayName,
-      LocalizedText description) {
-    this.dataType = dataType;
-    this.name = name;
-    this.value = value;
-    this.displayName = displayName;
-    this.description = description;
   }
 
   @Override
@@ -81,7 +71,7 @@ public final class DynamicEnumType extends DynamicType implements UaEnumeratedTy
     return dataType;
   }
 
-  public @Nullable String getName() {
+  public String getName() {
     return name;
   }
 
