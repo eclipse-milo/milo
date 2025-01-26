@@ -35,9 +35,8 @@ public class DynamicCodecFactory {
     } else if (definition instanceof StructureDefinition structureDefinition) {
       return switch (structureDefinition.getStructureType()) {
         case Structure, StructureWithOptionalFields, StructureWithSubtypedValues ->
-          new DynamicStructCodec(dataType, dataTypeTree);
-        case Union, UnionWithSubtypedValues ->
-          new DynamicUnionCodec(dataType, dataTypeTree);
+            new DynamicStructCodec(dataType, dataTypeTree);
+        case Union, UnionWithSubtypedValues -> new DynamicUnionCodec(dataType, dataTypeTree);
       };
     } else {
       throw new RuntimeException("unknown DataTypeDefinition: " + definition);

@@ -139,5 +139,4 @@ public class DynamicStructCodec extends GenericDataTypeCodec<DynamicStructType> 
   private Map<StructureField, FieldUtil.FieldHint> getFieldHints() {
     return fieldHints.get(() -> FieldUtil.createFieldHints(definition, dataTypeTree));
   }
-
 }
