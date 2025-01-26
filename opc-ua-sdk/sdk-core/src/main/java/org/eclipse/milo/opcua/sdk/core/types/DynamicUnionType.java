@@ -10,9 +10,8 @@
 
 package org.eclipse.milo.opcua.sdk.core.types;
 
-import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
@@ -23,15 +22,15 @@ import org.jspecify.annotations.Nullable;
 public final class DynamicUnionType extends DynamicType implements UaStructuredType {
 
   private final DataType dataType;
-  private final LinkedHashMap<String, Object> members;
+  private final @Nullable UnionValue value;
 
   public DynamicUnionType(DataType dataType) {
-    this(dataType, new LinkedHashMap<>());
+    this(dataType, null);
   }
 
-  public DynamicUnionType(DataType dataType, LinkedHashMap<String, Object> members) {
+  public DynamicUnionType(DataType dataType, @Nullable UnionValue value) {
     this.dataType = dataType;
-    this.members = members;
+    this.value = value;
   }
 
   @Override
@@ -62,20 +61,31 @@ public final class DynamicUnionType extends DynamicType implements UaStructuredT
     return dataType;
   }
 
-  public LinkedHashMap<String, Object> getMembers() {
-    return members;
+  /**
+   * Get the value of this union.
+   *
+   * @return the value of this union, or {@link Optional#empty()} if the value is {@code null}.
+   */
+  public Optional<UnionValue> getValue() {
+    return Optional.ofNullable(value);
   }
 
-  public @Nullable String getFieldName() {
-    return getMembers().keySet().stream().findFirst().orElse(null);
+  /**
+   * Check if this union contains a value for the given field name.
+   *
+   * @param fieldName the field name to check.
+   * @return {@code true} if the value is not {@code null} and its field name matches the given
+   *     field name, {@code false} otherwise.
+   */
+  public boolean is(String fieldName) {
+    return value != null && value.fieldName().equals(fieldName);
   }
 
-  public @Nullable Object getFieldValue() {
-    return getMembers().values().stream().findFirst().orElse(null);
-  }
-
+  /**
+   * @return {@code true} if the value is {@code null}, {@code false} otherwise.
+   */
   public boolean isNull() {
-    return getMembers().isEmpty();
+    return value == null;
   }
 
   @Override
@@ -83,45 +93,44 @@ public final class DynamicUnionType extends DynamicType implements UaStructuredT
     if (o == null || getClass() != o.getClass()) return false;
     DynamicUnionType that = (DynamicUnionType) o;
     return Objects.equals(dataType.getNodeId(), that.dataType.getNodeId())
-        && Objects.equals(members, that.members);
+        && Objects.equals(value, that.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(dataType.getNodeId(), members);
+    return Objects.hash(dataType, value);
   }
 
   @Override
   public String toString() {
     var joiner = new StringJoiner(", ", DynamicUnionType.class.getSimpleName() + "[", "]");
     joiner.add("dataType=" + dataType.getNodeId());
-    joiner.add(joinMembers(members));
+    if (value != null) {
+      joiner.add("%s=%s".formatted(value.fieldName(), value.fieldValue()));
+    } else {
+      joiner.add("null");
+    }
     return joiner.toString();
   }
 
-  private static String joinMembers(LinkedHashMap<String, Object> members) {
-    return members.entrySet().stream()
-        .findFirst()
-        .map(
-            e -> {
-              String k = e.getKey();
-              Object v = e.getValue();
-              if (v instanceof Object[]) {
-                return String.format("%s=%s", k, Arrays.toString((Object[]) v));
-              } else {
-                return String.format("%s=%s", k, v);
-              }
-            })
-        .orElse("null");
+  public static DynamicUnionType of(DataType dataType, String fieldName, Object fieldValue) {
+    return new DynamicUnionType(dataType, new UnionValue(fieldName, fieldValue));
   }
 
   public static DynamicUnionType ofNull(DataType dataType) {
     return new DynamicUnionType(dataType);
   }
 
-  public static DynamicUnionType of(DataType dataType, String fieldName, Object fieldValue) {
-    LinkedHashMap<String, Object> members = new LinkedHashMap<>();
-    members.put(fieldName, fieldValue);
-    return new DynamicUnionType(dataType, members);
+  /**
+   * Pair of a union's field name and its value.
+   *
+   * @param fieldName the field name.
+   * @param fieldValue the field's value.
+   */
+  public record UnionValue(String fieldName, Object fieldValue) {
+    public UnionValue {
+      Objects.requireNonNull(fieldName);
+      Objects.requireNonNull(fieldValue);
+    }
   }
 }

@@ -14,6 +14,7 @@ import static java.util.Objects.requireNonNullElse;
 
 import java.util.Map;
 import org.eclipse.milo.opcua.sdk.core.types.DynamicUnionType;
+import org.eclipse.milo.opcua.sdk.core.types.DynamicUnionType.UnionValue;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -92,19 +93,20 @@ public class DynamicUnionCodec extends GenericDataTypeCodec<DynamicUnionType> {
   private void encodeUnion(UaEncoder encoder, DynamicUnionType union) {
     StructureField[] fields = requireNonNullElse(definition.getFields(), new StructureField[0]);
 
-    if (union.getMembers().isEmpty()) {
+    if (union.isNull()) {
       encoder.encodeUInt32("SwitchValue", UInteger.valueOf(0));
     } else {
+      UnionValue value = union.getValue().orElseThrow();
+
       for (int i = 0; i < fields.length; i++) {
         StructureField field = fields[i];
         String fieldName = field.getName();
 
-        if (union.getMembers().containsKey(fieldName)) {
+        if (value.fieldName().equals(fieldName)) {
           encoder.encodeUInt32("SwitchValue", UInteger.valueOf(i + 1));
 
-          Object value = union.getMembers().get(fieldName);
-
-          FieldUtil.encodeFieldValue(encoder, definition, field, getFieldHints(), value);
+          FieldUtil.encodeFieldValue(
+              encoder, definition, field, getFieldHints(), value.fieldValue());
 
           // Return as soon as a field has been encoded.
           // Unions are only one field, indicated by SwitchValue.
