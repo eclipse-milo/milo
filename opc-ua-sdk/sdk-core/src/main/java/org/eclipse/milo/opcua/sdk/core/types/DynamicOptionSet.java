@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -53,10 +53,22 @@ public class DynamicOptionSet extends DynamicStruct {
     getMembers().put("ValidBits", validBits);
   }
 
+  public @Nullable String getName(int bitIndex) {
+    EnumField enumField = getFieldMap().get(bitIndex);
+
+    return enumField != null ? enumField.getName() : null;
+  }
+
   public @Nullable LocalizedText getDisplayName(int bitIndex) {
     EnumField enumField = getFieldMap().get(bitIndex);
 
     return enumField != null ? enumField.getDisplayName() : null;
+  }
+
+  public @Nullable LocalizedText getDescription(int bitIndex) {
+    EnumField enumField = getFieldMap().get(bitIndex);
+
+    return enumField != null ? enumField.getDescription() : null;
   }
 
   private Map<Integer, EnumField> getFieldMap() {
@@ -79,7 +91,7 @@ public class DynamicOptionSet extends DynamicStruct {
 
   @Override
   public String toString() {
-    return new StringJoiner(", ", DynamicOptionSet.class.getSimpleName() + "{", "}")
+    return new StringJoiner(", ", DynamicOptionSet.class.getSimpleName() + "[", "]")
         .add("value=" + toBitString(getValue()))
         .add("validBits=" + toBitString(getValidBits()))
         .toString();

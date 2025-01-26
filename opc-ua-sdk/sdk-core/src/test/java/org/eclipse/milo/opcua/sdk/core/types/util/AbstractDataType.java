@@ -50,4 +50,19 @@ public abstract class AbstractDataType implements DataType {
   public Boolean isAbstract() {
     return isAbstract;
   }
+
+  @Override
+  public NodeId getBinaryEncodingId() {
+    return NodeId.NULL_VALUE;
+  }
+
+  @Override
+  public NodeId getXmlEncodingId() {
+    return NodeId.NULL_VALUE;
+  }
+
+  @Override
+  public NodeId getJsonEncodingId() {
+    return NodeId.NULL_VALUE;
+  }
 }

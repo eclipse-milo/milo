@@ -98,29 +98,29 @@ public abstract class AbstractEncodingContext implements EncodingContext {
         }
       };
 
-  protected final DataType abstractTestType;
-  protected final DataType concreteTestType;
-  protected final DataType concreteTestTypeEx;
-  protected final DataType structWithBuiltinScalarFields;
-  protected final DataType structWithBuiltinScalarFieldsEx;
-  protected final DataType structWithBuiltinArrayFields;
-  protected final DataType structWithBuiltinArrayFieldsEx;
-  protected final DataType structWithBuiltinMatrixFields;
-  protected final DataType structWithBuiltinMatrixFieldsEx;
-  protected final DataType structWithAbstractScalarFields;
-  protected final DataType structWithAbstractArrayFields;
-  protected final DataType structWithAbstractMatrixFields;
-  protected final DataType structWithOptionalScalarFields;
-  protected final DataType structWithOptionalArrayFields;
-  protected final DataType structWithStructureScalarFields;
-  protected final DataType structWithStructureArrayFields;
-  protected final DataType structWithStructureMatrixFields;
+  public final DataType abstractTestType;
+  public final DataType concreteTestType;
+  public final DataType concreteTestTypeEx;
+  public final DataType structWithBuiltinScalarFields;
+  public final DataType structWithBuiltinScalarFieldsEx;
+  public final DataType structWithBuiltinArrayFields;
+  public final DataType structWithBuiltinArrayFieldsEx;
+  public final DataType structWithBuiltinMatrixFields;
+  public final DataType structWithBuiltinMatrixFieldsEx;
+  public final DataType structWithAbstractScalarFields;
+  public final DataType structWithAbstractArrayFields;
+  public final DataType structWithAbstractMatrixFields;
+  public final DataType structWithOptionalScalarFields;
+  public final DataType structWithOptionalArrayFields;
+  public final DataType structWithStructureScalarFields;
+  public final DataType structWithStructureArrayFields;
+  public final DataType structWithStructureMatrixFields;
 
-  protected final DataType unionOfScalar;
-  protected final DataType unionOfArray;
-  protected final DataType unionOfMatrix;
+  public final DataType unionOfScalar;
+  public final DataType unionOfArray;
+  public final DataType unionOfMatrix;
 
-  protected final DataType testEnumType;
+  public final DataType testEnumType;
 
   public DataTypeTree dataTypeTree = Mockito.mock(DataTypeTree.class);
   public DataTypeManager dataTypeManager = new DefaultDataTypeManager();

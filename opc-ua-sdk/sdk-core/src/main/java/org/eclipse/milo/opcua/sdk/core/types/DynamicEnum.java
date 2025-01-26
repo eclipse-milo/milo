@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.sdk.core.types;
 
 import static java.util.Objects.requireNonNullElse;
 
+import java.util.Objects;
+import java.util.StringJoiner;
 import java.util.function.Function;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
 import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
@@ -91,8 +93,25 @@ public class DynamicEnum implements UaEnumeratedType {
   }
 
   @Override
+  public boolean equals(Object o) {
+    if (o == null || getClass() != o.getClass()) return false;
+    DynamicEnum that = (DynamicEnum) o;
+    return value == that.value
+        && Objects.equals(dataType.getNodeId(), that.dataType.getNodeId())
+        && Objects.equals(name, that.name);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(dataType.getNodeId(), name, value);
+  }
+
+  @Override
   public String toString() {
-    return "DynamicEnum{" + "name='" + name + '\'' + ", value=" + value + '}';
+    return new StringJoiner(", ", DynamicEnum.class.getSimpleName() + "[", "]")
+        .add("name='" + name + "'")
+        .add("value=" + value)
+        .toString();
   }
 
   public static DynamicEnum newInstance(DataType dataType, int value) {

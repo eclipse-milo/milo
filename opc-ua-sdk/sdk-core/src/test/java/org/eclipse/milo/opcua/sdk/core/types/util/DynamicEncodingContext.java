@@ -17,6 +17,7 @@ import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.encoding.DataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.structured.XVType;
 import org.mockito.Mockito;
 
@@ -44,6 +45,13 @@ public class DynamicEncodingContext extends AbstractEncodingContext {
           return NodeIds.XVType_Encoding_DefaultJson;
         }
       };
+
+  public static final DataType APPLICATION_TYPE_DATA_TYPE =
+      new AbstractDataType(
+          ApplicationType.TypeInfo.TYPE_ID.toNodeId(new NamespaceTable()).orElseThrow(),
+          QualifiedName.NULL_VALUE,
+          ApplicationType.definition(),
+          false) {};
 
   public DynamicEncodingContext() {
     super();
