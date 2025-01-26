@@ -15,7 +15,6 @@ import static java.util.Objects.requireNonNullElse;
 
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.StringJoiner;
@@ -32,16 +31,16 @@ public final class DynamicOptionSetType extends DynamicType implements UaStructu
 
   private final Lazy<Map<Integer, EnumField>> lazyFieldMap = new Lazy<>();
 
+  private volatile ByteString value;
+  private volatile ByteString validBits;
+
   private final DataType dataType;
-  private final LinkedHashMap<String, Object> members;
 
-  public DynamicOptionSetType(DataType dataType) {
-    this(dataType, new LinkedHashMap<>());
-  }
-
-  public DynamicOptionSetType(DataType dataType, LinkedHashMap<String, Object> members) {
+  public DynamicOptionSetType(DataType dataType, ByteString value, ByteString validBits) {
     this.dataType = dataType;
-    this.members = members;
+
+    this.value = value;
+    this.validBits = validBits;
   }
 
   @Override
@@ -59,24 +58,50 @@ public final class DynamicOptionSetType extends DynamicType implements UaStructu
     return (EnumDefinition) requireNonNull(dataType.getDataTypeDefinition());
   }
 
-  public LinkedHashMap<String, Object> getMembers() {
-    return members;
-  }
-
+  /**
+   * Get the value of the option set.
+   *
+   * <p>The value is an array of bytes representing the bits in the option set. The length depends
+   * on the number of bits, and the number of bytes may be larger than needed for the valid bits.
+   *
+   * @return the value of the option set.
+   */
   public ByteString getValue() {
-    return (ByteString) getMembers().get("Value");
+    return value;
   }
 
+  /**
+   * Get the valid bits of the option set.
+   *
+   * <p>The value is an array of bytes the same length as the value, where each bit represents
+   * whether the corresponding bit in the value is valid.
+   *
+   * @return the valid bits of the option set.
+   */
   public ByteString getValidBits() {
-    return (ByteString) getMembers().get("ValidBits");
+    return validBits;
   }
 
+  /**
+   * Set the value of the option set.
+   *
+   * @param value the value of the option set.
+   */
   public void setValue(ByteString value) {
-    getMembers().put("Value", value);
+    requireNonNull(value);
+
+    this.value = value;
   }
 
+  /**
+   * Set the valid bits of the option set.
+   *
+   * @param validBits the valid bits of the option set.
+   */
   public void setValidBits(ByteString validBits) {
-    getMembers().put("ValidBits", validBits);
+    requireNonNull(validBits);
+
+    this.validBits = validBits;
   }
 
   /**

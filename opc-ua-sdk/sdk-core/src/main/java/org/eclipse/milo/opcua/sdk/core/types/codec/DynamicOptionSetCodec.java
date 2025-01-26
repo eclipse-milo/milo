@@ -38,11 +38,7 @@ class DynamicOptionSetCodec extends GenericDataTypeCodec<DynamicOptionSetType> {
     ByteString value = decoder.decodeByteString("Value");
     ByteString validBits = decoder.decodeByteString("ValidBits");
 
-    var optionSet = new DynamicOptionSetType(dataType);
-    optionSet.setValue(value);
-    optionSet.setValidBits(validBits);
-
-    return optionSet;
+    return new DynamicOptionSetType(dataType, value, validBits);
   }
 
   @Override
