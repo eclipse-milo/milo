@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.sdk.core.types;
 
 import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
 import org.eclipse.milo.opcua.stack.core.types.UaDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.DataTypeDefinition;
 
 /**
  * Base class for an instance of a "dynamic" type, i.e. one that is defined dynamically at runtime
@@ -26,4 +27,15 @@ public abstract sealed class DynamicType implements UaDataType
    * @return the {@link DataType} that defines this type.
    */
   public abstract DataType getDataType();
+
+  /**
+   * Get the {@link DataTypeDefinition} that defines this type.
+   *
+   * <p>Subclasses may refine the return type to either {@link
+   * org.eclipse.milo.opcua.stack.core.types.structured.EnumDefinition} or {@link
+   * org.eclipse.milo.opcua.stack.core.types.structured.StructureDefinition}.
+   *
+   * @return the {@link DataTypeDefinition} that defines this type.
+   */
+  public abstract DataTypeDefinition getDataTypeDefinition();
 }

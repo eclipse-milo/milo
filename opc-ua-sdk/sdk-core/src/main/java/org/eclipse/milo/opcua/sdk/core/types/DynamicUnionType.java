@@ -10,6 +10,8 @@
 
 package org.eclipse.milo.opcua.sdk.core.types;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.Objects;
 import java.util.Optional;
 import java.util.StringJoiner;
@@ -17,6 +19,7 @@ import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.structured.StructureDefinition;
 import org.jspecify.annotations.Nullable;
 
 public final class DynamicUnionType extends DynamicType implements UaStructuredType {
@@ -59,6 +62,11 @@ public final class DynamicUnionType extends DynamicType implements UaStructuredT
   @Override
   public DataType getDataType() {
     return dataType;
+  }
+
+  @Override
+  public StructureDefinition getDataTypeDefinition() {
+    return (StructureDefinition) requireNonNull(dataType.getDataTypeDefinition());
   }
 
   /**
@@ -104,7 +112,7 @@ public final class DynamicUnionType extends DynamicType implements UaStructuredT
   @Override
   public String toString() {
     var joiner = new StringJoiner(", ", DynamicUnionType.class.getSimpleName() + "[", "]");
-    joiner.add("dataType=" + dataType.getNodeId());
+    joiner.add("dataType=" + dataType.getNodeId().toParseableString());
     if (value != null) {
       joiner.add("%s=%s".formatted(value.fieldName(), value.fieldValue()));
     } else {
@@ -129,8 +137,8 @@ public final class DynamicUnionType extends DynamicType implements UaStructuredT
    */
   public record UnionValue(String fieldName, Object fieldValue) {
     public UnionValue {
-      Objects.requireNonNull(fieldName);
-      Objects.requireNonNull(fieldValue);
+      requireNonNull(fieldName);
+      requireNonNull(fieldValue);
     }
   }
 }

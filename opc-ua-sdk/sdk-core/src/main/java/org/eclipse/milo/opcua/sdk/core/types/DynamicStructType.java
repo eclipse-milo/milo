@@ -10,6 +10,8 @@
 
 package org.eclipse.milo.opcua.sdk.core.types;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Objects;
@@ -20,6 +22,7 @@ import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.structured.StructureDefinition;
 
 public final class DynamicStructType extends DynamicType implements UaStructuredType {
 
@@ -36,6 +39,18 @@ public final class DynamicStructType extends DynamicType implements UaStructured
     return dataType;
   }
 
+  @Override
+  public StructureDefinition getDataTypeDefinition() {
+    return (StructureDefinition) requireNonNull(dataType.getDataTypeDefinition());
+  }
+
+  /**
+   * Get the members of this struct.
+   *
+   * <p>The members are a map of member names to their values.
+   *
+   * @return the members of this struct.
+   */
   public LinkedHashMap<String, Object> getMembers() {
     return members;
   }
@@ -79,7 +94,7 @@ public final class DynamicStructType extends DynamicType implements UaStructured
   @Override
   public String toString() {
     var joiner = new StringJoiner(", ", DynamicStructType.class.getSimpleName() + "[", "]");
-    joiner.add("dataType=" + dataType.getNodeId());
+    joiner.add("dataType=" + dataType.getNodeId().toParseableString());
     joiner.add("members=" + joinMembers(members));
     return joiner.toString();
   }

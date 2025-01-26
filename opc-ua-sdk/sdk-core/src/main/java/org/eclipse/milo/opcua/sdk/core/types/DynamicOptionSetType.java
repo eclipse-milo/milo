@@ -10,12 +10,14 @@
 
 package org.eclipse.milo.opcua.sdk.core.types;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
@@ -25,7 +27,6 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.structured.EnumDefinition;
 import org.eclipse.milo.opcua.stack.core.types.structured.EnumField;
 import org.eclipse.milo.opcua.stack.core.util.Lazy;
-import org.jspecify.annotations.Nullable;
 
 public final class DynamicOptionSetType extends DynamicType implements UaStructuredType {
 
@@ -53,6 +54,11 @@ public final class DynamicOptionSetType extends DynamicType implements UaStructu
     return dataType;
   }
 
+  @Override
+  public EnumDefinition getDataTypeDefinition() {
+    return (EnumDefinition) requireNonNull(dataType.getDataTypeDefinition());
+  }
+
   public LinkedHashMap<String, Object> getMembers() {
     return members;
   }
@@ -73,22 +79,43 @@ public final class DynamicOptionSetType extends DynamicType implements UaStructu
     getMembers().put("ValidBits", validBits);
   }
 
-  public @Nullable String getName(int bitIndex) {
+  /**
+   * Get the name of the field at the given bit index.
+   *
+   * @param bitIndex the bit index.
+   * @return the name of the field at the given bit index, or {@link Optional#empty()} if no field
+   *     exists at the given bit index.
+   */
+  public Optional<String> getName(int bitIndex) {
     EnumField enumField = getFieldMap().get(bitIndex);
 
-    return enumField != null ? enumField.getName() : null;
+    return Optional.ofNullable(enumField).map(EnumField::getName);
   }
 
-  public @Nullable LocalizedText getDisplayName(int bitIndex) {
+  /**
+   * Get the display name of the field at the given bit index.
+   *
+   * @param bitIndex the bit index.
+   * @return the display name of the field at the given bit index, or {@link Optional#empty()} if no
+   *     field exists at the given bit index.
+   */
+  public Optional<LocalizedText> getDisplayName(int bitIndex) {
     EnumField enumField = getFieldMap().get(bitIndex);
 
-    return enumField != null ? enumField.getDisplayName() : null;
+    return Optional.ofNullable(enumField).map(EnumField::getDisplayName);
   }
 
-  public @Nullable LocalizedText getDescription(int bitIndex) {
+  /**
+   * Get the description of the field at the given bit index.
+   *
+   * @param bitIndex the bit index.
+   * @return the description of the field at the given bit index, or {@link Optional#empty()} if no
+   *     field exists at the given bit index.
+   */
+  public Optional<LocalizedText> getDescription(int bitIndex) {
     EnumField enumField = getFieldMap().get(bitIndex);
 
-    return enumField != null ? enumField.getDescription() : null;
+    return Optional.ofNullable(enumField).map(EnumField::getDescription);
   }
 
   private Map<Integer, EnumField> getFieldMap() {
@@ -112,6 +139,7 @@ public final class DynamicOptionSetType extends DynamicType implements UaStructu
   @Override
   public String toString() {
     return new StringJoiner(", ", DynamicOptionSetType.class.getSimpleName() + "[", "]")
+        .add("dataType=" + dataType.getNodeId().toParseableString())
         .add("value=" + toBitString(getValue()))
         .add("validBits=" + toBitString(getValidBits()))
         .toString();

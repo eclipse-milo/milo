@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.core.types;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
 import java.util.Objects;
@@ -33,6 +34,7 @@ public final class DynamicEnumType extends DynamicType implements UaEnumeratedTy
 
   public DynamicEnumType(DataType dataType, int value) {
     this.dataType = dataType;
+    this.value = value;
 
     EnumDefinition definition = (EnumDefinition) dataType.getDataTypeDefinition();
     assert definition != null;
@@ -41,8 +43,6 @@ public final class DynamicEnumType extends DynamicType implements UaEnumeratedTy
 
     for (EnumField field : fields) {
       if (field.getValue() == value) {
-        this.value = field.getValue().intValue();
-
         this.name = field.getName() != null ? field.getName() : "";
         this.displayName =
             field.getDisplayName() != null ? field.getDisplayName() : LocalizedText.NULL_VALUE;
@@ -71,14 +71,34 @@ public final class DynamicEnumType extends DynamicType implements UaEnumeratedTy
     return dataType;
   }
 
+  @Override
+  public EnumDefinition getDataTypeDefinition() {
+    return (EnumDefinition) requireNonNull(dataType.getDataTypeDefinition());
+  }
+
+  /**
+   * Get the name associated with this enum value.
+   *
+   * @return the name associated with this enum value.
+   */
   public String getName() {
     return name;
   }
 
+  /**
+   * Get the display name associated with this enum value.
+   *
+   * @return the display name associated with this enum value.
+   */
   public LocalizedText getDisplayName() {
     return displayName;
   }
 
+  /**
+   * Get the description associated with this enum value.
+   *
+   * @return the description associated with this enum value.
+   */
   public LocalizedText getDescription() {
     return description;
   }
@@ -100,7 +120,8 @@ public final class DynamicEnumType extends DynamicType implements UaEnumeratedTy
   @Override
   public String toString() {
     return new StringJoiner(", ", DynamicEnumType.class.getSimpleName() + "[", "]")
-        .add("name='" + name + "'")
+        .add("dataType=" + dataType.getNodeId().toParseableString())
+        .add("name=" + name)
         .add("value=" + value)
         .toString();
   }
