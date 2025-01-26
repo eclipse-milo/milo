@@ -161,6 +161,11 @@ public final class DynamicOptionSetType extends DynamicType implements UaStructu
         });
   }
 
+  /**
+   * The value and validBit bit strings are displayed left to right, bit 0 to N.
+   *
+   * @return a string representation of this {@link DynamicOptionSetType}.
+   */
   @Override
   public String toString() {
     return new StringJoiner(", ", DynamicOptionSetType.class.getSimpleName() + "[", "]")
