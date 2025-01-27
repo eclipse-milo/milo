@@ -209,6 +209,7 @@ public class Matrix {
     StringJoiner joiner =
         new StringJoiner(", ", Matrix.class.getSimpleName() + "{", "}")
             .add("builtinDataType=" + builtinDataType)
+            .add("dataType=" + dataTypeId.toParseableString())
             .add("dimensions=" + Arrays.toString(dimensions));
 
     Class<?> clazz = ArrayUtil.getType(flatArray);
