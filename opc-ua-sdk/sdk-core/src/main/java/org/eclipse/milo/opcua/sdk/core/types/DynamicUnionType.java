@@ -15,6 +15,7 @@ import static java.util.Objects.requireNonNull;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.StringJoiner;
+import java.util.function.Function;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
@@ -121,12 +122,12 @@ public final class DynamicUnionType extends DynamicType implements UaStructuredT
     return joiner.toString();
   }
 
-  public static DynamicUnionType of(DataType dataType, String fieldName, Object fieldValue) {
-    return new DynamicUnionType(dataType, new UnionValue(fieldName, fieldValue));
+  public static DynamicUnionType newInstance(DataType dataType, @Nullable UnionValue value) {
+    return new DynamicUnionType(dataType, value);
   }
 
-  public static DynamicUnionType ofNull(DataType dataType) {
-    return new DynamicUnionType(dataType);
+  public static Function<UnionValue, DynamicUnionType> newInstanceFactory(DataType dataType) {
+    return value -> new DynamicUnionType(dataType, value);
   }
 
   /**

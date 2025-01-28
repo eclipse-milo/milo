@@ -78,13 +78,14 @@ public class DynamicUnionCodec extends GenericDataTypeCodec<DynamicUnionType> {
     StructureField[] fields = requireNonNullElse(definition.getFields(), new StructureField[0]);
 
     if (switchField == 0) {
-      return DynamicUnionType.ofNull(dataType);
+      return DynamicUnionType.newInstance(dataType, null);
     } else if (switchField <= fields.length) {
       StructureField field = fields[switchField - 1];
 
       Object value = FieldUtil.decodeFieldValue(decoder, definition, field, getFieldHints());
 
-      return DynamicUnionType.of(dataType, requireNonNull(field.getName()), value);
+      return DynamicUnionType.newInstance(
+          dataType, new UnionValue(requireNonNull(field.getName()), value));
     } else {
       throw new UaSerializationException(
           StatusCodes.Bad_DecodingError, "invalid Union SwitchField value: " + switchField);

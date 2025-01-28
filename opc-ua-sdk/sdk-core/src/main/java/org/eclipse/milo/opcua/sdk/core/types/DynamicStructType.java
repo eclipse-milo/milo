@@ -119,6 +119,6 @@ public final class DynamicStructType extends DynamicType implements UaStructured
   }
 
   public static Supplier<DynamicStructType> newInstanceFactory(DataType dataType) {
-    return () -> new DynamicStructType(dataType, new LinkedHashMap<>());
+    return () -> newInstance(dataType);
   }
 }

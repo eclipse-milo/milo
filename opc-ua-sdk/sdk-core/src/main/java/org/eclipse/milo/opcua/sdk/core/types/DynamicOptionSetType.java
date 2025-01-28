@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.StringJoiner;
+import java.util.function.BiFunction;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
@@ -173,6 +174,18 @@ public final class DynamicOptionSetType extends DynamicType implements UaStructu
         .add("value=" + toBitString(getValue()))
         .add("validBits=" + toBitString(getValidBits()))
         .toString();
+  }
+
+  public static DynamicOptionSetType newInstance(
+      DataType dataType, ByteString value, ByteString validBits) {
+
+    return new DynamicOptionSetType(dataType, value, validBits);
+  }
+
+  public static BiFunction<ByteString, ByteString, DynamicOptionSetType> newInstanceFactory(
+      DataType dataType) {
+
+    return (value, validBits) -> newInstance(dataType, value, validBits);
   }
 
   private static String toBitString(ByteString bs) {
