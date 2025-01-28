@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.LinkedHashMap;
 import java.util.UUID;
 import java.util.stream.Stream;
+import org.eclipse.milo.opcua.sdk.core.types.DynamicUnionType.UnionValue;
 import org.eclipse.milo.opcua.sdk.core.types.util.DynamicEncodingContext;
 import org.eclipse.milo.opcua.sdk.core.types.util.StaticEncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
@@ -219,7 +220,8 @@ class DynamicTypeSerializationTest {
     members.put("ConcreteTestType", decoded.getMembers().get("ConcreteTestType"));
     members.put(
         "UnionOfScalar",
-        DynamicUnionType.of(dynamicEncodingContext.unionOfScalar, "Boolean", false));
+        DynamicUnionType.newInstance(
+            dynamicEncodingContext.unionOfScalar, new UnionValue("Boolean", false)));
     members.put("UnionOfArray", decoded.getMembers().get("UnionOfArray"));
     members.put("OptionSetUI8", decoded.getMembers().get("OptionSetUI8"));
     members.put("OptionSetUI16", decoded.getMembers().get("OptionSetUI16"));
