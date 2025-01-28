@@ -176,18 +176,6 @@ public final class DynamicOptionSetType extends DynamicType implements UaStructu
         .toString();
   }
 
-  public static DynamicOptionSetType newInstance(
-      DataType dataType, ByteString value, ByteString validBits) {
-
-    return new DynamicOptionSetType(dataType, value, validBits);
-  }
-
-  public static BiFunction<ByteString, ByteString, DynamicOptionSetType> newInstanceFactory(
-      DataType dataType) {
-
-    return (value, validBits) -> newInstance(dataType, value, validBits);
-  }
-
   private static String toBitString(ByteString bs) {
     var sb = new StringBuilder();
     for (byte b : bs.bytesOrEmpty()) {
@@ -196,5 +184,32 @@ public final class DynamicOptionSetType extends DynamicType implements UaStructu
       }
     }
     return sb.toString();
+  }
+
+  /**
+   * Create a new instance of {@link DynamicOptionSetType} using the given DataType.
+   *
+   * @param dataType the {@link DataType} of the OptionSet.
+   * @param value the value of the OptionSet.
+   * @param validBits the valid bits of the OptionSet.
+   * @return a new {@link DynamicOptionSetType} with the given DataType.
+   */
+  public static DynamicOptionSetType newInstance(
+      DataType dataType, ByteString value, ByteString validBits) {
+
+    return new DynamicOptionSetType(dataType, value, validBits);
+  }
+
+  /**
+   * Create a new instance "factory" that produces new {@link DynamicOptionSetType} instances of the
+   * given DataType.
+   *
+   * @param dataType the {@link DataType} of the OptionSet.
+   * @return a new instance "factory".
+   */
+  public static BiFunction<ByteString, ByteString, DynamicOptionSetType> newInstanceFactory(
+      DataType dataType) {
+
+    return (value, validBits) -> newInstance(dataType, value, validBits);
   }
 }

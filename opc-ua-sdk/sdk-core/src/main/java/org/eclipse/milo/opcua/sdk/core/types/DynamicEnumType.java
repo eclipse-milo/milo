@@ -126,10 +126,24 @@ public final class DynamicEnumType extends DynamicType implements UaEnumeratedTy
         .toString();
   }
 
+  /**
+   * Create a new DynamicEnumType using the given DataType and value.
+   *
+   * @param dataType the {@link DataType} of the enum.
+   * @param value the value of the enum.
+   * @return a new DynamicEnumType with the given DataType and value.
+   */
   public static DynamicEnumType newInstance(DataType dataType, int value) {
     return new DynamicEnumType(dataType, value);
   }
 
+  /**
+   * Create a new instance "factory" that produces new DynamicEnumType instances of the given
+   * DataType.
+   *
+   * @param dataType the {@link DataType} of the enum.
+   * @return a new instance "factory".
+   */
   public static Function<Integer, DynamicEnumType> newInstanceFactory(DataType dataType) {
     return value -> new DynamicEnumType(dataType, value);
   }

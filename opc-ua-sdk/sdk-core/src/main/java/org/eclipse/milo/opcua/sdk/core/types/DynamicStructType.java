@@ -114,10 +114,25 @@ public final class DynamicStructType extends DynamicType implements UaStructured
         .collect(Collectors.joining(", "));
   }
 
+  /**
+   * Create a new DynamicStructType using the given DataType.
+   *
+   * <p>The members of the struct are empty.
+   *
+   * @param dataType the {@link DataType} of the struct.
+   * @return a new DynamicStructType with the given DataType.
+   */
   public static DynamicStructType newInstance(DataType dataType) {
     return new DynamicStructType(dataType, new LinkedHashMap<>());
   }
 
+  /**
+   * Create a new instance "factory" that produces new DynamicStructType instances of the given
+   * DataType.
+   *
+   * @param dataType the {@link DataType} of the struct.
+   * @return a new instance "factory".
+   */
   public static Supplier<DynamicStructType> newInstanceFactory(DataType dataType) {
     return () -> newInstance(dataType);
   }

@@ -122,14 +122,6 @@ public final class DynamicUnionType extends DynamicType implements UaStructuredT
     return joiner.toString();
   }
 
-  public static DynamicUnionType newInstance(DataType dataType, @Nullable UnionValue value) {
-    return new DynamicUnionType(dataType, value);
-  }
-
-  public static Function<UnionValue, DynamicUnionType> newInstanceFactory(DataType dataType) {
-    return value -> new DynamicUnionType(dataType, value);
-  }
-
   /**
    * Pair of a union's field name and its value.
    *
@@ -141,5 +133,27 @@ public final class DynamicUnionType extends DynamicType implements UaStructuredT
       requireNonNull(fieldName);
       requireNonNull(fieldValue);
     }
+  }
+
+  /**
+   * Create a new DynamicUnionType using the given DataType and value.
+   *
+   * @param dataType the {@link DataType} of the union.
+   * @param value the {@link UnionValue} of the union.
+   * @return a new DynamicUnionType with the given DataType and value.
+   */
+  public static DynamicUnionType newInstance(DataType dataType, @Nullable UnionValue value) {
+    return new DynamicUnionType(dataType, value);
+  }
+
+  /**
+   * Create a new instance "factory" that produces new DynamicUnionType instances of the given
+   * DataType.
+   *
+   * @param dataType the {@link DataType} of the union.
+   * @return a new instance "factory".
+   */
+  public static Function<UnionValue, DynamicUnionType> newInstanceFactory(DataType dataType) {
+    return value -> new DynamicUnionType(dataType, value);
   }
 }
