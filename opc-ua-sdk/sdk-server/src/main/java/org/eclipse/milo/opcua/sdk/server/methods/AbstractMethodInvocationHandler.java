@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -91,7 +91,8 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
 
             if (dataTypeTree.isStructType(argDataTypeId)) {
               ExtensionObject xo = (ExtensionObject) value;
-              Object decoded = xo.decode(node.getNodeContext().getServer().getEncodingContext());
+              Object decoded =
+                  xo.decode(node.getNodeContext().getServer().getStaticEncodingContext());
 
               if (decoded instanceof UaStructuredType structuredType) {
                 valueDataTypeId =

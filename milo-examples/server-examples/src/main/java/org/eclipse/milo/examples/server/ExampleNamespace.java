@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -938,7 +938,7 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
     // Register Codecs for each supported encoding with DataTypeManager
     getNodeContext()
         .getServer()
-        .getDataTypeManager()
+        .getStaticDataTypeManager()
         .registerType(dataTypeId, new CustomStructType.Codec(), binaryEncodingId, null, null);
 
     // Prior to OPC UA 1.04, clients that needed to interpret custom types read the
@@ -1010,7 +1010,7 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
     // Register Codecs for each supported encoding with DataTypeManager
     getNodeContext()
         .getServer()
-        .getDataTypeManager()
+        .getStaticDataTypeManager()
         .registerType(dataTypeId, new CustomUnionType.Codec(), binaryEncodingId, null, null);
 
     StructureDescription description =
@@ -1189,7 +1189,7 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
 
     ExtensionObject xo =
         ExtensionObject.encodeDefaultBinary(
-            getServer().getEncodingContext(), value, binaryEncodingId);
+            getServer().getStaticEncodingContext(), value, binaryEncodingId);
 
     customStructTypeVariable.setValue(new DataValue(new Variant(xo)));
 
@@ -1226,7 +1226,7 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
 
     ExtensionObject xo =
         ExtensionObject.encodeDefaultBinary(
-            getServer().getEncodingContext(), value, binaryEncodingId);
+            getServer().getStaticEncodingContext(), value, binaryEncodingId);
 
     customUnionTypeVariable.setValue(new DataValue(new Variant(xo)));
 
@@ -1243,10 +1243,6 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
   private void addDynamicStructTypeVariable(UaFolderNode rootFolder, DataType dataType)
       throws Exception {
 
-    NodeId dataTypeId =
-        ExpandedNodeId.parse("nsu=%s;s=DataType.DynamicStructType".formatted(NAMESPACE_URI))
-            .toNodeIdOrThrow(getServer().getNamespaceTable());
-
     UaVariableNode dynamicStructTypeVariable =
         UaVariableNode.build(
             getNodeContext(),
@@ -1256,7 +1252,7 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
                     .setUserAccessLevel(AccessLevel.READ_WRITE)
                     .setBrowseName(newQualifiedName("DynamicStructTypeVariable"))
                     .setDisplayName(LocalizedText.english("DynamicStructTypeVariable"))
-                    .setDataType(dataTypeId)
+                    .setDataType(dataType.getNodeId())
                     .setTypeDefinition(NodeIds.BaseDataVariableType)
                     .build());
 

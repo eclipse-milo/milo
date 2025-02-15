@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -234,7 +234,7 @@ public class EventContentFilter {
     StatusCode[] operandStatusCodes = new StatusCode[xos.length];
 
     for (int i = 0; i < xos.length; i++) {
-      Object operand = xos[i].decodeOrNull(context.getServer().getEncodingContext());
+      Object operand = xos[i].decodeOrNull(context.getServer().getStaticEncodingContext());
 
       if (operand instanceof FilterOperand) {
         operands[i] = (FilterOperand) operand;
@@ -328,7 +328,7 @@ public class EventContentFilter {
     }
 
     FilterOperand[] filterOperands =
-        decodeOperands(context.getServer().getEncodingContext(), element.getFilterOperands());
+        decodeOperands(context.getServer().getStaticEncodingContext(), element.getFilterOperands());
 
     Operator<?> operator = getOperator(filterOperator);
 

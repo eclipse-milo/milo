@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -222,7 +222,7 @@ public class DefaultAttributeServiceSet extends AbstractServiceSet implements At
             request.getRequestHeader().getAdditionalHeader());
 
     ExtensionObject xo = request.getHistoryReadDetails();
-    HistoryReadDetails details = (HistoryReadDetails) xo.decode(server.getEncodingContext());
+    HistoryReadDetails details = (HistoryReadDetails) xo.decode(server.getStaticEncodingContext());
 
     List<HistoryReadResult> results =
         server
@@ -289,7 +289,7 @@ public class DefaultAttributeServiceSet extends AbstractServiceSet implements At
 
     List<HistoryUpdateDetails> historyUpdateDetailsList =
         Stream.of(historyUpdateDetails)
-            .map(xo -> (HistoryUpdateDetails) xo.decode(server.getEncodingContext()))
+            .map(xo -> (HistoryUpdateDetails) xo.decode(server.getStaticEncodingContext()))
             .collect(Collectors.toList());
 
     if (historyUpdateDetailsList.isEmpty()) {

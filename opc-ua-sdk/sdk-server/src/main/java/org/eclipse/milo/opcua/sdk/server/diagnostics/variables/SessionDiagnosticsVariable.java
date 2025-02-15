@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -88,7 +88,7 @@ public class SessionDiagnosticsVariable extends AbstractLifecycle {
                 ctx -> {
                   ExtensionObject xo =
                       ExtensionObject.encode(
-                          server.getEncodingContext(),
+                          server.getStaticEncodingContext(),
                           session.getSessionDiagnostics().getSessionDiagnosticsDataType());
                   return new DataValue(new Variant(xo));
                 }));
@@ -119,7 +119,7 @@ public class SessionDiagnosticsVariable extends AbstractLifecycle {
                 ctx -> {
                   ExtensionObject value =
                       ExtensionObject.encode(
-                          server.getEncodingContext(),
+                          server.getStaticEncodingContext(),
                           session.getSessionDiagnostics().getClientDescription());
                   return new DataValue(new Variant(value));
                 }));
@@ -222,7 +222,7 @@ public class SessionDiagnosticsVariable extends AbstractLifecycle {
                 ctx -> {
                   ExtensionObject value =
                       ExtensionObject.encode(
-                          server.getEncodingContext(),
+                          server.getStaticEncodingContext(),
                           session
                               .getSessionDiagnostics()
                               .getTotalRequestCount()
@@ -251,7 +251,7 @@ public class SessionDiagnosticsVariable extends AbstractLifecycle {
                 ctx -> {
                   ExtensionObject value =
                       ExtensionObject.encode(
-                          server.getEncodingContext(),
+                          server.getStaticEncodingContext(),
                           session.getSessionDiagnostics().getReadCount().getServiceCounter());
                   return new DataValue(new Variant(value));
                 }));
@@ -263,7 +263,7 @@ public class SessionDiagnosticsVariable extends AbstractLifecycle {
                 ctx -> {
                   ExtensionObject value =
                       ExtensionObject.encode(
-                          server.getEncodingContext(),
+                          server.getStaticEncodingContext(),
                           session
                               .getSessionDiagnostics()
                               .getHistoryReadCount()
@@ -278,7 +278,7 @@ public class SessionDiagnosticsVariable extends AbstractLifecycle {
                 ctx -> {
                   ExtensionObject value =
                       ExtensionObject.encode(
-                          server.getEncodingContext(),
+                          server.getStaticEncodingContext(),
                           session.getSessionDiagnostics().getWriteCount().getServiceCounter());
                   return new DataValue(new Variant(value));
                 }));
@@ -290,7 +290,7 @@ public class SessionDiagnosticsVariable extends AbstractLifecycle {
                 ctx -> {
                   ExtensionObject value =
                       ExtensionObject.encode(
-                          server.getEncodingContext(),
+                          server.getStaticEncodingContext(),
                           session
                               .getSessionDiagnostics()
                               .getHistoryUpdateCount()
@@ -305,7 +305,7 @@ public class SessionDiagnosticsVariable extends AbstractLifecycle {
                 ctx -> {
                   ExtensionObject value =
                       ExtensionObject.encode(
-                          server.getEncodingContext(),
+                          server.getStaticEncodingContext(),
                           session.getSessionDiagnostics().getCallCount().getServiceCounter());
                   return new DataValue(new Variant(value));
                 }));
@@ -317,7 +317,7 @@ public class SessionDiagnosticsVariable extends AbstractLifecycle {
                 ctx -> {
                   ExtensionObject value =
                       ExtensionObject.encode(
-                          server.getEncodingContext(),
+                          server.getStaticEncodingContext(),
                           session
                               .getSessionDiagnostics()
                               .getCreateMonitoredItemsCount()
@@ -332,7 +332,7 @@ public class SessionDiagnosticsVariable extends AbstractLifecycle {
                 ctx -> {
                   ExtensionObject value =
                       ExtensionObject.encode(
-                          server.getEncodingContext(),
+                          server.getStaticEncodingContext(),
                           session
                               .getSessionDiagnostics()
                               .getModifyMonitoredItemsCount()
@@ -347,7 +347,7 @@ public class SessionDiagnosticsVariable extends AbstractLifecycle {
                 ctx -> {
                   ExtensionObject value =
                       ExtensionObject.encode(
-                          server.getEncodingContext(),
+                          server.getStaticEncodingContext(),
                           session
                               .getSessionDiagnostics()
                               .getSetMonitoringModeCount()
@@ -362,7 +362,7 @@ public class SessionDiagnosticsVariable extends AbstractLifecycle {
                 ctx -> {
                   ExtensionObject value =
                       ExtensionObject.encode(
-                          server.getEncodingContext(),
+                          server.getStaticEncodingContext(),
                           session
                               .getSessionDiagnostics()
                               .getSetTriggeringCount()
@@ -377,7 +377,7 @@ public class SessionDiagnosticsVariable extends AbstractLifecycle {
                 ctx -> {
                   ExtensionObject value =
                       ExtensionObject.encode(
-                          server.getEncodingContext(),
+                          server.getStaticEncodingContext(),
                           session
                               .getSessionDiagnostics()
                               .getDeleteMonitoredItemsCount()
@@ -392,7 +392,7 @@ public class SessionDiagnosticsVariable extends AbstractLifecycle {
                 ctx -> {
                   ExtensionObject value =
                       ExtensionObject.encode(
-                          server.getEncodingContext(),
+                          server.getStaticEncodingContext(),
                           session
                               .getSessionDiagnostics()
                               .getCreateSubscriptionCount()
@@ -407,7 +407,7 @@ public class SessionDiagnosticsVariable extends AbstractLifecycle {
                 ctx -> {
                   ExtensionObject value =
                       ExtensionObject.encode(
-                          server.getEncodingContext(),
+                          server.getStaticEncodingContext(),
                           session
                               .getSessionDiagnostics()
                               .getModifySubscriptionCount()
@@ -422,7 +422,7 @@ public class SessionDiagnosticsVariable extends AbstractLifecycle {
                 ctx -> {
                   ExtensionObject value =
                       ExtensionObject.encode(
-                          server.getEncodingContext(),
+                          server.getStaticEncodingContext(),
                           session
                               .getSessionDiagnostics()
                               .getSetPublishingModeCount()
@@ -437,7 +437,7 @@ public class SessionDiagnosticsVariable extends AbstractLifecycle {
                 ctx -> {
                   ExtensionObject value =
                       ExtensionObject.encode(
-                          server.getEncodingContext(),
+                          server.getStaticEncodingContext(),
                           session.getSessionDiagnostics().getPublishCount().getServiceCounter());
                   return new DataValue(new Variant(value));
                 }));
@@ -449,7 +449,7 @@ public class SessionDiagnosticsVariable extends AbstractLifecycle {
                 ctx -> {
                   ExtensionObject value =
                       ExtensionObject.encode(
-                          server.getEncodingContext(),
+                          server.getStaticEncodingContext(),
                           session.getSessionDiagnostics().getRepublishCount().getServiceCounter());
                   return new DataValue(new Variant(value));
                 }));
@@ -461,7 +461,7 @@ public class SessionDiagnosticsVariable extends AbstractLifecycle {
                 ctx -> {
                   ExtensionObject value =
                       ExtensionObject.encode(
-                          server.getEncodingContext(),
+                          server.getStaticEncodingContext(),
                           session
                               .getSessionDiagnostics()
                               .getTransferSubscriptionsCount()
@@ -476,7 +476,7 @@ public class SessionDiagnosticsVariable extends AbstractLifecycle {
                 ctx -> {
                   ExtensionObject value =
                       ExtensionObject.encode(
-                          server.getEncodingContext(),
+                          server.getStaticEncodingContext(),
                           session
                               .getSessionDiagnostics()
                               .getDeleteSubscriptionsCount()
@@ -491,7 +491,7 @@ public class SessionDiagnosticsVariable extends AbstractLifecycle {
                 ctx -> {
                   ExtensionObject value =
                       ExtensionObject.encode(
-                          server.getEncodingContext(),
+                          server.getStaticEncodingContext(),
                           session.getSessionDiagnostics().getAddNodesCount().getServiceCounter());
                   return new DataValue(new Variant(value));
                 }));
@@ -503,7 +503,7 @@ public class SessionDiagnosticsVariable extends AbstractLifecycle {
                 ctx -> {
                   ExtensionObject value =
                       ExtensionObject.encode(
-                          server.getEncodingContext(),
+                          server.getStaticEncodingContext(),
                           session
                               .getSessionDiagnostics()
                               .getAddReferencesCount()
@@ -518,7 +518,7 @@ public class SessionDiagnosticsVariable extends AbstractLifecycle {
                 ctx -> {
                   ExtensionObject value =
                       ExtensionObject.encode(
-                          server.getEncodingContext(),
+                          server.getStaticEncodingContext(),
                           session
                               .getSessionDiagnostics()
                               .getDeleteNodesCount()
@@ -533,7 +533,7 @@ public class SessionDiagnosticsVariable extends AbstractLifecycle {
                 ctx -> {
                   ExtensionObject value =
                       ExtensionObject.encode(
-                          server.getEncodingContext(),
+                          server.getStaticEncodingContext(),
                           session
                               .getSessionDiagnostics()
                               .getDeleteReferencesCount()
@@ -548,7 +548,7 @@ public class SessionDiagnosticsVariable extends AbstractLifecycle {
                 ctx -> {
                   ExtensionObject value =
                       ExtensionObject.encode(
-                          server.getEncodingContext(),
+                          server.getStaticEncodingContext(),
                           session.getSessionDiagnostics().getBrowseCount().getServiceCounter());
                   return new DataValue(new Variant(value));
                 }));
@@ -560,7 +560,7 @@ public class SessionDiagnosticsVariable extends AbstractLifecycle {
                 ctx -> {
                   ExtensionObject value =
                       ExtensionObject.encode(
-                          server.getEncodingContext(),
+                          server.getStaticEncodingContext(),
                           session.getSessionDiagnostics().getBrowseNextCount().getServiceCounter());
                   return new DataValue(new Variant(value));
                 }));
@@ -572,7 +572,7 @@ public class SessionDiagnosticsVariable extends AbstractLifecycle {
                 ctx -> {
                   ExtensionObject value =
                       ExtensionObject.encode(
-                          server.getEncodingContext(),
+                          server.getStaticEncodingContext(),
                           session
                               .getSessionDiagnostics()
                               .getTranslateBrowsePathsToNodeIdsCount()
@@ -587,7 +587,7 @@ public class SessionDiagnosticsVariable extends AbstractLifecycle {
                 ctx -> {
                   ExtensionObject value =
                       ExtensionObject.encode(
-                          server.getEncodingContext(),
+                          server.getStaticEncodingContext(),
                           session.getSessionDiagnostics().getQueryFirstCount().getServiceCounter());
                   return new DataValue(new Variant(value));
                 }));
@@ -599,7 +599,7 @@ public class SessionDiagnosticsVariable extends AbstractLifecycle {
                 ctx -> {
                   ExtensionObject value =
                       ExtensionObject.encode(
-                          server.getEncodingContext(),
+                          server.getStaticEncodingContext(),
                           session.getSessionDiagnostics().getQueryNextCount().getServiceCounter());
                   return new DataValue(new Variant(value));
                 }));
@@ -611,7 +611,7 @@ public class SessionDiagnosticsVariable extends AbstractLifecycle {
                 ctx -> {
                   ExtensionObject value =
                       ExtensionObject.encode(
-                          server.getEncodingContext(),
+                          server.getStaticEncodingContext(),
                           session
                               .getSessionDiagnostics()
                               .getRegisterNodesCount()
@@ -626,7 +626,7 @@ public class SessionDiagnosticsVariable extends AbstractLifecycle {
                 ctx -> {
                   ExtensionObject value =
                       ExtensionObject.encode(
-                          server.getEncodingContext(),
+                          server.getStaticEncodingContext(),
                           session
                               .getSessionDiagnostics()
                               .getUnregisterNodesCount()

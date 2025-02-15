@@ -83,7 +83,7 @@ public class NodeFactoryTest {
 
     Mockito.when(server.getAddressSpaceManager()).thenReturn(addressSpaceManager);
 
-    Mockito.when(server.getEncodingContext()).thenReturn(DefaultEncodingContext.INSTANCE);
+    Mockito.when(server.getStaticEncodingContext()).thenReturn(DefaultEncodingContext.INSTANCE);
 
     Mockito.when(server.getEncodingManager()).thenReturn(OpcUaEncodingManager.getInstance());
 

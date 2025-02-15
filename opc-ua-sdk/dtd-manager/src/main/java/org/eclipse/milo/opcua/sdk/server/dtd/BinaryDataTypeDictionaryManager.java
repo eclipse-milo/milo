@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -124,7 +124,7 @@ public class BinaryDataTypeDictionaryManager implements Lifecycle {
 
   @Override
   public void startup() {
-    context.getServer().getDataTypeManager().registerTypeDictionary(dataTypeDictionary);
+    context.getServer().getStaticDataTypeManager().registerTypeDictionary(dataTypeDictionary);
 
     // Add a DataTypeDictionary Node...
     dictionaryNode =
@@ -321,7 +321,7 @@ public class BinaryDataTypeDictionaryManager implements Lifecycle {
 
     context
         .getServer()
-        .getDataTypeManager()
+        .getStaticDataTypeManager()
         .registerType(dataTypeId, codec, binaryEncodingId, null, null);
   }
 

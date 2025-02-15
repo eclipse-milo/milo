@@ -57,7 +57,7 @@ public class UaNodeTest {
     Mockito.when(server.getAddressSpaceManager()).thenReturn(addressSpaceManager);
     Mockito.when(server.getObjectTypeManager()).thenReturn(objectTypeManager);
     Mockito.when(server.getVariableTypeManager()).thenReturn(variableTypeManager);
-    Mockito.when(server.getEncodingContext()).thenReturn(DefaultEncodingContext.INSTANCE);
+    Mockito.when(server.getStaticEncodingContext()).thenReturn(DefaultEncodingContext.INSTANCE);
     Mockito.when(server.getEncodingManager()).thenReturn(OpcUaEncodingManager.getInstance());
 
     UaNodeManager nodeManager = new UaNodeManager();

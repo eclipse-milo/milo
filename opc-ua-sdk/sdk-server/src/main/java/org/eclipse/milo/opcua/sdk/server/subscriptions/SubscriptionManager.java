@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -477,7 +477,7 @@ public class SubscriptionManager {
       }
 
       Object filterObject =
-          request.getRequestedParameters().getFilter().decode(server.getEncodingContext());
+          request.getRequestedParameters().getFilter().decode(server.getStaticEncodingContext());
 
       MonitoringFilter filter = validateEventItemFilter(filterObject, attributes);
 
@@ -532,7 +532,7 @@ public class SubscriptionManager {
         ExtensionObject filterXo = request.getRequestedParameters().getFilter();
 
         if (filterXo != null && !filterXo.isNull()) {
-          Object filterObject = filterXo.decode(server.getEncodingContext());
+          Object filterObject = filterXo.decode(server.getStaticEncodingContext());
 
           filter = validateDataItemFilter(filterObject, attributeId, attributes);
         }
@@ -750,7 +750,7 @@ public class SubscriptionManager {
 
     if (attributeId == AttributeId.EventNotifier) {
       Object filterObject =
-          request.getRequestedParameters().getFilter().decode(server.getEncodingContext());
+          request.getRequestedParameters().getFilter().decode(server.getStaticEncodingContext());
 
       MonitoringFilter filter = validateEventItemFilter(filterObject, monitoringAttributes);
 
@@ -779,7 +779,7 @@ public class SubscriptionManager {
         ExtensionObject filterXo = request.getRequestedParameters().getFilter();
 
         if (filterXo != null && !filterXo.isNull()) {
-          Object filterObject = filterXo.decode(server.getEncodingContext());
+          Object filterObject = filterXo.decode(server.getStaticEncodingContext());
 
           filter = validateDataItemFilter(filterObject, attributeId, monitoringAttributes);
         }
