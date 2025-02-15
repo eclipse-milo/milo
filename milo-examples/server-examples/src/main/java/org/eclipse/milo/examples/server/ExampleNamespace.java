@@ -16,6 +16,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 
 import java.lang.reflect.Array;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
@@ -29,6 +30,10 @@ import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.ValueRank;
 import org.eclipse.milo.opcua.sdk.core.ValueRanks;
 import org.eclipse.milo.opcua.sdk.core.dtd.BinaryDataTypeCodec;
+import org.eclipse.milo.opcua.sdk.core.types.DynamicStructType;
+import org.eclipse.milo.opcua.sdk.core.types.codec.DynamicStructCodec;
+import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
+import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
 import org.eclipse.milo.opcua.sdk.server.Lifecycle;
 import org.eclipse.milo.opcua.sdk.server.ManagedNamespaceWithLifecycle;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
@@ -37,6 +42,7 @@ import org.eclipse.milo.opcua.sdk.server.identity.Identity;
 import org.eclipse.milo.opcua.sdk.server.items.DataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
 import org.eclipse.milo.opcua.sdk.server.model.objects.BaseEventTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.DataTypeEncodingTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ServerTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.AnalogItemTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaDataTypeNode;
@@ -53,15 +59,7 @@ import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
-import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
-import org.eclipse.milo.opcua.stack.core.types.builtin.XmlElement;
+import org.eclipse.milo.opcua.stack.core.types.builtin.*;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.StructureType;
 import org.eclipse.milo.opcua.stack.core.types.structured.EnumDefinition;
@@ -230,6 +228,14 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
       addCustomUnionTypeVariable(folderNode);
     } catch (Exception e) {
       logger.warn("Failed to register custom struct type", e);
+    }
+
+    try {
+      DataType dataType = registerDynamicStructType();
+
+      addDynamicStructTypeVariable(folderNode, dataType);
+    } catch (Exception e) {
+      logger.warn("Failed to register dynamic struct type", e);
     }
 
     addCustomObjectTypeAndInstance(folderNode);
@@ -1019,6 +1025,119 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
         description);
   }
 
+  private DataType registerDynamicStructType() throws Exception {
+    // Define NodeIds for DataType and encoding Nodes
+    NodeId dataTypeId =
+        ExpandedNodeId.parse("nsu=%s;s=DataType.DynamicStructType".formatted(NAMESPACE_URI))
+            .toNodeIdOrThrow(getServer().getNamespaceTable());
+
+    NodeId binaryEncodingId =
+        ExpandedNodeId.parse(
+                "nsu=%s;s=DataType.DynamicStructType.BinaryEncoding".formatted(NAMESPACE_URI))
+            .toNodeIdOrThrow(getServer().getNamespaceTable());
+
+    // Add a custom DataTypeNode with a SubtypeOf reference to Structure
+    UaDataTypeNode dataTypeNode =
+        new UaDataTypeNode(
+            getNodeContext(),
+            dataTypeId,
+            newQualifiedName("DynamicStructType"),
+            LocalizedText.english("DynamicStructType"),
+            LocalizedText.NULL_VALUE,
+            uint(0),
+            uint(0),
+            false);
+
+    dataTypeNode.addReference(
+        new Reference(
+            dataTypeId,
+            NodeIds.HasSubtype,
+            NodeIds.Structure.expanded(),
+            Reference.Direction.INVERSE));
+
+    getNodeManager().addNode(dataTypeNode);
+
+    // Add a DataTypeEncodingNode for binary encoding of the new DataType
+    DataTypeEncodingTypeNode dataTypeEncodingNode =
+        new DataTypeEncodingTypeNode(
+            getNodeContext(),
+            binaryEncodingId,
+            new QualifiedName(0, "Default Binary"),
+            LocalizedText.english("Default Binary"),
+            LocalizedText.NULL_VALUE,
+            uint(0),
+            uint(0),
+            null,
+            null,
+            null);
+
+    dataTypeEncodingNode.addReference(
+        new Reference(
+            dataTypeEncodingNode.getNodeId(),
+            NodeIds.HasTypeDefinition,
+            NodeIds.DataTypeEncodingType.expanded(),
+            Reference.Direction.FORWARD));
+
+    dataTypeEncodingNode.addReference(
+        new Reference(
+            dataTypeEncodingNode.getNodeId(),
+            NodeIds.HasEncoding,
+            dataTypeId.expanded(),
+            Reference.Direction.INVERSE));
+
+    getNodeManager().addNode(dataTypeEncodingNode);
+
+    // Define the structure
+    StructureField[] fields =
+        new StructureField[] {
+          new StructureField(
+              "foo",
+              LocalizedText.NULL_VALUE,
+              NodeIds.String,
+              ValueRanks.Scalar,
+              null,
+              getServer().getConfig().getLimits().getMaxStringLength(),
+              false),
+          new StructureField(
+              "bar",
+              LocalizedText.NULL_VALUE,
+              NodeIds.UInt32,
+              ValueRanks.Scalar,
+              null,
+              uint(0),
+              false),
+          new StructureField(
+              "baz",
+              LocalizedText.NULL_VALUE,
+              NodeIds.Boolean,
+              ValueRanks.Scalar,
+              null,
+              uint(0),
+              false)
+        };
+
+    StructureDefinition definition =
+        new StructureDefinition(
+            binaryEncodingId, NodeIds.Structure, StructureType.Structure, fields);
+
+    // Set the DataTypeDefinition attribute
+    dataTypeNode.setDataTypeDefinition(definition);
+
+    DataTypeTree dataTypeTree = getNodeContext().getServer().updateDataTypeTree();
+    DataType dataType = dataTypeTree.getDataType(dataTypeId);
+    assert dataType != null;
+
+    // Register Codecs for each supported encoding with DataTypeManager
+    var codec = new DynamicStructCodec(dataType, dataTypeTree);
+
+    getNodeContext()
+        .getServer()
+        .getDynamicDataTypeManager()
+        .registerType(dataTypeId, codec, binaryEncodingId, null, null);
+
+    return dataType;
+  }
+
   private void addCustomEnumTypeVariable(UaFolderNode rootFolder) throws Exception {
     NodeId dataTypeId = CustomEnumType.TYPE_ID.toNodeIdOrThrow(getServer().getNamespaceTable());
 
@@ -1116,6 +1235,49 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
     customUnionTypeVariable.addReference(
         new Reference(
             customUnionTypeVariable.getNodeId(),
+            NodeIds.Organizes,
+            rootFolder.getNodeId().expanded(),
+            false));
+  }
+
+  private void addDynamicStructTypeVariable(UaFolderNode rootFolder, DataType dataType)
+      throws Exception {
+
+    NodeId dataTypeId =
+        ExpandedNodeId.parse("nsu=%s;s=DataType.DynamicStructType".formatted(NAMESPACE_URI))
+            .toNodeIdOrThrow(getServer().getNamespaceTable());
+
+    UaVariableNode dynamicStructTypeVariable =
+        UaVariableNode.build(
+            getNodeContext(),
+            b ->
+                b.setNodeId(newNodeId("HelloWorld/DynamicStructTypeVariable"))
+                    .setAccessLevel(AccessLevel.READ_WRITE)
+                    .setUserAccessLevel(AccessLevel.READ_WRITE)
+                    .setBrowseName(newQualifiedName("DynamicStructTypeVariable"))
+                    .setDisplayName(LocalizedText.english("DynamicStructTypeVariable"))
+                    .setDataType(dataTypeId)
+                    .setTypeDefinition(NodeIds.BaseDataVariableType)
+                    .build());
+
+    LinkedHashMap<String, Object> members = new LinkedHashMap<>();
+    members.put("foo", "foo");
+    members.put("bar", uint(42));
+    members.put("baz", true);
+    DynamicStructType value = new DynamicStructType(dataType, members);
+
+    // Note that we're using getDynamicEncodingContext() here
+    ExtensionObject xo =
+        ExtensionObject.encodeDefaultBinary(
+            getServer().getDynamicEncodingContext(), value, dataType.getBinaryEncodingId());
+
+    dynamicStructTypeVariable.setValue(new DataValue(Variant.ofExtensionObject(xo)));
+
+    getNodeManager().addNode(dynamicStructTypeVariable);
+
+    dynamicStructTypeVariable.addReference(
+        new Reference(
+            dynamicStructTypeVariable.getNodeId(),
             NodeIds.Organizes,
             rootFolder.getNodeId().expanded(),
             false));

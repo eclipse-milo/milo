@@ -131,6 +131,9 @@ public class OpcUaServer extends AbstractServiceHandler {
   private final DataTypeManager dataTypeManager =
       DefaultDataTypeManager.createAndInitialize(namespaceTable);
 
+  private final DataTypeManager dynamicDataTypeManager =
+      DefaultDataTypeManager.createAndInitialize(namespaceTable);
+
   private final Set<NodeId> registeredViews = Sets.newConcurrentHashSet();
 
   private final ServerDiagnosticsSummary diagnosticsSummary = new ServerDiagnosticsSummary(this);
@@ -151,6 +154,7 @@ public class OpcUaServer extends AbstractServiceHandler {
   private final EventNotifier eventNotifier = new ServerEventNotifier();
 
   private final EncodingContext encodingContext;
+  private final EncodingContext dynamicEncodingContext;
 
   private final OpcUaNamespace opcUaNamespace;
   private final ServerNamespace serverNamespace;
@@ -172,6 +176,34 @@ public class OpcUaServer extends AbstractServiceHandler {
           @Override
           public DataTypeManager getDataTypeManager() {
             return dataTypeManager;
+          }
+
+          @Override
+          public EncodingManager getEncodingManager() {
+            return encodingManager;
+          }
+
+          @Override
+          public EncodingLimits getEncodingLimits() {
+            return config.getEncodingLimits();
+          }
+
+          @Override
+          public NamespaceTable getNamespaceTable() {
+            return namespaceTable;
+          }
+
+          @Override
+          public ServerTable getServerTable() {
+            return serverTable;
+          }
+        };
+
+    dynamicEncodingContext =
+        new EncodingContext() {
+          @Override
+          public DataTypeManager getDataTypeManager() {
+            return dynamicDataTypeManager;
           }
 
           @Override
@@ -323,6 +355,10 @@ public class OpcUaServer extends AbstractServiceHandler {
     return dataTypeManager;
   }
 
+  public DataTypeManager getDynamicDataTypeManager() {
+    return dynamicDataTypeManager;
+  }
+
   public EncodingManager getEncodingManager() {
     return encodingManager;
   }
@@ -337,6 +373,10 @@ public class OpcUaServer extends AbstractServiceHandler {
 
   public EncodingContext getEncodingContext() {
     return encodingContext;
+  }
+
+  public EncodingContext getDynamicEncodingContext() {
+    return dynamicEncodingContext;
   }
 
   public ServerDiagnosticsSummary getDiagnosticsSummary() {
