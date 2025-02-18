@@ -30,7 +30,9 @@ import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.ValueRank;
 import org.eclipse.milo.opcua.sdk.core.ValueRanks;
 import org.eclipse.milo.opcua.sdk.core.dtd.BinaryDataTypeCodec;
+import org.eclipse.milo.opcua.sdk.core.types.DynamicEnumType;
 import org.eclipse.milo.opcua.sdk.core.types.DynamicStructType;
+import org.eclipse.milo.opcua.sdk.core.types.codec.DynamicCodecFactory;
 import org.eclipse.milo.opcua.sdk.core.types.codec.DynamicStructCodec;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
@@ -236,6 +238,14 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
       addDynamicStructTypeVariable(folderNode, dataType);
     } catch (Exception e) {
       logger.warn("Failed to register dynamic struct type", e);
+    }
+
+    try {
+      DataType enumDataType = registerDynamicEnumType();
+
+      addDynamicEnumTypeVariable(folderNode, enumDataType);
+    } catch (Exception e) {
+      logger.warn("Failed to register dynamic enum type", e);
     }
 
     addCustomObjectTypeAndInstance(folderNode);
@@ -1025,6 +1035,71 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
         description);
   }
 
+  private DataType registerDynamicEnumType() throws Exception {
+    // Define NodeId for DataType
+    NodeId dataTypeId =
+        ExpandedNodeId.parse("nsu=%s;s=DataType.DynamicEnumType".formatted(NAMESPACE_URI))
+            .toNodeIdOrThrow(getServer().getNamespaceTable());
+
+    // Add a custom DataTypeNode with a SubtypeOf reference to Enumeration
+    UaDataTypeNode dataTypeNode =
+        new UaDataTypeNode(
+            getNodeContext(),
+            dataTypeId,
+            newQualifiedName("DynamicEnumType"),
+            LocalizedText.english("DynamicEnumType"),
+            LocalizedText.NULL_VALUE,
+            uint(0),
+            uint(0),
+            false);
+
+    dataTypeNode.addReference(
+        new Reference(
+            dataTypeId,
+            NodeIds.HasSubtype,
+            NodeIds.Enumeration.expanded(),
+            Reference.Direction.INVERSE));
+
+    getNodeManager().addNode(dataTypeNode);
+
+    // Define the enum fields
+    EnumField[] fields =
+        new EnumField[] {
+          new EnumField(
+              0L, LocalizedText.english("DynField0"), LocalizedText.NULL_VALUE, "DynField0"),
+          new EnumField(
+              1L, LocalizedText.english("DynField1"), LocalizedText.NULL_VALUE, "DynField1"),
+          new EnumField(
+              2L, LocalizedText.english("DynField2"), LocalizedText.NULL_VALUE, "DynField2")
+        };
+
+    EnumDefinition definition = new EnumDefinition(fields);
+
+    // Set the EnumStrings property
+    dataTypeNode.setEnumStrings(
+        new LocalizedText[] {
+          LocalizedText.english("DynField0"),
+          LocalizedText.english("DynField1"),
+          LocalizedText.english("DynField2")
+        });
+
+    // Set the DataTypeDefinition attribute
+    dataTypeNode.setDataTypeDefinition(definition);
+
+    DataTypeTree dataTypeTree = getNodeContext().getServer().updateDataTypeTree();
+    DataType dataType = dataTypeTree.getDataType(dataTypeId);
+    assert dataType != null;
+
+    // Register with the dynamic DataTypeManager
+    getNodeContext()
+        .getServer()
+        .getDynamicDataTypeManager()
+        .registerType(
+            dataTypeId, DynamicCodecFactory.create(dataType, dataTypeTree), null, null, null);
+
+    return dataType;
+  }
+
   private DataType registerDynamicStructType() throws Exception {
     // Define NodeIds for DataType and encoding Nodes
     NodeId dataTypeId =
@@ -1240,9 +1315,29 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
             false));
   }
 
-  private void addDynamicStructTypeVariable(UaFolderNode rootFolder, DataType dataType)
-      throws Exception {
+  private void addDynamicEnumTypeVariable(UaFolderNode rootFolder, DataType dataType) {
+    NodeId nodeId = newNodeId("HelloWorld/DynamicEnumTypeVariable");
 
+    UaVariableNode dynamicEnumTypeVariable =
+        new UaVariableNode.UaVariableNodeBuilder(getNodeContext())
+            .setNodeId(nodeId)
+            .setAccessLevel(AccessLevel.READ_WRITE)
+            .setUserAccessLevel(AccessLevel.READ_WRITE)
+            .setBrowseName(newQualifiedName("DynamicEnumTypeVariable"))
+            .setDisplayName(LocalizedText.english("DynamicEnumTypeVariable"))
+            .setDataType(dataType.getNodeId())
+            .setTypeDefinition(NodeIds.BaseDataVariableType)
+            .build();
+
+    // Create an instance of DynamicEnumType with value 0 (DynField0)
+    DynamicEnumType value = DynamicEnumType.newInstance(dataType, 0);
+    dynamicEnumTypeVariable.setValue(new DataValue(new Variant(value)));
+
+    getNodeManager().addNode(dynamicEnumTypeVariable);
+    rootFolder.addOrganizes(dynamicEnumTypeVariable);
+  }
+
+  private void addDynamicStructTypeVariable(UaFolderNode rootFolder, DataType dataType) {
     UaVariableNode dynamicStructTypeVariable =
         UaVariableNode.build(
             getNodeContext(),
