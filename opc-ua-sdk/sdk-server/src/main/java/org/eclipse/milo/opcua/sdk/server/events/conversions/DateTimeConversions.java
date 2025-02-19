@@ -14,7 +14,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -42,7 +42,7 @@ final class DateTimeConversions {
   }
 
   @Nullable
-  static Object convert(@NonNull Object o, BuiltinDataType targetType, boolean implicit) {
+  static Object convert(@NonNull Object o, OpcUaDataType targetType, boolean implicit) {
     if (o instanceof DateTime) {
       DateTime d = (DateTime) o;
 
@@ -53,7 +53,7 @@ final class DateTimeConversions {
   }
 
   @Nullable
-  static Object explicitConversion(@NonNull DateTime d, BuiltinDataType targetType) {
+  static Object explicitConversion(@NonNull DateTime d, OpcUaDataType targetType) {
     // @formatter:off
     switch (targetType) {
       case String:
@@ -65,7 +65,7 @@ final class DateTimeConversions {
   }
 
   @Nullable
-  static Object implicitConversion(@NonNull DateTime d, BuiltinDataType targetType) {
+  static Object implicitConversion(@NonNull DateTime d, OpcUaDataType targetType) {
     // no implicit conversions exist
     return null;
   }

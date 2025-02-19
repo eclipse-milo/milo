@@ -26,8 +26,8 @@ import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaViewNode;
 import org.eclipse.milo.opcua.sdk.test.TestNamespace;
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
@@ -210,7 +210,7 @@ class AttributeTestHelper {
                   USER_ROLE_PERMISSIONS,
                   ACCESS_RESTRICTIONS,
                   new DataValue(new Variant(42)),
-                  BuiltinDataType.Int32.getNodeId(),
+                  OpcUaDataType.Int32.getNodeId(),
                   -1,
                   null,
                   AccessLevel.toValue(AccessLevel.READ_WRITE),
@@ -239,7 +239,7 @@ class AttributeTestHelper {
                   USER_ROLE_PERMISSIONS,
                   ACCESS_RESTRICTIONS,
                   new DataValue(new Variant(42)),
-                  BuiltinDataType.Int32.getNodeId(),
+                  OpcUaDataType.Int32.getNodeId(),
                   -1,
                   null,
                   false);

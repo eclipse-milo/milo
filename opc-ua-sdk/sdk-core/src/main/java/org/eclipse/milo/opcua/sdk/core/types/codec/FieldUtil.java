@@ -21,8 +21,8 @@ import org.eclipse.milo.opcua.sdk.core.types.DynamicEnumType;
 import org.eclipse.milo.opcua.sdk.core.types.DynamicStructType;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -117,7 +117,7 @@ class FieldUtil {
         return matrix.transform(v -> new DynamicEnumType(hint.dataType, (Integer) v));
       } else if (fieldHint instanceof FieldHint.Struct) {
         if (dataTypeId.equals(NodeIds.Structure) || fieldAllowsSubtyping(definition, field)) {
-          Matrix matrix = decoder.decodeMatrix(fieldName, BuiltinDataType.ExtensionObject);
+          Matrix matrix = decoder.decodeMatrix(fieldName, OpcUaDataType.ExtensionObject);
 
           return matrix.transform(
               o -> {
@@ -242,8 +242,8 @@ class FieldUtil {
       NodeId dataTypeId = field.getDataType();
 
       FieldHint hint;
-      if (BuiltinDataType.isBuiltin(dataTypeId)) {
-        BuiltinDataType dataType = requireNonNull(BuiltinDataType.fromNodeId(dataTypeId));
+      if (OpcUaDataType.isBuiltin(dataTypeId)) {
+        OpcUaDataType dataType = requireNonNull(OpcUaDataType.fromNodeId(dataTypeId));
         hint = new FieldHint.Builtin(dataType);
       } else if (dataTypeTree.isEnumType(dataTypeId)) {
         DataType dataType = requireNonNull(dataTypeTree.getDataType(dataTypeId));
@@ -261,9 +261,9 @@ class FieldUtil {
   }
 
   private static Object decodeBuiltinDataType(
-      UaDecoder decoder, String fieldName, BuiltinDataType builtinDataType) {
+      UaDecoder decoder, String fieldName, OpcUaDataType dataType) {
 
-    return switch (builtinDataType) {
+    return switch (dataType) {
       case Boolean -> decoder.decodeBoolean(fieldName);
       case SByte -> decoder.decodeSByte(fieldName);
       case Byte -> decoder.decodeByte(fieldName);
@@ -293,9 +293,9 @@ class FieldUtil {
   }
 
   private static Object decodeBuiltinDataTypeArray(
-      UaDecoder decoder, String fieldName, BuiltinDataType builtinDataType) {
+      UaDecoder decoder, String fieldName, OpcUaDataType dataType) {
 
-    return switch (builtinDataType) {
+    return switch (dataType) {
       case Boolean -> decoder.decodeBooleanArray(fieldName);
       case SByte -> decoder.decodeSByteArray(fieldName);
       case Byte -> decoder.decodeByteArray(fieldName);
@@ -325,9 +325,9 @@ class FieldUtil {
   }
 
   private static void encodeBuiltinDataType(
-      UaEncoder encoder, String fieldName, BuiltinDataType builtinDataType, Object value) {
+      UaEncoder encoder, String fieldName, OpcUaDataType dataType, Object value) {
 
-    switch (builtinDataType) {
+    switch (dataType) {
       case Boolean:
         encoder.encodeBoolean(fieldName, (Boolean) value);
         break;
@@ -405,14 +405,14 @@ class FieldUtil {
         break;
       default:
         // Shouldn't happen
-        throw new RuntimeException("unhandled BuiltinDataType: " + builtinDataType);
+        throw new RuntimeException("unhandled BuiltinDataType: " + dataType);
     }
   }
 
   private static void encodeBuiltinDataTypeArray(
-      UaEncoder encoder, String fieldName, BuiltinDataType builtinDataType, Object value) {
+      UaEncoder encoder, String fieldName, OpcUaDataType dataType, Object value) {
 
-    switch (builtinDataType) {
+    switch (dataType) {
       case Boolean:
         encoder.encodeBooleanArray(fieldName, (Boolean[]) value);
         break;
@@ -490,13 +490,13 @@ class FieldUtil {
         break;
       default:
         // Shouldn't happen
-        throw new RuntimeException("unhandled BuiltinDataType: " + builtinDataType);
+        throw new RuntimeException("unhandled BuiltinDataType: " + dataType);
     }
   }
 
   sealed interface FieldHint permits FieldHint.Builtin, FieldHint.Enum, FieldHint.Struct {
 
-    record Builtin(BuiltinDataType dataType) implements FieldHint {}
+    record Builtin(OpcUaDataType dataType) implements FieldHint {}
 
     record Enum(DataType dataType) implements FieldHint {}
 

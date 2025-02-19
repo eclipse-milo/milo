@@ -13,7 +13,7 @@ package org.eclipse.milo.opcua.sdk.server.events.conversions;
 import io.netty.buffer.ByteBufUtil;
 import java.nio.ByteBuffer;
 import java.util.UUID;
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -40,7 +40,7 @@ final class ByteStringConversions {
   }
 
   @Nullable
-  static Object convert(@NonNull Object o, BuiltinDataType targetType, boolean implicit) {
+  static Object convert(@NonNull Object o, OpcUaDataType targetType, boolean implicit) {
     if (o instanceof ByteString) {
       ByteString bs = (ByteString) o;
 
@@ -51,7 +51,7 @@ final class ByteStringConversions {
   }
 
   @Nullable
-  static Object explicitConversion(@NonNull ByteString bs, BuiltinDataType targetType) {
+  static Object explicitConversion(@NonNull ByteString bs, OpcUaDataType targetType) {
     // @formatter:off
     switch (targetType) {
       case Guid:
@@ -65,7 +65,7 @@ final class ByteStringConversions {
   }
 
   @Nullable
-  static Object implicitConversion(@NonNull ByteString bs, BuiltinDataType targetType) {
+  static Object implicitConversion(@NonNull ByteString bs, OpcUaDataType targetType) {
     // no implicit conversions exist
     return null;
   }

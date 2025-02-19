@@ -30,7 +30,7 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.IdType;
 import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 import org.jspecify.annotations.Nullable;
 
-public enum BuiltinDataType {
+public enum OpcUaDataType {
   Boolean(1, Boolean.class),
   SByte(2, Byte.class),
   Byte(3, UByte.class),
@@ -60,7 +60,7 @@ public enum BuiltinDataType {
   private final int typeId;
   private final Class<?> backingClass;
 
-  BuiltinDataType(int typeId, Class<?> backingClass) {
+  OpcUaDataType(int typeId, Class<?> backingClass) {
     this.typeId = typeId;
     this.backingClass = backingClass;
   }
@@ -79,14 +79,14 @@ public enum BuiltinDataType {
 
   private static final BiMap<Integer, Class<?>> BackingClassesById;
   private static final BiMap<NodeId, Class<?>> BackingClassesByNodeId;
-  private static final BiMap<NodeId, BuiltinDataType> DataTypesByNodeId;
+  private static final BiMap<NodeId, OpcUaDataType> DataTypesByNodeId;
 
   static {
     ImmutableBiMap.Builder<Integer, Class<?>> builder = ImmutableBiMap.builder();
     ImmutableBiMap.Builder<NodeId, Class<?>> builder2 = ImmutableBiMap.builder();
-    ImmutableBiMap.Builder<NodeId, BuiltinDataType> builder3 = ImmutableBiMap.builder();
+    ImmutableBiMap.Builder<NodeId, OpcUaDataType> builder3 = ImmutableBiMap.builder();
 
-    for (BuiltinDataType dataType : values()) {
+    for (OpcUaDataType dataType : values()) {
       builder.put(dataType.getTypeId(), dataType.getBackingClass());
       builder2.put(dataType.getNodeId(), dataType.getBackingClass());
       builder3.put(dataType.getNodeId(), dataType);
@@ -129,30 +129,30 @@ public enum BuiltinDataType {
     return null;
   }
 
-  public static @Nullable BuiltinDataType fromTypeId(int typeId) {
+  public static @Nullable OpcUaDataType fromTypeId(int typeId) {
     // TODO turn this into a lookup
-    for (BuiltinDataType builtinDataType : values()) {
-      if (builtinDataType.typeId == typeId) {
-        return builtinDataType;
+    for (OpcUaDataType dataType : values()) {
+      if (dataType.typeId == typeId) {
+        return dataType;
       }
     }
     return null;
   }
 
   @Nullable
-  public static BuiltinDataType fromBackingClass(Class<?> backingClass) {
+  public static OpcUaDataType fromBackingClass(Class<?> backingClass) {
     NodeId nodeId = BackingClassesByNodeId.inverse().get(maybeBoxPrimitive(backingClass));
 
     return nodeId != null ? DataTypesByNodeId.get(nodeId) : null;
   }
 
   @Nullable
-  public static BuiltinDataType fromNodeId(NodeId nodeId) {
+  public static OpcUaDataType fromNodeId(NodeId nodeId) {
     return DataTypesByNodeId.get(nodeId);
   }
 
   @Nullable
-  public static BuiltinDataType fromNodeId(ExpandedNodeId nodeId) {
+  public static OpcUaDataType fromNodeId(ExpandedNodeId nodeId) {
     if (nodeId.getIdentifier() instanceof UInteger
         && (Namespaces.OPC_UA.equals(nodeId.getNamespaceUri())
             || nodeId.getNamespaceIndex().intValue() == 0)) {
@@ -172,7 +172,7 @@ public enum BuiltinDataType {
   }
 
   public static boolean isBuiltin(ExpandedNodeId typeId) {
-    return BuiltinDataType.fromNodeId(typeId) != null;
+    return OpcUaDataType.fromNodeId(typeId) != null;
   }
 
   public static boolean isBuiltin(Class<?> clazz) {

@@ -24,8 +24,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.Random;
 import java.util.UUID;
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
@@ -807,19 +807,19 @@ class OpcUaJsonDecoderTest {
             });
 
     decoder.reset(new StringReader("[[0,1],[2,3]]"));
-    assertEquals(matrix2d, decoder.decodeMatrix(null, BuiltinDataType.Int32));
+    assertEquals(matrix2d, decoder.decodeMatrix(null, OpcUaDataType.Int32));
 
     decoder.reset(new StringReader("[[[0,1],[2,3]],[[4,5],[6,7]]]"));
-    assertEquals(matrix3d, decoder.decodeMatrix(null, BuiltinDataType.Int32));
+    assertEquals(matrix3d, decoder.decodeMatrix(null, OpcUaDataType.Int32));
 
     decoder.reset(new StringReader("{\"foo\":[[0,1],[2,3]]}"));
     decoder.jsonReader.beginObject();
-    assertEquals(matrix2d, decoder.decodeMatrix("foo", BuiltinDataType.Int32));
+    assertEquals(matrix2d, decoder.decodeMatrix("foo", OpcUaDataType.Int32));
     decoder.jsonReader.endObject();
 
     decoder.reset(new StringReader("{\"foo\":[[[0,1],[2,3]],[[4,5],[6,7]]]}"));
     decoder.jsonReader.beginObject();
-    assertEquals(matrix3d, decoder.decodeMatrix("foo", BuiltinDataType.Int32));
+    assertEquals(matrix3d, decoder.decodeMatrix("foo", OpcUaDataType.Int32));
     decoder.jsonReader.endObject();
   }
 

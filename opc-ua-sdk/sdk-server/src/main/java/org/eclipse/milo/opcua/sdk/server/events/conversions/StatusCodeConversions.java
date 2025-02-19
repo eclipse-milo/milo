@@ -14,7 +14,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ulong;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
@@ -57,7 +57,7 @@ final class StatusCodeConversions {
   }
 
   @Nullable
-  static Object convert(@NonNull Object o, BuiltinDataType targetType, boolean implicit) {
+  static Object convert(@NonNull Object o, OpcUaDataType targetType, boolean implicit) {
     if (o instanceof StatusCode) {
       StatusCode s = (StatusCode) o;
 
@@ -68,7 +68,7 @@ final class StatusCodeConversions {
   }
 
   @Nullable
-  static Object explicitConversion(@NonNull StatusCode s, BuiltinDataType targetType) {
+  static Object explicitConversion(@NonNull StatusCode s, OpcUaDataType targetType) {
     // @formatter:off
     switch (targetType) {
       case Int16:
@@ -82,7 +82,7 @@ final class StatusCodeConversions {
   }
 
   @Nullable
-  static Object implicitConversion(@NonNull StatusCode s, BuiltinDataType targetType) {
+  static Object implicitConversion(@NonNull StatusCode s, OpcUaDataType targetType) {
     // @formatter:off
     switch (targetType) {
       case Int32:

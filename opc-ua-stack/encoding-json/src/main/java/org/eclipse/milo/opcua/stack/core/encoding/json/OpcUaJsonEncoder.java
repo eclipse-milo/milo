@@ -22,7 +22,7 @@ import java.util.Base64;
 import java.util.Stack;
 import java.util.UUID;
 import java.util.function.BiConsumer;
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.DataTypeCodec;
@@ -798,9 +798,9 @@ public class OpcUaJsonEncoder implements UaEncoder {
 
     int typeId;
     if (typeHint == TypeHint.ENUM) {
-      typeId = BuiltinDataType.Int32.getTypeId();
+      typeId = OpcUaDataType.Int32.getTypeId();
     } else if (typeHint == TypeHint.STRUCT) {
-      typeId = BuiltinDataType.ExtensionObject.getTypeId();
+      typeId = OpcUaDataType.ExtensionObject.getTypeId();
     } else if (typeHint == TypeHint.OPTION_SET) {
       // TODO this would fail on empty array
       //  would be better to have size-specific OptionSetUI subclasses, e.g. OptionSetUI8,
@@ -1372,9 +1372,9 @@ public class OpcUaJsonEncoder implements UaEncoder {
           }
         } else {
           int[] dimensions = value.getDimensions();
-          BuiltinDataType builtinDataType = value.getBuiltinDataType().orElseThrow();
+          OpcUaDataType dataType = value.getBuiltinDataType().orElseThrow();
           try {
-            encodeFlatArrayAsNested(flatArray, dimensions, builtinDataType, 0);
+            encodeFlatArrayAsNested(flatArray, dimensions, dataType, 0);
           } catch (IOException e) {
             throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
           }
@@ -1468,21 +1468,20 @@ public class OpcUaJsonEncoder implements UaEncoder {
   }
 
   private void encodeFlatArrayAsNested(
-      Object value, int[] dimensions, BuiltinDataType builtinDataType, int offset)
-      throws IOException {
+      Object value, int[] dimensions, OpcUaDataType dataType, int offset) throws IOException {
 
     if (dimensions.length == 1) {
       jsonWriter.beginArray();
       for (int i = 0; i < dimensions[0]; i++) {
         Object e = Array.get(value, offset + i);
-        encodeBuiltinTypeValue(null, builtinDataType.getTypeId(), e);
+        encodeBuiltinTypeValue(null, dataType.getTypeId(), e);
       }
       jsonWriter.endArray();
     } else {
       jsonWriter.beginArray();
       int[] tail = Arrays.copyOfRange(dimensions, 1, dimensions.length);
       for (int i = 0; i < dimensions[0]; i++) {
-        encodeFlatArrayAsNested(value, tail, builtinDataType, offset + i * length(tail));
+        encodeFlatArrayAsNested(value, tail, dataType, offset + i * length(tail));
       }
       jsonWriter.endArray();
     }

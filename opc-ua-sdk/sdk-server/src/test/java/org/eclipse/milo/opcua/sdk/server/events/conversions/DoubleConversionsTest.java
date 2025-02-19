@@ -17,7 +17,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ulong;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
@@ -30,7 +30,7 @@ public class DoubleConversionsTest extends AbstractConversionTest<Double> {
   }
 
   @Override
-  public Conversion[] getConversions(BuiltinDataType targetType) {
+  public Conversion[] getConversions(OpcUaDataType targetType) {
     switch (targetType) {
       case Boolean:
         {
@@ -145,7 +145,7 @@ public class DoubleConversionsTest extends AbstractConversionTest<Double> {
   }
 
   @Override
-  public ConversionType getConversionType(BuiltinDataType targetType) {
+  public ConversionType getConversionType(OpcUaDataType targetType) {
     // @formatter:off
     switch (targetType) {
       case Boolean:
@@ -177,7 +177,7 @@ public class DoubleConversionsTest extends AbstractConversionTest<Double> {
   }
 
   @Override
-  protected Object convert(Object fromValue, BuiltinDataType targetType, boolean implicit) {
+  protected Object convert(Object fromValue, OpcUaDataType targetType, boolean implicit) {
     return DoubleConversions.convert(fromValue, targetType, implicit);
   }
 }

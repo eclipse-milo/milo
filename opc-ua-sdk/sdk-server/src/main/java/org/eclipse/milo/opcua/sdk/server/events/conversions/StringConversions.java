@@ -16,7 +16,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
 import java.util.UUID;
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
@@ -196,7 +196,7 @@ final class StringConversions {
   }
 
   @Nullable
-  static Object convert(@NonNull Object o, BuiltinDataType targetType, boolean implicit) {
+  static Object convert(@NonNull Object o, OpcUaDataType targetType, boolean implicit) {
     if (o instanceof String) {
       String s = (String) o;
 
@@ -207,7 +207,7 @@ final class StringConversions {
   }
 
   @Nullable
-  static Object explicitConversion(@NonNull String s, BuiltinDataType targetType) {
+  static Object explicitConversion(@NonNull String s, OpcUaDataType targetType) {
     // @formatter:off
     switch (targetType) {
       case DateTime:
@@ -227,7 +227,7 @@ final class StringConversions {
   }
 
   @Nullable
-  static Object implicitConversion(@NonNull String s, BuiltinDataType targetType) {
+  static Object implicitConversion(@NonNull String s, OpcUaDataType targetType) {
     // @formatter:off
     switch (targetType) {
       case Boolean:

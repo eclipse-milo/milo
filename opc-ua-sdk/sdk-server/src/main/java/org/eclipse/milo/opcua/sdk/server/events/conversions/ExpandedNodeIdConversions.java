@@ -10,8 +10,8 @@
 
 package org.eclipse.milo.opcua.sdk.server.events.conversions;
 
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.jspecify.annotations.NonNull;
@@ -33,7 +33,7 @@ final class ExpandedNodeIdConversions {
   }
 
   @Nullable
-  static Object convert(@NonNull Object o, BuiltinDataType targetType, boolean implicit) {
+  static Object convert(@NonNull Object o, OpcUaDataType targetType, boolean implicit) {
     if (o instanceof ExpandedNodeId) {
       ExpandedNodeId eni = (ExpandedNodeId) o;
 
@@ -44,7 +44,7 @@ final class ExpandedNodeIdConversions {
   }
 
   @Nullable
-  static Object explicitConversion(@NonNull ExpandedNodeId eni, BuiltinDataType targetType) {
+  static Object explicitConversion(@NonNull ExpandedNodeId eni, OpcUaDataType targetType) {
     // @formatter:off
     switch (targetType) {
       case NodeId:
@@ -56,7 +56,7 @@ final class ExpandedNodeIdConversions {
   }
 
   @Nullable
-  static Object implicitConversion(@NonNull ExpandedNodeId eni, BuiltinDataType targetType) {
+  static Object implicitConversion(@NonNull ExpandedNodeId eni, OpcUaDataType targetType) {
     // @formatter:off
     switch (targetType) {
       case String:

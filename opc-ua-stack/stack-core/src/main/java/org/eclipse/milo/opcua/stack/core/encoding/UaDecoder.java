@@ -12,7 +12,7 @@ package org.eclipse.milo.opcua.stack.core.encoding;
 
 import java.util.UUID;
 import java.util.function.Function;
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.types.UaMessageType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
@@ -157,8 +157,7 @@ public interface UaDecoder {
   <T> T[] decodeArray(String field, Function<String, T> decoder, Class<T> clazz)
       throws UaSerializationException;
 
-  Matrix decodeMatrix(String field, BuiltinDataType builtinDataType)
-      throws UaSerializationException;
+  Matrix decodeMatrix(String field, OpcUaDataType dataType) throws UaSerializationException;
 
   Matrix decodeEnumMatrix(String field) throws UaSerializationException;
 

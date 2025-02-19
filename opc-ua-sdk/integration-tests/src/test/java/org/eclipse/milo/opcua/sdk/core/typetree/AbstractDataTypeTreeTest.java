@@ -19,8 +19,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Comparator;
 import java.util.Objects;
 import org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest;
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -109,26 +109,26 @@ public abstract class AbstractDataTypeTreeTest extends AbstractClientServerTest 
   @Test
   public void testGetBuiltinType() {
     // Check all the builtin types
-    for (BuiltinDataType expectedType : BuiltinDataType.values()) {
-      BuiltinDataType builtinType = dataTypeTree.getBuiltinType(expectedType.getNodeId());
+    for (OpcUaDataType expectedType : OpcUaDataType.values()) {
+      OpcUaDataType builtinType = dataTypeTree.getBuiltinType(expectedType.getNodeId());
 
       assertEquals(expectedType, builtinType);
     }
 
     // Check that subtypes resolve to their builtin types
-    assertEquals(BuiltinDataType.String, dataTypeTree.getBuiltinType(NodeIds.NumericRange));
-    assertEquals(BuiltinDataType.DateTime, dataTypeTree.getBuiltinType(NodeIds.DateTime));
-    assertEquals(BuiltinDataType.ByteString, dataTypeTree.getBuiltinType(NodeIds.Image));
-    assertEquals(BuiltinDataType.ByteString, dataTypeTree.getBuiltinType(NodeIds.ImageBMP));
+    assertEquals(OpcUaDataType.String, dataTypeTree.getBuiltinType(NodeIds.NumericRange));
+    assertEquals(OpcUaDataType.DateTime, dataTypeTree.getBuiltinType(NodeIds.DateTime));
+    assertEquals(OpcUaDataType.ByteString, dataTypeTree.getBuiltinType(NodeIds.Image));
+    assertEquals(OpcUaDataType.ByteString, dataTypeTree.getBuiltinType(NodeIds.ImageBMP));
     assertEquals(
-        BuiltinDataType.NodeId, dataTypeTree.getBuiltinType(NodeIds.SessionAuthenticationToken));
+        OpcUaDataType.NodeId, dataTypeTree.getBuiltinType(NodeIds.SessionAuthenticationToken));
     assertEquals(
-        BuiltinDataType.ExtensionObject, dataTypeTree.getBuiltinType(NodeIds.TrustListDataType));
-    assertEquals(BuiltinDataType.Double, dataTypeTree.getBuiltinType(NodeIds.Duration));
-    assertEquals(BuiltinDataType.UInt32, dataTypeTree.getBuiltinType(NodeIds.IntegerId));
-    assertEquals(BuiltinDataType.UInt64, dataTypeTree.getBuiltinType(NodeIds.BitFieldMaskDataType));
+        OpcUaDataType.ExtensionObject, dataTypeTree.getBuiltinType(NodeIds.TrustListDataType));
+    assertEquals(OpcUaDataType.Double, dataTypeTree.getBuiltinType(NodeIds.Duration));
+    assertEquals(OpcUaDataType.UInt32, dataTypeTree.getBuiltinType(NodeIds.IntegerId));
+    assertEquals(OpcUaDataType.UInt64, dataTypeTree.getBuiltinType(NodeIds.BitFieldMaskDataType));
     // note: enumerations resolve to BaseDataType aka Variant
-    assertEquals(BuiltinDataType.Variant, dataTypeTree.getBuiltinType(NodeIds.NamingRuleType));
+    assertEquals(OpcUaDataType.Variant, dataTypeTree.getBuiltinType(NodeIds.NamingRuleType));
   }
 
   @Test

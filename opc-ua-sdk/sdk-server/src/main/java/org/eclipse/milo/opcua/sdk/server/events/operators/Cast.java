@@ -15,7 +15,7 @@ import org.eclipse.milo.opcua.sdk.server.events.OperatorContext;
 import org.eclipse.milo.opcua.sdk.server.events.ValidationException;
 import org.eclipse.milo.opcua.sdk.server.events.conversions.ImplicitConversions;
 import org.eclipse.milo.opcua.sdk.server.model.objects.BaseEventTypeNode;
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
@@ -52,7 +52,7 @@ public class Cast implements Operator<Object> {
     if (dataTypeIdObject instanceof NodeId) {
       NodeId dataTypeId = (NodeId) dataTypeIdObject;
 
-      BuiltinDataType dataType = BuiltinDataType.fromNodeId(dataTypeId);
+      OpcUaDataType dataType = OpcUaDataType.fromNodeId(dataTypeId);
 
       if (dataType != null) {
         return ImplicitConversions.convert(sourceValue, dataType);
@@ -62,7 +62,7 @@ public class Cast implements Operator<Object> {
     } else if (dataTypeIdObject instanceof ExpandedNodeId) {
       ExpandedNodeId dataTypeId = (ExpandedNodeId) dataTypeIdObject;
 
-      BuiltinDataType dataType = BuiltinDataType.fromNodeId(dataTypeId);
+      OpcUaDataType dataType = OpcUaDataType.fromNodeId(dataTypeId);
 
       if (dataType != null) {
         return ImplicitConversions.convert(sourceValue, dataType);

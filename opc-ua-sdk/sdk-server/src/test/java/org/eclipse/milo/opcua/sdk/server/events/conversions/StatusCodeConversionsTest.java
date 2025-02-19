@@ -14,7 +14,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ulong;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 
@@ -26,7 +26,7 @@ public class StatusCodeConversionsTest extends AbstractConversionTest<StatusCode
   }
 
   @Override
-  public Conversion[] getConversions(BuiltinDataType targetType) {
+  public Conversion[] getConversions(OpcUaDataType targetType) {
     switch (targetType) {
       case Int16:
         {
@@ -81,7 +81,7 @@ public class StatusCodeConversionsTest extends AbstractConversionTest<StatusCode
   }
 
   @Override
-  public ConversionType getConversionType(BuiltinDataType targetType) {
+  public ConversionType getConversionType(OpcUaDataType targetType) {
     // @formatter:off
     switch (targetType) {
       case Int16:
@@ -103,7 +103,7 @@ public class StatusCodeConversionsTest extends AbstractConversionTest<StatusCode
   }
 
   @Override
-  protected Object convert(Object fromValue, BuiltinDataType targetType, boolean implicit) {
+  protected Object convert(Object fromValue, OpcUaDataType targetType, boolean implicit) {
     return StatusCodeConversions.convert(fromValue, targetType, implicit);
   }
 }

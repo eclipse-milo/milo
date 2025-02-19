@@ -10,7 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.server.events.conversions;
 
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -25,7 +25,7 @@ final class LocalizedTextConversions {
   }
 
   @Nullable
-  static Object convert(@NonNull Object o, BuiltinDataType targetType, boolean implicit) {
+  static Object convert(@NonNull Object o, OpcUaDataType targetType, boolean implicit) {
     if (o instanceof LocalizedText) {
       LocalizedText text = (LocalizedText) o;
 
@@ -36,12 +36,12 @@ final class LocalizedTextConversions {
   }
 
   @Nullable
-  static Object explicitConversion(@NonNull LocalizedText text, BuiltinDataType targetType) {
+  static Object explicitConversion(@NonNull LocalizedText text, OpcUaDataType targetType) {
     return implicitConversion(text, targetType);
   }
 
   @Nullable
-  static Object implicitConversion(@NonNull LocalizedText text, BuiltinDataType targetType) {
+  static Object implicitConversion(@NonNull LocalizedText text, OpcUaDataType targetType) {
     // @formatter:off
     switch (targetType) {
       case String:

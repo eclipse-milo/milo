@@ -15,7 +15,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ulong;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -113,7 +113,7 @@ final class Int32Conversions {
   }
 
   @Nullable
-  static Object convert(@Nullable Object o, BuiltinDataType targetType, boolean implicit) {
+  static Object convert(@Nullable Object o, OpcUaDataType targetType, boolean implicit) {
     if (o instanceof Integer) {
       Integer i = (Integer) o;
 
@@ -124,7 +124,7 @@ final class Int32Conversions {
   }
 
   @Nullable
-  static Object explicitConversion(@NonNull Integer i, BuiltinDataType targetType) {
+  static Object explicitConversion(@NonNull Integer i, OpcUaDataType targetType) {
     // @formatter:off
     switch (targetType) {
       case Boolean:
@@ -150,7 +150,7 @@ final class Int32Conversions {
   }
 
   @Nullable
-  static Object implicitConversion(@NonNull Integer i, BuiltinDataType targetType) {
+  static Object implicitConversion(@NonNull Integer i, OpcUaDataType targetType) {
     // @formatter:off
     switch (targetType) {
       case Double:

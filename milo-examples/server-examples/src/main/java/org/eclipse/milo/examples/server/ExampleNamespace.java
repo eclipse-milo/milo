@@ -50,8 +50,8 @@ import org.eclipse.milo.opcua.sdk.server.nodes.factories.NodeFactory;
 import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilters;
 import org.eclipse.milo.opcua.sdk.server.util.SubscriptionModel;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
@@ -853,7 +853,7 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
             dataTypeId,
             new QualifiedName(getNamespaceIndex(), "CustomEnumType"),
             definition,
-            ubyte(BuiltinDataType.Int32.getTypeId()));
+            ubyte(OpcUaDataType.Int32.getTypeId()));
 
     dictionaryManager.registerEnum(description);
   }

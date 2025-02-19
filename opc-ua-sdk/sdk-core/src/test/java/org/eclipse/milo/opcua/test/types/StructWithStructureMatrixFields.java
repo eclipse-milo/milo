@@ -11,8 +11,8 @@
 package org.eclipse.milo.opcua.test.types;
 
 import java.util.StringJoiner;
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -167,9 +167,9 @@ public class StructWithStructureMatrixFields extends Structure implements UaStru
       final Matrix struct1;
       final Matrix struct2;
       final Matrix struct3;
-      struct1 = decoder.decodeMatrix("Struct1", BuiltinDataType.ExtensionObject);
-      struct2 = decoder.decodeMatrix("Struct2", BuiltinDataType.ExtensionObject);
-      struct3 = decoder.decodeMatrix("Struct3", BuiltinDataType.ExtensionObject);
+      struct1 = decoder.decodeMatrix("Struct1", OpcUaDataType.ExtensionObject);
+      struct2 = decoder.decodeMatrix("Struct2", OpcUaDataType.ExtensionObject);
+      struct3 = decoder.decodeMatrix("Struct3", OpcUaDataType.ExtensionObject);
       return new StructWithStructureMatrixFields(struct1, struct2, struct3);
     }
 

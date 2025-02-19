@@ -29,8 +29,8 @@ import java.util.StringJoiner;
 import java.util.UUID;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
@@ -165,8 +165,8 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
 
     if (field.getValueRank() == -1) {
       Object hint = getHint(field);
-      if (hint instanceof BuiltinDataType) {
-        return decodeBuiltinDataType(decoder, fieldName, (BuiltinDataType) hint);
+      if (hint instanceof OpcUaDataType) {
+        return decodeBuiltinDataType(decoder, fieldName, (OpcUaDataType) hint);
       } else if (hint instanceof EnumHint) {
         int enumValue = decoder.decodeEnum(fieldName);
 
@@ -187,8 +187,8 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
       }
     } else if (field.getValueRank() == 1) {
       Object hint = getHint(field);
-      if (hint instanceof BuiltinDataType) {
-        return decodeBuiltinDataTypeArray(decoder, fieldName, (BuiltinDataType) hint);
+      if (hint instanceof OpcUaDataType) {
+        return decodeBuiltinDataTypeArray(decoder, fieldName, (OpcUaDataType) hint);
       } else if (hint instanceof EnumHint) {
         var array = new JsonArray();
         for (int value : decoder.decodeEnumArray(fieldName)) {
@@ -215,8 +215,8 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
       }
     } else if (field.getValueRank() > 1) {
       Object hint = getHint(field);
-      if (hint instanceof BuiltinDataType) {
-        Matrix matrix = decoder.decodeMatrix(fieldName, (BuiltinDataType) hint);
+      if (hint instanceof OpcUaDataType) {
+        Matrix matrix = decoder.decodeMatrix(fieldName, (OpcUaDataType) hint);
 
         return decodeBuiltinDataTypeMatrix(matrix);
       } else if (hint instanceof EnumHint) {
@@ -225,7 +225,7 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
         return decodeEnumMatrix(matrix);
       } else if (hint instanceof StructHint) {
         if (dataTypeId.equals(NodeIds.Structure) || fieldAllowsSubtyping(field)) {
-          Matrix matrix = decoder.decodeMatrix(fieldName, BuiltinDataType.ExtensionObject);
+          Matrix matrix = decoder.decodeMatrix(fieldName, OpcUaDataType.ExtensionObject);
 
           return decodeStructMatrix(decoder.getEncodingContext(), matrix, true);
         } else {
@@ -256,7 +256,7 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
   }
 
   private static JsonElement decodeBuiltinDataType(
-      UaDecoder decoder, String fieldName, BuiltinDataType dataType) {
+      UaDecoder decoder, String fieldName, OpcUaDataType dataType) {
     return switch (dataType) {
       case Boolean -> JsonConversions.fromBoolean(decoder.decodeBoolean(fieldName));
       case SByte -> JsonConversions.fromSByte(decoder.decodeSByte(fieldName));
@@ -291,7 +291,7 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
   }
 
   private static JsonElement decodeBuiltinDataTypeArray(
-      UaDecoder decoder, String fieldName, BuiltinDataType dataType) {
+      UaDecoder decoder, String fieldName, OpcUaDataType dataType) {
     switch (dataType) {
       case Boolean:
         {
@@ -501,7 +501,7 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
   }
 
   private static JsonElement decodeBuiltinDataTypeMatrix(
-      Object flatArray, BuiltinDataType dataType, int[] dimensions, int offset) {
+      Object flatArray, OpcUaDataType dataType, int[] dimensions, int offset) {
     var jsonArray = new JsonArray();
 
     if (dimensions.length == 1) {
@@ -527,7 +527,7 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
 
   static JsonElement decodeEnumMatrix(Matrix matrix) {
     return decodeBuiltinDataTypeMatrix(
-        matrix.getElements(), BuiltinDataType.Int32, matrix.getDimensions(), 0);
+        matrix.getElements(), OpcUaDataType.Int32, matrix.getDimensions(), 0);
   }
 
   static JsonElement decodeStructMatrix(EncodingContext context, Matrix matrix, boolean subtyped) {
@@ -656,8 +656,8 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
 
     if (field.getValueRank() == -1) {
       Object hint = getHint(field);
-      if (hint instanceof BuiltinDataType) {
-        encodeBuiltinDataType(encoder, fieldName, (BuiltinDataType) hint, value);
+      if (hint instanceof OpcUaDataType) {
+        encodeBuiltinDataType(encoder, fieldName, (OpcUaDataType) hint, value);
       } else if (hint instanceof EnumHint) {
         encoder.encodeEnum(fieldName, new JsonEnumWrapper(value.getAsInt(), dataTypeId.expanded()));
       } else if (hint instanceof StructHint) {
@@ -681,8 +681,8 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
       JsonArray jsonArray = value.getAsJsonArray();
 
       Object hint = getHint(field);
-      if (hint instanceof BuiltinDataType) {
-        encodeBuiltinDataTypeArray(encoder, fieldName, (BuiltinDataType) hint, jsonArray);
+      if (hint instanceof OpcUaDataType) {
+        encodeBuiltinDataTypeArray(encoder, fieldName, (OpcUaDataType) hint, jsonArray);
       } else if (hint instanceof EnumHint) {
         JsonEnumWrapper[] enumValues = new JsonEnumWrapper[jsonArray.size()];
         for (int i = 0; i < jsonArray.size(); i++) {
@@ -724,26 +724,26 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
       JsonArray jsonArray = value.getAsJsonArray();
 
       Object hint = getHint(field);
-      if (hint instanceof BuiltinDataType) {
-        Object[] flatArray = encodeBuiltinDataTypeMatrix((BuiltinDataType) hint, jsonArray);
-        var matrix = new Matrix(flatArray, getDimensions(jsonArray), (BuiltinDataType) hint);
+      if (hint instanceof OpcUaDataType) {
+        Object[] flatArray = encodeBuiltinDataTypeMatrix((OpcUaDataType) hint, jsonArray);
+        var matrix = new Matrix(flatArray, getDimensions(jsonArray), (OpcUaDataType) hint);
         encoder.encodeMatrix(fieldName, matrix);
       } else if (hint instanceof EnumHint) {
         Object[] flatArray = encodeEnumMatrix(dataTypeId.expanded(), jsonArray);
-        var matrix = new Matrix(flatArray, getDimensions(jsonArray), BuiltinDataType.Int32);
+        var matrix = new Matrix(flatArray, getDimensions(jsonArray), OpcUaDataType.Int32);
         encoder.encodeEnumMatrix(fieldName, matrix);
       } else if (hint instanceof StructHint) {
         if (dataTypeId.equals(NodeIds.Structure) || fieldAllowsSubtyping(field)) {
           Object[] flatArray =
               encodeStructMatrix(encoder.getEncodingContext(), dataTypeTree, jsonArray, true);
           var matrix =
-              new Matrix(flatArray, getDimensions(jsonArray), BuiltinDataType.ExtensionObject);
+              new Matrix(flatArray, getDimensions(jsonArray), OpcUaDataType.ExtensionObject);
           encoder.encodeMatrix(fieldName, matrix);
         } else {
           Object[] flatArray =
               encodeStructMatrix(encoder.getEncodingContext(), dataTypeTree, jsonArray, false);
           var matrix =
-              new Matrix(flatArray, getDimensions(jsonArray), BuiltinDataType.ExtensionObject);
+              new Matrix(flatArray, getDimensions(jsonArray), OpcUaDataType.ExtensionObject);
           encoder.encodeStructMatrix(fieldName, matrix, dataTypeId);
         }
       } else {
@@ -755,7 +755,7 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
   }
 
   private void encodeBuiltinDataType(
-      UaEncoder encoder, String fieldName, BuiltinDataType dataType, JsonElement value) {
+      UaEncoder encoder, String fieldName, OpcUaDataType dataType, JsonElement value) {
     switch (dataType) {
       case Boolean:
         encoder.encodeBoolean(fieldName, JsonConversions.toBoolean(value));
@@ -837,7 +837,7 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
   }
 
   private void encodeBuiltinDataTypeArray(
-      UaEncoder encoder, String fieldName, BuiltinDataType dataType, JsonArray value) {
+      UaEncoder encoder, String fieldName, OpcUaDataType dataType, JsonArray value) {
     switch (dataType) {
       case Boolean:
         {
@@ -1062,7 +1062,7 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
     }
   }
 
-  static Object[] encodeBuiltinDataTypeMatrix(BuiltinDataType dataType, JsonArray jsonArray) {
+  static Object[] encodeBuiltinDataTypeMatrix(OpcUaDataType dataType, JsonArray jsonArray) {
     var elements = new ArrayList<>();
 
     for (int i = 0; i < jsonArray.size(); i++) {
@@ -1155,8 +1155,8 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
 
               for (StructureField f : fields) {
                 NodeId dataTypeId = f.getDataType();
-                if (BuiltinDataType.isBuiltin(dataTypeId)) {
-                  map.put(f, BuiltinDataType.fromNodeId(dataTypeId));
+                if (OpcUaDataType.isBuiltin(dataTypeId)) {
+                  map.put(f, OpcUaDataType.fromNodeId(dataTypeId));
                 } else if (dataTypeTree.isEnumType(dataTypeId)) {
                   map.put(f, new EnumHint());
                 } else if (dataTypeTree.isStructType(dataTypeId)) {

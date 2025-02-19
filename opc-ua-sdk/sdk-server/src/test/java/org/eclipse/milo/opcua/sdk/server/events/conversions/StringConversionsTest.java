@@ -16,7 +16,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 
 import java.util.UUID;
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
@@ -32,7 +32,7 @@ public class StringConversionsTest extends AbstractConversionTest<String> {
   }
 
   @Override
-  public Conversion[] getConversions(BuiltinDataType targetType) {
+  public Conversion[] getConversions(OpcUaDataType targetType) {
     switch (targetType) {
       case Boolean:
         {
@@ -55,7 +55,7 @@ public class StringConversionsTest extends AbstractConversionTest<String> {
           // Arbitrary DateTime without any nano precision because
           // they are lost going to ISO 8601 format.
           DateTime dt = new DateTime(131801928020000000L);
-          String dts = (String) DateTimeConversions.convert(dt, BuiltinDataType.String, false);
+          String dts = (String) DateTimeConversions.convert(dt, OpcUaDataType.String, false);
           return new Conversion[] {c(dts, dt)};
         }
 
@@ -142,7 +142,7 @@ public class StringConversionsTest extends AbstractConversionTest<String> {
   }
 
   @Override
-  public ConversionType getConversionType(BuiltinDataType targetType) {
+  public ConversionType getConversionType(OpcUaDataType targetType) {
     // @formatter:off
     switch (targetType) {
       case Boolean:
@@ -186,7 +186,7 @@ public class StringConversionsTest extends AbstractConversionTest<String> {
   }
 
   @Override
-  protected Object convert(Object fromValue, BuiltinDataType targetType, boolean implicit) {
+  protected Object convert(Object fromValue, OpcUaDataType targetType, boolean implicit) {
     return StringConversions.convert(fromValue, targetType, implicit);
   }
 }

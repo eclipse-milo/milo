@@ -11,8 +11,8 @@
 package org.eclipse.milo.opcua.test.types;
 
 import java.util.StringJoiner;
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
@@ -186,19 +186,19 @@ public class UnionOfMatrix extends Union {
         case 1:
           {
             final Matrix _boolean;
-            _boolean = decoder.decodeMatrix("Boolean", BuiltinDataType.Boolean);
+            _boolean = decoder.decodeMatrix("Boolean", OpcUaDataType.Boolean);
             return UnionOfMatrix.ofBoolean(_boolean);
           }
         case 2:
           {
             final Matrix sByte;
-            sByte = decoder.decodeMatrix("SByte", BuiltinDataType.SByte);
+            sByte = decoder.decodeMatrix("SByte", OpcUaDataType.SByte);
             return UnionOfMatrix.ofSByte(sByte);
           }
         case 3:
           {
             final Matrix _byte;
-            _byte = decoder.decodeMatrix("Byte", BuiltinDataType.Byte);
+            _byte = decoder.decodeMatrix("Byte", OpcUaDataType.Byte);
             return UnionOfMatrix.ofByte(_byte);
           }
         default:

@@ -11,8 +11,8 @@
 package org.eclipse.milo.opcua.test.types;
 
 import java.util.StringJoiner;
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -275,21 +275,21 @@ public class StructWithOptionalMatrixFields extends Structure implements UaStruc
       final Matrix concreteTestType;
       final Matrix optionalConcreteTestType;
       final long encodingMask = decoder.decodeUInt32("EncodingMask").longValue();
-      int32 = decoder.decodeMatrix("Int32", BuiltinDataType.Int32);
+      int32 = decoder.decodeMatrix("Int32", OpcUaDataType.Int32);
       if ((encodingMask & (1L << 0)) != 0) {
-        optionalInt32 = decoder.decodeMatrix("OptionalInt32", BuiltinDataType.Int32);
+        optionalInt32 = decoder.decodeMatrix("OptionalInt32", OpcUaDataType.Int32);
       } else {
         optionalInt32 = null;
       }
-      string = decoder.decodeMatrix("String", BuiltinDataType.String);
+      string = decoder.decodeMatrix("String", OpcUaDataType.String);
       if ((encodingMask & (1L << 1)) != 0) {
-        optionalString = decoder.decodeMatrix("OptionalString", BuiltinDataType.String);
+        optionalString = decoder.decodeMatrix("OptionalString", OpcUaDataType.String);
       } else {
         optionalString = null;
       }
-      duration = decoder.decodeMatrix("Duration", BuiltinDataType.Double);
+      duration = decoder.decodeMatrix("Duration", OpcUaDataType.Double);
       if ((encodingMask & (1L << 2)) != 0) {
-        optionalDuration = decoder.decodeMatrix("OptionalDuration", BuiltinDataType.Double);
+        optionalDuration = decoder.decodeMatrix("OptionalDuration", OpcUaDataType.Double);
       } else {
         optionalDuration = null;
       }

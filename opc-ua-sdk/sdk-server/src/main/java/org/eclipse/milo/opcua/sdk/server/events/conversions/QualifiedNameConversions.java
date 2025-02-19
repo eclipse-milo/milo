@@ -10,7 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.server.events.conversions;
 
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.jspecify.annotations.NonNull;
@@ -31,7 +31,7 @@ final class QualifiedNameConversions {
   }
 
   @Nullable
-  static Object convert(@NonNull Object o, BuiltinDataType targetType, boolean implicit) {
+  static Object convert(@NonNull Object o, OpcUaDataType targetType, boolean implicit) {
     if (o instanceof QualifiedName) {
       QualifiedName name = (QualifiedName) o;
 
@@ -42,12 +42,12 @@ final class QualifiedNameConversions {
   }
 
   @Nullable
-  static Object explicitConversion(@NonNull QualifiedName name, BuiltinDataType targetType) {
+  static Object explicitConversion(@NonNull QualifiedName name, OpcUaDataType targetType) {
     return implicitConversion(name, targetType);
   }
 
   @Nullable
-  static Object implicitConversion(@NonNull QualifiedName name, BuiltinDataType targetType) {
+  static Object implicitConversion(@NonNull QualifiedName name, OpcUaDataType targetType) {
     // @formatter:off
     switch (targetType) {
       case String:

@@ -17,7 +17,7 @@ import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.UUID;
 import java.util.function.Function;
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
@@ -43,41 +43,41 @@ public class Matrix {
 
   private final Object flatArray;
   private final int[] dimensions;
-  private final BuiltinDataType builtinDataType;
+  private final OpcUaDataType dataType;
   private final ExpandedNodeId dataTypeId;
 
   public Matrix(@Nullable Object nestedArray) {
     if (nestedArray == null) {
       this.flatArray = null;
       this.dimensions = new int[0];
-      this.builtinDataType = null;
+      this.dataType = null;
       this.dataTypeId = null;
     } else {
       this.flatArray = ArrayUtil.flatten(nestedArray);
       this.dimensions = ArrayUtil.getDimensions(nestedArray);
-      this.builtinDataType = deriveBuiltinType(flatArray);
+      this.dataType = deriveBuiltinType(flatArray);
       this.dataTypeId = deriveDataTypeId(flatArray);
     }
 
-    assert flatArray == null || (dimensions.length > 1 && builtinDataType != null);
+    assert flatArray == null || (dimensions.length > 1 && dataType != null);
   }
 
   public Matrix(Object flatArray, int[] dimensions) {
     this.flatArray = flatArray;
     this.dimensions = dimensions;
-    this.builtinDataType = deriveBuiltinType(flatArray);
+    this.dataType = deriveBuiltinType(flatArray);
     this.dataTypeId = deriveDataTypeId(flatArray);
 
-    assert dimensions.length > 1 && builtinDataType != null;
+    assert dimensions.length > 1 && dataType != null;
   }
 
-  public Matrix(Object flatArray, int[] dimensions, BuiltinDataType builtinDataType) {
+  public Matrix(Object flatArray, int[] dimensions, OpcUaDataType dataType) {
     this.flatArray = flatArray;
     this.dimensions = dimensions;
-    this.builtinDataType = builtinDataType;
+    this.dataType = dataType;
     this.dataTypeId = deriveDataTypeId(flatArray);
 
-    assert flatArray != null && dimensions.length > 1 && builtinDataType != null;
+    assert flatArray != null && dimensions.length > 1 && dataType != null;
   }
 
   /**
@@ -112,14 +112,14 @@ public class Matrix {
   }
 
   /**
-   * Get the {@link BuiltinDataType} of the elements of this Matrix.
+   * Get the {@link OpcUaDataType} of the elements of this Matrix.
    *
    * <p>Empty only if this Matrix contains a {@code null} value.
    *
-   * @return the {@link BuiltinDataType} of the elements of this Matrix.
+   * @return the {@link OpcUaDataType} of the elements of this Matrix.
    */
-  public Optional<BuiltinDataType> getBuiltinDataType() {
-    return Optional.ofNullable(builtinDataType);
+  public Optional<OpcUaDataType> getBuiltinDataType() {
+    return Optional.ofNullable(dataType);
   }
 
   /**
@@ -194,12 +194,12 @@ public class Matrix {
     Matrix matrix = (Matrix) o;
     return Objects.deepEquals(flatArray, matrix.flatArray)
         && Arrays.equals(dimensions, matrix.dimensions)
-        && builtinDataType == matrix.builtinDataType;
+        && dataType == matrix.dataType;
   }
 
   @Override
   public int hashCode() {
-    int result = Objects.hash(flatArray, builtinDataType);
+    int result = Objects.hash(flatArray, dataType);
     result = 31 * result + Arrays.hashCode(dimensions);
     return result;
   }
@@ -208,7 +208,7 @@ public class Matrix {
   public String toString() {
     StringJoiner joiner =
         new StringJoiner(", ", Matrix.class.getSimpleName() + "{", "}")
-            .add("builtinDataType=" + builtinDataType)
+            .add("builtinDataType=" + dataType)
             .add("dataType=" + dataTypeId.toParseableString())
             .add("dimensions=" + Arrays.toString(dimensions));
 
@@ -239,31 +239,31 @@ public class Matrix {
     return joiner.toString();
   }
 
-  private static @Nullable BuiltinDataType deriveBuiltinType(Object flatArray) {
+  private static @Nullable OpcUaDataType deriveBuiltinType(Object flatArray) {
     Class<?> type = ArrayUtil.getType(flatArray);
 
     return deriveBuiltinType(type);
   }
 
-  private static @Nullable BuiltinDataType deriveBuiltinType(Class<?> type) {
+  private static @Nullable OpcUaDataType deriveBuiltinType(Class<?> type) {
     if (UaEnumeratedType.class.isAssignableFrom(type)) {
-      return BuiltinDataType.Int32;
+      return OpcUaDataType.Int32;
     } else if (UaStructuredType.class.isAssignableFrom(type)) {
-      return BuiltinDataType.ExtensionObject;
+      return OpcUaDataType.ExtensionObject;
     } else if (OptionSetUInteger.class.isAssignableFrom(type)) {
       if (OptionSetUI8.class.isAssignableFrom(type)) {
-        return BuiltinDataType.Byte;
+        return OpcUaDataType.Byte;
       } else if (OptionSetUI16.class.isAssignableFrom(type)) {
-        return BuiltinDataType.UInt16;
+        return OpcUaDataType.UInt16;
       } else if (OptionSetUI32.class.isAssignableFrom(type)) {
-        return BuiltinDataType.UInt32;
+        return OpcUaDataType.UInt32;
       } else if (OptionSetUI64.class.isAssignableFrom(type)) {
-        return BuiltinDataType.UInt64;
+        return OpcUaDataType.UInt64;
       } else {
         throw new RuntimeException("unknown OptionSetUInteger subclass: " + type);
       }
     } else {
-      return BuiltinDataType.fromBackingClass(type);
+      return OpcUaDataType.fromBackingClass(type);
     }
   }
 
@@ -285,11 +285,11 @@ public class Matrix {
         return null;
       }
     } else {
-      BuiltinDataType builtinDataType = deriveBuiltinType(type);
-      if (builtinDataType == null) {
+      OpcUaDataType dataType = deriveBuiltinType(type);
+      if (dataType == null) {
         return null;
       } else {
-        return builtinDataType.getNodeId().expanded();
+        return dataType.getNodeId().expanded();
       }
     }
   }

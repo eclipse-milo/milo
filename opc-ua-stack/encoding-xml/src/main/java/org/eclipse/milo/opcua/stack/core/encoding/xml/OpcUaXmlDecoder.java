@@ -25,7 +25,7 @@ import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
@@ -1224,8 +1224,7 @@ public class OpcUaXmlDecoder implements UaDecoder {
   }
 
   @Override
-  public Matrix decodeMatrix(String field, BuiltinDataType builtinDataType)
-      throws UaSerializationException {
+  public Matrix decodeMatrix(String field, OpcUaDataType dataType) throws UaSerializationException {
     return null;
   }
 

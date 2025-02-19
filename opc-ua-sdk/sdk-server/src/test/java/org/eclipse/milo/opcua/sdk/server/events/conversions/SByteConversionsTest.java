@@ -15,7 +15,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ulong;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 
 public class SByteConversionsTest extends AbstractConversionTest<Byte> {
 
@@ -25,7 +25,7 @@ public class SByteConversionsTest extends AbstractConversionTest<Byte> {
   }
 
   @Override
-  public Conversion[] getConversions(BuiltinDataType targetType) {
+  public Conversion[] getConversions(OpcUaDataType targetType) {
     switch (targetType) {
       case Boolean:
         return new Conversion[] {c((byte) 0, Boolean.FALSE), c((byte) 1, Boolean.TRUE)};
@@ -34,7 +34,7 @@ public class SByteConversionsTest extends AbstractConversionTest<Byte> {
         return new Conversion[] {
           c((byte) 0, ubyte(0)),
           c(Byte.MAX_VALUE, ubyte(Byte.MAX_VALUE)),
-          c((byte) -1, null, BuiltinDataType.Byte)
+          c((byte) -1, null, OpcUaDataType.Byte)
         };
 
       case Double:
@@ -124,7 +124,7 @@ public class SByteConversionsTest extends AbstractConversionTest<Byte> {
   }
 
   @Override
-  public ConversionType getConversionType(BuiltinDataType targetType) {
+  public ConversionType getConversionType(OpcUaDataType targetType) {
     // @formatter:off
     switch (targetType) {
       case Boolean:
@@ -156,7 +156,7 @@ public class SByteConversionsTest extends AbstractConversionTest<Byte> {
   }
 
   @Override
-  protected Object convert(Object fromValue, BuiltinDataType targetType, boolean implicit) {
+  protected Object convert(Object fromValue, OpcUaDataType targetType, boolean implicit) {
     return SByteConversions.convert(fromValue, targetType, implicit);
   }
 }

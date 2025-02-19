@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.junit.jupiter.api.Test;
 
@@ -51,7 +51,7 @@ public class ByteConversionsTest {
     for (Object[] conversion : CONVERSIONS) {
       UByte b = (UByte) conversion[0];
       Object expected = conversion[1];
-      BuiltinDataType targetType = BuiltinDataType.fromBackingClass(expected.getClass());
+      OpcUaDataType targetType = OpcUaDataType.fromBackingClass(expected.getClass());
 
       assertNotNull(targetType);
 

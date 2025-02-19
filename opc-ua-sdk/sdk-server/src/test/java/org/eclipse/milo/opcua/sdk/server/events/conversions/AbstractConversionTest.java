@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
@@ -23,7 +23,7 @@ abstract class AbstractConversionTest<S> {
 
   @Test
   public void testNullConversion() {
-    for (BuiltinDataType targetType : BuiltinDataType.values()) {
+    for (OpcUaDataType targetType : OpcUaDataType.values()) {
       assertNull(convert(null, targetType, true));
       assertNull(convert(null, targetType, false));
     }
@@ -31,10 +31,10 @@ abstract class AbstractConversionTest<S> {
 
   @Test
   public void testAllConversions() {
-    for (BuiltinDataType targetType : BuiltinDataType.values()) {
+    for (OpcUaDataType targetType : OpcUaDataType.values()) {
       Conversion[] conversions = getConversions(targetType);
       ConversionType conversionType = getConversionType(targetType);
-      BuiltinDataType sourceType = BuiltinDataType.fromBackingClass(getSourceClass());
+      OpcUaDataType sourceType = OpcUaDataType.fromBackingClass(getSourceClass());
 
       if (conversionType != ConversionType.NONE) {
         if (conversions == null || conversions.length == 0) {
@@ -70,7 +70,7 @@ abstract class AbstractConversionTest<S> {
 
   @Test
   public void testExplicitConversionsCalledImplicitlyAreNull() {
-    for (BuiltinDataType targetType : BuiltinDataType.values()) {
+    for (OpcUaDataType targetType : OpcUaDataType.values()) {
       Conversion[] conversions = getConversions(targetType);
 
       for (Conversion conversion : conversions) {
@@ -89,7 +89,7 @@ abstract class AbstractConversionTest<S> {
 
   @Test
   public void testImplicitConversionsCalledExplicitly() {
-    for (BuiltinDataType targetType : BuiltinDataType.values()) {
+    for (OpcUaDataType targetType : OpcUaDataType.values()) {
       Conversion[] conversions = getConversions(targetType);
 
       for (Conversion conversion : conversions) {
@@ -115,12 +115,12 @@ abstract class AbstractConversionTest<S> {
     Conversion c = new Conversion();
     c.fromValue = fromValue;
     c.targetValue = targetValue;
-    c.targetType = BuiltinDataType.fromBackingClass(targetValue.getClass());
+    c.targetType = OpcUaDataType.fromBackingClass(targetValue.getClass());
     return c;
   }
 
   protected Conversion c(
-      @NonNull S fromValue, @Nullable Object targetValue, @NonNull BuiltinDataType targetType) {
+      @NonNull S fromValue, @Nullable Object targetValue, @NonNull OpcUaDataType targetType) {
     Conversion c = new Conversion();
     c.fromValue = fromValue;
     c.targetValue = targetValue;
@@ -130,9 +130,9 @@ abstract class AbstractConversionTest<S> {
 
   protected abstract Class<S> getSourceClass();
 
-  public abstract Conversion[] getConversions(BuiltinDataType targetType);
+  public abstract Conversion[] getConversions(OpcUaDataType targetType);
 
-  public abstract ConversionType getConversionType(BuiltinDataType targetType);
+  public abstract ConversionType getConversionType(OpcUaDataType targetType);
 
   /*
   {
@@ -160,12 +160,12 @@ abstract class AbstractConversionTest<S> {
 
   // protected abstract Conversion[] getImplicitConversions();
 
-  protected abstract Object convert(Object fromValue, BuiltinDataType targetType, boolean implicit);
+  protected abstract Object convert(Object fromValue, OpcUaDataType targetType, boolean implicit);
 
   static class Conversion {
     Object fromValue;
     Object targetValue;
-    BuiltinDataType targetType;
+    OpcUaDataType targetType;
   }
 
   enum ConversionType {

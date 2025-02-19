@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest;
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
@@ -46,7 +46,7 @@ public class UaVariableTypeNodeAttributeTest extends AbstractClientServerTest {
     assertEquals(AttributeTestHelper.ACCESS_RESTRICTIONS, variableTypeNode.getAccessRestrictions());
 
     assertEquals(new Variant(42), variableTypeNode.getValue().getValue());
-    assertEquals(BuiltinDataType.Int32.getNodeId(), variableTypeNode.getDataType());
+    assertEquals(OpcUaDataType.Int32.getNodeId(), variableTypeNode.getDataType());
     assertEquals(-1, variableTypeNode.getValueRank());
     assertNull(variableTypeNode.getArrayDimensions());
     assertFalse(variableTypeNode.getIsAbstract());
@@ -72,7 +72,7 @@ public class UaVariableTypeNodeAttributeTest extends AbstractClientServerTest {
         AttributeTestHelper.ACCESS_RESTRICTIONS, variableTypeNode.readAccessRestrictions());
 
     assertEquals(new Variant(42), variableTypeNode.readValue().getValue());
-    assertEquals(BuiltinDataType.Int32.getNodeId(), variableTypeNode.readDataType());
+    assertEquals(OpcUaDataType.Int32.getNodeId(), variableTypeNode.readDataType());
     assertEquals(-1, variableTypeNode.readValueRank());
     assertNull(variableTypeNode.readArrayDimensions());
     assertFalse(variableTypeNode.readIsAbstract());

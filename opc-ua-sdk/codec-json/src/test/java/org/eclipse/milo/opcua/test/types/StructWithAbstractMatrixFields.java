@@ -11,8 +11,8 @@
 package org.eclipse.milo.opcua.test.types;
 
 import java.util.StringJoiner;
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -174,15 +174,15 @@ public class StructWithAbstractMatrixFields extends Structure implements UaStruc
       final Matrix att1;
       final Matrix att2;
       {
-        Matrix matrix = decoder.decodeMatrix("Number", BuiltinDataType.Variant);
+        Matrix matrix = decoder.decodeMatrix("Number", OpcUaDataType.Variant);
         number = matrix.transform(v -> ((Variant) v).getValue());
       }
       {
-        Matrix matrix = decoder.decodeMatrix("ATT1", BuiltinDataType.ExtensionObject);
+        Matrix matrix = decoder.decodeMatrix("ATT1", OpcUaDataType.ExtensionObject);
         att1 = matrix.transform(v -> ((ExtensionObject) v).decode(context));
       }
       {
-        Matrix matrix = decoder.decodeMatrix("ATT2", BuiltinDataType.ExtensionObject);
+        Matrix matrix = decoder.decodeMatrix("ATT2", OpcUaDataType.ExtensionObject);
         att2 = matrix.transform(v -> ((ExtensionObject) v).decode(context));
       }
       return new StructWithAbstractMatrixFields(number, att1, att2);

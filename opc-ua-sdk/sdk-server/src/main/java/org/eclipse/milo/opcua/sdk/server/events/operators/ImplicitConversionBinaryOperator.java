@@ -16,7 +16,7 @@ import org.eclipse.milo.opcua.sdk.server.events.OperatorContext;
 import org.eclipse.milo.opcua.sdk.server.events.ValidationException;
 import org.eclipse.milo.opcua.sdk.server.events.conversions.ImplicitConversions;
 import org.eclipse.milo.opcua.sdk.server.model.objects.BaseEventTypeNode;
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.structured.FilterOperand;
@@ -54,8 +54,8 @@ abstract class ImplicitConversionBinaryOperator<T> implements Operator<T> {
       return null;
     }
 
-    BuiltinDataType dt0 = getType(value0);
-    BuiltinDataType dt1 = getType(value1);
+    OpcUaDataType dt0 = getType(value0);
+    OpcUaDataType dt1 = getType(value1);
 
     if (dt0 == null || dt1 == null) {
       throw new UaException(StatusCodes.Bad_UnexpectedError);
@@ -85,13 +85,13 @@ abstract class ImplicitConversionBinaryOperator<T> implements Operator<T> {
   protected abstract T apply(
       OperatorContext context,
       BaseEventTypeNode eventNode,
-      BuiltinDataType dataType,
+      OpcUaDataType dataType,
       @Nullable Object operand0,
       @Nullable Object operand1)
       throws UaException;
 
   @Nullable
-  private static Object convert(@NonNull Object value, BuiltinDataType targetType) {
+  private static Object convert(@NonNull Object value, OpcUaDataType targetType) {
     if (value.getClass().isArray()) {
       return convertArray(value, targetType);
     } else {
@@ -99,7 +99,7 @@ abstract class ImplicitConversionBinaryOperator<T> implements Operator<T> {
     }
   }
 
-  private static Object convertArray(@NonNull Object array, BuiltinDataType targetType) {
+  private static Object convertArray(@NonNull Object array, OpcUaDataType targetType) {
     int[] dimensions = ArrayUtil.getDimensions(array);
 
     Object flattened = ArrayUtil.flatten(array);
@@ -116,11 +116,11 @@ abstract class ImplicitConversionBinaryOperator<T> implements Operator<T> {
     return ArrayUtil.unflatten(transformed, dimensions);
   }
 
-  private static BuiltinDataType getType(@NonNull Object o) {
+  private static OpcUaDataType getType(@NonNull Object o) {
     if (o.getClass().isArray()) {
-      return BuiltinDataType.fromBackingClass(ArrayUtil.getType(o));
+      return OpcUaDataType.fromBackingClass(ArrayUtil.getType(o));
     } else {
-      return BuiltinDataType.fromBackingClass(o.getClass());
+      return OpcUaDataType.fromBackingClass(o.getClass());
     }
   }
 }

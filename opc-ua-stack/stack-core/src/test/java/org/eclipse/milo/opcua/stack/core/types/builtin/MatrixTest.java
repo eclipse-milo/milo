@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ThreeDVector;
 import org.junit.jupiter.api.Test;
 
@@ -85,15 +85,14 @@ class MatrixTest {
 
   @Test
   void getBuiltinDataType() {
-    assertEquals(BuiltinDataType.Int32, primitiveMatrix2d.getBuiltinDataType().orElse(null));
-    assertEquals(BuiltinDataType.ExtensionObject, vectorMatrix2d.getBuiltinDataType().orElse(null));
+    assertEquals(OpcUaDataType.Int32, primitiveMatrix2d.getBuiltinDataType().orElse(null));
+    assertEquals(OpcUaDataType.ExtensionObject, vectorMatrix2d.getBuiltinDataType().orElse(null));
   }
 
   @Test
   void getDataTypeId() {
     assertEquals(
-        BuiltinDataType.Int32.getNodeId().expanded(),
-        primitiveMatrix2d.getDataTypeId().orElse(null));
+        OpcUaDataType.Int32.getNodeId().expanded(), primitiveMatrix2d.getDataTypeId().orElse(null));
     assertEquals(ThreeDVector.TYPE_ID, vectorMatrix2d.getDataTypeId().orElse(null));
   }
 }

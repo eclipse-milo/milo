@@ -14,14 +14,14 @@ import static org.eclipse.milo.opcua.sdk.server.events.conversions.ImplicitConve
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.junit.jupiter.api.Test;
 
 public class ImplicitConversionsTest {
 
   @Test
   public void testConvert() {
-    assertEquals(ubyte(0), convert(false, BuiltinDataType.Byte));
-    assertEquals(ubyte(1), convert(true, BuiltinDataType.Byte));
+    assertEquals(ubyte(0), convert(false, OpcUaDataType.Byte));
+    assertEquals(ubyte(1), convert(true, OpcUaDataType.Byte));
   }
 }

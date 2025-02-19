@@ -20,7 +20,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.UUID;
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -47,16 +47,16 @@ public class JsonConversions {
   // region OPC UA to JSON Conversions
 
   /**
-   * Convert an OPC UA value of some {@link BuiltinDataType} to a {@link JsonElement}.
+   * Convert an OPC UA value of some {@link OpcUaDataType} to a {@link JsonElement}.
    *
-   * <p>Converting from values of type {@link BuiltinDataType#DiagnosticInfo} is not supported.
+   * <p>Converting from values of type {@link OpcUaDataType#DiagnosticInfo} is not supported.
    *
    * @param value the OPC UA value to convert.
-   * @param dataType the OPC UA {@link BuiltinDataType} of the value.
+   * @param dataType the OPC UA {@link OpcUaDataType} of the value.
    * @return the converted {@link JsonElement}.
-   * @throws IllegalArgumentException if the {@link BuiltinDataType} is not supported.
+   * @throws IllegalArgumentException if the {@link OpcUaDataType} is not supported.
    */
-  public static JsonElement from(Object value, BuiltinDataType dataType) {
+  public static JsonElement from(Object value, OpcUaDataType dataType) {
     return switch (dataType) {
       case Boolean -> fromBoolean((Boolean) value);
       case SByte -> fromSByte((Byte) value);
@@ -242,7 +242,7 @@ public class JsonConversions {
 
     var jsonObject = new JsonObject();
 
-    BuiltinDataType dataType = value.getBuiltinDataType().orElseThrow();
+    OpcUaDataType dataType = value.getBuiltinDataType().orElseThrow();
     jsonObject.addProperty("Type", dataType.getTypeId());
 
     if (valueObject.getClass().isArray()) {
@@ -279,16 +279,16 @@ public class JsonConversions {
   // region JSON to OPC UA Conversions
 
   /**
-   * Convert a {@link JsonElement} to a value of some OPC UA {@link BuiltinDataType}.
+   * Convert a {@link JsonElement} to a value of some OPC UA {@link OpcUaDataType}.
    *
-   * <p>Converting to values of type {@link BuiltinDataType#DiagnosticInfo} is not supported.
+   * <p>Converting to values of type {@link OpcUaDataType#DiagnosticInfo} is not supported.
    *
    * @param element the {@link JsonElement} to convert.
-   * @param dataType the OPC UA {@link BuiltinDataType} to convert to.
+   * @param dataType the OPC UA {@link OpcUaDataType} to convert to.
    * @return the converted value.
-   * @throws IllegalArgumentException if the {@link BuiltinDataType} is not supported.
+   * @throws IllegalArgumentException if the {@link OpcUaDataType} is not supported.
    */
-  public static Object to(JsonElement element, BuiltinDataType dataType) {
+  public static Object to(JsonElement element, OpcUaDataType dataType) {
     return switch (dataType) {
       case Boolean -> toBoolean(element);
       case SByte -> toSByte(element);
@@ -510,7 +510,7 @@ public class JsonConversions {
     int typeId = jsonObject.get("Type").getAsInt();
     JsonElement bodyElement = jsonObject.get("Body");
 
-    BuiltinDataType dataType = BuiltinDataType.fromTypeId(typeId);
+    OpcUaDataType dataType = OpcUaDataType.fromTypeId(typeId);
     if (dataType == null) {
       throw new IllegalArgumentException("unknown type: " + typeId);
     }

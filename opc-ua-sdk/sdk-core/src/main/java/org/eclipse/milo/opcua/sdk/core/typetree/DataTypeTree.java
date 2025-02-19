@@ -10,8 +10,8 @@
 
 package org.eclipse.milo.opcua.sdk.core.typetree;
 
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -53,12 +53,12 @@ public class DataTypeTree extends TypeTree<DataType> {
    *
    * @param dataTypeId the {@link NodeId} of a DataType Node.
    * @return the backing Class a value of DataType {@code dataTypeId} would have.
-   * @see BuiltinDataType
-   * @see BuiltinDataType#getBackingClass()
+   * @see OpcUaDataType
+   * @see OpcUaDataType#getBackingClass()
    */
   public Class<?> getBackingClass(NodeId dataTypeId) {
-    if (BuiltinDataType.isBuiltin(dataTypeId)) {
-      return BuiltinDataType.getBackingClass(dataTypeId);
+    if (OpcUaDataType.isBuiltin(dataTypeId)) {
+      return OpcUaDataType.getBackingClass(dataTypeId);
     } else {
       if (NodeIds.Enumeration.equals(dataTypeId)) {
         return Integer.class;
@@ -82,15 +82,15 @@ public class DataTypeTree extends TypeTree<DataType> {
   }
 
   /**
-   * Get the {@link BuiltinDataType} {@code dataTypeId} inherits from, following references to the
-   * parent as necessary until a {@link BuiltinDataType} is found.
+   * Get the {@link OpcUaDataType} {@code dataTypeId} inherits from, following references to the
+   * parent as necessary until a {@link OpcUaDataType} is found.
    *
    * @param dataTypeId the {@link NodeId} of a DataType Node.
-   * @return the {@link BuiltinDataType} this DataType inherits from.
+   * @return the {@link OpcUaDataType} this DataType inherits from.
    */
-  public BuiltinDataType getBuiltinType(NodeId dataTypeId) {
-    if (BuiltinDataType.isBuiltin(dataTypeId)) {
-      return BuiltinDataType.fromNodeId(dataTypeId);
+  public OpcUaDataType getBuiltinType(NodeId dataTypeId) {
+    if (OpcUaDataType.isBuiltin(dataTypeId)) {
+      return OpcUaDataType.fromNodeId(dataTypeId);
     } else {
       Tree<DataType> node = types.get(dataTypeId);
       Tree<DataType> parent = node != null ? node.getParent() : null;
@@ -98,7 +98,7 @@ public class DataTypeTree extends TypeTree<DataType> {
       if (parent != null) {
         return getBuiltinType(parent.getValue().getNodeId());
       } else {
-        return BuiltinDataType.Variant;
+        return OpcUaDataType.Variant;
       }
     }
   }

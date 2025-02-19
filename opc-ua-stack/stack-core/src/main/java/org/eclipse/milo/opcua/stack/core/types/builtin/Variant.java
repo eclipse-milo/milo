@@ -18,7 +18,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
@@ -72,7 +72,7 @@ public final class Variant {
     }
   }
 
-  public Optional<BuiltinDataType> getBuiltinDataType() {
+  public Optional<OpcUaDataType> getBuiltinDataType() {
     if (value == null) {
       return Optional.empty();
     }
@@ -80,25 +80,25 @@ public final class Variant {
     Class<?> type = value.getClass().isArray() ? ArrayUtil.getType(value) : value.getClass();
 
     if (UaEnumeratedType.class.isAssignableFrom(type)) {
-      return Optional.of(BuiltinDataType.Int32);
+      return Optional.of(OpcUaDataType.Int32);
     } else if (UaStructuredType.class.isAssignableFrom(type)) {
-      return Optional.of(BuiltinDataType.ExtensionObject);
+      return Optional.of(OpcUaDataType.ExtensionObject);
     } else if (OptionSetUInteger.class.isAssignableFrom(type)) {
       if (OptionSetUI8.class.isAssignableFrom(type)) {
-        return Optional.of(BuiltinDataType.Byte);
+        return Optional.of(OpcUaDataType.Byte);
       } else if (OptionSetUI16.class.isAssignableFrom(type)) {
-        return Optional.of(BuiltinDataType.UInt16);
+        return Optional.of(OpcUaDataType.UInt16);
       } else if (OptionSetUI32.class.isAssignableFrom(type)) {
-        return Optional.of(BuiltinDataType.UInt32);
+        return Optional.of(OpcUaDataType.UInt32);
       } else if (OptionSetUI64.class.isAssignableFrom(type)) {
-        return Optional.of(BuiltinDataType.UInt64);
+        return Optional.of(OpcUaDataType.UInt64);
       } else {
         throw new RuntimeException("unknown OptionSetUInteger subclass: " + type);
       }
     } else if (Matrix.class.isAssignableFrom(type)) {
       return ((Matrix) value).getBuiltinDataType();
     } else {
-      return Optional.ofNullable(BuiltinDataType.fromBackingClass(type));
+      return Optional.ofNullable(OpcUaDataType.fromBackingClass(type));
     }
   }
 

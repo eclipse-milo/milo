@@ -11,8 +11,8 @@
 package org.eclipse.milo.opcua.test.types;
 
 import java.util.StringJoiner;
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
@@ -569,29 +569,29 @@ public class StructWithBuiltinMatrixFields extends Structure implements UaStruct
       final Matrix localizedText;
       final Matrix dataValue;
       final Matrix variant;
-      _boolean = decoder.decodeMatrix("Boolean", BuiltinDataType.Boolean);
-      sByte = decoder.decodeMatrix("SByte", BuiltinDataType.SByte);
-      _byte = decoder.decodeMatrix("Byte", BuiltinDataType.Byte);
-      int16 = decoder.decodeMatrix("Int16", BuiltinDataType.Int16);
-      uInt16 = decoder.decodeMatrix("UInt16", BuiltinDataType.UInt16);
-      int32 = decoder.decodeMatrix("Int32", BuiltinDataType.Int32);
-      uInt32 = decoder.decodeMatrix("UInt32", BuiltinDataType.UInt32);
-      int64 = decoder.decodeMatrix("Int64", BuiltinDataType.Int64);
-      uInt64 = decoder.decodeMatrix("UInt64", BuiltinDataType.UInt64);
-      _float = decoder.decodeMatrix("Float", BuiltinDataType.Float);
-      _double = decoder.decodeMatrix("Double", BuiltinDataType.Double);
-      string = decoder.decodeMatrix("String", BuiltinDataType.String);
-      dateTime = decoder.decodeMatrix("DateTime", BuiltinDataType.DateTime);
-      guid = decoder.decodeMatrix("Guid", BuiltinDataType.Guid);
-      byteString = decoder.decodeMatrix("ByteString", BuiltinDataType.ByteString);
-      xmlElement = decoder.decodeMatrix("XmlElement", BuiltinDataType.XmlElement);
-      nodeId = decoder.decodeMatrix("NodeId", BuiltinDataType.NodeId);
-      expandedNodeId = decoder.decodeMatrix("ExpandedNodeId", BuiltinDataType.ExpandedNodeId);
-      statusCode = decoder.decodeMatrix("StatusCode", BuiltinDataType.StatusCode);
-      qualifiedName = decoder.decodeMatrix("QualifiedName", BuiltinDataType.QualifiedName);
-      localizedText = decoder.decodeMatrix("LocalizedText", BuiltinDataType.LocalizedText);
-      dataValue = decoder.decodeMatrix("DataValue", BuiltinDataType.DataValue);
-      variant = decoder.decodeMatrix("Variant", BuiltinDataType.Variant);
+      _boolean = decoder.decodeMatrix("Boolean", OpcUaDataType.Boolean);
+      sByte = decoder.decodeMatrix("SByte", OpcUaDataType.SByte);
+      _byte = decoder.decodeMatrix("Byte", OpcUaDataType.Byte);
+      int16 = decoder.decodeMatrix("Int16", OpcUaDataType.Int16);
+      uInt16 = decoder.decodeMatrix("UInt16", OpcUaDataType.UInt16);
+      int32 = decoder.decodeMatrix("Int32", OpcUaDataType.Int32);
+      uInt32 = decoder.decodeMatrix("UInt32", OpcUaDataType.UInt32);
+      int64 = decoder.decodeMatrix("Int64", OpcUaDataType.Int64);
+      uInt64 = decoder.decodeMatrix("UInt64", OpcUaDataType.UInt64);
+      _float = decoder.decodeMatrix("Float", OpcUaDataType.Float);
+      _double = decoder.decodeMatrix("Double", OpcUaDataType.Double);
+      string = decoder.decodeMatrix("String", OpcUaDataType.String);
+      dateTime = decoder.decodeMatrix("DateTime", OpcUaDataType.DateTime);
+      guid = decoder.decodeMatrix("Guid", OpcUaDataType.Guid);
+      byteString = decoder.decodeMatrix("ByteString", OpcUaDataType.ByteString);
+      xmlElement = decoder.decodeMatrix("XmlElement", OpcUaDataType.XmlElement);
+      nodeId = decoder.decodeMatrix("NodeId", OpcUaDataType.NodeId);
+      expandedNodeId = decoder.decodeMatrix("ExpandedNodeId", OpcUaDataType.ExpandedNodeId);
+      statusCode = decoder.decodeMatrix("StatusCode", OpcUaDataType.StatusCode);
+      qualifiedName = decoder.decodeMatrix("QualifiedName", OpcUaDataType.QualifiedName);
+      localizedText = decoder.decodeMatrix("LocalizedText", OpcUaDataType.LocalizedText);
+      dataValue = decoder.decodeMatrix("DataValue", OpcUaDataType.DataValue);
+      variant = decoder.decodeMatrix("Variant", OpcUaDataType.Variant);
       return new StructWithBuiltinMatrixFields(
           _boolean,
           sByte,

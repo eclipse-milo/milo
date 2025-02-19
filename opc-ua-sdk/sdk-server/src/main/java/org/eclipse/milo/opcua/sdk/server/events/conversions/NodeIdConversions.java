@@ -10,7 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.server.events.conversions;
 
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.jspecify.annotations.NonNull;
@@ -31,7 +31,7 @@ final class NodeIdConversions {
   }
 
   @Nullable
-  static Object convert(@NonNull Object o, BuiltinDataType targetType, boolean implicit) {
+  static Object convert(@NonNull Object o, OpcUaDataType targetType, boolean implicit) {
     if (o instanceof NodeId) {
       NodeId nodeId = (NodeId) o;
 
@@ -44,12 +44,12 @@ final class NodeIdConversions {
   }
 
   @Nullable
-  static Object explicitConversion(@NonNull NodeId nodeId, BuiltinDataType targetType) {
+  static Object explicitConversion(@NonNull NodeId nodeId, OpcUaDataType targetType) {
     return implicitConversion(nodeId, targetType);
   }
 
   @Nullable
-  static Object implicitConversion(@NonNull NodeId nodeId, BuiltinDataType targetType) {
+  static Object implicitConversion(@NonNull NodeId nodeId, OpcUaDataType targetType) {
     // @formatter:off
     switch (targetType) {
       case ExpandedNodeId:

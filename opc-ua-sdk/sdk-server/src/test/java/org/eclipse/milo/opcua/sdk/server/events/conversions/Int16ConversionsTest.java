@@ -14,7 +14,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ulong;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 
 public class Int16ConversionsTest extends AbstractConversionTest<Short> {
@@ -25,7 +25,7 @@ public class Int16ConversionsTest extends AbstractConversionTest<Short> {
   }
 
   @Override
-  public Conversion[] getConversions(BuiltinDataType targetType) {
+  public Conversion[] getConversions(OpcUaDataType targetType) {
     switch (targetType) {
       case Boolean:
         {
@@ -35,10 +35,10 @@ public class Int16ConversionsTest extends AbstractConversionTest<Short> {
       case Byte:
         {
           return new Conversion[] {
-            c(UByte.MIN_VALUE, UByte.MIN, BuiltinDataType.Byte),
-            c(UByte.MAX_VALUE, UByte.MAX, BuiltinDataType.Byte),
-            c((short) (UByte.MIN_VALUE - 1), null, BuiltinDataType.Byte),
-            c((short) (UByte.MAX_VALUE + 1), null, BuiltinDataType.Byte)
+            c(UByte.MIN_VALUE, UByte.MIN, OpcUaDataType.Byte),
+            c(UByte.MAX_VALUE, UByte.MAX, OpcUaDataType.Byte),
+            c((short) (UByte.MIN_VALUE - 1), null, OpcUaDataType.Byte),
+            c((short) (UByte.MAX_VALUE + 1), null, OpcUaDataType.Byte)
           };
         }
 
@@ -84,8 +84,8 @@ public class Int16ConversionsTest extends AbstractConversionTest<Short> {
             c((short) 0, (byte) 0),
             c((short) Byte.MIN_VALUE, Byte.MIN_VALUE),
             c((short) Byte.MAX_VALUE, Byte.MAX_VALUE),
-            c((short) (Byte.MIN_VALUE - 1), null, BuiltinDataType.SByte),
-            c((short) (Byte.MAX_VALUE + 1), null, BuiltinDataType.SByte)
+            c((short) (Byte.MIN_VALUE - 1), null, OpcUaDataType.SByte),
+            c((short) (Byte.MAX_VALUE + 1), null, OpcUaDataType.SByte)
           };
         }
 
@@ -99,7 +99,7 @@ public class Int16ConversionsTest extends AbstractConversionTest<Short> {
           return new Conversion[] {
             c((short) 0, ushort(0)),
             c(Short.MAX_VALUE, ushort(Short.MAX_VALUE)),
-            c((short) -1, null, BuiltinDataType.UInt16)
+            c((short) -1, null, OpcUaDataType.UInt16)
           };
         }
 
@@ -108,7 +108,7 @@ public class Int16ConversionsTest extends AbstractConversionTest<Short> {
           return new Conversion[] {
             c((short) 0, uint(0)),
             c(Short.MAX_VALUE, uint(Short.MAX_VALUE)),
-            c((short) -1, null, BuiltinDataType.UInt32)
+            c((short) -1, null, OpcUaDataType.UInt32)
           };
         }
 
@@ -117,7 +117,7 @@ public class Int16ConversionsTest extends AbstractConversionTest<Short> {
           return new Conversion[] {
             c((short) 0, ulong(0)),
             c(Short.MAX_VALUE, ulong(Short.MAX_VALUE)),
-            c((short) -1, null, BuiltinDataType.UInt64)
+            c((short) -1, null, OpcUaDataType.UInt64)
           };
         }
 
@@ -127,7 +127,7 @@ public class Int16ConversionsTest extends AbstractConversionTest<Short> {
   }
 
   @Override
-  public ConversionType getConversionType(BuiltinDataType targetType) {
+  public ConversionType getConversionType(OpcUaDataType targetType) {
     // @formatter:off
     switch (targetType) {
       case Boolean:
@@ -159,7 +159,7 @@ public class Int16ConversionsTest extends AbstractConversionTest<Short> {
   }
 
   @Override
-  protected Object convert(Object fromValue, BuiltinDataType targetType, boolean implicit) {
+  protected Object convert(Object fromValue, OpcUaDataType targetType, boolean implicit) {
     return Int16Conversions.convert(fromValue, targetType, implicit);
   }
 }

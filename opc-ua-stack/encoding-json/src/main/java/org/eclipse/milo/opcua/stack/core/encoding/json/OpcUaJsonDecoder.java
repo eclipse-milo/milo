@@ -30,7 +30,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.DataTypeCodec;
@@ -1076,7 +1076,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
             Array.set(flatArray, i, elements.get(i));
           }
 
-          var matrix = new Matrix(flatArray, dimensions, BuiltinDataType.fromTypeId(typeId));
+          var matrix = new Matrix(flatArray, dimensions, OpcUaDataType.fromTypeId(typeId));
 
           return new Variant(matrix);
         } finally {
@@ -1552,8 +1552,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
   }
 
   @Override
-  public Matrix decodeMatrix(String field, BuiltinDataType builtinDataType)
-      throws UaSerializationException {
+  public Matrix decodeMatrix(String field, OpcUaDataType dataType) throws UaSerializationException {
     try {
       if (field != null) {
         String nextName = nextName();
@@ -1563,8 +1562,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
         }
       }
 
-      Object nestedArray =
-          decodeNestedMultiDimensionalArrayBuiltinValue(builtinDataType.getTypeId());
+      Object nestedArray = decodeNestedMultiDimensionalArrayBuiltinValue(dataType.getTypeId());
 
       return new Matrix(nestedArray);
     } catch (IOException e) {
@@ -1574,7 +1572,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
 
   @Override
   public Matrix decodeEnumMatrix(String field) throws UaSerializationException {
-    return decodeMatrix(field, BuiltinDataType.Int32);
+    return decodeMatrix(field, OpcUaDataType.Int32);
   }
 
   @Override

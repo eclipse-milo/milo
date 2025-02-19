@@ -24,7 +24,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.DataTypeCodec;
@@ -414,7 +414,7 @@ public class OpcUaBinaryDecoder implements UaDecoder {
 
             Object value;
             if (dimensions.length > 1) {
-              value = new Matrix(flatArray, dimensions, BuiltinDataType.fromTypeId(typeId));
+              value = new Matrix(flatArray, dimensions, OpcUaDataType.fromTypeId(typeId));
             } else {
               value = flatArray;
             }
@@ -1229,8 +1229,7 @@ public class OpcUaBinaryDecoder implements UaDecoder {
   }
 
   @Override
-  public Matrix decodeMatrix(String field, BuiltinDataType builtinDataType)
-      throws UaSerializationException {
+  public Matrix decodeMatrix(String field, OpcUaDataType dataType) throws UaSerializationException {
     int[] dimensions = decodeMatrixDimensions();
     if (dimensions == null) return null;
 
@@ -1246,21 +1245,21 @@ public class OpcUaBinaryDecoder implements UaDecoder {
     checkArrayLength(length);
 
     // TODO speed this up by switching on BuiltinDataType instead of using reflection
-    Class<?> backingClass = builtinDataType.getBackingClass();
+    Class<?> backingClass = dataType.getBackingClass();
     Object flatArray = Array.newInstance(backingClass, length);
 
     for (int i = 0; i < length; i++) {
-      Object element = decodeBuiltinType(builtinDataType.getTypeId());
+      Object element = decodeBuiltinType(dataType.getTypeId());
 
       Array.set(flatArray, i, element);
     }
 
-    return new Matrix(flatArray, dimensions, builtinDataType);
+    return new Matrix(flatArray, dimensions, dataType);
   }
 
   @Override
   public Matrix decodeEnumMatrix(String field) throws UaSerializationException {
-    return decodeMatrix(field, BuiltinDataType.Int32);
+    return decodeMatrix(field, OpcUaDataType.Int32);
   }
 
   @Override
@@ -1296,7 +1295,7 @@ public class OpcUaBinaryDecoder implements UaDecoder {
       Array.set(flatArray, i, value);
     }
 
-    return new Matrix(flatArray, dimensions, BuiltinDataType.ExtensionObject);
+    return new Matrix(flatArray, dimensions, OpcUaDataType.ExtensionObject);
   }
 
   @Override

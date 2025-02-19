@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
@@ -105,7 +105,7 @@ public class VariantSerializationTest extends BinarySerializationFixture {
   public void testNullArrayEncodedWithNegativeArraySize() {
     ByteBuf buffer = Unpooled.buffer();
 
-    buffer.writeByte(BuiltinDataType.Int16.getTypeId() | (1 << 7));
+    buffer.writeByte(OpcUaDataType.Int16.getTypeId() | (1 << 7));
     buffer.writeIntLE(-1);
 
     OpcUaBinaryDecoder reader = new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE);

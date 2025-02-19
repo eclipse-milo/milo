@@ -11,7 +11,7 @@
 package org.eclipse.milo.opcua.sdk.test;
 
 import java.util.Arrays;
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
@@ -112,7 +112,7 @@ public class MatrixTestType implements UaStructuredType {
         throws UaSerializationException {
       Integer[][] builtinMatrix =
           (Integer[][])
-              decoder.decodeMatrix("BuiltinMatrix", BuiltinDataType.Int32).nestedArrayValue();
+              decoder.decodeMatrix("BuiltinMatrix", OpcUaDataType.Int32).nestedArrayValue();
       ApplicationType[][] enumMatrix =
           (ApplicationType[][])
               decoder

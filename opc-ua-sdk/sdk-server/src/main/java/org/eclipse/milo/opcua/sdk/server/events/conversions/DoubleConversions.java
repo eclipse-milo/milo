@@ -15,7 +15,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ulong;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
@@ -133,7 +133,7 @@ final class DoubleConversions {
   }
 
   @Nullable
-  static Object convert(@Nullable Object o, BuiltinDataType targetType, boolean implicit) {
+  static Object convert(@Nullable Object o, OpcUaDataType targetType, boolean implicit) {
     if (o instanceof Double) {
       Double d = (Double) o;
 
@@ -144,7 +144,7 @@ final class DoubleConversions {
   }
 
   @Nullable
-  static Object explicitConversion(@NonNull Double d, BuiltinDataType targetType) {
+  static Object explicitConversion(@NonNull Double d, OpcUaDataType targetType) {
     // @formatter:off
     switch (targetType) {
       case Boolean:
@@ -176,7 +176,7 @@ final class DoubleConversions {
   }
 
   @Nullable
-  static Object implicitConversion(@NonNull Double d, BuiltinDataType targetType) {
+  static Object implicitConversion(@NonNull Double d, OpcUaDataType targetType) {
     // no implicit conversions exist
     return null;
   }

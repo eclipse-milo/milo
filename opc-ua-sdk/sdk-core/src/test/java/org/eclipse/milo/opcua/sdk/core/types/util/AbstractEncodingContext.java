@@ -12,9 +12,9 @@ package org.eclipse.milo.opcua.sdk.core.types.util;
 
 import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
-import org.eclipse.milo.opcua.stack.core.BuiltinDataType;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.ServerTable;
 import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingManager;
@@ -341,7 +341,7 @@ public abstract class AbstractEncodingContext implements EncodingContext {
         };
 
     Mockito.when(dataTypeTree.getDataType(typeId)).thenReturn(dataType);
-    Mockito.when(dataTypeTree.getBuiltinType(NodeIds.Duration)).thenReturn(BuiltinDataType.Double);
+    Mockito.when(dataTypeTree.getBuiltinType(NodeIds.Duration)).thenReturn(OpcUaDataType.Double);
 
     Mockito.when(dataTypeTree.isEnumType(NodeIds.ApplicationType)).thenReturn(true);
     Mockito.when(dataTypeTree.getDataType(NodeIds.ApplicationType))
@@ -359,13 +359,13 @@ public abstract class AbstractEncodingContext implements EncodingContext {
     Mockito.when(dataTypeTree.isStructType(NodeIds.XVType)).thenReturn(true);
 
     Mockito.when(dataTypeTree.getBuiltinType(NodeIds.AccessLevelType))
-        .thenReturn(BuiltinDataType.Byte);
+        .thenReturn(OpcUaDataType.Byte);
     Mockito.when(dataTypeTree.getBuiltinType(NodeIds.AccessRestrictionType))
-        .thenReturn(BuiltinDataType.UInt16);
+        .thenReturn(OpcUaDataType.UInt16);
     Mockito.when(dataTypeTree.getBuiltinType(NodeIds.AccessLevelExType))
-        .thenReturn(BuiltinDataType.UInt32);
+        .thenReturn(OpcUaDataType.UInt32);
     Mockito.when(dataTypeTree.getBuiltinType(NodeIds.BitFieldMaskDataType))
-        .thenReturn(BuiltinDataType.UInt64);
+        .thenReturn(OpcUaDataType.UInt64);
 
     return dataType;
   }
@@ -480,7 +480,7 @@ public abstract class AbstractEncodingContext implements EncodingContext {
         };
 
     Mockito.when(dataTypeTree.getDataType(typeId)).thenReturn(dataType);
-    Mockito.when(dataTypeTree.getBuiltinType(NodeIds.Number)).thenReturn(BuiltinDataType.Variant);
+    Mockito.when(dataTypeTree.getBuiltinType(NodeIds.Number)).thenReturn(OpcUaDataType.Variant);
     Mockito.when(dataTypeTree.isStructType(typeId)).thenReturn(true);
 
     return dataType;
@@ -520,7 +520,7 @@ public abstract class AbstractEncodingContext implements EncodingContext {
         };
 
     Mockito.when(dataTypeTree.getDataType(typeId)).thenReturn(dataType);
-    Mockito.when(dataTypeTree.getBuiltinType(NodeIds.Number)).thenReturn(BuiltinDataType.Variant);
+    Mockito.when(dataTypeTree.getBuiltinType(NodeIds.Number)).thenReturn(OpcUaDataType.Variant);
     Mockito.when(dataTypeTree.isStructType(typeId)).thenReturn(true);
 
     return dataType;
