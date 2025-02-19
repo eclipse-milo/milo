@@ -1372,7 +1372,7 @@ public class OpcUaJsonEncoder implements UaEncoder {
           }
         } else {
           int[] dimensions = value.getDimensions();
-          OpcUaDataType dataType = value.getBuiltinDataType().orElseThrow();
+          OpcUaDataType dataType = value.getDataType().orElseThrow();
           try {
             encodeFlatArrayAsNested(flatArray, dimensions, dataType, 0);
           } catch (IOException e) {

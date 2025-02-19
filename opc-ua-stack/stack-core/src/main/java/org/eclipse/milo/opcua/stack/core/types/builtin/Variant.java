@@ -72,7 +72,7 @@ public final class Variant {
     }
   }
 
-  public Optional<OpcUaDataType> getBuiltinDataType() {
+  public Optional<OpcUaDataType> getDataType() {
     if (value == null) {
       return Optional.empty();
     }
@@ -96,7 +96,7 @@ public final class Variant {
         throw new RuntimeException("unknown OptionSetUInteger subclass: " + type);
       }
     } else if (Matrix.class.isAssignableFrom(type)) {
-      return ((Matrix) value).getBuiltinDataType();
+      return ((Matrix) value).getDataType();
     } else {
       return Optional.ofNullable(OpcUaDataType.fromBackingClass(type));
     }
@@ -189,7 +189,7 @@ public final class Variant {
       checkArgument(clazzIsArray || !Variant.class.equals(clazz), "Variant cannot contain Variant");
       checkArgument(!DiagnosticInfo.class.equals(clazz), "Variant cannot contain DiagnosticInfo");
       checkArgument(
-          variant.getBuiltinDataType().isPresent(), "Variant cannot contain %s", value.getClass());
+          variant.getDataType().isPresent(), "Variant cannot contain %s", value.getClass());
     }
 
     return variant;

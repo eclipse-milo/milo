@@ -118,7 +118,7 @@ public class Matrix {
    *
    * @return the {@link OpcUaDataType} of the elements of this Matrix.
    */
-  public Optional<OpcUaDataType> getBuiltinDataType() {
+  public Optional<OpcUaDataType> getDataType() {
     return Optional.ofNullable(dataType);
   }
 

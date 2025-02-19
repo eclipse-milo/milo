@@ -84,9 +84,9 @@ class MatrixTest {
   }
 
   @Test
-  void getBuiltinDataType() {
-    assertEquals(OpcUaDataType.Int32, primitiveMatrix2d.getBuiltinDataType().orElse(null));
-    assertEquals(OpcUaDataType.ExtensionObject, vectorMatrix2d.getBuiltinDataType().orElse(null));
+  void getDataType() {
+    assertEquals(OpcUaDataType.Int32, primitiveMatrix2d.getDataType().orElse(null));
+    assertEquals(OpcUaDataType.ExtensionObject, vectorMatrix2d.getDataType().orElse(null));
   }
 
   @Test

@@ -55,19 +55,19 @@ public class VariantTest {
   }
 
   @ParameterizedTest
-  @MethodSource("getBuiltinDataTypeSource")
-  void getBuiltinDataType(Object input, OpcUaDataType expected) {
-    assertEquals(expected, Variant.of(input).getBuiltinDataType().orElseThrow());
+  @MethodSource("getDataTypeSource")
+  void getDataType(Object input, OpcUaDataType expected) {
+    assertEquals(expected, Variant.of(input).getDataType().orElseThrow());
   }
 
   @Test
   void variantCanContainAbstractType() {
     Number n = 1.0f;
     Variant v = Variant.of(n);
-    assertEquals(OpcUaDataType.Float, v.getBuiltinDataType().orElseThrow());
+    assertEquals(OpcUaDataType.Float, v.getDataType().orElseThrow());
   }
 
-  private static Stream<Arguments> getBuiltinDataTypeSource() {
+  private static Stream<Arguments> getDataTypeSource() {
     return Stream.of(
         Arguments.of(true, OpcUaDataType.Boolean),
         Arguments.of((byte) 1, OpcUaDataType.SByte),

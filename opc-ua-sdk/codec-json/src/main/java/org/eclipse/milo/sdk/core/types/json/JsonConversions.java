@@ -242,7 +242,7 @@ public class JsonConversions {
 
     var jsonObject = new JsonObject();
 
-    OpcUaDataType dataType = value.getBuiltinDataType().orElseThrow();
+    OpcUaDataType dataType = value.getDataType().orElseThrow();
     jsonObject.addProperty("Type", dataType.getTypeId());
 
     if (valueObject.getClass().isArray()) {

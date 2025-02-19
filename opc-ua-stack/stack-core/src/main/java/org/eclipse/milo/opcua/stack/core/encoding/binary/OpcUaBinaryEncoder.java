@@ -612,7 +612,7 @@ public class OpcUaBinaryEncoder implements UaEncoder {
           buffer.writeByte(0);
           return;
         }
-        valueClass = ((Matrix) value).getBuiltinDataType().orElseThrow().getBackingClass();
+        valueClass = ((Matrix) value).getDataType().orElseThrow().getBackingClass();
       }
 
       int typeId = TypeUtil.getBuiltinTypeId(valueClass);
@@ -1194,7 +1194,7 @@ public class OpcUaBinaryEncoder implements UaEncoder {
       assert length == Arrays.stream(dimensions).reduce(1, (left, right) -> left * right);
 
       int typeId =
-          value.getBuiltinDataType().orElseThrow().getTypeId(); // won't throw, we checked for null
+          value.getDataType().orElseThrow().getTypeId(); // won't throw, we checked for null
 
       for (int i = 0; i < length; i++) {
         Object o = Array.get(elements, i);

@@ -492,7 +492,7 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
 
   static JsonElement decodeBuiltinDataTypeMatrix(Matrix matrix) {
     return matrix
-        .getBuiltinDataType()
+        .getDataType()
         .map(
             dataType ->
                 decodeBuiltinDataTypeMatrix(
