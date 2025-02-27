@@ -135,7 +135,7 @@ class OpcTcpTransportTest extends SecurityFixture {
     System.out.println("disconnected");
 
     System.out.println("unbinding server transport...");
-    serverTransport.unbind();
+    serverTransport.unbindAll();
     System.out.println("server transport unbound");
   }
 
@@ -200,7 +200,7 @@ class OpcTcpTransportTest extends SecurityFixture {
     System.out.println("disconnected");
 
     System.out.println("unbinding server transport...");
-    serverTransport.unbind();
+    serverTransport.unbindAll();
     System.out.println("server transport unbound");
   }
 
@@ -260,7 +260,7 @@ class OpcTcpTransportTest extends SecurityFixture {
 
     assertThrows(ExecutionException.class, () -> createSession(transport));
 
-    serverTransport.unbind();
+    serverTransport.unbindAll();
   }
 
   private static void createSession(OpcTcpClientTransport transport) throws Exception {

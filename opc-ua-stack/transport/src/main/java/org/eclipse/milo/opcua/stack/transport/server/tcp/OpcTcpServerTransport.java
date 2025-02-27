@@ -17,21 +17,20 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LoggingHandler;
 import java.net.InetSocketAddress;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.util.Lazy;
 import org.eclipse.milo.opcua.stack.transport.server.OpcServerTransport;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.server.uasc.UascServerHelloHandler;
-import org.slf4j.LoggerFactory;
 
 public class OpcTcpServerTransport implements OpcServerTransport {
 
-  private final Set<InetSocketAddress> boundAddresses = new HashSet<>();
-  private final Set<Channel> channelReferences = new HashSet<>();
-  private final Set<Channel> childChannelReferences = Collections.synchronizedSet(new HashSet<>());
+  private final Map<InetSocketAddress, Channel> serverChannelMap = new HashMap<>();
+
+  private final Map<InetSocketAddress, Set<Channel>> childChannelMap =
+      Collections.synchronizedMap(new HashMap<>());
+
   private final Lazy<ServerBootstrap> serverBootstrap = new Lazy<>();
 
   private final OpcTcpServerTransportConfig config;
@@ -43,6 +42,7 @@ public class OpcTcpServerTransport implements OpcServerTransport {
   @Override
   public synchronized void bind(
       ServerApplicationContext applicationContext, InetSocketAddress bindAddress) throws Exception {
+
     ServerBootstrap bootstrap =
         serverBootstrap.get(
             () ->
@@ -65,44 +65,71 @@ public class OpcTcpServerTransport implements OpcServerTransport {
                                         applicationContext,
                                         TransportProfile.TCP_UASC_UABINARY));
 
-                            childChannelReferences.add(channel);
+                            Set<Channel> channels =
+                                childChannelMap.computeIfAbsent(bindAddress, k -> new HashSet<>());
+
+                            channels.add(channel);
+
                             channel
                                 .closeFuture()
-                                .addListener(future -> childChannelReferences.remove(channel));
+                                .addListener(
+                                    future -> {
+                                      Set<Channel> cs = childChannelMap.get(bindAddress);
+                                      if (cs != null) cs.remove(channel);
+                                    });
                           }
                         }));
 
     assert bootstrap != null;
 
-    if (!boundAddresses.contains(bindAddress)) {
+    if (!serverChannelMap.containsKey(bindAddress)) {
       ChannelFuture bindFuture = bootstrap.bind(bindAddress).sync();
 
-      boundAddresses.add(bindAddress);
-      channelReferences.add(bindFuture.channel());
+      serverChannelMap.put(bindAddress, bindFuture.channel());
     }
   }
 
   @Override
-  public synchronized void unbind() {
-    boundAddresses.clear();
+  public synchronized void unbind(InetSocketAddress address) throws Exception {
+    Channel channel = serverChannelMap.remove(address);
 
-    channelReferences.forEach(
-        channel -> {
+    if (channel != null) {
+      channel.close().sync();
+    }
+
+    Set<Channel> childChannels = childChannelMap.remove(address);
+
+    if (childChannels != null) {
+      for (Channel childChannel : childChannels) {
+        childChannel.close().sync();
+      }
+    }
+  }
+
+  @Override
+  public synchronized void unbindAll() {
+    serverChannelMap.forEach(
+        (address, channel) -> {
           try {
             channel.close().sync();
           } catch (InterruptedException ignored) {
           }
         });
-    channelReferences.clear();
 
-    synchronized (childChannelReferences) {
-      childChannelReferences.forEach(
-          channel -> {
-            LoggerFactory.getLogger(getClass()).info("Closing child channel: {}", channel);
-            channel.close();
-          });
-      childChannelReferences.clear();
-    }
+    serverChannelMap.clear();
+
+    childChannelMap.forEach(
+        (address, channels) -> {
+          channels.forEach(
+              channel -> {
+                try {
+                  channel.close().sync();
+                } catch (InterruptedException ignored) {
+                }
+              });
+        });
+
+    childChannelMap.clear();
 
     serverBootstrap.reset();
   }

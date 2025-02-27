@@ -25,9 +25,17 @@ public interface OpcServerTransport {
       throws Exception;
 
   /**
+   * Unbind this transport from the given address.
+   *
+   * @param address the address to unbind.
+   * @throws Exception if an error occurs unbinding this address.
+   */
+  void unbind(InetSocketAddress address) throws Exception;
+
+  /**
    * Unbind this transport (close the server channel).
    *
    * @throws Exception if an error occurs unbinding this transport.
    */
-  void unbind() throws Exception;
+  void unbindAll() throws Exception;
 }

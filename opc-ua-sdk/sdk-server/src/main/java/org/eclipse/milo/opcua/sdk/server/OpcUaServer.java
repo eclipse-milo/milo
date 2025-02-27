@@ -19,19 +19,10 @@ import java.net.InetSocketAddress;
 import java.security.KeyPair;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
 import org.eclipse.milo.opcua.sdk.core.typetree.ReferenceTypeTree;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.ServerDiagnosticsSummary;
@@ -137,6 +128,9 @@ public class OpcUaServer extends AbstractServiceHandler {
 
   private final List<EndpointConfig> boundEndpoints = new CopyOnWriteArrayList<>();
 
+  private final Map<TransportProfile, List<EndpointConfig>> configuredEndpoints =
+      new ConcurrentHashMap<>();
+
   /**
    * SecureChannel id sequence, starting at a random value in [1..{@link Integer#MAX_VALUE}], and
    * wrapping back to 1 after {@link UInteger#MAX_VALUE}.
@@ -226,25 +220,28 @@ public class OpcUaServer extends AbstractServiceHandler {
           }
         };
 
-    Stream<String> paths =
+    configuredEndpoints.putAll(
         config.getEndpoints().stream()
-            .map(e -> EndpointUtil.getPath(e.getEndpointUrl()))
-            .distinct();
+            .collect(Collectors.groupingBy(EndpointConfig::getTransportProfile)));
 
-    paths.forEach(
-        path -> {
-          addServiceSet(path, new DefaultDiscoveryServiceSet(OpcUaServer.this));
+    configuredEndpoints.values().stream()
+        .flatMap(List::stream)
+        .map(e -> EndpointUtil.getPath(e.getEndpointUrl()))
+        .distinct()
+        .forEach(
+            path -> {
+              addServiceSet(path, new DefaultDiscoveryServiceSet(OpcUaServer.this));
 
-          if (!path.endsWith("/discovery")) {
-            addServiceSet(path, new DefaultAttributeServiceSet(OpcUaServer.this));
-            addServiceSet(path, new DefaultMethodServiceSet(OpcUaServer.this));
-            addServiceSet(path, new DefaultMonitoredItemServiceSet(OpcUaServer.this));
-            addServiceSet(path, new DefaultNodeManagementServiceSet(OpcUaServer.this));
-            addServiceSet(path, new DefaultSessionServiceSet(OpcUaServer.this));
-            addServiceSet(path, new DefaultSubscriptionServiceSet(OpcUaServer.this));
-            addServiceSet(path, new DefaultViewServiceSet(OpcUaServer.this));
-          }
-        });
+              if (!path.endsWith("/discovery")) {
+                addServiceSet(path, new DefaultAttributeServiceSet(OpcUaServer.this));
+                addServiceSet(path, new DefaultMethodServiceSet(OpcUaServer.this));
+                addServiceSet(path, new DefaultMonitoredItemServiceSet(OpcUaServer.this));
+                addServiceSet(path, new DefaultNodeManagementServiceSet(OpcUaServer.this));
+                addServiceSet(path, new DefaultSessionServiceSet(OpcUaServer.this));
+                addServiceSet(path, new DefaultSubscriptionServiceSet(OpcUaServer.this));
+                addServiceSet(path, new DefaultViewServiceSet(OpcUaServer.this));
+              }
+            });
 
     ObjectTypeInitializer.initialize(namespaceTable, objectTypeManager);
 
@@ -264,52 +261,53 @@ public class OpcUaServer extends AbstractServiceHandler {
   public CompletableFuture<OpcUaServer> startup() {
     eventFactory.startup();
 
-    config.getEndpoints().stream()
+    configuredEndpoints.values().stream()
+        .flatMap(List::stream)
         .sorted(Comparator.comparing(EndpointConfig::getTransportProfile))
-        .forEach(
-            endpoint -> {
-              logger.info(
-                  "Binding endpoint {} to {}:{} [{}/{}]",
-                  endpoint.getEndpointUrl(),
-                  endpoint.getBindAddress(),
-                  endpoint.getBindPort(),
-                  endpoint.getSecurityPolicy(),
-                  endpoint.getSecurityMode());
-
-              TransportProfile transportProfile = endpoint.getTransportProfile();
-
-              OpcServerTransport transport =
-                  transports.computeIfAbsent(transportProfile, transportFactory::create);
-
-              if (transport != null) {
-                try {
-                  var bindAddress =
-                      new InetSocketAddress(endpoint.getBindAddress(), endpoint.getBindPort());
-                  transport.bind(applicationContext, bindAddress);
-
-                  transports.put(transportProfile, transport);
-
-                  boundEndpoints.add(endpoint);
-                } catch (Exception e) {
-                  logger.warn(
-                      "Failed to bind endpoint {} to {}:{} [{}/{}]",
-                      endpoint.getEndpointUrl(),
-                      endpoint.getBindAddress(),
-                      endpoint.getBindPort(),
-                      endpoint.getSecurityPolicy(),
-                      endpoint.getSecurityMode(),
-                      e);
-                }
-              } else {
-                logger.warn("No OpcServerTransport for TransportProfile: {}", transportProfile);
-              }
-            });
+        .forEach(this::bindEndpoint);
 
     if (boundEndpoints.isEmpty()) {
       return CompletableFuture.failedFuture(
           new UaException(StatusCodes.Bad_ConfigurationError, "No endpoints bound"));
     } else {
       return CompletableFuture.completedFuture(this);
+    }
+  }
+
+  private void bindEndpoint(EndpointConfig endpoint) {
+    logger.info(
+        "Binding endpoint {} to {}:{} [{}/{}]",
+        endpoint.getEndpointUrl(),
+        endpoint.getBindAddress(),
+        endpoint.getBindPort(),
+        endpoint.getSecurityPolicy(),
+        endpoint.getSecurityMode());
+
+    TransportProfile transportProfile = endpoint.getTransportProfile();
+
+    OpcServerTransport transport =
+        transports.computeIfAbsent(transportProfile, transportFactory::create);
+
+    if (transport != null) {
+      try {
+        var bindAddress = new InetSocketAddress(endpoint.getBindAddress(), endpoint.getBindPort());
+        transport.bind(applicationContext, bindAddress);
+
+        transports.put(transportProfile, transport);
+
+        boundEndpoints.add(endpoint);
+      } catch (Exception e) {
+        logger.warn(
+            "Failed to bind endpoint {} to {}:{} [{}/{}]",
+            endpoint.getEndpointUrl(),
+            endpoint.getBindAddress(),
+            endpoint.getBindPort(),
+            endpoint.getSecurityPolicy(),
+            endpoint.getSecurityMode(),
+            e);
+      }
+    } else {
+      logger.warn("No OpcServerTransport for TransportProfile: {}", transportProfile);
     }
   }
 
@@ -326,7 +324,7 @@ public class OpcUaServer extends AbstractServiceHandler {
         .forEach(
             transport -> {
               try {
-                transport.unbind();
+                transport.unbindAll();
               } catch (Exception e) {
                 logger.warn("Error unbinding transport", e);
               }
@@ -512,21 +510,93 @@ public class OpcUaServer extends AbstractServiceHandler {
   }
 
   /**
-   * Get the {@link EndpointConfig}s that were successfully bound during {@link #startup()}.
+   * Get the {@link EndpointConfig}s that were successfully bound during {@link #startup()} or the
+   * most recent endpoint configuration change.
    *
-   * @return the {@link EndpointConfig}s that were successfully bound during {@link #startup()}.
+   * @return the currently bound {@link EndpointConfig}s.
    */
   public List<EndpointConfig> getBoundEndpoints() {
     return List.copyOf(boundEndpoints);
+  }
+
+  /**
+   * Get the currently configured List of {@link EndpointConfig}s.
+   *
+   * @return the currently configured List of {@link EndpointConfig}s.
+   */
+  public List<EndpointConfig> getConfiguredEndpoints() {
+    return configuredEndpoints.values().stream().flatMap(List::stream).toList();
+  }
+
+  public void reconfigureEndpoints(List<EndpointConfig> endpoints) {
+    Map<TransportProfile, List<EndpointConfig>> byTransportProfile =
+        endpoints.stream().collect(Collectors.groupingBy(EndpointConfig::getTransportProfile));
+
+    Set<TransportProfile> removedTransports =
+        Sets.difference(configuredEndpoints.keySet(), byTransportProfile.keySet());
+
+    for (TransportProfile transportProfile : removedTransports) {
+      OpcServerTransport transport = transports.remove(transportProfile);
+      if (transport != null) {
+        try {
+          transport.unbindAll();
+        } catch (Exception e) {
+          logger.warn("Error unbinding transport: {}", transportProfile, e);
+        }
+      }
+    }
+
+    for (var entry : byTransportProfile.entrySet()) {
+      TransportProfile transportProfile = entry.getKey();
+      OpcServerTransport transport = transports.get(transportProfile);
+
+      if (transport != null) {
+        List<EndpointConfig> newEndpoints = entry.getValue();
+        List<EndpointConfig> existingEndpoints = configuredEndpoints.get(transportProfile);
+
+        Set<InetSocketAddress> newBindAddresses =
+            newEndpoints.stream()
+                .map(e -> new InetSocketAddress(e.getBindAddress(), e.getBindPort()))
+                .collect(Collectors.toSet());
+
+        Set<InetSocketAddress> existingBindAddresses =
+            existingEndpoints.stream()
+                .map(e -> new InetSocketAddress(e.getBindAddress(), e.getBindPort()))
+                .collect(Collectors.toSet());
+
+        Set<InetSocketAddress> removedBindAddresses =
+            Sets.difference(existingBindAddresses, newBindAddresses);
+
+        for (InetSocketAddress address : removedBindAddresses) {
+          try {
+            transport.unbind(address);
+          } catch (Exception e) {
+            logger.warn("Error unbinding '{}' on transport: {}", address, transportProfile, e);
+          }
+        }
+
+        boundEndpoints.clear();
+        configuredEndpoints.clear();
+
+        configuredEndpoints.putAll(
+            endpoints.stream().collect(Collectors.groupingBy(EndpointConfig::getTransportProfile)));
+
+        configuredEndpoints.values().stream()
+            .flatMap(List::stream)
+            .sorted(Comparator.comparing(EndpointConfig::getTransportProfile))
+            .forEach(this::bindEndpoint);
+      }
+    }
   }
 
   private class ServerApplicationContextImpl implements ServerApplicationContext {
 
     @Override
     public List<EndpointDescription> getEndpointDescriptions() {
-      return config.getEndpoints().stream()
+      return configuredEndpoints.values().stream()
+          .flatMap(List::stream)
           .map(this::transformEndpoint)
-          .collect(Collectors.toUnmodifiableList());
+          .toList();
     }
 
     @Override
@@ -606,9 +676,7 @@ public class OpcUaServer extends AbstractServiceHandler {
               context.getChannel().remoteAddress());
         }
 
-        if (serviceHandler instanceof AsyncServiceHandler) {
-          AsyncServiceHandler asyncServiceHandler = (AsyncServiceHandler) serviceHandler;
-
+        if (serviceHandler instanceof AsyncServiceHandler asyncServiceHandler) {
           CompletableFuture<UaResponseMessageType> response =
               asyncServiceHandler
                   .handleAsync(context, requestMessage)
@@ -687,17 +755,15 @@ public class OpcUaServer extends AbstractServiceHandler {
       Service service = Service.from(requestMessage.getTypeId());
 
       if (service != null) {
-        switch (service) {
-          case DISCOVERY_FIND_SERVERS:
-          case DISCOVERY_GET_ENDPOINTS:
-          case DISCOVERY_REGISTER_SERVER:
-          case DISCOVERY_FIND_SERVERS_ON_NETWORK:
-          case DISCOVERY_REGISTER_SERVER_2:
-            return true;
-
-          default:
-            return false;
-        }
+        return switch (service) {
+          case DISCOVERY_FIND_SERVERS,
+              DISCOVERY_GET_ENDPOINTS,
+              DISCOVERY_REGISTER_SERVER,
+              DISCOVERY_FIND_SERVERS_ON_NETWORK,
+              DISCOVERY_REGISTER_SERVER_2 ->
+              true;
+          default -> false;
+        };
       }
 
       return false;
@@ -732,7 +798,8 @@ public class OpcUaServer extends AbstractServiceHandler {
       return applicationDescription.get(
           () -> {
             List<String> discoveryUrls =
-                config.getEndpoints().stream()
+                configuredEndpoints.values().stream()
+                    .flatMap(List::stream)
                     .map(EndpointConfig::getEndpointUrl)
                     .filter(url -> url.endsWith("/discovery"))
                     .distinct()
@@ -740,10 +807,11 @@ public class OpcUaServer extends AbstractServiceHandler {
 
             if (discoveryUrls.isEmpty()) {
               discoveryUrls =
-                  config.getEndpoints().stream()
+                  configuredEndpoints.values().stream()
+                      .flatMap(List::stream)
                       .map(EndpointConfig::getEndpointUrl)
                       .distinct()
-                      .collect(toList());
+                      .toList();
             }
 
             return new ApplicationDescription(
