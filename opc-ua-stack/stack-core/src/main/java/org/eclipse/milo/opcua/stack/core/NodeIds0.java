@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ *  Copyright (c) 2025 the Eclipse Milo Authors
  *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *  This program and the accompanying materials are made
+ *  available under the terms of the Eclipse Public License 2.0
+ *  which is available at https://www.eclipse.org/legal/epl-2.0/
  *
- * SPDX-License-Identifier: EPL-2.0
+ *  SPDX-License-Identifier: EPL-2.0
  */
 
 package org.eclipse.milo.opcua.stack.core;
@@ -2535,10 +2535,6 @@ abstract class NodeIds0 extends NodeIds1 {
 
   public static final NodeId AnalogItemType_EURange = new NodeId(UShort.MIN, uint(2369));
 
-  public static final NodeId AnalogItemType_InstrumentRange = new NodeId(UShort.MIN, uint(2370));
-
-  public static final NodeId AnalogItemType_EngineeringUnits = new NodeId(UShort.MIN, uint(2371));
-
   public static final NodeId DiscreteItemType = new NodeId(UShort.MIN, uint(2372));
 
   public static final NodeId TwoStateDiscreteType = new NodeId(UShort.MIN, uint(2373));
@@ -3361,1400 +3357,7 @@ abstract class NodeIds0 extends NodeIds1 {
       SessionDiagnosticsObjectType_SessionSecurityDiagnostics_ClientCertificate =
           new NodeId(UShort.MIN, uint(3187));
 
-  public static final NodeId TransparentRedundancyType_RedundancySupport =
-      new NodeId(UShort.MIN, uint(3188));
-
-  public static final NodeId NonTransparentRedundancyType_RedundancySupport =
-      new NodeId(UShort.MIN, uint(3189));
-
   public static final NodeId BaseEventType_LocalTime = new NodeId(UShort.MIN, uint(3190));
-
-  public static final NodeId EventQueueOverflowEventType_EventId =
-      new NodeId(UShort.MIN, uint(3191));
-
-  public static final NodeId EventQueueOverflowEventType_EventType =
-      new NodeId(UShort.MIN, uint(3192));
-
-  public static final NodeId EventQueueOverflowEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(3193));
-
-  public static final NodeId EventQueueOverflowEventType_SourceName =
-      new NodeId(UShort.MIN, uint(3194));
-
-  public static final NodeId EventQueueOverflowEventType_Time = new NodeId(UShort.MIN, uint(3195));
-
-  public static final NodeId EventQueueOverflowEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3196));
-
-  public static final NodeId EventQueueOverflowEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(3197));
-
-  public static final NodeId EventQueueOverflowEventType_Message =
-      new NodeId(UShort.MIN, uint(3198));
-
-  public static final NodeId EventQueueOverflowEventType_Severity =
-      new NodeId(UShort.MIN, uint(3199));
-
-  public static final NodeId AuditEventType_EventId = new NodeId(UShort.MIN, uint(3200));
-
-  public static final NodeId AuditEventType_EventType = new NodeId(UShort.MIN, uint(3201));
-
-  public static final NodeId AuditEventType_SourceNode = new NodeId(UShort.MIN, uint(3202));
-
-  public static final NodeId AuditEventType_SourceName = new NodeId(UShort.MIN, uint(3203));
-
-  public static final NodeId AuditEventType_Time = new NodeId(UShort.MIN, uint(3204));
-
-  public static final NodeId AuditEventType_ReceiveTime = new NodeId(UShort.MIN, uint(3205));
-
-  public static final NodeId AuditEventType_LocalTime = new NodeId(UShort.MIN, uint(3206));
-
-  public static final NodeId AuditEventType_Message = new NodeId(UShort.MIN, uint(3207));
-
-  public static final NodeId AuditEventType_Severity = new NodeId(UShort.MIN, uint(3208));
-
-  public static final NodeId AuditSecurityEventType_EventId = new NodeId(UShort.MIN, uint(3209));
-
-  public static final NodeId AuditSecurityEventType_EventType = new NodeId(UShort.MIN, uint(3210));
-
-  public static final NodeId AuditSecurityEventType_SourceNode = new NodeId(UShort.MIN, uint(3211));
-
-  public static final NodeId AuditSecurityEventType_SourceName = new NodeId(UShort.MIN, uint(3212));
-
-  public static final NodeId AuditSecurityEventType_Time = new NodeId(UShort.MIN, uint(3213));
-
-  public static final NodeId AuditSecurityEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3214));
-
-  public static final NodeId AuditSecurityEventType_LocalTime = new NodeId(UShort.MIN, uint(3215));
-
-  public static final NodeId AuditSecurityEventType_Message = new NodeId(UShort.MIN, uint(3216));
-
-  public static final NodeId AuditSecurityEventType_Severity = new NodeId(UShort.MIN, uint(3217));
-
-  public static final NodeId AuditSecurityEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(3218));
-
-  public static final NodeId AuditSecurityEventType_Status = new NodeId(UShort.MIN, uint(3219));
-
-  public static final NodeId AuditSecurityEventType_ServerId = new NodeId(UShort.MIN, uint(3220));
-
-  public static final NodeId AuditSecurityEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(3221));
-
-  public static final NodeId AuditSecurityEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(3222));
-
-  public static final NodeId AuditChannelEventType_EventId = new NodeId(UShort.MIN, uint(3223));
-
-  public static final NodeId AuditChannelEventType_EventType = new NodeId(UShort.MIN, uint(3224));
-
-  public static final NodeId AuditChannelEventType_SourceNode = new NodeId(UShort.MIN, uint(3225));
-
-  public static final NodeId AuditChannelEventType_SourceName = new NodeId(UShort.MIN, uint(3226));
-
-  public static final NodeId AuditChannelEventType_Time = new NodeId(UShort.MIN, uint(3227));
-
-  public static final NodeId AuditChannelEventType_ReceiveTime = new NodeId(UShort.MIN, uint(3228));
-
-  public static final NodeId AuditChannelEventType_LocalTime = new NodeId(UShort.MIN, uint(3229));
-
-  public static final NodeId AuditChannelEventType_Message = new NodeId(UShort.MIN, uint(3230));
-
-  public static final NodeId AuditChannelEventType_Severity = new NodeId(UShort.MIN, uint(3231));
-
-  public static final NodeId AuditChannelEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(3232));
-
-  public static final NodeId AuditChannelEventType_Status = new NodeId(UShort.MIN, uint(3233));
-
-  public static final NodeId AuditChannelEventType_ServerId = new NodeId(UShort.MIN, uint(3234));
-
-  public static final NodeId AuditChannelEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(3235));
-
-  public static final NodeId AuditChannelEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(3236));
-
-  public static final NodeId AuditOpenSecureChannelEventType_EventId =
-      new NodeId(UShort.MIN, uint(3237));
-
-  public static final NodeId AuditOpenSecureChannelEventType_EventType =
-      new NodeId(UShort.MIN, uint(3238));
-
-  public static final NodeId AuditOpenSecureChannelEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(3239));
-
-  public static final NodeId AuditOpenSecureChannelEventType_SourceName =
-      new NodeId(UShort.MIN, uint(3240));
-
-  public static final NodeId AuditOpenSecureChannelEventType_Time =
-      new NodeId(UShort.MIN, uint(3241));
-
-  public static final NodeId AuditOpenSecureChannelEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3242));
-
-  public static final NodeId AuditOpenSecureChannelEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(3243));
-
-  public static final NodeId AuditOpenSecureChannelEventType_Message =
-      new NodeId(UShort.MIN, uint(3244));
-
-  public static final NodeId AuditOpenSecureChannelEventType_Severity =
-      new NodeId(UShort.MIN, uint(3245));
-
-  public static final NodeId AuditOpenSecureChannelEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(3246));
-
-  public static final NodeId AuditOpenSecureChannelEventType_Status =
-      new NodeId(UShort.MIN, uint(3247));
-
-  public static final NodeId AuditOpenSecureChannelEventType_ServerId =
-      new NodeId(UShort.MIN, uint(3248));
-
-  public static final NodeId AuditOpenSecureChannelEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(3249));
-
-  public static final NodeId AuditOpenSecureChannelEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(3250));
-
-  public static final NodeId AuditOpenSecureChannelEventType_SecureChannelId =
-      new NodeId(UShort.MIN, uint(3251));
-
-  public static final NodeId AuditSessionEventType_EventId = new NodeId(UShort.MIN, uint(3252));
-
-  public static final NodeId AuditSessionEventType_EventType = new NodeId(UShort.MIN, uint(3253));
-
-  public static final NodeId AuditSessionEventType_SourceNode = new NodeId(UShort.MIN, uint(3254));
-
-  public static final NodeId AuditSessionEventType_SourceName = new NodeId(UShort.MIN, uint(3255));
-
-  public static final NodeId AuditSessionEventType_Time = new NodeId(UShort.MIN, uint(3256));
-
-  public static final NodeId AuditSessionEventType_ReceiveTime = new NodeId(UShort.MIN, uint(3257));
-
-  public static final NodeId AuditSessionEventType_LocalTime = new NodeId(UShort.MIN, uint(3258));
-
-  public static final NodeId AuditSessionEventType_Message = new NodeId(UShort.MIN, uint(3259));
-
-  public static final NodeId AuditSessionEventType_Severity = new NodeId(UShort.MIN, uint(3260));
-
-  public static final NodeId AuditSessionEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(3261));
-
-  public static final NodeId AuditSessionEventType_Status = new NodeId(UShort.MIN, uint(3262));
-
-  public static final NodeId AuditSessionEventType_ServerId = new NodeId(UShort.MIN, uint(3263));
-
-  public static final NodeId AuditSessionEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(3264));
-
-  public static final NodeId AuditSessionEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(3265));
-
-  public static final NodeId AuditCreateSessionEventType_EventId =
-      new NodeId(UShort.MIN, uint(3266));
-
-  public static final NodeId AuditCreateSessionEventType_EventType =
-      new NodeId(UShort.MIN, uint(3267));
-
-  public static final NodeId AuditCreateSessionEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(3268));
-
-  public static final NodeId AuditCreateSessionEventType_SourceName =
-      new NodeId(UShort.MIN, uint(3269));
-
-  public static final NodeId AuditCreateSessionEventType_Time = new NodeId(UShort.MIN, uint(3270));
-
-  public static final NodeId AuditCreateSessionEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3271));
-
-  public static final NodeId AuditCreateSessionEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(3272));
-
-  public static final NodeId AuditCreateSessionEventType_Message =
-      new NodeId(UShort.MIN, uint(3273));
-
-  public static final NodeId AuditCreateSessionEventType_Severity =
-      new NodeId(UShort.MIN, uint(3274));
-
-  public static final NodeId AuditCreateSessionEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(3275));
-
-  public static final NodeId AuditCreateSessionEventType_Status =
-      new NodeId(UShort.MIN, uint(3276));
-
-  public static final NodeId AuditCreateSessionEventType_ServerId =
-      new NodeId(UShort.MIN, uint(3277));
-
-  public static final NodeId AuditCreateSessionEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(3278));
-
-  public static final NodeId AuditCreateSessionEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(3279));
-
-  public static final NodeId AuditUrlMismatchEventType_EventId = new NodeId(UShort.MIN, uint(3281));
-
-  public static final NodeId AuditUrlMismatchEventType_EventType =
-      new NodeId(UShort.MIN, uint(3282));
-
-  public static final NodeId AuditUrlMismatchEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(3283));
-
-  public static final NodeId AuditUrlMismatchEventType_SourceName =
-      new NodeId(UShort.MIN, uint(3284));
-
-  public static final NodeId AuditUrlMismatchEventType_Time = new NodeId(UShort.MIN, uint(3285));
-
-  public static final NodeId AuditUrlMismatchEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3286));
-
-  public static final NodeId AuditUrlMismatchEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(3287));
-
-  public static final NodeId AuditUrlMismatchEventType_Message = new NodeId(UShort.MIN, uint(3288));
-
-  public static final NodeId AuditUrlMismatchEventType_Severity =
-      new NodeId(UShort.MIN, uint(3289));
-
-  public static final NodeId AuditUrlMismatchEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(3290));
-
-  public static final NodeId AuditUrlMismatchEventType_Status = new NodeId(UShort.MIN, uint(3291));
-
-  public static final NodeId AuditUrlMismatchEventType_ServerId =
-      new NodeId(UShort.MIN, uint(3292));
-
-  public static final NodeId AuditUrlMismatchEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(3293));
-
-  public static final NodeId AuditUrlMismatchEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(3294));
-
-  public static final NodeId AuditUrlMismatchEventType_SecureChannelId =
-      new NodeId(UShort.MIN, uint(3296));
-
-  public static final NodeId AuditUrlMismatchEventType_ClientCertificate =
-      new NodeId(UShort.MIN, uint(3297));
-
-  public static final NodeId AuditUrlMismatchEventType_ClientCertificateThumbprint =
-      new NodeId(UShort.MIN, uint(3298));
-
-  public static final NodeId AuditUrlMismatchEventType_RevisedSessionTimeout =
-      new NodeId(UShort.MIN, uint(3299));
-
-  public static final NodeId AuditActivateSessionEventType_EventId =
-      new NodeId(UShort.MIN, uint(3300));
-
-  public static final NodeId AuditActivateSessionEventType_EventType =
-      new NodeId(UShort.MIN, uint(3301));
-
-  public static final NodeId AuditActivateSessionEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(3302));
-
-  public static final NodeId AuditActivateSessionEventType_SourceName =
-      new NodeId(UShort.MIN, uint(3303));
-
-  public static final NodeId AuditActivateSessionEventType_Time =
-      new NodeId(UShort.MIN, uint(3304));
-
-  public static final NodeId AuditActivateSessionEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3305));
-
-  public static final NodeId AuditActivateSessionEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(3306));
-
-  public static final NodeId AuditActivateSessionEventType_Message =
-      new NodeId(UShort.MIN, uint(3307));
-
-  public static final NodeId AuditActivateSessionEventType_Severity =
-      new NodeId(UShort.MIN, uint(3308));
-
-  public static final NodeId AuditActivateSessionEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(3309));
-
-  public static final NodeId AuditActivateSessionEventType_Status =
-      new NodeId(UShort.MIN, uint(3310));
-
-  public static final NodeId AuditActivateSessionEventType_ServerId =
-      new NodeId(UShort.MIN, uint(3311));
-
-  public static final NodeId AuditActivateSessionEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(3312));
-
-  public static final NodeId AuditActivateSessionEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(3313));
-
-  public static final NodeId AuditActivateSessionEventType_SessionId =
-      new NodeId(UShort.MIN, uint(3314));
-
-  public static final NodeId AuditCancelEventType_EventId = new NodeId(UShort.MIN, uint(3315));
-
-  public static final NodeId AuditCancelEventType_EventType = new NodeId(UShort.MIN, uint(3316));
-
-  public static final NodeId AuditCancelEventType_SourceNode = new NodeId(UShort.MIN, uint(3317));
-
-  public static final NodeId AuditCancelEventType_SourceName = new NodeId(UShort.MIN, uint(3318));
-
-  public static final NodeId AuditCancelEventType_Time = new NodeId(UShort.MIN, uint(3319));
-
-  public static final NodeId AuditCancelEventType_ReceiveTime = new NodeId(UShort.MIN, uint(3320));
-
-  public static final NodeId AuditCancelEventType_LocalTime = new NodeId(UShort.MIN, uint(3321));
-
-  public static final NodeId AuditCancelEventType_Message = new NodeId(UShort.MIN, uint(3322));
-
-  public static final NodeId AuditCancelEventType_Severity = new NodeId(UShort.MIN, uint(3323));
-
-  public static final NodeId AuditCancelEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(3324));
-
-  public static final NodeId AuditCancelEventType_Status = new NodeId(UShort.MIN, uint(3325));
-
-  public static final NodeId AuditCancelEventType_ServerId = new NodeId(UShort.MIN, uint(3326));
-
-  public static final NodeId AuditCancelEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(3327));
-
-  public static final NodeId AuditCancelEventType_ClientUserId = new NodeId(UShort.MIN, uint(3328));
-
-  public static final NodeId AuditCancelEventType_SessionId = new NodeId(UShort.MIN, uint(3329));
-
-  public static final NodeId AuditCertificateEventType_EventId = new NodeId(UShort.MIN, uint(3330));
-
-  public static final NodeId AuditCertificateEventType_EventType =
-      new NodeId(UShort.MIN, uint(3331));
-
-  public static final NodeId AuditCertificateEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(3332));
-
-  public static final NodeId AuditCertificateEventType_SourceName =
-      new NodeId(UShort.MIN, uint(3333));
-
-  public static final NodeId AuditCertificateEventType_Time = new NodeId(UShort.MIN, uint(3334));
-
-  public static final NodeId AuditCertificateEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3335));
-
-  public static final NodeId AuditCertificateEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(3336));
-
-  public static final NodeId AuditCertificateEventType_Message = new NodeId(UShort.MIN, uint(3337));
-
-  public static final NodeId AuditCertificateEventType_Severity =
-      new NodeId(UShort.MIN, uint(3338));
-
-  public static final NodeId AuditCertificateEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(3339));
-
-  public static final NodeId AuditCertificateEventType_Status = new NodeId(UShort.MIN, uint(3340));
-
-  public static final NodeId AuditCertificateEventType_ServerId =
-      new NodeId(UShort.MIN, uint(3341));
-
-  public static final NodeId AuditCertificateEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(3342));
-
-  public static final NodeId AuditCertificateEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(3343));
-
-  public static final NodeId AuditCertificateDataMismatchEventType_EventId =
-      new NodeId(UShort.MIN, uint(3344));
-
-  public static final NodeId AuditCertificateDataMismatchEventType_EventType =
-      new NodeId(UShort.MIN, uint(3345));
-
-  public static final NodeId AuditCertificateDataMismatchEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(3346));
-
-  public static final NodeId AuditCertificateDataMismatchEventType_SourceName =
-      new NodeId(UShort.MIN, uint(3347));
-
-  public static final NodeId AuditCertificateDataMismatchEventType_Time =
-      new NodeId(UShort.MIN, uint(3348));
-
-  public static final NodeId AuditCertificateDataMismatchEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3349));
-
-  public static final NodeId AuditCertificateDataMismatchEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(3350));
-
-  public static final NodeId AuditCertificateDataMismatchEventType_Message =
-      new NodeId(UShort.MIN, uint(3351));
-
-  public static final NodeId AuditCertificateDataMismatchEventType_Severity =
-      new NodeId(UShort.MIN, uint(3352));
-
-  public static final NodeId AuditCertificateDataMismatchEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(3353));
-
-  public static final NodeId AuditCertificateDataMismatchEventType_Status =
-      new NodeId(UShort.MIN, uint(3354));
-
-  public static final NodeId AuditCertificateDataMismatchEventType_ServerId =
-      new NodeId(UShort.MIN, uint(3355));
-
-  public static final NodeId AuditCertificateDataMismatchEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(3356));
-
-  public static final NodeId AuditCertificateDataMismatchEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(3357));
-
-  public static final NodeId AuditCertificateDataMismatchEventType_Certificate =
-      new NodeId(UShort.MIN, uint(3358));
-
-  public static final NodeId AuditCertificateExpiredEventType_EventId =
-      new NodeId(UShort.MIN, uint(3359));
-
-  public static final NodeId AuditCertificateExpiredEventType_EventType =
-      new NodeId(UShort.MIN, uint(3360));
-
-  public static final NodeId AuditCertificateExpiredEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(3361));
-
-  public static final NodeId AuditCertificateExpiredEventType_SourceName =
-      new NodeId(UShort.MIN, uint(3362));
-
-  public static final NodeId AuditCertificateExpiredEventType_Time =
-      new NodeId(UShort.MIN, uint(3363));
-
-  public static final NodeId AuditCertificateExpiredEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3364));
-
-  public static final NodeId AuditCertificateExpiredEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(3365));
-
-  public static final NodeId AuditCertificateExpiredEventType_Message =
-      new NodeId(UShort.MIN, uint(3366));
-
-  public static final NodeId AuditCertificateExpiredEventType_Severity =
-      new NodeId(UShort.MIN, uint(3367));
-
-  public static final NodeId AuditCertificateExpiredEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(3368));
-
-  public static final NodeId AuditCertificateExpiredEventType_Status =
-      new NodeId(UShort.MIN, uint(3369));
-
-  public static final NodeId AuditCertificateExpiredEventType_ServerId =
-      new NodeId(UShort.MIN, uint(3370));
-
-  public static final NodeId AuditCertificateExpiredEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(3371));
-
-  public static final NodeId AuditCertificateExpiredEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(3372));
-
-  public static final NodeId AuditCertificateExpiredEventType_Certificate =
-      new NodeId(UShort.MIN, uint(3373));
-
-  public static final NodeId AuditCertificateInvalidEventType_EventId =
-      new NodeId(UShort.MIN, uint(3374));
-
-  public static final NodeId AuditCertificateInvalidEventType_EventType =
-      new NodeId(UShort.MIN, uint(3375));
-
-  public static final NodeId AuditCertificateInvalidEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(3376));
-
-  public static final NodeId AuditCertificateInvalidEventType_SourceName =
-      new NodeId(UShort.MIN, uint(3377));
-
-  public static final NodeId AuditCertificateInvalidEventType_Time =
-      new NodeId(UShort.MIN, uint(3378));
-
-  public static final NodeId AuditCertificateInvalidEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3379));
-
-  public static final NodeId AuditCertificateInvalidEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(3380));
-
-  public static final NodeId AuditCertificateInvalidEventType_Message =
-      new NodeId(UShort.MIN, uint(3381));
-
-  public static final NodeId AuditCertificateInvalidEventType_Severity =
-      new NodeId(UShort.MIN, uint(3382));
-
-  public static final NodeId AuditCertificateInvalidEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(3383));
-
-  public static final NodeId AuditCertificateInvalidEventType_Status =
-      new NodeId(UShort.MIN, uint(3384));
-
-  public static final NodeId AuditCertificateInvalidEventType_ServerId =
-      new NodeId(UShort.MIN, uint(3385));
-
-  public static final NodeId AuditCertificateInvalidEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(3386));
-
-  public static final NodeId AuditCertificateInvalidEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(3387));
-
-  public static final NodeId AuditCertificateInvalidEventType_Certificate =
-      new NodeId(UShort.MIN, uint(3388));
-
-  public static final NodeId AuditCertificateUntrustedEventType_EventId =
-      new NodeId(UShort.MIN, uint(3389));
-
-  public static final NodeId AuditCertificateUntrustedEventType_EventType =
-      new NodeId(UShort.MIN, uint(3390));
-
-  public static final NodeId AuditCertificateUntrustedEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(3391));
-
-  public static final NodeId AuditCertificateUntrustedEventType_SourceName =
-      new NodeId(UShort.MIN, uint(3392));
-
-  public static final NodeId AuditCertificateUntrustedEventType_Time =
-      new NodeId(UShort.MIN, uint(3393));
-
-  public static final NodeId AuditCertificateUntrustedEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3394));
-
-  public static final NodeId AuditCertificateUntrustedEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(3395));
-
-  public static final NodeId AuditCertificateUntrustedEventType_Message =
-      new NodeId(UShort.MIN, uint(3396));
-
-  public static final NodeId AuditCertificateUntrustedEventType_Severity =
-      new NodeId(UShort.MIN, uint(3397));
-
-  public static final NodeId AuditCertificateUntrustedEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(3398));
-
-  public static final NodeId AuditCertificateUntrustedEventType_Status =
-      new NodeId(UShort.MIN, uint(3399));
-
-  public static final NodeId AuditCertificateUntrustedEventType_ServerId =
-      new NodeId(UShort.MIN, uint(3400));
-
-  public static final NodeId AuditCertificateUntrustedEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(3401));
-
-  public static final NodeId AuditCertificateUntrustedEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(3402));
-
-  public static final NodeId AuditCertificateUntrustedEventType_Certificate =
-      new NodeId(UShort.MIN, uint(3403));
-
-  public static final NodeId AuditCertificateRevokedEventType_EventId =
-      new NodeId(UShort.MIN, uint(3404));
-
-  public static final NodeId AuditCertificateRevokedEventType_EventType =
-      new NodeId(UShort.MIN, uint(3405));
-
-  public static final NodeId AuditCertificateRevokedEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(3406));
-
-  public static final NodeId AuditCertificateRevokedEventType_SourceName =
-      new NodeId(UShort.MIN, uint(3407));
-
-  public static final NodeId AuditCertificateRevokedEventType_Time =
-      new NodeId(UShort.MIN, uint(3408));
-
-  public static final NodeId AuditCertificateRevokedEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3409));
-
-  public static final NodeId AuditCertificateRevokedEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(3410));
-
-  public static final NodeId AuditCertificateRevokedEventType_Message =
-      new NodeId(UShort.MIN, uint(3411));
-
-  public static final NodeId AuditCertificateRevokedEventType_Severity =
-      new NodeId(UShort.MIN, uint(3412));
-
-  public static final NodeId AuditCertificateRevokedEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(3413));
-
-  public static final NodeId AuditCertificateRevokedEventType_Status =
-      new NodeId(UShort.MIN, uint(3414));
-
-  public static final NodeId AuditCertificateRevokedEventType_ServerId =
-      new NodeId(UShort.MIN, uint(3415));
-
-  public static final NodeId AuditCertificateRevokedEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(3416));
-
-  public static final NodeId AuditCertificateRevokedEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(3417));
-
-  public static final NodeId AuditCertificateRevokedEventType_Certificate =
-      new NodeId(UShort.MIN, uint(3418));
-
-  public static final NodeId AuditCertificateMismatchEventType_EventId =
-      new NodeId(UShort.MIN, uint(3419));
-
-  public static final NodeId AuditCertificateMismatchEventType_EventType =
-      new NodeId(UShort.MIN, uint(3420));
-
-  public static final NodeId AuditCertificateMismatchEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(3421));
-
-  public static final NodeId AuditCertificateMismatchEventType_SourceName =
-      new NodeId(UShort.MIN, uint(3422));
-
-  public static final NodeId AuditCertificateMismatchEventType_Time =
-      new NodeId(UShort.MIN, uint(3423));
-
-  public static final NodeId AuditCertificateMismatchEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3424));
-
-  public static final NodeId AuditCertificateMismatchEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(3425));
-
-  public static final NodeId AuditCertificateMismatchEventType_Message =
-      new NodeId(UShort.MIN, uint(3426));
-
-  public static final NodeId AuditCertificateMismatchEventType_Severity =
-      new NodeId(UShort.MIN, uint(3427));
-
-  public static final NodeId AuditCertificateMismatchEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(3428));
-
-  public static final NodeId AuditCertificateMismatchEventType_Status =
-      new NodeId(UShort.MIN, uint(3429));
-
-  public static final NodeId AuditCertificateMismatchEventType_ServerId =
-      new NodeId(UShort.MIN, uint(3430));
-
-  public static final NodeId AuditCertificateMismatchEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(3431));
-
-  public static final NodeId AuditCertificateMismatchEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(3432));
-
-  public static final NodeId AuditCertificateMismatchEventType_Certificate =
-      new NodeId(UShort.MIN, uint(3433));
-
-  public static final NodeId AuditNodeManagementEventType_EventId =
-      new NodeId(UShort.MIN, uint(3434));
-
-  public static final NodeId AuditNodeManagementEventType_EventType =
-      new NodeId(UShort.MIN, uint(3435));
-
-  public static final NodeId AuditNodeManagementEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(3436));
-
-  public static final NodeId AuditNodeManagementEventType_SourceName =
-      new NodeId(UShort.MIN, uint(3437));
-
-  public static final NodeId AuditNodeManagementEventType_Time = new NodeId(UShort.MIN, uint(3438));
-
-  public static final NodeId AuditNodeManagementEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3439));
-
-  public static final NodeId AuditNodeManagementEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(3440));
-
-  public static final NodeId AuditNodeManagementEventType_Message =
-      new NodeId(UShort.MIN, uint(3441));
-
-  public static final NodeId AuditNodeManagementEventType_Severity =
-      new NodeId(UShort.MIN, uint(3442));
-
-  public static final NodeId AuditNodeManagementEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(3443));
-
-  public static final NodeId AuditNodeManagementEventType_Status =
-      new NodeId(UShort.MIN, uint(3444));
-
-  public static final NodeId AuditNodeManagementEventType_ServerId =
-      new NodeId(UShort.MIN, uint(3445));
-
-  public static final NodeId AuditNodeManagementEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(3446));
-
-  public static final NodeId AuditNodeManagementEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(3447));
-
-  public static final NodeId AuditAddNodesEventType_EventId = new NodeId(UShort.MIN, uint(3448));
-
-  public static final NodeId AuditAddNodesEventType_EventType = new NodeId(UShort.MIN, uint(3449));
-
-  public static final NodeId AuditAddNodesEventType_SourceNode = new NodeId(UShort.MIN, uint(3450));
-
-  public static final NodeId AuditAddNodesEventType_SourceName = new NodeId(UShort.MIN, uint(3451));
-
-  public static final NodeId AuditAddNodesEventType_Time = new NodeId(UShort.MIN, uint(3452));
-
-  public static final NodeId AuditAddNodesEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3453));
-
-  public static final NodeId AuditAddNodesEventType_LocalTime = new NodeId(UShort.MIN, uint(3454));
-
-  public static final NodeId AuditAddNodesEventType_Message = new NodeId(UShort.MIN, uint(3455));
-
-  public static final NodeId AuditAddNodesEventType_Severity = new NodeId(UShort.MIN, uint(3456));
-
-  public static final NodeId AuditAddNodesEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(3457));
-
-  public static final NodeId AuditAddNodesEventType_Status = new NodeId(UShort.MIN, uint(3458));
-
-  public static final NodeId AuditAddNodesEventType_ServerId = new NodeId(UShort.MIN, uint(3459));
-
-  public static final NodeId AuditAddNodesEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(3460));
-
-  public static final NodeId AuditAddNodesEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(3461));
-
-  public static final NodeId AuditDeleteNodesEventType_EventId = new NodeId(UShort.MIN, uint(3462));
-
-  public static final NodeId AuditDeleteNodesEventType_EventType =
-      new NodeId(UShort.MIN, uint(3463));
-
-  public static final NodeId AuditDeleteNodesEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(3464));
-
-  public static final NodeId AuditDeleteNodesEventType_SourceName =
-      new NodeId(UShort.MIN, uint(3465));
-
-  public static final NodeId AuditDeleteNodesEventType_Time = new NodeId(UShort.MIN, uint(3466));
-
-  public static final NodeId AuditDeleteNodesEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3467));
-
-  public static final NodeId AuditDeleteNodesEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(3468));
-
-  public static final NodeId AuditDeleteNodesEventType_Message = new NodeId(UShort.MIN, uint(3469));
-
-  public static final NodeId AuditDeleteNodesEventType_Severity =
-      new NodeId(UShort.MIN, uint(3470));
-
-  public static final NodeId AuditDeleteNodesEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(3471));
-
-  public static final NodeId AuditDeleteNodesEventType_Status = new NodeId(UShort.MIN, uint(3472));
-
-  public static final NodeId AuditDeleteNodesEventType_ServerId =
-      new NodeId(UShort.MIN, uint(3473));
-
-  public static final NodeId AuditDeleteNodesEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(3474));
-
-  public static final NodeId AuditDeleteNodesEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(3475));
-
-  public static final NodeId AuditAddReferencesEventType_EventId =
-      new NodeId(UShort.MIN, uint(3476));
-
-  public static final NodeId AuditAddReferencesEventType_EventType =
-      new NodeId(UShort.MIN, uint(3477));
-
-  public static final NodeId AuditAddReferencesEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(3478));
-
-  public static final NodeId AuditAddReferencesEventType_SourceName =
-      new NodeId(UShort.MIN, uint(3479));
-
-  public static final NodeId AuditAddReferencesEventType_Time = new NodeId(UShort.MIN, uint(3480));
-
-  public static final NodeId AuditAddReferencesEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3481));
-
-  public static final NodeId AuditAddReferencesEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(3482));
-
-  public static final NodeId AuditAddReferencesEventType_Message =
-      new NodeId(UShort.MIN, uint(3483));
-
-  public static final NodeId AuditAddReferencesEventType_Severity =
-      new NodeId(UShort.MIN, uint(3484));
-
-  public static final NodeId AuditAddReferencesEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(3485));
-
-  public static final NodeId AuditAddReferencesEventType_Status =
-      new NodeId(UShort.MIN, uint(3486));
-
-  public static final NodeId AuditAddReferencesEventType_ServerId =
-      new NodeId(UShort.MIN, uint(3487));
-
-  public static final NodeId AuditAddReferencesEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(3488));
-
-  public static final NodeId AuditAddReferencesEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(3489));
-
-  public static final NodeId AuditDeleteReferencesEventType_EventId =
-      new NodeId(UShort.MIN, uint(3490));
-
-  public static final NodeId AuditDeleteReferencesEventType_EventType =
-      new NodeId(UShort.MIN, uint(3491));
-
-  public static final NodeId AuditDeleteReferencesEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(3492));
-
-  public static final NodeId AuditDeleteReferencesEventType_SourceName =
-      new NodeId(UShort.MIN, uint(3493));
-
-  public static final NodeId AuditDeleteReferencesEventType_Time =
-      new NodeId(UShort.MIN, uint(3494));
-
-  public static final NodeId AuditDeleteReferencesEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3495));
-
-  public static final NodeId AuditDeleteReferencesEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(3496));
-
-  public static final NodeId AuditDeleteReferencesEventType_Message =
-      new NodeId(UShort.MIN, uint(3497));
-
-  public static final NodeId AuditDeleteReferencesEventType_Severity =
-      new NodeId(UShort.MIN, uint(3498));
-
-  public static final NodeId AuditDeleteReferencesEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(3499));
-
-  public static final NodeId AuditDeleteReferencesEventType_Status =
-      new NodeId(UShort.MIN, uint(3500));
-
-  public static final NodeId AuditDeleteReferencesEventType_ServerId =
-      new NodeId(UShort.MIN, uint(3501));
-
-  public static final NodeId AuditDeleteReferencesEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(3502));
-
-  public static final NodeId AuditDeleteReferencesEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(3503));
-
-  public static final NodeId AuditUpdateEventType_EventId = new NodeId(UShort.MIN, uint(3504));
-
-  public static final NodeId AuditUpdateEventType_EventType = new NodeId(UShort.MIN, uint(3505));
-
-  public static final NodeId AuditUpdateEventType_SourceNode = new NodeId(UShort.MIN, uint(3506));
-
-  public static final NodeId AuditUpdateEventType_SourceName = new NodeId(UShort.MIN, uint(3507));
-
-  public static final NodeId AuditUpdateEventType_Time = new NodeId(UShort.MIN, uint(3508));
-
-  public static final NodeId AuditUpdateEventType_ReceiveTime = new NodeId(UShort.MIN, uint(3509));
-
-  public static final NodeId AuditUpdateEventType_LocalTime = new NodeId(UShort.MIN, uint(3510));
-
-  public static final NodeId AuditUpdateEventType_Message = new NodeId(UShort.MIN, uint(3511));
-
-  public static final NodeId AuditUpdateEventType_Severity = new NodeId(UShort.MIN, uint(3512));
-
-  public static final NodeId AuditUpdateEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(3513));
-
-  public static final NodeId AuditUpdateEventType_Status = new NodeId(UShort.MIN, uint(3514));
-
-  public static final NodeId AuditUpdateEventType_ServerId = new NodeId(UShort.MIN, uint(3515));
-
-  public static final NodeId AuditUpdateEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(3516));
-
-  public static final NodeId AuditUpdateEventType_ClientUserId = new NodeId(UShort.MIN, uint(3517));
-
-  public static final NodeId AuditWriteUpdateEventType_EventId = new NodeId(UShort.MIN, uint(3518));
-
-  public static final NodeId AuditWriteUpdateEventType_EventType =
-      new NodeId(UShort.MIN, uint(3519));
-
-  public static final NodeId AuditWriteUpdateEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(3520));
-
-  public static final NodeId AuditWriteUpdateEventType_SourceName =
-      new NodeId(UShort.MIN, uint(3521));
-
-  public static final NodeId AuditWriteUpdateEventType_Time = new NodeId(UShort.MIN, uint(3522));
-
-  public static final NodeId AuditWriteUpdateEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3523));
-
-  public static final NodeId AuditWriteUpdateEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(3524));
-
-  public static final NodeId AuditWriteUpdateEventType_Message = new NodeId(UShort.MIN, uint(3525));
-
-  public static final NodeId AuditWriteUpdateEventType_Severity =
-      new NodeId(UShort.MIN, uint(3526));
-
-  public static final NodeId AuditWriteUpdateEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(3527));
-
-  public static final NodeId AuditWriteUpdateEventType_Status = new NodeId(UShort.MIN, uint(3528));
-
-  public static final NodeId AuditWriteUpdateEventType_ServerId =
-      new NodeId(UShort.MIN, uint(3529));
-
-  public static final NodeId AuditWriteUpdateEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(3530));
-
-  public static final NodeId AuditWriteUpdateEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(3531));
-
-  public static final NodeId AuditHistoryUpdateEventType_EventId =
-      new NodeId(UShort.MIN, uint(3532));
-
-  public static final NodeId AuditHistoryUpdateEventType_EventType =
-      new NodeId(UShort.MIN, uint(3533));
-
-  public static final NodeId AuditHistoryUpdateEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(3534));
-
-  public static final NodeId AuditHistoryUpdateEventType_SourceName =
-      new NodeId(UShort.MIN, uint(3535));
-
-  public static final NodeId AuditHistoryUpdateEventType_Time = new NodeId(UShort.MIN, uint(3536));
-
-  public static final NodeId AuditHistoryUpdateEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3537));
-
-  public static final NodeId AuditHistoryUpdateEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(3538));
-
-  public static final NodeId AuditHistoryUpdateEventType_Message =
-      new NodeId(UShort.MIN, uint(3539));
-
-  public static final NodeId AuditHistoryUpdateEventType_Severity =
-      new NodeId(UShort.MIN, uint(3540));
-
-  public static final NodeId AuditHistoryUpdateEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(3541));
-
-  public static final NodeId AuditHistoryUpdateEventType_Status =
-      new NodeId(UShort.MIN, uint(3542));
-
-  public static final NodeId AuditHistoryUpdateEventType_ServerId =
-      new NodeId(UShort.MIN, uint(3543));
-
-  public static final NodeId AuditHistoryUpdateEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(3544));
-
-  public static final NodeId AuditHistoryUpdateEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(3545));
-
-  public static final NodeId AuditHistoryEventUpdateEventType_EventId =
-      new NodeId(UShort.MIN, uint(3546));
-
-  public static final NodeId AuditHistoryEventUpdateEventType_EventType =
-      new NodeId(UShort.MIN, uint(3547));
-
-  public static final NodeId AuditHistoryEventUpdateEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(3548));
-
-  public static final NodeId AuditHistoryEventUpdateEventType_SourceName =
-      new NodeId(UShort.MIN, uint(3549));
-
-  public static final NodeId AuditHistoryEventUpdateEventType_Time =
-      new NodeId(UShort.MIN, uint(3550));
-
-  public static final NodeId AuditHistoryEventUpdateEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3551));
-
-  public static final NodeId AuditHistoryEventUpdateEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(3552));
-
-  public static final NodeId AuditHistoryEventUpdateEventType_Message =
-      new NodeId(UShort.MIN, uint(3553));
-
-  public static final NodeId AuditHistoryEventUpdateEventType_Severity =
-      new NodeId(UShort.MIN, uint(3554));
-
-  public static final NodeId AuditHistoryEventUpdateEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(3555));
-
-  public static final NodeId AuditHistoryEventUpdateEventType_Status =
-      new NodeId(UShort.MIN, uint(3556));
-
-  public static final NodeId AuditHistoryEventUpdateEventType_ServerId =
-      new NodeId(UShort.MIN, uint(3557));
-
-  public static final NodeId AuditHistoryEventUpdateEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(3558));
-
-  public static final NodeId AuditHistoryEventUpdateEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(3559));
-
-  public static final NodeId AuditHistoryEventUpdateEventType_ParameterDataTypeId =
-      new NodeId(UShort.MIN, uint(3560));
-
-  public static final NodeId AuditHistoryValueUpdateEventType_EventId =
-      new NodeId(UShort.MIN, uint(3561));
-
-  public static final NodeId AuditHistoryValueUpdateEventType_EventType =
-      new NodeId(UShort.MIN, uint(3562));
-
-  public static final NodeId AuditHistoryValueUpdateEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(3563));
-
-  public static final NodeId AuditHistoryValueUpdateEventType_SourceName =
-      new NodeId(UShort.MIN, uint(3564));
-
-  public static final NodeId AuditHistoryValueUpdateEventType_Time =
-      new NodeId(UShort.MIN, uint(3565));
-
-  public static final NodeId AuditHistoryValueUpdateEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3566));
-
-  public static final NodeId AuditHistoryValueUpdateEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(3567));
-
-  public static final NodeId AuditHistoryValueUpdateEventType_Message =
-      new NodeId(UShort.MIN, uint(3568));
-
-  public static final NodeId AuditHistoryValueUpdateEventType_Severity =
-      new NodeId(UShort.MIN, uint(3569));
-
-  public static final NodeId AuditHistoryValueUpdateEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(3570));
-
-  public static final NodeId AuditHistoryValueUpdateEventType_Status =
-      new NodeId(UShort.MIN, uint(3571));
-
-  public static final NodeId AuditHistoryValueUpdateEventType_ServerId =
-      new NodeId(UShort.MIN, uint(3572));
-
-  public static final NodeId AuditHistoryValueUpdateEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(3573));
-
-  public static final NodeId AuditHistoryValueUpdateEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(3574));
-
-  public static final NodeId AuditHistoryValueUpdateEventType_ParameterDataTypeId =
-      new NodeId(UShort.MIN, uint(3575));
-
-  public static final NodeId AuditHistoryDeleteEventType_EventId =
-      new NodeId(UShort.MIN, uint(3576));
-
-  public static final NodeId AuditHistoryDeleteEventType_EventType =
-      new NodeId(UShort.MIN, uint(3577));
-
-  public static final NodeId AuditHistoryDeleteEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(3578));
-
-  public static final NodeId AuditHistoryDeleteEventType_SourceName =
-      new NodeId(UShort.MIN, uint(3579));
-
-  public static final NodeId AuditHistoryDeleteEventType_Time = new NodeId(UShort.MIN, uint(3580));
-
-  public static final NodeId AuditHistoryDeleteEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3581));
-
-  public static final NodeId AuditHistoryDeleteEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(3582));
-
-  public static final NodeId AuditHistoryDeleteEventType_Message =
-      new NodeId(UShort.MIN, uint(3583));
-
-  public static final NodeId AuditHistoryDeleteEventType_Severity =
-      new NodeId(UShort.MIN, uint(3584));
-
-  public static final NodeId AuditHistoryDeleteEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(3585));
-
-  public static final NodeId AuditHistoryDeleteEventType_Status =
-      new NodeId(UShort.MIN, uint(3586));
-
-  public static final NodeId AuditHistoryDeleteEventType_ServerId =
-      new NodeId(UShort.MIN, uint(3587));
-
-  public static final NodeId AuditHistoryDeleteEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(3588));
-
-  public static final NodeId AuditHistoryDeleteEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(3589));
-
-  public static final NodeId AuditHistoryDeleteEventType_ParameterDataTypeId =
-      new NodeId(UShort.MIN, uint(3590));
-
-  public static final NodeId AuditHistoryRawModifyDeleteEventType_EventId =
-      new NodeId(UShort.MIN, uint(3591));
-
-  public static final NodeId AuditHistoryRawModifyDeleteEventType_EventType =
-      new NodeId(UShort.MIN, uint(3592));
-
-  public static final NodeId AuditHistoryRawModifyDeleteEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(3593));
-
-  public static final NodeId AuditHistoryRawModifyDeleteEventType_SourceName =
-      new NodeId(UShort.MIN, uint(3594));
-
-  public static final NodeId AuditHistoryRawModifyDeleteEventType_Time =
-      new NodeId(UShort.MIN, uint(3595));
-
-  public static final NodeId AuditHistoryRawModifyDeleteEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3596));
-
-  public static final NodeId AuditHistoryRawModifyDeleteEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(3597));
-
-  public static final NodeId AuditHistoryRawModifyDeleteEventType_Message =
-      new NodeId(UShort.MIN, uint(3598));
-
-  public static final NodeId AuditHistoryRawModifyDeleteEventType_Severity =
-      new NodeId(UShort.MIN, uint(3599));
-
-  public static final NodeId AuditHistoryRawModifyDeleteEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(3600));
-
-  public static final NodeId AuditHistoryRawModifyDeleteEventType_Status =
-      new NodeId(UShort.MIN, uint(3601));
-
-  public static final NodeId AuditHistoryRawModifyDeleteEventType_ServerId =
-      new NodeId(UShort.MIN, uint(3602));
-
-  public static final NodeId AuditHistoryRawModifyDeleteEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(3603));
-
-  public static final NodeId AuditHistoryRawModifyDeleteEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(3604));
-
-  public static final NodeId AuditHistoryRawModifyDeleteEventType_ParameterDataTypeId =
-      new NodeId(UShort.MIN, uint(3605));
-
-  public static final NodeId AuditHistoryRawModifyDeleteEventType_UpdatedNode =
-      new NodeId(UShort.MIN, uint(3606));
-
-  public static final NodeId AuditHistoryAtTimeDeleteEventType_EventId =
-      new NodeId(UShort.MIN, uint(3607));
-
-  public static final NodeId AuditHistoryAtTimeDeleteEventType_EventType =
-      new NodeId(UShort.MIN, uint(3608));
-
-  public static final NodeId AuditHistoryAtTimeDeleteEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(3609));
-
-  public static final NodeId AuditHistoryAtTimeDeleteEventType_SourceName =
-      new NodeId(UShort.MIN, uint(3610));
-
-  public static final NodeId AuditHistoryAtTimeDeleteEventType_Time =
-      new NodeId(UShort.MIN, uint(3611));
-
-  public static final NodeId AuditHistoryAtTimeDeleteEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3612));
-
-  public static final NodeId AuditHistoryAtTimeDeleteEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(3613));
-
-  public static final NodeId AuditHistoryAtTimeDeleteEventType_Message =
-      new NodeId(UShort.MIN, uint(3614));
-
-  public static final NodeId AuditHistoryAtTimeDeleteEventType_Severity =
-      new NodeId(UShort.MIN, uint(3615));
-
-  public static final NodeId AuditHistoryAtTimeDeleteEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(3616));
-
-  public static final NodeId AuditHistoryAtTimeDeleteEventType_Status =
-      new NodeId(UShort.MIN, uint(3617));
-
-  public static final NodeId AuditHistoryAtTimeDeleteEventType_ServerId =
-      new NodeId(UShort.MIN, uint(3618));
-
-  public static final NodeId AuditHistoryAtTimeDeleteEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(3619));
-
-  public static final NodeId AuditHistoryAtTimeDeleteEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(3620));
-
-  public static final NodeId AuditHistoryAtTimeDeleteEventType_ParameterDataTypeId =
-      new NodeId(UShort.MIN, uint(3621));
-
-  public static final NodeId AuditHistoryAtTimeDeleteEventType_UpdatedNode =
-      new NodeId(UShort.MIN, uint(3622));
-
-  public static final NodeId AuditHistoryEventDeleteEventType_EventId =
-      new NodeId(UShort.MIN, uint(3623));
-
-  public static final NodeId AuditHistoryEventDeleteEventType_EventType =
-      new NodeId(UShort.MIN, uint(3624));
-
-  public static final NodeId AuditHistoryEventDeleteEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(3625));
-
-  public static final NodeId AuditHistoryEventDeleteEventType_SourceName =
-      new NodeId(UShort.MIN, uint(3626));
-
-  public static final NodeId AuditHistoryEventDeleteEventType_Time =
-      new NodeId(UShort.MIN, uint(3627));
-
-  public static final NodeId AuditHistoryEventDeleteEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3628));
-
-  public static final NodeId AuditHistoryEventDeleteEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(3629));
-
-  public static final NodeId AuditHistoryEventDeleteEventType_Message =
-      new NodeId(UShort.MIN, uint(3630));
-
-  public static final NodeId AuditHistoryEventDeleteEventType_Severity =
-      new NodeId(UShort.MIN, uint(3631));
-
-  public static final NodeId AuditHistoryEventDeleteEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(3632));
-
-  public static final NodeId AuditHistoryEventDeleteEventType_Status =
-      new NodeId(UShort.MIN, uint(3633));
-
-  public static final NodeId AuditHistoryEventDeleteEventType_ServerId =
-      new NodeId(UShort.MIN, uint(3634));
-
-  public static final NodeId AuditHistoryEventDeleteEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(3635));
-
-  public static final NodeId AuditHistoryEventDeleteEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(3636));
-
-  public static final NodeId AuditHistoryEventDeleteEventType_ParameterDataTypeId =
-      new NodeId(UShort.MIN, uint(3637));
-
-  public static final NodeId AuditHistoryEventDeleteEventType_UpdatedNode =
-      new NodeId(UShort.MIN, uint(3638));
-
-  public static final NodeId AuditUpdateMethodEventType_EventId =
-      new NodeId(UShort.MIN, uint(3639));
-
-  public static final NodeId AuditUpdateMethodEventType_EventType =
-      new NodeId(UShort.MIN, uint(3640));
-
-  public static final NodeId AuditUpdateMethodEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(3641));
-
-  public static final NodeId AuditUpdateMethodEventType_SourceName =
-      new NodeId(UShort.MIN, uint(3642));
-
-  public static final NodeId AuditUpdateMethodEventType_Time = new NodeId(UShort.MIN, uint(3643));
-
-  public static final NodeId AuditUpdateMethodEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3644));
-
-  public static final NodeId AuditUpdateMethodEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(3645));
-
-  public static final NodeId AuditUpdateMethodEventType_Message =
-      new NodeId(UShort.MIN, uint(3646));
-
-  public static final NodeId AuditUpdateMethodEventType_Severity =
-      new NodeId(UShort.MIN, uint(3647));
-
-  public static final NodeId AuditUpdateMethodEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(3648));
-
-  public static final NodeId AuditUpdateMethodEventType_Status = new NodeId(UShort.MIN, uint(3649));
-
-  public static final NodeId AuditUpdateMethodEventType_ServerId =
-      new NodeId(UShort.MIN, uint(3650));
-
-  public static final NodeId AuditUpdateMethodEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(3651));
-
-  public static final NodeId AuditUpdateMethodEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(3652));
-
-  public static final NodeId SystemEventType_EventId = new NodeId(UShort.MIN, uint(3653));
-
-  public static final NodeId SystemEventType_EventType = new NodeId(UShort.MIN, uint(3654));
-
-  public static final NodeId SystemEventType_SourceNode = new NodeId(UShort.MIN, uint(3655));
-
-  public static final NodeId SystemEventType_SourceName = new NodeId(UShort.MIN, uint(3656));
-
-  public static final NodeId SystemEventType_Time = new NodeId(UShort.MIN, uint(3657));
-
-  public static final NodeId SystemEventType_ReceiveTime = new NodeId(UShort.MIN, uint(3658));
-
-  public static final NodeId SystemEventType_LocalTime = new NodeId(UShort.MIN, uint(3659));
-
-  public static final NodeId SystemEventType_Message = new NodeId(UShort.MIN, uint(3660));
-
-  public static final NodeId SystemEventType_Severity = new NodeId(UShort.MIN, uint(3661));
-
-  public static final NodeId DeviceFailureEventType_EventId = new NodeId(UShort.MIN, uint(3662));
-
-  public static final NodeId DeviceFailureEventType_EventType = new NodeId(UShort.MIN, uint(3663));
-
-  public static final NodeId DeviceFailureEventType_SourceNode = new NodeId(UShort.MIN, uint(3664));
-
-  public static final NodeId DeviceFailureEventType_SourceName = new NodeId(UShort.MIN, uint(3665));
-
-  public static final NodeId DeviceFailureEventType_Time = new NodeId(UShort.MIN, uint(3666));
-
-  public static final NodeId DeviceFailureEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3667));
-
-  public static final NodeId DeviceFailureEventType_LocalTime = new NodeId(UShort.MIN, uint(3668));
-
-  public static final NodeId DeviceFailureEventType_Message = new NodeId(UShort.MIN, uint(3669));
-
-  public static final NodeId DeviceFailureEventType_Severity = new NodeId(UShort.MIN, uint(3670));
-
-  public static final NodeId BaseModelChangeEventType_EventId = new NodeId(UShort.MIN, uint(3671));
-
-  public static final NodeId BaseModelChangeEventType_EventType =
-      new NodeId(UShort.MIN, uint(3672));
-
-  public static final NodeId BaseModelChangeEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(3673));
-
-  public static final NodeId BaseModelChangeEventType_SourceName =
-      new NodeId(UShort.MIN, uint(3674));
-
-  public static final NodeId BaseModelChangeEventType_Time = new NodeId(UShort.MIN, uint(3675));
-
-  public static final NodeId BaseModelChangeEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3676));
-
-  public static final NodeId BaseModelChangeEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(3677));
-
-  public static final NodeId BaseModelChangeEventType_Message = new NodeId(UShort.MIN, uint(3678));
-
-  public static final NodeId BaseModelChangeEventType_Severity = new NodeId(UShort.MIN, uint(3679));
-
-  public static final NodeId GeneralModelChangeEventType_EventId =
-      new NodeId(UShort.MIN, uint(3680));
-
-  public static final NodeId GeneralModelChangeEventType_EventType =
-      new NodeId(UShort.MIN, uint(3681));
-
-  public static final NodeId GeneralModelChangeEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(3682));
-
-  public static final NodeId GeneralModelChangeEventType_SourceName =
-      new NodeId(UShort.MIN, uint(3683));
-
-  public static final NodeId GeneralModelChangeEventType_Time = new NodeId(UShort.MIN, uint(3684));
-
-  public static final NodeId GeneralModelChangeEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3685));
-
-  public static final NodeId GeneralModelChangeEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(3686));
-
-  public static final NodeId GeneralModelChangeEventType_Message =
-      new NodeId(UShort.MIN, uint(3687));
-
-  public static final NodeId GeneralModelChangeEventType_Severity =
-      new NodeId(UShort.MIN, uint(3688));
-
-  public static final NodeId SemanticChangeEventType_EventId = new NodeId(UShort.MIN, uint(3689));
-
-  public static final NodeId SemanticChangeEventType_EventType = new NodeId(UShort.MIN, uint(3690));
-
-  public static final NodeId SemanticChangeEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(3691));
-
-  public static final NodeId SemanticChangeEventType_SourceName =
-      new NodeId(UShort.MIN, uint(3692));
-
-  public static final NodeId SemanticChangeEventType_Time = new NodeId(UShort.MIN, uint(3693));
-
-  public static final NodeId SemanticChangeEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3694));
-
-  public static final NodeId SemanticChangeEventType_LocalTime = new NodeId(UShort.MIN, uint(3695));
-
-  public static final NodeId SemanticChangeEventType_Message = new NodeId(UShort.MIN, uint(3696));
-
-  public static final NodeId SemanticChangeEventType_Severity = new NodeId(UShort.MIN, uint(3697));
 
   public static final NodeId ServerStatusType_BuildInfo_ProductUri =
       new NodeId(UShort.MIN, uint(3698));
@@ -4794,21 +3397,6 @@ abstract class NodeIds0 extends NodeIds1 {
 
   public static final NodeId Server_ServerRedundancy_RedundancySupport =
       new NodeId(UShort.MIN, uint(3709));
-
-  public static final NodeId FiniteStateVariableType_Name = new NodeId(UShort.MIN, uint(3714));
-
-  public static final NodeId FiniteStateVariableType_Number = new NodeId(UShort.MIN, uint(3715));
-
-  public static final NodeId FiniteStateVariableType_EffectiveDisplayName =
-      new NodeId(UShort.MIN, uint(3716));
-
-  public static final NodeId FiniteTransitionVariableType_Name = new NodeId(UShort.MIN, uint(3717));
-
-  public static final NodeId FiniteTransitionVariableType_Number =
-      new NodeId(UShort.MIN, uint(3718));
-
-  public static final NodeId FiniteTransitionVariableType_TransitionTime =
-      new NodeId(UShort.MIN, uint(3719));
 
   public static final NodeId StateMachineType_CurrentState_Id = new NodeId(UShort.MIN, uint(3720));
 
@@ -4857,26 +3445,6 @@ abstract class NodeIds0 extends NodeIds1 {
   public static final NodeId FiniteStateMachineType_LastTransition_TransitionTime =
       new NodeId(UShort.MIN, uint(3735));
 
-  public static final NodeId InitialStateType_StateNumber = new NodeId(UShort.MIN, uint(3736));
-
-  public static final NodeId TransitionEventType_EventId = new NodeId(UShort.MIN, uint(3737));
-
-  public static final NodeId TransitionEventType_EventType = new NodeId(UShort.MIN, uint(3738));
-
-  public static final NodeId TransitionEventType_SourceNode = new NodeId(UShort.MIN, uint(3739));
-
-  public static final NodeId TransitionEventType_SourceName = new NodeId(UShort.MIN, uint(3740));
-
-  public static final NodeId TransitionEventType_Time = new NodeId(UShort.MIN, uint(3741));
-
-  public static final NodeId TransitionEventType_ReceiveTime = new NodeId(UShort.MIN, uint(3742));
-
-  public static final NodeId TransitionEventType_LocalTime = new NodeId(UShort.MIN, uint(3743));
-
-  public static final NodeId TransitionEventType_Message = new NodeId(UShort.MIN, uint(3744));
-
-  public static final NodeId TransitionEventType_Severity = new NodeId(UShort.MIN, uint(3745));
-
   public static final NodeId TransitionEventType_FromState_Id = new NodeId(UShort.MIN, uint(3746));
 
   public static final NodeId TransitionEventType_FromState_Name =
@@ -4909,194 +3477,7 @@ abstract class NodeIds0 extends NodeIds1 {
   public static final NodeId TransitionEventType_Transition_TransitionTime =
       new NodeId(UShort.MIN, uint(3757));
 
-  public static final NodeId AuditUpdateStateEventType_EventId = new NodeId(UShort.MIN, uint(3758));
-
-  public static final NodeId AuditUpdateStateEventType_EventType =
-      new NodeId(UShort.MIN, uint(3759));
-
-  public static final NodeId AuditUpdateStateEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(3760));
-
-  public static final NodeId AuditUpdateStateEventType_SourceName =
-      new NodeId(UShort.MIN, uint(3761));
-
-  public static final NodeId AuditUpdateStateEventType_Time = new NodeId(UShort.MIN, uint(3762));
-
-  public static final NodeId AuditUpdateStateEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3763));
-
-  public static final NodeId AuditUpdateStateEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(3764));
-
-  public static final NodeId AuditUpdateStateEventType_Message = new NodeId(UShort.MIN, uint(3765));
-
-  public static final NodeId AuditUpdateStateEventType_Severity =
-      new NodeId(UShort.MIN, uint(3766));
-
-  public static final NodeId AuditUpdateStateEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(3767));
-
-  public static final NodeId AuditUpdateStateEventType_Status = new NodeId(UShort.MIN, uint(3768));
-
-  public static final NodeId AuditUpdateStateEventType_ServerId =
-      new NodeId(UShort.MIN, uint(3769));
-
-  public static final NodeId AuditUpdateStateEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(3770));
-
-  public static final NodeId AuditUpdateStateEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(3771));
-
-  public static final NodeId AuditUpdateStateEventType_MethodId =
-      new NodeId(UShort.MIN, uint(3772));
-
-  public static final NodeId AuditUpdateStateEventType_InputArguments =
-      new NodeId(UShort.MIN, uint(3773));
-
-  public static final NodeId AnalogItemType_Definition = new NodeId(UShort.MIN, uint(3774));
-
-  public static final NodeId AnalogItemType_ValuePrecision = new NodeId(UShort.MIN, uint(3775));
-
-  public static final NodeId DiscreteItemType_Definition = new NodeId(UShort.MIN, uint(3776));
-
-  public static final NodeId DiscreteItemType_ValuePrecision = new NodeId(UShort.MIN, uint(3777));
-
-  public static final NodeId TwoStateDiscreteType_Definition = new NodeId(UShort.MIN, uint(3778));
-
-  public static final NodeId TwoStateDiscreteType_ValuePrecision =
-      new NodeId(UShort.MIN, uint(3779));
-
-  public static final NodeId MultiStateDiscreteType_Definition = new NodeId(UShort.MIN, uint(3780));
-
-  public static final NodeId MultiStateDiscreteType_ValuePrecision =
-      new NodeId(UShort.MIN, uint(3781));
-
-  public static final NodeId ProgramTransitionEventType_EventId =
-      new NodeId(UShort.MIN, uint(3782));
-
-  public static final NodeId ProgramTransitionEventType_EventType =
-      new NodeId(UShort.MIN, uint(3783));
-
-  public static final NodeId ProgramTransitionEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(3784));
-
-  public static final NodeId ProgramTransitionEventType_SourceName =
-      new NodeId(UShort.MIN, uint(3785));
-
-  public static final NodeId ProgramTransitionEventType_Time = new NodeId(UShort.MIN, uint(3786));
-
-  public static final NodeId ProgramTransitionEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3787));
-
-  public static final NodeId ProgramTransitionEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(3788));
-
-  public static final NodeId ProgramTransitionEventType_Message =
-      new NodeId(UShort.MIN, uint(3789));
-
-  public static final NodeId ProgramTransitionEventType_Severity =
-      new NodeId(UShort.MIN, uint(3790));
-
-  public static final NodeId ProgramTransitionEventType_FromState =
-      new NodeId(UShort.MIN, uint(3791));
-
-  public static final NodeId ProgramTransitionEventType_FromState_Id =
-      new NodeId(UShort.MIN, uint(3792));
-
-  public static final NodeId ProgramTransitionEventType_FromState_Name =
-      new NodeId(UShort.MIN, uint(3793));
-
-  public static final NodeId ProgramTransitionEventType_FromState_Number =
-      new NodeId(UShort.MIN, uint(3794));
-
-  public static final NodeId ProgramTransitionEventType_FromState_EffectiveDisplayName =
-      new NodeId(UShort.MIN, uint(3795));
-
-  public static final NodeId ProgramTransitionEventType_ToState =
-      new NodeId(UShort.MIN, uint(3796));
-
-  public static final NodeId ProgramTransitionEventType_ToState_Id =
-      new NodeId(UShort.MIN, uint(3797));
-
-  public static final NodeId ProgramTransitionEventType_ToState_Name =
-      new NodeId(UShort.MIN, uint(3798));
-
-  public static final NodeId ProgramTransitionEventType_ToState_Number =
-      new NodeId(UShort.MIN, uint(3799));
-
-  public static final NodeId ProgramTransitionEventType_ToState_EffectiveDisplayName =
-      new NodeId(UShort.MIN, uint(3800));
-
-  public static final NodeId ProgramTransitionEventType_Transition =
-      new NodeId(UShort.MIN, uint(3801));
-
-  public static final NodeId ProgramTransitionEventType_Transition_Id =
-      new NodeId(UShort.MIN, uint(3802));
-
-  public static final NodeId ProgramTransitionEventType_Transition_Name =
-      new NodeId(UShort.MIN, uint(3803));
-
-  public static final NodeId ProgramTransitionEventType_Transition_Number =
-      new NodeId(UShort.MIN, uint(3804));
-
-  public static final NodeId ProgramTransitionEventType_Transition_TransitionTime =
-      new NodeId(UShort.MIN, uint(3805));
-
   public static final NodeId ProgramTransitionAuditEventType = new NodeId(UShort.MIN, uint(3806));
-
-  public static final NodeId ProgramTransitionAuditEventType_EventId =
-      new NodeId(UShort.MIN, uint(3807));
-
-  public static final NodeId ProgramTransitionAuditEventType_EventType =
-      new NodeId(UShort.MIN, uint(3808));
-
-  public static final NodeId ProgramTransitionAuditEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(3809));
-
-  public static final NodeId ProgramTransitionAuditEventType_SourceName =
-      new NodeId(UShort.MIN, uint(3810));
-
-  public static final NodeId ProgramTransitionAuditEventType_Time =
-      new NodeId(UShort.MIN, uint(3811));
-
-  public static final NodeId ProgramTransitionAuditEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3812));
-
-  public static final NodeId ProgramTransitionAuditEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(3813));
-
-  public static final NodeId ProgramTransitionAuditEventType_Message =
-      new NodeId(UShort.MIN, uint(3814));
-
-  public static final NodeId ProgramTransitionAuditEventType_Severity =
-      new NodeId(UShort.MIN, uint(3815));
-
-  public static final NodeId ProgramTransitionAuditEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(3816));
-
-  public static final NodeId ProgramTransitionAuditEventType_Status =
-      new NodeId(UShort.MIN, uint(3817));
-
-  public static final NodeId ProgramTransitionAuditEventType_ServerId =
-      new NodeId(UShort.MIN, uint(3818));
-
-  public static final NodeId ProgramTransitionAuditEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(3819));
-
-  public static final NodeId ProgramTransitionAuditEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(3820));
-
-  public static final NodeId ProgramTransitionAuditEventType_MethodId =
-      new NodeId(UShort.MIN, uint(3821));
-
-  public static final NodeId ProgramTransitionAuditEventType_InputArguments =
-      new NodeId(UShort.MIN, uint(3822));
-
-  public static final NodeId ProgramTransitionAuditEventType_OldStateId =
-      new NodeId(UShort.MIN, uint(3823));
-
-  public static final NodeId ProgramTransitionAuditEventType_NewStateId =
-      new NodeId(UShort.MIN, uint(3824));
 
   public static final NodeId ProgramTransitionAuditEventType_Transition =
       new NodeId(UShort.MIN, uint(3825));
@@ -5181,341 +3562,12 @@ abstract class NodeIds0 extends NodeIds1 {
   public static final NodeId AddCommentMethodType_InputArguments =
       new NodeId(UShort.MIN, uint(3864));
 
-  public static final NodeId ConditionType_EventId = new NodeId(UShort.MIN, uint(3865));
-
-  public static final NodeId ConditionType_EventType = new NodeId(UShort.MIN, uint(3866));
-
-  public static final NodeId ConditionType_SourceNode = new NodeId(UShort.MIN, uint(3867));
-
-  public static final NodeId ConditionType_SourceName = new NodeId(UShort.MIN, uint(3868));
-
-  public static final NodeId ConditionType_Time = new NodeId(UShort.MIN, uint(3869));
-
-  public static final NodeId ConditionType_ReceiveTime = new NodeId(UShort.MIN, uint(3870));
-
-  public static final NodeId ConditionType_LocalTime = new NodeId(UShort.MIN, uint(3871));
-
-  public static final NodeId ConditionType_Message = new NodeId(UShort.MIN, uint(3872));
-
-  public static final NodeId ConditionType_Severity = new NodeId(UShort.MIN, uint(3873));
-
   public static final NodeId ConditionType_Retain = new NodeId(UShort.MIN, uint(3874));
 
   public static final NodeId ConditionType_ConditionRefresh = new NodeId(UShort.MIN, uint(3875));
 
   public static final NodeId ConditionType_ConditionRefresh_InputArguments =
       new NodeId(UShort.MIN, uint(3876));
-
-  public static final NodeId RefreshStartEventType_EventId = new NodeId(UShort.MIN, uint(3969));
-
-  public static final NodeId RefreshStartEventType_EventType = new NodeId(UShort.MIN, uint(3970));
-
-  public static final NodeId RefreshStartEventType_SourceNode = new NodeId(UShort.MIN, uint(3971));
-
-  public static final NodeId RefreshStartEventType_SourceName = new NodeId(UShort.MIN, uint(3972));
-
-  public static final NodeId RefreshStartEventType_Time = new NodeId(UShort.MIN, uint(3973));
-
-  public static final NodeId RefreshStartEventType_ReceiveTime = new NodeId(UShort.MIN, uint(3974));
-
-  public static final NodeId RefreshStartEventType_LocalTime = new NodeId(UShort.MIN, uint(3975));
-
-  public static final NodeId RefreshStartEventType_Message = new NodeId(UShort.MIN, uint(3976));
-
-  public static final NodeId RefreshStartEventType_Severity = new NodeId(UShort.MIN, uint(3977));
-
-  public static final NodeId RefreshEndEventType_EventId = new NodeId(UShort.MIN, uint(3978));
-
-  public static final NodeId RefreshEndEventType_EventType = new NodeId(UShort.MIN, uint(3979));
-
-  public static final NodeId RefreshEndEventType_SourceNode = new NodeId(UShort.MIN, uint(3980));
-
-  public static final NodeId RefreshEndEventType_SourceName = new NodeId(UShort.MIN, uint(3981));
-
-  public static final NodeId RefreshEndEventType_Time = new NodeId(UShort.MIN, uint(3982));
-
-  public static final NodeId RefreshEndEventType_ReceiveTime = new NodeId(UShort.MIN, uint(3983));
-
-  public static final NodeId RefreshEndEventType_LocalTime = new NodeId(UShort.MIN, uint(3984));
-
-  public static final NodeId RefreshEndEventType_Message = new NodeId(UShort.MIN, uint(3985));
-
-  public static final NodeId RefreshEndEventType_Severity = new NodeId(UShort.MIN, uint(3986));
-
-  public static final NodeId RefreshRequiredEventType_EventId = new NodeId(UShort.MIN, uint(3987));
-
-  public static final NodeId RefreshRequiredEventType_EventType =
-      new NodeId(UShort.MIN, uint(3988));
-
-  public static final NodeId RefreshRequiredEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(3989));
-
-  public static final NodeId RefreshRequiredEventType_SourceName =
-      new NodeId(UShort.MIN, uint(3990));
-
-  public static final NodeId RefreshRequiredEventType_Time = new NodeId(UShort.MIN, uint(3991));
-
-  public static final NodeId RefreshRequiredEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(3992));
-
-  public static final NodeId RefreshRequiredEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(3993));
-
-  public static final NodeId RefreshRequiredEventType_Message = new NodeId(UShort.MIN, uint(3994));
-
-  public static final NodeId RefreshRequiredEventType_Severity = new NodeId(UShort.MIN, uint(3995));
-
-  public static final NodeId AuditConditionEventType_EventId = new NodeId(UShort.MIN, uint(3996));
-
-  public static final NodeId AuditConditionEventType_EventType = new NodeId(UShort.MIN, uint(3997));
-
-  public static final NodeId AuditConditionEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(3998));
-
-  public static final NodeId AuditConditionEventType_SourceName =
-      new NodeId(UShort.MIN, uint(3999));
-
-  public static final NodeId AuditConditionEventType_Time = new NodeId(UShort.MIN, uint(4000));
-
-  public static final NodeId AuditConditionEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(4001));
-
-  public static final NodeId AuditConditionEventType_LocalTime = new NodeId(UShort.MIN, uint(4002));
-
-  public static final NodeId AuditConditionEventType_Message = new NodeId(UShort.MIN, uint(4003));
-
-  public static final NodeId AuditConditionEventType_Severity = new NodeId(UShort.MIN, uint(4004));
-
-  public static final NodeId AuditConditionEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(4005));
-
-  public static final NodeId AuditConditionEventType_Status = new NodeId(UShort.MIN, uint(4006));
-
-  public static final NodeId AuditConditionEventType_ServerId = new NodeId(UShort.MIN, uint(4007));
-
-  public static final NodeId AuditConditionEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(4008));
-
-  public static final NodeId AuditConditionEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(4009));
-
-  public static final NodeId AuditConditionEventType_MethodId = new NodeId(UShort.MIN, uint(4010));
-
-  public static final NodeId AuditConditionEventType_InputArguments =
-      new NodeId(UShort.MIN, uint(4011));
-
-  public static final NodeId AuditConditionEnableEventType_EventId =
-      new NodeId(UShort.MIN, uint(4106));
-
-  public static final NodeId AuditConditionEnableEventType_EventType =
-      new NodeId(UShort.MIN, uint(4107));
-
-  public static final NodeId AuditConditionEnableEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(4108));
-
-  public static final NodeId AuditConditionEnableEventType_SourceName =
-      new NodeId(UShort.MIN, uint(4109));
-
-  public static final NodeId AuditConditionEnableEventType_Time =
-      new NodeId(UShort.MIN, uint(4110));
-
-  public static final NodeId AuditConditionEnableEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(4111));
-
-  public static final NodeId AuditConditionEnableEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(4112));
-
-  public static final NodeId AuditConditionEnableEventType_Message =
-      new NodeId(UShort.MIN, uint(4113));
-
-  public static final NodeId AuditConditionEnableEventType_Severity =
-      new NodeId(UShort.MIN, uint(4114));
-
-  public static final NodeId AuditConditionEnableEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(4115));
-
-  public static final NodeId AuditConditionEnableEventType_Status =
-      new NodeId(UShort.MIN, uint(4116));
-
-  public static final NodeId AuditConditionEnableEventType_ServerId =
-      new NodeId(UShort.MIN, uint(4117));
-
-  public static final NodeId AuditConditionEnableEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(4118));
-
-  public static final NodeId AuditConditionEnableEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(4119));
-
-  public static final NodeId AuditConditionEnableEventType_MethodId =
-      new NodeId(UShort.MIN, uint(4120));
-
-  public static final NodeId AuditConditionEnableEventType_InputArguments =
-      new NodeId(UShort.MIN, uint(4121));
-
-  public static final NodeId AuditConditionCommentEventType_EventId =
-      new NodeId(UShort.MIN, uint(4170));
-
-  public static final NodeId AuditConditionCommentEventType_EventType =
-      new NodeId(UShort.MIN, uint(4171));
-
-  public static final NodeId AuditConditionCommentEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(4172));
-
-  public static final NodeId AuditConditionCommentEventType_SourceName =
-      new NodeId(UShort.MIN, uint(4173));
-
-  public static final NodeId AuditConditionCommentEventType_Time =
-      new NodeId(UShort.MIN, uint(4174));
-
-  public static final NodeId AuditConditionCommentEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(4175));
-
-  public static final NodeId AuditConditionCommentEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(4176));
-
-  public static final NodeId AuditConditionCommentEventType_Message =
-      new NodeId(UShort.MIN, uint(4177));
-
-  public static final NodeId AuditConditionCommentEventType_Severity =
-      new NodeId(UShort.MIN, uint(4178));
-
-  public static final NodeId AuditConditionCommentEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(4179));
-
-  public static final NodeId AuditConditionCommentEventType_Status =
-      new NodeId(UShort.MIN, uint(4180));
-
-  public static final NodeId AuditConditionCommentEventType_ServerId =
-      new NodeId(UShort.MIN, uint(4181));
-
-  public static final NodeId AuditConditionCommentEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(4182));
-
-  public static final NodeId AuditConditionCommentEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(4183));
-
-  public static final NodeId AuditConditionCommentEventType_MethodId =
-      new NodeId(UShort.MIN, uint(4184));
-
-  public static final NodeId AuditConditionCommentEventType_InputArguments =
-      new NodeId(UShort.MIN, uint(4185));
-
-  public static final NodeId DialogConditionType_EventId = new NodeId(UShort.MIN, uint(4188));
-
-  public static final NodeId DialogConditionType_EventType = new NodeId(UShort.MIN, uint(4189));
-
-  public static final NodeId DialogConditionType_SourceNode = new NodeId(UShort.MIN, uint(4190));
-
-  public static final NodeId DialogConditionType_SourceName = new NodeId(UShort.MIN, uint(4191));
-
-  public static final NodeId DialogConditionType_Time = new NodeId(UShort.MIN, uint(4192));
-
-  public static final NodeId DialogConditionType_ReceiveTime = new NodeId(UShort.MIN, uint(4193));
-
-  public static final NodeId DialogConditionType_LocalTime = new NodeId(UShort.MIN, uint(4194));
-
-  public static final NodeId DialogConditionType_Message = new NodeId(UShort.MIN, uint(4195));
-
-  public static final NodeId DialogConditionType_Severity = new NodeId(UShort.MIN, uint(4196));
-
-  public static final NodeId DialogConditionType_Retain = new NodeId(UShort.MIN, uint(4197));
-
-  public static final NodeId DialogConditionType_ConditionRefresh =
-      new NodeId(UShort.MIN, uint(4198));
-
-  public static final NodeId DialogConditionType_ConditionRefresh_InputArguments =
-      new NodeId(UShort.MIN, uint(4199));
-
-  public static final NodeId AcknowledgeableConditionType_EventId =
-      new NodeId(UShort.MIN, uint(5113));
-
-  public static final NodeId AcknowledgeableConditionType_EventType =
-      new NodeId(UShort.MIN, uint(5114));
-
-  public static final NodeId AcknowledgeableConditionType_SourceNode =
-      new NodeId(UShort.MIN, uint(5115));
-
-  public static final NodeId AcknowledgeableConditionType_SourceName =
-      new NodeId(UShort.MIN, uint(5116));
-
-  public static final NodeId AcknowledgeableConditionType_Time = new NodeId(UShort.MIN, uint(5117));
-
-  public static final NodeId AcknowledgeableConditionType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(5118));
-
-  public static final NodeId AcknowledgeableConditionType_LocalTime =
-      new NodeId(UShort.MIN, uint(5119));
-
-  public static final NodeId AcknowledgeableConditionType_Message =
-      new NodeId(UShort.MIN, uint(5120));
-
-  public static final NodeId AcknowledgeableConditionType_Severity =
-      new NodeId(UShort.MIN, uint(5121));
-
-  public static final NodeId AcknowledgeableConditionType_Retain =
-      new NodeId(UShort.MIN, uint(5122));
-
-  public static final NodeId AcknowledgeableConditionType_ConditionRefresh =
-      new NodeId(UShort.MIN, uint(5123));
-
-  public static final NodeId AcknowledgeableConditionType_ConditionRefresh_InputArguments =
-      new NodeId(UShort.MIN, uint(5124));
-
-  public static final NodeId AlarmConditionType_EventId = new NodeId(UShort.MIN, uint(5540));
-
-  public static final NodeId AlarmConditionType_EventType = new NodeId(UShort.MIN, uint(5541));
-
-  public static final NodeId AlarmConditionType_SourceNode = new NodeId(UShort.MIN, uint(5542));
-
-  public static final NodeId AlarmConditionType_SourceName = new NodeId(UShort.MIN, uint(5543));
-
-  public static final NodeId AlarmConditionType_Time = new NodeId(UShort.MIN, uint(5544));
-
-  public static final NodeId AlarmConditionType_ReceiveTime = new NodeId(UShort.MIN, uint(5545));
-
-  public static final NodeId AlarmConditionType_LocalTime = new NodeId(UShort.MIN, uint(5546));
-
-  public static final NodeId AlarmConditionType_Message = new NodeId(UShort.MIN, uint(5547));
-
-  public static final NodeId AlarmConditionType_Severity = new NodeId(UShort.MIN, uint(5548));
-
-  public static final NodeId AlarmConditionType_Retain = new NodeId(UShort.MIN, uint(5549));
-
-  public static final NodeId AlarmConditionType_ConditionRefresh =
-      new NodeId(UShort.MIN, uint(5550));
-
-  public static final NodeId AlarmConditionType_ConditionRefresh_InputArguments =
-      new NodeId(UShort.MIN, uint(5551));
-
-  public static final NodeId ShelvedStateMachineType_CurrentState =
-      new NodeId(UShort.MIN, uint(6088));
-
-  public static final NodeId ShelvedStateMachineType_CurrentState_Id =
-      new NodeId(UShort.MIN, uint(6089));
-
-  public static final NodeId ShelvedStateMachineType_CurrentState_Name =
-      new NodeId(UShort.MIN, uint(6090));
-
-  public static final NodeId ShelvedStateMachineType_CurrentState_Number =
-      new NodeId(UShort.MIN, uint(6091));
-
-  public static final NodeId ShelvedStateMachineType_CurrentState_EffectiveDisplayName =
-      new NodeId(UShort.MIN, uint(6092));
-
-  public static final NodeId ShelvedStateMachineType_LastTransition =
-      new NodeId(UShort.MIN, uint(6093));
-
-  public static final NodeId ShelvedStateMachineType_LastTransition_Id =
-      new NodeId(UShort.MIN, uint(6094));
-
-  public static final NodeId ShelvedStateMachineType_LastTransition_Name =
-      new NodeId(UShort.MIN, uint(6095));
-
-  public static final NodeId ShelvedStateMachineType_LastTransition_Number =
-      new NodeId(UShort.MIN, uint(6096));
-
-  public static final NodeId ShelvedStateMachineType_LastTransition_TransitionTime =
-      new NodeId(UShort.MIN, uint(6097));
 
   public static final NodeId ShelvedStateMachineType_Unshelved_StateNumber =
       new NodeId(UShort.MIN, uint(6098));
@@ -5530,31 +3582,6 @@ abstract class NodeIds0 extends NodeIds1 {
 
   public static final NodeId TimedShelveMethodType_InputArguments =
       new NodeId(UShort.MIN, uint(6103));
-
-  public static final NodeId LimitAlarmType_EventId = new NodeId(UShort.MIN, uint(6116));
-
-  public static final NodeId LimitAlarmType_EventType = new NodeId(UShort.MIN, uint(6117));
-
-  public static final NodeId LimitAlarmType_SourceNode = new NodeId(UShort.MIN, uint(6118));
-
-  public static final NodeId LimitAlarmType_SourceName = new NodeId(UShort.MIN, uint(6119));
-
-  public static final NodeId LimitAlarmType_Time = new NodeId(UShort.MIN, uint(6120));
-
-  public static final NodeId LimitAlarmType_ReceiveTime = new NodeId(UShort.MIN, uint(6121));
-
-  public static final NodeId LimitAlarmType_LocalTime = new NodeId(UShort.MIN, uint(6122));
-
-  public static final NodeId LimitAlarmType_Message = new NodeId(UShort.MIN, uint(6123));
-
-  public static final NodeId LimitAlarmType_Severity = new NodeId(UShort.MIN, uint(6124));
-
-  public static final NodeId LimitAlarmType_Retain = new NodeId(UShort.MIN, uint(6125));
-
-  public static final NodeId LimitAlarmType_ConditionRefresh = new NodeId(UShort.MIN, uint(6126));
-
-  public static final NodeId LimitAlarmType_ConditionRefresh_InputArguments =
-      new NodeId(UShort.MIN, uint(6127));
 
   public static final NodeId IdType_EnumStrings = new NodeId(UShort.MIN, uint(7591));
 
@@ -6451,165 +4478,14 @@ abstract class NodeIds0 extends NodeIds1 {
 
   public static final NodeId AuditConditionRespondEventType = new NodeId(UShort.MIN, uint(8927));
 
-  public static final NodeId AuditConditionRespondEventType_EventId =
-      new NodeId(UShort.MIN, uint(8928));
-
-  public static final NodeId AuditConditionRespondEventType_EventType =
-      new NodeId(UShort.MIN, uint(8929));
-
-  public static final NodeId AuditConditionRespondEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(8930));
-
-  public static final NodeId AuditConditionRespondEventType_SourceName =
-      new NodeId(UShort.MIN, uint(8931));
-
-  public static final NodeId AuditConditionRespondEventType_Time =
-      new NodeId(UShort.MIN, uint(8932));
-
-  public static final NodeId AuditConditionRespondEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(8933));
-
-  public static final NodeId AuditConditionRespondEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(8934));
-
-  public static final NodeId AuditConditionRespondEventType_Message =
-      new NodeId(UShort.MIN, uint(8935));
-
-  public static final NodeId AuditConditionRespondEventType_Severity =
-      new NodeId(UShort.MIN, uint(8936));
-
-  public static final NodeId AuditConditionRespondEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(8937));
-
-  public static final NodeId AuditConditionRespondEventType_Status =
-      new NodeId(UShort.MIN, uint(8938));
-
-  public static final NodeId AuditConditionRespondEventType_ServerId =
-      new NodeId(UShort.MIN, uint(8939));
-
-  public static final NodeId AuditConditionRespondEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(8940));
-
-  public static final NodeId AuditConditionRespondEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(8941));
-
-  public static final NodeId AuditConditionRespondEventType_MethodId =
-      new NodeId(UShort.MIN, uint(8942));
-
-  public static final NodeId AuditConditionRespondEventType_InputArguments =
-      new NodeId(UShort.MIN, uint(8943));
-
   public static final NodeId AuditConditionAcknowledgeEventType =
       new NodeId(UShort.MIN, uint(8944));
 
-  public static final NodeId AuditConditionAcknowledgeEventType_EventId =
-      new NodeId(UShort.MIN, uint(8945));
-
-  public static final NodeId AuditConditionAcknowledgeEventType_EventType =
-      new NodeId(UShort.MIN, uint(8946));
-
-  public static final NodeId AuditConditionAcknowledgeEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(8947));
-
-  public static final NodeId AuditConditionAcknowledgeEventType_SourceName =
-      new NodeId(UShort.MIN, uint(8948));
-
-  public static final NodeId AuditConditionAcknowledgeEventType_Time =
-      new NodeId(UShort.MIN, uint(8949));
-
-  public static final NodeId AuditConditionAcknowledgeEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(8950));
-
-  public static final NodeId AuditConditionAcknowledgeEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(8951));
-
-  public static final NodeId AuditConditionAcknowledgeEventType_Message =
-      new NodeId(UShort.MIN, uint(8952));
-
-  public static final NodeId AuditConditionAcknowledgeEventType_Severity =
-      new NodeId(UShort.MIN, uint(8953));
-
-  public static final NodeId AuditConditionAcknowledgeEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(8954));
-
-  public static final NodeId AuditConditionAcknowledgeEventType_Status =
-      new NodeId(UShort.MIN, uint(8955));
-
-  public static final NodeId AuditConditionAcknowledgeEventType_ServerId =
-      new NodeId(UShort.MIN, uint(8956));
-
-  public static final NodeId AuditConditionAcknowledgeEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(8957));
-
-  public static final NodeId AuditConditionAcknowledgeEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(8958));
-
-  public static final NodeId AuditConditionAcknowledgeEventType_MethodId =
-      new NodeId(UShort.MIN, uint(8959));
-
-  public static final NodeId AuditConditionAcknowledgeEventType_InputArguments =
-      new NodeId(UShort.MIN, uint(8960));
-
   public static final NodeId AuditConditionConfirmEventType = new NodeId(UShort.MIN, uint(8961));
-
-  public static final NodeId AuditConditionConfirmEventType_EventId =
-      new NodeId(UShort.MIN, uint(8962));
-
-  public static final NodeId AuditConditionConfirmEventType_EventType =
-      new NodeId(UShort.MIN, uint(8963));
-
-  public static final NodeId AuditConditionConfirmEventType_SourceNode =
-      new NodeId(UShort.MIN, uint(8964));
-
-  public static final NodeId AuditConditionConfirmEventType_SourceName =
-      new NodeId(UShort.MIN, uint(8965));
-
-  public static final NodeId AuditConditionConfirmEventType_Time =
-      new NodeId(UShort.MIN, uint(8966));
-
-  public static final NodeId AuditConditionConfirmEventType_ReceiveTime =
-      new NodeId(UShort.MIN, uint(8967));
-
-  public static final NodeId AuditConditionConfirmEventType_LocalTime =
-      new NodeId(UShort.MIN, uint(8968));
-
-  public static final NodeId AuditConditionConfirmEventType_Message =
-      new NodeId(UShort.MIN, uint(8969));
-
-  public static final NodeId AuditConditionConfirmEventType_Severity =
-      new NodeId(UShort.MIN, uint(8970));
-
-  public static final NodeId AuditConditionConfirmEventType_ActionTimeStamp =
-      new NodeId(UShort.MIN, uint(8971));
-
-  public static final NodeId AuditConditionConfirmEventType_Status =
-      new NodeId(UShort.MIN, uint(8972));
-
-  public static final NodeId AuditConditionConfirmEventType_ServerId =
-      new NodeId(UShort.MIN, uint(8973));
-
-  public static final NodeId AuditConditionConfirmEventType_ClientAuditEntryId =
-      new NodeId(UShort.MIN, uint(8974));
-
-  public static final NodeId AuditConditionConfirmEventType_ClientUserId =
-      new NodeId(UShort.MIN, uint(8975));
-
-  public static final NodeId AuditConditionConfirmEventType_MethodId =
-      new NodeId(UShort.MIN, uint(8976));
-
-  public static final NodeId AuditConditionConfirmEventType_InputArguments =
-      new NodeId(UShort.MIN, uint(8977));
 
   public static final NodeId TwoStateVariableType = new NodeId(UShort.MIN, uint(8995));
 
   public static final NodeId TwoStateVariableType_Id = new NodeId(UShort.MIN, uint(8996));
-
-  public static final NodeId TwoStateVariableType_Name = new NodeId(UShort.MIN, uint(8997));
-
-  public static final NodeId TwoStateVariableType_Number = new NodeId(UShort.MIN, uint(8998));
-
-  public static final NodeId TwoStateVariableType_EffectiveDisplayName =
-      new NodeId(UShort.MIN, uint(8999));
 
   public static final NodeId TwoStateVariableType_TransitionTime =
       new NodeId(UShort.MIN, uint(9000));
@@ -6674,4 +4550,2278 @@ abstract class NodeIds0 extends NodeIds1 {
 
   public static final NodeId ConditionType_Comment_SourceTimestamp =
       new NodeId(UShort.MIN, uint(9025));
+
+  public static final NodeId ConditionType_ClientUserId = new NodeId(UShort.MIN, uint(9026));
+
+  public static final NodeId ConditionType_Enable = new NodeId(UShort.MIN, uint(9027));
+
+  public static final NodeId ConditionType_Disable = new NodeId(UShort.MIN, uint(9028));
+
+  public static final NodeId ConditionType_AddComment = new NodeId(UShort.MIN, uint(9029));
+
+  public static final NodeId ConditionType_AddComment_InputArguments =
+      new NodeId(UShort.MIN, uint(9030));
+
+  public static final NodeId DialogResponseMethodType = new NodeId(UShort.MIN, uint(9031));
+
+  public static final NodeId DialogResponseMethodType_InputArguments =
+      new NodeId(UShort.MIN, uint(9032));
+
+  public static final NodeId DialogConditionType_EnabledState = new NodeId(UShort.MIN, uint(9035));
+
+  public static final NodeId DialogConditionType_EnabledState_Id =
+      new NodeId(UShort.MIN, uint(9036));
+
+  public static final NodeId DialogConditionType_EnabledState_Name =
+      new NodeId(UShort.MIN, uint(9037));
+
+  public static final NodeId DialogConditionType_EnabledState_Number =
+      new NodeId(UShort.MIN, uint(9038));
+
+  public static final NodeId DialogConditionType_EnabledState_EffectiveDisplayName =
+      new NodeId(UShort.MIN, uint(9039));
+
+  public static final NodeId DialogConditionType_EnabledState_TransitionTime =
+      new NodeId(UShort.MIN, uint(9040));
+
+  public static final NodeId DialogConditionType_EnabledState_EffectiveTransitionTime =
+      new NodeId(UShort.MIN, uint(9041));
+
+  public static final NodeId DialogConditionType_EnabledState_TrueState =
+      new NodeId(UShort.MIN, uint(9042));
+
+  public static final NodeId DialogConditionType_EnabledState_FalseState =
+      new NodeId(UShort.MIN, uint(9043));
+
+  public static final NodeId DialogConditionType_DialogState = new NodeId(UShort.MIN, uint(9055));
+
+  public static final NodeId DialogConditionType_DialogState_Id =
+      new NodeId(UShort.MIN, uint(9056));
+
+  public static final NodeId DialogConditionType_DialogState_Name =
+      new NodeId(UShort.MIN, uint(9057));
+
+  public static final NodeId DialogConditionType_DialogState_Number =
+      new NodeId(UShort.MIN, uint(9058));
+
+  public static final NodeId DialogConditionType_DialogState_EffectiveDisplayName =
+      new NodeId(UShort.MIN, uint(9059));
+
+  public static final NodeId DialogConditionType_DialogState_TransitionTime =
+      new NodeId(UShort.MIN, uint(9060));
+
+  public static final NodeId DialogConditionType_DialogState_EffectiveTransitionTime =
+      new NodeId(UShort.MIN, uint(9061));
+
+  public static final NodeId DialogConditionType_DialogState_TrueState =
+      new NodeId(UShort.MIN, uint(9062));
+
+  public static final NodeId DialogConditionType_DialogState_FalseState =
+      new NodeId(UShort.MIN, uint(9063));
+
+  public static final NodeId DialogConditionType_ResponseOptionSet =
+      new NodeId(UShort.MIN, uint(9064));
+
+  public static final NodeId DialogConditionType_DefaultResponse =
+      new NodeId(UShort.MIN, uint(9065));
+
+  public static final NodeId DialogConditionType_OkResponse = new NodeId(UShort.MIN, uint(9066));
+
+  public static final NodeId DialogConditionType_CancelResponse =
+      new NodeId(UShort.MIN, uint(9067));
+
+  public static final NodeId DialogConditionType_LastResponse = new NodeId(UShort.MIN, uint(9068));
+
+  public static final NodeId DialogConditionType_Respond = new NodeId(UShort.MIN, uint(9069));
+
+  public static final NodeId DialogConditionType_Respond_InputArguments =
+      new NodeId(UShort.MIN, uint(9070));
+
+  public static final NodeId AcknowledgeableConditionType_EnabledState =
+      new NodeId(UShort.MIN, uint(9073));
+
+  public static final NodeId AcknowledgeableConditionType_EnabledState_Id =
+      new NodeId(UShort.MIN, uint(9074));
+
+  public static final NodeId AcknowledgeableConditionType_EnabledState_Name =
+      new NodeId(UShort.MIN, uint(9075));
+
+  public static final NodeId AcknowledgeableConditionType_EnabledState_Number =
+      new NodeId(UShort.MIN, uint(9076));
+
+  public static final NodeId AcknowledgeableConditionType_EnabledState_EffectiveDisplayName =
+      new NodeId(UShort.MIN, uint(9077));
+
+  public static final NodeId AcknowledgeableConditionType_EnabledState_TransitionTime =
+      new NodeId(UShort.MIN, uint(9078));
+
+  public static final NodeId AcknowledgeableConditionType_EnabledState_EffectiveTransitionTime =
+      new NodeId(UShort.MIN, uint(9079));
+
+  public static final NodeId AcknowledgeableConditionType_EnabledState_TrueState =
+      new NodeId(UShort.MIN, uint(9080));
+
+  public static final NodeId AcknowledgeableConditionType_EnabledState_FalseState =
+      new NodeId(UShort.MIN, uint(9081));
+
+  public static final NodeId AcknowledgeableConditionType_AckedState =
+      new NodeId(UShort.MIN, uint(9093));
+
+  public static final NodeId AcknowledgeableConditionType_AckedState_Id =
+      new NodeId(UShort.MIN, uint(9094));
+
+  public static final NodeId AcknowledgeableConditionType_AckedState_Name =
+      new NodeId(UShort.MIN, uint(9095));
+
+  public static final NodeId AcknowledgeableConditionType_AckedState_Number =
+      new NodeId(UShort.MIN, uint(9096));
+
+  public static final NodeId AcknowledgeableConditionType_AckedState_EffectiveDisplayName =
+      new NodeId(UShort.MIN, uint(9097));
+
+  public static final NodeId AcknowledgeableConditionType_AckedState_TransitionTime =
+      new NodeId(UShort.MIN, uint(9098));
+
+  public static final NodeId AcknowledgeableConditionType_AckedState_EffectiveTransitionTime =
+      new NodeId(UShort.MIN, uint(9099));
+
+  public static final NodeId AcknowledgeableConditionType_AckedState_TrueState =
+      new NodeId(UShort.MIN, uint(9100));
+
+  public static final NodeId AcknowledgeableConditionType_AckedState_FalseState =
+      new NodeId(UShort.MIN, uint(9101));
+
+  public static final NodeId AcknowledgeableConditionType_ConfirmedState =
+      new NodeId(UShort.MIN, uint(9102));
+
+  public static final NodeId AcknowledgeableConditionType_ConfirmedState_Id =
+      new NodeId(UShort.MIN, uint(9103));
+
+  public static final NodeId AcknowledgeableConditionType_ConfirmedState_Name =
+      new NodeId(UShort.MIN, uint(9104));
+
+  public static final NodeId AcknowledgeableConditionType_ConfirmedState_Number =
+      new NodeId(UShort.MIN, uint(9105));
+
+  public static final NodeId AcknowledgeableConditionType_ConfirmedState_EffectiveDisplayName =
+      new NodeId(UShort.MIN, uint(9106));
+
+  public static final NodeId AcknowledgeableConditionType_ConfirmedState_TransitionTime =
+      new NodeId(UShort.MIN, uint(9107));
+
+  public static final NodeId AcknowledgeableConditionType_ConfirmedState_EffectiveTransitionTime =
+      new NodeId(UShort.MIN, uint(9108));
+
+  public static final NodeId AcknowledgeableConditionType_ConfirmedState_TrueState =
+      new NodeId(UShort.MIN, uint(9109));
+
+  public static final NodeId AcknowledgeableConditionType_ConfirmedState_FalseState =
+      new NodeId(UShort.MIN, uint(9110));
+
+  public static final NodeId AcknowledgeableConditionType_Acknowledge =
+      new NodeId(UShort.MIN, uint(9111));
+
+  public static final NodeId AcknowledgeableConditionType_Acknowledge_InputArguments =
+      new NodeId(UShort.MIN, uint(9112));
+
+  public static final NodeId AcknowledgeableConditionType_Confirm =
+      new NodeId(UShort.MIN, uint(9113));
+
+  public static final NodeId AcknowledgeableConditionType_Confirm_InputArguments =
+      new NodeId(UShort.MIN, uint(9114));
+
+  public static final NodeId ShelvedStateMachineType_UnshelveTime =
+      new NodeId(UShort.MIN, uint(9115));
+
+  public static final NodeId AlarmConditionType_EnabledState = new NodeId(UShort.MIN, uint(9118));
+
+  public static final NodeId AlarmConditionType_EnabledState_Id =
+      new NodeId(UShort.MIN, uint(9119));
+
+  public static final NodeId AlarmConditionType_EnabledState_Name =
+      new NodeId(UShort.MIN, uint(9120));
+
+  public static final NodeId AlarmConditionType_EnabledState_Number =
+      new NodeId(UShort.MIN, uint(9121));
+
+  public static final NodeId AlarmConditionType_EnabledState_EffectiveDisplayName =
+      new NodeId(UShort.MIN, uint(9122));
+
+  public static final NodeId AlarmConditionType_EnabledState_TransitionTime =
+      new NodeId(UShort.MIN, uint(9123));
+
+  public static final NodeId AlarmConditionType_EnabledState_EffectiveTransitionTime =
+      new NodeId(UShort.MIN, uint(9124));
+
+  public static final NodeId AlarmConditionType_EnabledState_TrueState =
+      new NodeId(UShort.MIN, uint(9125));
+
+  public static final NodeId AlarmConditionType_EnabledState_FalseState =
+      new NodeId(UShort.MIN, uint(9126));
+
+  public static final NodeId AlarmConditionType_ActiveState = new NodeId(UShort.MIN, uint(9160));
+
+  public static final NodeId AlarmConditionType_ActiveState_Id = new NodeId(UShort.MIN, uint(9161));
+
+  public static final NodeId AlarmConditionType_ActiveState_Name =
+      new NodeId(UShort.MIN, uint(9162));
+
+  public static final NodeId AlarmConditionType_ActiveState_Number =
+      new NodeId(UShort.MIN, uint(9163));
+
+  public static final NodeId AlarmConditionType_ActiveState_EffectiveDisplayName =
+      new NodeId(UShort.MIN, uint(9164));
+
+  public static final NodeId AlarmConditionType_ActiveState_TransitionTime =
+      new NodeId(UShort.MIN, uint(9165));
+
+  public static final NodeId AlarmConditionType_ActiveState_EffectiveTransitionTime =
+      new NodeId(UShort.MIN, uint(9166));
+
+  public static final NodeId AlarmConditionType_ActiveState_TrueState =
+      new NodeId(UShort.MIN, uint(9167));
+
+  public static final NodeId AlarmConditionType_ActiveState_FalseState =
+      new NodeId(UShort.MIN, uint(9168));
+
+  public static final NodeId AlarmConditionType_SuppressedState =
+      new NodeId(UShort.MIN, uint(9169));
+
+  public static final NodeId AlarmConditionType_SuppressedState_Id =
+      new NodeId(UShort.MIN, uint(9170));
+
+  public static final NodeId AlarmConditionType_SuppressedState_Name =
+      new NodeId(UShort.MIN, uint(9171));
+
+  public static final NodeId AlarmConditionType_SuppressedState_Number =
+      new NodeId(UShort.MIN, uint(9172));
+
+  public static final NodeId AlarmConditionType_SuppressedState_EffectiveDisplayName =
+      new NodeId(UShort.MIN, uint(9173));
+
+  public static final NodeId AlarmConditionType_SuppressedState_TransitionTime =
+      new NodeId(UShort.MIN, uint(9174));
+
+  public static final NodeId AlarmConditionType_SuppressedState_EffectiveTransitionTime =
+      new NodeId(UShort.MIN, uint(9175));
+
+  public static final NodeId AlarmConditionType_SuppressedState_TrueState =
+      new NodeId(UShort.MIN, uint(9176));
+
+  public static final NodeId AlarmConditionType_SuppressedState_FalseState =
+      new NodeId(UShort.MIN, uint(9177));
+
+  public static final NodeId AlarmConditionType_ShelvingState = new NodeId(UShort.MIN, uint(9178));
+
+  public static final NodeId AlarmConditionType_ShelvingState_CurrentState =
+      new NodeId(UShort.MIN, uint(9179));
+
+  public static final NodeId AlarmConditionType_ShelvingState_CurrentState_Id =
+      new NodeId(UShort.MIN, uint(9180));
+
+  public static final NodeId AlarmConditionType_ShelvingState_CurrentState_Name =
+      new NodeId(UShort.MIN, uint(9181));
+
+  public static final NodeId AlarmConditionType_ShelvingState_CurrentState_Number =
+      new NodeId(UShort.MIN, uint(9182));
+
+  public static final NodeId AlarmConditionType_ShelvingState_CurrentState_EffectiveDisplayName =
+      new NodeId(UShort.MIN, uint(9183));
+
+  public static final NodeId AlarmConditionType_ShelvingState_LastTransition =
+      new NodeId(UShort.MIN, uint(9184));
+
+  public static final NodeId AlarmConditionType_ShelvingState_LastTransition_Id =
+      new NodeId(UShort.MIN, uint(9185));
+
+  public static final NodeId AlarmConditionType_ShelvingState_LastTransition_Name =
+      new NodeId(UShort.MIN, uint(9186));
+
+  public static final NodeId AlarmConditionType_ShelvingState_LastTransition_Number =
+      new NodeId(UShort.MIN, uint(9187));
+
+  public static final NodeId AlarmConditionType_ShelvingState_LastTransition_TransitionTime =
+      new NodeId(UShort.MIN, uint(9188));
+
+  public static final NodeId AlarmConditionType_ShelvingState_UnshelveTime =
+      new NodeId(UShort.MIN, uint(9189));
+
+  public static final NodeId AlarmConditionType_ShelvingState_Unshelve =
+      new NodeId(UShort.MIN, uint(9211));
+
+  public static final NodeId AlarmConditionType_ShelvingState_OneShotShelve =
+      new NodeId(UShort.MIN, uint(9212));
+
+  public static final NodeId AlarmConditionType_ShelvingState_TimedShelve =
+      new NodeId(UShort.MIN, uint(9213));
+
+  public static final NodeId AlarmConditionType_ShelvingState_TimedShelve_InputArguments =
+      new NodeId(UShort.MIN, uint(9214));
+
+  public static final NodeId AlarmConditionType_SuppressedOrShelved =
+      new NodeId(UShort.MIN, uint(9215));
+
+  public static final NodeId AlarmConditionType_MaxTimeShelved = new NodeId(UShort.MIN, uint(9216));
+
+  public static final NodeId ExclusiveLimitStateMachineType = new NodeId(UShort.MIN, uint(9318));
+
+  public static final NodeId ExclusiveLimitStateMachineType_HighHigh =
+      new NodeId(UShort.MIN, uint(9329));
+
+  public static final NodeId ExclusiveLimitStateMachineType_HighHigh_StateNumber =
+      new NodeId(UShort.MIN, uint(9330));
+
+  public static final NodeId ExclusiveLimitStateMachineType_High =
+      new NodeId(UShort.MIN, uint(9331));
+
+  public static final NodeId ExclusiveLimitStateMachineType_High_StateNumber =
+      new NodeId(UShort.MIN, uint(9332));
+
+  public static final NodeId ExclusiveLimitStateMachineType_Low =
+      new NodeId(UShort.MIN, uint(9333));
+
+  public static final NodeId ExclusiveLimitStateMachineType_Low_StateNumber =
+      new NodeId(UShort.MIN, uint(9334));
+
+  public static final NodeId ExclusiveLimitStateMachineType_LowLow =
+      new NodeId(UShort.MIN, uint(9335));
+
+  public static final NodeId ExclusiveLimitStateMachineType_LowLow_StateNumber =
+      new NodeId(UShort.MIN, uint(9336));
+
+  public static final NodeId ExclusiveLimitStateMachineType_LowLowToLow =
+      new NodeId(UShort.MIN, uint(9337));
+
+  public static final NodeId ExclusiveLimitStateMachineType_LowToLowLow =
+      new NodeId(UShort.MIN, uint(9338));
+
+  public static final NodeId ExclusiveLimitStateMachineType_HighHighToHigh =
+      new NodeId(UShort.MIN, uint(9339));
+
+  public static final NodeId ExclusiveLimitStateMachineType_HighToHighHigh =
+      new NodeId(UShort.MIN, uint(9340));
+
+  public static final NodeId ExclusiveLimitAlarmType = new NodeId(UShort.MIN, uint(9341));
+
+  public static final NodeId ExclusiveLimitAlarmType_ActiveState =
+      new NodeId(UShort.MIN, uint(9398));
+
+  public static final NodeId ExclusiveLimitAlarmType_ActiveState_Id =
+      new NodeId(UShort.MIN, uint(9399));
+
+  public static final NodeId ExclusiveLimitAlarmType_ActiveState_Name =
+      new NodeId(UShort.MIN, uint(9400));
+
+  public static final NodeId ExclusiveLimitAlarmType_ActiveState_Number =
+      new NodeId(UShort.MIN, uint(9401));
+
+  public static final NodeId ExclusiveLimitAlarmType_ActiveState_EffectiveDisplayName =
+      new NodeId(UShort.MIN, uint(9402));
+
+  public static final NodeId ExclusiveLimitAlarmType_ActiveState_TransitionTime =
+      new NodeId(UShort.MIN, uint(9403));
+
+  public static final NodeId ExclusiveLimitAlarmType_ActiveState_EffectiveTransitionTime =
+      new NodeId(UShort.MIN, uint(9404));
+
+  public static final NodeId ExclusiveLimitAlarmType_ActiveState_TrueState =
+      new NodeId(UShort.MIN, uint(9405));
+
+  public static final NodeId ExclusiveLimitAlarmType_ActiveState_FalseState =
+      new NodeId(UShort.MIN, uint(9406));
+
+  public static final NodeId ExclusiveLimitAlarmType_LimitState =
+      new NodeId(UShort.MIN, uint(9455));
+
+  public static final NodeId ExclusiveLimitAlarmType_LimitState_CurrentState =
+      new NodeId(UShort.MIN, uint(9456));
+
+  public static final NodeId ExclusiveLimitAlarmType_LimitState_CurrentState_Id =
+      new NodeId(UShort.MIN, uint(9457));
+
+  public static final NodeId ExclusiveLimitAlarmType_LimitState_CurrentState_Name =
+      new NodeId(UShort.MIN, uint(9458));
+
+  public static final NodeId ExclusiveLimitAlarmType_LimitState_CurrentState_Number =
+      new NodeId(UShort.MIN, uint(9459));
+
+  public static final NodeId ExclusiveLimitAlarmType_LimitState_CurrentState_EffectiveDisplayName =
+      new NodeId(UShort.MIN, uint(9460));
+
+  public static final NodeId ExclusiveLimitAlarmType_LimitState_LastTransition =
+      new NodeId(UShort.MIN, uint(9461));
+
+  public static final NodeId ExclusiveLimitAlarmType_LimitState_LastTransition_Id =
+      new NodeId(UShort.MIN, uint(9462));
+
+  public static final NodeId ExclusiveLimitAlarmType_LimitState_LastTransition_Name =
+      new NodeId(UShort.MIN, uint(9463));
+
+  public static final NodeId ExclusiveLimitAlarmType_LimitState_LastTransition_Number =
+      new NodeId(UShort.MIN, uint(9464));
+
+  public static final NodeId ExclusiveLimitAlarmType_LimitState_LastTransition_TransitionTime =
+      new NodeId(UShort.MIN, uint(9465));
+
+  public static final NodeId ExclusiveLevelAlarmType = new NodeId(UShort.MIN, uint(9482));
+
+  public static final NodeId ExclusiveRateOfChangeAlarmType = new NodeId(UShort.MIN, uint(9623));
+
+  public static final NodeId ExclusiveDeviationAlarmType = new NodeId(UShort.MIN, uint(9764));
+
+  public static final NodeId ExclusiveDeviationAlarmType_SetpointNode =
+      new NodeId(UShort.MIN, uint(9905));
+
+  public static final NodeId NonExclusiveLimitAlarmType = new NodeId(UShort.MIN, uint(9906));
+
+  public static final NodeId NonExclusiveLimitAlarmType_ActiveState =
+      new NodeId(UShort.MIN, uint(9963));
+
+  public static final NodeId NonExclusiveLimitAlarmType_ActiveState_Id =
+      new NodeId(UShort.MIN, uint(9964));
+
+  public static final NodeId NonExclusiveLimitAlarmType_ActiveState_Name =
+      new NodeId(UShort.MIN, uint(9965));
+
+  public static final NodeId NonExclusiveLimitAlarmType_ActiveState_Number =
+      new NodeId(UShort.MIN, uint(9966));
+
+  public static final NodeId NonExclusiveLimitAlarmType_ActiveState_EffectiveDisplayName =
+      new NodeId(UShort.MIN, uint(9967));
+
+  public static final NodeId NonExclusiveLimitAlarmType_ActiveState_TransitionTime =
+      new NodeId(UShort.MIN, uint(9968));
+
+  public static final NodeId NonExclusiveLimitAlarmType_ActiveState_EffectiveTransitionTime =
+      new NodeId(UShort.MIN, uint(9969));
+
+  public static final NodeId NonExclusiveLimitAlarmType_ActiveState_TrueState =
+      new NodeId(UShort.MIN, uint(9970));
+
+  public static final NodeId NonExclusiveLimitAlarmType_ActiveState_FalseState =
+      new NodeId(UShort.MIN, uint(9971));
+
+  public static final NodeId NonExclusiveLimitAlarmType_HighHighState =
+      new NodeId(UShort.MIN, uint(10020));
+
+  public static final NodeId NonExclusiveLimitAlarmType_HighHighState_Id =
+      new NodeId(UShort.MIN, uint(10021));
+
+  public static final NodeId NonExclusiveLimitAlarmType_HighHighState_Name =
+      new NodeId(UShort.MIN, uint(10022));
+
+  public static final NodeId NonExclusiveLimitAlarmType_HighHighState_Number =
+      new NodeId(UShort.MIN, uint(10023));
+
+  public static final NodeId NonExclusiveLimitAlarmType_HighHighState_EffectiveDisplayName =
+      new NodeId(UShort.MIN, uint(10024));
+
+  public static final NodeId NonExclusiveLimitAlarmType_HighHighState_TransitionTime =
+      new NodeId(UShort.MIN, uint(10025));
+
+  public static final NodeId NonExclusiveLimitAlarmType_HighHighState_EffectiveTransitionTime =
+      new NodeId(UShort.MIN, uint(10026));
+
+  public static final NodeId NonExclusiveLimitAlarmType_HighHighState_TrueState =
+      new NodeId(UShort.MIN, uint(10027));
+
+  public static final NodeId NonExclusiveLimitAlarmType_HighHighState_FalseState =
+      new NodeId(UShort.MIN, uint(10028));
+
+  public static final NodeId NonExclusiveLimitAlarmType_HighState =
+      new NodeId(UShort.MIN, uint(10029));
+
+  public static final NodeId NonExclusiveLimitAlarmType_HighState_Id =
+      new NodeId(UShort.MIN, uint(10030));
+
+  public static final NodeId NonExclusiveLimitAlarmType_HighState_Name =
+      new NodeId(UShort.MIN, uint(10031));
+
+  public static final NodeId NonExclusiveLimitAlarmType_HighState_Number =
+      new NodeId(UShort.MIN, uint(10032));
+
+  public static final NodeId NonExclusiveLimitAlarmType_HighState_EffectiveDisplayName =
+      new NodeId(UShort.MIN, uint(10033));
+
+  public static final NodeId NonExclusiveLimitAlarmType_HighState_TransitionTime =
+      new NodeId(UShort.MIN, uint(10034));
+
+  public static final NodeId NonExclusiveLimitAlarmType_HighState_EffectiveTransitionTime =
+      new NodeId(UShort.MIN, uint(10035));
+
+  public static final NodeId NonExclusiveLimitAlarmType_HighState_TrueState =
+      new NodeId(UShort.MIN, uint(10036));
+
+  public static final NodeId NonExclusiveLimitAlarmType_HighState_FalseState =
+      new NodeId(UShort.MIN, uint(10037));
+
+  public static final NodeId NonExclusiveLimitAlarmType_LowState =
+      new NodeId(UShort.MIN, uint(10038));
+
+  public static final NodeId NonExclusiveLimitAlarmType_LowState_Id =
+      new NodeId(UShort.MIN, uint(10039));
+
+  public static final NodeId NonExclusiveLimitAlarmType_LowState_Name =
+      new NodeId(UShort.MIN, uint(10040));
+
+  public static final NodeId NonExclusiveLimitAlarmType_LowState_Number =
+      new NodeId(UShort.MIN, uint(10041));
+
+  public static final NodeId NonExclusiveLimitAlarmType_LowState_EffectiveDisplayName =
+      new NodeId(UShort.MIN, uint(10042));
+
+  public static final NodeId NonExclusiveLimitAlarmType_LowState_TransitionTime =
+      new NodeId(UShort.MIN, uint(10043));
+
+  public static final NodeId NonExclusiveLimitAlarmType_LowState_EffectiveTransitionTime =
+      new NodeId(UShort.MIN, uint(10044));
+
+  public static final NodeId NonExclusiveLimitAlarmType_LowState_TrueState =
+      new NodeId(UShort.MIN, uint(10045));
+
+  public static final NodeId NonExclusiveLimitAlarmType_LowState_FalseState =
+      new NodeId(UShort.MIN, uint(10046));
+
+  public static final NodeId NonExclusiveLimitAlarmType_LowLowState =
+      new NodeId(UShort.MIN, uint(10047));
+
+  public static final NodeId NonExclusiveLimitAlarmType_LowLowState_Id =
+      new NodeId(UShort.MIN, uint(10048));
+
+  public static final NodeId NonExclusiveLimitAlarmType_LowLowState_Name =
+      new NodeId(UShort.MIN, uint(10049));
+
+  public static final NodeId NonExclusiveLimitAlarmType_LowLowState_Number =
+      new NodeId(UShort.MIN, uint(10050));
+
+  public static final NodeId NonExclusiveLimitAlarmType_LowLowState_EffectiveDisplayName =
+      new NodeId(UShort.MIN, uint(10051));
+
+  public static final NodeId NonExclusiveLimitAlarmType_LowLowState_TransitionTime =
+      new NodeId(UShort.MIN, uint(10052));
+
+  public static final NodeId NonExclusiveLimitAlarmType_LowLowState_EffectiveTransitionTime =
+      new NodeId(UShort.MIN, uint(10053));
+
+  public static final NodeId NonExclusiveLimitAlarmType_LowLowState_TrueState =
+      new NodeId(UShort.MIN, uint(10054));
+
+  public static final NodeId NonExclusiveLimitAlarmType_LowLowState_FalseState =
+      new NodeId(UShort.MIN, uint(10055));
+
+  public static final NodeId NonExclusiveLevelAlarmType = new NodeId(UShort.MIN, uint(10060));
+
+  public static final NodeId NonExclusiveRateOfChangeAlarmType =
+      new NodeId(UShort.MIN, uint(10214));
+
+  public static final NodeId NonExclusiveDeviationAlarmType = new NodeId(UShort.MIN, uint(10368));
+
+  public static final NodeId NonExclusiveDeviationAlarmType_SetpointNode =
+      new NodeId(UShort.MIN, uint(10522));
+
+  public static final NodeId DiscreteAlarmType = new NodeId(UShort.MIN, uint(10523));
+
+  public static final NodeId OffNormalAlarmType = new NodeId(UShort.MIN, uint(10637));
+
+  public static final NodeId TripAlarmType = new NodeId(UShort.MIN, uint(10751));
+
+  public static final NodeId AuditConditionShelvingEventType = new NodeId(UShort.MIN, uint(11093));
+
+  public static final NodeId TwoStateVariableType_TrueState = new NodeId(UShort.MIN, uint(11110));
+
+  public static final NodeId TwoStateVariableType_FalseState = new NodeId(UShort.MIN, uint(11111));
+
+  public static final NodeId ConditionType_ConditionClassId = new NodeId(UShort.MIN, uint(11112));
+
+  public static final NodeId ConditionType_ConditionClassName = new NodeId(UShort.MIN, uint(11113));
+
+  public static final NodeId AlarmConditionType_InputNode = new NodeId(UShort.MIN, uint(11120));
+
+  public static final NodeId LimitAlarmType_HighHighLimit = new NodeId(UShort.MIN, uint(11124));
+
+  public static final NodeId LimitAlarmType_HighLimit = new NodeId(UShort.MIN, uint(11125));
+
+  public static final NodeId LimitAlarmType_LowLimit = new NodeId(UShort.MIN, uint(11126));
+
+  public static final NodeId LimitAlarmType_LowLowLimit = new NodeId(UShort.MIN, uint(11127));
+
+  public static final NodeId OffNormalAlarmType_NormalState = new NodeId(UShort.MIN, uint(11158));
+
+  public static final NodeId BaseConditionClassType = new NodeId(UShort.MIN, uint(11163));
+
+  public static final NodeId ProcessConditionClassType = new NodeId(UShort.MIN, uint(11164));
+
+  public static final NodeId MaintenanceConditionClassType = new NodeId(UShort.MIN, uint(11165));
+
+  public static final NodeId SystemConditionClassType = new NodeId(UShort.MIN, uint(11166));
+
+  public static final NodeId
+      HistoricalDataConfigurationType_AggregateConfiguration_TreatUncertainAsBad =
+          new NodeId(UShort.MIN, uint(11168));
+
+  public static final NodeId HistoricalDataConfigurationType_AggregateConfiguration_PercentDataBad =
+      new NodeId(UShort.MIN, uint(11169));
+
+  public static final NodeId
+      HistoricalDataConfigurationType_AggregateConfiguration_PercentDataGood =
+          new NodeId(UShort.MIN, uint(11170));
+
+  public static final NodeId
+      HistoricalDataConfigurationType_AggregateConfiguration_UseSlopedExtrapolation =
+          new NodeId(UShort.MIN, uint(11171));
+
+  public static final NodeId HistoryServerCapabilitiesType_AggregateFunctions =
+      new NodeId(UShort.MIN, uint(11172));
+
+  public static final NodeId AggregateConfigurationType = new NodeId(UShort.MIN, uint(11187));
+
+  public static final NodeId AggregateConfigurationType_TreatUncertainAsBad =
+      new NodeId(UShort.MIN, uint(11188));
+
+  public static final NodeId AggregateConfigurationType_PercentDataBad =
+      new NodeId(UShort.MIN, uint(11189));
+
+  public static final NodeId AggregateConfigurationType_PercentDataGood =
+      new NodeId(UShort.MIN, uint(11190));
+
+  public static final NodeId AggregateConfigurationType_UseSlopedExtrapolation =
+      new NodeId(UShort.MIN, uint(11191));
+
+  public static final NodeId HistoryServerCapabilities = new NodeId(UShort.MIN, uint(11192));
+
+  public static final NodeId HistoryServerCapabilities_AccessHistoryDataCapability =
+      new NodeId(UShort.MIN, uint(11193));
+
+  public static final NodeId HistoryServerCapabilities_InsertDataCapability =
+      new NodeId(UShort.MIN, uint(11196));
+
+  public static final NodeId HistoryServerCapabilities_ReplaceDataCapability =
+      new NodeId(UShort.MIN, uint(11197));
+
+  public static final NodeId HistoryServerCapabilities_UpdateDataCapability =
+      new NodeId(UShort.MIN, uint(11198));
+
+  public static final NodeId HistoryServerCapabilities_DeleteRawCapability =
+      new NodeId(UShort.MIN, uint(11199));
+
+  public static final NodeId HistoryServerCapabilities_DeleteAtTimeCapability =
+      new NodeId(UShort.MIN, uint(11200));
+
+  public static final NodeId HistoryServerCapabilities_AggregateFunctions =
+      new NodeId(UShort.MIN, uint(11201));
+
+  public static final NodeId HAConfiguration = new NodeId(UShort.MIN, uint(11202));
+
+  public static final NodeId HAConfiguration_AggregateConfiguration =
+      new NodeId(UShort.MIN, uint(11203));
+
+  public static final NodeId HAConfiguration_AggregateConfiguration_TreatUncertainAsBad =
+      new NodeId(UShort.MIN, uint(11204));
+
+  public static final NodeId HAConfiguration_AggregateConfiguration_PercentDataBad =
+      new NodeId(UShort.MIN, uint(11205));
+
+  public static final NodeId HAConfiguration_AggregateConfiguration_PercentDataGood =
+      new NodeId(UShort.MIN, uint(11206));
+
+  public static final NodeId HAConfiguration_AggregateConfiguration_UseSlopedExtrapolation =
+      new NodeId(UShort.MIN, uint(11207));
+
+  public static final NodeId HAConfiguration_Stepped = new NodeId(UShort.MIN, uint(11208));
+
+  public static final NodeId HAConfiguration_Definition = new NodeId(UShort.MIN, uint(11209));
+
+  public static final NodeId HAConfiguration_MaxTimeInterval = new NodeId(UShort.MIN, uint(11210));
+
+  public static final NodeId HAConfiguration_MinTimeInterval = new NodeId(UShort.MIN, uint(11211));
+
+  public static final NodeId HAConfiguration_ExceptionDeviation =
+      new NodeId(UShort.MIN, uint(11212));
+
+  public static final NodeId HAConfiguration_ExceptionDeviationFormat =
+      new NodeId(UShort.MIN, uint(11213));
+
+  public static final NodeId Annotations = new NodeId(UShort.MIN, uint(11214));
+
+  public static final NodeId HistoricalEventFilter = new NodeId(UShort.MIN, uint(11215));
+
+  public static final NodeId ModificationInfo = new NodeId(UShort.MIN, uint(11216));
+
+  public static final NodeId HistoryModifiedData = new NodeId(UShort.MIN, uint(11217));
+
+  public static final NodeId ModificationInfo_Encoding_DefaultXml =
+      new NodeId(UShort.MIN, uint(11218));
+
+  public static final NodeId HistoryModifiedData_Encoding_DefaultXml =
+      new NodeId(UShort.MIN, uint(11219));
+
+  public static final NodeId ModificationInfo_Encoding_DefaultBinary =
+      new NodeId(UShort.MIN, uint(11226));
+
+  public static final NodeId HistoryModifiedData_Encoding_DefaultBinary =
+      new NodeId(UShort.MIN, uint(11227));
+
+  public static final NodeId HistoryUpdateType = new NodeId(UShort.MIN, uint(11234));
+
+  public static final NodeId MultiStateValueDiscreteType = new NodeId(UShort.MIN, uint(11238));
+
+  public static final NodeId MultiStateValueDiscreteType_EnumValues =
+      new NodeId(UShort.MIN, uint(11241));
+
+  public static final NodeId HistoryServerCapabilities_AccessHistoryEventsCapability =
+      new NodeId(UShort.MIN, uint(11242));
+
+  public static final NodeId HistoryServerCapabilitiesType_MaxReturnDataValues =
+      new NodeId(UShort.MIN, uint(11268));
+
+  public static final NodeId HistoryServerCapabilitiesType_MaxReturnEventValues =
+      new NodeId(UShort.MIN, uint(11269));
+
+  public static final NodeId HistoryServerCapabilitiesType_InsertAnnotationCapability =
+      new NodeId(UShort.MIN, uint(11270));
+
+  public static final NodeId HistoryServerCapabilities_MaxReturnDataValues =
+      new NodeId(UShort.MIN, uint(11273));
+
+  public static final NodeId HistoryServerCapabilities_MaxReturnEventValues =
+      new NodeId(UShort.MIN, uint(11274));
+
+  public static final NodeId HistoryServerCapabilities_InsertAnnotationCapability =
+      new NodeId(UShort.MIN, uint(11275));
+
+  public static final NodeId HistoryServerCapabilitiesType_InsertEventCapability =
+      new NodeId(UShort.MIN, uint(11278));
+
+  public static final NodeId HistoryServerCapabilitiesType_ReplaceEventCapability =
+      new NodeId(UShort.MIN, uint(11279));
+
+  public static final NodeId HistoryServerCapabilitiesType_UpdateEventCapability =
+      new NodeId(UShort.MIN, uint(11280));
+
+  public static final NodeId HistoryServerCapabilities_InsertEventCapability =
+      new NodeId(UShort.MIN, uint(11281));
+
+  public static final NodeId HistoryServerCapabilities_ReplaceEventCapability =
+      new NodeId(UShort.MIN, uint(11282));
+
+  public static final NodeId HistoryServerCapabilities_UpdateEventCapability =
+      new NodeId(UShort.MIN, uint(11283));
+
+  public static final NodeId AggregateFunction_TimeAverage2 = new NodeId(UShort.MIN, uint(11285));
+
+  public static final NodeId AggregateFunction_Minimum2 = new NodeId(UShort.MIN, uint(11286));
+
+  public static final NodeId AggregateFunction_Maximum2 = new NodeId(UShort.MIN, uint(11287));
+
+  public static final NodeId AggregateFunction_Range2 = new NodeId(UShort.MIN, uint(11288));
+
+  public static final NodeId AggregateFunction_WorstQuality2 = new NodeId(UShort.MIN, uint(11292));
+
+  public static final NodeId PerformUpdateType = new NodeId(UShort.MIN, uint(11293));
+
+  public static final NodeId UpdateStructureDataDetails = new NodeId(UShort.MIN, uint(11295));
+
+  public static final NodeId UpdateStructureDataDetails_Encoding_DefaultXml =
+      new NodeId(UShort.MIN, uint(11296));
+
+  public static final NodeId UpdateStructureDataDetails_Encoding_DefaultBinary =
+      new NodeId(UShort.MIN, uint(11300));
+
+  public static final NodeId AggregateFunction_Total2 = new NodeId(UShort.MIN, uint(11304));
+
+  public static final NodeId AggregateFunction_MinimumActualTime2 =
+      new NodeId(UShort.MIN, uint(11305));
+
+  public static final NodeId AggregateFunction_MaximumActualTime2 =
+      new NodeId(UShort.MIN, uint(11306));
+
+  public static final NodeId AggregateFunction_DurationInStateZero =
+      new NodeId(UShort.MIN, uint(11307));
+
+  public static final NodeId AggregateFunction_DurationInStateNonZero =
+      new NodeId(UShort.MIN, uint(11308));
+
+  public static final NodeId Server_ServerRedundancy_CurrentServerId =
+      new NodeId(UShort.MIN, uint(11312));
+
+  public static final NodeId Server_ServerRedundancy_RedundantServerArray =
+      new NodeId(UShort.MIN, uint(11313));
+
+  public static final NodeId Server_ServerRedundancy_ServerUriArray =
+      new NodeId(UShort.MIN, uint(11314));
+
+  public static final NodeId ShelvedStateMachineType_UnshelvedToTimedShelved_TransitionNumber =
+      new NodeId(UShort.MIN, uint(11322));
+
+  public static final NodeId ShelvedStateMachineType_UnshelvedToOneShotShelved_TransitionNumber =
+      new NodeId(UShort.MIN, uint(11323));
+
+  public static final NodeId ShelvedStateMachineType_TimedShelvedToUnshelved_TransitionNumber =
+      new NodeId(UShort.MIN, uint(11324));
+
+  public static final NodeId ShelvedStateMachineType_TimedShelvedToOneShotShelved_TransitionNumber =
+      new NodeId(UShort.MIN, uint(11325));
+
+  public static final NodeId ShelvedStateMachineType_OneShotShelvedToUnshelved_TransitionNumber =
+      new NodeId(UShort.MIN, uint(11326));
+
+  public static final NodeId ShelvedStateMachineType_OneShotShelvedToTimedShelved_TransitionNumber =
+      new NodeId(UShort.MIN, uint(11327));
+
+  public static final NodeId ExclusiveLimitStateMachineType_LowLowToLow_TransitionNumber =
+      new NodeId(UShort.MIN, uint(11340));
+
+  public static final NodeId ExclusiveLimitStateMachineType_LowToLowLow_TransitionNumber =
+      new NodeId(UShort.MIN, uint(11341));
+
+  public static final NodeId ExclusiveLimitStateMachineType_HighHighToHigh_TransitionNumber =
+      new NodeId(UShort.MIN, uint(11342));
+
+  public static final NodeId ExclusiveLimitStateMachineType_HighToHighHigh_TransitionNumber =
+      new NodeId(UShort.MIN, uint(11343));
+
+  public static final NodeId AggregateFunction_StandardDeviationSample =
+      new NodeId(UShort.MIN, uint(11426));
+
+  public static final NodeId AggregateFunction_StandardDeviationPopulation =
+      new NodeId(UShort.MIN, uint(11427));
+
+  public static final NodeId AggregateFunction_VarianceSample = new NodeId(UShort.MIN, uint(11428));
+
+  public static final NodeId AggregateFunction_VariancePopulation =
+      new NodeId(UShort.MIN, uint(11429));
+
+  public static final NodeId EnumStrings = new NodeId(UShort.MIN, uint(11432));
+
+  public static final NodeId ValueAsText = new NodeId(UShort.MIN, uint(11433));
+
+  public static final NodeId ProgressEventType = new NodeId(UShort.MIN, uint(11436));
+
+  public static final NodeId SystemStatusChangeEventType = new NodeId(UShort.MIN, uint(11446));
+
+  public static final NodeId TransitionVariableType_EffectiveTransitionTime =
+      new NodeId(UShort.MIN, uint(11456));
+
+  public static final NodeId StateMachineType_LastTransition_EffectiveTransitionTime =
+      new NodeId(UShort.MIN, uint(11458));
+
+  public static final NodeId FiniteStateMachineType_LastTransition_EffectiveTransitionTime =
+      new NodeId(UShort.MIN, uint(11459));
+
+  public static final NodeId TransitionEventType_Transition_EffectiveTransitionTime =
+      new NodeId(UShort.MIN, uint(11460));
+
+  public static final NodeId MultiStateValueDiscreteType_ValueAsText =
+      new NodeId(UShort.MIN, uint(11461));
+
+  public static final NodeId ProgramTransitionAuditEventType_Transition_EffectiveTransitionTime =
+      new NodeId(UShort.MIN, uint(11463));
+
+  public static final NodeId ProgramStateMachineType_LastTransition_EffectiveTransitionTime =
+      new NodeId(UShort.MIN, uint(11464));
+
+  public static final NodeId
+      AlarmConditionType_ShelvingState_LastTransition_EffectiveTransitionTime =
+          new NodeId(UShort.MIN, uint(11466));
+
+  public static final NodeId
+      ExclusiveLimitAlarmType_LimitState_LastTransition_EffectiveTransitionTime =
+          new NodeId(UShort.MIN, uint(11470));
+
+  public static final NodeId AuditActivateSessionEventType_SecureChannelId =
+      new NodeId(UShort.MIN, uint(11485));
+
+  public static final NodeId OptionSetType = new NodeId(UShort.MIN, uint(11487));
+
+  public static final NodeId OptionSetType_OptionSetValues = new NodeId(UShort.MIN, uint(11488));
+
+  public static final NodeId ServerType_GetMonitoredItems = new NodeId(UShort.MIN, uint(11489));
+
+  public static final NodeId ServerType_GetMonitoredItems_InputArguments =
+      new NodeId(UShort.MIN, uint(11490));
+
+  public static final NodeId ServerType_GetMonitoredItems_OutputArguments =
+      new NodeId(UShort.MIN, uint(11491));
+
+  public static final NodeId Server_GetMonitoredItems = new NodeId(UShort.MIN, uint(11492));
+
+  public static final NodeId Server_GetMonitoredItems_InputArguments =
+      new NodeId(UShort.MIN, uint(11493));
+
+  public static final NodeId Server_GetMonitoredItems_OutputArguments =
+      new NodeId(UShort.MIN, uint(11494));
+
+  public static final NodeId GetMonitoredItemsMethodType = new NodeId(UShort.MIN, uint(11495));
+
+  public static final NodeId GetMonitoredItemsMethodType_InputArguments =
+      new NodeId(UShort.MIN, uint(11496));
+
+  public static final NodeId GetMonitoredItemsMethodType_OutputArguments =
+      new NodeId(UShort.MIN, uint(11497));
+
+  public static final NodeId MaxStringLength = new NodeId(UShort.MIN, uint(11498));
+
+  public static final NodeId HistoricalDataConfigurationType_StartOfArchive =
+      new NodeId(UShort.MIN, uint(11499));
+
+  public static final NodeId HistoricalDataConfigurationType_StartOfOnlineArchive =
+      new NodeId(UShort.MIN, uint(11500));
+
+  public static final NodeId HistoryServerCapabilitiesType_DeleteEventCapability =
+      new NodeId(UShort.MIN, uint(11501));
+
+  public static final NodeId HistoryServerCapabilities_DeleteEventCapability =
+      new NodeId(UShort.MIN, uint(11502));
+
+  public static final NodeId HAConfiguration_StartOfArchive = new NodeId(UShort.MIN, uint(11503));
+
+  public static final NodeId HAConfiguration_StartOfOnlineArchive =
+      new NodeId(UShort.MIN, uint(11504));
+
+  public static final NodeId AggregateFunction_StartBound = new NodeId(UShort.MIN, uint(11505));
+
+  public static final NodeId AggregateFunction_EndBound = new NodeId(UShort.MIN, uint(11506));
+
+  public static final NodeId AggregateFunction_DeltaBounds = new NodeId(UShort.MIN, uint(11507));
+
+  public static final NodeId ModellingRule_OptionalPlaceholder =
+      new NodeId(UShort.MIN, uint(11508));
+
+  public static final NodeId ModellingRule_MandatoryPlaceholder =
+      new NodeId(UShort.MIN, uint(11510));
+
+  public static final NodeId MaxArrayLength = new NodeId(UShort.MIN, uint(11512));
+
+  public static final NodeId EngineeringUnits = new NodeId(UShort.MIN, uint(11513));
+
+  public static final NodeId ServerType_ServerCapabilities_MaxArrayLength =
+      new NodeId(UShort.MIN, uint(11514));
+
+  public static final NodeId ServerType_ServerCapabilities_MaxStringLength =
+      new NodeId(UShort.MIN, uint(11515));
+
+  public static final NodeId ServerType_ServerCapabilities_OperationLimits =
+      new NodeId(UShort.MIN, uint(11516));
+
+  public static final NodeId ServerType_ServerCapabilities_OperationLimits_MaxNodesPerRead =
+      new NodeId(UShort.MIN, uint(11517));
+
+  public static final NodeId ServerType_ServerCapabilities_OperationLimits_MaxNodesPerWrite =
+      new NodeId(UShort.MIN, uint(11519));
+
+  public static final NodeId ServerType_ServerCapabilities_OperationLimits_MaxNodesPerMethodCall =
+      new NodeId(UShort.MIN, uint(11521));
+
+  public static final NodeId ServerType_ServerCapabilities_OperationLimits_MaxNodesPerBrowse =
+      new NodeId(UShort.MIN, uint(11522));
+
+  public static final NodeId
+      ServerType_ServerCapabilities_OperationLimits_MaxNodesPerRegisterNodes =
+          new NodeId(UShort.MIN, uint(11523));
+
+  public static final NodeId
+      ServerType_ServerCapabilities_OperationLimits_MaxNodesPerTranslateBrowsePathsToNodeIds =
+          new NodeId(UShort.MIN, uint(11524));
+
+  public static final NodeId
+      ServerType_ServerCapabilities_OperationLimits_MaxNodesPerNodeManagement =
+          new NodeId(UShort.MIN, uint(11525));
+
+  public static final NodeId
+      ServerType_ServerCapabilities_OperationLimits_MaxMonitoredItemsPerCall =
+          new NodeId(UShort.MIN, uint(11526));
+
+  public static final NodeId ServerType_Namespaces = new NodeId(UShort.MIN, uint(11527));
+
+  public static final NodeId ServerCapabilitiesType_MaxArrayLength =
+      new NodeId(UShort.MIN, uint(11549));
+
+  public static final NodeId ServerCapabilitiesType_MaxStringLength =
+      new NodeId(UShort.MIN, uint(11550));
+
+  public static final NodeId ServerCapabilitiesType_OperationLimits =
+      new NodeId(UShort.MIN, uint(11551));
+
+  public static final NodeId ServerCapabilitiesType_OperationLimits_MaxNodesPerRead =
+      new NodeId(UShort.MIN, uint(11552));
+
+  public static final NodeId ServerCapabilitiesType_OperationLimits_MaxNodesPerWrite =
+      new NodeId(UShort.MIN, uint(11554));
+
+  public static final NodeId ServerCapabilitiesType_OperationLimits_MaxNodesPerMethodCall =
+      new NodeId(UShort.MIN, uint(11556));
+
+  public static final NodeId ServerCapabilitiesType_OperationLimits_MaxNodesPerBrowse =
+      new NodeId(UShort.MIN, uint(11557));
+
+  public static final NodeId ServerCapabilitiesType_OperationLimits_MaxNodesPerRegisterNodes =
+      new NodeId(UShort.MIN, uint(11558));
+
+  public static final NodeId
+      ServerCapabilitiesType_OperationLimits_MaxNodesPerTranslateBrowsePathsToNodeIds =
+          new NodeId(UShort.MIN, uint(11559));
+
+  public static final NodeId ServerCapabilitiesType_OperationLimits_MaxNodesPerNodeManagement =
+      new NodeId(UShort.MIN, uint(11560));
+
+  public static final NodeId ServerCapabilitiesType_OperationLimits_MaxMonitoredItemsPerCall =
+      new NodeId(UShort.MIN, uint(11561));
+
+  public static final NodeId ServerCapabilitiesType_VendorCapability_Placeholder =
+      new NodeId(UShort.MIN, uint(11562));
+
+  public static final NodeId OperationLimitsType = new NodeId(UShort.MIN, uint(11564));
+
+  public static final NodeId OperationLimitsType_MaxNodesPerRead =
+      new NodeId(UShort.MIN, uint(11565));
+
+  public static final NodeId OperationLimitsType_MaxNodesPerWrite =
+      new NodeId(UShort.MIN, uint(11567));
+
+  public static final NodeId OperationLimitsType_MaxNodesPerMethodCall =
+      new NodeId(UShort.MIN, uint(11569));
+
+  public static final NodeId OperationLimitsType_MaxNodesPerBrowse =
+      new NodeId(UShort.MIN, uint(11570));
+
+  public static final NodeId OperationLimitsType_MaxNodesPerRegisterNodes =
+      new NodeId(UShort.MIN, uint(11571));
+
+  public static final NodeId OperationLimitsType_MaxNodesPerTranslateBrowsePathsToNodeIds =
+      new NodeId(UShort.MIN, uint(11572));
+
+  public static final NodeId OperationLimitsType_MaxNodesPerNodeManagement =
+      new NodeId(UShort.MIN, uint(11573));
+
+  public static final NodeId OperationLimitsType_MaxMonitoredItemsPerCall =
+      new NodeId(UShort.MIN, uint(11574));
+
+  public static final NodeId FileType = new NodeId(UShort.MIN, uint(11575));
+
+  public static final NodeId FileType_Size = new NodeId(UShort.MIN, uint(11576));
+
+  public static final NodeId FileType_OpenCount = new NodeId(UShort.MIN, uint(11579));
+
+  public static final NodeId FileType_Open = new NodeId(UShort.MIN, uint(11580));
+
+  public static final NodeId FileType_Open_InputArguments = new NodeId(UShort.MIN, uint(11581));
+
+  public static final NodeId FileType_Open_OutputArguments = new NodeId(UShort.MIN, uint(11582));
+
+  public static final NodeId FileType_Close = new NodeId(UShort.MIN, uint(11583));
+
+  public static final NodeId FileType_Close_InputArguments = new NodeId(UShort.MIN, uint(11584));
+
+  public static final NodeId FileType_Read = new NodeId(UShort.MIN, uint(11585));
+
+  public static final NodeId FileType_Read_InputArguments = new NodeId(UShort.MIN, uint(11586));
+
+  public static final NodeId FileType_Read_OutputArguments = new NodeId(UShort.MIN, uint(11587));
+
+  public static final NodeId FileType_Write = new NodeId(UShort.MIN, uint(11588));
+
+  public static final NodeId FileType_Write_InputArguments = new NodeId(UShort.MIN, uint(11589));
+
+  public static final NodeId FileType_GetPosition = new NodeId(UShort.MIN, uint(11590));
+
+  public static final NodeId FileType_GetPosition_InputArguments =
+      new NodeId(UShort.MIN, uint(11591));
+
+  public static final NodeId FileType_GetPosition_OutputArguments =
+      new NodeId(UShort.MIN, uint(11592));
+
+  public static final NodeId FileType_SetPosition = new NodeId(UShort.MIN, uint(11593));
+
+  public static final NodeId FileType_SetPosition_InputArguments =
+      new NodeId(UShort.MIN, uint(11594));
+
+  public static final NodeId AddressSpaceFileType = new NodeId(UShort.MIN, uint(11595));
+
+  public static final NodeId AddressSpaceFileType_ExportNamespace =
+      new NodeId(UShort.MIN, uint(11615));
+
+  public static final NodeId NamespaceMetadataType = new NodeId(UShort.MIN, uint(11616));
+
+  public static final NodeId NamespaceMetadataType_NamespaceUri =
+      new NodeId(UShort.MIN, uint(11617));
+
+  public static final NodeId NamespaceMetadataType_NamespaceVersion =
+      new NodeId(UShort.MIN, uint(11618));
+
+  public static final NodeId NamespaceMetadataType_NamespacePublicationDate =
+      new NodeId(UShort.MIN, uint(11619));
+
+  public static final NodeId NamespaceMetadataType_IsNamespaceSubset =
+      new NodeId(UShort.MIN, uint(11620));
+
+  public static final NodeId NamespaceMetadataType_StaticNodeIdTypes =
+      new NodeId(UShort.MIN, uint(11621));
+
+  public static final NodeId NamespaceMetadataType_StaticNumericNodeIdRange =
+      new NodeId(UShort.MIN, uint(11622));
+
+  public static final NodeId NamespaceMetadataType_StaticStringNodeIdPattern =
+      new NodeId(UShort.MIN, uint(11623));
+
+  public static final NodeId NamespaceMetadataType_NamespaceFile =
+      new NodeId(UShort.MIN, uint(11624));
+
+  public static final NodeId NamespaceMetadataType_NamespaceFile_Size =
+      new NodeId(UShort.MIN, uint(11625));
+
+  public static final NodeId NamespaceMetadataType_NamespaceFile_OpenCount =
+      new NodeId(UShort.MIN, uint(11628));
+
+  public static final NodeId NamespaceMetadataType_NamespaceFile_Open =
+      new NodeId(UShort.MIN, uint(11629));
+
+  public static final NodeId NamespaceMetadataType_NamespaceFile_Open_InputArguments =
+      new NodeId(UShort.MIN, uint(11630));
+
+  public static final NodeId NamespaceMetadataType_NamespaceFile_Open_OutputArguments =
+      new NodeId(UShort.MIN, uint(11631));
+
+  public static final NodeId NamespaceMetadataType_NamespaceFile_Close =
+      new NodeId(UShort.MIN, uint(11632));
+
+  public static final NodeId NamespaceMetadataType_NamespaceFile_Close_InputArguments =
+      new NodeId(UShort.MIN, uint(11633));
+
+  public static final NodeId NamespaceMetadataType_NamespaceFile_Read =
+      new NodeId(UShort.MIN, uint(11634));
+
+  public static final NodeId NamespaceMetadataType_NamespaceFile_Read_InputArguments =
+      new NodeId(UShort.MIN, uint(11635));
+
+  public static final NodeId NamespaceMetadataType_NamespaceFile_Read_OutputArguments =
+      new NodeId(UShort.MIN, uint(11636));
+
+  public static final NodeId NamespaceMetadataType_NamespaceFile_Write =
+      new NodeId(UShort.MIN, uint(11637));
+
+  public static final NodeId NamespaceMetadataType_NamespaceFile_Write_InputArguments =
+      new NodeId(UShort.MIN, uint(11638));
+
+  public static final NodeId NamespaceMetadataType_NamespaceFile_GetPosition =
+      new NodeId(UShort.MIN, uint(11639));
+
+  public static final NodeId NamespaceMetadataType_NamespaceFile_GetPosition_InputArguments =
+      new NodeId(UShort.MIN, uint(11640));
+
+  public static final NodeId NamespaceMetadataType_NamespaceFile_GetPosition_OutputArguments =
+      new NodeId(UShort.MIN, uint(11641));
+
+  public static final NodeId NamespaceMetadataType_NamespaceFile_SetPosition =
+      new NodeId(UShort.MIN, uint(11642));
+
+  public static final NodeId NamespaceMetadataType_NamespaceFile_SetPosition_InputArguments =
+      new NodeId(UShort.MIN, uint(11643));
+
+  public static final NodeId NamespaceMetadataType_NamespaceFile_ExportNamespace =
+      new NodeId(UShort.MIN, uint(11644));
+
+  public static final NodeId NamespacesType = new NodeId(UShort.MIN, uint(11645));
+
+  public static final NodeId NamespacesType_NamespaceIdentifier_Placeholder =
+      new NodeId(UShort.MIN, uint(11646));
+
+  public static final NodeId NamespacesType_NamespaceIdentifier_Placeholder_NamespaceUri =
+      new NodeId(UShort.MIN, uint(11647));
+
+  public static final NodeId NamespacesType_NamespaceIdentifier_Placeholder_NamespaceVersion =
+      new NodeId(UShort.MIN, uint(11648));
+
+  public static final NodeId
+      NamespacesType_NamespaceIdentifier_Placeholder_NamespacePublicationDate =
+          new NodeId(UShort.MIN, uint(11649));
+
+  public static final NodeId NamespacesType_NamespaceIdentifier_Placeholder_IsNamespaceSubset =
+      new NodeId(UShort.MIN, uint(11650));
+
+  public static final NodeId NamespacesType_NamespaceIdentifier_Placeholder_StaticNodeIdTypes =
+      new NodeId(UShort.MIN, uint(11651));
+
+  public static final NodeId
+      NamespacesType_NamespaceIdentifier_Placeholder_StaticNumericNodeIdRange =
+          new NodeId(UShort.MIN, uint(11652));
+
+  public static final NodeId
+      NamespacesType_NamespaceIdentifier_Placeholder_StaticStringNodeIdPattern =
+          new NodeId(UShort.MIN, uint(11653));
+
+  public static final NodeId NamespacesType_NamespaceIdentifier_Placeholder_NamespaceFile =
+      new NodeId(UShort.MIN, uint(11654));
+
+  public static final NodeId NamespacesType_NamespaceIdentifier_Placeholder_NamespaceFile_Size =
+      new NodeId(UShort.MIN, uint(11655));
+
+  public static final NodeId
+      NamespacesType_NamespaceIdentifier_Placeholder_NamespaceFile_OpenCount =
+          new NodeId(UShort.MIN, uint(11658));
+
+  public static final NodeId NamespacesType_NamespaceIdentifier_Placeholder_NamespaceFile_Open =
+      new NodeId(UShort.MIN, uint(11659));
+
+  public static final NodeId
+      NamespacesType_NamespaceIdentifier_Placeholder_NamespaceFile_Open_InputArguments =
+          new NodeId(UShort.MIN, uint(11660));
+
+  public static final NodeId
+      NamespacesType_NamespaceIdentifier_Placeholder_NamespaceFile_Open_OutputArguments =
+          new NodeId(UShort.MIN, uint(11661));
+
+  public static final NodeId NamespacesType_NamespaceIdentifier_Placeholder_NamespaceFile_Close =
+      new NodeId(UShort.MIN, uint(11662));
+
+  public static final NodeId
+      NamespacesType_NamespaceIdentifier_Placeholder_NamespaceFile_Close_InputArguments =
+          new NodeId(UShort.MIN, uint(11663));
+
+  public static final NodeId NamespacesType_NamespaceIdentifier_Placeholder_NamespaceFile_Read =
+      new NodeId(UShort.MIN, uint(11664));
+
+  public static final NodeId
+      NamespacesType_NamespaceIdentifier_Placeholder_NamespaceFile_Read_InputArguments =
+          new NodeId(UShort.MIN, uint(11665));
+
+  public static final NodeId
+      NamespacesType_NamespaceIdentifier_Placeholder_NamespaceFile_Read_OutputArguments =
+          new NodeId(UShort.MIN, uint(11666));
+
+  public static final NodeId NamespacesType_NamespaceIdentifier_Placeholder_NamespaceFile_Write =
+      new NodeId(UShort.MIN, uint(11667));
+
+  public static final NodeId
+      NamespacesType_NamespaceIdentifier_Placeholder_NamespaceFile_Write_InputArguments =
+          new NodeId(UShort.MIN, uint(11668));
+
+  public static final NodeId
+      NamespacesType_NamespaceIdentifier_Placeholder_NamespaceFile_GetPosition =
+          new NodeId(UShort.MIN, uint(11669));
+
+  public static final NodeId
+      NamespacesType_NamespaceIdentifier_Placeholder_NamespaceFile_GetPosition_InputArguments =
+          new NodeId(UShort.MIN, uint(11670));
+
+  public static final NodeId
+      NamespacesType_NamespaceIdentifier_Placeholder_NamespaceFile_GetPosition_OutputArguments =
+          new NodeId(UShort.MIN, uint(11671));
+
+  public static final NodeId
+      NamespacesType_NamespaceIdentifier_Placeholder_NamespaceFile_SetPosition =
+          new NodeId(UShort.MIN, uint(11672));
+
+  public static final NodeId
+      NamespacesType_NamespaceIdentifier_Placeholder_NamespaceFile_SetPosition_InputArguments =
+          new NodeId(UShort.MIN, uint(11673));
+
+  public static final NodeId
+      NamespacesType_NamespaceIdentifier_Placeholder_NamespaceFile_ExportNamespace =
+          new NodeId(UShort.MIN, uint(11674));
+
+  public static final NodeId SystemStatusChangeEventType_SystemState =
+      new NodeId(UShort.MIN, uint(11696));
+
+  public static final NodeId SamplingIntervalDiagnosticsType_SampledMonitoredItemsCount =
+      new NodeId(UShort.MIN, uint(11697));
+
+  public static final NodeId SamplingIntervalDiagnosticsType_MaxSampledMonitoredItemsCount =
+      new NodeId(UShort.MIN, uint(11698));
+
+  public static final NodeId SamplingIntervalDiagnosticsType_DisabledMonitoredItemsSamplingCount =
+      new NodeId(UShort.MIN, uint(11699));
+
+  public static final NodeId OptionSetType_BitMask = new NodeId(UShort.MIN, uint(11701));
+
+  public static final NodeId Server_ServerCapabilities_MaxArrayLength =
+      new NodeId(UShort.MIN, uint(11702));
+
+  public static final NodeId Server_ServerCapabilities_MaxStringLength =
+      new NodeId(UShort.MIN, uint(11703));
+
+  public static final NodeId Server_ServerCapabilities_OperationLimits =
+      new NodeId(UShort.MIN, uint(11704));
+
+  public static final NodeId Server_ServerCapabilities_OperationLimits_MaxNodesPerRead =
+      new NodeId(UShort.MIN, uint(11705));
+
+  public static final NodeId Server_ServerCapabilities_OperationLimits_MaxNodesPerWrite =
+      new NodeId(UShort.MIN, uint(11707));
+
+  public static final NodeId Server_ServerCapabilities_OperationLimits_MaxNodesPerMethodCall =
+      new NodeId(UShort.MIN, uint(11709));
+
+  public static final NodeId Server_ServerCapabilities_OperationLimits_MaxNodesPerBrowse =
+      new NodeId(UShort.MIN, uint(11710));
+
+  public static final NodeId Server_ServerCapabilities_OperationLimits_MaxNodesPerRegisterNodes =
+      new NodeId(UShort.MIN, uint(11711));
+
+  public static final NodeId
+      Server_ServerCapabilities_OperationLimits_MaxNodesPerTranslateBrowsePathsToNodeIds =
+          new NodeId(UShort.MIN, uint(11712));
+
+  public static final NodeId Server_ServerCapabilities_OperationLimits_MaxNodesPerNodeManagement =
+      new NodeId(UShort.MIN, uint(11713));
+
+  public static final NodeId Server_ServerCapabilities_OperationLimits_MaxMonitoredItemsPerCall =
+      new NodeId(UShort.MIN, uint(11714));
+
+  public static final NodeId Server_Namespaces = new NodeId(UShort.MIN, uint(11715));
+
+  public static final NodeId BitFieldMaskDataType = new NodeId(UShort.MIN, uint(11737));
+
+  public static final NodeId OpenMethodType = new NodeId(UShort.MIN, uint(11738));
+
+  public static final NodeId OpenMethodType_InputArguments = new NodeId(UShort.MIN, uint(11739));
+
+  public static final NodeId OpenMethodType_OutputArguments = new NodeId(UShort.MIN, uint(11740));
+
+  public static final NodeId CloseMethodType = new NodeId(UShort.MIN, uint(11741));
+
+  public static final NodeId CloseMethodType_InputArguments = new NodeId(UShort.MIN, uint(11742));
+
+  public static final NodeId ReadMethodType = new NodeId(UShort.MIN, uint(11743));
+
+  public static final NodeId ReadMethodType_InputArguments = new NodeId(UShort.MIN, uint(11744));
+
+  public static final NodeId ReadMethodType_OutputArguments = new NodeId(UShort.MIN, uint(11745));
+
+  public static final NodeId WriteMethodType = new NodeId(UShort.MIN, uint(11746));
+
+  public static final NodeId WriteMethodType_InputArguments = new NodeId(UShort.MIN, uint(11747));
+
+  public static final NodeId GetPositionMethodType = new NodeId(UShort.MIN, uint(11748));
+
+  public static final NodeId GetPositionMethodType_InputArguments =
+      new NodeId(UShort.MIN, uint(11749));
+
+  public static final NodeId GetPositionMethodType_OutputArguments =
+      new NodeId(UShort.MIN, uint(11750));
+
+  public static final NodeId SetPositionMethodType = new NodeId(UShort.MIN, uint(11751));
+
+  public static final NodeId SetPositionMethodType_InputArguments =
+      new NodeId(UShort.MIN, uint(11752));
+
+  public static final NodeId SystemOffNormalAlarmType = new NodeId(UShort.MIN, uint(11753));
+
+  public static final NodeId AuditConditionCommentEventType_Comment =
+      new NodeId(UShort.MIN, uint(11851));
+
+  public static final NodeId AuditConditionRespondEventType_SelectedResponse =
+      new NodeId(UShort.MIN, uint(11852));
+
+  public static final NodeId AuditConditionAcknowledgeEventType_Comment =
+      new NodeId(UShort.MIN, uint(11853));
+
+  public static final NodeId AuditConditionConfirmEventType_Comment =
+      new NodeId(UShort.MIN, uint(11854));
+
+  public static final NodeId AuditConditionShelvingEventType_ShelvingTime =
+      new NodeId(UShort.MIN, uint(11855));
+
+  public static final NodeId AuditProgramTransitionEventType = new NodeId(UShort.MIN, uint(11856));
+
+  public static final NodeId AuditProgramTransitionEventType_TransitionNumber =
+      new NodeId(UShort.MIN, uint(11875));
+
+  public static final NodeId HistoricalDataConfigurationType_AggregateFunctions =
+      new NodeId(UShort.MIN, uint(11876));
+
+  public static final NodeId HAConfiguration_AggregateFunctions =
+      new NodeId(UShort.MIN, uint(11877));
+
+  public static final NodeId NodeClass_EnumValues = new NodeId(UShort.MIN, uint(11878));
+
+  public static final NodeId InstanceNode = new NodeId(UShort.MIN, uint(11879));
+
+  public static final NodeId TypeNode = new NodeId(UShort.MIN, uint(11880));
+
+  public static final NodeId NodeAttributesMask_EnumValues = new NodeId(UShort.MIN, uint(11881));
+
+  public static final NodeId BrowseResultMask_EnumValues = new NodeId(UShort.MIN, uint(11883));
+
+  public static final NodeId HistoryUpdateType_EnumValues = new NodeId(UShort.MIN, uint(11884));
+
+  public static final NodeId PerformUpdateType_EnumValues = new NodeId(UShort.MIN, uint(11885));
+
+  public static final NodeId InstanceNode_Encoding_DefaultXml = new NodeId(UShort.MIN, uint(11887));
+
+  public static final NodeId TypeNode_Encoding_DefaultXml = new NodeId(UShort.MIN, uint(11888));
+
+  public static final NodeId InstanceNode_Encoding_DefaultBinary =
+      new NodeId(UShort.MIN, uint(11889));
+
+  public static final NodeId TypeNode_Encoding_DefaultBinary = new NodeId(UShort.MIN, uint(11890));
+
+  public static final NodeId
+      SessionDiagnosticsObjectType_SessionDiagnostics_UnauthorizedRequestCount =
+          new NodeId(UShort.MIN, uint(11891));
+
+  public static final NodeId SessionDiagnosticsVariableType_UnauthorizedRequestCount =
+      new NodeId(UShort.MIN, uint(11892));
+
+  public static final NodeId OpenFileMode = new NodeId(UShort.MIN, uint(11939));
+
+  public static final NodeId OpenFileMode_EnumValues = new NodeId(UShort.MIN, uint(11940));
+
+  public static final NodeId ModelChangeStructureVerbMask = new NodeId(UShort.MIN, uint(11941));
+
+  public static final NodeId ModelChangeStructureVerbMask_EnumValues =
+      new NodeId(UShort.MIN, uint(11942));
+
+  public static final NodeId EndpointUrlListDataType = new NodeId(UShort.MIN, uint(11943));
+
+  public static final NodeId NetworkGroupDataType = new NodeId(UShort.MIN, uint(11944));
+
+  public static final NodeId NonTransparentNetworkRedundancyType =
+      new NodeId(UShort.MIN, uint(11945));
+
+  public static final NodeId NonTransparentNetworkRedundancyType_ServerNetworkGroups =
+      new NodeId(UShort.MIN, uint(11948));
+
+  public static final NodeId EndpointUrlListDataType_Encoding_DefaultXml =
+      new NodeId(UShort.MIN, uint(11949));
+
+  public static final NodeId NetworkGroupDataType_Encoding_DefaultXml =
+      new NodeId(UShort.MIN, uint(11950));
+
+  public static final NodeId OpcUa_XmlSchema_EndpointUrlListDataType =
+      new NodeId(UShort.MIN, uint(11951));
+
+  public static final NodeId OpcUa_XmlSchema_EndpointUrlListDataType_DataTypeVersion =
+      new NodeId(UShort.MIN, uint(11952));
+
+  public static final NodeId OpcUa_XmlSchema_EndpointUrlListDataType_DictionaryFragment =
+      new NodeId(UShort.MIN, uint(11953));
+
+  public static final NodeId OpcUa_XmlSchema_NetworkGroupDataType =
+      new NodeId(UShort.MIN, uint(11954));
+
+  public static final NodeId OpcUa_XmlSchema_NetworkGroupDataType_DataTypeVersion =
+      new NodeId(UShort.MIN, uint(11955));
+
+  public static final NodeId OpcUa_XmlSchema_NetworkGroupDataType_DictionaryFragment =
+      new NodeId(UShort.MIN, uint(11956));
+
+  public static final NodeId EndpointUrlListDataType_Encoding_DefaultBinary =
+      new NodeId(UShort.MIN, uint(11957));
+
+  public static final NodeId NetworkGroupDataType_Encoding_DefaultBinary =
+      new NodeId(UShort.MIN, uint(11958));
+
+  public static final NodeId OpcUa_BinarySchema_EndpointUrlListDataType =
+      new NodeId(UShort.MIN, uint(11959));
+
+  public static final NodeId OpcUa_BinarySchema_EndpointUrlListDataType_DataTypeVersion =
+      new NodeId(UShort.MIN, uint(11960));
+
+  public static final NodeId OpcUa_BinarySchema_EndpointUrlListDataType_DictionaryFragment =
+      new NodeId(UShort.MIN, uint(11961));
+
+  public static final NodeId OpcUa_BinarySchema_NetworkGroupDataType =
+      new NodeId(UShort.MIN, uint(11962));
+
+  public static final NodeId OpcUa_BinarySchema_NetworkGroupDataType_DataTypeVersion =
+      new NodeId(UShort.MIN, uint(11963));
+
+  public static final NodeId OpcUa_BinarySchema_NetworkGroupDataType_DictionaryFragment =
+      new NodeId(UShort.MIN, uint(11964));
+
+  public static final NodeId ArrayItemType = new NodeId(UShort.MIN, uint(12021));
+
+  public static final NodeId ArrayItemType_InstrumentRange = new NodeId(UShort.MIN, uint(12024));
+
+  public static final NodeId ArrayItemType_EURange = new NodeId(UShort.MIN, uint(12025));
+
+  public static final NodeId ArrayItemType_EngineeringUnits = new NodeId(UShort.MIN, uint(12026));
+
+  public static final NodeId ArrayItemType_Title = new NodeId(UShort.MIN, uint(12027));
+
+  public static final NodeId ArrayItemType_AxisScaleType = new NodeId(UShort.MIN, uint(12028));
+
+  public static final NodeId YArrayItemType = new NodeId(UShort.MIN, uint(12029));
+
+  public static final NodeId YArrayItemType_XAxisDefinition = new NodeId(UShort.MIN, uint(12037));
+
+  public static final NodeId XYArrayItemType = new NodeId(UShort.MIN, uint(12038));
+
+  public static final NodeId XYArrayItemType_XAxisDefinition = new NodeId(UShort.MIN, uint(12046));
+
+  public static final NodeId ImageItemType = new NodeId(UShort.MIN, uint(12047));
+
+  public static final NodeId ImageItemType_XAxisDefinition = new NodeId(UShort.MIN, uint(12055));
+
+  public static final NodeId ImageItemType_YAxisDefinition = new NodeId(UShort.MIN, uint(12056));
+
+  public static final NodeId CubeItemType = new NodeId(UShort.MIN, uint(12057));
+
+  public static final NodeId CubeItemType_XAxisDefinition = new NodeId(UShort.MIN, uint(12065));
+
+  public static final NodeId CubeItemType_YAxisDefinition = new NodeId(UShort.MIN, uint(12066));
+
+  public static final NodeId CubeItemType_ZAxisDefinition = new NodeId(UShort.MIN, uint(12067));
+
+  public static final NodeId NDimensionArrayItemType = new NodeId(UShort.MIN, uint(12068));
+
+  public static final NodeId NDimensionArrayItemType_AxisDefinition =
+      new NodeId(UShort.MIN, uint(12076));
+
+  public static final NodeId AxisScaleEnumeration = new NodeId(UShort.MIN, uint(12077));
+
+  public static final NodeId AxisScaleEnumeration_EnumStrings = new NodeId(UShort.MIN, uint(12078));
+
+  public static final NodeId AxisInformation = new NodeId(UShort.MIN, uint(12079));
+
+  public static final NodeId XVType = new NodeId(UShort.MIN, uint(12080));
+
+  public static final NodeId AxisInformation_Encoding_DefaultXml =
+      new NodeId(UShort.MIN, uint(12081));
+
+  public static final NodeId XVType_Encoding_DefaultXml = new NodeId(UShort.MIN, uint(12082));
+
+  public static final NodeId OpcUa_XmlSchema_AxisInformation = new NodeId(UShort.MIN, uint(12083));
+
+  public static final NodeId OpcUa_XmlSchema_AxisInformation_DataTypeVersion =
+      new NodeId(UShort.MIN, uint(12084));
+
+  public static final NodeId OpcUa_XmlSchema_AxisInformation_DictionaryFragment =
+      new NodeId(UShort.MIN, uint(12085));
+
+  public static final NodeId OpcUa_XmlSchema_XVType = new NodeId(UShort.MIN, uint(12086));
+
+  public static final NodeId OpcUa_XmlSchema_XVType_DataTypeVersion =
+      new NodeId(UShort.MIN, uint(12087));
+
+  public static final NodeId OpcUa_XmlSchema_XVType_DictionaryFragment =
+      new NodeId(UShort.MIN, uint(12088));
+
+  public static final NodeId AxisInformation_Encoding_DefaultBinary =
+      new NodeId(UShort.MIN, uint(12089));
+
+  public static final NodeId XVType_Encoding_DefaultBinary = new NodeId(UShort.MIN, uint(12090));
+
+  public static final NodeId OpcUa_BinarySchema_AxisInformation =
+      new NodeId(UShort.MIN, uint(12091));
+
+  public static final NodeId OpcUa_BinarySchema_AxisInformation_DataTypeVersion =
+      new NodeId(UShort.MIN, uint(12092));
+
+  public static final NodeId OpcUa_BinarySchema_AxisInformation_DictionaryFragment =
+      new NodeId(UShort.MIN, uint(12093));
+
+  public static final NodeId OpcUa_BinarySchema_XVType = new NodeId(UShort.MIN, uint(12094));
+
+  public static final NodeId OpcUa_BinarySchema_XVType_DataTypeVersion =
+      new NodeId(UShort.MIN, uint(12095));
+
+  public static final NodeId OpcUa_BinarySchema_XVType_DictionaryFragment =
+      new NodeId(UShort.MIN, uint(12096));
+
+  public static final NodeId SessionsDiagnosticsSummaryType_ClientName_Placeholder =
+      new NodeId(UShort.MIN, uint(12097));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics =
+          new NodeId(UShort.MIN, uint(12098));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_SessionId =
+          new NodeId(UShort.MIN, uint(12099));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_SessionName =
+          new NodeId(UShort.MIN, uint(12100));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_ClientDescription =
+          new NodeId(UShort.MIN, uint(12101));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_ServerUri =
+          new NodeId(UShort.MIN, uint(12102));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_EndpointUrl =
+          new NodeId(UShort.MIN, uint(12103));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_LocaleIds =
+          new NodeId(UShort.MIN, uint(12104));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_ActualSessionTimeout =
+          new NodeId(UShort.MIN, uint(12105));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_MaxResponseMessageSize =
+          new NodeId(UShort.MIN, uint(12106));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_ClientConnectionTime =
+          new NodeId(UShort.MIN, uint(12107));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_ClientLastContactTime =
+          new NodeId(UShort.MIN, uint(12108));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_CurrentSubscriptionsCount =
+          new NodeId(UShort.MIN, uint(12109));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_CurrentMonitoredItemsCount =
+          new NodeId(UShort.MIN, uint(12110));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_CurrentPublishRequestsInQueue =
+          new NodeId(UShort.MIN, uint(12111));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_TotalRequestCount =
+          new NodeId(UShort.MIN, uint(12112));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_UnauthorizedRequestCount =
+          new NodeId(UShort.MIN, uint(12113));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_ReadCount =
+          new NodeId(UShort.MIN, uint(12114));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_HistoryReadCount =
+          new NodeId(UShort.MIN, uint(12115));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_WriteCount =
+          new NodeId(UShort.MIN, uint(12116));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_HistoryUpdateCount =
+          new NodeId(UShort.MIN, uint(12117));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_CallCount =
+          new NodeId(UShort.MIN, uint(12118));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_CreateMonitoredItemsCount =
+          new NodeId(UShort.MIN, uint(12119));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_ModifyMonitoredItemsCount =
+          new NodeId(UShort.MIN, uint(12120));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_SetMonitoringModeCount =
+          new NodeId(UShort.MIN, uint(12121));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_SetTriggeringCount =
+          new NodeId(UShort.MIN, uint(12122));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_DeleteMonitoredItemsCount =
+          new NodeId(UShort.MIN, uint(12123));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_CreateSubscriptionCount =
+          new NodeId(UShort.MIN, uint(12124));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_ModifySubscriptionCount =
+          new NodeId(UShort.MIN, uint(12125));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_SetPublishingModeCount =
+          new NodeId(UShort.MIN, uint(12126));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_PublishCount =
+          new NodeId(UShort.MIN, uint(12127));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_RepublishCount =
+          new NodeId(UShort.MIN, uint(12128));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_TransferSubscriptionsCount =
+          new NodeId(UShort.MIN, uint(12129));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_DeleteSubscriptionsCount =
+          new NodeId(UShort.MIN, uint(12130));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_AddNodesCount =
+          new NodeId(UShort.MIN, uint(12131));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_AddReferencesCount =
+          new NodeId(UShort.MIN, uint(12132));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_DeleteNodesCount =
+          new NodeId(UShort.MIN, uint(12133));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_DeleteReferencesCount =
+          new NodeId(UShort.MIN, uint(12134));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_BrowseCount =
+          new NodeId(UShort.MIN, uint(12135));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_BrowseNextCount =
+          new NodeId(UShort.MIN, uint(12136));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_TranslateBrowsePathsToNodeIdsCount =
+          new NodeId(UShort.MIN, uint(12137));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_QueryFirstCount =
+          new NodeId(UShort.MIN, uint(12138));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_QueryNextCount =
+          new NodeId(UShort.MIN, uint(12139));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_RegisterNodesCount =
+          new NodeId(UShort.MIN, uint(12140));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionDiagnostics_UnregisterNodesCount =
+          new NodeId(UShort.MIN, uint(12141));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionSecurityDiagnostics =
+          new NodeId(UShort.MIN, uint(12142));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionSecurityDiagnostics_SessionId =
+          new NodeId(UShort.MIN, uint(12143));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionSecurityDiagnostics_ClientUserIdOfSession =
+          new NodeId(UShort.MIN, uint(12144));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionSecurityDiagnostics_ClientUserIdHistory =
+          new NodeId(UShort.MIN, uint(12145));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionSecurityDiagnostics_AuthenticationMechanism =
+          new NodeId(UShort.MIN, uint(12146));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionSecurityDiagnostics_Encoding =
+          new NodeId(UShort.MIN, uint(12147));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionSecurityDiagnostics_TransportProtocol =
+          new NodeId(UShort.MIN, uint(12148));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionSecurityDiagnostics_SecurityMode =
+          new NodeId(UShort.MIN, uint(12149));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionSecurityDiagnostics_SecurityPolicyUri =
+          new NodeId(UShort.MIN, uint(12150));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SessionSecurityDiagnostics_ClientCertificate =
+          new NodeId(UShort.MIN, uint(12151));
+
+  public static final NodeId
+      SessionsDiagnosticsSummaryType_ClientName_Placeholder_SubscriptionDiagnosticsArray =
+          new NodeId(UShort.MIN, uint(12152));
+
+  public static final NodeId
+      ServerType_ServerCapabilities_OperationLimits_MaxNodesPerHistoryReadData =
+          new NodeId(UShort.MIN, uint(12153));
+
+  public static final NodeId
+      ServerType_ServerCapabilities_OperationLimits_MaxNodesPerHistoryReadEvents =
+          new NodeId(UShort.MIN, uint(12154));
+
+  public static final NodeId
+      ServerType_ServerCapabilities_OperationLimits_MaxNodesPerHistoryUpdateData =
+          new NodeId(UShort.MIN, uint(12155));
+
+  public static final NodeId
+      ServerType_ServerCapabilities_OperationLimits_MaxNodesPerHistoryUpdateEvents =
+          new NodeId(UShort.MIN, uint(12156));
+
+  public static final NodeId ServerCapabilitiesType_OperationLimits_MaxNodesPerHistoryReadData =
+      new NodeId(UShort.MIN, uint(12157));
+
+  public static final NodeId ServerCapabilitiesType_OperationLimits_MaxNodesPerHistoryReadEvents =
+      new NodeId(UShort.MIN, uint(12158));
+
+  public static final NodeId ServerCapabilitiesType_OperationLimits_MaxNodesPerHistoryUpdateData =
+      new NodeId(UShort.MIN, uint(12159));
+
+  public static final NodeId ServerCapabilitiesType_OperationLimits_MaxNodesPerHistoryUpdateEvents =
+      new NodeId(UShort.MIN, uint(12160));
+
+  public static final NodeId OperationLimitsType_MaxNodesPerHistoryReadData =
+      new NodeId(UShort.MIN, uint(12161));
+
+  public static final NodeId OperationLimitsType_MaxNodesPerHistoryReadEvents =
+      new NodeId(UShort.MIN, uint(12162));
+
+  public static final NodeId OperationLimitsType_MaxNodesPerHistoryUpdateData =
+      new NodeId(UShort.MIN, uint(12163));
+
+  public static final NodeId OperationLimitsType_MaxNodesPerHistoryUpdateEvents =
+      new NodeId(UShort.MIN, uint(12164));
+
+  public static final NodeId Server_ServerCapabilities_OperationLimits_MaxNodesPerHistoryReadData =
+      new NodeId(UShort.MIN, uint(12165));
+
+  public static final NodeId
+      Server_ServerCapabilities_OperationLimits_MaxNodesPerHistoryReadEvents =
+          new NodeId(UShort.MIN, uint(12166));
+
+  public static final NodeId
+      Server_ServerCapabilities_OperationLimits_MaxNodesPerHistoryUpdateData =
+          new NodeId(UShort.MIN, uint(12167));
+
+  public static final NodeId
+      Server_ServerCapabilities_OperationLimits_MaxNodesPerHistoryUpdateEvents =
+          new NodeId(UShort.MIN, uint(12168));
+
+  public static final NodeId NamingRuleType_EnumValues = new NodeId(UShort.MIN, uint(12169));
+
+  public static final NodeId ViewVersion = new NodeId(UShort.MIN, uint(12170));
+
+  public static final NodeId ComplexNumberType = new NodeId(UShort.MIN, uint(12171));
+
+  public static final NodeId DoubleComplexNumberType = new NodeId(UShort.MIN, uint(12172));
+
+  public static final NodeId ComplexNumberType_Encoding_DefaultXml =
+      new NodeId(UShort.MIN, uint(12173));
+
+  public static final NodeId DoubleComplexNumberType_Encoding_DefaultXml =
+      new NodeId(UShort.MIN, uint(12174));
+
+  public static final NodeId OpcUa_XmlSchema_ComplexNumberType =
+      new NodeId(UShort.MIN, uint(12175));
+
+  public static final NodeId OpcUa_XmlSchema_ComplexNumberType_DataTypeVersion =
+      new NodeId(UShort.MIN, uint(12176));
+
+  public static final NodeId OpcUa_XmlSchema_ComplexNumberType_DictionaryFragment =
+      new NodeId(UShort.MIN, uint(12177));
+
+  public static final NodeId OpcUa_XmlSchema_DoubleComplexNumberType =
+      new NodeId(UShort.MIN, uint(12178));
+
+  public static final NodeId OpcUa_XmlSchema_DoubleComplexNumberType_DataTypeVersion =
+      new NodeId(UShort.MIN, uint(12179));
+
+  public static final NodeId OpcUa_XmlSchema_DoubleComplexNumberType_DictionaryFragment =
+      new NodeId(UShort.MIN, uint(12180));
+
+  public static final NodeId ComplexNumberType_Encoding_DefaultBinary =
+      new NodeId(UShort.MIN, uint(12181));
+
+  public static final NodeId DoubleComplexNumberType_Encoding_DefaultBinary =
+      new NodeId(UShort.MIN, uint(12182));
+
+  public static final NodeId OpcUa_BinarySchema_ComplexNumberType =
+      new NodeId(UShort.MIN, uint(12183));
+
+  public static final NodeId OpcUa_BinarySchema_ComplexNumberType_DataTypeVersion =
+      new NodeId(UShort.MIN, uint(12184));
+
+  public static final NodeId OpcUa_BinarySchema_ComplexNumberType_DictionaryFragment =
+      new NodeId(UShort.MIN, uint(12185));
+
+  public static final NodeId OpcUa_BinarySchema_DoubleComplexNumberType =
+      new NodeId(UShort.MIN, uint(12186));
+
+  public static final NodeId OpcUa_BinarySchema_DoubleComplexNumberType_DataTypeVersion =
+      new NodeId(UShort.MIN, uint(12187));
+
+  public static final NodeId OpcUa_BinarySchema_DoubleComplexNumberType_DictionaryFragment =
+      new NodeId(UShort.MIN, uint(12188));
+
+  public static final NodeId ServerOnNetwork = new NodeId(UShort.MIN, uint(12189));
+
+  public static final NodeId FindServersOnNetworkRequest = new NodeId(UShort.MIN, uint(12190));
+
+  public static final NodeId FindServersOnNetworkResponse = new NodeId(UShort.MIN, uint(12191));
+
+  public static final NodeId RegisterServer2Request = new NodeId(UShort.MIN, uint(12193));
+
+  public static final NodeId RegisterServer2Response = new NodeId(UShort.MIN, uint(12194));
+
+  public static final NodeId ServerOnNetwork_Encoding_DefaultXml =
+      new NodeId(UShort.MIN, uint(12195));
+
+  public static final NodeId FindServersOnNetworkRequest_Encoding_DefaultXml =
+      new NodeId(UShort.MIN, uint(12196));
+
+  public static final NodeId FindServersOnNetworkResponse_Encoding_DefaultXml =
+      new NodeId(UShort.MIN, uint(12197));
+
+  public static final NodeId RegisterServer2Request_Encoding_DefaultXml =
+      new NodeId(UShort.MIN, uint(12199));
+
+  public static final NodeId RegisterServer2Response_Encoding_DefaultXml =
+      new NodeId(UShort.MIN, uint(12200));
+
+  public static final NodeId OpcUa_XmlSchema_ServerOnNetwork = new NodeId(UShort.MIN, uint(12201));
+
+  public static final NodeId OpcUa_XmlSchema_ServerOnNetwork_DataTypeVersion =
+      new NodeId(UShort.MIN, uint(12202));
+
+  public static final NodeId OpcUa_XmlSchema_ServerOnNetwork_DictionaryFragment =
+      new NodeId(UShort.MIN, uint(12203));
+
+  public static final NodeId ServerOnNetwork_Encoding_DefaultBinary =
+      new NodeId(UShort.MIN, uint(12207));
+
+  public static final NodeId FindServersOnNetworkRequest_Encoding_DefaultBinary =
+      new NodeId(UShort.MIN, uint(12208));
+
+  public static final NodeId FindServersOnNetworkResponse_Encoding_DefaultBinary =
+      new NodeId(UShort.MIN, uint(12209));
+
+  public static final NodeId RegisterServer2Request_Encoding_DefaultBinary =
+      new NodeId(UShort.MIN, uint(12211));
+
+  public static final NodeId RegisterServer2Response_Encoding_DefaultBinary =
+      new NodeId(UShort.MIN, uint(12212));
+
+  public static final NodeId OpcUa_BinarySchema_ServerOnNetwork =
+      new NodeId(UShort.MIN, uint(12213));
+
+  public static final NodeId OpcUa_BinarySchema_ServerOnNetwork_DataTypeVersion =
+      new NodeId(UShort.MIN, uint(12214));
+
+  public static final NodeId OpcUa_BinarySchema_ServerOnNetwork_DictionaryFragment =
+      new NodeId(UShort.MIN, uint(12215));
+
+  public static final NodeId ProgressEventType_Context = new NodeId(UShort.MIN, uint(12502));
+
+  public static final NodeId ProgressEventType_Progress = new NodeId(UShort.MIN, uint(12503));
+
+  public static final NodeId OpenWithMasksMethodType = new NodeId(UShort.MIN, uint(12513));
+
+  public static final NodeId OpenWithMasksMethodType_InputArguments =
+      new NodeId(UShort.MIN, uint(12514));
+
+  public static final NodeId OpenWithMasksMethodType_OutputArguments =
+      new NodeId(UShort.MIN, uint(12515));
+
+  public static final NodeId CloseAndUpdateMethodType = new NodeId(UShort.MIN, uint(12516));
+
+  public static final NodeId CloseAndUpdateMethodType_OutputArguments =
+      new NodeId(UShort.MIN, uint(12517));
+
+  public static final NodeId AddCertificateMethodType = new NodeId(UShort.MIN, uint(12518));
+
+  public static final NodeId AddCertificateMethodType_InputArguments =
+      new NodeId(UShort.MIN, uint(12519));
+
+  public static final NodeId RemoveCertificateMethodType = new NodeId(UShort.MIN, uint(12520));
+
+  public static final NodeId RemoveCertificateMethodType_InputArguments =
+      new NodeId(UShort.MIN, uint(12521));
+
+  public static final NodeId TrustListType = new NodeId(UShort.MIN, uint(12522));
+
+  public static final NodeId TrustListType_LastUpdateTime = new NodeId(UShort.MIN, uint(12542));
+
+  public static final NodeId TrustListType_OpenWithMasks = new NodeId(UShort.MIN, uint(12543));
+
+  public static final NodeId TrustListType_OpenWithMasks_InputArguments =
+      new NodeId(UShort.MIN, uint(12544));
+
+  public static final NodeId TrustListType_OpenWithMasks_OutputArguments =
+      new NodeId(UShort.MIN, uint(12545));
+
+  public static final NodeId TrustListType_CloseAndUpdate = new NodeId(UShort.MIN, uint(12546));
+
+  public static final NodeId TrustListType_CloseAndUpdate_OutputArguments =
+      new NodeId(UShort.MIN, uint(12547));
+
+  public static final NodeId TrustListType_AddCertificate = new NodeId(UShort.MIN, uint(12548));
+
+  public static final NodeId TrustListType_AddCertificate_InputArguments =
+      new NodeId(UShort.MIN, uint(12549));
+
+  public static final NodeId TrustListType_RemoveCertificate = new NodeId(UShort.MIN, uint(12550));
+
+  public static final NodeId TrustListType_RemoveCertificate_InputArguments =
+      new NodeId(UShort.MIN, uint(12551));
+
+  public static final NodeId TrustListMasks = new NodeId(UShort.MIN, uint(12552));
+
+  public static final NodeId TrustListMasks_EnumValues = new NodeId(UShort.MIN, uint(12553));
+
+  public static final NodeId TrustListDataType = new NodeId(UShort.MIN, uint(12554));
+
+  public static final NodeId CertificateGroupType = new NodeId(UShort.MIN, uint(12555));
+
+  public static final NodeId CertificateType = new NodeId(UShort.MIN, uint(12556));
+
+  public static final NodeId ApplicationCertificateType = new NodeId(UShort.MIN, uint(12557));
+
+  public static final NodeId HttpsCertificateType = new NodeId(UShort.MIN, uint(12558));
+
+  public static final NodeId RsaMinApplicationCertificateType = new NodeId(UShort.MIN, uint(12559));
+
+  public static final NodeId RsaSha256ApplicationCertificateType =
+      new NodeId(UShort.MIN, uint(12560));
+
+  public static final NodeId TrustListUpdatedAuditEventType = new NodeId(UShort.MIN, uint(12561));
+
+  public static final NodeId UpdateCertificateMethodType = new NodeId(UShort.MIN, uint(12578));
+
+  public static final NodeId UpdateCertificateMethodType_InputArguments =
+      new NodeId(UShort.MIN, uint(12579));
+
+  public static final NodeId UpdateCertificateMethodType_OutputArguments =
+      new NodeId(UShort.MIN, uint(12580));
+
+  public static final NodeId ServerConfigurationType = new NodeId(UShort.MIN, uint(12581));
+
+  public static final NodeId ServerConfigurationType_SupportedPrivateKeyFormats =
+      new NodeId(UShort.MIN, uint(12583));
+
+  public static final NodeId ServerConfigurationType_MaxTrustListSize =
+      new NodeId(UShort.MIN, uint(12584));
+
+  public static final NodeId ServerConfigurationType_MulticastDnsEnabled =
+      new NodeId(UShort.MIN, uint(12585));
+
+  public static final NodeId ServerConfigurationType_UpdateCertificate =
+      new NodeId(UShort.MIN, uint(12616));
+
+  public static final NodeId ServerConfigurationType_UpdateCertificate_InputArguments =
+      new NodeId(UShort.MIN, uint(12617));
+
+  public static final NodeId ServerConfigurationType_UpdateCertificate_OutputArguments =
+      new NodeId(UShort.MIN, uint(12618));
+
+  public static final NodeId CertificateUpdatedAuditEventType = new NodeId(UShort.MIN, uint(12620));
+
+  public static final NodeId ServerConfiguration = new NodeId(UShort.MIN, uint(12637));
+
+  public static final NodeId ServerConfiguration_SupportedPrivateKeyFormats =
+      new NodeId(UShort.MIN, uint(12639));
+
+  public static final NodeId ServerConfiguration_MaxTrustListSize =
+      new NodeId(UShort.MIN, uint(12640));
+
+  public static final NodeId ServerConfiguration_MulticastDnsEnabled =
+      new NodeId(UShort.MIN, uint(12641));
+
+  public static final NodeId
+      ServerConfiguration_CertificateGroups_DefaultApplicationGroup_TrustList =
+          new NodeId(UShort.MIN, uint(12642));
+
+  public static final NodeId
+      ServerConfiguration_CertificateGroups_DefaultApplicationGroup_TrustList_Size =
+          new NodeId(UShort.MIN, uint(12643));
+
+  public static final NodeId
+      ServerConfiguration_CertificateGroups_DefaultApplicationGroup_TrustList_OpenCount =
+          new NodeId(UShort.MIN, uint(12646));
+
+  public static final NodeId
+      ServerConfiguration_CertificateGroups_DefaultApplicationGroup_TrustList_Open =
+          new NodeId(UShort.MIN, uint(12647));
+
+  public static final NodeId
+      ServerConfiguration_CertificateGroups_DefaultApplicationGroup_TrustList_Open_InputArguments =
+          new NodeId(UShort.MIN, uint(12648));
+
+  public static final NodeId
+      ServerConfiguration_CertificateGroups_DefaultApplicationGroup_TrustList_Open_OutputArguments =
+          new NodeId(UShort.MIN, uint(12649));
+
+  public static final NodeId
+      ServerConfiguration_CertificateGroups_DefaultApplicationGroup_TrustList_Close =
+          new NodeId(UShort.MIN, uint(12650));
+
+  public static final NodeId
+      ServerConfiguration_CertificateGroups_DefaultApplicationGroup_TrustList_Close_InputArguments =
+          new NodeId(UShort.MIN, uint(12651));
+
+  public static final NodeId
+      ServerConfiguration_CertificateGroups_DefaultApplicationGroup_TrustList_Read =
+          new NodeId(UShort.MIN, uint(12652));
+
+  public static final NodeId
+      ServerConfiguration_CertificateGroups_DefaultApplicationGroup_TrustList_Read_InputArguments =
+          new NodeId(UShort.MIN, uint(12653));
+
+  public static final NodeId
+      ServerConfiguration_CertificateGroups_DefaultApplicationGroup_TrustList_Read_OutputArguments =
+          new NodeId(UShort.MIN, uint(12654));
+
+  public static final NodeId
+      ServerConfiguration_CertificateGroups_DefaultApplicationGroup_TrustList_Write =
+          new NodeId(UShort.MIN, uint(12655));
+
+  public static final NodeId
+      ServerConfiguration_CertificateGroups_DefaultApplicationGroup_TrustList_Write_InputArguments =
+          new NodeId(UShort.MIN, uint(12656));
+
+  public static final NodeId
+      ServerConfiguration_CertificateGroups_DefaultApplicationGroup_TrustList_GetPosition =
+          new NodeId(UShort.MIN, uint(12657));
+
+  public static final NodeId
+      ServerConfiguration_CertificateGroups_DefaultApplicationGroup_TrustList_GetPosition_InputArguments =
+          new NodeId(UShort.MIN, uint(12658));
+
+  public static final NodeId
+      ServerConfiguration_CertificateGroups_DefaultApplicationGroup_TrustList_GetPosition_OutputArguments =
+          new NodeId(UShort.MIN, uint(12659));
+
+  public static final NodeId
+      ServerConfiguration_CertificateGroups_DefaultApplicationGroup_TrustList_SetPosition =
+          new NodeId(UShort.MIN, uint(12660));
+
+  public static final NodeId
+      ServerConfiguration_CertificateGroups_DefaultApplicationGroup_TrustList_SetPosition_InputArguments =
+          new NodeId(UShort.MIN, uint(12661));
+
+  public static final NodeId
+      ServerConfiguration_CertificateGroups_DefaultApplicationGroup_TrustList_LastUpdateTime =
+          new NodeId(UShort.MIN, uint(12662));
+
+  public static final NodeId
+      ServerConfiguration_CertificateGroups_DefaultApplicationGroup_TrustList_OpenWithMasks =
+          new NodeId(UShort.MIN, uint(12663));
+
+  public static final NodeId
+      ServerConfiguration_CertificateGroups_DefaultApplicationGroup_TrustList_OpenWithMasks_InputArguments =
+          new NodeId(UShort.MIN, uint(12664));
+
+  public static final NodeId
+      ServerConfiguration_CertificateGroups_DefaultApplicationGroup_TrustList_OpenWithMasks_OutputArguments =
+          new NodeId(UShort.MIN, uint(12665));
+
+  public static final NodeId
+      ServerConfiguration_CertificateGroups_DefaultApplicationGroup_TrustList_CloseAndUpdate =
+          new NodeId(UShort.MIN, uint(12666));
+
+  public static final NodeId
+      ServerConfiguration_CertificateGroups_DefaultApplicationGroup_TrustList_CloseAndUpdate_OutputArguments =
+          new NodeId(UShort.MIN, uint(12667));
+
+  public static final NodeId
+      ServerConfiguration_CertificateGroups_DefaultApplicationGroup_TrustList_AddCertificate =
+          new NodeId(UShort.MIN, uint(12668));
+
+  public static final NodeId
+      ServerConfiguration_CertificateGroups_DefaultApplicationGroup_TrustList_AddCertificate_InputArguments =
+          new NodeId(UShort.MIN, uint(12669));
+
+  public static final NodeId
+      ServerConfiguration_CertificateGroups_DefaultApplicationGroup_TrustList_RemoveCertificate =
+          new NodeId(UShort.MIN, uint(12670));
+
+  public static final NodeId
+      ServerConfiguration_CertificateGroups_DefaultApplicationGroup_TrustList_RemoveCertificate_InputArguments =
+          new NodeId(UShort.MIN, uint(12671));
+
+  public static final NodeId TrustListDataType_Encoding_DefaultXml =
+      new NodeId(UShort.MIN, uint(12676));
+
+  public static final NodeId OpcUa_XmlSchema_TrustListDataType =
+      new NodeId(UShort.MIN, uint(12677));
+
+  public static final NodeId OpcUa_XmlSchema_TrustListDataType_DataTypeVersion =
+      new NodeId(UShort.MIN, uint(12678));
+
+  public static final NodeId OpcUa_XmlSchema_TrustListDataType_DictionaryFragment =
+      new NodeId(UShort.MIN, uint(12679));
+
+  public static final NodeId TrustListDataType_Encoding_DefaultBinary =
+      new NodeId(UShort.MIN, uint(12680));
+
+  public static final NodeId OpcUa_BinarySchema_TrustListDataType =
+      new NodeId(UShort.MIN, uint(12681));
+
+  public static final NodeId OpcUa_BinarySchema_TrustListDataType_DataTypeVersion =
+      new NodeId(UShort.MIN, uint(12682));
+
+  public static final NodeId OpcUa_BinarySchema_TrustListDataType_DictionaryFragment =
+      new NodeId(UShort.MIN, uint(12683));
+
+  public static final NodeId FileType_Writable = new NodeId(UShort.MIN, uint(12686));
+
+  public static final NodeId FileType_UserWritable = new NodeId(UShort.MIN, uint(12687));
+
+  public static final NodeId NamespaceMetadataType_NamespaceFile_Writable =
+      new NodeId(UShort.MIN, uint(12690));
+
+  public static final NodeId NamespaceMetadataType_NamespaceFile_UserWritable =
+      new NodeId(UShort.MIN, uint(12691));
+
+  public static final NodeId NamespacesType_NamespaceIdentifier_Placeholder_NamespaceFile_Writable =
+      new NodeId(UShort.MIN, uint(12692));
+
+  public static final NodeId
+      NamespacesType_NamespaceIdentifier_Placeholder_NamespaceFile_UserWritable =
+          new NodeId(UShort.MIN, uint(12693));
+
+  public static final NodeId CloseAndUpdateMethodType_InputArguments =
+      new NodeId(UShort.MIN, uint(12704));
+
+  public static final NodeId TrustListType_CloseAndUpdate_InputArguments =
+      new NodeId(UShort.MIN, uint(12705));
+
+  public static final NodeId ServerConfigurationType_ServerCapabilities =
+      new NodeId(UShort.MIN, uint(12708));
+
+  public static final NodeId ServerConfiguration_ServerCapabilities =
+      new NodeId(UShort.MIN, uint(12710));
+
+  public static final NodeId OpcUa_XmlSchema_RelativePathElement =
+      new NodeId(UShort.MIN, uint(12712));
+
+  public static final NodeId OpcUa_XmlSchema_RelativePathElement_DataTypeVersion =
+      new NodeId(UShort.MIN, uint(12713));
+
+  public static final NodeId OpcUa_XmlSchema_RelativePathElement_DictionaryFragment =
+      new NodeId(UShort.MIN, uint(12714));
+
+  public static final NodeId OpcUa_XmlSchema_RelativePath = new NodeId(UShort.MIN, uint(12715));
+
+  public static final NodeId OpcUa_XmlSchema_RelativePath_DataTypeVersion =
+      new NodeId(UShort.MIN, uint(12716));
+
+  public static final NodeId OpcUa_XmlSchema_RelativePath_DictionaryFragment =
+      new NodeId(UShort.MIN, uint(12717));
+
+  public static final NodeId OpcUa_BinarySchema_RelativePathElement =
+      new NodeId(UShort.MIN, uint(12718));
+
+  public static final NodeId OpcUa_BinarySchema_RelativePathElement_DataTypeVersion =
+      new NodeId(UShort.MIN, uint(12719));
+
+  public static final NodeId OpcUa_BinarySchema_RelativePathElement_DictionaryFragment =
+      new NodeId(UShort.MIN, uint(12720));
+
+  public static final NodeId OpcUa_BinarySchema_RelativePath = new NodeId(UShort.MIN, uint(12721));
+
+  public static final NodeId OpcUa_BinarySchema_RelativePath_DataTypeVersion =
+      new NodeId(UShort.MIN, uint(12722));
+
+  public static final NodeId OpcUa_BinarySchema_RelativePath_DictionaryFragment =
+      new NodeId(UShort.MIN, uint(12723));
 }
