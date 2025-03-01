@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ *  Copyright (c) 2025 the Eclipse Milo Authors
  *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *  This program and the accompanying materials are made
+ *  available under the terms of the Eclipse Public License 2.0
+ *  which is available at https://www.eclipse.org/legal/epl-2.0/
  *
- * SPDX-License-Identifier: EPL-2.0
+ *  SPDX-License-Identifier: EPL-2.0
  */
 
 package org.eclipse.milo.opcua.stack.core;
@@ -61,8 +61,8 @@ abstract class StatusCodes0 {
   @Description("The request message size exceeds limits set by the server.")
   public static final long Bad_RequestTooLarge = 0x80B80000L;
 
-  /** The response message size exceeds limits set by the client. */
-  @Description("The response message size exceeds limits set by the client.")
+  /** The response message size exceeds limits set by the client or server. */
+  @Description("The response message size exceeds limits set by the client or server.")
   public static final long Bad_ResponseTooLarge = 0x80B90000L;
 
   /** An unrecognized response was received from the server. */
@@ -257,6 +257,14 @@ abstract class StatusCodes0 {
           + " service or operation.")
   public static final long Bad_LicenseNotAvailable = 0x81100000L;
 
+  /** The Server does not have the resources to process the request at this time. */
+  @Description("The Server does not have the resources to process the request at this time.")
+  public static final long Bad_ServerTooBusy = 0x80EE0000L;
+
+  /** The log-on for the user succeeded but the user is required to change the password. */
+  @Description("The log-on for the user succeeded but the user is required to change the password.")
+  public static final long Good_PasswordChangeRequired = 0x00EF0000L;
+
   /** The subscription was transferred to another session. */
   @Description("The subscription was transferred to another session.")
   public static final long Good_SubscriptionTransferred = 0x002D0000L;
@@ -286,8 +294,12 @@ abstract class StatusCodes0 {
   @Description("Waiting for the server to obtain values from the underlying data source.")
   public static final long Bad_WaitingForInitialData = 0x80320000L;
 
-  /** The syntax of the node id is not valid. */
-  @Description("The syntax of the node id is not valid.")
+  /**
+   * The syntax the node id is not valid or refers to a node that is not valid for the operation.
+   */
+  @Description(
+      "The syntax the node id is not valid or refers to a node that is not valid for the"
+          + " operation.")
   public static final long Bad_NodeIdInvalid = 0x80330000L;
 
   /** The node id refers to a node that does not exist in the server address space. */
@@ -305,6 +317,10 @@ abstract class StatusCodes0 {
   /** No data exists within the range of indexes specified. */
   @Description("No data exists within the range of indexes specified.")
   public static final long Bad_IndexRangeNoData = 0x80370000L;
+
+  /** The written data does not match the IndexRange specified. */
+  @Description("The written data does not match the IndexRange specified.")
+  public static final long Bad_IndexRangeDataMismatch = 0x80EA0000L;
 
   /** The data encoding is invalid. */
   @Description("The data encoding is invalid.")
@@ -433,6 +449,14 @@ abstract class StatusCodes0 {
   @Description("The number was not accepted because of a numeric overflow.")
   public static final long Bad_NumericOverflow = 0x81120000L;
 
+  /** The locale in the requested write operation is not supported. */
+  @Description("The locale in the requested write operation is not supported.")
+  public static final long Bad_LocaleNotSupported = 0x80ED0000L;
+
+  /** The variable has no default value and no initial value. */
+  @Description("The variable has no default value and no initial value.")
+  public static final long Bad_NoValue = 0x80F00000L;
+
   /** The ServerUri is not a valid URI. */
   @Description("The ServerUri is not a valid URI.")
   public static final long Bad_ServerUriInvalid = 0x804F0000L;
@@ -447,7 +471,7 @@ abstract class StatusCodes0 {
 
   /** The semaphore file specified by the client is not valid. */
   @Description("The semaphore file specified by the client is not valid.")
-  public static final long Bad_SempahoreFileMissing = 0x80520000L;
+  public static final long Bad_SemaphoreFileMissing = 0x80520000L;
 
   /** The security token request type is not valid. */
   @Description("The security token request type is not valid.")
@@ -841,17 +865,26 @@ abstract class StatusCodes0 {
   public static final long Uncertain_EngineeringUnitsExceeded = 0x40940000L;
 
   /**
-   * The value is derived from multiple sources and has less than the required number of Good
+   * The data value is derived from multiple sources and has less than the required number of Good
    * sources.
    */
   @Description(
-      "The value is derived from multiple sources and has less than the required number of Good"
-          + " sources.")
+      "The data value is derived from multiple sources and has less than the required number of"
+          + " Good sources.")
   public static final long Uncertain_SubNormal = 0x40950000L;
 
   /** The value has been overridden. */
   @Description("The value has been overridden.")
   public static final long Good_LocalOverride = 0x00960000L;
+
+  /**
+   * The value is derived from multiple sources and has the required number of Good sources, but
+   * less than the full number of Good sources.
+   */
+  @Description(
+      "The value is derived from multiple sources and has the required number of Good sources, but"
+          + " less than the full number of Good sources.")
+  public static final long Good_SubNormal = 0x00EB0000L;
 
   /** This Condition refresh failed, a Condition refresh operation is already in progress. */
   @Description(
@@ -939,13 +972,9 @@ abstract class StatusCodes0 {
   @Description("The data or event was not successfully updated because no matching entry exists.")
   public static final long Bad_NoEntryExists = 0x80A00000L;
 
-  /**
-   * The client requested history using a timestamp format the server does not support (i.e
-   * requested ServerTimestamp when server only supports SourceTimestamp).
-   */
+  /** The Client requested history using a TimestampsToReturn the Server does not support. */
   @Description(
-      "The client requested history using a timestamp format the server does not support (i.e"
-          + " requested ServerTimestamp when server only supports SourceTimestamp).")
+      "The Client requested history using a TimestampsToReturn the Server does not support.")
   public static final long Bad_TimestampNotSupported = 0x80A10000L;
 
   /** The data or event was successfully inserted into the historical database. */
@@ -957,19 +986,20 @@ abstract class StatusCodes0 {
   public static final long Good_EntryReplaced = 0x00A30000L;
 
   /**
-   * The value is derived from multiple values and has less than the required number of Good values.
+   * The aggregate value is derived from multiple values and has less than the required number of
+   * Good values.
    */
   @Description(
-      "The value is derived from multiple values and has less than the required number of Good"
-          + " values.")
+      "The aggregate value is derived from multiple values and has less than the required number of"
+          + " Good values.")
   public static final long Uncertain_DataSubNormal = 0x40A40000L;
 
   /** No data exists for the requested time range or event filter. */
   @Description("No data exists for the requested time range or event filter.")
   public static final long Good_NoData = 0x00A50000L;
 
-  /** The data or event field was successfully replaced in the historical database. */
-  @Description("The data or event field was successfully replaced in the historical database.")
+  /** More data is available in the time range beyond the number of values requested. */
+  @Description("More data is available in the time range beyond the number of values requested.")
   public static final long Good_MoreData = 0x00A60000L;
 
   /** The requested number of Aggregates does not match the requested number of NodeIds. */
@@ -1009,6 +1039,10 @@ abstract class StatusCodes0 {
   @Description("The request has not been processed by the server yet.")
   public static final long Bad_RequestNotComplete = 0x81130000L;
 
+  /** The operation is not allowed because a transaction is in progress. */
+  @Description("The operation is not allowed because a transaction is in progress.")
+  public static final long Bad_TransactionPending = 0x80E80000L;
+
   /** The device identity needs a ticket before it can be accepted. */
   @Description("The device identity needs a ticket before it can be accepted.")
   public static final long Bad_TicketRequired = 0x811F0000L;
@@ -1016,6 +1050,19 @@ abstract class StatusCodes0 {
   /** The device identity needs a ticket before it can be accepted. */
   @Description("The device identity needs a ticket before it can be accepted.")
   public static final long Bad_TicketInvalid = 0x81200000L;
+
+  /**
+   * The requested operation is not allowed, because the Node is locked by a different application.
+   */
+  @Description(
+      "The requested operation is not allowed, because the Node is locked by a different"
+          + " application.")
+  public static final long Bad_Locked = 0x80E90000L;
+
+  /** The requested operation is not allowed, because the Node is not locked by the application. */
+  @Description(
+      "The requested operation is not allowed, because the Node is not locked by the application.")
+  public static final long Bad_RequiresLock = 0x80EC0000L;
 
   /** The value does not come from the real source and has been edited by the server. */
   @Description("The value does not come from the real source and has been edited by the server.")
