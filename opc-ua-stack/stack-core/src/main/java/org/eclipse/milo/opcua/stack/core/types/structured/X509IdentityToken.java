@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -34,11 +24,11 @@ import org.jspecify.annotations.Nullable;
 public class X509IdentityToken extends UserIdentityToken implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=325");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=327");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=327");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=326");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=326");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15143");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15143");
 
   private final ByteString certificateData;
 
@@ -133,8 +123,10 @@ public class X509IdentityToken extends UserIdentityToken implements UaStructured
 
     @Override
     public X509IdentityToken decodeType(EncodingContext context, UaDecoder decoder) {
-      String policyId = decoder.decodeString("PolicyId");
-      ByteString certificateData = decoder.decodeByteString("CertificateData");
+      final String policyId;
+      final ByteString certificateData;
+      policyId = decoder.decodeString("PolicyId");
+      certificateData = decoder.decodeByteString("CertificateData");
       return new X509IdentityToken(policyId, certificateData);
     }
 

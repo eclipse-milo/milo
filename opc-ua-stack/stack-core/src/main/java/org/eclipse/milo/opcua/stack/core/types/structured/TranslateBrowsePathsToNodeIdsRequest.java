@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -28,17 +18,17 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.8.4/#5.8.4.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.8.4/#5.8.4.2</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.9.4/#5.9.4.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.9.4/#5.9.4.2</a>
  */
 public class TranslateBrowsePathsToNodeIdsRequest extends Structure
     implements UaRequestMessageType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=552");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=554");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=554");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=553");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=553");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15193");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15193");
 
   private final RequestHeader requestHeader;
 
@@ -145,10 +135,10 @@ public class TranslateBrowsePathsToNodeIdsRequest extends Structure
     @Override
     public TranslateBrowsePathsToNodeIdsRequest decodeType(
         EncodingContext context, UaDecoder decoder) {
-      RequestHeader requestHeader =
-          (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
-      BrowsePath[] browsePaths =
-          (BrowsePath[]) decoder.decodeStructArray("BrowsePaths", BrowsePath.TYPE_ID);
+      final RequestHeader requestHeader;
+      final BrowsePath[] browsePaths;
+      requestHeader = (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
+      browsePaths = (BrowsePath[]) decoder.decodeStructArray("BrowsePaths", BrowsePath.TYPE_ID);
       return new TranslateBrowsePathsToNodeIdsRequest(requestHeader, browsePaths);
     }
 

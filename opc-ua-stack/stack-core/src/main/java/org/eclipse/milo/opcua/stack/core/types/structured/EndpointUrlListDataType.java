@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -33,11 +23,11 @@ import org.jspecify.annotations.Nullable;
 public class EndpointUrlListDataType extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=11943");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=11957");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=11957");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=11949");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=11949");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15363");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15363");
 
   private final String @Nullable [] endpointUrlList;
 
@@ -121,7 +111,8 @@ public class EndpointUrlListDataType extends Structure implements UaStructuredTy
 
     @Override
     public EndpointUrlListDataType decodeType(EncodingContext context, UaDecoder decoder) {
-      String[] endpointUrlList = decoder.decodeStringArray("EndpointUrlList");
+      final String[] endpointUrlList;
+      endpointUrlList = decoder.decodeStringArray("EndpointUrlList");
       return new EndpointUrlListDataType(endpointUrlList);
     }
 

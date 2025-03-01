@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -34,11 +24,11 @@ import org.jspecify.annotations.Nullable;
 public class PriorityMappingEntryType extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=25220");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=25239");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=25239");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=25243");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=25243");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=25247");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=25247");
 
   private final @Nullable String mappingUri;
 
@@ -180,10 +170,14 @@ public class PriorityMappingEntryType extends Structure implements UaStructuredT
 
     @Override
     public PriorityMappingEntryType decodeType(EncodingContext context, UaDecoder decoder) {
-      String mappingUri = decoder.decodeString("MappingUri");
-      String priorityLabel = decoder.decodeString("PriorityLabel");
-      UByte priorityValuePcp = decoder.decodeByte("PriorityValue_PCP");
-      UInteger priorityValueDscp = decoder.decodeUInt32("PriorityValue_DSCP");
+      final String mappingUri;
+      final String priorityLabel;
+      final UByte priorityValuePcp;
+      final UInteger priorityValueDscp;
+      mappingUri = decoder.decodeString("MappingUri");
+      priorityLabel = decoder.decodeString("PriorityLabel");
+      priorityValuePcp = decoder.decodeByte("PriorityValue_PCP");
+      priorityValueDscp = decoder.decodeUInt32("PriorityValue_DSCP");
       return new PriorityMappingEntryType(
           mappingUri, priorityLabel, priorityValuePcp, priorityValueDscp);
     }

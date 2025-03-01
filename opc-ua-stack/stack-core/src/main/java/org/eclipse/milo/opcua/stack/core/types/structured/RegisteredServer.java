@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -34,11 +24,11 @@ import org.jspecify.annotations.Nullable;
 public class RegisteredServer extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=432");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=434");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=434");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=433");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=433");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15102");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15102");
 
   private final @Nullable String serverUri;
 
@@ -256,14 +246,22 @@ public class RegisteredServer extends Structure implements UaStructuredType {
 
     @Override
     public RegisteredServer decodeType(EncodingContext context, UaDecoder decoder) {
-      String serverUri = decoder.decodeString("ServerUri");
-      String productUri = decoder.decodeString("ProductUri");
-      LocalizedText[] serverNames = decoder.decodeLocalizedTextArray("ServerNames");
-      ApplicationType serverType = ApplicationType.from(decoder.decodeEnum("ServerType"));
-      String gatewayServerUri = decoder.decodeString("GatewayServerUri");
-      String[] discoveryUrls = decoder.decodeStringArray("DiscoveryUrls");
-      String semaphoreFilePath = decoder.decodeString("SemaphoreFilePath");
-      Boolean isOnline = decoder.decodeBoolean("IsOnline");
+      final String serverUri;
+      final String productUri;
+      final LocalizedText[] serverNames;
+      final ApplicationType serverType;
+      final String gatewayServerUri;
+      final String[] discoveryUrls;
+      final String semaphoreFilePath;
+      final Boolean isOnline;
+      serverUri = decoder.decodeString("ServerUri");
+      productUri = decoder.decodeString("ProductUri");
+      serverNames = decoder.decodeLocalizedTextArray("ServerNames");
+      serverType = ApplicationType.from(decoder.decodeEnum("ServerType"));
+      gatewayServerUri = decoder.decodeString("GatewayServerUri");
+      discoveryUrls = decoder.decodeStringArray("DiscoveryUrls");
+      semaphoreFilePath = decoder.decodeString("SemaphoreFilePath");
+      isOnline = decoder.decodeBoolean("IsOnline");
       return new RegisteredServer(
           serverUri,
           productUri,

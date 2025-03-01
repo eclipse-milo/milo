@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -30,16 +20,16 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/6.2.3/#6.2.3.2.3">https://reference.opcfoundation.org/v105/Core/docs/Part14/6.2.3/#6.2.3.2.3</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/6.2.3/#6.2.3.2.4">https://reference.opcfoundation.org/v105/Core/docs/Part14/6.2.3/#6.2.3.2.4</a>
  */
 public class FieldMetaData extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=14524");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=14839");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=14839");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=14795");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=14795");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15051");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15051");
 
   private final @Nullable String name;
 
@@ -295,17 +285,26 @@ public class FieldMetaData extends Structure implements UaStructuredType {
 
     @Override
     public FieldMetaData decodeType(EncodingContext context, UaDecoder decoder) {
-      String name = decoder.decodeString("Name");
-      LocalizedText description = decoder.decodeLocalizedText("Description");
-      DataSetFieldFlags fieldFlags = new DataSetFieldFlags(decoder.decodeUInt16("FieldFlags"));
-      UByte builtInType = decoder.decodeByte("BuiltInType");
-      NodeId dataType = decoder.decodeNodeId("DataType");
-      Integer valueRank = decoder.decodeInt32("ValueRank");
-      UInteger[] arrayDimensions = decoder.decodeUInt32Array("ArrayDimensions");
-      UInteger maxStringLength = decoder.decodeUInt32("MaxStringLength");
-      UUID dataSetFieldId = decoder.decodeGuid("DataSetFieldId");
-      KeyValuePair[] properties =
-          (KeyValuePair[]) decoder.decodeStructArray("Properties", KeyValuePair.TYPE_ID);
+      final String name;
+      final LocalizedText description;
+      final DataSetFieldFlags fieldFlags;
+      final UByte builtInType;
+      final NodeId dataType;
+      final Integer valueRank;
+      final UInteger[] arrayDimensions;
+      final UInteger maxStringLength;
+      final UUID dataSetFieldId;
+      final KeyValuePair[] properties;
+      name = decoder.decodeString("Name");
+      description = decoder.decodeLocalizedText("Description");
+      fieldFlags = new DataSetFieldFlags(decoder.decodeUInt16("FieldFlags"));
+      builtInType = decoder.decodeByte("BuiltInType");
+      dataType = decoder.decodeNodeId("DataType");
+      valueRank = decoder.decodeInt32("ValueRank");
+      arrayDimensions = decoder.decodeUInt32Array("ArrayDimensions");
+      maxStringLength = decoder.decodeUInt32("MaxStringLength");
+      dataSetFieldId = decoder.decodeGuid("DataSetFieldId");
+      properties = (KeyValuePair[]) decoder.decodeStructArray("Properties", KeyValuePair.TYPE_ID);
       return new FieldMetaData(
           name,
           description,

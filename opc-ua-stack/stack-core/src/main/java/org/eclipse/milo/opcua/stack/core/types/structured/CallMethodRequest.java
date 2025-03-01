@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -29,16 +19,16 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.11.2/#5.11.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.11.2/#5.11.2.2</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.12.2/#5.12.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.12.2/#5.12.2.2</a>
  */
 public class CallMethodRequest extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=704");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=706");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=706");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=705");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=705");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15289");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15289");
 
   private final NodeId objectId;
 
@@ -158,9 +148,12 @@ public class CallMethodRequest extends Structure implements UaStructuredType {
 
     @Override
     public CallMethodRequest decodeType(EncodingContext context, UaDecoder decoder) {
-      NodeId objectId = decoder.decodeNodeId("ObjectId");
-      NodeId methodId = decoder.decodeNodeId("MethodId");
-      Variant[] inputArguments = decoder.decodeVariantArray("InputArguments");
+      final NodeId objectId;
+      final NodeId methodId;
+      final Variant[] inputArguments;
+      objectId = decoder.decodeNodeId("ObjectId");
+      methodId = decoder.decodeNodeId("MethodId");
+      inputArguments = decoder.decodeVariantArray("InputArguments");
       return new CallMethodRequest(objectId, methodId, inputArguments);
     }
 

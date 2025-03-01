@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -28,16 +18,16 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.4.3/#5.4.3.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.4.3/#5.4.3.2</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.5.3/#5.5.3.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.5.3/#5.5.3.2</a>
  */
 public class ServerOnNetwork extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=12189");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=12207");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=12207");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=12195");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=12195");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15095");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15095");
 
   private final UInteger recordId;
 
@@ -179,10 +169,14 @@ public class ServerOnNetwork extends Structure implements UaStructuredType {
 
     @Override
     public ServerOnNetwork decodeType(EncodingContext context, UaDecoder decoder) {
-      UInteger recordId = decoder.decodeUInt32("RecordId");
-      String serverName = decoder.decodeString("ServerName");
-      String discoveryUrl = decoder.decodeString("DiscoveryUrl");
-      String[] serverCapabilities = decoder.decodeStringArray("ServerCapabilities");
+      final UInteger recordId;
+      final String serverName;
+      final String discoveryUrl;
+      final String[] serverCapabilities;
+      recordId = decoder.decodeUInt32("RecordId");
+      serverName = decoder.decodeString("ServerName");
+      discoveryUrl = decoder.decodeString("DiscoveryUrl");
+      serverCapabilities = decoder.decodeStringArray("ServerCapabilities");
       return new ServerOnNetwork(recordId, serverName, discoveryUrl, serverCapabilities);
     }
 

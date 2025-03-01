@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -34,11 +24,11 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 public class ServerStatusDataType extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=862");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=864");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=864");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=863");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=863");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15367");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15367");
 
   private final DateTime startTime;
 
@@ -218,12 +208,18 @@ public class ServerStatusDataType extends Structure implements UaStructuredType 
 
     @Override
     public ServerStatusDataType decodeType(EncodingContext context, UaDecoder decoder) {
-      DateTime startTime = decoder.decodeDateTime("StartTime");
-      DateTime currentTime = decoder.decodeDateTime("CurrentTime");
-      ServerState state = ServerState.from(decoder.decodeEnum("State"));
-      BuildInfo buildInfo = (BuildInfo) decoder.decodeStruct("BuildInfo", BuildInfo.TYPE_ID);
-      UInteger secondsTillShutdown = decoder.decodeUInt32("SecondsTillShutdown");
-      LocalizedText shutdownReason = decoder.decodeLocalizedText("ShutdownReason");
+      final DateTime startTime;
+      final DateTime currentTime;
+      final ServerState state;
+      final BuildInfo buildInfo;
+      final UInteger secondsTillShutdown;
+      final LocalizedText shutdownReason;
+      startTime = decoder.decodeDateTime("StartTime");
+      currentTime = decoder.decodeDateTime("CurrentTime");
+      state = ServerState.from(decoder.decodeEnum("State"));
+      buildInfo = (BuildInfo) decoder.decodeStruct("BuildInfo", BuildInfo.TYPE_ID);
+      secondsTillShutdown = decoder.decodeUInt32("SecondsTillShutdown");
+      shutdownReason = decoder.decodeLocalizedText("ShutdownReason");
       return new ServerStatusDataType(
           startTime, currentTime, state, buildInfo, secondsTillShutdown, shutdownReason);
     }

@@ -1,17 +1,11 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
+import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
+import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
+import org.eclipse.milo.opcua.stack.core.encoding.UaEncoder;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
@@ -27,14 +21,14 @@ import org.jspecify.annotations.Nullable;
  * @see <a
  *     href="https://reference.opcfoundation.org/v105/Core/docs/Part18/4.4.3">https://reference.opcfoundation.org/v105/Core/docs/Part18/4.4.3</a>
  */
-public abstract class IdentityMappingRuleType extends Structure implements UaStructuredType {
+public class IdentityMappingRuleType extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=15634");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=15736");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15736");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=15728");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15728");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15042");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15042");
 
   private final IdentityCriteriaType criteriaType;
 
@@ -126,5 +120,28 @@ public abstract class IdentityMappingRuleType extends Structure implements UaStr
               UInteger.valueOf(0),
               false)
         });
+  }
+
+  public static final class Codec extends GenericDataTypeCodec<IdentityMappingRuleType> {
+    @Override
+    public Class<IdentityMappingRuleType> getType() {
+      return IdentityMappingRuleType.class;
+    }
+
+    @Override
+    public IdentityMappingRuleType decodeType(EncodingContext context, UaDecoder decoder) {
+      final IdentityCriteriaType criteriaType;
+      final String criteria;
+      criteriaType = IdentityCriteriaType.from(decoder.decodeEnum("CriteriaType"));
+      criteria = decoder.decodeString("Criteria");
+      return new IdentityMappingRuleType(criteriaType, criteria);
+    }
+
+    @Override
+    public void encodeType(
+        EncodingContext context, UaEncoder encoder, IdentityMappingRuleType value) {
+      encoder.encodeEnum("CriteriaType", value.getCriteriaType());
+      encoder.encodeString("Criteria", value.getCriteria());
+    }
   }
 }

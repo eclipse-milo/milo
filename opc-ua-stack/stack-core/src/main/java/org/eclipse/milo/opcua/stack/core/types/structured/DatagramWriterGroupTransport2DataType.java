@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -18,6 +8,7 @@ import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
 import org.eclipse.milo.opcua.stack.core.encoding.UaEncoder;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
@@ -35,11 +26,11 @@ public class DatagramWriterGroupTransport2DataType extends DatagramWriterGroupTr
     implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=23613");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=23865");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=23865");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=23933");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=23933");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=24001");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=24001");
 
   private final NetworkAddressDataType address;
 
@@ -154,7 +145,7 @@ public class DatagramWriterGroupTransport2DataType extends DatagramWriterGroupTr
     return new StructureDefinition(
         new NodeId(0, 23865),
         new NodeId(0, 15532),
-        StructureType.Structure,
+        StructureType.StructureWithSubtypedValues,
         new StructureField[] {
           new StructureField(
               "MessageRepeatCount",
@@ -179,7 +170,7 @@ public class DatagramWriterGroupTransport2DataType extends DatagramWriterGroupTr
               -1,
               null,
               UInteger.valueOf(0),
-              false),
+              true),
           new StructureField(
               "QosCategory",
               LocalizedText.NULL_VALUE,
@@ -195,7 +186,7 @@ public class DatagramWriterGroupTransport2DataType extends DatagramWriterGroupTr
               1,
               null,
               UInteger.valueOf(0),
-              false),
+              true),
           new StructureField(
               "DiscoveryAnnounceRate",
               LocalizedText.NULL_VALUE,
@@ -225,16 +216,33 @@ public class DatagramWriterGroupTransport2DataType extends DatagramWriterGroupTr
     @Override
     public DatagramWriterGroupTransport2DataType decodeType(
         EncodingContext context, UaDecoder decoder) {
-      UByte messageRepeatCount = decoder.decodeByte("MessageRepeatCount");
-      Double messageRepeatDelay = decoder.decodeDouble("MessageRepeatDelay");
-      NetworkAddressDataType address =
-          (NetworkAddressDataType) decoder.decodeStruct("Address", NetworkAddressDataType.TYPE_ID);
-      String qosCategory = decoder.decodeString("QosCategory");
-      TransmitQosDataType[] datagramQos =
-          (TransmitQosDataType[])
-              decoder.decodeStructArray("DatagramQos", TransmitQosDataType.TYPE_ID);
-      UInteger discoveryAnnounceRate = decoder.decodeUInt32("DiscoveryAnnounceRate");
-      String topic = decoder.decodeString("Topic");
+      final UByte messageRepeatCount;
+      final Double messageRepeatDelay;
+      final NetworkAddressDataType address;
+      final String qosCategory;
+      final TransmitQosDataType[] datagramQos;
+      final UInteger discoveryAnnounceRate;
+      final String topic;
+      messageRepeatCount = decoder.decodeByte("MessageRepeatCount");
+      messageRepeatDelay = decoder.decodeDouble("MessageRepeatDelay");
+      {
+        ExtensionObject xo = decoder.decodeExtensionObject("Address");
+        address = (NetworkAddressDataType) xo.decode(context);
+      }
+      qosCategory = decoder.decodeString("QosCategory");
+      {
+        ExtensionObject[] xos = decoder.decodeExtensionObjectArray("DatagramQos");
+        if (xos != null) {
+          datagramQos = new TransmitQosDataType[xos.length];
+          for (int i = 0; i < xos.length; i++) {
+            datagramQos[i] = (TransmitQosDataType) xos[i].decode(context);
+          }
+        } else {
+          datagramQos = null;
+        }
+      }
+      discoveryAnnounceRate = decoder.decodeUInt32("DiscoveryAnnounceRate");
+      topic = decoder.decodeString("Topic");
       return new DatagramWriterGroupTransport2DataType(
           messageRepeatCount,
           messageRepeatDelay,
@@ -250,9 +258,22 @@ public class DatagramWriterGroupTransport2DataType extends DatagramWriterGroupTr
         EncodingContext context, UaEncoder encoder, DatagramWriterGroupTransport2DataType value) {
       encoder.encodeByte("MessageRepeatCount", value.getMessageRepeatCount());
       encoder.encodeDouble("MessageRepeatDelay", value.getMessageRepeatDelay());
-      encoder.encodeStruct("Address", value.getAddress(), NetworkAddressDataType.TYPE_ID);
+      {
+        ExtensionObject xo = ExtensionObject.encode(context, value.getAddress());
+        encoder.encodeExtensionObject("Address", xo);
+      }
       encoder.encodeString("QosCategory", value.getQosCategory());
-      encoder.encodeStructArray("DatagramQos", value.getDatagramQos(), TransmitQosDataType.TYPE_ID);
+      {
+        ExtensionObject[] xos = null;
+        TransmitQosDataType[] datagramQos = value.getDatagramQos();
+        if (datagramQos != null) {
+          xos = new ExtensionObject[datagramQos.length];
+          for (int i = 0; i < xos.length; i++) {
+            xos[i] = ExtensionObject.encode(context, datagramQos[i]);
+          }
+        }
+        encoder.encodeExtensionObjectArray("DatagramQos", xos);
+      }
       encoder.encodeUInt32("DiscoveryAnnounceRate", value.getDiscoveryAnnounceRate());
       encoder.encodeString("Topic", value.getTopic());
     }

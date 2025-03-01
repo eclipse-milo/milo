@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -33,11 +23,11 @@ import org.jspecify.annotations.Nullable;
 public class PortableQualifiedName extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=24105");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=24108");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=24108");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=24120");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=24120");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=24132");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=24132");
 
   private final @Nullable String namespaceUri;
 
@@ -139,8 +129,10 @@ public class PortableQualifiedName extends Structure implements UaStructuredType
 
     @Override
     public PortableQualifiedName decodeType(EncodingContext context, UaDecoder decoder) {
-      String namespaceUri = decoder.decodeString("NamespaceUri");
-      String name = decoder.decodeString("Name");
+      final String namespaceUri;
+      final String name;
+      namespaceUri = decoder.decodeString("NamespaceUri");
+      name = decoder.decodeString("Name");
       return new PortableQualifiedName(namespaceUri, name);
     }
 

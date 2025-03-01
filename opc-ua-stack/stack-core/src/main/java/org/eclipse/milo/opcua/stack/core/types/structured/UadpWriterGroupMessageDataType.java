@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -35,11 +25,11 @@ public class UadpWriterGroupMessageDataType extends WriterGroupMessageDataType
     implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=15645");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=15715");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15715");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=16014");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=16014");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=16323");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=16323");
 
   private final UInteger groupVersion;
 
@@ -201,13 +191,17 @@ public class UadpWriterGroupMessageDataType extends WriterGroupMessageDataType
 
     @Override
     public UadpWriterGroupMessageDataType decodeType(EncodingContext context, UaDecoder decoder) {
-      UInteger groupVersion = decoder.decodeUInt32("GroupVersion");
-      DataSetOrderingType dataSetOrdering =
-          DataSetOrderingType.from(decoder.decodeEnum("DataSetOrdering"));
-      UadpNetworkMessageContentMask networkMessageContentMask =
+      final UInteger groupVersion;
+      final DataSetOrderingType dataSetOrdering;
+      final UadpNetworkMessageContentMask networkMessageContentMask;
+      final Double samplingOffset;
+      final Double[] publishingOffset;
+      groupVersion = decoder.decodeUInt32("GroupVersion");
+      dataSetOrdering = DataSetOrderingType.from(decoder.decodeEnum("DataSetOrdering"));
+      networkMessageContentMask =
           new UadpNetworkMessageContentMask(decoder.decodeUInt32("NetworkMessageContentMask"));
-      Double samplingOffset = decoder.decodeDouble("SamplingOffset");
-      Double[] publishingOffset = decoder.decodeDoubleArray("PublishingOffset");
+      samplingOffset = decoder.decodeDouble("SamplingOffset");
+      publishingOffset = decoder.decodeDoubleArray("PublishingOffset");
       return new UadpWriterGroupMessageDataType(
           groupVersion,
           dataSetOrdering,

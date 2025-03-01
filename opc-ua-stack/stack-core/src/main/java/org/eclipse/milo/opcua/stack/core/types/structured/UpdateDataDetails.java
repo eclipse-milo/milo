@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -30,16 +20,18 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v104/Core/docs/Part11/6.8.2/#6.8.2.1">https://reference.opcfoundation.org/v104/Core/docs/Part11/6.8.2/#6.8.2.1</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/6.9.2/#6.9.2.1">https://reference.opcfoundation.org/v105/Core/docs/Part11/6.9.2/#6.9.2.1</a>
  */
 public class UpdateDataDetails extends HistoryUpdateDetails implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=680");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=682");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=682");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=681");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=681");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15280");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15280");
+
+  private final NodeId nodeId;
 
   private final PerformUpdateType performInsertReplace;
 
@@ -47,7 +39,7 @@ public class UpdateDataDetails extends HistoryUpdateDetails implements UaStructu
 
   public UpdateDataDetails(
       NodeId nodeId, PerformUpdateType performInsertReplace, DataValue @Nullable [] updateValues) {
-    super(nodeId);
+    this.nodeId = nodeId;
     this.performInsertReplace = performInsertReplace;
     this.updateValues = updateValues;
   }
@@ -72,6 +64,10 @@ public class UpdateDataDetails extends HistoryUpdateDetails implements UaStructu
     return JSON_ENCODING_ID;
   }
 
+  public NodeId getNodeId() {
+    return nodeId;
+  }
+
   public PerformUpdateType getPerformInsertReplace() {
     return performInsertReplace;
   }
@@ -89,7 +85,7 @@ public class UpdateDataDetails extends HistoryUpdateDetails implements UaStructu
     }
     UpdateDataDetails that = (UpdateDataDetails) object;
     var eqb = new EqualsBuilder();
-    eqb.appendSuper(super.equals(object));
+    eqb.append(getNodeId(), that.getNodeId());
     eqb.append(getPerformInsertReplace(), that.getPerformInsertReplace());
     eqb.append(getUpdateValues(), that.getUpdateValues());
     return eqb.build();
@@ -98,15 +94,16 @@ public class UpdateDataDetails extends HistoryUpdateDetails implements UaStructu
   @Override
   public int hashCode() {
     var hcb = new HashCodeBuilder();
+    hcb.append(getNodeId());
     hcb.append(getPerformInsertReplace());
     hcb.append(getUpdateValues());
-    hcb.appendSuper(super.hashCode());
     return hcb.build();
   }
 
   @Override
   public String toString() {
     var joiner = new StringJoiner(", ", UpdateDataDetails.class.getSimpleName() + "[", "]");
+    joiner.add("nodeId=" + getNodeId());
     joiner.add("performInsertReplace=" + getPerformInsertReplace());
     joiner.add("updateValues=" + java.util.Arrays.toString(getUpdateValues()));
     return joiner.toString();
@@ -153,10 +150,12 @@ public class UpdateDataDetails extends HistoryUpdateDetails implements UaStructu
 
     @Override
     public UpdateDataDetails decodeType(EncodingContext context, UaDecoder decoder) {
-      NodeId nodeId = decoder.decodeNodeId("NodeId");
-      PerformUpdateType performInsertReplace =
-          PerformUpdateType.from(decoder.decodeEnum("PerformInsertReplace"));
-      DataValue[] updateValues = decoder.decodeDataValueArray("UpdateValues");
+      final NodeId nodeId;
+      final PerformUpdateType performInsertReplace;
+      final DataValue[] updateValues;
+      nodeId = decoder.decodeNodeId("NodeId");
+      performInsertReplace = PerformUpdateType.from(decoder.decodeEnum("PerformInsertReplace"));
+      updateValues = decoder.decodeDataValueArray("UpdateValues");
       return new UpdateDataDetails(nodeId, performInsertReplace, updateValues);
     }
 

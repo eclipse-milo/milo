@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -34,11 +24,11 @@ import org.jspecify.annotations.Nullable;
 public class PubSubKeyPushTargetDataType extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=25270");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=25530");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=25530");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=25546");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=25546");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=25562");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=25562");
 
   private final @Nullable String applicationUri;
 
@@ -276,17 +266,26 @@ public class PubSubKeyPushTargetDataType extends Structure implements UaStructur
 
     @Override
     public PubSubKeyPushTargetDataType decodeType(EncodingContext context, UaDecoder decoder) {
-      String applicationUri = decoder.decodeString("ApplicationUri");
-      String[] pushTargetFolder = decoder.decodeStringArray("PushTargetFolder");
-      String endpointUrl = decoder.decodeString("EndpointUrl");
-      String securityPolicyUri = decoder.decodeString("SecurityPolicyUri");
-      UserTokenPolicy userTokenType =
+      final String applicationUri;
+      final String[] pushTargetFolder;
+      final String endpointUrl;
+      final String securityPolicyUri;
+      final UserTokenPolicy userTokenType;
+      final UShort requestedKeyCount;
+      final Double retryInterval;
+      final KeyValuePair[] pushTargetProperties;
+      final String[] securityGroups;
+      applicationUri = decoder.decodeString("ApplicationUri");
+      pushTargetFolder = decoder.decodeStringArray("PushTargetFolder");
+      endpointUrl = decoder.decodeString("EndpointUrl");
+      securityPolicyUri = decoder.decodeString("SecurityPolicyUri");
+      userTokenType =
           (UserTokenPolicy) decoder.decodeStruct("UserTokenType", UserTokenPolicy.TYPE_ID);
-      UShort requestedKeyCount = decoder.decodeUInt16("RequestedKeyCount");
-      Double retryInterval = decoder.decodeDouble("RetryInterval");
-      KeyValuePair[] pushTargetProperties =
+      requestedKeyCount = decoder.decodeUInt16("RequestedKeyCount");
+      retryInterval = decoder.decodeDouble("RetryInterval");
+      pushTargetProperties =
           (KeyValuePair[]) decoder.decodeStructArray("PushTargetProperties", KeyValuePair.TYPE_ID);
-      String[] securityGroups = decoder.decodeStringArray("SecurityGroups");
+      securityGroups = decoder.decodeStringArray("SecurityGroups");
       return new PubSubKeyPushTargetDataType(
           applicationUri,
           pushTargetFolder,

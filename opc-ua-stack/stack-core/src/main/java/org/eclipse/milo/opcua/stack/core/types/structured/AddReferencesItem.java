@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -34,11 +24,11 @@ import org.jspecify.annotations.Nullable;
 public class AddReferencesItem extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=379");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=381");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=381");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=380");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=380");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15169");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15169");
 
   private final NodeId sourceNodeId;
 
@@ -218,12 +208,18 @@ public class AddReferencesItem extends Structure implements UaStructuredType {
 
     @Override
     public AddReferencesItem decodeType(EncodingContext context, UaDecoder decoder) {
-      NodeId sourceNodeId = decoder.decodeNodeId("SourceNodeId");
-      NodeId referenceTypeId = decoder.decodeNodeId("ReferenceTypeId");
-      Boolean isForward = decoder.decodeBoolean("IsForward");
-      String targetServerUri = decoder.decodeString("TargetServerUri");
-      ExpandedNodeId targetNodeId = decoder.decodeExpandedNodeId("TargetNodeId");
-      NodeClass targetNodeClass = NodeClass.from(decoder.decodeEnum("TargetNodeClass"));
+      final NodeId sourceNodeId;
+      final NodeId referenceTypeId;
+      final Boolean isForward;
+      final String targetServerUri;
+      final ExpandedNodeId targetNodeId;
+      final NodeClass targetNodeClass;
+      sourceNodeId = decoder.decodeNodeId("SourceNodeId");
+      referenceTypeId = decoder.decodeNodeId("ReferenceTypeId");
+      isForward = decoder.decodeBoolean("IsForward");
+      targetServerUri = decoder.decodeString("TargetServerUri");
+      targetNodeId = decoder.decodeExpandedNodeId("TargetNodeId");
+      targetNodeClass = NodeClass.from(decoder.decodeEnum("TargetNodeClass"));
       return new AddReferencesItem(
           sourceNodeId, referenceTypeId, isForward, targetServerUri, targetNodeId, targetNodeClass);
     }

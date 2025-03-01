@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -28,16 +18,16 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.4.2/#5.4.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.4.2/#5.4.2.2</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.5.2/#5.5.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.5.2/#5.5.2.2</a>
  */
 public class FindServersResponse extends Structure implements UaResponseMessageType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=423");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=425");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=425");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=424");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=424");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15094");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15094");
 
   private final ResponseHeader responseHeader;
 
@@ -140,9 +130,11 @@ public class FindServersResponse extends Structure implements UaResponseMessageT
 
     @Override
     public FindServersResponse decodeType(EncodingContext context, UaDecoder decoder) {
-      ResponseHeader responseHeader =
+      final ResponseHeader responseHeader;
+      final ApplicationDescription[] servers;
+      responseHeader =
           (ResponseHeader) decoder.decodeStruct("ResponseHeader", ResponseHeader.TYPE_ID);
-      ApplicationDescription[] servers =
+      servers =
           (ApplicationDescription[])
               decoder.decodeStructArray("Servers", ApplicationDescription.TYPE_ID);
       return new FindServersResponse(responseHeader, servers);

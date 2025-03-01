@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -18,6 +8,7 @@ import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
 import org.eclipse.milo.opcua.stack.core.encoding.UaEncoder;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -34,11 +25,11 @@ public class DatagramConnectionTransport2DataType extends DatagramConnectionTran
     implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=23612");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=23864");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=23864");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=23932");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=23932");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=24000");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=24000");
 
   private final UInteger discoveryAnnounceRate;
 
@@ -141,7 +132,7 @@ public class DatagramConnectionTransport2DataType extends DatagramConnectionTran
     return new StructureDefinition(
         new NodeId(0, 23864),
         new NodeId(0, 17467),
-        StructureType.Structure,
+        StructureType.StructureWithSubtypedValues,
         new StructureField[] {
           new StructureField(
               "DiscoveryAddress",
@@ -150,7 +141,7 @@ public class DatagramConnectionTransport2DataType extends DatagramConnectionTran
               -1,
               null,
               UInteger.valueOf(0),
-              false),
+              true),
           new StructureField(
               "DiscoveryAnnounceRate",
               LocalizedText.NULL_VALUE,
@@ -182,7 +173,7 @@ public class DatagramConnectionTransport2DataType extends DatagramConnectionTran
               1,
               null,
               UInteger.valueOf(0),
-              false)
+              true)
         });
   }
 
@@ -196,14 +187,29 @@ public class DatagramConnectionTransport2DataType extends DatagramConnectionTran
     @Override
     public DatagramConnectionTransport2DataType decodeType(
         EncodingContext context, UaDecoder decoder) {
-      NetworkAddressDataType discoveryAddress =
-          (NetworkAddressDataType)
-              decoder.decodeStruct("DiscoveryAddress", NetworkAddressDataType.TYPE_ID);
-      UInteger discoveryAnnounceRate = decoder.decodeUInt32("DiscoveryAnnounceRate");
-      UInteger discoveryMaxMessageSize = decoder.decodeUInt32("DiscoveryMaxMessageSize");
-      String qosCategory = decoder.decodeString("QosCategory");
-      QosDataType[] datagramQos =
-          (QosDataType[]) decoder.decodeStructArray("DatagramQos", QosDataType.TYPE_ID);
+      final NetworkAddressDataType discoveryAddress;
+      final UInteger discoveryAnnounceRate;
+      final UInteger discoveryMaxMessageSize;
+      final String qosCategory;
+      final QosDataType[] datagramQos;
+      {
+        ExtensionObject xo = decoder.decodeExtensionObject("DiscoveryAddress");
+        discoveryAddress = (NetworkAddressDataType) xo.decode(context);
+      }
+      discoveryAnnounceRate = decoder.decodeUInt32("DiscoveryAnnounceRate");
+      discoveryMaxMessageSize = decoder.decodeUInt32("DiscoveryMaxMessageSize");
+      qosCategory = decoder.decodeString("QosCategory");
+      {
+        ExtensionObject[] xos = decoder.decodeExtensionObjectArray("DatagramQos");
+        if (xos != null) {
+          datagramQos = new QosDataType[xos.length];
+          for (int i = 0; i < xos.length; i++) {
+            datagramQos[i] = (QosDataType) xos[i].decode(context);
+          }
+        } else {
+          datagramQos = null;
+        }
+      }
       return new DatagramConnectionTransport2DataType(
           discoveryAddress,
           discoveryAnnounceRate,
@@ -215,12 +221,24 @@ public class DatagramConnectionTransport2DataType extends DatagramConnectionTran
     @Override
     public void encodeType(
         EncodingContext context, UaEncoder encoder, DatagramConnectionTransport2DataType value) {
-      encoder.encodeStruct(
-          "DiscoveryAddress", value.getDiscoveryAddress(), NetworkAddressDataType.TYPE_ID);
+      {
+        ExtensionObject xo = ExtensionObject.encode(context, value.getDiscoveryAddress());
+        encoder.encodeExtensionObject("DiscoveryAddress", xo);
+      }
       encoder.encodeUInt32("DiscoveryAnnounceRate", value.getDiscoveryAnnounceRate());
       encoder.encodeUInt32("DiscoveryMaxMessageSize", value.getDiscoveryMaxMessageSize());
       encoder.encodeString("QosCategory", value.getQosCategory());
-      encoder.encodeStructArray("DatagramQos", value.getDatagramQos(), QosDataType.TYPE_ID);
+      {
+        ExtensionObject[] xos = null;
+        QosDataType[] datagramQos = value.getDatagramQos();
+        if (datagramQos != null) {
+          xos = new ExtensionObject[datagramQos.length];
+          for (int i = 0; i < xos.length; i++) {
+            xos[i] = ExtensionObject.encode(context, datagramQos[i]);
+          }
+        }
+        encoder.encodeExtensionObjectArray("DatagramQos", xos);
+      }
     }
   }
 }

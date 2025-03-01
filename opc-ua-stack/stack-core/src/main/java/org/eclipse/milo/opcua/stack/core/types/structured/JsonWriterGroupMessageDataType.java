@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -33,11 +23,11 @@ public class JsonWriterGroupMessageDataType extends WriterGroupMessageDataType
     implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=15657");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=15719");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15719");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=16017");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=16017");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=16393");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=16393");
 
   private final JsonNetworkMessageContentMask networkMessageContentMask;
 
@@ -122,7 +112,8 @@ public class JsonWriterGroupMessageDataType extends WriterGroupMessageDataType
 
     @Override
     public JsonWriterGroupMessageDataType decodeType(EncodingContext context, UaDecoder decoder) {
-      JsonNetworkMessageContentMask networkMessageContentMask =
+      final JsonNetworkMessageContentMask networkMessageContentMask;
+      networkMessageContentMask =
           new JsonNetworkMessageContentMask(decoder.decodeUInt32("NetworkMessageContentMask"));
       return new JsonWriterGroupMessageDataType(networkMessageContentMask);
     }

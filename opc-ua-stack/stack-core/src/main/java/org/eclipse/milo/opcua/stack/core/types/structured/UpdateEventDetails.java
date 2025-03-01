@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -29,16 +19,18 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v104/Core/docs/Part11/6.8.4/#6.8.4.1">https://reference.opcfoundation.org/v104/Core/docs/Part11/6.8.4/#6.8.4.1</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/6.9.4/#6.9.4.1">https://reference.opcfoundation.org/v105/Core/docs/Part11/6.9.4/#6.9.4.1</a>
  */
 public class UpdateEventDetails extends HistoryUpdateDetails implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=683");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=685");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=685");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=684");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=684");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15282");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15282");
+
+  private final NodeId nodeId;
 
   private final PerformUpdateType performInsertReplace;
 
@@ -51,7 +43,7 @@ public class UpdateEventDetails extends HistoryUpdateDetails implements UaStruct
       PerformUpdateType performInsertReplace,
       EventFilter filter,
       HistoryEventFieldList @Nullable [] eventData) {
-    super(nodeId);
+    this.nodeId = nodeId;
     this.performInsertReplace = performInsertReplace;
     this.filter = filter;
     this.eventData = eventData;
@@ -77,6 +69,10 @@ public class UpdateEventDetails extends HistoryUpdateDetails implements UaStruct
     return JSON_ENCODING_ID;
   }
 
+  public NodeId getNodeId() {
+    return nodeId;
+  }
+
   public PerformUpdateType getPerformInsertReplace() {
     return performInsertReplace;
   }
@@ -98,7 +94,7 @@ public class UpdateEventDetails extends HistoryUpdateDetails implements UaStruct
     }
     UpdateEventDetails that = (UpdateEventDetails) object;
     var eqb = new EqualsBuilder();
-    eqb.appendSuper(super.equals(object));
+    eqb.append(getNodeId(), that.getNodeId());
     eqb.append(getPerformInsertReplace(), that.getPerformInsertReplace());
     eqb.append(getFilter(), that.getFilter());
     eqb.append(getEventData(), that.getEventData());
@@ -108,16 +104,17 @@ public class UpdateEventDetails extends HistoryUpdateDetails implements UaStruct
   @Override
   public int hashCode() {
     var hcb = new HashCodeBuilder();
+    hcb.append(getNodeId());
     hcb.append(getPerformInsertReplace());
     hcb.append(getFilter());
     hcb.append(getEventData());
-    hcb.appendSuper(super.hashCode());
     return hcb.build();
   }
 
   @Override
   public String toString() {
     var joiner = new StringJoiner(", ", UpdateEventDetails.class.getSimpleName() + "[", "]");
+    joiner.add("nodeId=" + getNodeId());
     joiner.add("performInsertReplace=" + getPerformInsertReplace());
     joiner.add("filter=" + getFilter());
     joiner.add("eventData=" + java.util.Arrays.toString(getEventData()));
@@ -173,11 +170,14 @@ public class UpdateEventDetails extends HistoryUpdateDetails implements UaStruct
 
     @Override
     public UpdateEventDetails decodeType(EncodingContext context, UaDecoder decoder) {
-      NodeId nodeId = decoder.decodeNodeId("NodeId");
-      PerformUpdateType performInsertReplace =
-          PerformUpdateType.from(decoder.decodeEnum("PerformInsertReplace"));
-      EventFilter filter = (EventFilter) decoder.decodeStruct("Filter", EventFilter.TYPE_ID);
-      HistoryEventFieldList[] eventData =
+      final NodeId nodeId;
+      final PerformUpdateType performInsertReplace;
+      final EventFilter filter;
+      final HistoryEventFieldList[] eventData;
+      nodeId = decoder.decodeNodeId("NodeId");
+      performInsertReplace = PerformUpdateType.from(decoder.decodeEnum("PerformInsertReplace"));
+      filter = (EventFilter) decoder.decodeStruct("Filter", EventFilter.TYPE_ID);
+      eventData =
           (HistoryEventFieldList[])
               decoder.decodeStructArray("EventData", HistoryEventFieldList.TYPE_ID);
       return new UpdateEventDetails(nodeId, performInsertReplace, filter, eventData);

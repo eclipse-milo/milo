@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -35,11 +25,11 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 public class FieldTargetDataType extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=14744");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=14848");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=14848");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=14804");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=14804");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15061");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15061");
 
   private final UUID dataSetFieldId;
 
@@ -238,14 +228,21 @@ public class FieldTargetDataType extends Structure implements UaStructuredType {
 
     @Override
     public FieldTargetDataType decodeType(EncodingContext context, UaDecoder decoder) {
-      UUID dataSetFieldId = decoder.decodeGuid("DataSetFieldId");
-      String receiverIndexRange = decoder.decodeString("ReceiverIndexRange");
-      NodeId targetNodeId = decoder.decodeNodeId("TargetNodeId");
-      UInteger attributeId = decoder.decodeUInt32("AttributeId");
-      String writeIndexRange = decoder.decodeString("WriteIndexRange");
-      OverrideValueHandling overrideValueHandling =
+      final UUID dataSetFieldId;
+      final String receiverIndexRange;
+      final NodeId targetNodeId;
+      final UInteger attributeId;
+      final String writeIndexRange;
+      final OverrideValueHandling overrideValueHandling;
+      final Variant overrideValue;
+      dataSetFieldId = decoder.decodeGuid("DataSetFieldId");
+      receiverIndexRange = decoder.decodeString("ReceiverIndexRange");
+      targetNodeId = decoder.decodeNodeId("TargetNodeId");
+      attributeId = decoder.decodeUInt32("AttributeId");
+      writeIndexRange = decoder.decodeString("WriteIndexRange");
+      overrideValueHandling =
           OverrideValueHandling.from(decoder.decodeEnum("OverrideValueHandling"));
-      Variant overrideValue = decoder.decodeVariant("OverrideValue");
+      overrideValue = decoder.decodeVariant("OverrideValue");
       return new FieldTargetDataType(
           dataSetFieldId,
           receiverIndexRange,

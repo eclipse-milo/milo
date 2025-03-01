@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -32,11 +22,11 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 public class MethodAttributes extends NodeAttributes implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=358");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=360");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=360");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=359");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=359");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15157");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15157");
 
   private final Boolean executable;
 
@@ -188,13 +178,20 @@ public class MethodAttributes extends NodeAttributes implements UaStructuredType
 
     @Override
     public MethodAttributes decodeType(EncodingContext context, UaDecoder decoder) {
-      UInteger specifiedAttributes = decoder.decodeUInt32("SpecifiedAttributes");
-      LocalizedText displayName = decoder.decodeLocalizedText("DisplayName");
-      LocalizedText description = decoder.decodeLocalizedText("Description");
-      UInteger writeMask = decoder.decodeUInt32("WriteMask");
-      UInteger userWriteMask = decoder.decodeUInt32("UserWriteMask");
-      Boolean executable = decoder.decodeBoolean("Executable");
-      Boolean userExecutable = decoder.decodeBoolean("UserExecutable");
+      final UInteger specifiedAttributes;
+      final LocalizedText displayName;
+      final LocalizedText description;
+      final UInteger writeMask;
+      final UInteger userWriteMask;
+      final Boolean executable;
+      final Boolean userExecutable;
+      specifiedAttributes = decoder.decodeUInt32("SpecifiedAttributes");
+      displayName = decoder.decodeLocalizedText("DisplayName");
+      description = decoder.decodeLocalizedText("Description");
+      writeMask = decoder.decodeUInt32("WriteMask");
+      userWriteMask = decoder.decodeUInt32("UserWriteMask");
+      executable = decoder.decodeBoolean("Executable");
+      userExecutable = decoder.decodeBoolean("UserExecutable");
       return new MethodAttributes(
           specifiedAttributes,
           displayName,

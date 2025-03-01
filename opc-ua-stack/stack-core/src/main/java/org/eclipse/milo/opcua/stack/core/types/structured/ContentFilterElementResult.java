@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -35,11 +25,11 @@ import org.jspecify.annotations.Nullable;
 public class ContentFilterElementResult extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=604");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=606");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=606");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=605");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=605");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15211");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15211");
 
   private final StatusCode statusCode;
 
@@ -163,10 +153,12 @@ public class ContentFilterElementResult extends Structure implements UaStructure
 
     @Override
     public ContentFilterElementResult decodeType(EncodingContext context, UaDecoder decoder) {
-      StatusCode statusCode = decoder.decodeStatusCode("StatusCode");
-      StatusCode[] operandStatusCodes = decoder.decodeStatusCodeArray("OperandStatusCodes");
-      DiagnosticInfo[] operandDiagnosticInfos =
-          decoder.decodeDiagnosticInfoArray("OperandDiagnosticInfos");
+      final StatusCode statusCode;
+      final StatusCode[] operandStatusCodes;
+      final DiagnosticInfo[] operandDiagnosticInfos;
+      statusCode = decoder.decodeStatusCode("StatusCode");
+      operandStatusCodes = decoder.decodeStatusCodeArray("OperandStatusCodes");
+      operandDiagnosticInfos = decoder.decodeDiagnosticInfoArray("OperandDiagnosticInfos");
       return new ContentFilterElementResult(statusCode, operandStatusCodes, operandDiagnosticInfos);
     }
 

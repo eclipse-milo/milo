@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -32,11 +22,11 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 public class Range extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=884");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=886");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=886");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=885");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=885");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15375");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15375");
 
   private final Double low;
 
@@ -138,8 +128,10 @@ public class Range extends Structure implements UaStructuredType {
 
     @Override
     public Range decodeType(EncodingContext context, UaDecoder decoder) {
-      Double low = decoder.decodeDouble("Low");
-      Double high = decoder.decodeDouble("High");
+      final Double low;
+      final Double high;
+      low = decoder.decodeDouble("Low");
+      high = decoder.decodeDouble("High");
       return new Range(low, high);
     }
 

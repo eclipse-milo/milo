@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -27,16 +17,16 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.6.4/#5.6.4.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.6.4/#5.6.4.2</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.7.4/#5.7.4.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.7.4/#5.7.4.2</a>
  */
 public class CloseSessionRequest extends Structure implements UaRequestMessageType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=471");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=473");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=473");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=472");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=472");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15147");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15147");
 
   private final RequestHeader requestHeader;
 
@@ -138,9 +128,10 @@ public class CloseSessionRequest extends Structure implements UaRequestMessageTy
 
     @Override
     public CloseSessionRequest decodeType(EncodingContext context, UaDecoder decoder) {
-      RequestHeader requestHeader =
-          (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
-      Boolean deleteSubscriptions = decoder.decodeBoolean("DeleteSubscriptions");
+      final RequestHeader requestHeader;
+      final Boolean deleteSubscriptions;
+      requestHeader = (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
+      deleteSubscriptions = decoder.decodeBoolean("DeleteSubscriptions");
       return new CloseSessionRequest(requestHeader, deleteSubscriptions);
     }
 

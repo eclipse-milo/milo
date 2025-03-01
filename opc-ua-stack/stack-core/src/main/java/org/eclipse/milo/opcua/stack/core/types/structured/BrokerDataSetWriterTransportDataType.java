@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -35,11 +25,11 @@ public class BrokerDataSetWriterTransportDataType extends DataSetWriterTransport
     implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=15669");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=15729");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15729");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=16022");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=16022");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=16525");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=16525");
 
   private final @Nullable String queueName;
 
@@ -223,13 +213,19 @@ public class BrokerDataSetWriterTransportDataType extends DataSetWriterTransport
     @Override
     public BrokerDataSetWriterTransportDataType decodeType(
         EncodingContext context, UaDecoder decoder) {
-      String queueName = decoder.decodeString("QueueName");
-      String resourceUri = decoder.decodeString("ResourceUri");
-      String authenticationProfileUri = decoder.decodeString("AuthenticationProfileUri");
-      BrokerTransportQualityOfService requestedDeliveryGuarantee =
+      final String queueName;
+      final String resourceUri;
+      final String authenticationProfileUri;
+      final BrokerTransportQualityOfService requestedDeliveryGuarantee;
+      final String metaDataQueueName;
+      final Double metaDataUpdateTime;
+      queueName = decoder.decodeString("QueueName");
+      resourceUri = decoder.decodeString("ResourceUri");
+      authenticationProfileUri = decoder.decodeString("AuthenticationProfileUri");
+      requestedDeliveryGuarantee =
           BrokerTransportQualityOfService.from(decoder.decodeEnum("RequestedDeliveryGuarantee"));
-      String metaDataQueueName = decoder.decodeString("MetaDataQueueName");
-      Double metaDataUpdateTime = decoder.decodeDouble("MetaDataUpdateTime");
+      metaDataQueueName = decoder.decodeString("MetaDataQueueName");
+      metaDataUpdateTime = decoder.decodeDouble("MetaDataUpdateTime");
       return new BrokerDataSetWriterTransportDataType(
           queueName,
           resourceUri,

@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -28,16 +18,16 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.9.3/#5.9.3.1">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.9.3/#5.9.3.1</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.10.3/#5.10.3.1">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.10.3/#5.10.3.1</a>
  */
 public class NodeTypeDescription extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=573");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=575");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=575");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=574");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=574");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15201");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15201");
 
   private final ExpandedNodeId typeDefinitionNode;
 
@@ -160,9 +150,12 @@ public class NodeTypeDescription extends Structure implements UaStructuredType {
 
     @Override
     public NodeTypeDescription decodeType(EncodingContext context, UaDecoder decoder) {
-      ExpandedNodeId typeDefinitionNode = decoder.decodeExpandedNodeId("TypeDefinitionNode");
-      Boolean includeSubTypes = decoder.decodeBoolean("IncludeSubTypes");
-      QueryDataDescription[] dataToReturn =
+      final ExpandedNodeId typeDefinitionNode;
+      final Boolean includeSubTypes;
+      final QueryDataDescription[] dataToReturn;
+      typeDefinitionNode = decoder.decodeExpandedNodeId("TypeDefinitionNode");
+      includeSubTypes = decoder.decodeBoolean("IncludeSubTypes");
+      dataToReturn =
           (QueryDataDescription[])
               decoder.decodeStructArray("DataToReturn", QueryDataDescription.TYPE_ID);
       return new NodeTypeDescription(typeDefinitionNode, includeSubTypes, dataToReturn);

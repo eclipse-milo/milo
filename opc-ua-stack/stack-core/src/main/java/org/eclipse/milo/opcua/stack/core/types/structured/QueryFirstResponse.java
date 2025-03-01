@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -30,16 +20,16 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.9.3/#5.9.3.1">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.9.3/#5.9.3.1</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.10.3/#5.10.3.1">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.10.3/#5.10.3.1</a>
  */
 public class QueryFirstResponse extends Structure implements UaResponseMessageType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=616");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=618");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=618");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=617");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=617");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15252");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15252");
 
   private final ResponseHeader responseHeader;
 
@@ -219,15 +209,21 @@ public class QueryFirstResponse extends Structure implements UaResponseMessageTy
 
     @Override
     public QueryFirstResponse decodeType(EncodingContext context, UaDecoder decoder) {
-      ResponseHeader responseHeader =
+      final ResponseHeader responseHeader;
+      final QueryDataSet[] queryDataSets;
+      final ByteString continuationPoint;
+      final ParsingResult[] parsingResults;
+      final DiagnosticInfo[] diagnosticInfos;
+      final ContentFilterResult filterResult;
+      responseHeader =
           (ResponseHeader) decoder.decodeStruct("ResponseHeader", ResponseHeader.TYPE_ID);
-      QueryDataSet[] queryDataSets =
+      queryDataSets =
           (QueryDataSet[]) decoder.decodeStructArray("QueryDataSets", QueryDataSet.TYPE_ID);
-      ByteString continuationPoint = decoder.decodeByteString("ContinuationPoint");
-      ParsingResult[] parsingResults =
+      continuationPoint = decoder.decodeByteString("ContinuationPoint");
+      parsingResults =
           (ParsingResult[]) decoder.decodeStructArray("ParsingResults", ParsingResult.TYPE_ID);
-      DiagnosticInfo[] diagnosticInfos = decoder.decodeDiagnosticInfoArray("DiagnosticInfos");
-      ContentFilterResult filterResult =
+      diagnosticInfos = decoder.decodeDiagnosticInfoArray("DiagnosticInfos");
+      filterResult =
           (ContentFilterResult) decoder.decodeStruct("FilterResult", ContentFilterResult.TYPE_ID);
       return new QueryFirstResponse(
           responseHeader,

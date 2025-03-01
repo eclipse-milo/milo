@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -34,11 +24,11 @@ import org.jspecify.annotations.Nullable;
 public class ContentFilterResult extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=607");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=609");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=609");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=608");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=608");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15228");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15228");
 
   private final ContentFilterElementResult @Nullable [] elementResults;
 
@@ -142,11 +132,12 @@ public class ContentFilterResult extends Structure implements UaStructuredType {
 
     @Override
     public ContentFilterResult decodeType(EncodingContext context, UaDecoder decoder) {
-      ContentFilterElementResult[] elementResults =
+      final ContentFilterElementResult[] elementResults;
+      final DiagnosticInfo[] elementDiagnosticInfos;
+      elementResults =
           (ContentFilterElementResult[])
               decoder.decodeStructArray("ElementResults", ContentFilterElementResult.TYPE_ID);
-      DiagnosticInfo[] elementDiagnosticInfos =
-          decoder.decodeDiagnosticInfoArray("ElementDiagnosticInfos");
+      elementDiagnosticInfos = decoder.decodeDiagnosticInfoArray("ElementDiagnosticInfos");
       return new ContentFilterResult(elementResults, elementDiagnosticInfos);
     }
 

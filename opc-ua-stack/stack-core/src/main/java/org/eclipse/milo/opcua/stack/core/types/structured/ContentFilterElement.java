@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -35,11 +25,11 @@ import org.jspecify.annotations.Nullable;
 public class ContentFilterElement extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=583");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=585");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=585");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=584");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=584");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15204");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15204");
 
   private final FilterOperator filterOperator;
 
@@ -142,8 +132,10 @@ public class ContentFilterElement extends Structure implements UaStructuredType 
 
     @Override
     public ContentFilterElement decodeType(EncodingContext context, UaDecoder decoder) {
-      FilterOperator filterOperator = FilterOperator.from(decoder.decodeEnum("FilterOperator"));
-      ExtensionObject[] filterOperands = decoder.decodeExtensionObjectArray("FilterOperands");
+      final FilterOperator filterOperator;
+      final ExtensionObject[] filterOperands;
+      filterOperator = FilterOperator.from(decoder.decodeEnum("FilterOperator"));
+      filterOperands = decoder.decodeExtensionObjectArray("FilterOperands");
       return new ContentFilterElement(filterOperator, filterOperands);
     }
 

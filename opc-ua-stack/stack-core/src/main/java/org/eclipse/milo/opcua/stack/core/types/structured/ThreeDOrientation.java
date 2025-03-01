@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -32,11 +22,11 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 public class ThreeDOrientation extends Orientation implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=18812");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=18821");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=18821");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=18857");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=18857");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=19070");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=19070");
 
   private final Double a;
 
@@ -156,9 +146,12 @@ public class ThreeDOrientation extends Orientation implements UaStructuredType {
 
     @Override
     public ThreeDOrientation decodeType(EncodingContext context, UaDecoder decoder) {
-      Double a = decoder.decodeDouble("A");
-      Double b = decoder.decodeDouble("B");
-      Double c = decoder.decodeDouble("C");
+      final Double a;
+      final Double b;
+      final Double c;
+      a = decoder.decodeDouble("A");
+      b = decoder.decodeDouble("B");
+      c = decoder.decodeDouble("C");
       return new ThreeDOrientation(a, b, c);
     }
 

@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -34,11 +24,11 @@ public class UadpDataSetWriterMessageDataType extends DataSetWriterMessageDataTy
     implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=15652");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=15717");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15717");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=16015");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=16015");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=16391");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=16391");
 
   private final UadpDataSetMessageContentMask dataSetMessageContentMask;
 
@@ -181,11 +171,15 @@ public class UadpDataSetWriterMessageDataType extends DataSetWriterMessageDataTy
 
     @Override
     public UadpDataSetWriterMessageDataType decodeType(EncodingContext context, UaDecoder decoder) {
-      UadpDataSetMessageContentMask dataSetMessageContentMask =
+      final UadpDataSetMessageContentMask dataSetMessageContentMask;
+      final UShort configuredSize;
+      final UShort networkMessageNumber;
+      final UShort dataSetOffset;
+      dataSetMessageContentMask =
           new UadpDataSetMessageContentMask(decoder.decodeUInt32("DataSetMessageContentMask"));
-      UShort configuredSize = decoder.decodeUInt16("ConfiguredSize");
-      UShort networkMessageNumber = decoder.decodeUInt16("NetworkMessageNumber");
-      UShort dataSetOffset = decoder.decodeUInt16("DataSetOffset");
+      configuredSize = decoder.decodeUInt16("ConfiguredSize");
+      networkMessageNumber = decoder.decodeUInt16("NetworkMessageNumber");
+      dataSetOffset = decoder.decodeUInt16("DataSetOffset");
       return new UadpDataSetWriterMessageDataType(
           dataSetMessageContentMask, configuredSize, networkMessageNumber, dataSetOffset);
     }

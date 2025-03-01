@@ -15,15 +15,7 @@ import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.eclipse.milo.opcua.stack.core.types.structured.AddNodesItem;
-import org.eclipse.milo.opcua.stack.core.types.structured.AddReferencesItem;
-import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodRequest;
-import org.eclipse.milo.opcua.stack.core.types.structured.DeleteNodesItem;
-import org.eclipse.milo.opcua.stack.core.types.structured.DeleteReferencesItem;
-import org.eclipse.milo.opcua.stack.core.types.structured.HistoryReadValueId;
-import org.eclipse.milo.opcua.stack.core.types.structured.HistoryUpdateDetails;
-import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
-import org.eclipse.milo.opcua.stack.core.types.structured.WriteValue;
+import org.eclipse.milo.opcua.stack.core.types.structured.*;
 
 /**
  * A simple {@link AddressSpaceFilter} that delegates each of the filter operations to a simple
@@ -129,7 +121,23 @@ public abstract class SimpleAddressSpaceFilter implements AddressSpaceFilter {
   @Override
   public boolean filterHistoryUpdate(
       OpcUaServer server, HistoryUpdateDetails historyUpdateDetails) {
-    return filterNode(historyUpdateDetails.getNodeId());
+
+    if (historyUpdateDetails instanceof DeleteAtTimeDetails details) {
+      return filterNode(details.getNodeId());
+    } else if (historyUpdateDetails instanceof DeleteEventDetails details) {
+      return filterNode(details.getNodeId());
+    } else if (historyUpdateDetails instanceof DeleteRawModifiedDetails details) {
+      return filterNode(details.getNodeId());
+    } else if (historyUpdateDetails instanceof UpdateDataDetails details) {
+      return filterNode(details.getNodeId());
+    } else if (historyUpdateDetails instanceof UpdateEventDetails details) {
+      return filterNode(details.getNodeId());
+    } else if (historyUpdateDetails instanceof UpdateStructureDataDetails details) {
+      return filterNode(details.getNodeId());
+    } else {
+      throw new IllegalArgumentException(
+          "unexpected HistoryUpdateDetails: " + historyUpdateDetails);
+    }
   }
 
   // endregion

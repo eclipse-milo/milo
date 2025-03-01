@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -34,11 +24,11 @@ import org.jspecify.annotations.Nullable;
 public class BuildInfo extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=338");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=340");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=340");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=339");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=339");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15361");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15361");
 
   private final @Nullable String productUri;
 
@@ -218,12 +208,18 @@ public class BuildInfo extends Structure implements UaStructuredType {
 
     @Override
     public BuildInfo decodeType(EncodingContext context, UaDecoder decoder) {
-      String productUri = decoder.decodeString("ProductUri");
-      String manufacturerName = decoder.decodeString("ManufacturerName");
-      String productName = decoder.decodeString("ProductName");
-      String softwareVersion = decoder.decodeString("SoftwareVersion");
-      String buildNumber = decoder.decodeString("BuildNumber");
-      DateTime buildDate = decoder.decodeDateTime("BuildDate");
+      final String productUri;
+      final String manufacturerName;
+      final String productName;
+      final String softwareVersion;
+      final String buildNumber;
+      final DateTime buildDate;
+      productUri = decoder.decodeString("ProductUri");
+      manufacturerName = decoder.decodeString("ManufacturerName");
+      productName = decoder.decodeString("ProductName");
+      softwareVersion = decoder.decodeString("SoftwareVersion");
+      buildNumber = decoder.decodeString("BuildNumber");
+      buildDate = decoder.decodeDateTime("BuildDate");
       return new BuildInfo(
           productUri, manufacturerName, productName, softwareVersion, buildNumber, buildDate);
     }

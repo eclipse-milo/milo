@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -29,16 +19,16 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.12.4/#5.12.4.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.12.4/#5.12.4.2</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.13.4/#5.13.4.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.13.4/#5.13.4.2</a>
  */
 public class SetMonitoringModeRequest extends Structure implements UaRequestMessageType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=767");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=769");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=769");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=768");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=768");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15329");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15329");
 
   private final RequestHeader requestHeader;
 
@@ -180,11 +170,14 @@ public class SetMonitoringModeRequest extends Structure implements UaRequestMess
 
     @Override
     public SetMonitoringModeRequest decodeType(EncodingContext context, UaDecoder decoder) {
-      RequestHeader requestHeader =
-          (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
-      UInteger subscriptionId = decoder.decodeUInt32("SubscriptionId");
-      MonitoringMode monitoringMode = MonitoringMode.from(decoder.decodeEnum("MonitoringMode"));
-      UInteger[] monitoredItemIds = decoder.decodeUInt32Array("MonitoredItemIds");
+      final RequestHeader requestHeader;
+      final UInteger subscriptionId;
+      final MonitoringMode monitoringMode;
+      final UInteger[] monitoredItemIds;
+      requestHeader = (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
+      subscriptionId = decoder.decodeUInt32("SubscriptionId");
+      monitoringMode = MonitoringMode.from(decoder.decodeEnum("MonitoringMode"));
+      monitoredItemIds = decoder.decodeUInt32Array("MonitoredItemIds");
       return new SetMonitoringModeRequest(
           requestHeader, subscriptionId, monitoringMode, monitoredItemIds);
     }

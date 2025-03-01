@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -33,11 +23,11 @@ import org.jspecify.annotations.Nullable;
 public class PortableNodeId extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=24106");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=24109");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=24109");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=24121");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=24121");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=24133");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=24133");
 
   private final @Nullable String namespaceUri;
 
@@ -139,8 +129,10 @@ public class PortableNodeId extends Structure implements UaStructuredType {
 
     @Override
     public PortableNodeId decodeType(EncodingContext context, UaDecoder decoder) {
-      String namespaceUri = decoder.decodeString("NamespaceUri");
-      NodeId identifier = decoder.decodeNodeId("Identifier");
+      final String namespaceUri;
+      final NodeId identifier;
+      namespaceUri = decoder.decodeString("NamespaceUri");
+      identifier = decoder.decodeNodeId("Identifier");
       return new PortableNodeId(namespaceUri, identifier);
     }
 

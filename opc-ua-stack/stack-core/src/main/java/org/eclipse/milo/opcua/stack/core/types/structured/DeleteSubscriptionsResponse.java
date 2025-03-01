@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -30,16 +20,16 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.13.8/#5.13.8.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.13.8/#5.13.8.2</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.14.8/#5.14.8.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.14.8/#5.14.8.2</a>
  */
 public class DeleteSubscriptionsResponse extends Structure implements UaResponseMessageType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=848");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=850");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=850");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=849");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=849");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15360");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15360");
 
   private final ResponseHeader responseHeader;
 
@@ -163,10 +153,13 @@ public class DeleteSubscriptionsResponse extends Structure implements UaResponse
 
     @Override
     public DeleteSubscriptionsResponse decodeType(EncodingContext context, UaDecoder decoder) {
-      ResponseHeader responseHeader =
+      final ResponseHeader responseHeader;
+      final StatusCode[] results;
+      final DiagnosticInfo[] diagnosticInfos;
+      responseHeader =
           (ResponseHeader) decoder.decodeStruct("ResponseHeader", ResponseHeader.TYPE_ID);
-      StatusCode[] results = decoder.decodeStatusCodeArray("Results");
-      DiagnosticInfo[] diagnosticInfos = decoder.decodeDiagnosticInfoArray("DiagnosticInfos");
+      results = decoder.decodeStatusCodeArray("Results");
+      diagnosticInfos = decoder.decodeDiagnosticInfoArray("DiagnosticInfos");
       return new DeleteSubscriptionsResponse(responseHeader, results, diagnosticInfos);
     }
 

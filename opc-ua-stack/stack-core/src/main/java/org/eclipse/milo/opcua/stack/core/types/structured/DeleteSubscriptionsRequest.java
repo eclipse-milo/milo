@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -28,16 +18,16 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.13.8/#5.13.8.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.13.8/#5.13.8.2</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.14.8/#5.14.8.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.14.8/#5.14.8.2</a>
  */
 public class DeleteSubscriptionsRequest extends Structure implements UaRequestMessageType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=845");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=847");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=847");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=846");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=846");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15359");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15359");
 
   private final RequestHeader requestHeader;
 
@@ -141,9 +131,10 @@ public class DeleteSubscriptionsRequest extends Structure implements UaRequestMe
 
     @Override
     public DeleteSubscriptionsRequest decodeType(EncodingContext context, UaDecoder decoder) {
-      RequestHeader requestHeader =
-          (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
-      UInteger[] subscriptionIds = decoder.decodeUInt32Array("SubscriptionIds");
+      final RequestHeader requestHeader;
+      final UInteger[] subscriptionIds;
+      requestHeader = (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
+      subscriptionIds = decoder.decodeUInt32Array("SubscriptionIds");
       return new DeleteSubscriptionsRequest(requestHeader, subscriptionIds);
     }
 

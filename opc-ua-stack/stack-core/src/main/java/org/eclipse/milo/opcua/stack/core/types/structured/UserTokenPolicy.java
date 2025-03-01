@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -34,11 +24,11 @@ import org.jspecify.annotations.Nullable;
 public class UserTokenPolicy extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=304");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=306");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=306");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=305");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=305");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15098");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15098");
 
   private final @Nullable String policyId;
 
@@ -199,11 +189,16 @@ public class UserTokenPolicy extends Structure implements UaStructuredType {
 
     @Override
     public UserTokenPolicy decodeType(EncodingContext context, UaDecoder decoder) {
-      String policyId = decoder.decodeString("PolicyId");
-      UserTokenType tokenType = UserTokenType.from(decoder.decodeEnum("TokenType"));
-      String issuedTokenType = decoder.decodeString("IssuedTokenType");
-      String issuerEndpointUrl = decoder.decodeString("IssuerEndpointUrl");
-      String securityPolicyUri = decoder.decodeString("SecurityPolicyUri");
+      final String policyId;
+      final UserTokenType tokenType;
+      final String issuedTokenType;
+      final String issuerEndpointUrl;
+      final String securityPolicyUri;
+      policyId = decoder.decodeString("PolicyId");
+      tokenType = UserTokenType.from(decoder.decodeEnum("TokenType"));
+      issuedTokenType = decoder.decodeString("IssuedTokenType");
+      issuerEndpointUrl = decoder.decodeString("IssuerEndpointUrl");
+      securityPolicyUri = decoder.decodeString("SecurityPolicyUri");
       return new UserTokenPolicy(
           policyId, tokenType, issuedTokenType, issuerEndpointUrl, securityPolicyUri);
     }

@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -28,16 +18,16 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.7.2/#5.7.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.7.2/#5.7.2.2</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.8.2/#5.8.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.8.2/#5.8.2.2</a>
  */
 public class AddNodesRequest extends Structure implements UaRequestMessageType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=486");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=488");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=488");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=487");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=487");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15167");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15167");
 
   private final RequestHeader requestHeader;
 
@@ -139,10 +129,10 @@ public class AddNodesRequest extends Structure implements UaRequestMessageType {
 
     @Override
     public AddNodesRequest decodeType(EncodingContext context, UaDecoder decoder) {
-      RequestHeader requestHeader =
-          (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
-      AddNodesItem[] nodesToAdd =
-          (AddNodesItem[]) decoder.decodeStructArray("NodesToAdd", AddNodesItem.TYPE_ID);
+      final RequestHeader requestHeader;
+      final AddNodesItem[] nodesToAdd;
+      requestHeader = (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
+      nodesToAdd = (AddNodesItem[]) decoder.decodeStructArray("NodesToAdd", AddNodesItem.TYPE_ID);
       return new AddNodesRequest(requestHeader, nodesToAdd);
     }
 

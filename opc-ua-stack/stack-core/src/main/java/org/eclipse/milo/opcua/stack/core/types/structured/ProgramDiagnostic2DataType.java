@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -36,11 +26,11 @@ import org.jspecify.annotations.Nullable;
 public class ProgramDiagnostic2DataType extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=24033");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=24034");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=24034");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=24038");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=24038");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=24042");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=24042");
 
   private final NodeId createSessionId;
 
@@ -337,20 +327,32 @@ public class ProgramDiagnostic2DataType extends Structure implements UaStructure
 
     @Override
     public ProgramDiagnostic2DataType decodeType(EncodingContext context, UaDecoder decoder) {
-      NodeId createSessionId = decoder.decodeNodeId("CreateSessionId");
-      String createClientName = decoder.decodeString("CreateClientName");
-      DateTime invocationCreationTime = decoder.decodeDateTime("InvocationCreationTime");
-      DateTime lastTransitionTime = decoder.decodeDateTime("LastTransitionTime");
-      String lastMethodCall = decoder.decodeString("LastMethodCall");
-      NodeId lastMethodSessionId = decoder.decodeNodeId("LastMethodSessionId");
-      Argument[] lastMethodInputArguments =
+      final NodeId createSessionId;
+      final String createClientName;
+      final DateTime invocationCreationTime;
+      final DateTime lastTransitionTime;
+      final String lastMethodCall;
+      final NodeId lastMethodSessionId;
+      final Argument[] lastMethodInputArguments;
+      final Argument[] lastMethodOutputArguments;
+      final Variant[] lastMethodInputValues;
+      final Variant[] lastMethodOutputValues;
+      final DateTime lastMethodCallTime;
+      final StatusCode lastMethodReturnStatus;
+      createSessionId = decoder.decodeNodeId("CreateSessionId");
+      createClientName = decoder.decodeString("CreateClientName");
+      invocationCreationTime = decoder.decodeDateTime("InvocationCreationTime");
+      lastTransitionTime = decoder.decodeDateTime("LastTransitionTime");
+      lastMethodCall = decoder.decodeString("LastMethodCall");
+      lastMethodSessionId = decoder.decodeNodeId("LastMethodSessionId");
+      lastMethodInputArguments =
           (Argument[]) decoder.decodeStructArray("LastMethodInputArguments", Argument.TYPE_ID);
-      Argument[] lastMethodOutputArguments =
+      lastMethodOutputArguments =
           (Argument[]) decoder.decodeStructArray("LastMethodOutputArguments", Argument.TYPE_ID);
-      Variant[] lastMethodInputValues = decoder.decodeVariantArray("LastMethodInputValues");
-      Variant[] lastMethodOutputValues = decoder.decodeVariantArray("LastMethodOutputValues");
-      DateTime lastMethodCallTime = decoder.decodeDateTime("LastMethodCallTime");
-      StatusCode lastMethodReturnStatus = decoder.decodeStatusCode("LastMethodReturnStatus");
+      lastMethodInputValues = decoder.decodeVariantArray("LastMethodInputValues");
+      lastMethodOutputValues = decoder.decodeVariantArray("LastMethodOutputValues");
+      lastMethodCallTime = decoder.decodeDateTime("LastMethodCallTime");
+      lastMethodReturnStatus = decoder.decodeStatusCode("LastMethodReturnStatus");
       return new ProgramDiagnostic2DataType(
           createSessionId,
           createClientName,

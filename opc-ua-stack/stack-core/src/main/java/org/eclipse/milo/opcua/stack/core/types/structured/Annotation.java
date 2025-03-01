@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -29,16 +19,16 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v104/Core/docs/Part11/5.5">https://reference.opcfoundation.org/v104/Core/docs/Part11/5.5</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/6.6.6">https://reference.opcfoundation.org/v105/Core/docs/Part11/6.6.6</a>
  */
 public class Annotation extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=891");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=893");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=893");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=892");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=892");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15382");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15382");
 
   private final @Nullable String message;
 
@@ -158,9 +148,12 @@ public class Annotation extends Structure implements UaStructuredType {
 
     @Override
     public Annotation decodeType(EncodingContext context, UaDecoder decoder) {
-      String message = decoder.decodeString("Message");
-      String userName = decoder.decodeString("UserName");
-      DateTime annotationTime = decoder.decodeDateTime("AnnotationTime");
+      final String message;
+      final String userName;
+      final DateTime annotationTime;
+      message = decoder.decodeString("Message");
+      userName = decoder.decodeString("UserName");
+      annotationTime = decoder.decodeDateTime("AnnotationTime");
       return new Annotation(message, userName, annotationTime);
     }
 

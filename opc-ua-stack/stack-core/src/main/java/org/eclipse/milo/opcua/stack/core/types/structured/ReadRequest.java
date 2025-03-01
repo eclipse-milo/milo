@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -29,16 +19,16 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.10.2/#5.10.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.10.2/#5.10.2.2</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.11.2/#5.11.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.11.2/#5.11.2.2</a>
  */
 public class ReadRequest extends Structure implements UaRequestMessageType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=629");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=631");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=631");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=630");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=630");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15257");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15257");
 
   private final RequestHeader requestHeader;
 
@@ -180,13 +170,14 @@ public class ReadRequest extends Structure implements UaRequestMessageType {
 
     @Override
     public ReadRequest decodeType(EncodingContext context, UaDecoder decoder) {
-      RequestHeader requestHeader =
-          (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
-      Double maxAge = decoder.decodeDouble("MaxAge");
-      TimestampsToReturn timestampsToReturn =
-          TimestampsToReturn.from(decoder.decodeEnum("TimestampsToReturn"));
-      ReadValueId[] nodesToRead =
-          (ReadValueId[]) decoder.decodeStructArray("NodesToRead", ReadValueId.TYPE_ID);
+      final RequestHeader requestHeader;
+      final Double maxAge;
+      final TimestampsToReturn timestampsToReturn;
+      final ReadValueId[] nodesToRead;
+      requestHeader = (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
+      maxAge = decoder.decodeDouble("MaxAge");
+      timestampsToReturn = TimestampsToReturn.from(decoder.decodeEnum("TimestampsToReturn"));
+      nodesToRead = (ReadValueId[]) decoder.decodeStructArray("NodesToRead", ReadValueId.TYPE_ID);
       return new ReadRequest(requestHeader, maxAge, timestampsToReturn, nodesToRead);
     }
 

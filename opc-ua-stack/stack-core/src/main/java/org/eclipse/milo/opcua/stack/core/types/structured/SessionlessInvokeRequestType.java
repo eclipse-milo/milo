@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -26,18 +16,14 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.EqualsBuilder;
 import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 import org.jspecify.annotations.Nullable;
 
-/**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/6.3.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/6.3.2</a>
- */
 public class SessionlessInvokeRequestType extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=15901");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=15903");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15903");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=15902");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15902");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15091");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15091");
 
   private final UInteger urisVersion;
 
@@ -199,11 +185,16 @@ public class SessionlessInvokeRequestType extends Structure implements UaStructu
 
     @Override
     public SessionlessInvokeRequestType decodeType(EncodingContext context, UaDecoder decoder) {
-      UInteger urisVersion = decoder.decodeUInt32("UrisVersion");
-      String[] namespaceUris = decoder.decodeStringArray("NamespaceUris");
-      String[] serverUris = decoder.decodeStringArray("ServerUris");
-      String[] localeIds = decoder.decodeStringArray("LocaleIds");
-      UInteger serviceId = decoder.decodeUInt32("ServiceId");
+      final UInteger urisVersion;
+      final String[] namespaceUris;
+      final String[] serverUris;
+      final String[] localeIds;
+      final UInteger serviceId;
+      urisVersion = decoder.decodeUInt32("UrisVersion");
+      namespaceUris = decoder.decodeStringArray("NamespaceUris");
+      serverUris = decoder.decodeStringArray("ServerUris");
+      localeIds = decoder.decodeStringArray("LocaleIds");
+      serviceId = decoder.decodeUInt32("ServiceId");
       return new SessionlessInvokeRequestType(
           urisVersion, namespaceUris, serverUris, localeIds, serviceId);
     }

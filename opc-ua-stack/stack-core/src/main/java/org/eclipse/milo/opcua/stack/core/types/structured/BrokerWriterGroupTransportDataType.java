@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -35,11 +25,11 @@ public class BrokerWriterGroupTransportDataType extends WriterGroupTransportData
     implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=15667");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=15727");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15727");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=16021");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=16021");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=16524");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=16524");
 
   private final @Nullable String queueName;
 
@@ -183,10 +173,14 @@ public class BrokerWriterGroupTransportDataType extends WriterGroupTransportData
     @Override
     public BrokerWriterGroupTransportDataType decodeType(
         EncodingContext context, UaDecoder decoder) {
-      String queueName = decoder.decodeString("QueueName");
-      String resourceUri = decoder.decodeString("ResourceUri");
-      String authenticationProfileUri = decoder.decodeString("AuthenticationProfileUri");
-      BrokerTransportQualityOfService requestedDeliveryGuarantee =
+      final String queueName;
+      final String resourceUri;
+      final String authenticationProfileUri;
+      final BrokerTransportQualityOfService requestedDeliveryGuarantee;
+      queueName = decoder.decodeString("QueueName");
+      resourceUri = decoder.decodeString("ResourceUri");
+      authenticationProfileUri = decoder.decodeString("AuthenticationProfileUri");
+      requestedDeliveryGuarantee =
           BrokerTransportQualityOfService.from(decoder.decodeEnum("RequestedDeliveryGuarantee"));
       return new BrokerWriterGroupTransportDataType(
           queueName, resourceUri, authenticationProfileUri, requestedDeliveryGuarantee);

@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -28,16 +18,18 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v104/Core/docs/Part11/6.8.5/#6.8.5.1">https://reference.opcfoundation.org/v104/Core/docs/Part11/6.8.5/#6.8.5.1</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/6.9.5/#6.9.5.1">https://reference.opcfoundation.org/v105/Core/docs/Part11/6.9.5/#6.9.5.1</a>
  */
 public class DeleteRawModifiedDetails extends HistoryUpdateDetails implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=686");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=688");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=688");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=687");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=687");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15283");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15283");
+
+  private final NodeId nodeId;
 
   private final Boolean isDeleteModified;
 
@@ -47,7 +39,7 @@ public class DeleteRawModifiedDetails extends HistoryUpdateDetails implements Ua
 
   public DeleteRawModifiedDetails(
       NodeId nodeId, Boolean isDeleteModified, DateTime startTime, DateTime endTime) {
-    super(nodeId);
+    this.nodeId = nodeId;
     this.isDeleteModified = isDeleteModified;
     this.startTime = startTime;
     this.endTime = endTime;
@@ -73,6 +65,10 @@ public class DeleteRawModifiedDetails extends HistoryUpdateDetails implements Ua
     return JSON_ENCODING_ID;
   }
 
+  public NodeId getNodeId() {
+    return nodeId;
+  }
+
   public Boolean getIsDeleteModified() {
     return isDeleteModified;
   }
@@ -94,7 +90,7 @@ public class DeleteRawModifiedDetails extends HistoryUpdateDetails implements Ua
     }
     DeleteRawModifiedDetails that = (DeleteRawModifiedDetails) object;
     var eqb = new EqualsBuilder();
-    eqb.appendSuper(super.equals(object));
+    eqb.append(getNodeId(), that.getNodeId());
     eqb.append(getIsDeleteModified(), that.getIsDeleteModified());
     eqb.append(getStartTime(), that.getStartTime());
     eqb.append(getEndTime(), that.getEndTime());
@@ -104,16 +100,17 @@ public class DeleteRawModifiedDetails extends HistoryUpdateDetails implements Ua
   @Override
   public int hashCode() {
     var hcb = new HashCodeBuilder();
+    hcb.append(getNodeId());
     hcb.append(getIsDeleteModified());
     hcb.append(getStartTime());
     hcb.append(getEndTime());
-    hcb.appendSuper(super.hashCode());
     return hcb.build();
   }
 
   @Override
   public String toString() {
     var joiner = new StringJoiner(", ", DeleteRawModifiedDetails.class.getSimpleName() + "[", "]");
+    joiner.add("nodeId=" + getNodeId());
     joiner.add("isDeleteModified=" + getIsDeleteModified());
     joiner.add("startTime=" + getStartTime());
     joiner.add("endTime=" + getEndTime());
@@ -169,10 +166,14 @@ public class DeleteRawModifiedDetails extends HistoryUpdateDetails implements Ua
 
     @Override
     public DeleteRawModifiedDetails decodeType(EncodingContext context, UaDecoder decoder) {
-      NodeId nodeId = decoder.decodeNodeId("NodeId");
-      Boolean isDeleteModified = decoder.decodeBoolean("IsDeleteModified");
-      DateTime startTime = decoder.decodeDateTime("StartTime");
-      DateTime endTime = decoder.decodeDateTime("EndTime");
+      final NodeId nodeId;
+      final Boolean isDeleteModified;
+      final DateTime startTime;
+      final DateTime endTime;
+      nodeId = decoder.decodeNodeId("NodeId");
+      isDeleteModified = decoder.decodeBoolean("IsDeleteModified");
+      startTime = decoder.decodeDateTime("StartTime");
+      endTime = decoder.decodeDateTime("EndTime");
       return new DeleteRawModifiedDetails(nodeId, isDeleteModified, startTime, endTime);
     }
 

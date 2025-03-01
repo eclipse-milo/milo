@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -33,11 +23,11 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 public class StructureDescription extends DataTypeDescription implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=15487");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=126");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=126");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=15589");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15589");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15058");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15058");
 
   private final StructureDefinition structureDefinition;
 
@@ -141,9 +131,12 @@ public class StructureDescription extends DataTypeDescription implements UaStruc
 
     @Override
     public StructureDescription decodeType(EncodingContext context, UaDecoder decoder) {
-      NodeId dataTypeId = decoder.decodeNodeId("DataTypeId");
-      QualifiedName name = decoder.decodeQualifiedName("Name");
-      StructureDefinition structureDefinition =
+      final NodeId dataTypeId;
+      final QualifiedName name;
+      final StructureDefinition structureDefinition;
+      dataTypeId = decoder.decodeNodeId("DataTypeId");
+      name = decoder.decodeQualifiedName("Name");
+      structureDefinition =
           (StructureDefinition)
               decoder.decodeStruct("StructureDefinition", StructureDefinition.TYPE_ID);
       return new StructureDescription(dataTypeId, name, structureDefinition);

@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -34,11 +24,11 @@ import org.jspecify.annotations.Nullable;
 public class UserNameIdentityToken extends UserIdentityToken implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=322");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=324");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=324");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=323");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=323");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15142");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15142");
 
   private final @Nullable String userName;
 
@@ -173,10 +163,14 @@ public class UserNameIdentityToken extends UserIdentityToken implements UaStruct
 
     @Override
     public UserNameIdentityToken decodeType(EncodingContext context, UaDecoder decoder) {
-      String policyId = decoder.decodeString("PolicyId");
-      String userName = decoder.decodeString("UserName");
-      ByteString password = decoder.decodeByteString("Password");
-      String encryptionAlgorithm = decoder.decodeString("EncryptionAlgorithm");
+      final String policyId;
+      final String userName;
+      final ByteString password;
+      final String encryptionAlgorithm;
+      policyId = decoder.decodeString("PolicyId");
+      userName = decoder.decodeString("UserName");
+      password = decoder.decodeByteString("Password");
+      encryptionAlgorithm = decoder.decodeString("EncryptionAlgorithm");
       return new UserNameIdentityToken(policyId, userName, password, encryptionAlgorithm);
     }
 

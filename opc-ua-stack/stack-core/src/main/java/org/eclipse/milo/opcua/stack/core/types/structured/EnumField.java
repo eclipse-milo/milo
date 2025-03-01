@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -33,11 +23,11 @@ import org.jspecify.annotations.Nullable;
 public class EnumField extends EnumValueType implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=102");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=14845");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=14845");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=14801");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=14801");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15083");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15083");
 
   private final @Nullable String name;
 
@@ -149,10 +139,14 @@ public class EnumField extends EnumValueType implements UaStructuredType {
 
     @Override
     public EnumField decodeType(EncodingContext context, UaDecoder decoder) {
-      Long value = decoder.decodeInt64("Value");
-      LocalizedText displayName = decoder.decodeLocalizedText("DisplayName");
-      LocalizedText description = decoder.decodeLocalizedText("Description");
-      String name = decoder.decodeString("Name");
+      final Long value;
+      final LocalizedText displayName;
+      final LocalizedText description;
+      final String name;
+      value = decoder.decodeInt64("Value");
+      displayName = decoder.decodeLocalizedText("DisplayName");
+      description = decoder.decodeLocalizedText("Description");
+      name = decoder.decodeString("Name");
       return new EnumField(value, displayName, description, name);
     }
 

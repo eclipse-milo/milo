@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -28,16 +18,16 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.10.4/#5.10.4.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.10.4/#5.10.4.2</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.11.4/#5.11.4.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.11.4/#5.11.4.2</a>
  */
 public class WriteValue extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=668");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=670");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=670");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=669");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=669");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15276");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15276");
 
   private final NodeId nodeId;
 
@@ -175,10 +165,14 @@ public class WriteValue extends Structure implements UaStructuredType {
 
     @Override
     public WriteValue decodeType(EncodingContext context, UaDecoder decoder) {
-      NodeId nodeId = decoder.decodeNodeId("NodeId");
-      UInteger attributeId = decoder.decodeUInt32("AttributeId");
-      String indexRange = decoder.decodeString("IndexRange");
-      DataValue value = decoder.decodeDataValue("Value");
+      final NodeId nodeId;
+      final UInteger attributeId;
+      final String indexRange;
+      final DataValue value;
+      nodeId = decoder.decodeNodeId("NodeId");
+      attributeId = decoder.decodeUInt32("AttributeId");
+      indexRange = decoder.decodeString("IndexRange");
+      value = decoder.decodeDataValue("Value");
       return new WriteValue(nodeId, attributeId, indexRange, value);
     }
 

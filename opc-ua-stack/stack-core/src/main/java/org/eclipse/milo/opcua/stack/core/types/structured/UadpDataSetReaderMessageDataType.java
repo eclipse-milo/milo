@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -35,11 +25,11 @@ public class UadpDataSetReaderMessageDataType extends DataSetReaderMessageDataTy
     implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=15653");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=15718");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15718");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=16016");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=16016");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=16392");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=16392");
 
   private final UInteger groupVersion;
 
@@ -277,17 +267,26 @@ public class UadpDataSetReaderMessageDataType extends DataSetReaderMessageDataTy
 
     @Override
     public UadpDataSetReaderMessageDataType decodeType(EncodingContext context, UaDecoder decoder) {
-      UInteger groupVersion = decoder.decodeUInt32("GroupVersion");
-      UShort networkMessageNumber = decoder.decodeUInt16("NetworkMessageNumber");
-      UShort dataSetOffset = decoder.decodeUInt16("DataSetOffset");
-      UUID dataSetClassId = decoder.decodeGuid("DataSetClassId");
-      UadpNetworkMessageContentMask networkMessageContentMask =
+      final UInteger groupVersion;
+      final UShort networkMessageNumber;
+      final UShort dataSetOffset;
+      final UUID dataSetClassId;
+      final UadpNetworkMessageContentMask networkMessageContentMask;
+      final UadpDataSetMessageContentMask dataSetMessageContentMask;
+      final Double publishingInterval;
+      final Double receiveOffset;
+      final Double processingOffset;
+      groupVersion = decoder.decodeUInt32("GroupVersion");
+      networkMessageNumber = decoder.decodeUInt16("NetworkMessageNumber");
+      dataSetOffset = decoder.decodeUInt16("DataSetOffset");
+      dataSetClassId = decoder.decodeGuid("DataSetClassId");
+      networkMessageContentMask =
           new UadpNetworkMessageContentMask(decoder.decodeUInt32("NetworkMessageContentMask"));
-      UadpDataSetMessageContentMask dataSetMessageContentMask =
+      dataSetMessageContentMask =
           new UadpDataSetMessageContentMask(decoder.decodeUInt32("DataSetMessageContentMask"));
-      Double publishingInterval = decoder.decodeDouble("PublishingInterval");
-      Double receiveOffset = decoder.decodeDouble("ReceiveOffset");
-      Double processingOffset = decoder.decodeDouble("ProcessingOffset");
+      publishingInterval = decoder.decodeDouble("PublishingInterval");
+      receiveOffset = decoder.decodeDouble("ReceiveOffset");
+      processingOffset = decoder.decodeDouble("ProcessingOffset");
       return new UadpDataSetReaderMessageDataType(
           groupVersion,
           networkMessageNumber,

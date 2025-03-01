@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -29,17 +19,17 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.8.4/#5.8.4.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.8.4/#5.8.4.2</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.9.4/#5.9.4.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.9.4/#5.9.4.2</a>
  */
 public class TranslateBrowsePathsToNodeIdsResponse extends Structure
     implements UaResponseMessageType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=555");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=557");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=557");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=556");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=556");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15194");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15194");
 
   private final ResponseHeader responseHeader;
 
@@ -166,11 +156,13 @@ public class TranslateBrowsePathsToNodeIdsResponse extends Structure
     @Override
     public TranslateBrowsePathsToNodeIdsResponse decodeType(
         EncodingContext context, UaDecoder decoder) {
-      ResponseHeader responseHeader =
+      final ResponseHeader responseHeader;
+      final BrowsePathResult[] results;
+      final DiagnosticInfo[] diagnosticInfos;
+      responseHeader =
           (ResponseHeader) decoder.decodeStruct("ResponseHeader", ResponseHeader.TYPE_ID);
-      BrowsePathResult[] results =
-          (BrowsePathResult[]) decoder.decodeStructArray("Results", BrowsePathResult.TYPE_ID);
-      DiagnosticInfo[] diagnosticInfos = decoder.decodeDiagnosticInfoArray("DiagnosticInfos");
+      results = (BrowsePathResult[]) decoder.decodeStructArray("Results", BrowsePathResult.TYPE_ID);
+      diagnosticInfos = decoder.decodeDiagnosticInfoArray("DiagnosticInfos");
       return new TranslateBrowsePathsToNodeIdsResponse(responseHeader, results, diagnosticInfos);
     }
 

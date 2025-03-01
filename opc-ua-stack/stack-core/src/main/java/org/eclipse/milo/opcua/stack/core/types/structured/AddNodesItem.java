@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -35,11 +25,11 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 public class AddNodesItem extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=376");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=378");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=378");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=377");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=377");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15165");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15165");
 
   private final ExpandedNodeId parentNodeId;
 
@@ -238,13 +228,20 @@ public class AddNodesItem extends Structure implements UaStructuredType {
 
     @Override
     public AddNodesItem decodeType(EncodingContext context, UaDecoder decoder) {
-      ExpandedNodeId parentNodeId = decoder.decodeExpandedNodeId("ParentNodeId");
-      NodeId referenceTypeId = decoder.decodeNodeId("ReferenceTypeId");
-      ExpandedNodeId requestedNewNodeId = decoder.decodeExpandedNodeId("RequestedNewNodeId");
-      QualifiedName browseName = decoder.decodeQualifiedName("BrowseName");
-      NodeClass nodeClass = NodeClass.from(decoder.decodeEnum("NodeClass"));
-      ExtensionObject nodeAttributes = decoder.decodeExtensionObject("NodeAttributes");
-      ExpandedNodeId typeDefinition = decoder.decodeExpandedNodeId("TypeDefinition");
+      final ExpandedNodeId parentNodeId;
+      final NodeId referenceTypeId;
+      final ExpandedNodeId requestedNewNodeId;
+      final QualifiedName browseName;
+      final NodeClass nodeClass;
+      final ExtensionObject nodeAttributes;
+      final ExpandedNodeId typeDefinition;
+      parentNodeId = decoder.decodeExpandedNodeId("ParentNodeId");
+      referenceTypeId = decoder.decodeNodeId("ReferenceTypeId");
+      requestedNewNodeId = decoder.decodeExpandedNodeId("RequestedNewNodeId");
+      browseName = decoder.decodeQualifiedName("BrowseName");
+      nodeClass = NodeClass.from(decoder.decodeEnum("NodeClass"));
+      nodeAttributes = decoder.decodeExtensionObject("NodeAttributes");
+      typeDefinition = decoder.decodeExpandedNodeId("TypeDefinition");
       return new AddNodesItem(
           parentNodeId,
           referenceTypeId,

@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -35,11 +25,11 @@ import org.jspecify.annotations.Nullable;
 public class PublishedVariableDataType extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=14273");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=14323");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=14323");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=14319");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=14319");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15060");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15060");
 
   private final NodeId publishedVariable;
 
@@ -257,14 +247,22 @@ public class PublishedVariableDataType extends Structure implements UaStructured
 
     @Override
     public PublishedVariableDataType decodeType(EncodingContext context, UaDecoder decoder) {
-      NodeId publishedVariable = decoder.decodeNodeId("PublishedVariable");
-      UInteger attributeId = decoder.decodeUInt32("AttributeId");
-      Double samplingIntervalHint = decoder.decodeDouble("SamplingIntervalHint");
-      UInteger deadbandType = decoder.decodeUInt32("DeadbandType");
-      Double deadbandValue = decoder.decodeDouble("DeadbandValue");
-      String indexRange = decoder.decodeString("IndexRange");
-      Variant substituteValue = decoder.decodeVariant("SubstituteValue");
-      QualifiedName[] metaDataProperties = decoder.decodeQualifiedNameArray("MetaDataProperties");
+      final NodeId publishedVariable;
+      final UInteger attributeId;
+      final Double samplingIntervalHint;
+      final UInteger deadbandType;
+      final Double deadbandValue;
+      final String indexRange;
+      final Variant substituteValue;
+      final QualifiedName[] metaDataProperties;
+      publishedVariable = decoder.decodeNodeId("PublishedVariable");
+      attributeId = decoder.decodeUInt32("AttributeId");
+      samplingIntervalHint = decoder.decodeDouble("SamplingIntervalHint");
+      deadbandType = decoder.decodeUInt32("DeadbandType");
+      deadbandValue = decoder.decodeDouble("DeadbandValue");
+      indexRange = decoder.decodeString("IndexRange");
+      substituteValue = decoder.decodeVariant("SubstituteValue");
+      metaDataProperties = decoder.decodeQualifiedNameArray("MetaDataProperties");
       return new PublishedVariableDataType(
           publishedVariable,
           attributeId,

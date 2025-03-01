@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -29,16 +19,16 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v104/Core/docs/Part11/6.4.4/#6.4.4.1">https://reference.opcfoundation.org/v104/Core/docs/Part11/6.4.4/#6.4.4.1</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/6.5.4/#6.5.4.1">https://reference.opcfoundation.org/v105/Core/docs/Part11/6.5.4/#6.5.4.1</a>
  */
 public class ReadProcessedDetails extends HistoryReadDetails implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=650");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=652");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=652");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=651");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=651");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15264");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15264");
 
   private final DateTime startTime;
 
@@ -199,11 +189,16 @@ public class ReadProcessedDetails extends HistoryReadDetails implements UaStruct
 
     @Override
     public ReadProcessedDetails decodeType(EncodingContext context, UaDecoder decoder) {
-      DateTime startTime = decoder.decodeDateTime("StartTime");
-      DateTime endTime = decoder.decodeDateTime("EndTime");
-      Double processingInterval = decoder.decodeDouble("ProcessingInterval");
-      NodeId[] aggregateType = decoder.decodeNodeIdArray("AggregateType");
-      AggregateConfiguration aggregateConfiguration =
+      final DateTime startTime;
+      final DateTime endTime;
+      final Double processingInterval;
+      final NodeId[] aggregateType;
+      final AggregateConfiguration aggregateConfiguration;
+      startTime = decoder.decodeDateTime("StartTime");
+      endTime = decoder.decodeDateTime("EndTime");
+      processingInterval = decoder.decodeDouble("ProcessingInterval");
+      aggregateType = decoder.decodeNodeIdArray("AggregateType");
+      aggregateConfiguration =
           (AggregateConfiguration)
               decoder.decodeStruct("AggregateConfiguration", AggregateConfiguration.TYPE_ID);
       return new ReadProcessedDetails(

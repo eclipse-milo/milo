@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -36,11 +26,11 @@ import org.jspecify.annotations.Nullable;
 public class EndpointDescription extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=312");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=314");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=314");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=313");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=313");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15099");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15099");
 
   private final @Nullable String endpointUrl;
 
@@ -258,18 +248,25 @@ public class EndpointDescription extends Structure implements UaStructuredType {
 
     @Override
     public EndpointDescription decodeType(EncodingContext context, UaDecoder decoder) {
-      String endpointUrl = decoder.decodeString("EndpointUrl");
-      ApplicationDescription server =
+      final String endpointUrl;
+      final ApplicationDescription server;
+      final ByteString serverCertificate;
+      final MessageSecurityMode securityMode;
+      final String securityPolicyUri;
+      final UserTokenPolicy[] userIdentityTokens;
+      final String transportProfileUri;
+      final UByte securityLevel;
+      endpointUrl = decoder.decodeString("EndpointUrl");
+      server =
           (ApplicationDescription) decoder.decodeStruct("Server", ApplicationDescription.TYPE_ID);
-      ByteString serverCertificate = decoder.decodeByteString("ServerCertificate");
-      MessageSecurityMode securityMode =
-          MessageSecurityMode.from(decoder.decodeEnum("SecurityMode"));
-      String securityPolicyUri = decoder.decodeString("SecurityPolicyUri");
-      UserTokenPolicy[] userIdentityTokens =
+      serverCertificate = decoder.decodeByteString("ServerCertificate");
+      securityMode = MessageSecurityMode.from(decoder.decodeEnum("SecurityMode"));
+      securityPolicyUri = decoder.decodeString("SecurityPolicyUri");
+      userIdentityTokens =
           (UserTokenPolicy[])
               decoder.decodeStructArray("UserIdentityTokens", UserTokenPolicy.TYPE_ID);
-      String transportProfileUri = decoder.decodeString("TransportProfileUri");
-      UByte securityLevel = decoder.decodeByte("SecurityLevel");
+      transportProfileUri = decoder.decodeString("TransportProfileUri");
+      securityLevel = decoder.decodeByte("SecurityLevel");
       return new EndpointDescription(
           endpointUrl,
           server,

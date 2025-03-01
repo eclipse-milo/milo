@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -35,11 +25,11 @@ import org.jspecify.annotations.Nullable;
 public class NotificationMessage extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=803");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=805");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=805");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=804");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=804");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15343");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15343");
 
   private final UInteger sequenceNumber;
 
@@ -162,9 +152,12 @@ public class NotificationMessage extends Structure implements UaStructuredType {
 
     @Override
     public NotificationMessage decodeType(EncodingContext context, UaDecoder decoder) {
-      UInteger sequenceNumber = decoder.decodeUInt32("SequenceNumber");
-      DateTime publishTime = decoder.decodeDateTime("PublishTime");
-      ExtensionObject[] notificationData = decoder.decodeExtensionObjectArray("NotificationData");
+      final UInteger sequenceNumber;
+      final DateTime publishTime;
+      final ExtensionObject[] notificationData;
+      sequenceNumber = decoder.decodeUInt32("SequenceNumber");
+      publishTime = decoder.decodeDateTime("PublishTime");
+      notificationData = decoder.decodeExtensionObjectArray("NotificationData");
       return new NotificationMessage(sequenceNumber, publishTime, notificationData);
     }
 

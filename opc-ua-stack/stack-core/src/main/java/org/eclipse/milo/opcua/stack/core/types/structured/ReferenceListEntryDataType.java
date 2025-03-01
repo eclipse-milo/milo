@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -25,18 +15,14 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.StructureType;
 import org.eclipse.milo.opcua.stack.core.util.codegen.EqualsBuilder;
 import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 
-/**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part23/5.5.2">https://reference.opcfoundation.org/v105/Core/docs/Part23/5.5.2</a>
- */
 public class ReferenceListEntryDataType extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=32660");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=32662");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=32662");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=32670");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=32670");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=32678");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=32678");
 
   private final NodeId referenceType;
 
@@ -158,9 +144,12 @@ public class ReferenceListEntryDataType extends Structure implements UaStructure
 
     @Override
     public ReferenceListEntryDataType decodeType(EncodingContext context, UaDecoder decoder) {
-      NodeId referenceType = decoder.decodeNodeId("ReferenceType");
-      Boolean isForward = decoder.decodeBoolean("IsForward");
-      ExpandedNodeId targetNode = decoder.decodeExpandedNodeId("TargetNode");
+      final NodeId referenceType;
+      final Boolean isForward;
+      final ExpandedNodeId targetNode;
+      referenceType = decoder.decodeNodeId("ReferenceType");
+      isForward = decoder.decodeBoolean("IsForward");
+      targetNode = decoder.decodeExpandedNodeId("TargetNode");
       return new ReferenceListEntryDataType(referenceType, isForward, targetNode);
     }
 

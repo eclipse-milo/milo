@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -18,6 +8,7 @@ import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
 import org.eclipse.milo.opcua.stack.core.encoding.UaEncoder;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
@@ -36,11 +27,11 @@ import org.jspecify.annotations.Nullable;
 public class WriterGroupDataType extends PubSubGroupDataType implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=15480");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=21150");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=21150");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=21174");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=21174");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=21198");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=21198");
 
   private final UShort writerGroupId;
 
@@ -209,7 +200,7 @@ public class WriterGroupDataType extends PubSubGroupDataType implements UaStruct
     return new StructureDefinition(
         new NodeId(0, 21150),
         new NodeId(0, 15609),
-        StructureType.Structure,
+        StructureType.StructureWithSubtypedValues,
         new StructureField[] {
           new StructureField(
               "Name",
@@ -322,7 +313,7 @@ public class WriterGroupDataType extends PubSubGroupDataType implements UaStruct
               -1,
               null,
               UInteger.valueOf(0),
-              false),
+              true),
           new StructureField(
               "MessageSettings",
               LocalizedText.NULL_VALUE,
@@ -330,7 +321,7 @@ public class WriterGroupDataType extends PubSubGroupDataType implements UaStruct
               -1,
               null,
               UInteger.valueOf(0),
-              false),
+              true),
           new StructureField(
               "DataSetWriters",
               LocalizedText.NULL_VALUE,
@@ -350,30 +341,47 @@ public class WriterGroupDataType extends PubSubGroupDataType implements UaStruct
 
     @Override
     public WriterGroupDataType decodeType(EncodingContext context, UaDecoder decoder) {
-      String name = decoder.decodeString("Name");
-      Boolean enabled = decoder.decodeBoolean("Enabled");
-      MessageSecurityMode securityMode =
-          MessageSecurityMode.from(decoder.decodeEnum("SecurityMode"));
-      String securityGroupId = decoder.decodeString("SecurityGroupId");
-      EndpointDescription[] securityKeyServices =
+      final String name;
+      final Boolean enabled;
+      final MessageSecurityMode securityMode;
+      final String securityGroupId;
+      final EndpointDescription[] securityKeyServices;
+      final UInteger maxNetworkMessageSize;
+      final KeyValuePair[] groupProperties;
+      final UShort writerGroupId;
+      final Double publishingInterval;
+      final Double keepAliveTime;
+      final UByte priority;
+      final String[] localeIds;
+      final String headerLayoutUri;
+      final WriterGroupTransportDataType transportSettings;
+      final WriterGroupMessageDataType messageSettings;
+      final DataSetWriterDataType[] dataSetWriters;
+      name = decoder.decodeString("Name");
+      enabled = decoder.decodeBoolean("Enabled");
+      securityMode = MessageSecurityMode.from(decoder.decodeEnum("SecurityMode"));
+      securityGroupId = decoder.decodeString("SecurityGroupId");
+      securityKeyServices =
           (EndpointDescription[])
               decoder.decodeStructArray("SecurityKeyServices", EndpointDescription.TYPE_ID);
-      UInteger maxNetworkMessageSize = decoder.decodeUInt32("MaxNetworkMessageSize");
-      KeyValuePair[] groupProperties =
+      maxNetworkMessageSize = decoder.decodeUInt32("MaxNetworkMessageSize");
+      groupProperties =
           (KeyValuePair[]) decoder.decodeStructArray("GroupProperties", KeyValuePair.TYPE_ID);
-      UShort writerGroupId = decoder.decodeUInt16("WriterGroupId");
-      Double publishingInterval = decoder.decodeDouble("PublishingInterval");
-      Double keepAliveTime = decoder.decodeDouble("KeepAliveTime");
-      UByte priority = decoder.decodeByte("Priority");
-      String[] localeIds = decoder.decodeStringArray("LocaleIds");
-      String headerLayoutUri = decoder.decodeString("HeaderLayoutUri");
-      WriterGroupTransportDataType transportSettings =
-          (WriterGroupTransportDataType)
-              decoder.decodeStruct("TransportSettings", WriterGroupTransportDataType.TYPE_ID);
-      WriterGroupMessageDataType messageSettings =
-          (WriterGroupMessageDataType)
-              decoder.decodeStruct("MessageSettings", WriterGroupMessageDataType.TYPE_ID);
-      DataSetWriterDataType[] dataSetWriters =
+      writerGroupId = decoder.decodeUInt16("WriterGroupId");
+      publishingInterval = decoder.decodeDouble("PublishingInterval");
+      keepAliveTime = decoder.decodeDouble("KeepAliveTime");
+      priority = decoder.decodeByte("Priority");
+      localeIds = decoder.decodeStringArray("LocaleIds");
+      headerLayoutUri = decoder.decodeString("HeaderLayoutUri");
+      {
+        ExtensionObject xo = decoder.decodeExtensionObject("TransportSettings");
+        transportSettings = (WriterGroupTransportDataType) xo.decode(context);
+      }
+      {
+        ExtensionObject xo = decoder.decodeExtensionObject("MessageSettings");
+        messageSettings = (WriterGroupMessageDataType) xo.decode(context);
+      }
+      dataSetWriters =
           (DataSetWriterDataType[])
               decoder.decodeStructArray("DataSetWriters", DataSetWriterDataType.TYPE_ID);
       return new WriterGroupDataType(
@@ -412,10 +420,14 @@ public class WriterGroupDataType extends PubSubGroupDataType implements UaStruct
       encoder.encodeByte("Priority", value.getPriority());
       encoder.encodeStringArray("LocaleIds", value.getLocaleIds());
       encoder.encodeString("HeaderLayoutUri", value.getHeaderLayoutUri());
-      encoder.encodeStruct(
-          "TransportSettings", value.getTransportSettings(), WriterGroupTransportDataType.TYPE_ID);
-      encoder.encodeStruct(
-          "MessageSettings", value.getMessageSettings(), WriterGroupMessageDataType.TYPE_ID);
+      {
+        ExtensionObject xo = ExtensionObject.encode(context, value.getTransportSettings());
+        encoder.encodeExtensionObject("TransportSettings", xo);
+      }
+      {
+        ExtensionObject xo = ExtensionObject.encode(context, value.getMessageSettings());
+        encoder.encodeExtensionObject("MessageSettings", xo);
+      }
       encoder.encodeStructArray(
           "DataSetWriters", value.getDataSetWriters(), DataSetWriterDataType.TYPE_ID);
     }

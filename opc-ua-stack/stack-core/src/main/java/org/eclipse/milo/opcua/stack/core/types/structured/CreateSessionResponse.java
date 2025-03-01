@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -29,16 +19,16 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.6.2/#5.6.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.6.2/#5.6.2.2</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.7.2/#5.7.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.7.2/#5.7.2.2</a>
  */
 public class CreateSessionResponse extends Structure implements UaResponseMessageType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=462");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=464");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=464");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=463");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=463");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15139");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15139");
 
   private final ResponseHeader responseHeader;
 
@@ -295,23 +285,33 @@ public class CreateSessionResponse extends Structure implements UaResponseMessag
 
     @Override
     public CreateSessionResponse decodeType(EncodingContext context, UaDecoder decoder) {
-      ResponseHeader responseHeader =
+      final ResponseHeader responseHeader;
+      final NodeId sessionId;
+      final NodeId authenticationToken;
+      final Double revisedSessionTimeout;
+      final ByteString serverNonce;
+      final ByteString serverCertificate;
+      final EndpointDescription[] serverEndpoints;
+      final SignedSoftwareCertificate[] serverSoftwareCertificates;
+      final SignatureData serverSignature;
+      final UInteger maxRequestMessageSize;
+      responseHeader =
           (ResponseHeader) decoder.decodeStruct("ResponseHeader", ResponseHeader.TYPE_ID);
-      NodeId sessionId = decoder.decodeNodeId("SessionId");
-      NodeId authenticationToken = decoder.decodeNodeId("AuthenticationToken");
-      Double revisedSessionTimeout = decoder.decodeDouble("RevisedSessionTimeout");
-      ByteString serverNonce = decoder.decodeByteString("ServerNonce");
-      ByteString serverCertificate = decoder.decodeByteString("ServerCertificate");
-      EndpointDescription[] serverEndpoints =
+      sessionId = decoder.decodeNodeId("SessionId");
+      authenticationToken = decoder.decodeNodeId("AuthenticationToken");
+      revisedSessionTimeout = decoder.decodeDouble("RevisedSessionTimeout");
+      serverNonce = decoder.decodeByteString("ServerNonce");
+      serverCertificate = decoder.decodeByteString("ServerCertificate");
+      serverEndpoints =
           (EndpointDescription[])
               decoder.decodeStructArray("ServerEndpoints", EndpointDescription.TYPE_ID);
-      SignedSoftwareCertificate[] serverSoftwareCertificates =
+      serverSoftwareCertificates =
           (SignedSoftwareCertificate[])
               decoder.decodeStructArray(
                   "ServerSoftwareCertificates", SignedSoftwareCertificate.TYPE_ID);
-      SignatureData serverSignature =
+      serverSignature =
           (SignatureData) decoder.decodeStruct("ServerSignature", SignatureData.TYPE_ID);
-      UInteger maxRequestMessageSize = decoder.decodeUInt32("MaxRequestMessageSize");
+      maxRequestMessageSize = decoder.decodeUInt32("MaxRequestMessageSize");
       return new CreateSessionResponse(
           responseHeader,
           sessionId,

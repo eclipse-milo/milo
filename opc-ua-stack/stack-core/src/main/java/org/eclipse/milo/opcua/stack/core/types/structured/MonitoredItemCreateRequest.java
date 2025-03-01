@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -28,16 +18,16 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.12.2/#5.12.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.12.2/#5.12.2.2</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.13.2/#5.13.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.13.2/#5.13.2.2</a>
  */
 public class MonitoredItemCreateRequest extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=743");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=745");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=745");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=744");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=744");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15321");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15321");
 
   private final ReadValueId itemToMonitor;
 
@@ -161,10 +151,12 @@ public class MonitoredItemCreateRequest extends Structure implements UaStructure
 
     @Override
     public MonitoredItemCreateRequest decodeType(EncodingContext context, UaDecoder decoder) {
-      ReadValueId itemToMonitor =
-          (ReadValueId) decoder.decodeStruct("ItemToMonitor", ReadValueId.TYPE_ID);
-      MonitoringMode monitoringMode = MonitoringMode.from(decoder.decodeEnum("MonitoringMode"));
-      MonitoringParameters requestedParameters =
+      final ReadValueId itemToMonitor;
+      final MonitoringMode monitoringMode;
+      final MonitoringParameters requestedParameters;
+      itemToMonitor = (ReadValueId) decoder.decodeStruct("ItemToMonitor", ReadValueId.TYPE_ID);
+      monitoringMode = MonitoringMode.from(decoder.decodeEnum("MonitoringMode"));
+      requestedParameters =
           (MonitoringParameters)
               decoder.decodeStruct("RequestedParameters", MonitoringParameters.TYPE_ID);
       return new MonitoredItemCreateRequest(itemToMonitor, monitoringMode, requestedParameters);

@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -33,11 +23,11 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 public class ViewAttributes extends NodeAttributes implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=373");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=375");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=375");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=374");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=374");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15162");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15162");
 
   private final Boolean containsNoLoops;
 
@@ -189,13 +179,20 @@ public class ViewAttributes extends NodeAttributes implements UaStructuredType {
 
     @Override
     public ViewAttributes decodeType(EncodingContext context, UaDecoder decoder) {
-      UInteger specifiedAttributes = decoder.decodeUInt32("SpecifiedAttributes");
-      LocalizedText displayName = decoder.decodeLocalizedText("DisplayName");
-      LocalizedText description = decoder.decodeLocalizedText("Description");
-      UInteger writeMask = decoder.decodeUInt32("WriteMask");
-      UInteger userWriteMask = decoder.decodeUInt32("UserWriteMask");
-      Boolean containsNoLoops = decoder.decodeBoolean("ContainsNoLoops");
-      UByte eventNotifier = decoder.decodeByte("EventNotifier");
+      final UInteger specifiedAttributes;
+      final LocalizedText displayName;
+      final LocalizedText description;
+      final UInteger writeMask;
+      final UInteger userWriteMask;
+      final Boolean containsNoLoops;
+      final UByte eventNotifier;
+      specifiedAttributes = decoder.decodeUInt32("SpecifiedAttributes");
+      displayName = decoder.decodeLocalizedText("DisplayName");
+      description = decoder.decodeLocalizedText("Description");
+      writeMask = decoder.decodeUInt32("WriteMask");
+      userWriteMask = decoder.decodeUInt32("UserWriteMask");
+      containsNoLoops = decoder.decodeBoolean("ContainsNoLoops");
+      eventNotifier = decoder.decodeByte("EventNotifier");
       return new ViewAttributes(
           specifiedAttributes,
           displayName,

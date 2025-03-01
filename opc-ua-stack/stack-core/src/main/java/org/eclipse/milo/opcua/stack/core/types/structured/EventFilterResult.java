@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -35,11 +25,11 @@ import org.jspecify.annotations.Nullable;
 public class EventFilterResult extends MonitoringFilterResult implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=734");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=736");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=736");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=735");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=735");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15314");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15314");
 
   private final StatusCode @Nullable [] selectClauseResults;
 
@@ -164,10 +154,13 @@ public class EventFilterResult extends MonitoringFilterResult implements UaStruc
 
     @Override
     public EventFilterResult decodeType(EncodingContext context, UaDecoder decoder) {
-      StatusCode[] selectClauseResults = decoder.decodeStatusCodeArray("SelectClauseResults");
-      DiagnosticInfo[] selectClauseDiagnosticInfos =
+      final StatusCode[] selectClauseResults;
+      final DiagnosticInfo[] selectClauseDiagnosticInfos;
+      final ContentFilterResult whereClauseResult;
+      selectClauseResults = decoder.decodeStatusCodeArray("SelectClauseResults");
+      selectClauseDiagnosticInfos =
           decoder.decodeDiagnosticInfoArray("SelectClauseDiagnosticInfos");
-      ContentFilterResult whereClauseResult =
+      whereClauseResult =
           (ContentFilterResult)
               decoder.decodeStruct("WhereClauseResult", ContentFilterResult.TYPE_ID);
       return new EventFilterResult(

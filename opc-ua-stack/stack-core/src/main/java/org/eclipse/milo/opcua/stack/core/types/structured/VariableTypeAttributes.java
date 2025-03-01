@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -34,11 +24,11 @@ import org.jspecify.annotations.Nullable;
 public class VariableTypeAttributes extends NodeAttributes implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=364");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=366");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=366");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=365");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=365");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15159");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15159");
 
   private final Variant value;
 
@@ -247,16 +237,26 @@ public class VariableTypeAttributes extends NodeAttributes implements UaStructur
 
     @Override
     public VariableTypeAttributes decodeType(EncodingContext context, UaDecoder decoder) {
-      UInteger specifiedAttributes = decoder.decodeUInt32("SpecifiedAttributes");
-      LocalizedText displayName = decoder.decodeLocalizedText("DisplayName");
-      LocalizedText description = decoder.decodeLocalizedText("Description");
-      UInteger writeMask = decoder.decodeUInt32("WriteMask");
-      UInteger userWriteMask = decoder.decodeUInt32("UserWriteMask");
-      Variant value = decoder.decodeVariant("Value");
-      NodeId dataType = decoder.decodeNodeId("DataType");
-      Integer valueRank = decoder.decodeInt32("ValueRank");
-      UInteger[] arrayDimensions = decoder.decodeUInt32Array("ArrayDimensions");
-      Boolean isAbstract = decoder.decodeBoolean("IsAbstract");
+      final UInteger specifiedAttributes;
+      final LocalizedText displayName;
+      final LocalizedText description;
+      final UInteger writeMask;
+      final UInteger userWriteMask;
+      final Variant value;
+      final NodeId dataType;
+      final Integer valueRank;
+      final UInteger[] arrayDimensions;
+      final Boolean isAbstract;
+      specifiedAttributes = decoder.decodeUInt32("SpecifiedAttributes");
+      displayName = decoder.decodeLocalizedText("DisplayName");
+      description = decoder.decodeLocalizedText("Description");
+      writeMask = decoder.decodeUInt32("WriteMask");
+      userWriteMask = decoder.decodeUInt32("UserWriteMask");
+      value = decoder.decodeVariant("Value");
+      dataType = decoder.decodeNodeId("DataType");
+      valueRank = decoder.decodeInt32("ValueRank");
+      arrayDimensions = decoder.decodeUInt32Array("ArrayDimensions");
+      isAbstract = decoder.decodeBoolean("IsAbstract");
       return new VariableTypeAttributes(
           specifiedAttributes,
           displayName,

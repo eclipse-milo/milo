@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -29,16 +19,16 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v104/Core/docs/Part11/6.5.3">https://reference.opcfoundation.org/v104/Core/docs/Part11/6.5.3</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/6.6.3">https://reference.opcfoundation.org/v105/Core/docs/Part11/6.6.3</a>
  */
 public class HistoryModifiedData extends HistoryData implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=11217");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=11227");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=11227");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=11219");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=11219");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15272");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15272");
 
   private final ModificationInfo @Nullable [] modificationInfos;
 
@@ -134,8 +124,10 @@ public class HistoryModifiedData extends HistoryData implements UaStructuredType
 
     @Override
     public HistoryModifiedData decodeType(EncodingContext context, UaDecoder decoder) {
-      DataValue[] dataValues = decoder.decodeDataValueArray("DataValues");
-      ModificationInfo[] modificationInfos =
+      final DataValue[] dataValues;
+      final ModificationInfo[] modificationInfos;
+      dataValues = decoder.decodeDataValueArray("DataValues");
+      modificationInfos =
           (ModificationInfo[])
               decoder.decodeStructArray("ModificationInfos", ModificationInfo.TYPE_ID);
       return new HistoryModifiedData(dataValues, modificationInfos);

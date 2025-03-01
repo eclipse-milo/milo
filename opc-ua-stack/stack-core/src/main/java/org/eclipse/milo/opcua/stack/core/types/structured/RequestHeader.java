@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -35,11 +25,11 @@ import org.jspecify.annotations.Nullable;
 public class RequestHeader extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=389");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=391");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=391");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=390");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=390");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15088");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15088");
 
   private final NodeId authenticationToken;
 
@@ -238,13 +228,20 @@ public class RequestHeader extends Structure implements UaStructuredType {
 
     @Override
     public RequestHeader decodeType(EncodingContext context, UaDecoder decoder) {
-      NodeId authenticationToken = decoder.decodeNodeId("AuthenticationToken");
-      DateTime timestamp = decoder.decodeDateTime("Timestamp");
-      UInteger requestHandle = decoder.decodeUInt32("RequestHandle");
-      UInteger returnDiagnostics = decoder.decodeUInt32("ReturnDiagnostics");
-      String auditEntryId = decoder.decodeString("AuditEntryId");
-      UInteger timeoutHint = decoder.decodeUInt32("TimeoutHint");
-      ExtensionObject additionalHeader = decoder.decodeExtensionObject("AdditionalHeader");
+      final NodeId authenticationToken;
+      final DateTime timestamp;
+      final UInteger requestHandle;
+      final UInteger returnDiagnostics;
+      final String auditEntryId;
+      final UInteger timeoutHint;
+      final ExtensionObject additionalHeader;
+      authenticationToken = decoder.decodeNodeId("AuthenticationToken");
+      timestamp = decoder.decodeDateTime("Timestamp");
+      requestHandle = decoder.decodeUInt32("RequestHandle");
+      returnDiagnostics = decoder.decodeUInt32("ReturnDiagnostics");
+      auditEntryId = decoder.decodeString("AuditEntryId");
+      timeoutHint = decoder.decodeUInt32("TimeoutHint");
+      additionalHeader = decoder.decodeExtensionObject("AdditionalHeader");
       return new RequestHeader(
           authenticationToken,
           timestamp,

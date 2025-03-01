@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -27,16 +17,16 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.9.3/#5.9.3.1">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.9.3/#5.9.3.1</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.10.3/#5.10.3.1">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.10.3/#5.10.3.1</a>
  */
 public class QueryDataDescription extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=570");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=572");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=572");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=571");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=571");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15200");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15200");
 
   private final RelativePath relativePath;
 
@@ -156,10 +146,12 @@ public class QueryDataDescription extends Structure implements UaStructuredType 
 
     @Override
     public QueryDataDescription decodeType(EncodingContext context, UaDecoder decoder) {
-      RelativePath relativePath =
-          (RelativePath) decoder.decodeStruct("RelativePath", RelativePath.TYPE_ID);
-      UInteger attributeId = decoder.decodeUInt32("AttributeId");
-      String indexRange = decoder.decodeString("IndexRange");
+      final RelativePath relativePath;
+      final UInteger attributeId;
+      final String indexRange;
+      relativePath = (RelativePath) decoder.decodeStruct("RelativePath", RelativePath.TYPE_ID);
+      attributeId = decoder.decodeUInt32("AttributeId");
+      indexRange = decoder.decodeString("IndexRange");
       return new QueryDataDescription(relativePath, attributeId, indexRange);
     }
 

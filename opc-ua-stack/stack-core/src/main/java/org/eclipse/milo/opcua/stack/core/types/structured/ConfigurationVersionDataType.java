@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -27,16 +17,16 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/6.2.3/#6.2.3.2.5">https://reference.opcfoundation.org/v105/Core/docs/Part14/6.2.3/#6.2.3.2.5</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/6.2.3/#6.2.3.2.6">https://reference.opcfoundation.org/v105/Core/docs/Part14/6.2.3/#6.2.3.2.6</a>
  */
 public class ConfigurationVersionDataType extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=14593");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=14847");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=14847");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=14803");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=14803");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15049");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15049");
 
   private final UInteger majorVersion;
 
@@ -139,8 +129,10 @@ public class ConfigurationVersionDataType extends Structure implements UaStructu
 
     @Override
     public ConfigurationVersionDataType decodeType(EncodingContext context, UaDecoder decoder) {
-      UInteger majorVersion = decoder.decodeUInt32("MajorVersion");
-      UInteger minorVersion = decoder.decodeUInt32("MinorVersion");
+      final UInteger majorVersion;
+      final UInteger minorVersion;
+      majorVersion = decoder.decodeUInt32("MajorVersion");
+      minorVersion = decoder.decodeUInt32("MinorVersion");
       return new ConfigurationVersionDataType(majorVersion, minorVersion);
     }
 

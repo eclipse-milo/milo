@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -35,11 +25,11 @@ import org.jspecify.annotations.Nullable;
 public class RedundantServerDataType extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=853");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=855");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=855");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=854");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=854");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15362");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15362");
 
   private final @Nullable String serverId;
 
@@ -160,9 +150,12 @@ public class RedundantServerDataType extends Structure implements UaStructuredTy
 
     @Override
     public RedundantServerDataType decodeType(EncodingContext context, UaDecoder decoder) {
-      String serverId = decoder.decodeString("ServerId");
-      UByte serviceLevel = decoder.decodeByte("ServiceLevel");
-      ServerState serverState = ServerState.from(decoder.decodeEnum("ServerState"));
+      final String serverId;
+      final UByte serviceLevel;
+      final ServerState serverState;
+      serverId = decoder.decodeString("ServerId");
+      serviceLevel = decoder.decodeByte("ServiceLevel");
+      serverState = ServerState.from(decoder.decodeEnum("ServerState"));
       return new RedundantServerDataType(serverId, serviceLevel, serverState);
     }
 

@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -29,21 +19,23 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v104/Core/docs/Part11/6.8.6/#6.8.6.1">https://reference.opcfoundation.org/v104/Core/docs/Part11/6.8.6/#6.8.6.1</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/6.9.6/#6.9.6.1">https://reference.opcfoundation.org/v105/Core/docs/Part11/6.9.6/#6.9.6.1</a>
  */
 public class DeleteAtTimeDetails extends HistoryUpdateDetails implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=689");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=691");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=691");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=690");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=690");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15284");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15284");
+
+  private final NodeId nodeId;
 
   private final DateTime @Nullable [] reqTimes;
 
   public DeleteAtTimeDetails(NodeId nodeId, DateTime @Nullable [] reqTimes) {
-    super(nodeId);
+    this.nodeId = nodeId;
     this.reqTimes = reqTimes;
   }
 
@@ -67,6 +59,10 @@ public class DeleteAtTimeDetails extends HistoryUpdateDetails implements UaStruc
     return JSON_ENCODING_ID;
   }
 
+  public NodeId getNodeId() {
+    return nodeId;
+  }
+
   public DateTime @Nullable [] getReqTimes() {
     return reqTimes;
   }
@@ -80,7 +76,7 @@ public class DeleteAtTimeDetails extends HistoryUpdateDetails implements UaStruc
     }
     DeleteAtTimeDetails that = (DeleteAtTimeDetails) object;
     var eqb = new EqualsBuilder();
-    eqb.appendSuper(super.equals(object));
+    eqb.append(getNodeId(), that.getNodeId());
     eqb.append(getReqTimes(), that.getReqTimes());
     return eqb.build();
   }
@@ -88,14 +84,15 @@ public class DeleteAtTimeDetails extends HistoryUpdateDetails implements UaStruc
   @Override
   public int hashCode() {
     var hcb = new HashCodeBuilder();
+    hcb.append(getNodeId());
     hcb.append(getReqTimes());
-    hcb.appendSuper(super.hashCode());
     return hcb.build();
   }
 
   @Override
   public String toString() {
     var joiner = new StringJoiner(", ", DeleteAtTimeDetails.class.getSimpleName() + "[", "]");
+    joiner.add("nodeId=" + getNodeId());
     joiner.add("reqTimes=" + java.util.Arrays.toString(getReqTimes()));
     return joiner.toString();
   }
@@ -133,8 +130,10 @@ public class DeleteAtTimeDetails extends HistoryUpdateDetails implements UaStruc
 
     @Override
     public DeleteAtTimeDetails decodeType(EncodingContext context, UaDecoder decoder) {
-      NodeId nodeId = decoder.decodeNodeId("NodeId");
-      DateTime[] reqTimes = decoder.decodeDateTimeArray("ReqTimes");
+      final NodeId nodeId;
+      final DateTime[] reqTimes;
+      nodeId = decoder.decodeNodeId("NodeId");
+      reqTimes = decoder.decodeDateTimeArray("ReqTimes");
       return new DeleteAtTimeDetails(nodeId, reqTimes);
     }
 

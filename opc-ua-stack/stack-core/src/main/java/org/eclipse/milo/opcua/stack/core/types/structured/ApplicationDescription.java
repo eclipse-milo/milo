@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -29,16 +19,16 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/12.3.3">https://reference.opcfoundation.org/v105/Core/docs/Part5/12.3.3</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/7.2.4/#7.2.4.6.5">https://reference.opcfoundation.org/v105/Core/docs/Part14/7.2.4/#7.2.4.6.5</a>
  */
 public class ApplicationDescription extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=308");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=310");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=310");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=309");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=309");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15087");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15087");
 
   private final @Nullable String applicationUri;
 
@@ -237,13 +227,20 @@ public class ApplicationDescription extends Structure implements UaStructuredTyp
 
     @Override
     public ApplicationDescription decodeType(EncodingContext context, UaDecoder decoder) {
-      String applicationUri = decoder.decodeString("ApplicationUri");
-      String productUri = decoder.decodeString("ProductUri");
-      LocalizedText applicationName = decoder.decodeLocalizedText("ApplicationName");
-      ApplicationType applicationType = ApplicationType.from(decoder.decodeEnum("ApplicationType"));
-      String gatewayServerUri = decoder.decodeString("GatewayServerUri");
-      String discoveryProfileUri = decoder.decodeString("DiscoveryProfileUri");
-      String[] discoveryUrls = decoder.decodeStringArray("DiscoveryUrls");
+      final String applicationUri;
+      final String productUri;
+      final LocalizedText applicationName;
+      final ApplicationType applicationType;
+      final String gatewayServerUri;
+      final String discoveryProfileUri;
+      final String[] discoveryUrls;
+      applicationUri = decoder.decodeString("ApplicationUri");
+      productUri = decoder.decodeString("ProductUri");
+      applicationName = decoder.decodeLocalizedText("ApplicationName");
+      applicationType = ApplicationType.from(decoder.decodeEnum("ApplicationType"));
+      gatewayServerUri = decoder.decodeString("GatewayServerUri");
+      discoveryProfileUri = decoder.decodeString("DiscoveryProfileUri");
+      discoveryUrls = decoder.decodeStringArray("DiscoveryUrls");
       return new ApplicationDescription(
           applicationUri,
           productUri,

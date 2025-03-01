@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -34,11 +24,11 @@ import org.jspecify.annotations.Nullable;
 public class AxisInformation extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=12079");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=12089");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=12089");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=12081");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=12081");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15379");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15379");
 
   private final EUInformation engineeringUnits;
 
@@ -199,13 +189,17 @@ public class AxisInformation extends Structure implements UaStructuredType {
 
     @Override
     public AxisInformation decodeType(EncodingContext context, UaDecoder decoder) {
-      EUInformation engineeringUnits =
+      final EUInformation engineeringUnits;
+      final Range euRange;
+      final LocalizedText title;
+      final AxisScaleEnumeration axisScaleType;
+      final Double[] axisSteps;
+      engineeringUnits =
           (EUInformation) decoder.decodeStruct("EngineeringUnits", EUInformation.TYPE_ID);
-      Range euRange = (Range) decoder.decodeStruct("EURange", Range.TYPE_ID);
-      LocalizedText title = decoder.decodeLocalizedText("Title");
-      AxisScaleEnumeration axisScaleType =
-          AxisScaleEnumeration.from(decoder.decodeEnum("AxisScaleType"));
-      Double[] axisSteps = decoder.decodeDoubleArray("AxisSteps");
+      euRange = (Range) decoder.decodeStruct("EURange", Range.TYPE_ID);
+      title = decoder.decodeLocalizedText("Title");
+      axisScaleType = AxisScaleEnumeration.from(decoder.decodeEnum("AxisScaleType"));
+      axisSteps = decoder.decodeDoubleArray("AxisSteps");
       return new AxisInformation(engineeringUnits, euRange, title, axisScaleType, axisSteps);
     }
 

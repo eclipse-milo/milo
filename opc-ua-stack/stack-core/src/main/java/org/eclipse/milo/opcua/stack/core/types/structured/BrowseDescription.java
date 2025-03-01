@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -28,16 +18,16 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.8.2/#5.8.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.8.2/#5.8.2.2</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.9.2/#5.9.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.9.2/#5.9.2.2</a>
  */
 public class BrowseDescription extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=514");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=516");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=516");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=515");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=515");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15180");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15180");
 
   private final NodeId nodeId;
 
@@ -217,12 +207,18 @@ public class BrowseDescription extends Structure implements UaStructuredType {
 
     @Override
     public BrowseDescription decodeType(EncodingContext context, UaDecoder decoder) {
-      NodeId nodeId = decoder.decodeNodeId("NodeId");
-      BrowseDirection browseDirection = BrowseDirection.from(decoder.decodeEnum("BrowseDirection"));
-      NodeId referenceTypeId = decoder.decodeNodeId("ReferenceTypeId");
-      Boolean includeSubtypes = decoder.decodeBoolean("IncludeSubtypes");
-      UInteger nodeClassMask = decoder.decodeUInt32("NodeClassMask");
-      UInteger resultMask = decoder.decodeUInt32("ResultMask");
+      final NodeId nodeId;
+      final BrowseDirection browseDirection;
+      final NodeId referenceTypeId;
+      final Boolean includeSubtypes;
+      final UInteger nodeClassMask;
+      final UInteger resultMask;
+      nodeId = decoder.decodeNodeId("NodeId");
+      browseDirection = BrowseDirection.from(decoder.decodeEnum("BrowseDirection"));
+      referenceTypeId = decoder.decodeNodeId("ReferenceTypeId");
+      includeSubtypes = decoder.decodeBoolean("IncludeSubtypes");
+      nodeClassMask = decoder.decodeUInt32("NodeClassMask");
+      resultMask = decoder.decodeUInt32("ResultMask");
       return new BrowseDescription(
           nodeId, browseDirection, referenceTypeId, includeSubtypes, nodeClassMask, resultMask);
     }

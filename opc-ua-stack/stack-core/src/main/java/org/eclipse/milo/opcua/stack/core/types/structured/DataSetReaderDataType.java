@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -18,6 +8,7 @@ import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
 import org.eclipse.milo.opcua.stack.core.encoding.UaEncoder;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
@@ -36,11 +27,11 @@ import org.jspecify.annotations.Nullable;
 public class DataSetReaderDataType extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=15623");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=15703");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15703");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=16007");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=16007");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=16286");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=16286");
 
   private final @Nullable String name;
 
@@ -281,7 +272,7 @@ public class DataSetReaderDataType extends Structure implements UaStructuredType
     return new StructureDefinition(
         new NodeId(0, 15703),
         new NodeId(0, 22),
-        StructureType.Structure,
+        StructureType.StructureWithSubtypedValues,
         new StructureField[] {
           new StructureField(
               "Name",
@@ -402,7 +393,7 @@ public class DataSetReaderDataType extends Structure implements UaStructuredType
               -1,
               null,
               UInteger.valueOf(0),
-              false),
+              true),
           new StructureField(
               "MessageSettings",
               LocalizedText.NULL_VALUE,
@@ -410,7 +401,7 @@ public class DataSetReaderDataType extends Structure implements UaStructuredType
               -1,
               null,
               UInteger.valueOf(0),
-              false),
+              true),
           new StructureField(
               "SubscribedDataSet",
               LocalizedText.NULL_VALUE,
@@ -418,7 +409,7 @@ public class DataSetReaderDataType extends Structure implements UaStructuredType
               -1,
               null,
               UInteger.valueOf(0),
-              false)
+              true)
         });
   }
 
@@ -430,37 +421,56 @@ public class DataSetReaderDataType extends Structure implements UaStructuredType
 
     @Override
     public DataSetReaderDataType decodeType(EncodingContext context, UaDecoder decoder) {
-      String name = decoder.decodeString("Name");
-      Boolean enabled = decoder.decodeBoolean("Enabled");
-      Variant publisherId = decoder.decodeVariant("PublisherId");
-      UShort writerGroupId = decoder.decodeUInt16("WriterGroupId");
-      UShort dataSetWriterId = decoder.decodeUInt16("DataSetWriterId");
-      DataSetMetaDataType dataSetMetaData =
+      final String name;
+      final Boolean enabled;
+      final Variant publisherId;
+      final UShort writerGroupId;
+      final UShort dataSetWriterId;
+      final DataSetMetaDataType dataSetMetaData;
+      final DataSetFieldContentMask dataSetFieldContentMask;
+      final Double messageReceiveTimeout;
+      final UInteger keyFrameCount;
+      final String headerLayoutUri;
+      final MessageSecurityMode securityMode;
+      final String securityGroupId;
+      final EndpointDescription[] securityKeyServices;
+      final KeyValuePair[] dataSetReaderProperties;
+      final DataSetReaderTransportDataType transportSettings;
+      final DataSetReaderMessageDataType messageSettings;
+      final SubscribedDataSetDataType subscribedDataSet;
+      name = decoder.decodeString("Name");
+      enabled = decoder.decodeBoolean("Enabled");
+      publisherId = decoder.decodeVariant("PublisherId");
+      writerGroupId = decoder.decodeUInt16("WriterGroupId");
+      dataSetWriterId = decoder.decodeUInt16("DataSetWriterId");
+      dataSetMetaData =
           (DataSetMetaDataType)
               decoder.decodeStruct("DataSetMetaData", DataSetMetaDataType.TYPE_ID);
-      DataSetFieldContentMask dataSetFieldContentMask =
+      dataSetFieldContentMask =
           new DataSetFieldContentMask(decoder.decodeUInt32("DataSetFieldContentMask"));
-      Double messageReceiveTimeout = decoder.decodeDouble("MessageReceiveTimeout");
-      UInteger keyFrameCount = decoder.decodeUInt32("KeyFrameCount");
-      String headerLayoutUri = decoder.decodeString("HeaderLayoutUri");
-      MessageSecurityMode securityMode =
-          MessageSecurityMode.from(decoder.decodeEnum("SecurityMode"));
-      String securityGroupId = decoder.decodeString("SecurityGroupId");
-      EndpointDescription[] securityKeyServices =
+      messageReceiveTimeout = decoder.decodeDouble("MessageReceiveTimeout");
+      keyFrameCount = decoder.decodeUInt32("KeyFrameCount");
+      headerLayoutUri = decoder.decodeString("HeaderLayoutUri");
+      securityMode = MessageSecurityMode.from(decoder.decodeEnum("SecurityMode"));
+      securityGroupId = decoder.decodeString("SecurityGroupId");
+      securityKeyServices =
           (EndpointDescription[])
               decoder.decodeStructArray("SecurityKeyServices", EndpointDescription.TYPE_ID);
-      KeyValuePair[] dataSetReaderProperties =
+      dataSetReaderProperties =
           (KeyValuePair[])
               decoder.decodeStructArray("DataSetReaderProperties", KeyValuePair.TYPE_ID);
-      DataSetReaderTransportDataType transportSettings =
-          (DataSetReaderTransportDataType)
-              decoder.decodeStruct("TransportSettings", DataSetReaderTransportDataType.TYPE_ID);
-      DataSetReaderMessageDataType messageSettings =
-          (DataSetReaderMessageDataType)
-              decoder.decodeStruct("MessageSettings", DataSetReaderMessageDataType.TYPE_ID);
-      SubscribedDataSetDataType subscribedDataSet =
-          (SubscribedDataSetDataType)
-              decoder.decodeStruct("SubscribedDataSet", SubscribedDataSetDataType.TYPE_ID);
+      {
+        ExtensionObject xo = decoder.decodeExtensionObject("TransportSettings");
+        transportSettings = (DataSetReaderTransportDataType) xo.decode(context);
+      }
+      {
+        ExtensionObject xo = decoder.decodeExtensionObject("MessageSettings");
+        messageSettings = (DataSetReaderMessageDataType) xo.decode(context);
+      }
+      {
+        ExtensionObject xo = decoder.decodeExtensionObject("SubscribedDataSet");
+        subscribedDataSet = (SubscribedDataSetDataType) xo.decode(context);
+      }
       return new DataSetReaderDataType(
           name,
           enabled,
@@ -502,14 +512,18 @@ public class DataSetReaderDataType extends Structure implements UaStructuredType
           "SecurityKeyServices", value.getSecurityKeyServices(), EndpointDescription.TYPE_ID);
       encoder.encodeStructArray(
           "DataSetReaderProperties", value.getDataSetReaderProperties(), KeyValuePair.TYPE_ID);
-      encoder.encodeStruct(
-          "TransportSettings",
-          value.getTransportSettings(),
-          DataSetReaderTransportDataType.TYPE_ID);
-      encoder.encodeStruct(
-          "MessageSettings", value.getMessageSettings(), DataSetReaderMessageDataType.TYPE_ID);
-      encoder.encodeStruct(
-          "SubscribedDataSet", value.getSubscribedDataSet(), SubscribedDataSetDataType.TYPE_ID);
+      {
+        ExtensionObject xo = ExtensionObject.encode(context, value.getTransportSettings());
+        encoder.encodeExtensionObject("TransportSettings", xo);
+      }
+      {
+        ExtensionObject xo = ExtensionObject.encode(context, value.getMessageSettings());
+        encoder.encodeExtensionObject("MessageSettings", xo);
+      }
+      {
+        ExtensionObject xo = ExtensionObject.encode(context, value.getSubscribedDataSet());
+        encoder.encodeExtensionObject("SubscribedDataSet", xo);
+      }
     }
   }
 }

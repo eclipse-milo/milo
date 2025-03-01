@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -32,11 +22,11 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 public class DeleteReferencesItem extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=385");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=387");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=387");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=386");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=386");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15175");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15175");
 
   private final NodeId sourceNodeId;
 
@@ -197,11 +187,16 @@ public class DeleteReferencesItem extends Structure implements UaStructuredType 
 
     @Override
     public DeleteReferencesItem decodeType(EncodingContext context, UaDecoder decoder) {
-      NodeId sourceNodeId = decoder.decodeNodeId("SourceNodeId");
-      NodeId referenceTypeId = decoder.decodeNodeId("ReferenceTypeId");
-      Boolean isForward = decoder.decodeBoolean("IsForward");
-      ExpandedNodeId targetNodeId = decoder.decodeExpandedNodeId("TargetNodeId");
-      Boolean deleteBidirectional = decoder.decodeBoolean("DeleteBidirectional");
+      final NodeId sourceNodeId;
+      final NodeId referenceTypeId;
+      final Boolean isForward;
+      final ExpandedNodeId targetNodeId;
+      final Boolean deleteBidirectional;
+      sourceNodeId = decoder.decodeNodeId("SourceNodeId");
+      referenceTypeId = decoder.decodeNodeId("ReferenceTypeId");
+      isForward = decoder.decodeBoolean("IsForward");
+      targetNodeId = decoder.decodeExpandedNodeId("TargetNodeId");
+      deleteBidirectional = decoder.decodeBoolean("DeleteBidirectional");
       return new DeleteReferencesItem(
           sourceNodeId, referenceTypeId, isForward, targetNodeId, deleteBidirectional);
     }

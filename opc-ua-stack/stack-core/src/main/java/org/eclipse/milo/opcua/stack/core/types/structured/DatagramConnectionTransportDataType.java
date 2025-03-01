@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -18,6 +8,7 @@ import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
 import org.eclipse.milo.opcua.stack.core.encoding.UaEncoder;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -33,11 +24,11 @@ public class DatagramConnectionTransportDataType extends ConnectionTransportData
     implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=17467");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=17468");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=17468");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=17472");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=17472");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=17476");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=17476");
 
   private final NetworkAddressDataType discoveryAddress;
 
@@ -102,7 +93,7 @@ public class DatagramConnectionTransportDataType extends ConnectionTransportData
     return new StructureDefinition(
         new NodeId(0, 17468),
         new NodeId(0, 15618),
-        StructureType.Structure,
+        StructureType.StructureWithSubtypedValues,
         new StructureField[] {
           new StructureField(
               "DiscoveryAddress",
@@ -111,7 +102,7 @@ public class DatagramConnectionTransportDataType extends ConnectionTransportData
               -1,
               null,
               UInteger.valueOf(0),
-              false)
+              true)
         });
   }
 
@@ -125,17 +116,21 @@ public class DatagramConnectionTransportDataType extends ConnectionTransportData
     @Override
     public DatagramConnectionTransportDataType decodeType(
         EncodingContext context, UaDecoder decoder) {
-      NetworkAddressDataType discoveryAddress =
-          (NetworkAddressDataType)
-              decoder.decodeStruct("DiscoveryAddress", NetworkAddressDataType.TYPE_ID);
+      final NetworkAddressDataType discoveryAddress;
+      {
+        ExtensionObject xo = decoder.decodeExtensionObject("DiscoveryAddress");
+        discoveryAddress = (NetworkAddressDataType) xo.decode(context);
+      }
       return new DatagramConnectionTransportDataType(discoveryAddress);
     }
 
     @Override
     public void encodeType(
         EncodingContext context, UaEncoder encoder, DatagramConnectionTransportDataType value) {
-      encoder.encodeStruct(
-          "DiscoveryAddress", value.getDiscoveryAddress(), NetworkAddressDataType.TYPE_ID);
+      {
+        ExtensionObject xo = ExtensionObject.encode(context, value.getDiscoveryAddress());
+        encoder.encodeExtensionObject("DiscoveryAddress", xo);
+      }
     }
   }
 }

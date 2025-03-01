@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -28,16 +18,16 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.4.3/#5.4.3.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.4.3/#5.4.3.2</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.5.3/#5.5.3.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.5.3/#5.5.3.2</a>
  */
 public class FindServersOnNetworkRequest extends Structure implements UaRequestMessageType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=12190");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=12208");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=12208");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=12196");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=12196");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15096");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15096");
 
   private final RequestHeader requestHeader;
 
@@ -180,11 +170,14 @@ public class FindServersOnNetworkRequest extends Structure implements UaRequestM
 
     @Override
     public FindServersOnNetworkRequest decodeType(EncodingContext context, UaDecoder decoder) {
-      RequestHeader requestHeader =
-          (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
-      UInteger startingRecordId = decoder.decodeUInt32("StartingRecordId");
-      UInteger maxRecordsToReturn = decoder.decodeUInt32("MaxRecordsToReturn");
-      String[] serverCapabilityFilter = decoder.decodeStringArray("ServerCapabilityFilter");
+      final RequestHeader requestHeader;
+      final UInteger startingRecordId;
+      final UInteger maxRecordsToReturn;
+      final String[] serverCapabilityFilter;
+      requestHeader = (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
+      startingRecordId = decoder.decodeUInt32("StartingRecordId");
+      maxRecordsToReturn = decoder.decodeUInt32("MaxRecordsToReturn");
+      serverCapabilityFilter = decoder.decodeStringArray("ServerCapabilityFilter");
       return new FindServersOnNetworkRequest(
           requestHeader, startingRecordId, maxRecordsToReturn, serverCapabilityFilter);
     }

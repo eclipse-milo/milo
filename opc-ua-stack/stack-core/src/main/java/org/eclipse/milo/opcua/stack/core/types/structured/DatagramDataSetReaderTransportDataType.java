@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -18,6 +8,7 @@ import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
 import org.eclipse.milo.opcua.stack.core.encoding.UaEncoder;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -34,11 +25,11 @@ public class DatagramDataSetReaderTransportDataType extends DataSetReaderTranspo
     implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=23614");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=23866");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=23866");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=23934");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=23934");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=24002");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=24002");
 
   private final NetworkAddressDataType address;
 
@@ -137,7 +128,7 @@ public class DatagramDataSetReaderTransportDataType extends DataSetReaderTranspo
     return new StructureDefinition(
         new NodeId(0, 23866),
         new NodeId(0, 15628),
-        StructureType.Structure,
+        StructureType.StructureWithSubtypedValues,
         new StructureField[] {
           new StructureField(
               "Address",
@@ -146,7 +137,7 @@ public class DatagramDataSetReaderTransportDataType extends DataSetReaderTranspo
               -1,
               null,
               UInteger.valueOf(0),
-              false),
+              true),
           new StructureField(
               "QosCategory",
               LocalizedText.NULL_VALUE,
@@ -162,7 +153,7 @@ public class DatagramDataSetReaderTransportDataType extends DataSetReaderTranspo
               1,
               null,
               UInteger.valueOf(0),
-              false),
+              true),
           new StructureField(
               "Topic",
               LocalizedText.NULL_VALUE,
@@ -184,22 +175,49 @@ public class DatagramDataSetReaderTransportDataType extends DataSetReaderTranspo
     @Override
     public DatagramDataSetReaderTransportDataType decodeType(
         EncodingContext context, UaDecoder decoder) {
-      NetworkAddressDataType address =
-          (NetworkAddressDataType) decoder.decodeStruct("Address", NetworkAddressDataType.TYPE_ID);
-      String qosCategory = decoder.decodeString("QosCategory");
-      ReceiveQosDataType[] datagramQos =
-          (ReceiveQosDataType[])
-              decoder.decodeStructArray("DatagramQos", ReceiveQosDataType.TYPE_ID);
-      String topic = decoder.decodeString("Topic");
+      final NetworkAddressDataType address;
+      final String qosCategory;
+      final ReceiveQosDataType[] datagramQos;
+      final String topic;
+      {
+        ExtensionObject xo = decoder.decodeExtensionObject("Address");
+        address = (NetworkAddressDataType) xo.decode(context);
+      }
+      qosCategory = decoder.decodeString("QosCategory");
+      {
+        ExtensionObject[] xos = decoder.decodeExtensionObjectArray("DatagramQos");
+        if (xos != null) {
+          datagramQos = new ReceiveQosDataType[xos.length];
+          for (int i = 0; i < xos.length; i++) {
+            datagramQos[i] = (ReceiveQosDataType) xos[i].decode(context);
+          }
+        } else {
+          datagramQos = null;
+        }
+      }
+      topic = decoder.decodeString("Topic");
       return new DatagramDataSetReaderTransportDataType(address, qosCategory, datagramQos, topic);
     }
 
     @Override
     public void encodeType(
         EncodingContext context, UaEncoder encoder, DatagramDataSetReaderTransportDataType value) {
-      encoder.encodeStruct("Address", value.getAddress(), NetworkAddressDataType.TYPE_ID);
+      {
+        ExtensionObject xo = ExtensionObject.encode(context, value.getAddress());
+        encoder.encodeExtensionObject("Address", xo);
+      }
       encoder.encodeString("QosCategory", value.getQosCategory());
-      encoder.encodeStructArray("DatagramQos", value.getDatagramQos(), ReceiveQosDataType.TYPE_ID);
+      {
+        ExtensionObject[] xos = null;
+        ReceiveQosDataType[] datagramQos = value.getDatagramQos();
+        if (datagramQos != null) {
+          xos = new ExtensionObject[datagramQos.length];
+          for (int i = 0; i < xos.length; i++) {
+            xos[i] = ExtensionObject.encode(context, datagramQos[i]);
+          }
+        }
+        encoder.encodeExtensionObjectArray("DatagramQos", xos);
+      }
       encoder.encodeString("Topic", value.getTopic());
     }
   }

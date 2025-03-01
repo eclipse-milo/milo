@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -33,11 +23,11 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 public class DataChangeFilter extends MonitoringFilter implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=722");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=724");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=724");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=723");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=723");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15294");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15294");
 
   private final DataChangeTrigger trigger;
 
@@ -157,9 +147,12 @@ public class DataChangeFilter extends MonitoringFilter implements UaStructuredTy
 
     @Override
     public DataChangeFilter decodeType(EncodingContext context, UaDecoder decoder) {
-      DataChangeTrigger trigger = DataChangeTrigger.from(decoder.decodeEnum("Trigger"));
-      UInteger deadbandType = decoder.decodeUInt32("DeadbandType");
-      Double deadbandValue = decoder.decodeDouble("DeadbandValue");
+      final DataChangeTrigger trigger;
+      final UInteger deadbandType;
+      final Double deadbandValue;
+      trigger = DataChangeTrigger.from(decoder.decodeEnum("Trigger"));
+      deadbandType = decoder.decodeUInt32("DeadbandType");
+      deadbandValue = decoder.decodeDouble("DeadbandValue");
       return new DataChangeFilter(trigger, deadbandType, deadbandValue);
     }
 

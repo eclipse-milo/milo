@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -33,11 +23,11 @@ import org.jspecify.annotations.Nullable;
 public class AdditionalParametersType extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=16313");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=17537");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=17537");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=17541");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=17541");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=17547");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=17547");
 
   private final KeyValuePair @Nullable [] parameters;
 
@@ -121,8 +111,8 @@ public class AdditionalParametersType extends Structure implements UaStructuredT
 
     @Override
     public AdditionalParametersType decodeType(EncodingContext context, UaDecoder decoder) {
-      KeyValuePair[] parameters =
-          (KeyValuePair[]) decoder.decodeStructArray("Parameters", KeyValuePair.TYPE_ID);
+      final KeyValuePair[] parameters;
+      parameters = (KeyValuePair[]) decoder.decodeStructArray("Parameters", KeyValuePair.TYPE_ID);
       return new AdditionalParametersType(parameters);
     }
 

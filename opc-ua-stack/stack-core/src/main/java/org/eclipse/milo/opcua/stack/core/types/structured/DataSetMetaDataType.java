@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -29,16 +19,16 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/6.2.3/#6.2.3.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part14/6.2.3/#6.2.3.2.2</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/6.2.3/#6.2.3.2.3">https://reference.opcfoundation.org/v105/Core/docs/Part14/6.2.3/#6.2.3.2.3</a>
  */
 public class DataSetMetaDataType extends DataTypeSchemaHeader implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=14523");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=124");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=124");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=14794");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=14794");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15050");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15050");
 
   private final @Nullable String name;
 
@@ -238,21 +228,29 @@ public class DataSetMetaDataType extends DataTypeSchemaHeader implements UaStruc
 
     @Override
     public DataSetMetaDataType decodeType(EncodingContext context, UaDecoder decoder) {
-      String[] namespaces = decoder.decodeStringArray("Namespaces");
-      StructureDescription[] structureDataTypes =
+      final String[] namespaces;
+      final StructureDescription[] structureDataTypes;
+      final EnumDescription[] enumDataTypes;
+      final SimpleTypeDescription[] simpleDataTypes;
+      final String name;
+      final LocalizedText description;
+      final FieldMetaData[] fields;
+      final UUID dataSetClassId;
+      final ConfigurationVersionDataType configurationVersion;
+      namespaces = decoder.decodeStringArray("Namespaces");
+      structureDataTypes =
           (StructureDescription[])
               decoder.decodeStructArray("StructureDataTypes", StructureDescription.TYPE_ID);
-      EnumDescription[] enumDataTypes =
+      enumDataTypes =
           (EnumDescription[]) decoder.decodeStructArray("EnumDataTypes", EnumDescription.TYPE_ID);
-      SimpleTypeDescription[] simpleDataTypes =
+      simpleDataTypes =
           (SimpleTypeDescription[])
               decoder.decodeStructArray("SimpleDataTypes", SimpleTypeDescription.TYPE_ID);
-      String name = decoder.decodeString("Name");
-      LocalizedText description = decoder.decodeLocalizedText("Description");
-      FieldMetaData[] fields =
-          (FieldMetaData[]) decoder.decodeStructArray("Fields", FieldMetaData.TYPE_ID);
-      UUID dataSetClassId = decoder.decodeGuid("DataSetClassId");
-      ConfigurationVersionDataType configurationVersion =
+      name = decoder.decodeString("Name");
+      description = decoder.decodeLocalizedText("Description");
+      fields = (FieldMetaData[]) decoder.decodeStructArray("Fields", FieldMetaData.TYPE_ID);
+      dataSetClassId = decoder.decodeGuid("DataSetClassId");
+      configurationVersion =
           (ConfigurationVersionDataType)
               decoder.decodeStruct("ConfigurationVersion", ConfigurationVersionDataType.TYPE_ID);
       return new DataSetMetaDataType(

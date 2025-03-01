@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -33,11 +23,11 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 public class AggregateFilter extends MonitoringFilter implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=728");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=730");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=730");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=729");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=729");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15312");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15312");
 
   private final DateTime startTime;
 
@@ -179,10 +169,14 @@ public class AggregateFilter extends MonitoringFilter implements UaStructuredTyp
 
     @Override
     public AggregateFilter decodeType(EncodingContext context, UaDecoder decoder) {
-      DateTime startTime = decoder.decodeDateTime("StartTime");
-      NodeId aggregateType = decoder.decodeNodeId("AggregateType");
-      Double processingInterval = decoder.decodeDouble("ProcessingInterval");
-      AggregateConfiguration aggregateConfiguration =
+      final DateTime startTime;
+      final NodeId aggregateType;
+      final Double processingInterval;
+      final AggregateConfiguration aggregateConfiguration;
+      startTime = decoder.decodeDateTime("StartTime");
+      aggregateType = decoder.decodeNodeId("AggregateType");
+      processingInterval = decoder.decodeDouble("ProcessingInterval");
+      aggregateConfiguration =
           (AggregateConfiguration)
               decoder.decodeStruct("AggregateConfiguration", AggregateConfiguration.TYPE_ID);
       return new AggregateFilter(

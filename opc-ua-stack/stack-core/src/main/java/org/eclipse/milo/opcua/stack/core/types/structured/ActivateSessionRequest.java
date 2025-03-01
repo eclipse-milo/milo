@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -29,16 +19,16 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.6.3/#5.6.3.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.6.3/#5.6.3.2</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.7.3/#5.7.3.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.7.3/#5.7.3.2</a>
  */
 public class ActivateSessionRequest extends Structure implements UaRequestMessageType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=465");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=467");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=467");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=466");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=466");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15145");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15145");
 
   private final RequestHeader requestHeader;
 
@@ -219,17 +209,22 @@ public class ActivateSessionRequest extends Structure implements UaRequestMessag
 
     @Override
     public ActivateSessionRequest decodeType(EncodingContext context, UaDecoder decoder) {
-      RequestHeader requestHeader =
-          (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
-      SignatureData clientSignature =
+      final RequestHeader requestHeader;
+      final SignatureData clientSignature;
+      final SignedSoftwareCertificate[] clientSoftwareCertificates;
+      final String[] localeIds;
+      final ExtensionObject userIdentityToken;
+      final SignatureData userTokenSignature;
+      requestHeader = (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
+      clientSignature =
           (SignatureData) decoder.decodeStruct("ClientSignature", SignatureData.TYPE_ID);
-      SignedSoftwareCertificate[] clientSoftwareCertificates =
+      clientSoftwareCertificates =
           (SignedSoftwareCertificate[])
               decoder.decodeStructArray(
                   "ClientSoftwareCertificates", SignedSoftwareCertificate.TYPE_ID);
-      String[] localeIds = decoder.decodeStringArray("LocaleIds");
-      ExtensionObject userIdentityToken = decoder.decodeExtensionObject("UserIdentityToken");
-      SignatureData userTokenSignature =
+      localeIds = decoder.decodeStringArray("LocaleIds");
+      userIdentityToken = decoder.decodeExtensionObject("UserIdentityToken");
+      userTokenSignature =
           (SignatureData) decoder.decodeStruct("UserTokenSignature", SignatureData.TYPE_ID);
       return new ActivateSessionRequest(
           requestHeader,

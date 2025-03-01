@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -33,11 +23,11 @@ import org.jspecify.annotations.Nullable;
 public class StructureField extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=101");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=14844");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=14844");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=14800");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=14800");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15065");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15065");
 
   private final @Nullable String name;
 
@@ -236,13 +226,20 @@ public class StructureField extends Structure implements UaStructuredType {
 
     @Override
     public StructureField decodeType(EncodingContext context, UaDecoder decoder) {
-      String name = decoder.decodeString("Name");
-      LocalizedText description = decoder.decodeLocalizedText("Description");
-      NodeId dataType = decoder.decodeNodeId("DataType");
-      Integer valueRank = decoder.decodeInt32("ValueRank");
-      UInteger[] arrayDimensions = decoder.decodeUInt32Array("ArrayDimensions");
-      UInteger maxStringLength = decoder.decodeUInt32("MaxStringLength");
-      Boolean isOptional = decoder.decodeBoolean("IsOptional");
+      final String name;
+      final LocalizedText description;
+      final NodeId dataType;
+      final Integer valueRank;
+      final UInteger[] arrayDimensions;
+      final UInteger maxStringLength;
+      final Boolean isOptional;
+      name = decoder.decodeString("Name");
+      description = decoder.decodeLocalizedText("Description");
+      dataType = decoder.decodeNodeId("DataType");
+      valueRank = decoder.decodeInt32("ValueRank");
+      arrayDimensions = decoder.decodeUInt32Array("ArrayDimensions");
+      maxStringLength = decoder.decodeUInt32("MaxStringLength");
+      isOptional = decoder.decodeBoolean("IsOptional");
       return new StructureField(
           name, description, dataType, valueRank, arrayDimensions, maxStringLength, isOptional);
     }

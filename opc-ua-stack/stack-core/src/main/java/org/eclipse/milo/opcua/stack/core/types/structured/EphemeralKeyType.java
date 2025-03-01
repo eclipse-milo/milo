@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -33,11 +23,11 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 public class EphemeralKeyType extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=17548");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=17549");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=17549");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=17553");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=17553");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=17557");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=17557");
 
   private final ByteString publicKey;
 
@@ -139,8 +129,10 @@ public class EphemeralKeyType extends Structure implements UaStructuredType {
 
     @Override
     public EphemeralKeyType decodeType(EncodingContext context, UaDecoder decoder) {
-      ByteString publicKey = decoder.decodeByteString("PublicKey");
-      ByteString signature = decoder.decodeByteString("Signature");
+      final ByteString publicKey;
+      final ByteString signature;
+      publicKey = decoder.decodeByteString("PublicKey");
+      signature = decoder.decodeByteString("Signature");
       return new EphemeralKeyType(publicKey, signature);
     }
 

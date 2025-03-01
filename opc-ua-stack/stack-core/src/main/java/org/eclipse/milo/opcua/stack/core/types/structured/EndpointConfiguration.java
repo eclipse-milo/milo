@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -28,11 +18,11 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 public class EndpointConfiguration extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=331");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=333");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=333");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=332");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=332");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15199");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15199");
 
   private final Integer operationTimeout;
 
@@ -269,15 +259,24 @@ public class EndpointConfiguration extends Structure implements UaStructuredType
 
     @Override
     public EndpointConfiguration decodeType(EncodingContext context, UaDecoder decoder) {
-      Integer operationTimeout = decoder.decodeInt32("OperationTimeout");
-      Boolean useBinaryEncoding = decoder.decodeBoolean("UseBinaryEncoding");
-      Integer maxStringLength = decoder.decodeInt32("MaxStringLength");
-      Integer maxByteStringLength = decoder.decodeInt32("MaxByteStringLength");
-      Integer maxArrayLength = decoder.decodeInt32("MaxArrayLength");
-      Integer maxMessageSize = decoder.decodeInt32("MaxMessageSize");
-      Integer maxBufferSize = decoder.decodeInt32("MaxBufferSize");
-      Integer channelLifetime = decoder.decodeInt32("ChannelLifetime");
-      Integer securityTokenLifetime = decoder.decodeInt32("SecurityTokenLifetime");
+      final Integer operationTimeout;
+      final Boolean useBinaryEncoding;
+      final Integer maxStringLength;
+      final Integer maxByteStringLength;
+      final Integer maxArrayLength;
+      final Integer maxMessageSize;
+      final Integer maxBufferSize;
+      final Integer channelLifetime;
+      final Integer securityTokenLifetime;
+      operationTimeout = decoder.decodeInt32("OperationTimeout");
+      useBinaryEncoding = decoder.decodeBoolean("UseBinaryEncoding");
+      maxStringLength = decoder.decodeInt32("MaxStringLength");
+      maxByteStringLength = decoder.decodeInt32("MaxByteStringLength");
+      maxArrayLength = decoder.decodeInt32("MaxArrayLength");
+      maxMessageSize = decoder.decodeInt32("MaxMessageSize");
+      maxBufferSize = decoder.decodeInt32("MaxBufferSize");
+      channelLifetime = decoder.decodeInt32("ChannelLifetime");
+      securityTokenLifetime = decoder.decodeInt32("SecurityTokenLifetime");
       return new EndpointConfiguration(
           operationTimeout,
           useBinaryEncoding,

@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.Arrays;
@@ -20,7 +10,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/6.2.3/#6.2.3.2.4">https://reference.opcfoundation.org/v105/Core/docs/Part14/6.2.3/#6.2.3.2.4</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/6.2.3/#6.2.3.2.5">https://reference.opcfoundation.org/v105/Core/docs/Part14/6.2.3/#6.2.3.2.5</a>
  */
 public class DataSetFieldFlags extends OptionSetUI16<DataSetFieldFlags.Field> {
   public DataSetFieldFlags(UShort value) {

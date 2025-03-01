@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -32,11 +22,11 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 public class ThreeDVector extends Vector implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=18808");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=18817");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=18817");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=18853");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=18853");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=19066");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=19066");
 
   private final Double x;
 
@@ -156,9 +146,12 @@ public class ThreeDVector extends Vector implements UaStructuredType {
 
     @Override
     public ThreeDVector decodeType(EncodingContext context, UaDecoder decoder) {
-      Double x = decoder.decodeDouble("X");
-      Double y = decoder.decodeDouble("Y");
-      Double z = decoder.decodeDouble("Z");
+      final Double x;
+      final Double y;
+      final Double z;
+      x = decoder.decodeDouble("X");
+      y = decoder.decodeDouble("Y");
+      z = decoder.decodeDouble("Z");
       return new ThreeDVector(x, y, z);
     }
 

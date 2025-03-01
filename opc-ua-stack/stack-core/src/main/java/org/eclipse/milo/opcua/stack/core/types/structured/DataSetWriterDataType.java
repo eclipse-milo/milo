@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -18,6 +8,7 @@ import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
 import org.eclipse.milo.opcua.stack.core.encoding.UaEncoder;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -34,11 +25,11 @@ import org.jspecify.annotations.Nullable;
 public class DataSetWriterDataType extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=15597");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=15682");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15682");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=15955");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15955");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=16156");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=16156");
 
   private final @Nullable String name;
 
@@ -191,7 +182,7 @@ public class DataSetWriterDataType extends Structure implements UaStructuredType
     return new StructureDefinition(
         new NodeId(0, 15682),
         new NodeId(0, 22),
-        StructureType.Structure,
+        StructureType.StructureWithSubtypedValues,
         new StructureField[] {
           new StructureField(
               "Name",
@@ -256,7 +247,7 @@ public class DataSetWriterDataType extends Structure implements UaStructuredType
               -1,
               null,
               UInteger.valueOf(0),
-              false),
+              true),
           new StructureField(
               "MessageSettings",
               LocalizedText.NULL_VALUE,
@@ -264,7 +255,7 @@ public class DataSetWriterDataType extends Structure implements UaStructuredType
               -1,
               null,
               UInteger.valueOf(0),
-              false)
+              true)
         });
   }
 
@@ -276,22 +267,33 @@ public class DataSetWriterDataType extends Structure implements UaStructuredType
 
     @Override
     public DataSetWriterDataType decodeType(EncodingContext context, UaDecoder decoder) {
-      String name = decoder.decodeString("Name");
-      Boolean enabled = decoder.decodeBoolean("Enabled");
-      UShort dataSetWriterId = decoder.decodeUInt16("DataSetWriterId");
-      DataSetFieldContentMask dataSetFieldContentMask =
+      final String name;
+      final Boolean enabled;
+      final UShort dataSetWriterId;
+      final DataSetFieldContentMask dataSetFieldContentMask;
+      final UInteger keyFrameCount;
+      final String dataSetName;
+      final KeyValuePair[] dataSetWriterProperties;
+      final DataSetWriterTransportDataType transportSettings;
+      final DataSetWriterMessageDataType messageSettings;
+      name = decoder.decodeString("Name");
+      enabled = decoder.decodeBoolean("Enabled");
+      dataSetWriterId = decoder.decodeUInt16("DataSetWriterId");
+      dataSetFieldContentMask =
           new DataSetFieldContentMask(decoder.decodeUInt32("DataSetFieldContentMask"));
-      UInteger keyFrameCount = decoder.decodeUInt32("KeyFrameCount");
-      String dataSetName = decoder.decodeString("DataSetName");
-      KeyValuePair[] dataSetWriterProperties =
+      keyFrameCount = decoder.decodeUInt32("KeyFrameCount");
+      dataSetName = decoder.decodeString("DataSetName");
+      dataSetWriterProperties =
           (KeyValuePair[])
               decoder.decodeStructArray("DataSetWriterProperties", KeyValuePair.TYPE_ID);
-      DataSetWriterTransportDataType transportSettings =
-          (DataSetWriterTransportDataType)
-              decoder.decodeStruct("TransportSettings", DataSetWriterTransportDataType.TYPE_ID);
-      DataSetWriterMessageDataType messageSettings =
-          (DataSetWriterMessageDataType)
-              decoder.decodeStruct("MessageSettings", DataSetWriterMessageDataType.TYPE_ID);
+      {
+        ExtensionObject xo = decoder.decodeExtensionObject("TransportSettings");
+        transportSettings = (DataSetWriterTransportDataType) xo.decode(context);
+      }
+      {
+        ExtensionObject xo = decoder.decodeExtensionObject("MessageSettings");
+        messageSettings = (DataSetWriterMessageDataType) xo.decode(context);
+      }
       return new DataSetWriterDataType(
           name,
           enabled,
@@ -316,12 +318,14 @@ public class DataSetWriterDataType extends Structure implements UaStructuredType
       encoder.encodeString("DataSetName", value.getDataSetName());
       encoder.encodeStructArray(
           "DataSetWriterProperties", value.getDataSetWriterProperties(), KeyValuePair.TYPE_ID);
-      encoder.encodeStruct(
-          "TransportSettings",
-          value.getTransportSettings(),
-          DataSetWriterTransportDataType.TYPE_ID);
-      encoder.encodeStruct(
-          "MessageSettings", value.getMessageSettings(), DataSetWriterMessageDataType.TYPE_ID);
+      {
+        ExtensionObject xo = ExtensionObject.encode(context, value.getTransportSettings());
+        encoder.encodeExtensionObject("TransportSettings", xo);
+      }
+      {
+        ExtensionObject xo = ExtensionObject.encode(context, value.getMessageSettings());
+        encoder.encodeExtensionObject("MessageSettings", xo);
+      }
     }
   }
 }

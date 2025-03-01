@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -34,11 +24,11 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 public class StatusChangeNotification extends NotificationData implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=818");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=820");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=820");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=819");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=819");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15350");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15350");
 
   private final StatusCode status;
 
@@ -140,8 +130,10 @@ public class StatusChangeNotification extends NotificationData implements UaStru
 
     @Override
     public StatusChangeNotification decodeType(EncodingContext context, UaDecoder decoder) {
-      StatusCode status = decoder.decodeStatusCode("Status");
-      DiagnosticInfo diagnosticInfo = decoder.decodeDiagnosticInfo("DiagnosticInfo");
+      final StatusCode status;
+      final DiagnosticInfo diagnosticInfo;
+      status = decoder.decodeStatusCode("Status");
+      diagnosticInfo = decoder.decodeDiagnosticInfo("DiagnosticInfo");
       return new StatusChangeNotification(status, diagnosticInfo);
     }
 

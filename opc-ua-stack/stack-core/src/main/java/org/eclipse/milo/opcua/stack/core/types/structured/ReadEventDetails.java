@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -28,16 +18,16 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v104/Core/docs/Part11/6.4.2/#6.4.2.1">https://reference.opcfoundation.org/v104/Core/docs/Part11/6.4.2/#6.4.2.1</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/6.5.2/#6.5.2.1">https://reference.opcfoundation.org/v105/Core/docs/Part11/6.5.2/#6.5.2.1</a>
  */
 public class ReadEventDetails extends HistoryReadDetails implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=644");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=646");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=646");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=645");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=645");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15262");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15262");
 
   private final UInteger numValuesPerNode;
 
@@ -176,10 +166,14 @@ public class ReadEventDetails extends HistoryReadDetails implements UaStructured
 
     @Override
     public ReadEventDetails decodeType(EncodingContext context, UaDecoder decoder) {
-      UInteger numValuesPerNode = decoder.decodeUInt32("NumValuesPerNode");
-      DateTime startTime = decoder.decodeDateTime("StartTime");
-      DateTime endTime = decoder.decodeDateTime("EndTime");
-      EventFilter filter = (EventFilter) decoder.decodeStruct("Filter", EventFilter.TYPE_ID);
+      final UInteger numValuesPerNode;
+      final DateTime startTime;
+      final DateTime endTime;
+      final EventFilter filter;
+      numValuesPerNode = decoder.decodeUInt32("NumValuesPerNode");
+      startTime = decoder.decodeDateTime("StartTime");
+      endTime = decoder.decodeDateTime("EndTime");
+      filter = (EventFilter) decoder.decodeStruct("Filter", EventFilter.TYPE_ID);
       return new ReadEventDetails(numValuesPerNode, startTime, endTime, filter);
     }
 

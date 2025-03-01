@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -33,11 +23,11 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 public class ViewDescription extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=511");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=513");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=513");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=512");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=512");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15179");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15179");
 
   private final NodeId viewId;
 
@@ -157,9 +147,12 @@ public class ViewDescription extends Structure implements UaStructuredType {
 
     @Override
     public ViewDescription decodeType(EncodingContext context, UaDecoder decoder) {
-      NodeId viewId = decoder.decodeNodeId("ViewId");
-      DateTime timestamp = decoder.decodeDateTime("Timestamp");
-      UInteger viewVersion = decoder.decodeUInt32("ViewVersion");
+      final NodeId viewId;
+      final DateTime timestamp;
+      final UInteger viewVersion;
+      viewId = decoder.decodeNodeId("ViewId");
+      timestamp = decoder.decodeDateTime("Timestamp");
+      viewVersion = decoder.decodeUInt32("ViewVersion");
       return new ViewDescription(viewId, timestamp, viewVersion);
     }
 

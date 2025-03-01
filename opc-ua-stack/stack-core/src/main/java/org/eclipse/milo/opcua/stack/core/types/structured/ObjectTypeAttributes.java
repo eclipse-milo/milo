@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -32,11 +22,11 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 public class ObjectTypeAttributes extends NodeAttributes implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=361");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=363");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=363");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=362");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=362");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15158");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15158");
 
   private final Boolean isAbstract;
 
@@ -169,12 +159,18 @@ public class ObjectTypeAttributes extends NodeAttributes implements UaStructured
 
     @Override
     public ObjectTypeAttributes decodeType(EncodingContext context, UaDecoder decoder) {
-      UInteger specifiedAttributes = decoder.decodeUInt32("SpecifiedAttributes");
-      LocalizedText displayName = decoder.decodeLocalizedText("DisplayName");
-      LocalizedText description = decoder.decodeLocalizedText("Description");
-      UInteger writeMask = decoder.decodeUInt32("WriteMask");
-      UInteger userWriteMask = decoder.decodeUInt32("UserWriteMask");
-      Boolean isAbstract = decoder.decodeBoolean("IsAbstract");
+      final UInteger specifiedAttributes;
+      final LocalizedText displayName;
+      final LocalizedText description;
+      final UInteger writeMask;
+      final UInteger userWriteMask;
+      final Boolean isAbstract;
+      specifiedAttributes = decoder.decodeUInt32("SpecifiedAttributes");
+      displayName = decoder.decodeLocalizedText("DisplayName");
+      description = decoder.decodeLocalizedText("Description");
+      writeMask = decoder.decodeUInt32("WriteMask");
+      userWriteMask = decoder.decodeUInt32("UserWriteMask");
+      isAbstract = decoder.decodeBoolean("IsAbstract");
       return new ObjectTypeAttributes(
           specifiedAttributes, displayName, description, writeMask, userWriteMask, isAbstract);
     }

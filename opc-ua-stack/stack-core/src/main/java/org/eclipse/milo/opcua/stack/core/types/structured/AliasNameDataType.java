@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -34,11 +24,11 @@ import org.jspecify.annotations.Nullable;
 public class AliasNameDataType extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=23468");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=23499");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=23499");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=23505");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=23505");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=23511");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=23511");
 
   private final QualifiedName aliasName;
 
@@ -140,8 +130,10 @@ public class AliasNameDataType extends Structure implements UaStructuredType {
 
     @Override
     public AliasNameDataType decodeType(EncodingContext context, UaDecoder decoder) {
-      QualifiedName aliasName = decoder.decodeQualifiedName("AliasName");
-      ExpandedNodeId[] referencedNodes = decoder.decodeExpandedNodeIdArray("ReferencedNodes");
+      final QualifiedName aliasName;
+      final ExpandedNodeId[] referencedNodes;
+      aliasName = decoder.decodeQualifiedName("AliasName");
+      referencedNodes = decoder.decodeExpandedNodeIdArray("ReferencedNodes");
       return new AliasNameDataType(aliasName, referencedNodes);
     }
 

@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -33,11 +23,11 @@ import org.jspecify.annotations.Nullable;
 public class AttributeOperand extends FilterOperand implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=598");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=600");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=600");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=599");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=599");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15209");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15209");
 
   private final NodeId nodeId;
 
@@ -198,12 +188,16 @@ public class AttributeOperand extends FilterOperand implements UaStructuredType 
 
     @Override
     public AttributeOperand decodeType(EncodingContext context, UaDecoder decoder) {
-      NodeId nodeId = decoder.decodeNodeId("NodeId");
-      String alias = decoder.decodeString("Alias");
-      RelativePath browsePath =
-          (RelativePath) decoder.decodeStruct("BrowsePath", RelativePath.TYPE_ID);
-      UInteger attributeId = decoder.decodeUInt32("AttributeId");
-      String indexRange = decoder.decodeString("IndexRange");
+      final NodeId nodeId;
+      final String alias;
+      final RelativePath browsePath;
+      final UInteger attributeId;
+      final String indexRange;
+      nodeId = decoder.decodeNodeId("NodeId");
+      alias = decoder.decodeString("Alias");
+      browsePath = (RelativePath) decoder.decodeStruct("BrowsePath", RelativePath.TYPE_ID);
+      attributeId = decoder.decodeUInt32("AttributeId");
+      indexRange = decoder.decodeString("IndexRange");
       return new AttributeOperand(nodeId, alias, browsePath, attributeId, indexRange);
     }
 

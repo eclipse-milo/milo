@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -28,16 +18,16 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.4.2/#5.4.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.4.2/#5.4.2.2</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.5.2/#5.5.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.5.2/#5.5.2.2</a>
  */
 public class FindServersRequest extends Structure implements UaRequestMessageType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=420");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=422");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=422");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=421");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=421");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15093");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15093");
 
   private final RequestHeader requestHeader;
 
@@ -179,11 +169,14 @@ public class FindServersRequest extends Structure implements UaRequestMessageTyp
 
     @Override
     public FindServersRequest decodeType(EncodingContext context, UaDecoder decoder) {
-      RequestHeader requestHeader =
-          (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
-      String endpointUrl = decoder.decodeString("EndpointUrl");
-      String[] localeIds = decoder.decodeStringArray("LocaleIds");
-      String[] serverUris = decoder.decodeStringArray("ServerUris");
+      final RequestHeader requestHeader;
+      final String endpointUrl;
+      final String[] localeIds;
+      final String[] serverUris;
+      requestHeader = (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
+      endpointUrl = decoder.decodeString("EndpointUrl");
+      localeIds = decoder.decodeStringArray("LocaleIds");
+      serverUris = decoder.decodeStringArray("ServerUris");
       return new FindServersRequest(requestHeader, endpointUrl, localeIds, serverUris);
     }
 

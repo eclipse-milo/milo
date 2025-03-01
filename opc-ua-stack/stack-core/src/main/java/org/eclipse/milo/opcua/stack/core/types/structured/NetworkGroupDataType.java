@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -33,11 +23,11 @@ import org.jspecify.annotations.Nullable;
 public class NetworkGroupDataType extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=11944");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=11958");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=11958");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=11950");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=11950");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15364");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15364");
 
   private final @Nullable String serverUri;
 
@@ -140,8 +130,10 @@ public class NetworkGroupDataType extends Structure implements UaStructuredType 
 
     @Override
     public NetworkGroupDataType decodeType(EncodingContext context, UaDecoder decoder) {
-      String serverUri = decoder.decodeString("ServerUri");
-      EndpointUrlListDataType[] networkPaths =
+      final String serverUri;
+      final EndpointUrlListDataType[] networkPaths;
+      serverUri = decoder.decodeString("ServerUri");
+      networkPaths =
           (EndpointUrlListDataType[])
               decoder.decodeStructArray("NetworkPaths", EndpointUrlListDataType.TYPE_ID);
       return new NetworkGroupDataType(serverUri, networkPaths);

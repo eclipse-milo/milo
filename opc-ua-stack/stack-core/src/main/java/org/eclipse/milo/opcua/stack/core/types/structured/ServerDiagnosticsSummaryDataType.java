@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -32,11 +22,11 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 public class ServerDiagnosticsSummaryDataType extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=859");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=861");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=861");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=860");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=860");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15366");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15366");
 
   private final UInteger serverViewCount;
 
@@ -331,19 +321,30 @@ public class ServerDiagnosticsSummaryDataType extends Structure implements UaStr
 
     @Override
     public ServerDiagnosticsSummaryDataType decodeType(EncodingContext context, UaDecoder decoder) {
-      UInteger serverViewCount = decoder.decodeUInt32("ServerViewCount");
-      UInteger currentSessionCount = decoder.decodeUInt32("CurrentSessionCount");
-      UInteger cumulatedSessionCount = decoder.decodeUInt32("CumulatedSessionCount");
-      UInteger securityRejectedSessionCount = decoder.decodeUInt32("SecurityRejectedSessionCount");
-      UInteger rejectedSessionCount = decoder.decodeUInt32("RejectedSessionCount");
-      UInteger sessionTimeoutCount = decoder.decodeUInt32("SessionTimeoutCount");
-      UInteger sessionAbortCount = decoder.decodeUInt32("SessionAbortCount");
-      UInteger currentSubscriptionCount = decoder.decodeUInt32("CurrentSubscriptionCount");
-      UInteger cumulatedSubscriptionCount = decoder.decodeUInt32("CumulatedSubscriptionCount");
-      UInteger publishingIntervalCount = decoder.decodeUInt32("PublishingIntervalCount");
-      UInteger securityRejectedRequestsCount =
-          decoder.decodeUInt32("SecurityRejectedRequestsCount");
-      UInteger rejectedRequestsCount = decoder.decodeUInt32("RejectedRequestsCount");
+      final UInteger serverViewCount;
+      final UInteger currentSessionCount;
+      final UInteger cumulatedSessionCount;
+      final UInteger securityRejectedSessionCount;
+      final UInteger rejectedSessionCount;
+      final UInteger sessionTimeoutCount;
+      final UInteger sessionAbortCount;
+      final UInteger currentSubscriptionCount;
+      final UInteger cumulatedSubscriptionCount;
+      final UInteger publishingIntervalCount;
+      final UInteger securityRejectedRequestsCount;
+      final UInteger rejectedRequestsCount;
+      serverViewCount = decoder.decodeUInt32("ServerViewCount");
+      currentSessionCount = decoder.decodeUInt32("CurrentSessionCount");
+      cumulatedSessionCount = decoder.decodeUInt32("CumulatedSessionCount");
+      securityRejectedSessionCount = decoder.decodeUInt32("SecurityRejectedSessionCount");
+      rejectedSessionCount = decoder.decodeUInt32("RejectedSessionCount");
+      sessionTimeoutCount = decoder.decodeUInt32("SessionTimeoutCount");
+      sessionAbortCount = decoder.decodeUInt32("SessionAbortCount");
+      currentSubscriptionCount = decoder.decodeUInt32("CurrentSubscriptionCount");
+      cumulatedSubscriptionCount = decoder.decodeUInt32("CumulatedSubscriptionCount");
+      publishingIntervalCount = decoder.decodeUInt32("PublishingIntervalCount");
+      securityRejectedRequestsCount = decoder.decodeUInt32("SecurityRejectedRequestsCount");
+      rejectedRequestsCount = decoder.decodeUInt32("RejectedRequestsCount");
       return new ServerDiagnosticsSummaryDataType(
           serverViewCount,
           currentSessionCount,

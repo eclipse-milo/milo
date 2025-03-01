@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -28,16 +18,16 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.12.5/#5.12.5.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.12.5/#5.12.5.2</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.13.5/#5.13.5.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.13.5/#5.13.5.2</a>
  */
 public class SetTriggeringRequest extends Structure implements UaRequestMessageType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=773");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=775");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=775");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=774");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=774");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15332");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15332");
 
   private final RequestHeader requestHeader;
 
@@ -198,12 +188,16 @@ public class SetTriggeringRequest extends Structure implements UaRequestMessageT
 
     @Override
     public SetTriggeringRequest decodeType(EncodingContext context, UaDecoder decoder) {
-      RequestHeader requestHeader =
-          (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
-      UInteger subscriptionId = decoder.decodeUInt32("SubscriptionId");
-      UInteger triggeringItemId = decoder.decodeUInt32("TriggeringItemId");
-      UInteger[] linksToAdd = decoder.decodeUInt32Array("LinksToAdd");
-      UInteger[] linksToRemove = decoder.decodeUInt32Array("LinksToRemove");
+      final RequestHeader requestHeader;
+      final UInteger subscriptionId;
+      final UInteger triggeringItemId;
+      final UInteger[] linksToAdd;
+      final UInteger[] linksToRemove;
+      requestHeader = (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
+      subscriptionId = decoder.decodeUInt32("SubscriptionId");
+      triggeringItemId = decoder.decodeUInt32("TriggeringItemId");
+      linksToAdd = decoder.decodeUInt32Array("LinksToAdd");
+      linksToRemove = decoder.decodeUInt32Array("LinksToRemove");
       return new SetTriggeringRequest(
           requestHeader, subscriptionId, triggeringItemId, linksToAdd, linksToRemove);
     }

@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -34,11 +24,11 @@ public class PubSubConfiguration2DataType extends PubSubConfigurationDataType
     implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=23602");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=23854");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=23854");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=23922");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=23922");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=23990");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=23990");
 
   private final StandaloneSubscribedDataSetDataType @Nullable [] subscribedDataSets;
 
@@ -270,32 +260,42 @@ public class PubSubConfiguration2DataType extends PubSubConfigurationDataType
 
     @Override
     public PubSubConfiguration2DataType decodeType(EncodingContext context, UaDecoder decoder) {
-      PublishedDataSetDataType[] publishedDataSets =
+      final PublishedDataSetDataType[] publishedDataSets;
+      final PubSubConnectionDataType[] connections;
+      final Boolean enabled;
+      final StandaloneSubscribedDataSetDataType[] subscribedDataSets;
+      final DataSetMetaDataType[] dataSetClasses;
+      final EndpointDescription[] defaultSecurityKeyServices;
+      final SecurityGroupDataType[] securityGroups;
+      final PubSubKeyPushTargetDataType[] pubSubKeyPushTargets;
+      final UInteger configurationVersion;
+      final KeyValuePair[] configurationProperties;
+      publishedDataSets =
           (PublishedDataSetDataType[])
               decoder.decodeStructArray("PublishedDataSets", PublishedDataSetDataType.TYPE_ID);
-      PubSubConnectionDataType[] connections =
+      connections =
           (PubSubConnectionDataType[])
               decoder.decodeStructArray("Connections", PubSubConnectionDataType.TYPE_ID);
-      Boolean enabled = decoder.decodeBoolean("Enabled");
-      StandaloneSubscribedDataSetDataType[] subscribedDataSets =
+      enabled = decoder.decodeBoolean("Enabled");
+      subscribedDataSets =
           (StandaloneSubscribedDataSetDataType[])
               decoder.decodeStructArray(
                   "SubscribedDataSets", StandaloneSubscribedDataSetDataType.TYPE_ID);
-      DataSetMetaDataType[] dataSetClasses =
+      dataSetClasses =
           (DataSetMetaDataType[])
               decoder.decodeStructArray("DataSetClasses", DataSetMetaDataType.TYPE_ID);
-      EndpointDescription[] defaultSecurityKeyServices =
+      defaultSecurityKeyServices =
           (EndpointDescription[])
               decoder.decodeStructArray("DefaultSecurityKeyServices", EndpointDescription.TYPE_ID);
-      SecurityGroupDataType[] securityGroups =
+      securityGroups =
           (SecurityGroupDataType[])
               decoder.decodeStructArray("SecurityGroups", SecurityGroupDataType.TYPE_ID);
-      PubSubKeyPushTargetDataType[] pubSubKeyPushTargets =
+      pubSubKeyPushTargets =
           (PubSubKeyPushTargetDataType[])
               decoder.decodeStructArray(
                   "PubSubKeyPushTargets", PubSubKeyPushTargetDataType.TYPE_ID);
-      UInteger configurationVersion = decoder.decodeUInt32("ConfigurationVersion");
-      KeyValuePair[] configurationProperties =
+      configurationVersion = decoder.decodeUInt32("ConfigurationVersion");
+      configurationProperties =
           (KeyValuePair[])
               decoder.decodeStructArray("ConfigurationProperties", KeyValuePair.TYPE_ID);
       return new PubSubConfiguration2DataType(

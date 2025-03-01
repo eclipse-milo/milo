@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -33,11 +23,11 @@ import org.jspecify.annotations.Nullable;
 public class MdnsDiscoveryConfiguration extends DiscoveryConfiguration implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=12891");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=12901");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=12901");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=12893");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=12893");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15106");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15106");
 
   private final @Nullable String mdnsServerName;
 
@@ -141,8 +131,10 @@ public class MdnsDiscoveryConfiguration extends DiscoveryConfiguration implement
 
     @Override
     public MdnsDiscoveryConfiguration decodeType(EncodingContext context, UaDecoder decoder) {
-      String mdnsServerName = decoder.decodeString("MdnsServerName");
-      String[] serverCapabilities = decoder.decodeStringArray("ServerCapabilities");
+      final String mdnsServerName;
+      final String[] serverCapabilities;
+      mdnsServerName = decoder.decodeString("MdnsServerName");
+      serverCapabilities = decoder.decodeStringArray("ServerCapabilities");
       return new MdnsDiscoveryConfiguration(mdnsServerName, serverCapabilities);
     }
 

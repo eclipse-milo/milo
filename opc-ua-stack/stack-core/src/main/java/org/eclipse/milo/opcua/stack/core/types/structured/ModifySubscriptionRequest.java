@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -28,16 +18,16 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.13.3/#5.13.3.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.13.3/#5.13.3.2</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.14.3/#5.14.3.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.14.3/#5.14.3.2</a>
  */
 public class ModifySubscriptionRequest extends Structure implements UaRequestMessageType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=791");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=793");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=793");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=792");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=792");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15339");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15339");
 
   private final RequestHeader requestHeader;
 
@@ -236,14 +226,20 @@ public class ModifySubscriptionRequest extends Structure implements UaRequestMes
 
     @Override
     public ModifySubscriptionRequest decodeType(EncodingContext context, UaDecoder decoder) {
-      RequestHeader requestHeader =
-          (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
-      UInteger subscriptionId = decoder.decodeUInt32("SubscriptionId");
-      Double requestedPublishingInterval = decoder.decodeDouble("RequestedPublishingInterval");
-      UInteger requestedLifetimeCount = decoder.decodeUInt32("RequestedLifetimeCount");
-      UInteger requestedMaxKeepAliveCount = decoder.decodeUInt32("RequestedMaxKeepAliveCount");
-      UInteger maxNotificationsPerPublish = decoder.decodeUInt32("MaxNotificationsPerPublish");
-      UByte priority = decoder.decodeByte("Priority");
+      final RequestHeader requestHeader;
+      final UInteger subscriptionId;
+      final Double requestedPublishingInterval;
+      final UInteger requestedLifetimeCount;
+      final UInteger requestedMaxKeepAliveCount;
+      final UInteger maxNotificationsPerPublish;
+      final UByte priority;
+      requestHeader = (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
+      subscriptionId = decoder.decodeUInt32("SubscriptionId");
+      requestedPublishingInterval = decoder.decodeDouble("RequestedPublishingInterval");
+      requestedLifetimeCount = decoder.decodeUInt32("RequestedLifetimeCount");
+      requestedMaxKeepAliveCount = decoder.decodeUInt32("RequestedMaxKeepAliveCount");
+      maxNotificationsPerPublish = decoder.decodeUInt32("MaxNotificationsPerPublish");
+      priority = decoder.decodeByte("Priority");
       return new ModifySubscriptionRequest(
           requestHeader,
           subscriptionId,

@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -33,11 +23,11 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 public class ReadValueId extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=626");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=628");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=628");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=627");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=627");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15256");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15256");
 
   private final NodeId nodeId;
 
@@ -176,10 +166,14 @@ public class ReadValueId extends Structure implements UaStructuredType {
 
     @Override
     public ReadValueId decodeType(EncodingContext context, UaDecoder decoder) {
-      NodeId nodeId = decoder.decodeNodeId("NodeId");
-      UInteger attributeId = decoder.decodeUInt32("AttributeId");
-      String indexRange = decoder.decodeString("IndexRange");
-      QualifiedName dataEncoding = decoder.decodeQualifiedName("DataEncoding");
+      final NodeId nodeId;
+      final UInteger attributeId;
+      final String indexRange;
+      final QualifiedName dataEncoding;
+      nodeId = decoder.decodeNodeId("NodeId");
+      attributeId = decoder.decodeUInt32("AttributeId");
+      indexRange = decoder.decodeString("IndexRange");
+      dataEncoding = decoder.decodeQualifiedName("DataEncoding");
       return new ReadValueId(nodeId, attributeId, indexRange, dataEncoding);
     }
 

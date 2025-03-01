@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -34,11 +24,11 @@ import org.jspecify.annotations.Nullable;
 public class PubSubConfigurationValueDataType extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=25520");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=25532");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=25532");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=25548");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=25548");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=25564");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=25564");
 
   private final PubSubConfigurationRefDataType configurationElement;
 
@@ -162,11 +152,14 @@ public class PubSubConfigurationValueDataType extends Structure implements UaStr
 
     @Override
     public PubSubConfigurationValueDataType decodeType(EncodingContext context, UaDecoder decoder) {
-      PubSubConfigurationRefDataType configurationElement =
+      final PubSubConfigurationRefDataType configurationElement;
+      final String name;
+      final Variant identifier;
+      configurationElement =
           (PubSubConfigurationRefDataType)
               decoder.decodeStruct("ConfigurationElement", PubSubConfigurationRefDataType.TYPE_ID);
-      String name = decoder.decodeString("Name");
-      Variant identifier = decoder.decodeVariant("Identifier");
+      name = decoder.decodeString("Name");
+      identifier = decoder.decodeVariant("Identifier");
       return new PubSubConfigurationValueDataType(configurationElement, name, identifier);
     }
 

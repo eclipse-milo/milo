@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -28,16 +18,16 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/7.22.4">https://reference.opcfoundation.org/v105/Core/docs/Part4/7.22.4</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/6.5.4/#6.5.4.1">https://reference.opcfoundation.org/v105/Core/docs/Part11/6.5.4/#6.5.4.1</a>
  */
 public class AggregateConfiguration extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=948");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=950");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=950");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=949");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=949");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15304");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15304");
 
   private final Boolean useServerCapabilitiesDefaults;
 
@@ -198,12 +188,16 @@ public class AggregateConfiguration extends Structure implements UaStructuredTyp
 
     @Override
     public AggregateConfiguration decodeType(EncodingContext context, UaDecoder decoder) {
-      Boolean useServerCapabilitiesDefaults =
-          decoder.decodeBoolean("UseServerCapabilitiesDefaults");
-      Boolean treatUncertainAsBad = decoder.decodeBoolean("TreatUncertainAsBad");
-      UByte percentDataBad = decoder.decodeByte("PercentDataBad");
-      UByte percentDataGood = decoder.decodeByte("PercentDataGood");
-      Boolean useSlopedExtrapolation = decoder.decodeBoolean("UseSlopedExtrapolation");
+      final Boolean useServerCapabilitiesDefaults;
+      final Boolean treatUncertainAsBad;
+      final UByte percentDataBad;
+      final UByte percentDataGood;
+      final Boolean useSlopedExtrapolation;
+      useServerCapabilitiesDefaults = decoder.decodeBoolean("UseServerCapabilitiesDefaults");
+      treatUncertainAsBad = decoder.decodeBoolean("TreatUncertainAsBad");
+      percentDataBad = decoder.decodeByte("PercentDataBad");
+      percentDataGood = decoder.decodeByte("PercentDataGood");
+      useSlopedExtrapolation = decoder.decodeBoolean("UseSlopedExtrapolation");
       return new AggregateConfiguration(
           useServerCapabilitiesDefaults,
           treatUncertainAsBad,

@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -35,11 +25,11 @@ import org.jspecify.annotations.Nullable;
 public class SessionSecurityDiagnosticsDataType extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=868");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=870");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=870");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=869");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=869");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15369");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15369");
 
   private final NodeId sessionId;
 
@@ -278,16 +268,24 @@ public class SessionSecurityDiagnosticsDataType extends Structure implements UaS
     @Override
     public SessionSecurityDiagnosticsDataType decodeType(
         EncodingContext context, UaDecoder decoder) {
-      NodeId sessionId = decoder.decodeNodeId("SessionId");
-      String clientUserIdOfSession = decoder.decodeString("ClientUserIdOfSession");
-      String[] clientUserIdHistory = decoder.decodeStringArray("ClientUserIdHistory");
-      String authenticationMechanism = decoder.decodeString("AuthenticationMechanism");
-      String encoding = decoder.decodeString("Encoding");
-      String transportProtocol = decoder.decodeString("TransportProtocol");
-      MessageSecurityMode securityMode =
-          MessageSecurityMode.from(decoder.decodeEnum("SecurityMode"));
-      String securityPolicyUri = decoder.decodeString("SecurityPolicyUri");
-      ByteString clientCertificate = decoder.decodeByteString("ClientCertificate");
+      final NodeId sessionId;
+      final String clientUserIdOfSession;
+      final String[] clientUserIdHistory;
+      final String authenticationMechanism;
+      final String encoding;
+      final String transportProtocol;
+      final MessageSecurityMode securityMode;
+      final String securityPolicyUri;
+      final ByteString clientCertificate;
+      sessionId = decoder.decodeNodeId("SessionId");
+      clientUserIdOfSession = decoder.decodeString("ClientUserIdOfSession");
+      clientUserIdHistory = decoder.decodeStringArray("ClientUserIdHistory");
+      authenticationMechanism = decoder.decodeString("AuthenticationMechanism");
+      encoding = decoder.decodeString("Encoding");
+      transportProtocol = decoder.decodeString("TransportProtocol");
+      securityMode = MessageSecurityMode.from(decoder.decodeEnum("SecurityMode"));
+      securityPolicyUri = decoder.decodeString("SecurityPolicyUri");
+      clientCertificate = decoder.decodeByteString("ClientCertificate");
       return new SessionSecurityDiagnosticsDataType(
           sessionId,
           clientUserIdOfSession,

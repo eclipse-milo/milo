@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -25,18 +15,14 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.StructureType;
 import org.eclipse.milo.opcua.stack.core.util.codegen.EqualsBuilder;
 import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 
-/**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part23/5.5.1">https://reference.opcfoundation.org/v105/Core/docs/Part23/5.5.1</a>
- */
 public class ReferenceDescriptionDataType extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=32659");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=32661");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=32661");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=32669");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=32669");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=32677");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=32677");
 
   private final NodeId sourceNode;
 
@@ -176,10 +162,14 @@ public class ReferenceDescriptionDataType extends Structure implements UaStructu
 
     @Override
     public ReferenceDescriptionDataType decodeType(EncodingContext context, UaDecoder decoder) {
-      NodeId sourceNode = decoder.decodeNodeId("SourceNode");
-      NodeId referenceType = decoder.decodeNodeId("ReferenceType");
-      Boolean isForward = decoder.decodeBoolean("IsForward");
-      ExpandedNodeId targetNode = decoder.decodeExpandedNodeId("TargetNode");
+      final NodeId sourceNode;
+      final NodeId referenceType;
+      final Boolean isForward;
+      final ExpandedNodeId targetNode;
+      sourceNode = decoder.decodeNodeId("SourceNode");
+      referenceType = decoder.decodeNodeId("ReferenceType");
+      isForward = decoder.decodeBoolean("IsForward");
+      targetNode = decoder.decodeExpandedNodeId("TargetNode");
       return new ReferenceDescriptionDataType(sourceNode, referenceType, isForward, targetNode);
     }
 

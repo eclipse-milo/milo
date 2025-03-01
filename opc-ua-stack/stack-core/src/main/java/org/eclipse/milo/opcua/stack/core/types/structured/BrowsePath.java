@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -27,16 +17,16 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part3/6.2.5">https://reference.opcfoundation.org/v105/Core/docs/Part3/6.2.5</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.9.4/#5.9.4.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.9.4/#5.9.4.2</a>
  */
 public class BrowsePath extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=543");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=545");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=545");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=544");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=544");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15190");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15190");
 
   private final NodeId startingNode;
 
@@ -138,9 +128,10 @@ public class BrowsePath extends Structure implements UaStructuredType {
 
     @Override
     public BrowsePath decodeType(EncodingContext context, UaDecoder decoder) {
-      NodeId startingNode = decoder.decodeNodeId("StartingNode");
-      RelativePath relativePath =
-          (RelativePath) decoder.decodeStruct("RelativePath", RelativePath.TYPE_ID);
+      final NodeId startingNode;
+      final RelativePath relativePath;
+      startingNode = decoder.decodeNodeId("StartingNode");
+      relativePath = (RelativePath) decoder.decodeStruct("RelativePath", RelativePath.TYPE_ID);
       return new BrowsePath(startingNode, relativePath);
     }
 

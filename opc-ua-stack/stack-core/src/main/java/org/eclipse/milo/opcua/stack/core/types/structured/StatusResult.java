@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -34,11 +24,11 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 public class StatusResult extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=299");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=301");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=301");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=300");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=300");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15371");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15371");
 
   private final StatusCode statusCode;
 
@@ -140,8 +130,10 @@ public class StatusResult extends Structure implements UaStructuredType {
 
     @Override
     public StatusResult decodeType(EncodingContext context, UaDecoder decoder) {
-      StatusCode statusCode = decoder.decodeStatusCode("StatusCode");
-      DiagnosticInfo diagnosticInfo = decoder.decodeDiagnosticInfo("DiagnosticInfo");
+      final StatusCode statusCode;
+      final DiagnosticInfo diagnosticInfo;
+      statusCode = decoder.decodeStatusCode("StatusCode");
+      diagnosticInfo = decoder.decodeDiagnosticInfo("DiagnosticInfo");
       return new StatusResult(statusCode, diagnosticInfo);
     }
 

@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -34,11 +24,11 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 public class SimpleTypeDescription extends DataTypeDescription implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=15005");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=15421");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15421");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=15529");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15529");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15700");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15700");
 
   private final NodeId baseDataType;
 
@@ -160,10 +150,14 @@ public class SimpleTypeDescription extends DataTypeDescription implements UaStru
 
     @Override
     public SimpleTypeDescription decodeType(EncodingContext context, UaDecoder decoder) {
-      NodeId dataTypeId = decoder.decodeNodeId("DataTypeId");
-      QualifiedName name = decoder.decodeQualifiedName("Name");
-      NodeId baseDataType = decoder.decodeNodeId("BaseDataType");
-      UByte builtInType = decoder.decodeByte("BuiltInType");
+      final NodeId dataTypeId;
+      final QualifiedName name;
+      final NodeId baseDataType;
+      final UByte builtInType;
+      dataTypeId = decoder.decodeNodeId("DataTypeId");
+      name = decoder.decodeQualifiedName("Name");
+      baseDataType = decoder.decodeNodeId("BaseDataType");
+      builtInType = decoder.decodeByte("BuiltInType");
       return new SimpleTypeDescription(dataTypeId, name, baseDataType, builtInType);
     }
 

@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -34,11 +24,11 @@ public class PublishedDataItemsDataType extends PublishedDataSetSourceDataType
     implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=15581");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=15679");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15679");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=15953");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15953");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=16154");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=16154");
 
   private final PublishedVariableDataType @Nullable [] publishedData;
 
@@ -123,7 +113,8 @@ public class PublishedDataItemsDataType extends PublishedDataSetSourceDataType
 
     @Override
     public PublishedDataItemsDataType decodeType(EncodingContext context, UaDecoder decoder) {
-      PublishedVariableDataType[] publishedData =
+      final PublishedVariableDataType[] publishedData;
+      publishedData =
           (PublishedVariableDataType[])
               decoder.decodeStructArray("PublishedData", PublishedVariableDataType.TYPE_ID);
       return new PublishedDataItemsDataType(publishedData);

@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -33,11 +23,11 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 public class MonitoringParameters extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=740");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=742");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=742");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=741");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=741");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15320");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15320");
 
   private final UInteger clientHandle;
 
@@ -198,11 +188,16 @@ public class MonitoringParameters extends Structure implements UaStructuredType 
 
     @Override
     public MonitoringParameters decodeType(EncodingContext context, UaDecoder decoder) {
-      UInteger clientHandle = decoder.decodeUInt32("ClientHandle");
-      Double samplingInterval = decoder.decodeDouble("SamplingInterval");
-      ExtensionObject filter = decoder.decodeExtensionObject("Filter");
-      UInteger queueSize = decoder.decodeUInt32("QueueSize");
-      Boolean discardOldest = decoder.decodeBoolean("DiscardOldest");
+      final UInteger clientHandle;
+      final Double samplingInterval;
+      final ExtensionObject filter;
+      final UInteger queueSize;
+      final Boolean discardOldest;
+      clientHandle = decoder.decodeUInt32("ClientHandle");
+      samplingInterval = decoder.decodeDouble("SamplingInterval");
+      filter = decoder.decodeExtensionObject("Filter");
+      queueSize = decoder.decodeUInt32("QueueSize");
+      discardOldest = decoder.decodeBoolean("DiscardOldest");
       return new MonitoringParameters(
           clientHandle, samplingInterval, filter, queueSize, discardOldest);
     }

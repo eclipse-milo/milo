@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -32,11 +22,11 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 public class ServiceCounterDataType extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=871");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=873");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=873");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=872");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=872");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15370");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15370");
 
   private final UInteger totalCount;
 
@@ -138,8 +128,10 @@ public class ServiceCounterDataType extends Structure implements UaStructuredTyp
 
     @Override
     public ServiceCounterDataType decodeType(EncodingContext context, UaDecoder decoder) {
-      UInteger totalCount = decoder.decodeUInt32("TotalCount");
-      UInteger errorCount = decoder.decodeUInt32("ErrorCount");
+      final UInteger totalCount;
+      final UInteger errorCount;
+      totalCount = decoder.decodeUInt32("TotalCount");
+      errorCount = decoder.decodeUInt32("ErrorCount");
       return new ServiceCounterDataType(totalCount, errorCount);
     }
 

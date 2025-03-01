@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.Arrays;
@@ -56,8 +46,24 @@ public class JsonDataSetMessageContentMask
     return get(Field.DataSetWriterName);
   }
 
-  public boolean getReversibleFieldEncoding() {
-    return get(Field.ReversibleFieldEncoding);
+  public boolean getFieldEncoding1() {
+    return get(Field.FieldEncoding1);
+  }
+
+  public boolean getPublisherId() {
+    return get(Field.PublisherId);
+  }
+
+  public boolean getWriterGroupName() {
+    return get(Field.WriterGroupName);
+  }
+
+  public boolean getMinorVersion() {
+    return get(Field.MinorVersion);
+  }
+
+  public boolean getFieldEncoding2() {
+    return get(Field.FieldEncoding2);
   }
 
   @Override
@@ -81,7 +87,11 @@ public class JsonDataSetMessageContentMask
     joiner.add("status=" + getStatus());
     joiner.add("messageType=" + getMessageType());
     joiner.add("dataSetWriterName=" + getDataSetWriterName());
-    joiner.add("reversibleFieldEncoding=" + getReversibleFieldEncoding());
+    joiner.add("fieldEncoding1=" + getFieldEncoding1());
+    joiner.add("publisherId=" + getPublisherId());
+    joiner.add("writerGroupName=" + getWriterGroupName());
+    joiner.add("minorVersion=" + getMinorVersion());
+    joiner.add("fieldEncoding2=" + getFieldEncoding2());
     return joiner.toString();
   }
 
@@ -110,7 +120,15 @@ public class JsonDataSetMessageContentMask
 
     DataSetWriterName(6),
 
-    ReversibleFieldEncoding(7);
+    FieldEncoding1(7),
+
+    PublisherId(8),
+
+    WriterGroupName(9),
+
+    MinorVersion(10),
+
+    FieldEncoding2(11);
 
     private final int bitIndex;
 

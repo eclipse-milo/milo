@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -29,16 +19,16 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.10.3/#5.10.3.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.10.3/#5.10.3.2</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.11.3/#5.11.3.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.11.3/#5.11.3.2</a>
  */
 public class HistoryReadValueId extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=635");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=637");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=637");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=636");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=636");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15259");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15259");
 
   private final NodeId nodeId;
 
@@ -177,10 +167,14 @@ public class HistoryReadValueId extends Structure implements UaStructuredType {
 
     @Override
     public HistoryReadValueId decodeType(EncodingContext context, UaDecoder decoder) {
-      NodeId nodeId = decoder.decodeNodeId("NodeId");
-      String indexRange = decoder.decodeString("IndexRange");
-      QualifiedName dataEncoding = decoder.decodeQualifiedName("DataEncoding");
-      ByteString continuationPoint = decoder.decodeByteString("ContinuationPoint");
+      final NodeId nodeId;
+      final String indexRange;
+      final QualifiedName dataEncoding;
+      final ByteString continuationPoint;
+      nodeId = decoder.decodeNodeId("NodeId");
+      indexRange = decoder.decodeString("IndexRange");
+      dataEncoding = decoder.decodeQualifiedName("DataEncoding");
+      continuationPoint = decoder.decodeByteString("ContinuationPoint");
       return new HistoryReadValueId(nodeId, indexRange, dataEncoding, continuationPoint);
     }
 

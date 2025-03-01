@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -34,11 +24,11 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 public class ReferenceDescription extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=518");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=520");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=520");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=519");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=519");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15182");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15182");
 
   private final NodeId referenceTypeId;
 
@@ -237,13 +227,20 @@ public class ReferenceDescription extends Structure implements UaStructuredType 
 
     @Override
     public ReferenceDescription decodeType(EncodingContext context, UaDecoder decoder) {
-      NodeId referenceTypeId = decoder.decodeNodeId("ReferenceTypeId");
-      Boolean isForward = decoder.decodeBoolean("IsForward");
-      ExpandedNodeId nodeId = decoder.decodeExpandedNodeId("NodeId");
-      QualifiedName browseName = decoder.decodeQualifiedName("BrowseName");
-      LocalizedText displayName = decoder.decodeLocalizedText("DisplayName");
-      NodeClass nodeClass = NodeClass.from(decoder.decodeEnum("NodeClass"));
-      ExpandedNodeId typeDefinition = decoder.decodeExpandedNodeId("TypeDefinition");
+      final NodeId referenceTypeId;
+      final Boolean isForward;
+      final ExpandedNodeId nodeId;
+      final QualifiedName browseName;
+      final LocalizedText displayName;
+      final NodeClass nodeClass;
+      final ExpandedNodeId typeDefinition;
+      referenceTypeId = decoder.decodeNodeId("ReferenceTypeId");
+      isForward = decoder.decodeBoolean("IsForward");
+      nodeId = decoder.decodeExpandedNodeId("NodeId");
+      browseName = decoder.decodeQualifiedName("BrowseName");
+      displayName = decoder.decodeLocalizedText("DisplayName");
+      nodeClass = NodeClass.from(decoder.decodeEnum("NodeClass"));
+      typeDefinition = decoder.decodeExpandedNodeId("TypeDefinition");
       return new ReferenceDescription(
           referenceTypeId, isForward, nodeId, browseName, displayName, nodeClass, typeDefinition);
     }

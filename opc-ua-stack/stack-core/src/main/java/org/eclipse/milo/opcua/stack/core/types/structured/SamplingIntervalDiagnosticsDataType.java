@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -32,11 +22,11 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 public class SamplingIntervalDiagnosticsDataType extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=856");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=858");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=858");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=857");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=857");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15365");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15365");
 
   private final Double samplingInterval;
 
@@ -182,10 +172,14 @@ public class SamplingIntervalDiagnosticsDataType extends Structure implements Ua
     @Override
     public SamplingIntervalDiagnosticsDataType decodeType(
         EncodingContext context, UaDecoder decoder) {
-      Double samplingInterval = decoder.decodeDouble("SamplingInterval");
-      UInteger monitoredItemCount = decoder.decodeUInt32("MonitoredItemCount");
-      UInteger maxMonitoredItemCount = decoder.decodeUInt32("MaxMonitoredItemCount");
-      UInteger disabledMonitoredItemCount = decoder.decodeUInt32("DisabledMonitoredItemCount");
+      final Double samplingInterval;
+      final UInteger monitoredItemCount;
+      final UInteger maxMonitoredItemCount;
+      final UInteger disabledMonitoredItemCount;
+      samplingInterval = decoder.decodeDouble("SamplingInterval");
+      monitoredItemCount = decoder.decodeUInt32("MonitoredItemCount");
+      maxMonitoredItemCount = decoder.decodeUInt32("MaxMonitoredItemCount");
+      disabledMonitoredItemCount = decoder.decodeUInt32("DisabledMonitoredItemCount");
       return new SamplingIntervalDiagnosticsDataType(
           samplingInterval, monitoredItemCount, maxMonitoredItemCount, disabledMonitoredItemCount);
     }

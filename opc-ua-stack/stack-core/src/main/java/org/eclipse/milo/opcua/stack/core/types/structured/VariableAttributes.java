@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -35,11 +25,11 @@ import org.jspecify.annotations.Nullable;
 public class VariableAttributes extends NodeAttributes implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=355");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=357");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=357");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=356");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=356");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15153");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15153");
 
   private final Variant value;
 
@@ -305,19 +295,32 @@ public class VariableAttributes extends NodeAttributes implements UaStructuredTy
 
     @Override
     public VariableAttributes decodeType(EncodingContext context, UaDecoder decoder) {
-      UInteger specifiedAttributes = decoder.decodeUInt32("SpecifiedAttributes");
-      LocalizedText displayName = decoder.decodeLocalizedText("DisplayName");
-      LocalizedText description = decoder.decodeLocalizedText("Description");
-      UInteger writeMask = decoder.decodeUInt32("WriteMask");
-      UInteger userWriteMask = decoder.decodeUInt32("UserWriteMask");
-      Variant value = decoder.decodeVariant("Value");
-      NodeId dataType = decoder.decodeNodeId("DataType");
-      Integer valueRank = decoder.decodeInt32("ValueRank");
-      UInteger[] arrayDimensions = decoder.decodeUInt32Array("ArrayDimensions");
-      UByte accessLevel = decoder.decodeByte("AccessLevel");
-      UByte userAccessLevel = decoder.decodeByte("UserAccessLevel");
-      Double minimumSamplingInterval = decoder.decodeDouble("MinimumSamplingInterval");
-      Boolean historizing = decoder.decodeBoolean("Historizing");
+      final UInteger specifiedAttributes;
+      final LocalizedText displayName;
+      final LocalizedText description;
+      final UInteger writeMask;
+      final UInteger userWriteMask;
+      final Variant value;
+      final NodeId dataType;
+      final Integer valueRank;
+      final UInteger[] arrayDimensions;
+      final UByte accessLevel;
+      final UByte userAccessLevel;
+      final Double minimumSamplingInterval;
+      final Boolean historizing;
+      specifiedAttributes = decoder.decodeUInt32("SpecifiedAttributes");
+      displayName = decoder.decodeLocalizedText("DisplayName");
+      description = decoder.decodeLocalizedText("Description");
+      writeMask = decoder.decodeUInt32("WriteMask");
+      userWriteMask = decoder.decodeUInt32("UserWriteMask");
+      value = decoder.decodeVariant("Value");
+      dataType = decoder.decodeNodeId("DataType");
+      valueRank = decoder.decodeInt32("ValueRank");
+      arrayDimensions = decoder.decodeUInt32Array("ArrayDimensions");
+      accessLevel = decoder.decodeByte("AccessLevel");
+      userAccessLevel = decoder.decodeByte("UserAccessLevel");
+      minimumSamplingInterval = decoder.decodeDouble("MinimumSamplingInterval");
+      historizing = decoder.decodeBoolean("Historizing");
       return new VariableAttributes(
           specifiedAttributes,
           displayName,

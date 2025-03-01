@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -34,11 +24,11 @@ import org.jspecify.annotations.Nullable;
 public class EventFieldList extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=917");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=919");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=919");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=918");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=918");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15348");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15348");
 
   private final UInteger clientHandle;
 
@@ -140,8 +130,10 @@ public class EventFieldList extends Structure implements UaStructuredType {
 
     @Override
     public EventFieldList decodeType(EncodingContext context, UaDecoder decoder) {
-      UInteger clientHandle = decoder.decodeUInt32("ClientHandle");
-      Variant[] eventFields = decoder.decodeVariantArray("EventFields");
+      final UInteger clientHandle;
+      final Variant[] eventFields;
+      clientHandle = decoder.decodeUInt32("ClientHandle");
+      eventFields = decoder.decodeVariantArray("EventFields");
       return new EventFieldList(clientHandle, eventFields);
     }
 

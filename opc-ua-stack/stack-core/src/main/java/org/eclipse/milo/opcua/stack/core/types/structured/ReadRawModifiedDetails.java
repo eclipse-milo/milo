@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -28,16 +18,16 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v104/Core/docs/Part11/6.4.3/#6.4.3.1">https://reference.opcfoundation.org/v104/Core/docs/Part11/6.4.3/#6.4.3.1</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/6.5.3/#6.5.3.1">https://reference.opcfoundation.org/v105/Core/docs/Part11/6.5.3/#6.5.3.1</a>
  */
 public class ReadRawModifiedDetails extends HistoryReadDetails implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=647");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=649");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=649");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=648");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=648");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15263");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15263");
 
   private final Boolean isReadModified;
 
@@ -198,11 +188,16 @@ public class ReadRawModifiedDetails extends HistoryReadDetails implements UaStru
 
     @Override
     public ReadRawModifiedDetails decodeType(EncodingContext context, UaDecoder decoder) {
-      Boolean isReadModified = decoder.decodeBoolean("IsReadModified");
-      DateTime startTime = decoder.decodeDateTime("StartTime");
-      DateTime endTime = decoder.decodeDateTime("EndTime");
-      UInteger numValuesPerNode = decoder.decodeUInt32("NumValuesPerNode");
-      Boolean returnBounds = decoder.decodeBoolean("ReturnBounds");
+      final Boolean isReadModified;
+      final DateTime startTime;
+      final DateTime endTime;
+      final UInteger numValuesPerNode;
+      final Boolean returnBounds;
+      isReadModified = decoder.decodeBoolean("IsReadModified");
+      startTime = decoder.decodeDateTime("StartTime");
+      endTime = decoder.decodeDateTime("EndTime");
+      numValuesPerNode = decoder.decodeUInt32("NumValuesPerNode");
+      returnBounds = decoder.decodeBoolean("ReturnBounds");
       return new ReadRawModifiedDetails(
           isReadModified, startTime, endTime, numValuesPerNode, returnBounds);
     }

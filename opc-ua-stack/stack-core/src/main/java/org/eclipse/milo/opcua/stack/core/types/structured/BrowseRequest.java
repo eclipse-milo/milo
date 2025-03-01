@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -28,16 +18,16 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.8.2/#5.8.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.8.2/#5.8.2.2</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.9.2/#5.9.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.9.2/#5.9.2.2</a>
  */
 public class BrowseRequest extends Structure implements UaRequestMessageType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=525");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=527");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=527");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=526");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=526");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15184");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15184");
 
   private final RequestHeader requestHeader;
 
@@ -179,13 +169,14 @@ public class BrowseRequest extends Structure implements UaRequestMessageType {
 
     @Override
     public BrowseRequest decodeType(EncodingContext context, UaDecoder decoder) {
-      RequestHeader requestHeader =
-          (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
-      ViewDescription view =
-          (ViewDescription) decoder.decodeStruct("View", ViewDescription.TYPE_ID);
-      UInteger requestedMaxReferencesPerNode =
-          decoder.decodeUInt32("RequestedMaxReferencesPerNode");
-      BrowseDescription[] nodesToBrowse =
+      final RequestHeader requestHeader;
+      final ViewDescription view;
+      final UInteger requestedMaxReferencesPerNode;
+      final BrowseDescription[] nodesToBrowse;
+      requestHeader = (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
+      view = (ViewDescription) decoder.decodeStruct("View", ViewDescription.TYPE_ID);
+      requestedMaxReferencesPerNode = decoder.decodeUInt32("RequestedMaxReferencesPerNode");
+      nodesToBrowse =
           (BrowseDescription[])
               decoder.decodeStructArray("NodesToBrowse", BrowseDescription.TYPE_ID);
       return new BrowseRequest(requestHeader, view, requestedMaxReferencesPerNode, nodesToBrowse);

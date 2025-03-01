@@ -1,16 +1,8 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types;
 
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.types.structured.ActionMethodDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.ActionTargetDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ActivateSessionRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.ActivateSessionResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.AddNodesItem;
@@ -26,11 +18,13 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AggregateFilter;
 import org.eclipse.milo.opcua.stack.core.types.structured.AggregateFilterResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.AliasNameDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.Annotation;
+import org.eclipse.milo.opcua.stack.core.types.structured.AnnotationDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AnonymousIdentityToken;
 import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.AttributeOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.AxisInformation;
+import org.eclipse.milo.opcua.stack.core.types.structured.BitFieldDefinition;
 import org.eclipse.milo.opcua.stack.core.types.structured.BrokerConnectionTransportDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.BrokerDataSetReaderTransportDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.BrokerDataSetWriterTransportDataType;
@@ -97,6 +91,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.DeleteSubscriptionsReq
 import org.eclipse.milo.opcua.stack.core.types.structured.DeleteSubscriptionsResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.DiscoveryConfiguration;
 import org.eclipse.milo.opcua.stack.core.types.structured.DoubleComplexNumberType;
+import org.eclipse.milo.opcua.stack.core.types.structured.DtlsPubSubConnectionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.EUInformation;
 import org.eclipse.milo.opcua.stack.core.types.structured.ElementOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointConfiguration;
@@ -114,7 +109,6 @@ import org.eclipse.milo.opcua.stack.core.types.structured.EventFilterResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.EventNotificationList;
 import org.eclipse.milo.opcua.stack.core.types.structured.FieldMetaData;
 import org.eclipse.milo.opcua.stack.core.types.structured.FieldTargetDataType;
-import org.eclipse.milo.opcua.stack.core.types.structured.FilterOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.FindServersOnNetworkRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.FindServersOnNetworkResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.FindServersRequest;
@@ -127,22 +121,37 @@ import org.eclipse.milo.opcua.stack.core.types.structured.HistoryData;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryEvent;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryEventFieldList;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryModifiedData;
-import org.eclipse.milo.opcua.stack.core.types.structured.HistoryReadDetails;
+import org.eclipse.milo.opcua.stack.core.types.structured.HistoryModifiedEvent;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryReadRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryReadResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryReadResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryReadValueId;
-import org.eclipse.milo.opcua.stack.core.types.structured.HistoryUpdateDetails;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryUpdateRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryUpdateResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryUpdateResult;
+import org.eclipse.milo.opcua.stack.core.types.structured.IdentityMappingRuleType;
 import org.eclipse.milo.opcua.stack.core.types.structured.InstanceNode;
 import org.eclipse.milo.opcua.stack.core.types.structured.IssuedIdentityToken;
+import org.eclipse.milo.opcua.stack.core.types.structured.JsonActionMetaDataMessage;
+import org.eclipse.milo.opcua.stack.core.types.structured.JsonActionNetworkMessage;
+import org.eclipse.milo.opcua.stack.core.types.structured.JsonActionRequestMessage;
+import org.eclipse.milo.opcua.stack.core.types.structured.JsonActionResponderMessage;
+import org.eclipse.milo.opcua.stack.core.types.structured.JsonActionResponseMessage;
+import org.eclipse.milo.opcua.stack.core.types.structured.JsonApplicationDescriptionMessage;
+import org.eclipse.milo.opcua.stack.core.types.structured.JsonDataSetMessage;
+import org.eclipse.milo.opcua.stack.core.types.structured.JsonDataSetMetaDataMessage;
 import org.eclipse.milo.opcua.stack.core.types.structured.JsonDataSetReaderMessageDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.JsonDataSetWriterMessageDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.JsonPubSubConnectionMessage;
+import org.eclipse.milo.opcua.stack.core.types.structured.JsonServerEndpointsMessage;
+import org.eclipse.milo.opcua.stack.core.types.structured.JsonStatusMessage;
 import org.eclipse.milo.opcua.stack.core.types.structured.JsonWriterGroupMessageDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.KeyValuePair;
+import org.eclipse.milo.opcua.stack.core.types.structured.LinearConversionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.LiteralOperand;
+import org.eclipse.milo.opcua.stack.core.types.structured.LldpManagementAddressTxPortType;
+import org.eclipse.milo.opcua.stack.core.types.structured.LldpManagementAddressType;
+import org.eclipse.milo.opcua.stack.core.types.structured.LldpTlvType;
 import org.eclipse.milo.opcua.stack.core.types.structured.MdnsDiscoveryConfiguration;
 import org.eclipse.milo.opcua.stack.core.types.structured.MethodAttributes;
 import org.eclipse.milo.opcua.stack.core.types.structured.MethodNode;
@@ -188,11 +197,14 @@ import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConnectionDataTy
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubKeyPushTargetDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishResponse;
+import org.eclipse.milo.opcua.stack.core.types.structured.PublishedActionDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.PublishedActionMethodDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedDataItemsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedDataSetCustomSourceDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedDataSetDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedEventsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedVariableDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.QuantityDimension;
 import org.eclipse.milo.opcua.stack.core.types.structured.QueryDataDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.QueryDataSet;
 import org.eclipse.milo.opcua.stack.core.types.structured.QueryFirstRequest;
@@ -204,6 +216,8 @@ import org.eclipse.milo.opcua.stack.core.types.structured.RationalNumber;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadAnnotationDataDetails;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadAtTimeDetails;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadEventDetails;
+import org.eclipse.milo.opcua.stack.core.types.structured.ReadEventDetails2;
+import org.eclipse.milo.opcua.stack.core.types.structured.ReadEventDetailsSorted;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadProcessedDetails;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadRawModifiedDetails;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadRequest;
@@ -254,6 +268,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.SignatureData;
 import org.eclipse.milo.opcua.stack.core.types.structured.SignedSoftwareCertificate;
 import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.SimpleTypeDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.SortRuleElement;
 import org.eclipse.milo.opcua.stack.core.types.structured.StandaloneSubscribedDataSetDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.StandaloneSubscribedDataSetRefDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.StatusChangeNotification;
@@ -342,6 +357,12 @@ public class DataTypeInitializer {
         EndpointType.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
         EndpointType.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
     dataTypeManager.registerType(
+        BitFieldDefinition.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+        new BitFieldDefinition.Codec(),
+        BitFieldDefinition.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        BitFieldDefinition.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        BitFieldDefinition.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
+    dataTypeManager.registerType(
         RationalNumber.TYPE_ID.toNodeIdOrThrow(namespaceTable),
         new RationalNumber.Codec(),
         RationalNumber.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
@@ -372,11 +393,35 @@ public class DataTypeInitializer {
         ThreeDFrame.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
         ThreeDFrame.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
     dataTypeManager.registerType(
+        IdentityMappingRuleType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+        new IdentityMappingRuleType.Codec(),
+        IdentityMappingRuleType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        IdentityMappingRuleType.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        IdentityMappingRuleType.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
+    dataTypeManager.registerType(
         CurrencyUnitType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
         new CurrencyUnitType.Codec(),
         CurrencyUnitType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
         CurrencyUnitType.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
         CurrencyUnitType.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
+    dataTypeManager.registerType(
+        AnnotationDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+        new AnnotationDataType.Codec(),
+        AnnotationDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        AnnotationDataType.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        AnnotationDataType.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
+    dataTypeManager.registerType(
+        LinearConversionDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+        new LinearConversionDataType.Codec(),
+        LinearConversionDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        LinearConversionDataType.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        LinearConversionDataType.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
+    dataTypeManager.registerType(
+        QuantityDimension.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+        new QuantityDimension.Codec(),
+        QuantityDimension.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        QuantityDimension.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        QuantityDimension.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
     dataTypeManager.registerType(
         TrustListDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
         new TrustListDataType.Codec(),
@@ -474,11 +519,35 @@ public class DataTypeInitializer {
         PublishedDataSetCustomSourceDataType.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
         PublishedDataSetCustomSourceDataType.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
     dataTypeManager.registerType(
+        PublishedActionDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+        new PublishedActionDataType.Codec(),
+        PublishedActionDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        PublishedActionDataType.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        PublishedActionDataType.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
+    dataTypeManager.registerType(
+        PublishedActionMethodDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+        new PublishedActionMethodDataType.Codec(),
+        PublishedActionMethodDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        PublishedActionMethodDataType.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        PublishedActionMethodDataType.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
+    dataTypeManager.registerType(
         PublishedVariableDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
         new PublishedVariableDataType.Codec(),
         PublishedVariableDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
         PublishedVariableDataType.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
         PublishedVariableDataType.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
+    dataTypeManager.registerType(
+        ActionTargetDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+        new ActionTargetDataType.Codec(),
+        ActionTargetDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        ActionTargetDataType.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        ActionTargetDataType.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
+    dataTypeManager.registerType(
+        ActionMethodDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+        new ActionMethodDataType.Codec(),
+        ActionMethodDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        ActionMethodDataType.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        ActionMethodDataType.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
     dataTypeManager.registerType(
         DataSetWriterDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
         new DataSetWriterDataType.Codec(),
@@ -672,6 +741,12 @@ public class DataTypeInitializer {
         ReceiveQosPriorityDataType.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
         ReceiveQosPriorityDataType.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
     dataTypeManager.registerType(
+        DtlsPubSubConnectionDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+        new DtlsPubSubConnectionDataType.Codec(),
+        DtlsPubSubConnectionDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        DtlsPubSubConnectionDataType.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        DtlsPubSubConnectionDataType.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
+    dataTypeManager.registerType(
         PubSubConfigurationRefDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
         new PubSubConfigurationRefDataType.Codec(),
         PubSubConfigurationRefDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
@@ -701,6 +776,24 @@ public class DataTypeInitializer {
         PriorityMappingEntryType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
         PriorityMappingEntryType.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
         PriorityMappingEntryType.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
+    dataTypeManager.registerType(
+        LldpManagementAddressTxPortType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+        new LldpManagementAddressTxPortType.Codec(),
+        LldpManagementAddressTxPortType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        LldpManagementAddressTxPortType.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        LldpManagementAddressTxPortType.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
+    dataTypeManager.registerType(
+        LldpManagementAddressType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+        new LldpManagementAddressType.Codec(),
+        LldpManagementAddressType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        LldpManagementAddressType.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        LldpManagementAddressType.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
+    dataTypeManager.registerType(
+        LldpTlvType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+        new LldpTlvType.Codec(),
+        LldpTlvType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        LldpTlvType.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        LldpTlvType.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
     dataTypeManager.registerType(
         ReferenceDescriptionDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
         new ReferenceDescriptionDataType.Codec(),
@@ -888,12 +981,6 @@ public class DataTypeInitializer {
         ContentFilter.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
         ContentFilter.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
     dataTypeManager.registerType(
-        FilterOperand.TYPE_ID.toNodeIdOrThrow(namespaceTable),
-        new FilterOperand.Codec(),
-        FilterOperand.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
-        FilterOperand.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
-        FilterOperand.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
-    dataTypeManager.registerType(
         ElementOperand.TYPE_ID.toNodeIdOrThrow(namespaceTable),
         new ElementOperand.Codec(),
         ElementOperand.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
@@ -918,11 +1005,23 @@ public class DataTypeInitializer {
         SimpleAttributeOperand.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
         SimpleAttributeOperand.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
     dataTypeManager.registerType(
+        ModificationInfo.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+        new ModificationInfo.Codec(),
+        ModificationInfo.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        ModificationInfo.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        ModificationInfo.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
+    dataTypeManager.registerType(
         HistoryEvent.TYPE_ID.toNodeIdOrThrow(namespaceTable),
         new HistoryEvent.Codec(),
         HistoryEvent.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
         HistoryEvent.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
         HistoryEvent.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
+    dataTypeManager.registerType(
+        HistoryModifiedEvent.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+        new HistoryModifiedEvent.Codec(),
+        HistoryModifiedEvent.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        HistoryModifiedEvent.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        HistoryModifiedEvent.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
     dataTypeManager.registerType(
         MonitoringFilter.TYPE_ID.toNodeIdOrThrow(namespaceTable),
         new MonitoringFilter.Codec(),
@@ -1103,6 +1202,72 @@ public class DataTypeInitializer {
         DecimalDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
         DecimalDataType.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
         DecimalDataType.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
+    dataTypeManager.registerType(
+        JsonDataSetMessage.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+        new JsonDataSetMessage.Codec(),
+        JsonDataSetMessage.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        JsonDataSetMessage.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        JsonDataSetMessage.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
+    dataTypeManager.registerType(
+        JsonDataSetMetaDataMessage.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+        new JsonDataSetMetaDataMessage.Codec(),
+        JsonDataSetMetaDataMessage.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        JsonDataSetMetaDataMessage.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        JsonDataSetMetaDataMessage.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
+    dataTypeManager.registerType(
+        JsonApplicationDescriptionMessage.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+        new JsonApplicationDescriptionMessage.Codec(),
+        JsonApplicationDescriptionMessage.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        JsonApplicationDescriptionMessage.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        JsonApplicationDescriptionMessage.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
+    dataTypeManager.registerType(
+        JsonServerEndpointsMessage.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+        new JsonServerEndpointsMessage.Codec(),
+        JsonServerEndpointsMessage.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        JsonServerEndpointsMessage.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        JsonServerEndpointsMessage.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
+    dataTypeManager.registerType(
+        JsonStatusMessage.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+        new JsonStatusMessage.Codec(),
+        JsonStatusMessage.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        JsonStatusMessage.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        JsonStatusMessage.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
+    dataTypeManager.registerType(
+        JsonPubSubConnectionMessage.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+        new JsonPubSubConnectionMessage.Codec(),
+        JsonPubSubConnectionMessage.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        JsonPubSubConnectionMessage.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        JsonPubSubConnectionMessage.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
+    dataTypeManager.registerType(
+        JsonActionMetaDataMessage.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+        new JsonActionMetaDataMessage.Codec(),
+        JsonActionMetaDataMessage.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        JsonActionMetaDataMessage.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        JsonActionMetaDataMessage.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
+    dataTypeManager.registerType(
+        JsonActionResponderMessage.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+        new JsonActionResponderMessage.Codec(),
+        JsonActionResponderMessage.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        JsonActionResponderMessage.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        JsonActionResponderMessage.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
+    dataTypeManager.registerType(
+        JsonActionNetworkMessage.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+        new JsonActionNetworkMessage.Codec(),
+        JsonActionNetworkMessage.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        JsonActionNetworkMessage.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        JsonActionNetworkMessage.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
+    dataTypeManager.registerType(
+        JsonActionRequestMessage.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+        new JsonActionRequestMessage.Codec(),
+        JsonActionRequestMessage.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        JsonActionRequestMessage.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        JsonActionRequestMessage.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
+    dataTypeManager.registerType(
+        JsonActionResponseMessage.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+        new JsonActionResponseMessage.Codec(),
+        JsonActionResponseMessage.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        JsonActionResponseMessage.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        JsonActionResponseMessage.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
     dataTypeManager.registerType(
         Node.TYPE_ID.toNodeIdOrThrow(namespaceTable),
         new Node.Codec(),
@@ -1668,17 +1833,23 @@ public class DataTypeInitializer {
         HistoryReadResult.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
         HistoryReadResult.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
     dataTypeManager.registerType(
-        HistoryReadDetails.TYPE_ID.toNodeIdOrThrow(namespaceTable),
-        new HistoryReadDetails.Codec(),
-        HistoryReadDetails.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
-        HistoryReadDetails.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
-        HistoryReadDetails.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
-    dataTypeManager.registerType(
         ReadEventDetails.TYPE_ID.toNodeIdOrThrow(namespaceTable),
         new ReadEventDetails.Codec(),
         ReadEventDetails.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
         ReadEventDetails.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
         ReadEventDetails.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
+    dataTypeManager.registerType(
+        ReadEventDetails2.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+        new ReadEventDetails2.Codec(),
+        ReadEventDetails2.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        ReadEventDetails2.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        ReadEventDetails2.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
+    dataTypeManager.registerType(
+        ReadEventDetailsSorted.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+        new ReadEventDetailsSorted.Codec(),
+        ReadEventDetailsSorted.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        ReadEventDetailsSorted.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        ReadEventDetailsSorted.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
     dataTypeManager.registerType(
         ReadRawModifiedDetails.TYPE_ID.toNodeIdOrThrow(namespaceTable),
         new ReadRawModifiedDetails.Codec(),
@@ -1704,6 +1875,12 @@ public class DataTypeInitializer {
         ReadAnnotationDataDetails.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
         ReadAnnotationDataDetails.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
     dataTypeManager.registerType(
+        SortRuleElement.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+        new SortRuleElement.Codec(),
+        SortRuleElement.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        SortRuleElement.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+        SortRuleElement.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
+    dataTypeManager.registerType(
         HistoryData.TYPE_ID.toNodeIdOrThrow(namespaceTable),
         new HistoryData.Codec(),
         HistoryData.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
@@ -1715,12 +1892,6 @@ public class DataTypeInitializer {
         HistoryModifiedData.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
         HistoryModifiedData.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
         HistoryModifiedData.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
-    dataTypeManager.registerType(
-        ModificationInfo.TYPE_ID.toNodeIdOrThrow(namespaceTable),
-        new ModificationInfo.Codec(),
-        ModificationInfo.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
-        ModificationInfo.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
-        ModificationInfo.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
     dataTypeManager.registerType(
         HistoryReadRequest.TYPE_ID.toNodeIdOrThrow(namespaceTable),
         new HistoryReadRequest.Codec(),
@@ -1751,12 +1922,6 @@ public class DataTypeInitializer {
         WriteResponse.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
         WriteResponse.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
         WriteResponse.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
-    dataTypeManager.registerType(
-        HistoryUpdateDetails.TYPE_ID.toNodeIdOrThrow(namespaceTable),
-        new HistoryUpdateDetails.Codec(),
-        HistoryUpdateDetails.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
-        HistoryUpdateDetails.XML_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
-        HistoryUpdateDetails.JSON_ENCODING_ID.toNodeIdOrThrow(namespaceTable));
     dataTypeManager.registerType(
         UpdateDataDetails.TYPE_ID.toNodeIdOrThrow(namespaceTable),
         new UpdateDataDetails.Codec(),

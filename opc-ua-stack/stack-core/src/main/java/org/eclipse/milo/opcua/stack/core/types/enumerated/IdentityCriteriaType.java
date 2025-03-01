@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.enumerated;
 
 import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
@@ -47,7 +37,13 @@ public enum IdentityCriteriaType implements UaEnumeratedType {
   Application(7),
 
   /** The rule specifies the X509 subject name of a user or CA Certificate. */
-  X509Subject(8);
+  X509Subject(8),
+
+  /**
+   * The rule specifies any trusted application that has been authenticated with a trusted
+   * ApplicationInstance Certificate.
+   */
+  TrustedApplication(9);
 
   private final int value;
 
@@ -83,6 +79,8 @@ public enum IdentityCriteriaType implements UaEnumeratedType {
         return Application;
       case 8:
         return X509Subject;
+      case 9:
+        return TrustedApplication;
       default:
         return null;
     }
@@ -135,7 +133,15 @@ public enum IdentityCriteriaType implements UaEnumeratedType {
               LocalizedText.NULL_VALUE,
               new LocalizedText(
                   "", "The rule specifies the X509 subject name of a user or CA Certificate."),
-              "X509Subject")
+              "X509Subject"),
+          new EnumField(
+              9L,
+              LocalizedText.NULL_VALUE,
+              new LocalizedText(
+                  "",
+                  "The rule specifies any trusted application that has been authenticated with a"
+                      + " trusted ApplicationInstance Certificate."),
+              "TrustedApplication")
         });
   }
 

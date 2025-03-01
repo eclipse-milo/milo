@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -32,11 +22,11 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 public class ThreeDFrame extends Frame implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=18814");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=18823");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=18823");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=18859");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=18859");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=19072");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=19072");
 
   private final ThreeDCartesianCoordinates cartesianCoordinates;
 
@@ -139,10 +129,12 @@ public class ThreeDFrame extends Frame implements UaStructuredType {
 
     @Override
     public ThreeDFrame decodeType(EncodingContext context, UaDecoder decoder) {
-      ThreeDCartesianCoordinates cartesianCoordinates =
+      final ThreeDCartesianCoordinates cartesianCoordinates;
+      final ThreeDOrientation orientation;
+      cartesianCoordinates =
           (ThreeDCartesianCoordinates)
               decoder.decodeStruct("CartesianCoordinates", ThreeDCartesianCoordinates.TYPE_ID);
-      ThreeDOrientation orientation =
+      orientation =
           (ThreeDOrientation) decoder.decodeStruct("Orientation", ThreeDOrientation.TYPE_ID);
       return new ThreeDFrame(cartesianCoordinates, orientation);
     }

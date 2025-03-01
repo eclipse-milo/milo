@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -33,11 +23,11 @@ import org.jspecify.annotations.Nullable;
 public class Argument extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=296");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=298");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=298");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=297");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=297");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15081");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15081");
 
   private final @Nullable String name;
 
@@ -198,11 +188,16 @@ public class Argument extends Structure implements UaStructuredType {
 
     @Override
     public Argument decodeType(EncodingContext context, UaDecoder decoder) {
-      String name = decoder.decodeString("Name");
-      NodeId dataType = decoder.decodeNodeId("DataType");
-      Integer valueRank = decoder.decodeInt32("ValueRank");
-      UInteger[] arrayDimensions = decoder.decodeUInt32Array("ArrayDimensions");
-      LocalizedText description = decoder.decodeLocalizedText("Description");
+      final String name;
+      final NodeId dataType;
+      final Integer valueRank;
+      final UInteger[] arrayDimensions;
+      final LocalizedText description;
+      name = decoder.decodeString("Name");
+      dataType = decoder.decodeNodeId("DataType");
+      valueRank = decoder.decodeInt32("ValueRank");
+      arrayDimensions = decoder.decodeUInt32Array("ArrayDimensions");
+      description = decoder.decodeLocalizedText("Description");
       return new Argument(name, dataType, valueRank, arrayDimensions, description);
     }
 

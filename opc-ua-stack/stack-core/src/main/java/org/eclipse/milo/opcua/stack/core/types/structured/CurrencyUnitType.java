@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -33,11 +23,11 @@ import org.jspecify.annotations.Nullable;
 public class CurrencyUnitType extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=23498");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=23507");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=23507");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=23520");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=23520");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=23528");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=23528");
 
   private final Short numericCode;
 
@@ -176,10 +166,14 @@ public class CurrencyUnitType extends Structure implements UaStructuredType {
 
     @Override
     public CurrencyUnitType decodeType(EncodingContext context, UaDecoder decoder) {
-      Short numericCode = decoder.decodeInt16("NumericCode");
-      Byte exponent = decoder.decodeSByte("Exponent");
-      String alphabeticCode = decoder.decodeString("AlphabeticCode");
-      LocalizedText currency = decoder.decodeLocalizedText("Currency");
+      final Short numericCode;
+      final Byte exponent;
+      final String alphabeticCode;
+      final LocalizedText currency;
+      numericCode = decoder.decodeInt16("NumericCode");
+      exponent = decoder.decodeSByte("Exponent");
+      alphabeticCode = decoder.decodeString("AlphabeticCode");
+      currency = decoder.decodeLocalizedText("Currency");
       return new CurrencyUnitType(numericCode, exponent, alphabeticCode, currency);
     }
 

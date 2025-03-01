@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -34,11 +24,11 @@ import org.jspecify.annotations.Nullable;
 public class UABinaryFileDataType extends DataTypeSchemaHeader implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=15006");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=15422");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15422");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=15531");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15531");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15714");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15714");
 
   private final @Nullable String schemaLocation;
 
@@ -200,19 +190,25 @@ public class UABinaryFileDataType extends DataTypeSchemaHeader implements UaStru
 
     @Override
     public UABinaryFileDataType decodeType(EncodingContext context, UaDecoder decoder) {
-      String[] namespaces = decoder.decodeStringArray("Namespaces");
-      StructureDescription[] structureDataTypes =
+      final String[] namespaces;
+      final StructureDescription[] structureDataTypes;
+      final EnumDescription[] enumDataTypes;
+      final SimpleTypeDescription[] simpleDataTypes;
+      final String schemaLocation;
+      final KeyValuePair[] fileHeader;
+      final Variant body;
+      namespaces = decoder.decodeStringArray("Namespaces");
+      structureDataTypes =
           (StructureDescription[])
               decoder.decodeStructArray("StructureDataTypes", StructureDescription.TYPE_ID);
-      EnumDescription[] enumDataTypes =
+      enumDataTypes =
           (EnumDescription[]) decoder.decodeStructArray("EnumDataTypes", EnumDescription.TYPE_ID);
-      SimpleTypeDescription[] simpleDataTypes =
+      simpleDataTypes =
           (SimpleTypeDescription[])
               decoder.decodeStructArray("SimpleDataTypes", SimpleTypeDescription.TYPE_ID);
-      String schemaLocation = decoder.decodeString("SchemaLocation");
-      KeyValuePair[] fileHeader =
-          (KeyValuePair[]) decoder.decodeStructArray("FileHeader", KeyValuePair.TYPE_ID);
-      Variant body = decoder.decodeVariant("Body");
+      schemaLocation = decoder.decodeString("SchemaLocation");
+      fileHeader = (KeyValuePair[]) decoder.decodeStructArray("FileHeader", KeyValuePair.TYPE_ID);
+      body = decoder.decodeVariant("Body");
       return new UABinaryFileDataType(
           namespaces,
           structureDataTypes,

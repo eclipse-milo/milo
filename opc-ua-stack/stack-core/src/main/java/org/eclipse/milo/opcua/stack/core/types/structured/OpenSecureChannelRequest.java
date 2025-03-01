@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -28,18 +18,14 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.StructureType;
 import org.eclipse.milo.opcua.stack.core.util.codegen.EqualsBuilder;
 import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 
-/**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.5.2/#5.5.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.5.2/#5.5.2.2</a>
- */
 public class OpenSecureChannelRequest extends Structure implements UaRequestMessageType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=444");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=446");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=446");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=445");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=445");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15132");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15132");
 
   private final RequestHeader requestHeader;
 
@@ -219,15 +205,18 @@ public class OpenSecureChannelRequest extends Structure implements UaRequestMess
 
     @Override
     public OpenSecureChannelRequest decodeType(EncodingContext context, UaDecoder decoder) {
-      RequestHeader requestHeader =
-          (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
-      UInteger clientProtocolVersion = decoder.decodeUInt32("ClientProtocolVersion");
-      SecurityTokenRequestType requestType =
-          SecurityTokenRequestType.from(decoder.decodeEnum("RequestType"));
-      MessageSecurityMode securityMode =
-          MessageSecurityMode.from(decoder.decodeEnum("SecurityMode"));
-      ByteString clientNonce = decoder.decodeByteString("ClientNonce");
-      UInteger requestedLifetime = decoder.decodeUInt32("RequestedLifetime");
+      final RequestHeader requestHeader;
+      final UInteger clientProtocolVersion;
+      final SecurityTokenRequestType requestType;
+      final MessageSecurityMode securityMode;
+      final ByteString clientNonce;
+      final UInteger requestedLifetime;
+      requestHeader = (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
+      clientProtocolVersion = decoder.decodeUInt32("ClientProtocolVersion");
+      requestType = SecurityTokenRequestType.from(decoder.decodeEnum("RequestType"));
+      securityMode = MessageSecurityMode.from(decoder.decodeEnum("SecurityMode"));
+      clientNonce = decoder.decodeByteString("ClientNonce");
+      requestedLifetime = decoder.decodeUInt32("RequestedLifetime");
       return new OpenSecureChannelRequest(
           requestHeader,
           clientProtocolVersion,

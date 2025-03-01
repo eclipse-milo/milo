@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.client.dtd;
 
 import java.util.Map;
@@ -15,7 +5,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.jspecify.annotations.Nullable;
 
-abstract class BuiltinDataTypeInfo {
+abstract class BinaryDataTypeInfo {
   private static final Map<String, DataTypeInfo> DATA_TYPE_INFO_MAP;
 
   static {
@@ -29,6 +19,8 @@ abstract class BuiltinDataTypeInfo {
         "EphemeralKeyType", new DataTypeInfo(new NodeId(0, 17548), new NodeId(0, 17549)));
     DATA_TYPE_INFO_MAP.put(
         "EndpointType", new DataTypeInfo(new NodeId(0, 15528), new NodeId(0, 15671)));
+    DATA_TYPE_INFO_MAP.put(
+        "BitFieldDefinition", new DataTypeInfo(new NodeId(0, 32421), new NodeId(0, 32422)));
     DATA_TYPE_INFO_MAP.put(
         "RationalNumber", new DataTypeInfo(new NodeId(0, 18806), new NodeId(0, 18815)));
     DATA_TYPE_INFO_MAP.put("Vector", new DataTypeInfo(new NodeId(0, 18807), new NodeId(0, 18816)));
@@ -49,7 +41,15 @@ abstract class BuiltinDataTypeInfo {
     DATA_TYPE_INFO_MAP.put(
         "CurrencyUnitType", new DataTypeInfo(new NodeId(0, 23498), new NodeId(0, 23507)));
     DATA_TYPE_INFO_MAP.put(
+        "AnnotationDataType", new DataTypeInfo(new NodeId(0, 32434), new NodeId(0, 32560)));
+    DATA_TYPE_INFO_MAP.put(
+        "LinearConversionDataType", new DataTypeInfo(new NodeId(0, 32435), new NodeId(0, 32561)));
+    DATA_TYPE_INFO_MAP.put(
+        "QuantityDimension", new DataTypeInfo(new NodeId(0, 32438), new NodeId(0, 32562)));
+    DATA_TYPE_INFO_MAP.put(
         "TrustListDataType", new DataTypeInfo(new NodeId(0, 12554), new NodeId(0, 12680)));
+    DATA_TYPE_INFO_MAP.put(
+        "TransactionErrorType", new DataTypeInfo(new NodeId(0, 32285), new NodeId(0, 32382)));
     DATA_TYPE_INFO_MAP.put(
         "DataTypeSchemaHeader", new DataTypeInfo(new NodeId(0, 15534), new NodeId(0, 15676)));
     DATA_TYPE_INFO_MAP.put(
@@ -89,6 +89,15 @@ abstract class BuiltinDataTypeInfo {
     DATA_TYPE_INFO_MAP.put(
         "PublishedDataSetCustomSourceDataType",
         new DataTypeInfo(new NodeId(0, 25269), new NodeId(0, 25529)));
+    DATA_TYPE_INFO_MAP.put(
+        "ActionTargetDataType", new DataTypeInfo(new NodeId(0, 18593), new NodeId(0, 18598)));
+    DATA_TYPE_INFO_MAP.put(
+        "PublishedActionDataType", new DataTypeInfo(new NodeId(0, 18594), new NodeId(0, 18599)));
+    DATA_TYPE_INFO_MAP.put(
+        "ActionMethodDataType", new DataTypeInfo(new NodeId(0, 18597), new NodeId(0, 18600)));
+    DATA_TYPE_INFO_MAP.put(
+        "PublishedActionMethodDataType",
+        new DataTypeInfo(new NodeId(0, 18793), new NodeId(0, 18795)));
     DATA_TYPE_INFO_MAP.put(
         "DataSetWriterDataType", new DataTypeInfo(new NodeId(0, 15597), new NodeId(0, 15682)));
     DATA_TYPE_INFO_MAP.put(
@@ -201,6 +210,9 @@ abstract class BuiltinDataTypeInfo {
         "DatagramDataSetReaderTransportDataType",
         new DataTypeInfo(new NodeId(0, 23614), new NodeId(0, 23866)));
     DATA_TYPE_INFO_MAP.put(
+        "DtlsPubSubConnectionDataType",
+        new DataTypeInfo(new NodeId(0, 18794), new NodeId(0, 18930)));
+    DATA_TYPE_INFO_MAP.put(
         "BrokerConnectionTransportDataType",
         new DataTypeInfo(new NodeId(0, 15007), new NodeId(0, 15479)));
     DATA_TYPE_INFO_MAP.put(
@@ -224,6 +236,18 @@ abstract class BuiltinDataTypeInfo {
         "UserManagementDataType", new DataTypeInfo(new NodeId(0, 24281), new NodeId(0, 24292)));
     DATA_TYPE_INFO_MAP.put(
         "PriorityMappingEntryType", new DataTypeInfo(new NodeId(0, 25220), new NodeId(0, 25239)));
+    DATA_TYPE_INFO_MAP.put(
+        "LldpManagementAddressTxPortType",
+        new DataTypeInfo(new NodeId(0, 18953), new NodeId(0, 19079)));
+    DATA_TYPE_INFO_MAP.put(
+        "LldpManagementAddressType", new DataTypeInfo(new NodeId(0, 18954), new NodeId(0, 19080)));
+    DATA_TYPE_INFO_MAP.put(
+        "LldpTlvType", new DataTypeInfo(new NodeId(0, 18955), new NodeId(0, 19081)));
+    DATA_TYPE_INFO_MAP.put(
+        "ReferenceDescriptionDataType",
+        new DataTypeInfo(new NodeId(0, 32659), new NodeId(0, 32661)));
+    DATA_TYPE_INFO_MAP.put(
+        "ReferenceListEntryDataType", new DataTypeInfo(new NodeId(0, 32660), new NodeId(0, 32662)));
     DATA_TYPE_INFO_MAP.put(
         "RolePermissionType", new DataTypeInfo(new NodeId(0, 96), new NodeId(0, 128)));
     DATA_TYPE_INFO_MAP.put(
@@ -297,7 +321,11 @@ abstract class BuiltinDataTypeInfo {
     DATA_TYPE_INFO_MAP.put(
         "SimpleAttributeOperand", new DataTypeInfo(new NodeId(0, 601), new NodeId(0, 603)));
     DATA_TYPE_INFO_MAP.put(
+        "ModificationInfo", new DataTypeInfo(new NodeId(0, 11216), new NodeId(0, 11226)));
+    DATA_TYPE_INFO_MAP.put(
         "HistoryEvent", new DataTypeInfo(new NodeId(0, 659), new NodeId(0, 661)));
+    DATA_TYPE_INFO_MAP.put(
+        "HistoryModifiedEvent", new DataTypeInfo(new NodeId(0, 32824), new NodeId(0, 32825)));
     DATA_TYPE_INFO_MAP.put(
         "MonitoringFilter", new DataTypeInfo(new NodeId(0, 719), new NodeId(0, 721)));
     DATA_TYPE_INFO_MAP.put("EventFilter", new DataTypeInfo(new NodeId(0, 725), new NodeId(0, 727)));
@@ -546,6 +574,12 @@ abstract class BuiltinDataTypeInfo {
     DATA_TYPE_INFO_MAP.put(
         "ReadEventDetails", new DataTypeInfo(new NodeId(0, 644), new NodeId(0, 646)));
     DATA_TYPE_INFO_MAP.put(
+        "ReadEventDetails2", new DataTypeInfo(new NodeId(0, 32799), new NodeId(0, 32800)));
+    DATA_TYPE_INFO_MAP.put(
+        "SortRuleElement", new DataTypeInfo(new NodeId(0, 18648), new NodeId(0, 18650)));
+    DATA_TYPE_INFO_MAP.put(
+        "ReadEventDetailsSorted", new DataTypeInfo(new NodeId(0, 18649), new NodeId(0, 18651)));
+    DATA_TYPE_INFO_MAP.put(
         "ReadRawModifiedDetails", new DataTypeInfo(new NodeId(0, 647), new NodeId(0, 649)));
     DATA_TYPE_INFO_MAP.put(
         "ReadProcessedDetails", new DataTypeInfo(new NodeId(0, 650), new NodeId(0, 652)));
@@ -554,8 +588,6 @@ abstract class BuiltinDataTypeInfo {
     DATA_TYPE_INFO_MAP.put(
         "ReadAnnotationDataDetails", new DataTypeInfo(new NodeId(0, 23497), new NodeId(0, 23500)));
     DATA_TYPE_INFO_MAP.put("HistoryData", new DataTypeInfo(new NodeId(0, 656), new NodeId(0, 658)));
-    DATA_TYPE_INFO_MAP.put(
-        "ModificationInfo", new DataTypeInfo(new NodeId(0, 11216), new NodeId(0, 11226)));
     DATA_TYPE_INFO_MAP.put(
         "HistoryModifiedData", new DataTypeInfo(new NodeId(0, 11217), new NodeId(0, 11227)));
     DATA_TYPE_INFO_MAP.put(

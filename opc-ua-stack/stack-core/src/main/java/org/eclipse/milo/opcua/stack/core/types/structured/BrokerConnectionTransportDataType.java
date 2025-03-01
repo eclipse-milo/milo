@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -34,11 +24,11 @@ public class BrokerConnectionTransportDataType extends ConnectionTransportDataTy
     implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=15007");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=15479");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15479");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=15579");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15579");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15726");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15726");
 
   private final @Nullable String resourceUri;
 
@@ -143,8 +133,10 @@ public class BrokerConnectionTransportDataType extends ConnectionTransportDataTy
     @Override
     public BrokerConnectionTransportDataType decodeType(
         EncodingContext context, UaDecoder decoder) {
-      String resourceUri = decoder.decodeString("ResourceUri");
-      String authenticationProfileUri = decoder.decodeString("AuthenticationProfileUri");
+      final String resourceUri;
+      final String authenticationProfileUri;
+      resourceUri = decoder.decodeString("ResourceUri");
+      authenticationProfileUri = decoder.decodeString("AuthenticationProfileUri");
       return new BrokerConnectionTransportDataType(resourceUri, authenticationProfileUri);
     }
 

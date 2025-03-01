@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.Arrays;
@@ -52,6 +42,10 @@ public class JsonNetworkMessageContentMask
     return get(Field.ReplyTo);
   }
 
+  public boolean getWriterGroupName() {
+    return get(Field.WriterGroupName);
+  }
+
   @Override
   public UInteger getValue() {
     return (UInteger) value;
@@ -72,6 +66,7 @@ public class JsonNetworkMessageContentMask
     joiner.add("publisherId=" + getPublisherId());
     joiner.add("dataSetClassId=" + getDataSetClassId());
     joiner.add("replyTo=" + getReplyTo());
+    joiner.add("writerGroupName=" + getWriterGroupName());
     return joiner.toString();
   }
 
@@ -96,7 +91,9 @@ public class JsonNetworkMessageContentMask
 
     DataSetClassId(4),
 
-    ReplyTo(5);
+    ReplyTo(5),
+
+    WriterGroupName(6);
 
     private final int bitIndex;
 

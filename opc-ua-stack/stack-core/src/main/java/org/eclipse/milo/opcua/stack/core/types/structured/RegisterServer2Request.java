@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -29,16 +19,16 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.4.6/#5.4.6.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.4.6/#5.4.6.2</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.5.6/#5.5.6.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.5.6/#5.5.6.2</a>
  */
 public class RegisterServer2Request extends Structure implements UaRequestMessageType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=12193");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=12211");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=12211");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=12199");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=12199");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15107");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15107");
 
   private final RequestHeader requestHeader;
 
@@ -161,12 +151,12 @@ public class RegisterServer2Request extends Structure implements UaRequestMessag
 
     @Override
     public RegisterServer2Request decodeType(EncodingContext context, UaDecoder decoder) {
-      RequestHeader requestHeader =
-          (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
-      RegisteredServer server =
-          (RegisteredServer) decoder.decodeStruct("Server", RegisteredServer.TYPE_ID);
-      ExtensionObject[] discoveryConfiguration =
-          decoder.decodeExtensionObjectArray("DiscoveryConfiguration");
+      final RequestHeader requestHeader;
+      final RegisteredServer server;
+      final ExtensionObject[] discoveryConfiguration;
+      requestHeader = (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
+      server = (RegisteredServer) decoder.decodeStruct("Server", RegisteredServer.TYPE_ID);
+      discoveryConfiguration = decoder.decodeExtensionObjectArray("DiscoveryConfiguration");
       return new RegisterServer2Request(requestHeader, server, discoveryConfiguration);
     }
 

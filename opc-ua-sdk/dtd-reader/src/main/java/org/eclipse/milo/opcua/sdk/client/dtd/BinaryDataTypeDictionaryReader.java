@@ -338,8 +338,8 @@ public class BinaryDataTypeDictionaryReader {
                 structuredType -> {
                   String description = structuredType.getName();
 
-                  BuiltinDataTypeInfo.DataTypeInfo dataTypeInfo =
-                      BuiltinDataTypeInfo.getDataTypeInfo(description);
+                  BinaryDataTypeInfo.DataTypeInfo dataTypeInfo =
+                      BinaryDataTypeInfo.getDataTypeInfo(description);
 
                   if (dataTypeInfo != null) {
                     return new StructEncodingInfo(

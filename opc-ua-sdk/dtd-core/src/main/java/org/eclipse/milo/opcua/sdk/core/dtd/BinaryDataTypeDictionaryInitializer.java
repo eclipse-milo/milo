@@ -1,17 +1,9 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.sdk.core.dtd;
 
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.types.DataTypeDictionary;
+import org.eclipse.milo.opcua.stack.core.types.structured.ActionMethodDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.ActionTargetDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ActivateSessionRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.ActivateSessionResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.AddNodesItem;
@@ -27,11 +19,13 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AggregateFilter;
 import org.eclipse.milo.opcua.stack.core.types.structured.AggregateFilterResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.AliasNameDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.Annotation;
+import org.eclipse.milo.opcua.stack.core.types.structured.AnnotationDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AnonymousIdentityToken;
 import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.AttributeOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.AxisInformation;
+import org.eclipse.milo.opcua.stack.core.types.structured.BitFieldDefinition;
 import org.eclipse.milo.opcua.stack.core.types.structured.BrokerConnectionTransportDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.BrokerDataSetReaderTransportDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.BrokerDataSetWriterTransportDataType;
@@ -98,6 +92,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.DeleteSubscriptionsReq
 import org.eclipse.milo.opcua.stack.core.types.structured.DeleteSubscriptionsResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.DiscoveryConfiguration;
 import org.eclipse.milo.opcua.stack.core.types.structured.DoubleComplexNumberType;
+import org.eclipse.milo.opcua.stack.core.types.structured.DtlsPubSubConnectionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.EUInformation;
 import org.eclipse.milo.opcua.stack.core.types.structured.ElementOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointConfiguration;
@@ -115,7 +110,6 @@ import org.eclipse.milo.opcua.stack.core.types.structured.EventFilterResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.EventNotificationList;
 import org.eclipse.milo.opcua.stack.core.types.structured.FieldMetaData;
 import org.eclipse.milo.opcua.stack.core.types.structured.FieldTargetDataType;
-import org.eclipse.milo.opcua.stack.core.types.structured.FilterOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.FindServersOnNetworkRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.FindServersOnNetworkResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.FindServersRequest;
@@ -128,22 +122,37 @@ import org.eclipse.milo.opcua.stack.core.types.structured.HistoryData;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryEvent;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryEventFieldList;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryModifiedData;
-import org.eclipse.milo.opcua.stack.core.types.structured.HistoryReadDetails;
+import org.eclipse.milo.opcua.stack.core.types.structured.HistoryModifiedEvent;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryReadRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryReadResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryReadResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryReadValueId;
-import org.eclipse.milo.opcua.stack.core.types.structured.HistoryUpdateDetails;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryUpdateRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryUpdateResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryUpdateResult;
+import org.eclipse.milo.opcua.stack.core.types.structured.IdentityMappingRuleType;
 import org.eclipse.milo.opcua.stack.core.types.structured.InstanceNode;
 import org.eclipse.milo.opcua.stack.core.types.structured.IssuedIdentityToken;
+import org.eclipse.milo.opcua.stack.core.types.structured.JsonActionMetaDataMessage;
+import org.eclipse.milo.opcua.stack.core.types.structured.JsonActionNetworkMessage;
+import org.eclipse.milo.opcua.stack.core.types.structured.JsonActionRequestMessage;
+import org.eclipse.milo.opcua.stack.core.types.structured.JsonActionResponderMessage;
+import org.eclipse.milo.opcua.stack.core.types.structured.JsonActionResponseMessage;
+import org.eclipse.milo.opcua.stack.core.types.structured.JsonApplicationDescriptionMessage;
+import org.eclipse.milo.opcua.stack.core.types.structured.JsonDataSetMessage;
+import org.eclipse.milo.opcua.stack.core.types.structured.JsonDataSetMetaDataMessage;
 import org.eclipse.milo.opcua.stack.core.types.structured.JsonDataSetReaderMessageDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.JsonDataSetWriterMessageDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.JsonPubSubConnectionMessage;
+import org.eclipse.milo.opcua.stack.core.types.structured.JsonServerEndpointsMessage;
+import org.eclipse.milo.opcua.stack.core.types.structured.JsonStatusMessage;
 import org.eclipse.milo.opcua.stack.core.types.structured.JsonWriterGroupMessageDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.KeyValuePair;
+import org.eclipse.milo.opcua.stack.core.types.structured.LinearConversionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.LiteralOperand;
+import org.eclipse.milo.opcua.stack.core.types.structured.LldpManagementAddressTxPortType;
+import org.eclipse.milo.opcua.stack.core.types.structured.LldpManagementAddressType;
+import org.eclipse.milo.opcua.stack.core.types.structured.LldpTlvType;
 import org.eclipse.milo.opcua.stack.core.types.structured.MdnsDiscoveryConfiguration;
 import org.eclipse.milo.opcua.stack.core.types.structured.MethodAttributes;
 import org.eclipse.milo.opcua.stack.core.types.structured.MethodNode;
@@ -189,11 +198,14 @@ import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConnectionDataTy
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubKeyPushTargetDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishResponse;
+import org.eclipse.milo.opcua.stack.core.types.structured.PublishedActionDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.PublishedActionMethodDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedDataItemsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedDataSetCustomSourceDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedDataSetDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedEventsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedVariableDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.QuantityDimension;
 import org.eclipse.milo.opcua.stack.core.types.structured.QueryDataDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.QueryDataSet;
 import org.eclipse.milo.opcua.stack.core.types.structured.QueryFirstRequest;
@@ -205,6 +217,8 @@ import org.eclipse.milo.opcua.stack.core.types.structured.RationalNumber;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadAnnotationDataDetails;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadAtTimeDetails;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadEventDetails;
+import org.eclipse.milo.opcua.stack.core.types.structured.ReadEventDetails2;
+import org.eclipse.milo.opcua.stack.core.types.structured.ReadEventDetailsSorted;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadProcessedDetails;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadRawModifiedDetails;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadRequest;
@@ -255,6 +269,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.SignatureData;
 import org.eclipse.milo.opcua.stack.core.types.structured.SignedSoftwareCertificate;
 import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.SimpleTypeDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.SortRuleElement;
 import org.eclipse.milo.opcua.stack.core.types.structured.StandaloneSubscribedDataSetDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.StandaloneSubscribedDataSetRefDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.StatusChangeNotification;
@@ -337,6 +352,12 @@ public class BinaryDataTypeDictionaryInitializer extends DataTypeDictionaryIniti
             BinaryDataTypeCodec.from(new EndpointType.Codec())));
     binaryDictionary.registerType(
         new BinaryDataTypeDictionary.BinaryType(
+            "BitFieldDefinition",
+            BitFieldDefinition.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            BitFieldDefinition.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new BitFieldDefinition.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
             "RationalNumber",
             RationalNumber.TYPE_ID.toNodeIdOrThrow(namespaceTable),
             RationalNumber.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
@@ -367,10 +388,34 @@ public class BinaryDataTypeDictionaryInitializer extends DataTypeDictionaryIniti
             BinaryDataTypeCodec.from(new ThreeDFrame.Codec())));
     binaryDictionary.registerType(
         new BinaryDataTypeDictionary.BinaryType(
+            "IdentityMappingRuleType",
+            IdentityMappingRuleType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            IdentityMappingRuleType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new IdentityMappingRuleType.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
             "CurrencyUnitType",
             CurrencyUnitType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
             CurrencyUnitType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
             BinaryDataTypeCodec.from(new CurrencyUnitType.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "AnnotationDataType",
+            AnnotationDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            AnnotationDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new AnnotationDataType.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "LinearConversionDataType",
+            LinearConversionDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            LinearConversionDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new LinearConversionDataType.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "QuantityDimension",
+            QuantityDimension.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            QuantityDimension.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new QuantityDimension.Codec())));
     binaryDictionary.registerType(
         new BinaryDataTypeDictionary.BinaryType(
             "TrustListDataType",
@@ -469,10 +514,34 @@ public class BinaryDataTypeDictionaryInitializer extends DataTypeDictionaryIniti
             BinaryDataTypeCodec.from(new PublishedDataSetCustomSourceDataType.Codec())));
     binaryDictionary.registerType(
         new BinaryDataTypeDictionary.BinaryType(
+            "PublishedActionDataType",
+            PublishedActionDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            PublishedActionDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new PublishedActionDataType.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "PublishedActionMethodDataType",
+            PublishedActionMethodDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            PublishedActionMethodDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new PublishedActionMethodDataType.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
             "PublishedVariableDataType",
             PublishedVariableDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
             PublishedVariableDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
             BinaryDataTypeCodec.from(new PublishedVariableDataType.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "ActionTargetDataType",
+            ActionTargetDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            ActionTargetDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new ActionTargetDataType.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "ActionMethodDataType",
+            ActionMethodDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            ActionMethodDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new ActionMethodDataType.Codec())));
     binaryDictionary.registerType(
         new BinaryDataTypeDictionary.BinaryType(
             "DataSetWriterDataType",
@@ -670,6 +739,12 @@ public class BinaryDataTypeDictionaryInitializer extends DataTypeDictionaryIniti
             BinaryDataTypeCodec.from(new ReceiveQosPriorityDataType.Codec())));
     binaryDictionary.registerType(
         new BinaryDataTypeDictionary.BinaryType(
+            "DtlsPubSubConnectionDataType",
+            DtlsPubSubConnectionDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            DtlsPubSubConnectionDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new DtlsPubSubConnectionDataType.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
             "PubSubConfigurationRefDataType",
             PubSubConfigurationRefDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
             PubSubConfigurationRefDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
@@ -698,6 +773,24 @@ public class BinaryDataTypeDictionaryInitializer extends DataTypeDictionaryIniti
             PriorityMappingEntryType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
             PriorityMappingEntryType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
             BinaryDataTypeCodec.from(new PriorityMappingEntryType.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "LldpManagementAddressTxPortType",
+            LldpManagementAddressTxPortType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            LldpManagementAddressTxPortType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new LldpManagementAddressTxPortType.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "LldpManagementAddressType",
+            LldpManagementAddressType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            LldpManagementAddressType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new LldpManagementAddressType.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "LldpTlvType",
+            LldpTlvType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            LldpTlvType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new LldpTlvType.Codec())));
     binaryDictionary.registerType(
         new BinaryDataTypeDictionary.BinaryType(
             "ReferenceDescriptionDataType",
@@ -886,12 +979,6 @@ public class BinaryDataTypeDictionaryInitializer extends DataTypeDictionaryIniti
             BinaryDataTypeCodec.from(new ContentFilter.Codec())));
     binaryDictionary.registerType(
         new BinaryDataTypeDictionary.BinaryType(
-            "FilterOperand",
-            FilterOperand.TYPE_ID.toNodeIdOrThrow(namespaceTable),
-            FilterOperand.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
-            BinaryDataTypeCodec.from(new FilterOperand.Codec())));
-    binaryDictionary.registerType(
-        new BinaryDataTypeDictionary.BinaryType(
             "ElementOperand",
             ElementOperand.TYPE_ID.toNodeIdOrThrow(namespaceTable),
             ElementOperand.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
@@ -916,10 +1003,22 @@ public class BinaryDataTypeDictionaryInitializer extends DataTypeDictionaryIniti
             BinaryDataTypeCodec.from(new SimpleAttributeOperand.Codec())));
     binaryDictionary.registerType(
         new BinaryDataTypeDictionary.BinaryType(
+            "ModificationInfo",
+            ModificationInfo.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            ModificationInfo.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new ModificationInfo.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
             "HistoryEvent",
             HistoryEvent.TYPE_ID.toNodeIdOrThrow(namespaceTable),
             HistoryEvent.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
             BinaryDataTypeCodec.from(new HistoryEvent.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "HistoryModifiedEvent",
+            HistoryModifiedEvent.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            HistoryModifiedEvent.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new HistoryModifiedEvent.Codec())));
     binaryDictionary.registerType(
         new BinaryDataTypeDictionary.BinaryType(
             "MonitoringFilter",
@@ -1100,6 +1199,72 @@ public class BinaryDataTypeDictionaryInitializer extends DataTypeDictionaryIniti
             DecimalDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
             DecimalDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
             BinaryDataTypeCodec.from(new DecimalDataType.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "JsonDataSetMessage",
+            JsonDataSetMessage.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            JsonDataSetMessage.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new JsonDataSetMessage.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "JsonDataSetMetaDataMessage",
+            JsonDataSetMetaDataMessage.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            JsonDataSetMetaDataMessage.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new JsonDataSetMetaDataMessage.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "JsonApplicationDescriptionMessage",
+            JsonApplicationDescriptionMessage.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            JsonApplicationDescriptionMessage.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new JsonApplicationDescriptionMessage.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "JsonServerEndpointsMessage",
+            JsonServerEndpointsMessage.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            JsonServerEndpointsMessage.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new JsonServerEndpointsMessage.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "JsonStatusMessage",
+            JsonStatusMessage.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            JsonStatusMessage.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new JsonStatusMessage.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "JsonPubSubConnectionMessage",
+            JsonPubSubConnectionMessage.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            JsonPubSubConnectionMessage.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new JsonPubSubConnectionMessage.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "JsonActionMetaDataMessage",
+            JsonActionMetaDataMessage.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            JsonActionMetaDataMessage.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new JsonActionMetaDataMessage.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "JsonActionResponderMessage",
+            JsonActionResponderMessage.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            JsonActionResponderMessage.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new JsonActionResponderMessage.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "JsonActionNetworkMessage",
+            JsonActionNetworkMessage.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            JsonActionNetworkMessage.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new JsonActionNetworkMessage.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "JsonActionRequestMessage",
+            JsonActionRequestMessage.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            JsonActionRequestMessage.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new JsonActionRequestMessage.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "JsonActionResponseMessage",
+            JsonActionResponseMessage.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            JsonActionResponseMessage.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new JsonActionResponseMessage.Codec())));
     binaryDictionary.registerType(
         new BinaryDataTypeDictionary.BinaryType(
             "Node",
@@ -1667,16 +1832,22 @@ public class BinaryDataTypeDictionaryInitializer extends DataTypeDictionaryIniti
             BinaryDataTypeCodec.from(new HistoryReadResult.Codec())));
     binaryDictionary.registerType(
         new BinaryDataTypeDictionary.BinaryType(
-            "HistoryReadDetails",
-            HistoryReadDetails.TYPE_ID.toNodeIdOrThrow(namespaceTable),
-            HistoryReadDetails.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
-            BinaryDataTypeCodec.from(new HistoryReadDetails.Codec())));
-    binaryDictionary.registerType(
-        new BinaryDataTypeDictionary.BinaryType(
             "ReadEventDetails",
             ReadEventDetails.TYPE_ID.toNodeIdOrThrow(namespaceTable),
             ReadEventDetails.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
             BinaryDataTypeCodec.from(new ReadEventDetails.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "ReadEventDetails2",
+            ReadEventDetails2.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            ReadEventDetails2.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new ReadEventDetails2.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "ReadEventDetailsSorted",
+            ReadEventDetailsSorted.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            ReadEventDetailsSorted.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new ReadEventDetailsSorted.Codec())));
     binaryDictionary.registerType(
         new BinaryDataTypeDictionary.BinaryType(
             "ReadRawModifiedDetails",
@@ -1703,6 +1874,12 @@ public class BinaryDataTypeDictionaryInitializer extends DataTypeDictionaryIniti
             BinaryDataTypeCodec.from(new ReadAnnotationDataDetails.Codec())));
     binaryDictionary.registerType(
         new BinaryDataTypeDictionary.BinaryType(
+            "SortRuleElement",
+            SortRuleElement.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            SortRuleElement.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new SortRuleElement.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
             "HistoryData",
             HistoryData.TYPE_ID.toNodeIdOrThrow(namespaceTable),
             HistoryData.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
@@ -1713,12 +1890,6 @@ public class BinaryDataTypeDictionaryInitializer extends DataTypeDictionaryIniti
             HistoryModifiedData.TYPE_ID.toNodeIdOrThrow(namespaceTable),
             HistoryModifiedData.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
             BinaryDataTypeCodec.from(new HistoryModifiedData.Codec())));
-    binaryDictionary.registerType(
-        new BinaryDataTypeDictionary.BinaryType(
-            "ModificationInfo",
-            ModificationInfo.TYPE_ID.toNodeIdOrThrow(namespaceTable),
-            ModificationInfo.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
-            BinaryDataTypeCodec.from(new ModificationInfo.Codec())));
     binaryDictionary.registerType(
         new BinaryDataTypeDictionary.BinaryType(
             "HistoryReadRequest",
@@ -1749,12 +1920,6 @@ public class BinaryDataTypeDictionaryInitializer extends DataTypeDictionaryIniti
             WriteResponse.TYPE_ID.toNodeIdOrThrow(namespaceTable),
             WriteResponse.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
             BinaryDataTypeCodec.from(new WriteResponse.Codec())));
-    binaryDictionary.registerType(
-        new BinaryDataTypeDictionary.BinaryType(
-            "HistoryUpdateDetails",
-            HistoryUpdateDetails.TYPE_ID.toNodeIdOrThrow(namespaceTable),
-            HistoryUpdateDetails.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
-            BinaryDataTypeCodec.from(new HistoryUpdateDetails.Codec())));
     binaryDictionary.registerType(
         new BinaryDataTypeDictionary.BinaryType(
             "UpdateDataDetails",

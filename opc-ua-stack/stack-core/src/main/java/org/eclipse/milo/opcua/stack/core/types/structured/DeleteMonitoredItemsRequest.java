@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -28,16 +18,16 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.12.6/#5.12.6.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.12.6/#5.12.6.2</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.13.6/#5.13.6.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.13.6/#5.13.6.2</a>
  */
 public class DeleteMonitoredItemsRequest extends Structure implements UaRequestMessageType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=779");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=781");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=781");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=780");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=780");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15335");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15335");
 
   private final RequestHeader requestHeader;
 
@@ -161,10 +151,12 @@ public class DeleteMonitoredItemsRequest extends Structure implements UaRequestM
 
     @Override
     public DeleteMonitoredItemsRequest decodeType(EncodingContext context, UaDecoder decoder) {
-      RequestHeader requestHeader =
-          (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
-      UInteger subscriptionId = decoder.decodeUInt32("SubscriptionId");
-      UInteger[] monitoredItemIds = decoder.decodeUInt32Array("MonitoredItemIds");
+      final RequestHeader requestHeader;
+      final UInteger subscriptionId;
+      final UInteger[] monitoredItemIds;
+      requestHeader = (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
+      subscriptionId = decoder.decodeUInt32("SubscriptionId");
+      monitoredItemIds = decoder.decodeUInt32Array("MonitoredItemIds");
       return new DeleteMonitoredItemsRequest(requestHeader, subscriptionId, monitoredItemIds);
     }
 

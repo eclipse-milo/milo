@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -18,6 +8,7 @@ import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
 import org.eclipse.milo.opcua.stack.core.encoding.UaEncoder;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -34,11 +25,11 @@ public class StandaloneSubscribedDataSetDataType extends SubscribedDataSetDataTy
     implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=23600");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=23852");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=23852");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=23920");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=23920");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=23988");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=23988");
 
   private final @Nullable String name;
 
@@ -137,7 +128,7 @@ public class StandaloneSubscribedDataSetDataType extends SubscribedDataSetDataTy
     return new StructureDefinition(
         new NodeId(0, 23852),
         new NodeId(0, 15630),
-        StructureType.Structure,
+        StructureType.StructureWithSubtypedValues,
         new StructureField[] {
           new StructureField(
               "Name",
@@ -170,7 +161,7 @@ public class StandaloneSubscribedDataSetDataType extends SubscribedDataSetDataTy
               -1,
               null,
               UInteger.valueOf(0),
-              false)
+              true)
         });
   }
 
@@ -184,14 +175,19 @@ public class StandaloneSubscribedDataSetDataType extends SubscribedDataSetDataTy
     @Override
     public StandaloneSubscribedDataSetDataType decodeType(
         EncodingContext context, UaDecoder decoder) {
-      String name = decoder.decodeString("Name");
-      String[] dataSetFolder = decoder.decodeStringArray("DataSetFolder");
-      DataSetMetaDataType dataSetMetaData =
+      final String name;
+      final String[] dataSetFolder;
+      final DataSetMetaDataType dataSetMetaData;
+      final SubscribedDataSetDataType subscribedDataSet;
+      name = decoder.decodeString("Name");
+      dataSetFolder = decoder.decodeStringArray("DataSetFolder");
+      dataSetMetaData =
           (DataSetMetaDataType)
               decoder.decodeStruct("DataSetMetaData", DataSetMetaDataType.TYPE_ID);
-      SubscribedDataSetDataType subscribedDataSet =
-          (SubscribedDataSetDataType)
-              decoder.decodeStruct("SubscribedDataSet", SubscribedDataSetDataType.TYPE_ID);
+      {
+        ExtensionObject xo = decoder.decodeExtensionObject("SubscribedDataSet");
+        subscribedDataSet = (SubscribedDataSetDataType) xo.decode(context);
+      }
       return new StandaloneSubscribedDataSetDataType(
           name, dataSetFolder, dataSetMetaData, subscribedDataSet);
     }
@@ -203,8 +199,10 @@ public class StandaloneSubscribedDataSetDataType extends SubscribedDataSetDataTy
       encoder.encodeStringArray("DataSetFolder", value.getDataSetFolder());
       encoder.encodeStruct(
           "DataSetMetaData", value.getDataSetMetaData(), DataSetMetaDataType.TYPE_ID);
-      encoder.encodeStruct(
-          "SubscribedDataSet", value.getSubscribedDataSet(), SubscribedDataSetDataType.TYPE_ID);
+      {
+        ExtensionObject xo = ExtensionObject.encode(context, value.getSubscribedDataSet());
+        encoder.encodeExtensionObject("SubscribedDataSet", xo);
+      }
     }
   }
 }

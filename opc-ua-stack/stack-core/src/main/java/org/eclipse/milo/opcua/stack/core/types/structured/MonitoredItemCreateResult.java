@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -29,16 +19,16 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.12.2/#5.12.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.12.2/#5.12.2.2</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.13.2/#5.13.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.13.2/#5.13.2.2</a>
  */
 public class MonitoredItemCreateResult extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=746");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=748");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=748");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=747");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=747");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15322");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15322");
 
   private final StatusCode statusCode;
 
@@ -199,11 +189,16 @@ public class MonitoredItemCreateResult extends Structure implements UaStructured
 
     @Override
     public MonitoredItemCreateResult decodeType(EncodingContext context, UaDecoder decoder) {
-      StatusCode statusCode = decoder.decodeStatusCode("StatusCode");
-      UInteger monitoredItemId = decoder.decodeUInt32("MonitoredItemId");
-      Double revisedSamplingInterval = decoder.decodeDouble("RevisedSamplingInterval");
-      UInteger revisedQueueSize = decoder.decodeUInt32("RevisedQueueSize");
-      ExtensionObject filterResult = decoder.decodeExtensionObject("FilterResult");
+      final StatusCode statusCode;
+      final UInteger monitoredItemId;
+      final Double revisedSamplingInterval;
+      final UInteger revisedQueueSize;
+      final ExtensionObject filterResult;
+      statusCode = decoder.decodeStatusCode("StatusCode");
+      monitoredItemId = decoder.decodeUInt32("MonitoredItemId");
+      revisedSamplingInterval = decoder.decodeDouble("RevisedSamplingInterval");
+      revisedQueueSize = decoder.decodeUInt32("RevisedQueueSize");
+      filterResult = decoder.decodeExtensionObject("FilterResult");
       return new MonitoredItemCreateResult(
           statusCode, monitoredItemId, revisedSamplingInterval, revisedQueueSize, filterResult);
     }

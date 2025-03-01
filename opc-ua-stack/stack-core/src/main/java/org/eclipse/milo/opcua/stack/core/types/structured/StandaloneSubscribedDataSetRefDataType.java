@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -34,11 +24,11 @@ public class StandaloneSubscribedDataSetRefDataType extends SubscribedDataSetDat
     implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=23599");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=23851");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=23851");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=23919");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=23919");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=23987");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=23987");
 
   private final @Nullable String dataSetName;
 
@@ -126,7 +116,8 @@ public class StandaloneSubscribedDataSetRefDataType extends SubscribedDataSetDat
     @Override
     public StandaloneSubscribedDataSetRefDataType decodeType(
         EncodingContext context, UaDecoder decoder) {
-      String dataSetName = decoder.decodeString("DataSetName");
+      final String dataSetName;
+      dataSetName = decoder.decodeString("DataSetName");
       return new StandaloneSubscribedDataSetRefDataType(dataSetName);
     }
 

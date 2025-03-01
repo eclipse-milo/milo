@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -33,11 +23,11 @@ import org.jspecify.annotations.Nullable;
 public class StructureDefinition extends DataTypeDefinition implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=99");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=122");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=122");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=14798");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=14798");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15066");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15066");
 
   private final NodeId defaultEncodingId;
 
@@ -179,11 +169,14 @@ public class StructureDefinition extends DataTypeDefinition implements UaStructu
 
     @Override
     public StructureDefinition decodeType(EncodingContext context, UaDecoder decoder) {
-      NodeId defaultEncodingId = decoder.decodeNodeId("DefaultEncodingId");
-      NodeId baseDataType = decoder.decodeNodeId("BaseDataType");
-      StructureType structureType = StructureType.from(decoder.decodeEnum("StructureType"));
-      StructureField[] fields =
-          (StructureField[]) decoder.decodeStructArray("Fields", StructureField.TYPE_ID);
+      final NodeId defaultEncodingId;
+      final NodeId baseDataType;
+      final StructureType structureType;
+      final StructureField[] fields;
+      defaultEncodingId = decoder.decodeNodeId("DefaultEncodingId");
+      baseDataType = decoder.decodeNodeId("BaseDataType");
+      structureType = StructureType.from(decoder.decodeEnum("StructureType"));
+      fields = (StructureField[]) decoder.decodeStructArray("Fields", StructureField.TYPE_ID);
       return new StructureDefinition(defaultEncodingId, baseDataType, structureType, fields);
     }
 

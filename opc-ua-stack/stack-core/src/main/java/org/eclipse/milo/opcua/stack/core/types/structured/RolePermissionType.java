@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -32,11 +22,11 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 public class RolePermissionType extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=96");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=128");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=128");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=16126");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=16126");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15062");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15062");
 
   private final NodeId roleId;
 
@@ -138,8 +128,10 @@ public class RolePermissionType extends Structure implements UaStructuredType {
 
     @Override
     public RolePermissionType decodeType(EncodingContext context, UaDecoder decoder) {
-      NodeId roleId = decoder.decodeNodeId("RoleId");
-      PermissionType permissions = new PermissionType(decoder.decodeUInt32("Permissions"));
+      final NodeId roleId;
+      final PermissionType permissions;
+      roleId = decoder.decodeNodeId("RoleId");
+      permissions = new PermissionType(decoder.decodeUInt32("Permissions"));
       return new RolePermissionType(roleId, permissions);
     }
 

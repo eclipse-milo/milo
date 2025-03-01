@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.enumerated;
 
 import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
@@ -17,10 +7,6 @@ import org.eclipse.milo.opcua.stack.core.types.structured.EnumDefinition;
 import org.eclipse.milo.opcua.stack.core.types.structured.EnumField;
 import org.jspecify.annotations.Nullable;
 
-/**
- * @see <a
- *     href="https://reference.opcfoundation.org/v104/Core/docs/Part3/8.29">https://reference.opcfoundation.org/v104/Core/docs/Part3/8.29</a>
- */
 public enum NamingRuleType implements UaEnumeratedType {
   /** The BrowseName must appear in all instances of the type. */
   Mandatory(1),

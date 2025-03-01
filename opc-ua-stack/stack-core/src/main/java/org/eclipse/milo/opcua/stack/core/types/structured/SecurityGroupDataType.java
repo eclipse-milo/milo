@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -33,11 +23,11 @@ import org.jspecify.annotations.Nullable;
 public class SecurityGroupDataType extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=23601");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=23853");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=23853");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=23921");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=23921");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=23989");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=23989");
 
   private final @Nullable String name;
 
@@ -274,17 +264,26 @@ public class SecurityGroupDataType extends Structure implements UaStructuredType
 
     @Override
     public SecurityGroupDataType decodeType(EncodingContext context, UaDecoder decoder) {
-      String name = decoder.decodeString("Name");
-      String[] securityGroupFolder = decoder.decodeStringArray("SecurityGroupFolder");
-      Double keyLifetime = decoder.decodeDouble("KeyLifetime");
-      String securityPolicyUri = decoder.decodeString("SecurityPolicyUri");
-      UInteger maxFutureKeyCount = decoder.decodeUInt32("MaxFutureKeyCount");
-      UInteger maxPastKeyCount = decoder.decodeUInt32("MaxPastKeyCount");
-      String securityGroupId = decoder.decodeString("SecurityGroupId");
-      RolePermissionType[] rolePermissions =
+      final String name;
+      final String[] securityGroupFolder;
+      final Double keyLifetime;
+      final String securityPolicyUri;
+      final UInteger maxFutureKeyCount;
+      final UInteger maxPastKeyCount;
+      final String securityGroupId;
+      final RolePermissionType[] rolePermissions;
+      final KeyValuePair[] groupProperties;
+      name = decoder.decodeString("Name");
+      securityGroupFolder = decoder.decodeStringArray("SecurityGroupFolder");
+      keyLifetime = decoder.decodeDouble("KeyLifetime");
+      securityPolicyUri = decoder.decodeString("SecurityPolicyUri");
+      maxFutureKeyCount = decoder.decodeUInt32("MaxFutureKeyCount");
+      maxPastKeyCount = decoder.decodeUInt32("MaxPastKeyCount");
+      securityGroupId = decoder.decodeString("SecurityGroupId");
+      rolePermissions =
           (RolePermissionType[])
               decoder.decodeStructArray("RolePermissions", RolePermissionType.TYPE_ID);
-      KeyValuePair[] groupProperties =
+      groupProperties =
           (KeyValuePair[]) decoder.decodeStructArray("GroupProperties", KeyValuePair.TYPE_ID);
       return new SecurityGroupDataType(
           name,

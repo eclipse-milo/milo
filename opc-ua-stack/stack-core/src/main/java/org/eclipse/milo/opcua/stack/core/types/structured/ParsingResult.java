@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -30,16 +20,16 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.9.3/#5.9.3.1">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.9.3/#5.9.3.1</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.10.3/#5.10.3.1">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.10.3/#5.10.3.1</a>
  */
 public class ParsingResult extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=610");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=612");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=612");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=611");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=611");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15236");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15236");
 
   private final StatusCode statusCode;
 
@@ -162,10 +152,12 @@ public class ParsingResult extends Structure implements UaStructuredType {
 
     @Override
     public ParsingResult decodeType(EncodingContext context, UaDecoder decoder) {
-      StatusCode statusCode = decoder.decodeStatusCode("StatusCode");
-      StatusCode[] dataStatusCodes = decoder.decodeStatusCodeArray("DataStatusCodes");
-      DiagnosticInfo[] dataDiagnosticInfos =
-          decoder.decodeDiagnosticInfoArray("DataDiagnosticInfos");
+      final StatusCode statusCode;
+      final StatusCode[] dataStatusCodes;
+      final DiagnosticInfo[] dataDiagnosticInfos;
+      statusCode = decoder.decodeStatusCode("StatusCode");
+      dataStatusCodes = decoder.decodeStatusCodeArray("DataStatusCodes");
+      dataDiagnosticInfos = decoder.decodeDiagnosticInfoArray("DataDiagnosticInfos");
       return new ParsingResult(statusCode, dataStatusCodes, dataDiagnosticInfos);
     }
 

@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -31,16 +21,16 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part3/4.3.1">https://reference.opcfoundation.org/v105/Core/docs/Part3/4.3.1</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part3/4.4.1">https://reference.opcfoundation.org/v105/Core/docs/Part3/4.4.1</a>
  */
 public class Node extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=258");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=260");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=260");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=259");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=259");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15068");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15068");
 
   private final NodeId nodeId;
 
@@ -315,22 +305,32 @@ public class Node extends Structure implements UaStructuredType {
 
     @Override
     public Node decodeType(EncodingContext context, UaDecoder decoder) {
-      NodeId nodeId = decoder.decodeNodeId("NodeId");
-      NodeClass nodeClass = NodeClass.from(decoder.decodeEnum("NodeClass"));
-      QualifiedName browseName = decoder.decodeQualifiedName("BrowseName");
-      LocalizedText displayName = decoder.decodeLocalizedText("DisplayName");
-      LocalizedText description = decoder.decodeLocalizedText("Description");
-      UInteger writeMask = decoder.decodeUInt32("WriteMask");
-      UInteger userWriteMask = decoder.decodeUInt32("UserWriteMask");
-      RolePermissionType[] rolePermissions =
+      final NodeId nodeId;
+      final NodeClass nodeClass;
+      final QualifiedName browseName;
+      final LocalizedText displayName;
+      final LocalizedText description;
+      final UInteger writeMask;
+      final UInteger userWriteMask;
+      final RolePermissionType[] rolePermissions;
+      final RolePermissionType[] userRolePermissions;
+      final UShort accessRestrictions;
+      final ReferenceNode[] references;
+      nodeId = decoder.decodeNodeId("NodeId");
+      nodeClass = NodeClass.from(decoder.decodeEnum("NodeClass"));
+      browseName = decoder.decodeQualifiedName("BrowseName");
+      displayName = decoder.decodeLocalizedText("DisplayName");
+      description = decoder.decodeLocalizedText("Description");
+      writeMask = decoder.decodeUInt32("WriteMask");
+      userWriteMask = decoder.decodeUInt32("UserWriteMask");
+      rolePermissions =
           (RolePermissionType[])
               decoder.decodeStructArray("RolePermissions", RolePermissionType.TYPE_ID);
-      RolePermissionType[] userRolePermissions =
+      userRolePermissions =
           (RolePermissionType[])
               decoder.decodeStructArray("UserRolePermissions", RolePermissionType.TYPE_ID);
-      UShort accessRestrictions = decoder.decodeUInt16("AccessRestrictions");
-      ReferenceNode[] references =
-          (ReferenceNode[]) decoder.decodeStructArray("References", ReferenceNode.TYPE_ID);
+      accessRestrictions = decoder.decodeUInt16("AccessRestrictions");
+      references = (ReferenceNode[]) decoder.decodeStructArray("References", ReferenceNode.TYPE_ID);
       return new Node(
           nodeId,
           nodeClass,

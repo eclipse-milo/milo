@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -28,16 +18,16 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.9.3/#5.9.3.1">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.9.3/#5.9.3.1</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.10.3/#5.10.3.1">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.10.3/#5.10.3.1</a>
  */
 public class QueryFirstRequest extends Structure implements UaRequestMessageType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=613");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=615");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=615");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=614");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=614");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15244");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15244");
 
   private final RequestHeader requestHeader;
 
@@ -217,16 +207,20 @@ public class QueryFirstRequest extends Structure implements UaRequestMessageType
 
     @Override
     public QueryFirstRequest decodeType(EncodingContext context, UaDecoder decoder) {
-      RequestHeader requestHeader =
-          (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
-      ViewDescription view =
-          (ViewDescription) decoder.decodeStruct("View", ViewDescription.TYPE_ID);
-      NodeTypeDescription[] nodeTypes =
+      final RequestHeader requestHeader;
+      final ViewDescription view;
+      final NodeTypeDescription[] nodeTypes;
+      final ContentFilter filter;
+      final UInteger maxDataSetsToReturn;
+      final UInteger maxReferencesToReturn;
+      requestHeader = (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
+      view = (ViewDescription) decoder.decodeStruct("View", ViewDescription.TYPE_ID);
+      nodeTypes =
           (NodeTypeDescription[])
               decoder.decodeStructArray("NodeTypes", NodeTypeDescription.TYPE_ID);
-      ContentFilter filter = (ContentFilter) decoder.decodeStruct("Filter", ContentFilter.TYPE_ID);
-      UInteger maxDataSetsToReturn = decoder.decodeUInt32("MaxDataSetsToReturn");
-      UInteger maxReferencesToReturn = decoder.decodeUInt32("MaxReferencesToReturn");
+      filter = (ContentFilter) decoder.decodeStruct("Filter", ContentFilter.TYPE_ID);
+      maxDataSetsToReturn = decoder.decodeUInt32("MaxDataSetsToReturn");
+      maxReferencesToReturn = decoder.decodeUInt32("MaxReferencesToReturn");
       return new QueryFirstRequest(
           requestHeader, view, nodeTypes, filter, maxDataSetsToReturn, maxReferencesToReturn);
     }

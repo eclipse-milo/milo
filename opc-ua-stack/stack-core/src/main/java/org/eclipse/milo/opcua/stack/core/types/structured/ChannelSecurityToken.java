@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -26,18 +16,14 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.StructureType;
 import org.eclipse.milo.opcua.stack.core.util.codegen.EqualsBuilder;
 import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 
-/**
- * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.5.2/#5.5.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.5.2/#5.5.2.2</a>
- */
 public class ChannelSecurityToken extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=441");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=443");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=443");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=442");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=442");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15131");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15131");
 
   private final UInteger channelId;
 
@@ -176,10 +162,14 @@ public class ChannelSecurityToken extends Structure implements UaStructuredType 
 
     @Override
     public ChannelSecurityToken decodeType(EncodingContext context, UaDecoder decoder) {
-      UInteger channelId = decoder.decodeUInt32("ChannelId");
-      UInteger tokenId = decoder.decodeUInt32("TokenId");
-      DateTime createdAt = decoder.decodeDateTime("CreatedAt");
-      UInteger revisedLifetime = decoder.decodeUInt32("RevisedLifetime");
+      final UInteger channelId;
+      final UInteger tokenId;
+      final DateTime createdAt;
+      final UInteger revisedLifetime;
+      channelId = decoder.decodeUInt32("ChannelId");
+      tokenId = decoder.decodeUInt32("TokenId");
+      createdAt = decoder.decodeDateTime("CreatedAt");
+      revisedLifetime = decoder.decodeUInt32("RevisedLifetime");
       return new ChannelSecurityToken(channelId, tokenId, createdAt, revisedLifetime);
     }
 

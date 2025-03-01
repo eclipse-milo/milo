@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -28,16 +18,16 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v104/Core/docs/Part11/6.5.4">https://reference.opcfoundation.org/v104/Core/docs/Part11/6.5.4</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/6.6.4">https://reference.opcfoundation.org/v105/Core/docs/Part11/6.6.4</a>
  */
 public class HistoryEvent extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=659");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=661");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=661");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=660");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=660");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15273");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15273");
 
   private final HistoryEventFieldList @Nullable [] events;
 
@@ -121,7 +111,8 @@ public class HistoryEvent extends Structure implements UaStructuredType {
 
     @Override
     public HistoryEvent decodeType(EncodingContext context, UaDecoder decoder) {
-      HistoryEventFieldList[] events =
+      final HistoryEventFieldList[] events;
+      events =
           (HistoryEventFieldList[])
               decoder.decodeStructArray("Events", HistoryEventFieldList.TYPE_ID);
       return new HistoryEvent(events);

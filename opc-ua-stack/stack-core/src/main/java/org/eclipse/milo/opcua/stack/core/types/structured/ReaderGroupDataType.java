@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -18,6 +8,7 @@ import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
 import org.eclipse.milo.opcua.stack.core.encoding.UaEncoder;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -34,11 +25,11 @@ import org.jspecify.annotations.Nullable;
 public class ReaderGroupDataType extends PubSubGroupDataType implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=15520");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=21153");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=21153");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=21177");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=21177");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=21201");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=21201");
 
   private final ReaderGroupTransportDataType transportSettings;
 
@@ -141,7 +132,7 @@ public class ReaderGroupDataType extends PubSubGroupDataType implements UaStruct
     return new StructureDefinition(
         new NodeId(0, 21153),
         new NodeId(0, 15609),
-        StructureType.Structure,
+        StructureType.StructureWithSubtypedValues,
         new StructureField[] {
           new StructureField(
               "Name",
@@ -206,7 +197,7 @@ public class ReaderGroupDataType extends PubSubGroupDataType implements UaStruct
               -1,
               null,
               UInteger.valueOf(0),
-              false),
+              true),
           new StructureField(
               "MessageSettings",
               LocalizedText.NULL_VALUE,
@@ -214,7 +205,7 @@ public class ReaderGroupDataType extends PubSubGroupDataType implements UaStruct
               -1,
               null,
               UInteger.valueOf(0),
-              false),
+              true),
           new StructureField(
               "DataSetReaders",
               LocalizedText.NULL_VALUE,
@@ -234,24 +225,35 @@ public class ReaderGroupDataType extends PubSubGroupDataType implements UaStruct
 
     @Override
     public ReaderGroupDataType decodeType(EncodingContext context, UaDecoder decoder) {
-      String name = decoder.decodeString("Name");
-      Boolean enabled = decoder.decodeBoolean("Enabled");
-      MessageSecurityMode securityMode =
-          MessageSecurityMode.from(decoder.decodeEnum("SecurityMode"));
-      String securityGroupId = decoder.decodeString("SecurityGroupId");
-      EndpointDescription[] securityKeyServices =
+      final String name;
+      final Boolean enabled;
+      final MessageSecurityMode securityMode;
+      final String securityGroupId;
+      final EndpointDescription[] securityKeyServices;
+      final UInteger maxNetworkMessageSize;
+      final KeyValuePair[] groupProperties;
+      final ReaderGroupTransportDataType transportSettings;
+      final ReaderGroupMessageDataType messageSettings;
+      final DataSetReaderDataType[] dataSetReaders;
+      name = decoder.decodeString("Name");
+      enabled = decoder.decodeBoolean("Enabled");
+      securityMode = MessageSecurityMode.from(decoder.decodeEnum("SecurityMode"));
+      securityGroupId = decoder.decodeString("SecurityGroupId");
+      securityKeyServices =
           (EndpointDescription[])
               decoder.decodeStructArray("SecurityKeyServices", EndpointDescription.TYPE_ID);
-      UInteger maxNetworkMessageSize = decoder.decodeUInt32("MaxNetworkMessageSize");
-      KeyValuePair[] groupProperties =
+      maxNetworkMessageSize = decoder.decodeUInt32("MaxNetworkMessageSize");
+      groupProperties =
           (KeyValuePair[]) decoder.decodeStructArray("GroupProperties", KeyValuePair.TYPE_ID);
-      ReaderGroupTransportDataType transportSettings =
-          (ReaderGroupTransportDataType)
-              decoder.decodeStruct("TransportSettings", ReaderGroupTransportDataType.TYPE_ID);
-      ReaderGroupMessageDataType messageSettings =
-          (ReaderGroupMessageDataType)
-              decoder.decodeStruct("MessageSettings", ReaderGroupMessageDataType.TYPE_ID);
-      DataSetReaderDataType[] dataSetReaders =
+      {
+        ExtensionObject xo = decoder.decodeExtensionObject("TransportSettings");
+        transportSettings = (ReaderGroupTransportDataType) xo.decode(context);
+      }
+      {
+        ExtensionObject xo = decoder.decodeExtensionObject("MessageSettings");
+        messageSettings = (ReaderGroupMessageDataType) xo.decode(context);
+      }
+      dataSetReaders =
           (DataSetReaderDataType[])
               decoder.decodeStructArray("DataSetReaders", DataSetReaderDataType.TYPE_ID);
       return new ReaderGroupDataType(
@@ -278,10 +280,14 @@ public class ReaderGroupDataType extends PubSubGroupDataType implements UaStruct
       encoder.encodeUInt32("MaxNetworkMessageSize", value.getMaxNetworkMessageSize());
       encoder.encodeStructArray(
           "GroupProperties", value.getGroupProperties(), KeyValuePair.TYPE_ID);
-      encoder.encodeStruct(
-          "TransportSettings", value.getTransportSettings(), ReaderGroupTransportDataType.TYPE_ID);
-      encoder.encodeStruct(
-          "MessageSettings", value.getMessageSettings(), ReaderGroupMessageDataType.TYPE_ID);
+      {
+        ExtensionObject xo = ExtensionObject.encode(context, value.getTransportSettings());
+        encoder.encodeExtensionObject("TransportSettings", xo);
+      }
+      {
+        ExtensionObject xo = ExtensionObject.encode(context, value.getMessageSettings());
+        encoder.encodeExtensionObject("MessageSettings", xo);
+      }
       encoder.encodeStructArray(
           "DataSetReaders", value.getDataSetReaders(), DataSetReaderDataType.TYPE_ID);
     }

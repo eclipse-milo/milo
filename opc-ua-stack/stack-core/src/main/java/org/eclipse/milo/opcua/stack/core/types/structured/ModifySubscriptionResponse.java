@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -27,16 +17,16 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.13.3/#5.13.3.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.13.3/#5.13.3.2</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.14.3/#5.14.3.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.14.3/#5.14.3.2</a>
  */
 public class ModifySubscriptionResponse extends Structure implements UaResponseMessageType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=794");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=796");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=796");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=795");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=795");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15340");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15340");
 
   private final ResponseHeader responseHeader;
 
@@ -179,11 +169,15 @@ public class ModifySubscriptionResponse extends Structure implements UaResponseM
 
     @Override
     public ModifySubscriptionResponse decodeType(EncodingContext context, UaDecoder decoder) {
-      ResponseHeader responseHeader =
+      final ResponseHeader responseHeader;
+      final Double revisedPublishingInterval;
+      final UInteger revisedLifetimeCount;
+      final UInteger revisedMaxKeepAliveCount;
+      responseHeader =
           (ResponseHeader) decoder.decodeStruct("ResponseHeader", ResponseHeader.TYPE_ID);
-      Double revisedPublishingInterval = decoder.decodeDouble("RevisedPublishingInterval");
-      UInteger revisedLifetimeCount = decoder.decodeUInt32("RevisedLifetimeCount");
-      UInteger revisedMaxKeepAliveCount = decoder.decodeUInt32("RevisedMaxKeepAliveCount");
+      revisedPublishingInterval = decoder.decodeDouble("RevisedPublishingInterval");
+      revisedLifetimeCount = decoder.decodeUInt32("RevisedLifetimeCount");
+      revisedMaxKeepAliveCount = decoder.decodeUInt32("RevisedMaxKeepAliveCount");
       return new ModifySubscriptionResponse(
           responseHeader,
           revisedPublishingInterval,

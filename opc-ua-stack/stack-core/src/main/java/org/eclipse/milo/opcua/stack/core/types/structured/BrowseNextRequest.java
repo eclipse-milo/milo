@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -29,16 +19,16 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.8.3/#5.8.3.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.8.3/#5.8.3.2</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.9.3/#5.9.3.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.9.3/#5.9.3.2</a>
  */
 public class BrowseNextRequest extends Structure implements UaRequestMessageType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=531");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=533");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=533");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=532");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=532");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15186");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15186");
 
   private final RequestHeader requestHeader;
 
@@ -161,10 +151,12 @@ public class BrowseNextRequest extends Structure implements UaRequestMessageType
 
     @Override
     public BrowseNextRequest decodeType(EncodingContext context, UaDecoder decoder) {
-      RequestHeader requestHeader =
-          (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
-      Boolean releaseContinuationPoints = decoder.decodeBoolean("ReleaseContinuationPoints");
-      ByteString[] continuationPoints = decoder.decodeByteStringArray("ContinuationPoints");
+      final RequestHeader requestHeader;
+      final Boolean releaseContinuationPoints;
+      final ByteString[] continuationPoints;
+      requestHeader = (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
+      releaseContinuationPoints = decoder.decodeBoolean("ReleaseContinuationPoints");
+      continuationPoints = decoder.decodeByteStringArray("ContinuationPoints");
       return new BrowseNextRequest(requestHeader, releaseContinuationPoints, continuationPoints);
     }
 

@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -33,11 +23,11 @@ import org.jspecify.annotations.Nullable;
 public class UserManagementDataType extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=24281");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=24292");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=24292");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=24296");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=24296");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=24300");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=24300");
 
   private final @Nullable String userName;
 
@@ -160,10 +150,12 @@ public class UserManagementDataType extends Structure implements UaStructuredTyp
 
     @Override
     public UserManagementDataType decodeType(EncodingContext context, UaDecoder decoder) {
-      String userName = decoder.decodeString("UserName");
-      UserConfigurationMask userConfiguration =
-          new UserConfigurationMask(decoder.decodeUInt32("UserConfiguration"));
-      String description = decoder.decodeString("Description");
+      final String userName;
+      final UserConfigurationMask userConfiguration;
+      final String description;
+      userName = decoder.decodeString("UserName");
+      userConfiguration = new UserConfigurationMask(decoder.decodeUInt32("UserConfiguration"));
+      description = decoder.decodeString("Description");
       return new UserManagementDataType(userName, userConfiguration, description);
     }
 

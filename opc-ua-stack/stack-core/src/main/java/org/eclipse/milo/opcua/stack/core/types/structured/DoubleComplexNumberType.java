@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -32,11 +22,11 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 public class DoubleComplexNumberType extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=12172");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=12182");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=12182");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=12174");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=12174");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15378");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15378");
 
   private final Double real;
 
@@ -138,8 +128,10 @@ public class DoubleComplexNumberType extends Structure implements UaStructuredTy
 
     @Override
     public DoubleComplexNumberType decodeType(EncodingContext context, UaDecoder decoder) {
-      Double real = decoder.decodeDouble("Real");
-      Double imaginary = decoder.decodeDouble("Imaginary");
+      final Double real;
+      final Double imaginary;
+      real = decoder.decodeDouble("Real");
+      imaginary = decoder.decodeDouble("Imaginary");
       return new DoubleComplexNumberType(real, imaginary);
     }
 

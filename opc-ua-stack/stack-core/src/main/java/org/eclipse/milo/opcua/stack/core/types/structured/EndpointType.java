@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -34,11 +24,11 @@ import org.jspecify.annotations.Nullable;
 public class EndpointType extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=15528");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=15671");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15671");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=15949");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15949");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=16150");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=16150");
 
   private final @Nullable String endpointUrl;
 
@@ -180,11 +170,14 @@ public class EndpointType extends Structure implements UaStructuredType {
 
     @Override
     public EndpointType decodeType(EncodingContext context, UaDecoder decoder) {
-      String endpointUrl = decoder.decodeString("EndpointUrl");
-      MessageSecurityMode securityMode =
-          MessageSecurityMode.from(decoder.decodeEnum("SecurityMode"));
-      String securityPolicyUri = decoder.decodeString("SecurityPolicyUri");
-      String transportProfileUri = decoder.decodeString("TransportProfileUri");
+      final String endpointUrl;
+      final MessageSecurityMode securityMode;
+      final String securityPolicyUri;
+      final String transportProfileUri;
+      endpointUrl = decoder.decodeString("EndpointUrl");
+      securityMode = MessageSecurityMode.from(decoder.decodeEnum("SecurityMode"));
+      securityPolicyUri = decoder.decodeString("SecurityPolicyUri");
+      transportProfileUri = decoder.decodeString("TransportProfileUri");
       return new EndpointType(endpointUrl, securityMode, securityPolicyUri, transportProfileUri);
     }
 

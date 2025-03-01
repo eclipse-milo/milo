@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -29,16 +19,16 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.6.2/#5.6.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.6.2/#5.6.2.2</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.7.2/#5.7.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.7.2/#5.7.2.2</a>
  */
 public class CreateSessionRequest extends Structure implements UaRequestMessageType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=459");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=461");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=461");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=460");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=460");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15138");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15138");
 
   private final RequestHeader requestHeader;
 
@@ -275,18 +265,26 @@ public class CreateSessionRequest extends Structure implements UaRequestMessageT
 
     @Override
     public CreateSessionRequest decodeType(EncodingContext context, UaDecoder decoder) {
-      RequestHeader requestHeader =
-          (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
-      ApplicationDescription clientDescription =
+      final RequestHeader requestHeader;
+      final ApplicationDescription clientDescription;
+      final String serverUri;
+      final String endpointUrl;
+      final String sessionName;
+      final ByteString clientNonce;
+      final ByteString clientCertificate;
+      final Double requestedSessionTimeout;
+      final UInteger maxResponseMessageSize;
+      requestHeader = (RequestHeader) decoder.decodeStruct("RequestHeader", RequestHeader.TYPE_ID);
+      clientDescription =
           (ApplicationDescription)
               decoder.decodeStruct("ClientDescription", ApplicationDescription.TYPE_ID);
-      String serverUri = decoder.decodeString("ServerUri");
-      String endpointUrl = decoder.decodeString("EndpointUrl");
-      String sessionName = decoder.decodeString("SessionName");
-      ByteString clientNonce = decoder.decodeByteString("ClientNonce");
-      ByteString clientCertificate = decoder.decodeByteString("ClientCertificate");
-      Double requestedSessionTimeout = decoder.decodeDouble("RequestedSessionTimeout");
-      UInteger maxResponseMessageSize = decoder.decodeUInt32("MaxResponseMessageSize");
+      serverUri = decoder.decodeString("ServerUri");
+      endpointUrl = decoder.decodeString("EndpointUrl");
+      sessionName = decoder.decodeString("SessionName");
+      clientNonce = decoder.decodeByteString("ClientNonce");
+      clientCertificate = decoder.decodeByteString("ClientCertificate");
+      requestedSessionTimeout = decoder.decodeDouble("RequestedSessionTimeout");
+      maxResponseMessageSize = decoder.decodeUInt32("MaxResponseMessageSize");
       return new CreateSessionRequest(
           requestHeader,
           clientDescription,

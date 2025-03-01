@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -33,11 +23,11 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 public class AggregateFilterResult extends MonitoringFilterResult implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=737");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=739");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=739");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=738");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=738");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15315");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15315");
 
   private final DateTime revisedStartTime;
 
@@ -160,9 +150,12 @@ public class AggregateFilterResult extends MonitoringFilterResult implements UaS
 
     @Override
     public AggregateFilterResult decodeType(EncodingContext context, UaDecoder decoder) {
-      DateTime revisedStartTime = decoder.decodeDateTime("RevisedStartTime");
-      Double revisedProcessingInterval = decoder.decodeDouble("RevisedProcessingInterval");
-      AggregateConfiguration revisedAggregateConfiguration =
+      final DateTime revisedStartTime;
+      final Double revisedProcessingInterval;
+      final AggregateConfiguration revisedAggregateConfiguration;
+      revisedStartTime = decoder.decodeDateTime("RevisedStartTime");
+      revisedProcessingInterval = decoder.decodeDouble("RevisedProcessingInterval");
+      revisedAggregateConfiguration =
           (AggregateConfiguration)
               decoder.decodeStruct("RevisedAggregateConfiguration", AggregateConfiguration.TYPE_ID);
       return new AggregateFilterResult(

@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -34,11 +24,11 @@ import org.jspecify.annotations.Nullable;
 public class QueryDataSet extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=577");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=579");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=579");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=578");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=578");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15202");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15202");
 
   private final ExpandedNodeId nodeId;
 
@@ -159,9 +149,12 @@ public class QueryDataSet extends Structure implements UaStructuredType {
 
     @Override
     public QueryDataSet decodeType(EncodingContext context, UaDecoder decoder) {
-      ExpandedNodeId nodeId = decoder.decodeExpandedNodeId("NodeId");
-      ExpandedNodeId typeDefinitionNode = decoder.decodeExpandedNodeId("TypeDefinitionNode");
-      Variant[] values = decoder.decodeVariantArray("Values");
+      final ExpandedNodeId nodeId;
+      final ExpandedNodeId typeDefinitionNode;
+      final Variant[] values;
+      nodeId = decoder.decodeExpandedNodeId("NodeId");
+      typeDefinitionNode = decoder.decodeExpandedNodeId("TypeDefinitionNode");
+      values = decoder.decodeVariantArray("Values");
       return new QueryDataSet(nodeId, typeDefinitionNode, values);
     }
 

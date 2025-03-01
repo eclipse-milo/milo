@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -27,16 +17,16 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.6.5/#5.6.5.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.6.5/#5.6.5.2</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.7.5/#5.7.5.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.7.5/#5.7.5.2</a>
  */
 public class CancelResponse extends Structure implements UaResponseMessageType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=480");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=482");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=482");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=481");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=481");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15150");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15150");
 
   private final ResponseHeader responseHeader;
 
@@ -138,9 +128,11 @@ public class CancelResponse extends Structure implements UaResponseMessageType {
 
     @Override
     public CancelResponse decodeType(EncodingContext context, UaDecoder decoder) {
-      ResponseHeader responseHeader =
+      final ResponseHeader responseHeader;
+      final UInteger cancelCount;
+      responseHeader =
           (ResponseHeader) decoder.decodeStruct("ResponseHeader", ResponseHeader.TYPE_ID);
-      UInteger cancelCount = decoder.decodeUInt32("CancelCount");
+      cancelCount = decoder.decodeUInt32("CancelCount");
       return new CancelResponse(responseHeader, cancelCount);
     }
 

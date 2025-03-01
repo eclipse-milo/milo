@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -28,16 +18,16 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.12">https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.12</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.16">https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.16</a>
  */
 public class TransactionErrorType extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=32285");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=32382");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=32382");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=32386");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=32386");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=32390");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=32390");
 
   private final NodeId targetId;
 
@@ -157,9 +147,12 @@ public class TransactionErrorType extends Structure implements UaStructuredType 
 
     @Override
     public TransactionErrorType decodeType(EncodingContext context, UaDecoder decoder) {
-      NodeId targetId = decoder.decodeNodeId("TargetId");
-      StatusCode error = decoder.decodeStatusCode("Error");
-      LocalizedText message = decoder.decodeLocalizedText("Message");
+      final NodeId targetId;
+      final StatusCode error;
+      final LocalizedText message;
+      targetId = decoder.decodeNodeId("TargetId");
+      error = decoder.decodeStatusCode("Error");
+      message = decoder.decodeLocalizedText("Message");
       return new TransactionErrorType(targetId, error, message);
     }
 

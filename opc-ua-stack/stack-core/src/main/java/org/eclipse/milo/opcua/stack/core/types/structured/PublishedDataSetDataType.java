@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -18,6 +8,7 @@ import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
 import org.eclipse.milo.opcua.stack.core.encoding.UaEncoder;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -33,11 +24,11 @@ import org.jspecify.annotations.Nullable;
 public class PublishedDataSetDataType extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=15578");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=15677");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15677");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=15951");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15951");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=16152");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=16152");
 
   private final @Nullable String name;
 
@@ -145,7 +136,7 @@ public class PublishedDataSetDataType extends Structure implements UaStructuredT
     return new StructureDefinition(
         new NodeId(0, 15677),
         new NodeId(0, 22),
-        StructureType.Structure,
+        StructureType.StructureWithSubtypedValues,
         new StructureField[] {
           new StructureField(
               "Name",
@@ -186,7 +177,7 @@ public class PublishedDataSetDataType extends Structure implements UaStructuredT
               -1,
               null,
               UInteger.valueOf(0),
-              false)
+              true)
         });
   }
 
@@ -198,16 +189,22 @@ public class PublishedDataSetDataType extends Structure implements UaStructuredT
 
     @Override
     public PublishedDataSetDataType decodeType(EncodingContext context, UaDecoder decoder) {
-      String name = decoder.decodeString("Name");
-      String[] dataSetFolder = decoder.decodeStringArray("DataSetFolder");
-      DataSetMetaDataType dataSetMetaData =
+      final String name;
+      final String[] dataSetFolder;
+      final DataSetMetaDataType dataSetMetaData;
+      final KeyValuePair[] extensionFields;
+      final PublishedDataSetSourceDataType dataSetSource;
+      name = decoder.decodeString("Name");
+      dataSetFolder = decoder.decodeStringArray("DataSetFolder");
+      dataSetMetaData =
           (DataSetMetaDataType)
               decoder.decodeStruct("DataSetMetaData", DataSetMetaDataType.TYPE_ID);
-      KeyValuePair[] extensionFields =
+      extensionFields =
           (KeyValuePair[]) decoder.decodeStructArray("ExtensionFields", KeyValuePair.TYPE_ID);
-      PublishedDataSetSourceDataType dataSetSource =
-          (PublishedDataSetSourceDataType)
-              decoder.decodeStruct("DataSetSource", PublishedDataSetSourceDataType.TYPE_ID);
+      {
+        ExtensionObject xo = decoder.decodeExtensionObject("DataSetSource");
+        dataSetSource = (PublishedDataSetSourceDataType) xo.decode(context);
+      }
       return new PublishedDataSetDataType(
           name, dataSetFolder, dataSetMetaData, extensionFields, dataSetSource);
     }
@@ -221,8 +218,10 @@ public class PublishedDataSetDataType extends Structure implements UaStructuredT
           "DataSetMetaData", value.getDataSetMetaData(), DataSetMetaDataType.TYPE_ID);
       encoder.encodeStructArray(
           "ExtensionFields", value.getExtensionFields(), KeyValuePair.TYPE_ID);
-      encoder.encodeStruct(
-          "DataSetSource", value.getDataSetSource(), PublishedDataSetSourceDataType.TYPE_ID);
+      {
+        ExtensionObject xo = ExtensionObject.encode(context, value.getDataSetSource());
+        encoder.encodeExtensionObject("DataSetSource", xo);
+      }
     }
   }
 }

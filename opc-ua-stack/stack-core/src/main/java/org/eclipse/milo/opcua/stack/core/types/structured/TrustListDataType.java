@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -27,14 +17,18 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.EqualsBuilder;
 import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 import org.jspecify.annotations.Nullable;
 
+/**
+ * @see <a
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.2/#7.8.2.6">https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.2/#7.8.2.6</a>
+ */
 public class TrustListDataType extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=12554");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=12680");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=12680");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=12676");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=12676");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15044");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15044");
 
   private final UInteger specifiedLists;
 
@@ -195,11 +189,16 @@ public class TrustListDataType extends Structure implements UaStructuredType {
 
     @Override
     public TrustListDataType decodeType(EncodingContext context, UaDecoder decoder) {
-      UInteger specifiedLists = decoder.decodeUInt32("SpecifiedLists");
-      ByteString[] trustedCertificates = decoder.decodeByteStringArray("TrustedCertificates");
-      ByteString[] trustedCrls = decoder.decodeByteStringArray("TrustedCrls");
-      ByteString[] issuerCertificates = decoder.decodeByteStringArray("IssuerCertificates");
-      ByteString[] issuerCrls = decoder.decodeByteStringArray("IssuerCrls");
+      final UInteger specifiedLists;
+      final ByteString[] trustedCertificates;
+      final ByteString[] trustedCrls;
+      final ByteString[] issuerCertificates;
+      final ByteString[] issuerCrls;
+      specifiedLists = decoder.decodeUInt32("SpecifiedLists");
+      trustedCertificates = decoder.decodeByteStringArray("TrustedCertificates");
+      trustedCrls = decoder.decodeByteStringArray("TrustedCrls");
+      issuerCertificates = decoder.decodeByteStringArray("IssuerCertificates");
+      issuerCrls = decoder.decodeByteStringArray("IssuerCrls");
       return new TrustListDataType(
           specifiedLists, trustedCertificates, trustedCrls, issuerCertificates, issuerCrls);
     }

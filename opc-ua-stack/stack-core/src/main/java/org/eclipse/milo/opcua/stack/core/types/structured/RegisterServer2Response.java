@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -30,16 +20,16 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.4.6/#5.4.6.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.4.6/#5.4.6.2</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.5.6/#5.5.6.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.5.6/#5.5.6.2</a>
  */
 public class RegisterServer2Response extends Structure implements UaResponseMessageType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=12194");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=12212");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=12212");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=12200");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=12200");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15130");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15130");
 
   private final ResponseHeader responseHeader;
 
@@ -162,10 +152,13 @@ public class RegisterServer2Response extends Structure implements UaResponseMess
 
     @Override
     public RegisterServer2Response decodeType(EncodingContext context, UaDecoder decoder) {
-      ResponseHeader responseHeader =
+      final ResponseHeader responseHeader;
+      final StatusCode[] configurationResults;
+      final DiagnosticInfo[] diagnosticInfos;
+      responseHeader =
           (ResponseHeader) decoder.decodeStruct("ResponseHeader", ResponseHeader.TYPE_ID);
-      StatusCode[] configurationResults = decoder.decodeStatusCodeArray("ConfigurationResults");
-      DiagnosticInfo[] diagnosticInfos = decoder.decodeDiagnosticInfoArray("DiagnosticInfos");
+      configurationResults = decoder.decodeStatusCodeArray("ConfigurationResults");
+      diagnosticInfos = decoder.decodeDiagnosticInfoArray("DiagnosticInfos");
       return new RegisterServer2Response(responseHeader, configurationResults, diagnosticInfos);
     }
 

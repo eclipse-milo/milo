@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -32,11 +22,11 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 public class UnsignedRationalNumber extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=24107");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=24110");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=24110");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=24122");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=24122");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=24134");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=24134");
 
   private final UInteger numerator;
 
@@ -138,8 +128,10 @@ public class UnsignedRationalNumber extends Structure implements UaStructuredTyp
 
     @Override
     public UnsignedRationalNumber decodeType(EncodingContext context, UaDecoder decoder) {
-      UInteger numerator = decoder.decodeUInt32("Numerator");
-      UInteger denominator = decoder.decodeUInt32("Denominator");
+      final UInteger numerator;
+      final UInteger denominator;
+      numerator = decoder.decodeUInt32("Numerator");
+      denominator = decoder.decodeUInt32("Denominator");
       return new UnsignedRationalNumber(numerator, denominator);
     }
 

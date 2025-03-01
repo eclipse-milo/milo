@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -29,16 +19,16 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v104/Core/docs/Part11/6.4.5/#6.4.5.1">https://reference.opcfoundation.org/v104/Core/docs/Part11/6.4.5/#6.4.5.1</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/6.5.5/#6.5.5.1">https://reference.opcfoundation.org/v105/Core/docs/Part11/6.5.5/#6.5.5.1</a>
  */
 public class ReadAtTimeDetails extends HistoryReadDetails implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=653");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=655");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=655");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=654");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=654");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15269");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15269");
 
   private final DateTime @Nullable [] reqTimes;
 
@@ -140,8 +130,10 @@ public class ReadAtTimeDetails extends HistoryReadDetails implements UaStructure
 
     @Override
     public ReadAtTimeDetails decodeType(EncodingContext context, UaDecoder decoder) {
-      DateTime[] reqTimes = decoder.decodeDateTimeArray("ReqTimes");
-      Boolean useSimpleBounds = decoder.decodeBoolean("UseSimpleBounds");
+      final DateTime[] reqTimes;
+      final Boolean useSimpleBounds;
+      reqTimes = decoder.decodeDateTimeArray("ReqTimes");
+      useSimpleBounds = decoder.decodeBoolean("UseSimpleBounds");
       return new ReadAtTimeDetails(reqTimes, useSimpleBounds);
     }
 

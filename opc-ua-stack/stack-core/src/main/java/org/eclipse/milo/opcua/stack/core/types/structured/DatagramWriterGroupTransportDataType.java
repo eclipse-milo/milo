@@ -1,13 +1,3 @@
-/*
- * Copyright (c) 2024 the Eclipse Milo Authors
- *
- * This program and the accompanying materials are made
- * available under the terms of the Eclipse Public License 2.0
- * which is available at https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- */
-
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -34,11 +24,11 @@ public class DatagramWriterGroupTransportDataType extends WriterGroupTransportDa
     implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=15532");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=21155");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=21155");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=21179");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=21179");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=21203");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=21203");
 
   private final UByte messageRepeatCount;
 
@@ -144,8 +134,10 @@ public class DatagramWriterGroupTransportDataType extends WriterGroupTransportDa
     @Override
     public DatagramWriterGroupTransportDataType decodeType(
         EncodingContext context, UaDecoder decoder) {
-      UByte messageRepeatCount = decoder.decodeByte("MessageRepeatCount");
-      Double messageRepeatDelay = decoder.decodeDouble("MessageRepeatDelay");
+      final UByte messageRepeatCount;
+      final Double messageRepeatDelay;
+      messageRepeatCount = decoder.decodeByte("MessageRepeatCount");
+      messageRepeatDelay = decoder.decodeDouble("MessageRepeatDelay");
       return new DatagramWriterGroupTransportDataType(messageRepeatCount, messageRepeatDelay);
     }
 
