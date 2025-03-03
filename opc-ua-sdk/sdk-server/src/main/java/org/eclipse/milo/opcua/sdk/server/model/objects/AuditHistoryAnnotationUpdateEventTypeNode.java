@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -14,7 +14,6 @@ import java.util.Optional;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -22,6 +21,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.PerformUpdateType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.Annotation;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 
 public class AuditHistoryAnnotationUpdateEventTypeNode extends AuditHistoryUpdateEventTypeNode
@@ -101,12 +101,12 @@ public class AuditHistoryAnnotationUpdateEventTypeNode extends AuditHistoryUpdat
   }
 
   @Override
-  public DataValue[] getNewValues() {
+  public Annotation[] getNewValues() {
     return getProperty(AuditHistoryAnnotationUpdateEventType.NEW_VALUES).orElse(null);
   }
 
   @Override
-  public void setNewValues(DataValue[] value) {
+  public void setNewValues(Annotation[] value) {
     setProperty(AuditHistoryAnnotationUpdateEventType.NEW_VALUES, value);
   }
 
@@ -118,12 +118,12 @@ public class AuditHistoryAnnotationUpdateEventTypeNode extends AuditHistoryUpdat
   }
 
   @Override
-  public DataValue[] getOldValues() {
+  public Annotation[] getOldValues() {
     return getProperty(AuditHistoryAnnotationUpdateEventType.OLD_VALUES).orElse(null);
   }
 
   @Override
-  public void setOldValues(DataValue[] value) {
+  public void setOldValues(Annotation[] value) {
     setProperty(AuditHistoryAnnotationUpdateEventType.OLD_VALUES, value);
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -28,7 +28,7 @@ import org.eclipse.milo.opcua.stack.core.util.Lazy;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/8.6.4">https://reference.opcfoundation.org/v105/Core/docs/Part12/8.6.4</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/8.6.5">https://reference.opcfoundation.org/v105/Core/docs/Part12/8.6.5</a>
  */
 public interface KeyCredentialConfigurationType extends BaseObjectType {
   QualifiedProperty<String> RESOURCE_URI =
@@ -55,6 +55,14 @@ public interface KeyCredentialConfigurationType extends BaseObjectType {
           1,
           String[].class);
 
+  QualifiedProperty<String> CREDENTIAL_ID =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "CredentialId",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          -1,
+          String.class);
+
   QualifiedProperty<StatusCode> SERVICE_STATUS =
       new QualifiedProperty<>(
           "http://opcfoundation.org/UA/",
@@ -80,6 +88,12 @@ public interface KeyCredentialConfigurationType extends BaseObjectType {
   void setEndpointUrls(String[] value);
 
   PropertyType getEndpointUrlsNode();
+
+  String getCredentialId();
+
+  void setCredentialId(String value);
+
+  PropertyType getCredentialIdNode();
 
   StatusCode getServiceStatus();
 

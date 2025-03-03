@@ -1,0 +1,149 @@
+/*
+ * Copyright (c) 2025 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
+package org.eclipse.milo.opcua.sdk.server.model.objects;
+
+import java.util.Optional;
+import org.eclipse.milo.opcua.sdk.core.nodes.ObjectNode;
+import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.AnnotationDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.QuantityDimension;
+import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+
+public class QuantityTypeNode extends BaseObjectTypeNode implements QuantityType {
+  public QuantityTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType[] rolePermissions,
+      RolePermissionType[] userRolePermissions,
+      AccessRestrictionType accessRestrictions,
+      UByte eventNotifier) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions,
+        eventNotifier);
+  }
+
+  public QuantityTypeNode(
+      UaNodeContext context,
+      NodeId nodeId,
+      QualifiedName browseName,
+      LocalizedText displayName,
+      LocalizedText description,
+      UInteger writeMask,
+      UInteger userWriteMask,
+      RolePermissionType[] rolePermissions,
+      RolePermissionType[] userRolePermissions,
+      AccessRestrictionType accessRestrictions) {
+    super(
+        context,
+        nodeId,
+        browseName,
+        displayName,
+        description,
+        writeMask,
+        userWriteMask,
+        rolePermissions,
+        userRolePermissions,
+        accessRestrictions);
+  }
+
+  @Override
+  public PropertyTypeNode getSymbolNode() {
+    Optional<VariableNode> propertyNode = getPropertyNode(QuantityType.SYMBOL);
+    return (PropertyTypeNode) propertyNode.orElse(null);
+  }
+
+  @Override
+  public LocalizedText getSymbol() {
+    return getProperty(QuantityType.SYMBOL).orElse(null);
+  }
+
+  @Override
+  public void setSymbol(LocalizedText value) {
+    setProperty(QuantityType.SYMBOL, value);
+  }
+
+  @Override
+  public PropertyTypeNode getAnnotationNode() {
+    Optional<VariableNode> propertyNode = getPropertyNode(QuantityType.ANNOTATION);
+    return (PropertyTypeNode) propertyNode.orElse(null);
+  }
+
+  @Override
+  public AnnotationDataType[] getAnnotation() {
+    return getProperty(QuantityType.ANNOTATION).orElse(null);
+  }
+
+  @Override
+  public void setAnnotation(AnnotationDataType[] value) {
+    setProperty(QuantityType.ANNOTATION, value);
+  }
+
+  @Override
+  public PropertyTypeNode getConversionServiceNode() {
+    Optional<VariableNode> propertyNode = getPropertyNode(QuantityType.CONVERSION_SERVICE);
+    return (PropertyTypeNode) propertyNode.orElse(null);
+  }
+
+  @Override
+  public String getConversionService() {
+    return getProperty(QuantityType.CONVERSION_SERVICE).orElse(null);
+  }
+
+  @Override
+  public void setConversionService(String value) {
+    setProperty(QuantityType.CONVERSION_SERVICE, value);
+  }
+
+  @Override
+  public PropertyTypeNode getDimensionNode() {
+    Optional<VariableNode> propertyNode = getPropertyNode(QuantityType.DIMENSION);
+    return (PropertyTypeNode) propertyNode.orElse(null);
+  }
+
+  @Override
+  public QuantityDimension getDimension() {
+    return getProperty(QuantityType.DIMENSION).orElse(null);
+  }
+
+  @Override
+  public void setDimension(QuantityDimension value) {
+    setProperty(QuantityType.DIMENSION, value);
+  }
+
+  @Override
+  public BaseObjectTypeNode getServerUnitsNode() {
+    Optional<ObjectNode> component =
+        getObjectComponent("http://opcfoundation.org/UA/", "ServerUnits");
+    return (BaseObjectTypeNode) component.orElse(null);
+  }
+}

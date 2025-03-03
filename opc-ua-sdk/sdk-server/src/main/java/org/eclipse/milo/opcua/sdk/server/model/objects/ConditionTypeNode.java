@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -112,6 +112,38 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   @Override
   public void setConditionClassName(LocalizedText value) {
     setProperty(ConditionType.CONDITION_CLASS_NAME, value);
+  }
+
+  @Override
+  public PropertyTypeNode getConditionSubClassIdNode() {
+    Optional<VariableNode> propertyNode = getPropertyNode(ConditionType.CONDITION_SUB_CLASS_ID);
+    return (PropertyTypeNode) propertyNode.orElse(null);
+  }
+
+  @Override
+  public NodeId[] getConditionSubClassId() {
+    return getProperty(ConditionType.CONDITION_SUB_CLASS_ID).orElse(null);
+  }
+
+  @Override
+  public void setConditionSubClassId(NodeId[] value) {
+    setProperty(ConditionType.CONDITION_SUB_CLASS_ID, value);
+  }
+
+  @Override
+  public PropertyTypeNode getConditionSubClassNameNode() {
+    Optional<VariableNode> propertyNode = getPropertyNode(ConditionType.CONDITION_SUB_CLASS_NAME);
+    return (PropertyTypeNode) propertyNode.orElse(null);
+  }
+
+  @Override
+  public LocalizedText[] getConditionSubClassName() {
+    return getProperty(ConditionType.CONDITION_SUB_CLASS_NAME).orElse(null);
+  }
+
+  @Override
+  public void setConditionSubClassName(LocalizedText[] value) {
+    setProperty(ConditionType.CONDITION_SUB_CLASS_NAME, value);
   }
 
   @Override

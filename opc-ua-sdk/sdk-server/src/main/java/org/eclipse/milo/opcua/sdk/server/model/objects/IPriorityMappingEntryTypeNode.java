@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -117,7 +117,7 @@ public class IPriorityMappingEntryTypeNode extends BaseInterfaceTypeNode
   }
 
   @Override
-  public BaseDataVariableTypeNode getPriorityValue_PCPNode() {
+  public BaseDataVariableTypeNode getPriorityValuePcpNode() {
     Optional<VariableNode> component =
         getVariableComponent("http://opcfoundation.org/UA/", "PriorityValue_PCP");
     return (BaseDataVariableTypeNode) component.orElse(null);
@@ -137,7 +137,7 @@ public class IPriorityMappingEntryTypeNode extends BaseInterfaceTypeNode
   }
 
   @Override
-  public BaseDataVariableTypeNode getPriorityValue_DSCPNode() {
+  public BaseDataVariableTypeNode getPriorityValueDscpNode() {
     Optional<VariableNode> component =
         getVariableComponent("http://opcfoundation.org/UA/", "PriorityValue_DSCP");
     return (BaseDataVariableTypeNode) component.orElse(null);

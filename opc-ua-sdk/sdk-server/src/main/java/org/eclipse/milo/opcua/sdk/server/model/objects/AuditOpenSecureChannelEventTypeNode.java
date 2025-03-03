@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -187,12 +187,12 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
   }
 
   @Override
-  public String getCertificateErrorEventId() {
+  public ByteString getCertificateErrorEventId() {
     return getProperty(AuditOpenSecureChannelEventType.CERTIFICATE_ERROR_EVENT_ID).orElse(null);
   }
 
   @Override
-  public void setCertificateErrorEventId(String value) {
+  public void setCertificateErrorEventId(ByteString value) {
     setProperty(AuditOpenSecureChannelEventType.CERTIFICATE_ERROR_EVENT_ID, value);
   }
 }

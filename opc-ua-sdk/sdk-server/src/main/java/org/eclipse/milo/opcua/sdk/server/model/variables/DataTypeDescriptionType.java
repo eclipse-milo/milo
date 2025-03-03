@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -14,10 +14,6 @@ import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 
-/**
- * @see <a
- *     href="https://reference.opcfoundation.org/v104/Core/docs/Part5/D.5.3">https://reference.opcfoundation.org/v104/Core/docs/Part5/D.5.3</a>
- */
 public interface DataTypeDescriptionType extends BaseDataVariableType {
   QualifiedProperty<String> DATA_TYPE_VERSION =
       new QualifiedProperty<>(

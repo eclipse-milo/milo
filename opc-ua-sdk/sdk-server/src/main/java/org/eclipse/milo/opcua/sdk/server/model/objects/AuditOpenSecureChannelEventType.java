@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -70,13 +70,13 @@ public interface AuditOpenSecureChannelEventType extends AuditChannelEventType {
           -1,
           Double.class);
 
-  QualifiedProperty<String> CERTIFICATE_ERROR_EVENT_ID =
+  QualifiedProperty<ByteString> CERTIFICATE_ERROR_EVENT_ID =
       new QualifiedProperty<>(
           "http://opcfoundation.org/UA/",
           "CertificateErrorEventId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15"),
           -1,
-          String.class);
+          ByteString.class);
 
   ByteString getClientCertificate();
 
@@ -114,9 +114,9 @@ public interface AuditOpenSecureChannelEventType extends AuditChannelEventType {
 
   PropertyType getRequestedLifetimeNode();
 
-  String getCertificateErrorEventId();
+  ByteString getCertificateErrorEventId();
 
-  void setCertificateErrorEventId(String value);
+  void setCertificateErrorEventId(ByteString value);
 
   PropertyType getCertificateErrorEventIdNode();
 }

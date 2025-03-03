@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -76,23 +76,6 @@ public class TransparentRedundancyTypeNode extends ServerRedundancyTypeNode
   }
 
   @Override
-  public PropertyTypeNode getCurrentServerIdNode() {
-    Optional<VariableNode> propertyNode =
-        getPropertyNode(TransparentRedundancyType.CURRENT_SERVER_ID);
-    return (PropertyTypeNode) propertyNode.orElse(null);
-  }
-
-  @Override
-  public String getCurrentServerId() {
-    return getProperty(TransparentRedundancyType.CURRENT_SERVER_ID).orElse(null);
-  }
-
-  @Override
-  public void setCurrentServerId(String value) {
-    setProperty(TransparentRedundancyType.CURRENT_SERVER_ID, value);
-  }
-
-  @Override
   public PropertyTypeNode getRedundantServerArrayNode() {
     Optional<VariableNode> propertyNode =
         getPropertyNode(TransparentRedundancyType.REDUNDANT_SERVER_ARRAY);
@@ -107,5 +90,22 @@ public class TransparentRedundancyTypeNode extends ServerRedundancyTypeNode
   @Override
   public void setRedundantServerArray(RedundantServerDataType[] value) {
     setProperty(TransparentRedundancyType.REDUNDANT_SERVER_ARRAY, value);
+  }
+
+  @Override
+  public PropertyTypeNode getCurrentServerIdNode() {
+    Optional<VariableNode> propertyNode =
+        getPropertyNode(TransparentRedundancyType.CURRENT_SERVER_ID);
+    return (PropertyTypeNode) propertyNode.orElse(null);
+  }
+
+  @Override
+  public String getCurrentServerId() {
+    return getProperty(TransparentRedundancyType.CURRENT_SERVER_ID).orElse(null);
+  }
+
+  @Override
+  public void setCurrentServerId(String value) {
+    setProperty(TransparentRedundancyType.CURRENT_SERVER_ID, value);
   }
 }

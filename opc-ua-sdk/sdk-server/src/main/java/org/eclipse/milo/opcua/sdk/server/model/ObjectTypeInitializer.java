@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -21,7 +21,9 @@ import org.eclipse.milo.opcua.sdk.server.model.objects.AlarmMetricsTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.AlarmSuppressionGroupTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.AliasNameCategoryTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.AliasNameTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.AlternativeUnitTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ApplicationCertificateTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.ApplicationConfigurationFolderTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ApplicationConfigurationTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.AuditActivateSessionEventTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.AuditAddNodesEventTypeNode;
@@ -54,6 +56,8 @@ import org.eclipse.milo.opcua.sdk.server.model.objects.AuditDeleteReferencesEven
 import org.eclipse.milo.opcua.sdk.server.model.objects.AuditEventTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.AuditHistoryAnnotationUpdateEventTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.AuditHistoryAtTimeDeleteEventTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.AuditHistoryBulkInsertEventTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.AuditHistoryConfigurationChangeEventTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.AuditHistoryDeleteEventTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.AuditHistoryEventDeleteEventTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.AuditHistoryEventUpdateEventTypeNode;
@@ -130,6 +134,8 @@ import org.eclipse.milo.opcua.sdk.server.model.objects.FolderTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.GeneralModelChangeEventTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.HighlyManagedAlarmConditionClassTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.HistoricalDataConfigurationTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.HistoricalEventConfigurationTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.HistoricalExternalEventSourceTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.HistoryServerCapabilitiesTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.HttpsCertificateTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.IBaseEthernetCapabilitiesTypeNode;
@@ -161,6 +167,11 @@ import org.eclipse.milo.opcua.sdk.server.model.objects.KeyCredentialConfiguratio
 import org.eclipse.milo.opcua.sdk.server.model.objects.KeyCredentialDeletedAuditEventTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.KeyCredentialUpdatedAuditEventTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.LimitAlarmTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.LldpInformationTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.LldpLocalSystemTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.LldpPortInformationTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.LldpRemoteStatisticsTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.LldpRemoteSystemTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.MaintenanceConditionClassTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ModellingRuleTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.NamespaceMetadataTypeNode;
@@ -171,6 +182,7 @@ import org.eclipse.milo.opcua.sdk.server.model.objects.NonExclusiveDeviationAlar
 import org.eclipse.milo.opcua.sdk.server.model.objects.NonExclusiveLevelAlarmTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.NonExclusiveLimitAlarmTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.NonExclusiveRateOfChangeAlarmTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.NonTransparentBackupRedundancyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.NonTransparentNetworkRedundancyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.NonTransparentRedundancyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.OffNormalAlarmTypeNode;
@@ -205,6 +217,8 @@ import org.eclipse.milo.opcua.sdk.server.model.objects.PublishSubscribeTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.PublishedDataItemsTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.PublishedDataSetTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.PublishedEventsTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.QuantitiesFolderTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.QuantityTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ReaderGroupMessageTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ReaderGroupTransportTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ReaderGroupTypeNode;
@@ -225,6 +239,7 @@ import org.eclipse.milo.opcua.sdk.server.model.objects.ServerConfigurationTypeNo
 import org.eclipse.milo.opcua.sdk.server.model.objects.ServerDiagnosticsTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ServerRedundancyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ServerTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.ServerUnitTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.SessionDiagnosticsObjectTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.SessionsDiagnosticsSummaryTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ShelvedStateMachineTypeNode;
@@ -235,6 +250,7 @@ import org.eclipse.milo.opcua.sdk.server.model.objects.StatisticalConditionClass
 import org.eclipse.milo.opcua.sdk.server.model.objects.SubscribedDataSetFolderTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.SubscribedDataSetMirrorTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.SubscribedDataSetTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.SyntaxReferenceEntryTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.SystemConditionClassTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.SystemDiagnosticAlarmTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.SystemEventTypeNode;
@@ -256,6 +272,7 @@ import org.eclipse.milo.opcua.sdk.server.model.objects.TrustListUpdatedAuditEven
 import org.eclipse.milo.opcua.sdk.server.model.objects.UadpDataSetReaderMessageTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.UadpDataSetWriterMessageTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.UadpWriterGroupMessageTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.UnitTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.UriDictionaryEntryTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.UserCredentialCertificateTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.UserManagementTypeNode;
@@ -290,6 +307,10 @@ public class ObjectTypeInitializer {
         DictionaryFolderTypeNode.class,
         DictionaryFolderTypeNode::new);
     objectTypeManager.registerObjectType(
+        NodeId.parse("i=32502").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
+        QuantitiesFolderTypeNode.class,
+        QuantitiesFolderTypeNode::new);
+    objectTypeManager.registerObjectType(
         NodeId.parse("i=16405").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
         AlarmGroupTypeNode.class,
         AlarmGroupTypeNode::new);
@@ -301,6 +322,10 @@ public class ObjectTypeInitializer {
         NodeId.parse("i=13813").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
         CertificateGroupFolderTypeNode.class,
         CertificateGroupFolderTypeNode::new);
+    objectTypeManager.registerObjectType(
+        NodeId.parse("i=16662").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
+        ApplicationConfigurationFolderTypeNode.class,
+        ApplicationConfigurationFolderTypeNode::new);
     objectTypeManager.registerObjectType(
         NodeId.parse("i=17496").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
         KeyCredentialConfigurationFolderTypeNode.class,
@@ -381,6 +406,10 @@ public class ObjectTypeInitializer {
         NodeId.parse("i=11945").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
         NonTransparentNetworkRedundancyTypeNode.class,
         NonTransparentNetworkRedundancyTypeNode::new);
+    objectTypeManager.registerObjectType(
+        NodeId.parse("i=32411").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
+        NonTransparentBackupRedundancyTypeNode.class,
+        NonTransparentBackupRedundancyTypeNode::new);
     objectTypeManager.registerObjectType(
         NodeId.parse("i=11575").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
         FileTypeNode.class,
@@ -602,9 +631,17 @@ public class ObjectTypeInitializer {
         TrustListUpdateRequestedAuditEventTypeNode.class,
         TrustListUpdateRequestedAuditEventTypeNode::new);
     objectTypeManager.registerObjectType(
+        NodeId.parse("i=12561").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
+        TrustListUpdatedAuditEventTypeNode.class,
+        TrustListUpdatedAuditEventTypeNode::new);
+    objectTypeManager.registerObjectType(
         NodeId.parse("i=32306").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
         CertificateUpdateRequestedAuditEventTypeNode.class,
         CertificateUpdateRequestedAuditEventTypeNode::new);
+    objectTypeManager.registerObjectType(
+        NodeId.parse("i=12620").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
+        CertificateUpdatedAuditEventTypeNode.class,
+        CertificateUpdatedAuditEventTypeNode::new);
     objectTypeManager.registerObjectType(
         NodeId.parse("i=18011").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
         KeyCredentialAuditEventTypeNode.class,
@@ -626,13 +663,13 @@ public class ObjectTypeInitializer {
         AuditClientUpdateMethodResultEventTypeNode.class,
         AuditClientUpdateMethodResultEventTypeNode::new);
     objectTypeManager.registerObjectType(
-        NodeId.parse("i=12561").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
-        TrustListUpdatedAuditEventTypeNode.class,
-        TrustListUpdatedAuditEventTypeNode::new);
+        NodeId.parse("i=32758").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
+        AuditHistoryConfigurationChangeEventTypeNode.class,
+        AuditHistoryConfigurationChangeEventTypeNode::new);
     objectTypeManager.registerObjectType(
-        NodeId.parse("i=12620").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
-        CertificateUpdatedAuditEventTypeNode.class,
-        CertificateUpdatedAuditEventTypeNode::new);
+        NodeId.parse("i=32803").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
+        AuditHistoryBulkInsertEventTypeNode.class,
+        AuditHistoryBulkInsertEventTypeNode::new);
     objectTypeManager.registerObjectType(
         NodeId.parse("i=2130").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
         SystemEventTypeNode.class,
@@ -854,6 +891,10 @@ public class ObjectTypeInitializer {
         UriDictionaryEntryTypeNode.class,
         UriDictionaryEntryTypeNode::new);
     objectTypeManager.registerObjectType(
+        NodeId.parse("i=32439").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
+        SyntaxReferenceEntryTypeNode.class,
+        SyntaxReferenceEntryTypeNode::new);
+    objectTypeManager.registerObjectType(
         NodeId.parse("i=17602").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
         BaseInterfaceTypeNode.class,
         BaseInterfaceTypeNode::new);
@@ -926,6 +967,22 @@ public class ObjectTypeInitializer {
         OrderedListTypeNode.class,
         OrderedListTypeNode::new);
     objectTypeManager.registerObjectType(
+        NodeId.parse("i=32442").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
+        UnitTypeNode.class,
+        UnitTypeNode::new);
+    objectTypeManager.registerObjectType(
+        NodeId.parse("i=32447").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
+        ServerUnitTypeNode.class,
+        ServerUnitTypeNode::new);
+    objectTypeManager.registerObjectType(
+        NodeId.parse("i=32467").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
+        AlternativeUnitTypeNode.class,
+        AlternativeUnitTypeNode::new);
+    objectTypeManager.registerObjectType(
+        NodeId.parse("i=32475").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
+        QuantityTypeNode.class,
+        QuantityTypeNode::new);
+    objectTypeManager.registerObjectType(
         NodeId.parse("i=11163").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
         BaseConditionClassTypeNode.class,
         BaseConditionClassTypeNode::new);
@@ -969,6 +1026,14 @@ public class ObjectTypeInitializer {
         NodeId.parse("i=2318").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
         HistoricalDataConfigurationTypeNode.class,
         HistoricalDataConfigurationTypeNode::new);
+    objectTypeManager.registerObjectType(
+        NodeId.parse("i=32621").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
+        HistoricalEventConfigurationTypeNode.class,
+        HistoricalEventConfigurationTypeNode::new);
+    objectTypeManager.registerObjectType(
+        NodeId.parse("i=32625").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
+        HistoricalExternalEventSourceTypeNode.class,
+        HistoricalExternalEventSourceTypeNode::new);
     objectTypeManager.registerObjectType(
         NodeId.parse("i=2330").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
         HistoryServerCapabilitiesTypeNode.class,
@@ -1277,5 +1342,25 @@ public class ObjectTypeInitializer {
         NodeId.parse("i=25227").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
         PriorityMappingTableTypeNode.class,
         PriorityMappingTableTypeNode::new);
+    objectTypeManager.registerObjectType(
+        NodeId.parse("i=18973").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
+        LldpInformationTypeNode.class,
+        LldpInformationTypeNode::new);
+    objectTypeManager.registerObjectType(
+        NodeId.parse("i=18996").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
+        LldpRemoteStatisticsTypeNode.class,
+        LldpRemoteStatisticsTypeNode::new);
+    objectTypeManager.registerObjectType(
+        NodeId.parse("i=19002").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
+        LldpLocalSystemTypeNode.class,
+        LldpLocalSystemTypeNode::new);
+    objectTypeManager.registerObjectType(
+        NodeId.parse("i=19009").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
+        LldpPortInformationTypeNode.class,
+        LldpPortInformationTypeNode::new);
+    objectTypeManager.registerObjectType(
+        NodeId.parse("i=19033").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
+        LldpRemoteSystemTypeNode.class,
+        LldpRemoteSystemTypeNode::new);
   }
 }

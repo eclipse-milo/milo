@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -128,6 +128,23 @@ public class ServerConfigurationTypeNode extends BaseObjectTypeNode
   }
 
   @Override
+  public PropertyTypeNode getApplicationNamesNode() {
+    Optional<VariableNode> propertyNode =
+        getPropertyNode(ServerConfigurationType.APPLICATION_NAMES);
+    return (PropertyTypeNode) propertyNode.orElse(null);
+  }
+
+  @Override
+  public LocalizedText[] getApplicationNames() {
+    return getProperty(ServerConfigurationType.APPLICATION_NAMES).orElse(null);
+  }
+
+  @Override
+  public void setApplicationNames(LocalizedText[] value) {
+    setProperty(ServerConfigurationType.APPLICATION_NAMES, value);
+  }
+
+  @Override
   public PropertyTypeNode getServerCapabilitiesNode() {
     Optional<VariableNode> propertyNode =
         getPropertyNode(ServerConfigurationType.SERVER_CAPABILITIES);
@@ -210,6 +227,40 @@ public class ServerConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void setHasSecureElement(Boolean value) {
     setProperty(ServerConfigurationType.HAS_SECURE_ELEMENT, value);
+  }
+
+  @Override
+  public PropertyTypeNode getSupportsTransactionsNode() {
+    Optional<VariableNode> propertyNode =
+        getPropertyNode(ServerConfigurationType.SUPPORTS_TRANSACTIONS);
+    return (PropertyTypeNode) propertyNode.orElse(null);
+  }
+
+  @Override
+  public Boolean getSupportsTransactions() {
+    return getProperty(ServerConfigurationType.SUPPORTS_TRANSACTIONS).orElse(null);
+  }
+
+  @Override
+  public void setSupportsTransactions(Boolean value) {
+    setProperty(ServerConfigurationType.SUPPORTS_TRANSACTIONS, value);
+  }
+
+  @Override
+  public PropertyTypeNode getInApplicationSetupNode() {
+    Optional<VariableNode> propertyNode =
+        getPropertyNode(ServerConfigurationType.IN_APPLICATION_SETUP);
+    return (PropertyTypeNode) propertyNode.orElse(null);
+  }
+
+  @Override
+  public Boolean getInApplicationSetup() {
+    return getProperty(ServerConfigurationType.IN_APPLICATION_SETUP).orElse(null);
+  }
+
+  @Override
+  public void setInApplicationSetup(Boolean value) {
+    setProperty(ServerConfigurationType.IN_APPLICATION_SETUP, value);
   }
 
   @Override

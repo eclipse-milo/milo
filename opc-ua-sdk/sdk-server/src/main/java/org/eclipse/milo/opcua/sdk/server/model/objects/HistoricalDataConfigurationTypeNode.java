@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -227,6 +227,40 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void setServerTimestampSupported(Boolean value) {
     setProperty(HistoricalDataConfigurationType.SERVER_TIMESTAMP_SUPPORTED, value);
+  }
+
+  @Override
+  public PropertyTypeNode getMaxTimeStoredValuesNode() {
+    Optional<VariableNode> propertyNode =
+        getPropertyNode(HistoricalDataConfigurationType.MAX_TIME_STORED_VALUES);
+    return (PropertyTypeNode) propertyNode.orElse(null);
+  }
+
+  @Override
+  public Double getMaxTimeStoredValues() {
+    return getProperty(HistoricalDataConfigurationType.MAX_TIME_STORED_VALUES).orElse(null);
+  }
+
+  @Override
+  public void setMaxTimeStoredValues(Double value) {
+    setProperty(HistoricalDataConfigurationType.MAX_TIME_STORED_VALUES, value);
+  }
+
+  @Override
+  public PropertyTypeNode getMaxCountStoredValuesNode() {
+    Optional<VariableNode> propertyNode =
+        getPropertyNode(HistoricalDataConfigurationType.MAX_COUNT_STORED_VALUES);
+    return (PropertyTypeNode) propertyNode.orElse(null);
+  }
+
+  @Override
+  public UInteger getMaxCountStoredValues() {
+    return getProperty(HistoricalDataConfigurationType.MAX_COUNT_STORED_VALUES).orElse(null);
+  }
+
+  @Override
+  public void setMaxCountStoredValues(UInteger value) {
+    setProperty(HistoricalDataConfigurationType.MAX_COUNT_STORED_VALUES, value);
   }
 
   @Override

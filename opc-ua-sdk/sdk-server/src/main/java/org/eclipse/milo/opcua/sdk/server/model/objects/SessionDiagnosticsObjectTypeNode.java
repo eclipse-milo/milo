@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.sdk.server.model.objects;
 
 import java.util.Optional;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.SessionDiagnosticsVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.SessionSecurityDiagnosticsTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.SubscriptionDiagnosticsArrayTypeNode;
@@ -79,6 +80,23 @@ public class SessionDiagnosticsObjectTypeNode extends BaseObjectTypeNode
         rolePermissions,
         userRolePermissions,
         accessRestrictions);
+  }
+
+  @Override
+  public PropertyTypeNode getCurrentRoleIdsNode() {
+    Optional<VariableNode> propertyNode =
+        getPropertyNode(SessionDiagnosticsObjectType.CURRENT_ROLE_IDS);
+    return (PropertyTypeNode) propertyNode.orElse(null);
+  }
+
+  @Override
+  public NodeId[] getCurrentRoleIds() {
+    return getProperty(SessionDiagnosticsObjectType.CURRENT_ROLE_IDS).orElse(null);
+  }
+
+  @Override
+  public void setCurrentRoleIds(NodeId[] value) {
+    setProperty(SessionDiagnosticsObjectType.CURRENT_ROLE_IDS, value);
   }
 
   @Override

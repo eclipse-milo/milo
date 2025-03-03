@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -10,9 +10,11 @@
 
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
+import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
 import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
 import org.eclipse.milo.opcua.sdk.server.methods.Out;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -30,6 +32,20 @@ import org.eclipse.milo.opcua.stack.core.util.Lazy;
  *     href="https://reference.opcfoundation.org/v105/Core/docs/Part17/6.3.1">https://reference.opcfoundation.org/v105/Core/docs/Part17/6.3.1</a>
  */
 public interface AliasNameCategoryType extends FolderType {
+  QualifiedProperty<UInteger> LAST_CHANGE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "LastChange",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=20998"),
+          -1,
+          UInteger.class);
+
+  UInteger getLastChange();
+
+  void setLastChange(UInteger value);
+
+  PropertyType getLastChangeNode();
+
   MethodNode getFindAliasMethodNode();
 
   abstract class FindAliasMethod extends AbstractMethodInvocationHandler {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -259,6 +259,22 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   @Override
   public void setConfigurationVersion(UInteger value) {
     setProperty(NamespaceMetadataType.CONFIGURATION_VERSION, value);
+  }
+
+  @Override
+  public PropertyTypeNode getModelVersionNode() {
+    Optional<VariableNode> propertyNode = getPropertyNode(NamespaceMetadataType.MODEL_VERSION);
+    return (PropertyTypeNode) propertyNode.orElse(null);
+  }
+
+  @Override
+  public String getModelVersion() {
+    return getProperty(NamespaceMetadataType.MODEL_VERSION).orElse(null);
+  }
+
+  @Override
+  public void setModelVersion(String value) {
+    setProperty(NamespaceMetadataType.MODEL_VERSION, value);
   }
 
   @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -21,6 +21,7 @@ import org.eclipse.milo.opcua.sdk.server.model.variables.AudioVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.BaseAnalogTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.BaseDataVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.BaseVariableTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.variables.BitFieldTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.BuildInfoTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.CartesianCoordinatesTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.ConditionVariableTypeNode;
@@ -222,6 +223,10 @@ public class VariableTypeInitializer {
         NodeId.parse("i=18791").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
         ThreeDFrameTypeNode.class,
         ThreeDFrameTypeNode::new);
+    variableTypeManager.registerVariableType(
+        NodeId.parse("i=32431").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
+        BitFieldTypeNode.class,
+        BitFieldTypeNode::new);
     variableTypeManager.registerVariableType(
         NodeId.parse("i=2365").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
         DataItemTypeNode.class,

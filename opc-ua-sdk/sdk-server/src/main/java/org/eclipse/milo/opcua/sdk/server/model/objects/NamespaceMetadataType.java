@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -112,6 +112,14 @@ public interface NamespaceMetadataType extends BaseObjectType {
           -1,
           UInteger.class);
 
+  QualifiedProperty<String> MODEL_VERSION =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ModelVersion",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24263"),
+          -1,
+          String.class);
+
   String getNamespaceUri();
 
   void setNamespaceUri(String value);
@@ -177,6 +185,12 @@ public interface NamespaceMetadataType extends BaseObjectType {
   void setConfigurationVersion(UInteger value);
 
   PropertyType getConfigurationVersionNode();
+
+  String getModelVersion();
+
+  void setModelVersion(String value);
+
+  PropertyType getModelVersionNode();
 
   AddressSpaceFileType getNamespaceFileNode();
 }

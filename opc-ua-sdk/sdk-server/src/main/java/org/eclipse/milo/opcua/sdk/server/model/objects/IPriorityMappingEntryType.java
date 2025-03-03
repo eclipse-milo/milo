@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -31,13 +31,13 @@ public interface IPriorityMappingEntryType extends BaseInterfaceType {
 
   void setPriorityLabel(String value);
 
-  BaseDataVariableType getPriorityValue_PCPNode();
+  BaseDataVariableType getPriorityValuePcpNode();
 
   UByte getPriorityValuePcp();
 
   void setPriorityValuePcp(UByte value);
 
-  BaseDataVariableType getPriorityValue_DSCPNode();
+  BaseDataVariableType getPriorityValueDscpNode();
 
   UInteger getPriorityValueDscp();
 

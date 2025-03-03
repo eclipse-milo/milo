@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -125,5 +125,22 @@ public class AuditActivateSessionEventTypeNode extends AuditSessionEventTypeNode
   @Override
   public void setSecureChannelId(String value) {
     setProperty(AuditActivateSessionEventType.SECURE_CHANNEL_ID, value);
+  }
+
+  @Override
+  public PropertyTypeNode getCurrentRoleIdsNode() {
+    Optional<VariableNode> propertyNode =
+        getPropertyNode(AuditActivateSessionEventType.CURRENT_ROLE_IDS);
+    return (PropertyTypeNode) propertyNode.orElse(null);
+  }
+
+  @Override
+  public NodeId[] getCurrentRoleIds() {
+    return getProperty(AuditActivateSessionEventType.CURRENT_ROLE_IDS).orElse(null);
+  }
+
+  @Override
+  public void setCurrentRoleIds(NodeId[] value) {
+    setProperty(AuditActivateSessionEventType.CURRENT_ROLE_IDS, value);
   }
 }

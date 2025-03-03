@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -21,6 +21,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.RedundancySupport;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.RedundantServerDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 
 public class ServerRedundancyTypeNode extends BaseObjectTypeNode implements ServerRedundancyType {
@@ -88,5 +89,22 @@ public class ServerRedundancyTypeNode extends BaseObjectTypeNode implements Serv
   @Override
   public void setRedundancySupport(RedundancySupport value) {
     setProperty(ServerRedundancyType.REDUNDANCY_SUPPORT, value);
+  }
+
+  @Override
+  public PropertyTypeNode getRedundantServerArrayNode() {
+    Optional<VariableNode> propertyNode =
+        getPropertyNode(ServerRedundancyType.REDUNDANT_SERVER_ARRAY);
+    return (PropertyTypeNode) propertyNode.orElse(null);
+  }
+
+  @Override
+  public RedundantServerDataType[] getRedundantServerArray() {
+    return getProperty(ServerRedundancyType.REDUNDANT_SERVER_ARRAY).orElse(null);
+  }
+
+  @Override
+  public void setRedundantServerArray(RedundantServerDataType[] value) {
+    setProperty(ServerRedundancyType.REDUNDANT_SERVER_ARRAY, value);
   }
 }

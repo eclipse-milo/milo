@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -192,6 +192,73 @@ public class PubSubCapabilitiesTypeNode extends BaseObjectTypeNode
   }
 
   @Override
+  public PropertyTypeNode getMaxSecurityGroupsNode() {
+    Optional<VariableNode> propertyNode =
+        getPropertyNode(PubSubCapabilitiesType.MAX_SECURITY_GROUPS);
+    return (PropertyTypeNode) propertyNode.orElse(null);
+  }
+
+  @Override
+  public UInteger getMaxSecurityGroups() {
+    return getProperty(PubSubCapabilitiesType.MAX_SECURITY_GROUPS).orElse(null);
+  }
+
+  @Override
+  public void setMaxSecurityGroups(UInteger value) {
+    setProperty(PubSubCapabilitiesType.MAX_SECURITY_GROUPS, value);
+  }
+
+  @Override
+  public PropertyTypeNode getMaxPushTargetsNode() {
+    Optional<VariableNode> propertyNode = getPropertyNode(PubSubCapabilitiesType.MAX_PUSH_TARGETS);
+    return (PropertyTypeNode) propertyNode.orElse(null);
+  }
+
+  @Override
+  public UInteger getMaxPushTargets() {
+    return getProperty(PubSubCapabilitiesType.MAX_PUSH_TARGETS).orElse(null);
+  }
+
+  @Override
+  public void setMaxPushTargets(UInteger value) {
+    setProperty(PubSubCapabilitiesType.MAX_PUSH_TARGETS, value);
+  }
+
+  @Override
+  public PropertyTypeNode getMaxPublishedDataSetsNode() {
+    Optional<VariableNode> propertyNode =
+        getPropertyNode(PubSubCapabilitiesType.MAX_PUBLISHED_DATA_SETS);
+    return (PropertyTypeNode) propertyNode.orElse(null);
+  }
+
+  @Override
+  public UInteger getMaxPublishedDataSets() {
+    return getProperty(PubSubCapabilitiesType.MAX_PUBLISHED_DATA_SETS).orElse(null);
+  }
+
+  @Override
+  public void setMaxPublishedDataSets(UInteger value) {
+    setProperty(PubSubCapabilitiesType.MAX_PUBLISHED_DATA_SETS, value);
+  }
+
+  @Override
+  public PropertyTypeNode getMaxStandaloneSubscribedDataSetsNode() {
+    Optional<VariableNode> propertyNode =
+        getPropertyNode(PubSubCapabilitiesType.MAX_STANDALONE_SUBSCRIBED_DATA_SETS);
+    return (PropertyTypeNode) propertyNode.orElse(null);
+  }
+
+  @Override
+  public UInteger getMaxStandaloneSubscribedDataSets() {
+    return getProperty(PubSubCapabilitiesType.MAX_STANDALONE_SUBSCRIBED_DATA_SETS).orElse(null);
+  }
+
+  @Override
+  public void setMaxStandaloneSubscribedDataSets(UInteger value) {
+    setProperty(PubSubCapabilitiesType.MAX_STANDALONE_SUBSCRIBED_DATA_SETS, value);
+  }
+
+  @Override
   public PropertyTypeNode getMaxNetworkMessageSizeDatagramNode() {
     Optional<VariableNode> propertyNode =
         getPropertyNode(PubSubCapabilitiesType.MAX_NETWORK_MESSAGE_SIZE_DATAGRAM);
@@ -257,5 +324,22 @@ public class PubSubCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void setSupportSecurityKeyPush(Boolean value) {
     setProperty(PubSubCapabilitiesType.SUPPORT_SECURITY_KEY_PUSH, value);
+  }
+
+  @Override
+  public PropertyTypeNode getSupportSecurityKeyServerNode() {
+    Optional<VariableNode> propertyNode =
+        getPropertyNode(PubSubCapabilitiesType.SUPPORT_SECURITY_KEY_SERVER);
+    return (PropertyTypeNode) propertyNode.orElse(null);
+  }
+
+  @Override
+  public Boolean getSupportSecurityKeyServer() {
+    return getProperty(PubSubCapabilitiesType.SUPPORT_SECURITY_KEY_SERVER).orElse(null);
+  }
+
+  @Override
+  public void setSupportSecurityKeyServer(Boolean value) {
+    setProperty(PubSubCapabilitiesType.SUPPORT_SECURITY_KEY_SERVER, value);
   }
 }

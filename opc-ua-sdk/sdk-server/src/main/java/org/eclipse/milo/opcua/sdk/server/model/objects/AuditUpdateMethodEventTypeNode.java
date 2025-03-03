@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -17,6 +17,7 @@ import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
+import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
@@ -91,6 +92,23 @@ public class AuditUpdateMethodEventTypeNode extends AuditEventTypeNode
   }
 
   @Override
+  public PropertyTypeNode getStatusCodeIdNode() {
+    Optional<VariableNode> propertyNode =
+        getPropertyNode(AuditUpdateMethodEventType.STATUS_CODE_ID);
+    return (PropertyTypeNode) propertyNode.orElse(null);
+  }
+
+  @Override
+  public StatusCode getStatusCodeId() {
+    return getProperty(AuditUpdateMethodEventType.STATUS_CODE_ID).orElse(null);
+  }
+
+  @Override
+  public void setStatusCodeId(StatusCode value) {
+    setProperty(AuditUpdateMethodEventType.STATUS_CODE_ID, value);
+  }
+
+  @Override
   public PropertyTypeNode getInputArgumentsNode() {
     Optional<VariableNode> propertyNode =
         getPropertyNode(AuditUpdateMethodEventType.INPUT_ARGUMENTS);
@@ -105,5 +123,22 @@ public class AuditUpdateMethodEventTypeNode extends AuditEventTypeNode
   @Override
   public void setInputArguments(Object[] value) {
     setProperty(AuditUpdateMethodEventType.INPUT_ARGUMENTS, value);
+  }
+
+  @Override
+  public PropertyTypeNode getOutputArgumentsNode() {
+    Optional<VariableNode> propertyNode =
+        getPropertyNode(AuditUpdateMethodEventType.OUTPUT_ARGUMENTS);
+    return (PropertyTypeNode) propertyNode.orElse(null);
+  }
+
+  @Override
+  public Object[] getOutputArguments() {
+    return getProperty(AuditUpdateMethodEventType.OUTPUT_ARGUMENTS).orElse(null);
+  }
+
+  @Override
+  public void setOutputArguments(Object[] value) {
+    setProperty(AuditUpdateMethodEventType.OUTPUT_ARGUMENTS, value);
   }
 }

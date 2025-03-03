@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -13,30 +13,28 @@ package org.eclipse.milo.opcua.sdk.server.model.objects;
 import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 
 /**
  * @see <a
  *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.37">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.37</a>
  */
 public interface AuditClientUpdateMethodResultEventType extends AuditClientEventType {
-  QualifiedProperty<NodeId> OBJECT_ID =
+  QualifiedProperty<ExpandedNodeId> OBJECT_ID =
       new QualifiedProperty<>(
           "http://opcfoundation.org/UA/",
           "ObjectId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=18"),
           -1,
-          NodeId.class);
+          ExpandedNodeId.class);
 
-  QualifiedProperty<NodeId> METHOD_ID =
+  QualifiedProperty<ExpandedNodeId> METHOD_ID =
       new QualifiedProperty<>(
           "http://opcfoundation.org/UA/",
           "MethodId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=18"),
           -1,
-          NodeId.class);
+          ExpandedNodeId.class);
 
   QualifiedProperty<StatusCode> STATUS_CODE_ID =
       new QualifiedProperty<>(
@@ -46,31 +44,31 @@ public interface AuditClientUpdateMethodResultEventType extends AuditClientEvent
           -1,
           StatusCode.class);
 
-  QualifiedProperty<Argument[]> INPUT_ARGUMENTS =
+  QualifiedProperty<Object[]> INPUT_ARGUMENTS =
       new QualifiedProperty<>(
           "http://opcfoundation.org/UA/",
           "InputArguments",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=296"),
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
           1,
-          Argument[].class);
+          Object[].class);
 
-  QualifiedProperty<Argument[]> OUTPUT_ARGUMENTS =
+  QualifiedProperty<Object[]> OUTPUT_ARGUMENTS =
       new QualifiedProperty<>(
           "http://opcfoundation.org/UA/",
           "OutputArguments",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=296"),
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
           1,
-          Argument[].class);
+          Object[].class);
 
-  NodeId getObjectId();
+  ExpandedNodeId getObjectId();
 
-  void setObjectId(NodeId value);
+  void setObjectId(ExpandedNodeId value);
 
   PropertyType getObjectIdNode();
 
-  NodeId getMethodId();
+  ExpandedNodeId getMethodId();
 
-  void setMethodId(NodeId value);
+  void setMethodId(ExpandedNodeId value);
 
   PropertyType getMethodIdNode();
 
@@ -80,15 +78,15 @@ public interface AuditClientUpdateMethodResultEventType extends AuditClientEvent
 
   PropertyType getStatusCodeIdNode();
 
-  Argument[] getInputArguments();
+  Object[] getInputArguments();
 
-  void setInputArguments(Argument[] value);
+  void setInputArguments(Object[] value);
 
   PropertyType getInputArgumentsNode();
 
-  Argument[] getOutputArguments();
+  Object[] getOutputArguments();
 
-  void setOutputArguments(Argument[] value);
+  void setOutputArguments(Object[] value);
 
   PropertyType getOutputArgumentsNode();
 }

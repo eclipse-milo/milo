@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -18,7 +18,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.6.6">https://reference.opcfoundation.org/v105/Core/docs/Part11/5.6.6</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.8.6">https://reference.opcfoundation.org/v105/Core/docs/Part11/5.8.6</a>
  */
 public interface AuditHistoryRawModifyDeleteEventType extends AuditHistoryDeleteEventType {
   QualifiedProperty<Boolean> IS_DELETE_MODIFIED =

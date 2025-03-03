@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -30,7 +30,7 @@ import org.eclipse.milo.opcua.stack.core.util.Lazy;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.3">https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.3</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.4">https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.4</a>
  */
 public interface ServerConfigurationType extends BaseObjectType {
   QualifiedProperty<String> APPLICATION_URI =
@@ -56,6 +56,14 @@ public interface ServerConfigurationType extends BaseObjectType {
           ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=307"),
           -1,
           ApplicationType.class);
+
+  QualifiedProperty<LocalizedText[]> APPLICATION_NAMES =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ApplicationNames",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
+          1,
+          LocalizedText[].class);
 
   QualifiedProperty<String[]> SERVER_CAPABILITIES =
       new QualifiedProperty<>(
@@ -97,6 +105,22 @@ public interface ServerConfigurationType extends BaseObjectType {
           -1,
           Boolean.class);
 
+  QualifiedProperty<Boolean> SUPPORTS_TRANSACTIONS =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "SupportsTransactions",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          -1,
+          Boolean.class);
+
+  QualifiedProperty<Boolean> IN_APPLICATION_SETUP =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "InApplicationSetup",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          -1,
+          Boolean.class);
+
   String getApplicationUri();
 
   void setApplicationUri(String value);
@@ -114,6 +138,12 @@ public interface ServerConfigurationType extends BaseObjectType {
   void setApplicationType(ApplicationType value);
 
   PropertyType getApplicationTypeNode();
+
+  LocalizedText[] getApplicationNames();
+
+  void setApplicationNames(LocalizedText[] value);
+
+  PropertyType getApplicationNamesNode();
 
   String[] getServerCapabilities();
 
@@ -144,6 +174,18 @@ public interface ServerConfigurationType extends BaseObjectType {
   void setHasSecureElement(Boolean value);
 
   PropertyType getHasSecureElementNode();
+
+  Boolean getSupportsTransactions();
+
+  void setSupportsTransactions(Boolean value);
+
+  PropertyType getSupportsTransactionsNode();
+
+  Boolean getInApplicationSetup();
+
+  void setInApplicationSetup(Boolean value);
+
+  PropertyType getInApplicationSetupNode();
 
   CertificateGroupFolderType getCertificateGroupsNode();
 

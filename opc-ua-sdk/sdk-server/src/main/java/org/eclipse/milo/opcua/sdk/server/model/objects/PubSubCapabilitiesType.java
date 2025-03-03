@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -17,7 +17,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.12">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.12</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.12/#9.1.12.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.12/#9.1.12.1</a>
  */
 public interface PubSubCapabilitiesType extends BaseObjectType {
   QualifiedProperty<UInteger> MAX_PUB_SUB_CONNECTIONS =
@@ -76,6 +76,38 @@ public interface PubSubCapabilitiesType extends BaseObjectType {
           -1,
           UInteger.class);
 
+  QualifiedProperty<UInteger> MAX_SECURITY_GROUPS =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "MaxSecurityGroups",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          -1,
+          UInteger.class);
+
+  QualifiedProperty<UInteger> MAX_PUSH_TARGETS =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "MaxPushTargets",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          -1,
+          UInteger.class);
+
+  QualifiedProperty<UInteger> MAX_PUBLISHED_DATA_SETS =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "MaxPublishedDataSets",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          -1,
+          UInteger.class);
+
+  QualifiedProperty<UInteger> MAX_STANDALONE_SUBSCRIBED_DATA_SETS =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "MaxStandaloneSubscribedDataSets",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          -1,
+          UInteger.class);
+
   QualifiedProperty<UInteger> MAX_NETWORK_MESSAGE_SIZE_DATAGRAM =
       new QualifiedProperty<>(
           "http://opcfoundation.org/UA/",
@@ -104,6 +136,14 @@ public interface PubSubCapabilitiesType extends BaseObjectType {
       new QualifiedProperty<>(
           "http://opcfoundation.org/UA/",
           "SupportSecurityKeyPush",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          -1,
+          Boolean.class);
+
+  QualifiedProperty<Boolean> SUPPORT_SECURITY_KEY_SERVER =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "SupportSecurityKeyServer",
           ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
           -1,
           Boolean.class);
@@ -150,6 +190,30 @@ public interface PubSubCapabilitiesType extends BaseObjectType {
 
   PropertyType getMaxDataSetWritersPerGroupNode();
 
+  UInteger getMaxSecurityGroups();
+
+  void setMaxSecurityGroups(UInteger value);
+
+  PropertyType getMaxSecurityGroupsNode();
+
+  UInteger getMaxPushTargets();
+
+  void setMaxPushTargets(UInteger value);
+
+  PropertyType getMaxPushTargetsNode();
+
+  UInteger getMaxPublishedDataSets();
+
+  void setMaxPublishedDataSets(UInteger value);
+
+  PropertyType getMaxPublishedDataSetsNode();
+
+  UInteger getMaxStandaloneSubscribedDataSets();
+
+  void setMaxStandaloneSubscribedDataSets(UInteger value);
+
+  PropertyType getMaxStandaloneSubscribedDataSetsNode();
+
   UInteger getMaxNetworkMessageSizeDatagram();
 
   void setMaxNetworkMessageSizeDatagram(UInteger value);
@@ -173,4 +237,10 @@ public interface PubSubCapabilitiesType extends BaseObjectType {
   void setSupportSecurityKeyPush(Boolean value);
 
   PropertyType getSupportSecurityKeyPushNode();
+
+  Boolean getSupportSecurityKeyServer();
+
+  void setSupportSecurityKeyServer(Boolean value);
+
+  PropertyType getSupportSecurityKeyServerNode();
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -127,6 +127,23 @@ public class KeyCredentialConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void setEndpointUrls(String[] value) {
     setProperty(KeyCredentialConfigurationType.ENDPOINT_URLS, value);
+  }
+
+  @Override
+  public PropertyTypeNode getCredentialIdNode() {
+    Optional<VariableNode> propertyNode =
+        getPropertyNode(KeyCredentialConfigurationType.CREDENTIAL_ID);
+    return (PropertyTypeNode) propertyNode.orElse(null);
+  }
+
+  @Override
+  public String getCredentialId() {
+    return getProperty(KeyCredentialConfigurationType.CREDENTIAL_ID).orElse(null);
+  }
+
+  @Override
+  public void setCredentialId(String value) {
+    setProperty(KeyCredentialConfigurationType.CREDENTIAL_ID, value);
   }
 
   @Override

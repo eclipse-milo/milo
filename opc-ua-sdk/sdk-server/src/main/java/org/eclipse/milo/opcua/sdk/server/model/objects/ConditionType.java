@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -50,6 +50,22 @@ public interface ConditionType extends BaseEventType {
           ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
           -1,
           LocalizedText.class);
+
+  QualifiedProperty<NodeId[]> CONDITION_SUB_CLASS_ID =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ConditionSubClassId",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
+          1,
+          NodeId[].class);
+
+  QualifiedProperty<LocalizedText[]> CONDITION_SUB_CLASS_NAME =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ConditionSubClassName",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
+          1,
+          LocalizedText[].class);
 
   QualifiedProperty<String> CONDITION_NAME =
       new QualifiedProperty<>(
@@ -102,6 +118,18 @@ public interface ConditionType extends BaseEventType {
   void setConditionClassName(LocalizedText value);
 
   PropertyType getConditionClassNameNode();
+
+  NodeId[] getConditionSubClassId();
+
+  void setConditionSubClassId(NodeId[] value);
+
+  PropertyType getConditionSubClassIdNode();
+
+  LocalizedText[] getConditionSubClassName();
+
+  void setConditionSubClassName(LocalizedText[] value);
+
+  PropertyType getConditionSubClassNameNode();
 
   String getConditionName();
 

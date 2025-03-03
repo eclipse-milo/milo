@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -18,7 +18,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.HistoryEventFieldList;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.6.8">https://reference.opcfoundation.org/v105/Core/docs/Part11/5.6.8</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.8.8">https://reference.opcfoundation.org/v105/Core/docs/Part11/5.8.8</a>
  */
 public interface AuditHistoryEventDeleteEventType extends AuditHistoryDeleteEventType {
   QualifiedProperty<ByteString[]> EVENT_IDS =

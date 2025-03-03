@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -14,6 +14,7 @@ import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.RedundancySupport;
+import org.eclipse.milo.opcua.stack.core.types.structured.RedundantServerDataType;
 
 /**
  * @see <a
@@ -28,9 +29,23 @@ public interface ServerRedundancyType extends BaseObjectType {
           -1,
           RedundancySupport.class);
 
+  QualifiedProperty<RedundantServerDataType[]> REDUNDANT_SERVER_ARRAY =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "RedundantServerArray",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=853"),
+          1,
+          RedundantServerDataType[].class);
+
   RedundancySupport getRedundancySupport();
 
   void setRedundancySupport(RedundancySupport value);
 
   PropertyType getRedundancySupportNode();
+
+  RedundantServerDataType[] getRedundantServerArray();
+
+  void setRedundantServerArray(RedundantServerDataType[] value);
+
+  PropertyType getRedundantServerArrayNode();
 }

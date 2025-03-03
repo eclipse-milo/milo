@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -14,6 +14,7 @@ import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ExceptionDeviationFormat;
 
 /**
@@ -93,6 +94,22 @@ public interface HistoricalDataConfigurationType extends BaseObjectType {
           -1,
           Boolean.class);
 
+  QualifiedProperty<Double> MAX_TIME_STORED_VALUES =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "MaxTimeStoredValues",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
+          -1,
+          Double.class);
+
+  QualifiedProperty<UInteger> MAX_COUNT_STORED_VALUES =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "MaxCountStoredValues",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          -1,
+          UInteger.class);
+
   Boolean getStepped();
 
   void setStepped(Boolean value);
@@ -146,6 +163,18 @@ public interface HistoricalDataConfigurationType extends BaseObjectType {
   void setServerTimestampSupported(Boolean value);
 
   PropertyType getServerTimestampSupportedNode();
+
+  Double getMaxTimeStoredValues();
+
+  void setMaxTimeStoredValues(Double value);
+
+  PropertyType getMaxTimeStoredValuesNode();
+
+  UInteger getMaxCountStoredValues();
+
+  void setMaxCountStoredValues(UInteger value);
+
+  PropertyType getMaxCountStoredValuesNode();
 
   AggregateConfigurationType getAggregateConfigurationNode();
 
