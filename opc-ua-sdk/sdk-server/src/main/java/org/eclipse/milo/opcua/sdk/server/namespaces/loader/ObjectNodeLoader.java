@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -19,6 +19,9 @@ import org.eclipse.milo.opcua.sdk.server.model.objects.AlarmConditionTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.AlarmGroupTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.AliasNameCategoryTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.AliasNameTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.AlternativeUnitTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.ApplicationConfigurationFolderTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.ApplicationConfigurationTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.AuthorizationServiceConfigurationTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.BaseObjectTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.CertificateExpirationAlarmTypeNode;
@@ -43,15 +46,22 @@ import org.eclipse.milo.opcua.sdk.server.model.objects.FileTransferStateMachineT
 import org.eclipse.milo.opcua.sdk.server.model.objects.FileTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.FolderTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.HistoricalDataConfigurationTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.HistoricalEventConfigurationTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.HistoryServerCapabilitiesTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.InitialStateTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.KeyCredentialConfigurationFolderTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.KeyCredentialConfigurationTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.LldpInformationTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.LldpLocalSystemTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.LldpPortInformationTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.LldpRemoteStatisticsTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.LldpRemoteSystemTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ModellingRuleTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.NamespaceMetadataTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.NamespacesTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.NetworkAddressTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.OperationLimitsTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.ProvisionableDeviceTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.PubSubCapabilitiesTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.PubSubConfigurationTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.PubSubConnectionTypeNode;
@@ -66,6 +76,8 @@ import org.eclipse.milo.opcua.sdk.server.model.objects.PubSubKeyPushTargetTypeNo
 import org.eclipse.milo.opcua.sdk.server.model.objects.PubSubStatusTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.PublishSubscribeTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.PublishedDataSetTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.QuantitiesFolderTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.QuantityTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ReaderGroupMessageTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ReaderGroupTransportTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ReaderGroupTypeNode;
@@ -78,6 +90,7 @@ import org.eclipse.milo.opcua.sdk.server.model.objects.ServerConfigurationTypeNo
 import org.eclipse.milo.opcua.sdk.server.model.objects.ServerDiagnosticsTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ServerRedundancyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ServerTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.ServerUnitTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.SessionDiagnosticsObjectTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.SessionsDiagnosticsSummaryTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ShelvedStateMachineTypeNode;
@@ -85,9 +98,11 @@ import org.eclipse.milo.opcua.sdk.server.model.objects.StandaloneSubscribedDataS
 import org.eclipse.milo.opcua.sdk.server.model.objects.StateTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.SubscribedDataSetFolderTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.SubscribedDataSetTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.TransactionDiagnosticsTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.TransitionTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.TrustListOutOfDateAlarmTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.TrustListTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.UnitTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.UserManagementTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.VendorServerInfoTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.WriterGroupMessageTypeNode;
@@ -103,6 +118,8 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.PermissionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 
 class ObjectNodeLoader {
   private final UaNodeContext context;
@@ -121,7 +138,7 @@ class ObjectNodeLoader {
             new NodeId(0, 3062),
             new QualifiedName(0, "Default Binary"),
             new LocalizedText("", "Default Binary"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText("", "The default binary encoding for a data type."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -141,7 +158,7 @@ class ObjectNodeLoader {
               new NodeId(0, 3063),
               new QualifiedName(0, "Default XML"),
               new LocalizedText("", "Default XML"),
-              LocalizedText.NULL_VALUE,
+              new LocalizedText("", "The default XML encoding for a data type."),
               UInteger.valueOf(0),
               UInteger.valueOf(0),
               null,
@@ -162,7 +179,10 @@ class ObjectNodeLoader {
             new NodeId(0, 78),
             new QualifiedName(0, "Mandatory"),
             new LocalizedText("", "Mandatory"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Specifies that an instance with the attributes and references of the instance"
+                    + " declaration must appear when a type is instantiated."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -181,7 +201,10 @@ class ObjectNodeLoader {
             new NodeId(0, 80),
             new QualifiedName(0, "Optional"),
             new LocalizedText("", "Optional"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Specifies that an instance with the attributes and references of the instance"
+                    + " declaration may appear when a type is instantiated."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -200,7 +223,10 @@ class ObjectNodeLoader {
             new NodeId(0, 83),
             new QualifiedName(0, "ExposesItsArray"),
             new LocalizedText("", "ExposesItsArray"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Specifies that an instance appears for each element of the containing array"
+                    + " variable."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -219,7 +245,10 @@ class ObjectNodeLoader {
             new NodeId(0, 11508),
             new QualifiedName(0, "OptionalPlaceholder"),
             new LocalizedText("", "OptionalPlaceholder"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Specifies that zero or more instances with the attributes and references of the"
+                    + " instance declaration may appear when a type is instantiated."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -238,7 +267,10 @@ class ObjectNodeLoader {
             new NodeId(0, 11510),
             new QualifiedName(0, "MandatoryPlaceholder"),
             new LocalizedText("", "MandatoryPlaceholder"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Specifies that one or more instances with the attributes and references of the"
+                    + " instance declaration must appear when a type is instantiated."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -257,7 +289,7 @@ class ObjectNodeLoader {
             new NodeId(0, 84),
             new QualifiedName(0, "Root"),
             new LocalizedText("", "Root"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText("", "The root of the server address space."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -276,7 +308,8 @@ class ObjectNodeLoader {
             new NodeId(0, 85),
             new QualifiedName(0, "Objects"),
             new LocalizedText("", "Objects"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "", "The browse entry point when looking for objects in the server address space."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -297,7 +330,8 @@ class ObjectNodeLoader {
             new NodeId(0, 86),
             new QualifiedName(0, "Types"),
             new LocalizedText("", "Types"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "", "The browse entry point when looking for types in the server address space."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -318,7 +352,8 @@ class ObjectNodeLoader {
             new NodeId(0, 87),
             new QualifiedName(0, "Views"),
             new LocalizedText("", "Views"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "", "The browse entry point when looking for views in the server address space."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -339,7 +374,10 @@ class ObjectNodeLoader {
             new NodeId(0, 88),
             new QualifiedName(0, "ObjectTypes"),
             new LocalizedText("", "ObjectTypes"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "The browse entry point when looking for object types in the server address"
+                    + " space."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -362,7 +400,10 @@ class ObjectNodeLoader {
             new NodeId(0, 89),
             new QualifiedName(0, "VariableTypes"),
             new LocalizedText("", "VariableTypes"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "The browse entry point when looking for variable types in the server address"
+                    + " space."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -385,7 +426,9 @@ class ObjectNodeLoader {
             new NodeId(0, 90),
             new QualifiedName(0, "DataTypes"),
             new LocalizedText("", "DataTypes"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "The browse entry point when looking for data types in the server address space."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -408,7 +451,10 @@ class ObjectNodeLoader {
             new NodeId(0, 91),
             new QualifiedName(0, "ReferenceTypes"),
             new LocalizedText("", "ReferenceTypes"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "The browse entry point when looking for reference types in the server address"
+                    + " space."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -431,7 +477,8 @@ class ObjectNodeLoader {
             new NodeId(0, 92),
             new QualifiedName(0, "XML Schema"),
             new LocalizedText("", "XML Schema"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "", "A type system which uses XML schema to describe the encoding of data types."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -452,7 +499,10 @@ class ObjectNodeLoader {
             new NodeId(0, 93),
             new QualifiedName(0, "OPC Binary"),
             new LocalizedText("", "OPC Binary"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "A type system which uses OPC binary schema to describe the encoding of data"
+                    + " types."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -510,6 +560,9 @@ class ObjectNodeLoader {
     node.addReference(
         new Reference(
             new NodeId(0, 15957), new NodeId(0, 46), new NodeId(0, 16136).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15957), new NodeId(0, 46), new NodeId(0, 32408).expanded(), true));
     node.addReference(
         new Reference(
             new NodeId(0, 15957), new NodeId(0, 47), new NodeId(0, 11715).expanded(), false));
@@ -1063,6 +1116,28 @@ class ObjectNodeLoader {
 
   void loadNode35() {
     var node =
+        new FolderTypeNode(
+            this.context,
+            new NodeId(0, 31915),
+            new QualifiedName(0, "Locations"),
+            new LocalizedText("", "Locations"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 31915), new NodeId(0, 35), new NodeId(0, 85).expanded(), false));
+    node.addReference(
+        new Reference(new NodeId(0, 31915), new NodeId(0, 40), new NodeId(0, 61).expanded(), true));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode36() {
+    var node =
         new ServerTypeNode(
             this.context,
             new NodeId(0, 2253),
@@ -1071,7 +1146,14 @@ class ObjectNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+              new RolePermissionType(
+                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(65423))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65423)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             UByte.valueOf(1));
@@ -1134,7 +1216,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode36() {
+  void loadNode37() {
     var node =
         new ServerCapabilitiesTypeNode(
             this.context,
@@ -1144,7 +1226,14 @@ class ObjectNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+              new RolePermissionType(
+                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(65423))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65423)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             UByte.valueOf(0));
@@ -1213,6 +1302,9 @@ class ObjectNodeLoader {
             new NodeId(0, 2268), new NodeId(0, 46), new NodeId(0, 24100).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 2268), new NodeId(0, 46), new NodeId(0, 31916).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 2268), new NodeId(0, 46), new NodeId(0, 24101).expanded(), true));
     node.addReference(
         new Reference(
@@ -1223,7 +1315,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode37() {
+  void loadNode38() {
     var node =
         new OperationLimitsTypeNode(
             this.context,
@@ -1233,7 +1325,14 @@ class ObjectNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+              new RolePermissionType(
+                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(65423))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65423)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             UByte.valueOf(0));
@@ -1282,7 +1381,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode38() {
+  void loadNode39() {
     var node =
         new FolderTypeNode(
             this.context,
@@ -1292,7 +1391,14 @@ class ObjectNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+              new RolePermissionType(
+                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(65423))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65423)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             UByte.valueOf(0));
@@ -1304,7 +1410,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode39() {
+  void loadNode40() {
     var node =
         new FolderTypeNode(
             this.context,
@@ -1314,7 +1420,14 @@ class ObjectNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+              new RolePermissionType(
+                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(65423))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65423)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             UByte.valueOf(0));
@@ -1326,7 +1439,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode40() {
+  void loadNode41() {
     var node =
         new RoleSetTypeNode(
             this.context,
@@ -1336,7 +1449,11 @@ class ObjectNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(new NodeId(0, 15644), new PermissionType(UInteger.valueOf(1))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65423)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             UByte.valueOf(0));
@@ -1355,7 +1472,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode41() {
+  void loadNode42() {
     var node =
         new ServerDiagnosticsTypeNode(
             this.context,
@@ -1365,7 +1482,14 @@ class ObjectNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+              new RolePermissionType(
+                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(65423))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65423)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             UByte.valueOf(0));
@@ -1393,7 +1517,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode42() {
+  void loadNode43() {
     var node =
         new SessionsDiagnosticsSummaryTypeNode(
             this.context,
@@ -1403,7 +1527,14 @@ class ObjectNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+              new RolePermissionType(
+                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(65423))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65423)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             UByte.valueOf(0));
@@ -1422,7 +1553,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode43() {
+  void loadNode44() {
     var node =
         new VendorServerInfoTypeNode(
             this.context,
@@ -1432,7 +1563,14 @@ class ObjectNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+              new RolePermissionType(
+                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(65423))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65423)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             UByte.valueOf(0));
@@ -1445,7 +1583,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode44() {
+  void loadNode45() {
     var node =
         new ServerRedundancyTypeNode(
             this.context,
@@ -1455,13 +1593,23 @@ class ObjectNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+              new RolePermissionType(
+                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(65423))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65423)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             UByte.valueOf(0));
     node.addReference(
         new Reference(
             new NodeId(0, 2296), new NodeId(0, 46), new NodeId(0, 3709).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 2296), new NodeId(0, 46), new NodeId(0, 11313).expanded(), true));
     node.addReference(
         new Reference(
             new NodeId(0, 2296), new NodeId(0, 40), new NodeId(0, 2034).expanded(), true));
@@ -1471,7 +1619,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode45() {
+  void loadNode46() {
     var node =
         new NamespacesTypeNode(
             this.context,
@@ -1481,7 +1629,14 @@ class ObjectNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+              new RolePermissionType(
+                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(65423))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65423)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             UByte.valueOf(0));
@@ -1494,7 +1649,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode46() {
+  void loadNode47() {
     var node =
         new HistoryServerCapabilitiesTypeNode(
             this.context,
@@ -1565,7 +1720,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode47() {
+  void loadNode48() {
     var node =
         new FolderTypeNode(
             this.context,
@@ -1587,7 +1742,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode48() {
+  void loadNode49() {
     var node =
         new FileDirectoryTypeNode(
             this.context,
@@ -1625,7 +1780,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode49() {
+  void loadNode50() {
     var node =
         new FileTypeNode(
             this.context,
@@ -1681,7 +1836,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode50() {
+  void loadNode51() {
     var node =
         new FileDirectoryTypeNode(
             this.context,
@@ -1713,7 +1868,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode51() {
+  void loadNode52() {
     var node =
         new FileTransferStateMachineTypeNode(
             this.context,
@@ -1745,7 +1900,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode52() {
+  void loadNode53() {
     var node =
         new InitialStateTypeNode(
             this.context,
@@ -1786,7 +1941,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode53() {
+  void loadNode54() {
     var node =
         new StateTypeNode(
             this.context,
@@ -1821,7 +1976,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode54() {
+  void loadNode55() {
     var node =
         new StateTypeNode(
             this.context,
@@ -1856,7 +2011,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode55() {
+  void loadNode56() {
     var node =
         new StateTypeNode(
             this.context,
@@ -1891,7 +2046,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode56() {
+  void loadNode57() {
     var node =
         new StateTypeNode(
             this.context,
@@ -1929,7 +2084,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode57() {
+  void loadNode58() {
     var node =
         new TransitionTypeNode(
             this.context,
@@ -1964,7 +2119,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode58() {
+  void loadNode59() {
     var node =
         new TransitionTypeNode(
             this.context,
@@ -1999,7 +2154,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode59() {
+  void loadNode60() {
     var node =
         new TransitionTypeNode(
             this.context,
@@ -2034,7 +2189,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode60() {
+  void loadNode61() {
     var node =
         new TransitionTypeNode(
             this.context,
@@ -2069,7 +2224,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode61() {
+  void loadNode62() {
     var node =
         new TransitionTypeNode(
             this.context,
@@ -2104,7 +2259,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode62() {
+  void loadNode63() {
     var node =
         new TransitionTypeNode(
             this.context,
@@ -2139,7 +2294,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode63() {
+  void loadNode64() {
     var node =
         new TransitionTypeNode(
             this.context,
@@ -2174,7 +2329,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode64() {
+  void loadNode65() {
     var node =
         new TransitionTypeNode(
             this.context,
@@ -2209,7 +2364,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode65() {
+  void loadNode66() {
     var node =
         new TransitionTypeNode(
             this.context,
@@ -2244,7 +2399,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode66() {
+  void loadNode67() {
     var node =
         new RoleTypeNode(
             this.context,
@@ -2273,53 +2428,30 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode67() {
+  void loadNode68() {
     var node =
         new RoleTypeNode(
             this.context,
             new NodeId(0, 15644),
             new QualifiedName(0, "Anonymous"),
             new LocalizedText("", "Anonymous"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "The Role has very limited access for use when a Session has anonymous"
+                    + " credentials."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(new NodeId(0, 15644), new PermissionType(UInteger.valueOf(1))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65423)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             UByte.valueOf(0));
     node.addReference(
         new Reference(
             new NodeId(0, 15644), new NodeId(0, 46), new NodeId(0, 16192).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 15644), new NodeId(0, 46), new NodeId(0, 15412).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 15644), new NodeId(0, 46), new NodeId(0, 16193).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 15644), new NodeId(0, 46), new NodeId(0, 15413).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 15644), new NodeId(0, 46), new NodeId(0, 16194).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 15644), new NodeId(0, 47), new NodeId(0, 15648).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 15644), new NodeId(0, 47), new NodeId(0, 15650).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 15644), new NodeId(0, 47), new NodeId(0, 16195).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 15644), new NodeId(0, 47), new NodeId(0, 16197).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 15644), new NodeId(0, 47), new NodeId(0, 16199).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 15644), new NodeId(0, 47), new NodeId(0, 16201).expanded(), true));
     node.addReference(
         new Reference(
             new NodeId(0, 15644), new NodeId(0, 47), new NodeId(0, 15606).expanded(), false));
@@ -2329,56 +2461,30 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode68() {
+  void loadNode69() {
     var node =
         new RoleTypeNode(
             this.context,
             new NodeId(0, 15656),
             new QualifiedName(0, "AuthenticatedUser"),
             new LocalizedText("", "AuthenticatedUser"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "The Role has limited access for use when a Session has valid non-anonymous"
+                    + " credentials but has not been explicitly granted access to a Role."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(new NodeId(0, 15644), new PermissionType(UInteger.valueOf(1))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65423)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             UByte.valueOf(0));
     node.addReference(
         new Reference(
             new NodeId(0, 15656), new NodeId(0, 46), new NodeId(0, 16203).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 15656), new NodeId(0, 46), new NodeId(0, 15414).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 15656), new NodeId(0, 46), new NodeId(0, 16204).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 15656), new NodeId(0, 46), new NodeId(0, 15415).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 15656), new NodeId(0, 46), new NodeId(0, 16205).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 15656), new NodeId(0, 46), new NodeId(0, 24141).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 15656), new NodeId(0, 47), new NodeId(0, 15660).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 15656), new NodeId(0, 47), new NodeId(0, 15662).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 15656), new NodeId(0, 47), new NodeId(0, 16206).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 15656), new NodeId(0, 47), new NodeId(0, 16208).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 15656), new NodeId(0, 47), new NodeId(0, 16210).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 15656), new NodeId(0, 47), new NodeId(0, 16212).expanded(), true));
     node.addReference(
         new Reference(
             new NodeId(0, 15656), new NodeId(0, 47), new NodeId(0, 15606).expanded(), false));
@@ -2388,17 +2494,55 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode69() {
+  void loadNode70() {
+    var node =
+        new RoleTypeNode(
+            this.context,
+            new NodeId(0, 18625),
+            new QualifiedName(0, "TrustedApplication"),
+            new LocalizedText("", "TrustedApplication"),
+            new LocalizedText(
+                "", "The Role has limited access for use when a Client has been authenticated."),
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(new NodeId(0, 15644), new PermissionType(UInteger.valueOf(1))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65423)))
+            },
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18625), new NodeId(0, 46), new NodeId(0, 18626).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18625), new NodeId(0, 47), new NodeId(0, 15606).expanded(), false));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18625), new NodeId(0, 40), new NodeId(0, 15620).expanded(), true));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode71() {
     var node =
         new RoleTypeNode(
             this.context,
             new NodeId(0, 15668),
             new QualifiedName(0, "Observer"),
             new LocalizedText("", "Observer"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "The Role is allowed to browse, read live data, read historical data/events or"
+                    + " subscribe to data/events."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(new NodeId(0, 15644), new PermissionType(UInteger.valueOf(1))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65423)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             UByte.valueOf(0));
@@ -2447,17 +2591,24 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode70() {
+  void loadNode72() {
     var node =
         new RoleTypeNode(
             this.context,
             new NodeId(0, 15680),
             new QualifiedName(0, "Operator"),
             new LocalizedText("", "Operator"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "The Role is allowed to browse, read live data, read historical data/events or"
+                    + " subscribe to data/events."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(new NodeId(0, 15644), new PermissionType(UInteger.valueOf(1))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65423)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             UByte.valueOf(0));
@@ -2506,17 +2657,24 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode71() {
+  void loadNode73() {
     var node =
         new RoleTypeNode(
             this.context,
             new NodeId(0, 16036),
             new QualifiedName(0, "Engineer"),
             new LocalizedText("", "Engineer"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "The Role is allowed to browse, read live data, read and update historical"
+                    + " data/events, call methods or subscribe to data/events."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(new NodeId(0, 15644), new PermissionType(UInteger.valueOf(1))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65423)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             UByte.valueOf(0));
@@ -2565,17 +2723,24 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode72() {
+  void loadNode74() {
     var node =
         new RoleTypeNode(
             this.context,
             new NodeId(0, 15692),
             new QualifiedName(0, "Supervisor"),
             new LocalizedText("", "Supervisor"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "The Role is allowed to browse, read live data, read and historical data/events,"
+                    + " call methods or subscribe to data/events."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(new NodeId(0, 15644), new PermissionType(UInteger.valueOf(1))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65423)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             UByte.valueOf(0));
@@ -2624,17 +2789,23 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode73() {
+  void loadNode75() {
     var node =
         new RoleTypeNode(
             this.context,
             new NodeId(0, 15716),
             new QualifiedName(0, "ConfigureAdmin"),
             new LocalizedText("", "ConfigureAdmin"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "The Role is allowed to change the non-security related configuration settings."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(new NodeId(0, 15644), new PermissionType(UInteger.valueOf(1))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65423)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             UByte.valueOf(0));
@@ -2683,17 +2854,21 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode74() {
+  void loadNode76() {
     var node =
         new RoleTypeNode(
             this.context,
             new NodeId(0, 15704),
             new QualifiedName(0, "SecurityAdmin"),
             new LocalizedText("", "SecurityAdmin"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText("", "The Role is allowed to change security related settings."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(new NodeId(0, 15644), new PermissionType(UInteger.valueOf(1))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65423)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             UByte.valueOf(0));
@@ -2742,17 +2917,25 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode75() {
+  void loadNode77() {
     var node =
         new RoleTypeNode(
             this.context,
             new NodeId(0, 25565),
             new QualifiedName(0, "SecurityKeyServerAdmin"),
             new LocalizedText("", "SecurityKeyServerAdmin"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "This Role allows an administrator to manage SecurityGroups and PushTargets on a"
+                    + " SKS. This includes executing methods related to management of"
+                    + " SecurityGroups and PushTargets on an SKS."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(new NodeId(0, 15644), new PermissionType(UInteger.valueOf(1))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65423)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             UByte.valueOf(0));
@@ -2801,76 +2984,25 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode76() {
-    var node =
-        new RoleTypeNode(
-            this.context,
-            new NodeId(0, 25584),
-            new QualifiedName(0, "SecurityKeyServer"),
-            new LocalizedText("", "SecurityKeyServer"),
-            LocalizedText.NULL_VALUE,
-            UInteger.valueOf(0),
-            UInteger.valueOf(0),
-            null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
-            UByte.valueOf(0));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 25584), new NodeId(0, 46), new NodeId(0, 25585).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 25584), new NodeId(0, 46), new NodeId(0, 25586).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 25584), new NodeId(0, 46), new NodeId(0, 25587).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 25584), new NodeId(0, 46), new NodeId(0, 25588).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 25584), new NodeId(0, 46), new NodeId(0, 25589).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 25584), new NodeId(0, 46), new NodeId(0, 25590).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 25584), new NodeId(0, 47), new NodeId(0, 25591).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 25584), new NodeId(0, 47), new NodeId(0, 25593).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 25584), new NodeId(0, 47), new NodeId(0, 25595).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 25584), new NodeId(0, 47), new NodeId(0, 25597).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 25584), new NodeId(0, 47), new NodeId(0, 25599).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 25584), new NodeId(0, 47), new NodeId(0, 25601).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 25584), new NodeId(0, 47), new NodeId(0, 15606).expanded(), false));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 25584), new NodeId(0, 40), new NodeId(0, 15620).expanded(), true));
-    this.nodeManager.addNode(node);
-  }
-
-  void loadNode77() {
+  void loadNode78() {
     var node =
         new RoleTypeNode(
             this.context,
             new NodeId(0, 25603),
-            new QualifiedName(0, "SecurityKeyAccess"),
-            new LocalizedText("", "SecurityKeyAccess"),
-            LocalizedText.NULL_VALUE,
+            new QualifiedName(0, "SecurityKeyServerAccess"),
+            new LocalizedText("", "SecurityKeyServerAccess"),
+            new LocalizedText(
+                "",
+                "This Role allows a PubSub Application to access an SKS to pull keys. It is the"
+                    + " default Role for pull but it is expected that different custom Roles are"
+                    + " used for different SecurityGroups."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(new NodeId(0, 15644), new PermissionType(UInteger.valueOf(1))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65423)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             UByte.valueOf(0));
@@ -2919,7 +3051,73 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode78() {
+  void loadNode79() {
+    var node =
+        new RoleTypeNode(
+            this.context,
+            new NodeId(0, 25584),
+            new QualifiedName(0, "SecurityKeyServerPush"),
+            new LocalizedText("", "SecurityKeyServerPush"),
+            new LocalizedText(
+                "",
+                "This Role allows an SKS to push security keys to PubSub Applications. This"
+                    + " includes executing methods related to PubSub security."),
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(new NodeId(0, 15644), new PermissionType(UInteger.valueOf(1))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65423)))
+            },
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25584), new NodeId(0, 46), new NodeId(0, 25585).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25584), new NodeId(0, 46), new NodeId(0, 25586).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25584), new NodeId(0, 46), new NodeId(0, 25587).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25584), new NodeId(0, 46), new NodeId(0, 25588).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25584), new NodeId(0, 46), new NodeId(0, 25589).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25584), new NodeId(0, 46), new NodeId(0, 25590).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25584), new NodeId(0, 47), new NodeId(0, 25591).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25584), new NodeId(0, 47), new NodeId(0, 25593).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25584), new NodeId(0, 47), new NodeId(0, 25595).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25584), new NodeId(0, 47), new NodeId(0, 25597).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25584), new NodeId(0, 47), new NodeId(0, 25599).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25584), new NodeId(0, 47), new NodeId(0, 25601).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25584), new NodeId(0, 47), new NodeId(0, 15606).expanded(), false));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25584), new NodeId(0, 40), new NodeId(0, 15620).expanded(), true));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode80() {
     var node =
         new DictionaryEntryTypeNode(
             this.context,
@@ -2945,7 +3143,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode79() {
+  void loadNode81() {
     var node =
         new DictionaryFolderTypeNode(
             this.context,
@@ -2971,7 +3169,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode80() {
+  void loadNode82() {
     var node =
         new DictionaryEntryTypeNode(
             this.context,
@@ -2997,7 +3195,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode81() {
+  void loadNode83() {
     var node =
         new DictionaryFolderTypeNode(
             this.context,
@@ -3020,7 +3218,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode82() {
+  void loadNode84() {
     var node =
         new FolderTypeNode(
             this.context,
@@ -3045,7 +3243,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode83() {
+  void loadNode85() {
     var node =
         new BaseObjectTypeNode(
             this.context,
@@ -3076,7 +3274,241 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode84() {
+  void loadNode86() {
+    var node =
+        new BaseObjectTypeNode(
+            this.context,
+            new NodeId(0, 32452),
+            new QualifiedName(0, "AlternativeUnits"),
+            new LocalizedText("", "AlternativeUnits"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32452), new NodeId(0, 47), new NodeId(0, 32587).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 32452), new NodeId(0, 40), new NodeId(0, 58).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 32452), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32452), new NodeId(0, 47), new NodeId(0, 32447).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode87() {
+    var node =
+        new AlternativeUnitTypeNode(
+            this.context,
+            new NodeId(0, 32587),
+            new QualifiedName(0, "<AlternativeUnit>"),
+            new LocalizedText("", "<AlternativeUnit>"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32587), new NodeId(0, 46), new NodeId(0, 32588).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32587), new NodeId(0, 46), new NodeId(0, 32590).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32587), new NodeId(0, 40), new NodeId(0, 32467).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32587), new NodeId(0, 37), new NodeId(0, 11510).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32587), new NodeId(0, 47), new NodeId(0, 32452).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode88() {
+    var node =
+        new UnitTypeNode(
+            this.context,
+            new NodeId(0, 32462),
+            new QualifiedName(0, "CoherentUnit"),
+            new LocalizedText("", "CoherentUnit"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32462), new NodeId(0, 46), new NodeId(0, 32463).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32462), new NodeId(0, 46), new NodeId(0, 32465).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32462), new NodeId(0, 40), new NodeId(0, 32442).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 32462), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32462), new NodeId(0, 47), new NodeId(0, 32447).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode89() {
+    var node =
+        new BaseObjectTypeNode(
+            this.context,
+            new NodeId(0, 32481),
+            new QualifiedName(0, "ServerUnits"),
+            new LocalizedText("", "ServerUnits"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32481), new NodeId(0, 47), new NodeId(0, 32482).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 32481), new NodeId(0, 40), new NodeId(0, 58).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 32481), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32481), new NodeId(0, 47), new NodeId(0, 32475).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode90() {
+    var node =
+        new ServerUnitTypeNode(
+            this.context,
+            new NodeId(0, 32482),
+            new QualifiedName(0, "<ServerUnit>"),
+            new LocalizedText("", "<ServerUnit>"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32482), new NodeId(0, 46), new NodeId(0, 32483).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32482), new NodeId(0, 46), new NodeId(0, 32485).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32482), new NodeId(0, 46), new NodeId(0, 32496).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32482), new NodeId(0, 40), new NodeId(0, 32447).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32482), new NodeId(0, 37), new NodeId(0, 11510).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32482), new NodeId(0, 47), new NodeId(0, 32481).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode91() {
+    var node =
+        new QuantityTypeNode(
+            this.context,
+            new NodeId(0, 32503),
+            new QualifiedName(0, "<Quantity>"),
+            new LocalizedText("", "<Quantity>"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32503), new NodeId(0, 46), new NodeId(0, 32508).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32503), new NodeId(0, 47), new NodeId(0, 32509).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32503), new NodeId(0, 40), new NodeId(0, 32475).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32503), new NodeId(0, 37), new NodeId(0, 11508).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32503), new NodeId(0, 35), new NodeId(0, 32502).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode92() {
+    var node =
+        new BaseObjectTypeNode(
+            this.context,
+            new NodeId(0, 32509),
+            new QualifiedName(0, "ServerUnits"),
+            new LocalizedText("", "ServerUnits"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(new NodeId(0, 32509), new NodeId(0, 40), new NodeId(0, 58).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 32509), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32509), new NodeId(0, 47), new NodeId(0, 32503).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode93() {
+    var node =
+        new QuantitiesFolderTypeNode(
+            this.context,
+            new NodeId(0, 32530),
+            new QualifiedName(0, "Quantities"),
+            new LocalizedText("", "Quantities"),
+            new LocalizedText(
+                "",
+                "This Object is the entry point to quantities and their units managed in the"
+                    + " Server."),
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32530), new NodeId(0, 35), new NodeId(0, 2253).expanded(), false));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32530), new NodeId(0, 40), new NodeId(0, 32502).expanded(), true));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode94() {
     var node =
         new ShelvedStateMachineTypeNode(
             this.context,
@@ -3122,7 +3554,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode85() {
+  void loadNode95() {
     var node =
         new AlarmGroupTypeNode(
             this.context,
@@ -3147,7 +3579,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode86() {
+  void loadNode96() {
     var node =
         new AlarmGroupTypeNode(
             this.context,
@@ -3173,7 +3605,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode87() {
+  void loadNode97() {
     var node =
         new AlarmConditionTypeNode(
             this.context,
@@ -3277,7 +3709,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode88() {
+  void loadNode98() {
     var node =
         new StateTypeNode(
             this.context,
@@ -3315,7 +3747,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode89() {
+  void loadNode99() {
     var node =
         new StateTypeNode(
             this.context,
@@ -3353,7 +3785,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode90() {
+  void loadNode100() {
     var node =
         new StateTypeNode(
             this.context,
@@ -3391,7 +3823,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode91() {
+  void loadNode101() {
     var node =
         new TransitionTypeNode(
             this.context,
@@ -3432,7 +3864,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode92() {
+  void loadNode102() {
     var node =
         new TransitionTypeNode(
             this.context,
@@ -3473,7 +3905,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode93() {
+  void loadNode103() {
     var node =
         new TransitionTypeNode(
             this.context,
@@ -3514,7 +3946,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode94() {
+  void loadNode104() {
     var node =
         new TransitionTypeNode(
             this.context,
@@ -3555,7 +3987,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode95() {
+  void loadNode105() {
     var node =
         new TransitionTypeNode(
             this.context,
@@ -3596,7 +4028,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode96() {
+  void loadNode106() {
     var node =
         new TransitionTypeNode(
             this.context,
@@ -3637,7 +4069,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode97() {
+  void loadNode107() {
     var node =
         new StateTypeNode(
             this.context,
@@ -3669,7 +4101,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode98() {
+  void loadNode108() {
     var node =
         new StateTypeNode(
             this.context,
@@ -3701,7 +4133,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode99() {
+  void loadNode109() {
     var node =
         new StateTypeNode(
             this.context,
@@ -3733,7 +4165,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode100() {
+  void loadNode110() {
     var node =
         new StateTypeNode(
             this.context,
@@ -3765,7 +4197,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode101() {
+  void loadNode111() {
     var node =
         new TransitionTypeNode(
             this.context,
@@ -3800,7 +4232,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode102() {
+  void loadNode112() {
     var node =
         new TransitionTypeNode(
             this.context,
@@ -3835,7 +4267,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode103() {
+  void loadNode113() {
     var node =
         new TransitionTypeNode(
             this.context,
@@ -3870,7 +4302,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode104() {
+  void loadNode114() {
     var node =
         new TransitionTypeNode(
             this.context,
@@ -3905,7 +4337,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode105() {
+  void loadNode115() {
     var node =
         new ExclusiveLimitStateMachineTypeNode(
             this.context,
@@ -3939,7 +4371,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode106() {
+  void loadNode116() {
     var node =
         new BaseObjectTypeNode(
             this.context,
@@ -3963,7 +4395,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode107() {
+  void loadNode117() {
     var node =
         new StateTypeNode(
             this.context,
@@ -4001,7 +4433,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode108() {
+  void loadNode118() {
     var node =
         new StateTypeNode(
             this.context,
@@ -4042,7 +4474,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode109() {
+  void loadNode119() {
     var node =
         new StateTypeNode(
             this.context,
@@ -4083,7 +4515,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode110() {
+  void loadNode120() {
     var node =
         new StateTypeNode(
             this.context,
@@ -4121,7 +4553,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode111() {
+  void loadNode121() {
     var node =
         new TransitionTypeNode(
             this.context,
@@ -4162,7 +4594,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode112() {
+  void loadNode122() {
     var node =
         new TransitionTypeNode(
             this.context,
@@ -4203,7 +4635,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode113() {
+  void loadNode123() {
     var node =
         new TransitionTypeNode(
             this.context,
@@ -4244,7 +4676,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode114() {
+  void loadNode124() {
     var node =
         new TransitionTypeNode(
             this.context,
@@ -4282,7 +4714,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode115() {
+  void loadNode125() {
     var node =
         new TransitionTypeNode(
             this.context,
@@ -4323,7 +4755,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode116() {
+  void loadNode126() {
     var node =
         new TransitionTypeNode(
             this.context,
@@ -4364,7 +4796,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode117() {
+  void loadNode127() {
     var node =
         new TransitionTypeNode(
             this.context,
@@ -4408,7 +4840,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode118() {
+  void loadNode128() {
     var node =
         new TransitionTypeNode(
             this.context,
@@ -4449,7 +4881,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode119() {
+  void loadNode129() {
     var node =
         new TransitionTypeNode(
             this.context,
@@ -4490,7 +4922,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode120() {
+  void loadNode130() {
     var node =
         new AggregateConfigurationTypeNode(
             this.context,
@@ -4527,7 +4959,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode121() {
+  void loadNode131() {
     var node =
         new FolderTypeNode(
             this.context,
@@ -4551,7 +4983,31 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode122() {
+  void loadNode132() {
+    var node =
+        new FolderTypeNode(
+            this.context,
+            new NodeId(0, 32622),
+            new QualifiedName(0, "EventTypes"),
+            new LocalizedText("", "EventTypes"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(new NodeId(0, 32622), new NodeId(0, 40), new NodeId(0, 61).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 32622), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32622), new NodeId(0, 47), new NodeId(0, 32621).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode133() {
     var node =
         new HistoricalDataConfigurationTypeNode(
             this.context,
@@ -4577,7 +5033,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode123() {
+  void loadNode134() {
     var node =
         new AggregateConfigurationTypeNode(
             this.context,
@@ -4612,7 +5068,180 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode124() {
+  void loadNode135() {
+    var node =
+        new HistoricalDataConfigurationTypeNode(
+            this.context,
+            new NodeId(0, 32637),
+            new QualifiedName(0, "DefaultHAConfiguration"),
+            new LocalizedText("", "DefaultHAConfiguration"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32637), new NodeId(0, 47), new NodeId(0, 32638).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32637), new NodeId(0, 47), new NodeId(0, 32643).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32637), new NodeId(0, 46), new NodeId(0, 32644).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32637), new NodeId(0, 46), new NodeId(0, 32645).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32637), new NodeId(0, 46), new NodeId(0, 32646).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32637), new NodeId(0, 46), new NodeId(0, 32647).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32637), new NodeId(0, 46), new NodeId(0, 32648).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32637), new NodeId(0, 46), new NodeId(0, 32649).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32637), new NodeId(0, 46), new NodeId(0, 32650).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32637), new NodeId(0, 46), new NodeId(0, 32656).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32637), new NodeId(0, 46), new NodeId(0, 32682).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32637), new NodeId(0, 46), new NodeId(0, 32752).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32637), new NodeId(0, 46), new NodeId(0, 32753).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32637), new NodeId(0, 35), new NodeId(0, 2253).expanded(), false));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32637), new NodeId(0, 40), new NodeId(0, 2318).expanded(), true));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode136() {
+    var node =
+        new AggregateConfigurationTypeNode(
+            this.context,
+            new NodeId(0, 32638),
+            new QualifiedName(0, "AggregateConfiguration"),
+            new LocalizedText("", "AggregateConfiguration"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32638), new NodeId(0, 46), new NodeId(0, 32639).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32638), new NodeId(0, 46), new NodeId(0, 32640).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32638), new NodeId(0, 46), new NodeId(0, 32641).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32638), new NodeId(0, 46), new NodeId(0, 32642).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32638), new NodeId(0, 40), new NodeId(0, 11187).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32638), new NodeId(0, 47), new NodeId(0, 32637).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode137() {
+    var node =
+        new FolderTypeNode(
+            this.context,
+            new NodeId(0, 32643),
+            new QualifiedName(0, "AggregateFunctions"),
+            new LocalizedText("", "AggregateFunctions"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(new NodeId(0, 32643), new NodeId(0, 40), new NodeId(0, 61).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32643), new NodeId(0, 47), new NodeId(0, 32637).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode138() {
+    var node =
+        new HistoricalEventConfigurationTypeNode(
+            this.context,
+            new NodeId(0, 32754),
+            new QualifiedName(0, "DefaultHEConfiguration"),
+            new LocalizedText("", "DefaultHEConfiguration"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32754), new NodeId(0, 47), new NodeId(0, 32755).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32754), new NodeId(0, 46), new NodeId(0, 32756).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32754), new NodeId(0, 46), new NodeId(0, 32757).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32754), new NodeId(0, 35), new NodeId(0, 2253).expanded(), false));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32754), new NodeId(0, 40), new NodeId(0, 32621).expanded(), true));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode139() {
+    var node =
+        new FolderTypeNode(
+            this.context,
+            new NodeId(0, 32755),
+            new QualifiedName(0, "EventTypes"),
+            new LocalizedText("", "EventTypes"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(new NodeId(0, 32755), new NodeId(0, 40), new NodeId(0, 61).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32755), new NodeId(0, 47), new NodeId(0, 32754).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode140() {
     var node =
         new FolderTypeNode(
             this.context,
@@ -4636,7 +5265,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode125() {
+  void loadNode141() {
     var node =
         new TrustListTypeNode(
             this.context,
@@ -4688,6 +5317,15 @@ class ObjectNodeLoader {
             new NodeId(0, 13599), new NodeId(0, 47), new NodeId(0, 13621).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 13599), new NodeId(0, 47), new NodeId(0, 13624).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13599), new NodeId(0, 47), new NodeId(0, 13627).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13599), new NodeId(0, 47), new NodeId(0, 13629).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 13599), new NodeId(0, 40), new NodeId(0, 12522).expanded(), true));
     node.addReference(
         new Reference(new NodeId(0, 13599), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
@@ -4697,7 +5335,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode126() {
+  void loadNode142() {
     var node =
         new CertificateExpirationAlarmTypeNode(
             this.context,
@@ -4812,7 +5450,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode127() {
+  void loadNode143() {
     var node =
         new TrustListOutOfDateAlarmTypeNode(
             this.context,
@@ -4927,7 +5565,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode128() {
+  void loadNode144() {
     var node =
         new CertificateGroupTypeNode(
             this.context,
@@ -4949,16 +5587,19 @@ class ObjectNodeLoader {
             new NodeId(0, 13814), new NodeId(0, 46), new NodeId(0, 13847).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 13814), new NodeId(0, 9006), new NodeId(0, 13225).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 13814), new NodeId(0, 40), new NodeId(0, 12555).expanded(), true));
     node.addReference(
         new Reference(new NodeId(0, 13814), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13814), new NodeId(0, 35), new NodeId(0, 13813).expanded(), false));
+            new NodeId(0, 13814), new NodeId(0, 47), new NodeId(0, 13813).expanded(), false));
     this.nodeManager.addNode(node);
   }
 
-  void loadNode129() {
+  void loadNode145() {
     var node =
         new TrustListTypeNode(
             this.context,
@@ -5010,6 +5651,15 @@ class ObjectNodeLoader {
             new NodeId(0, 13815), new NodeId(0, 47), new NodeId(0, 13837).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 13815), new NodeId(0, 47), new NodeId(0, 13840).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13815), new NodeId(0, 47), new NodeId(0, 13843).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13815), new NodeId(0, 47), new NodeId(0, 13845).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 13815), new NodeId(0, 40), new NodeId(0, 12522).expanded(), true));
     node.addReference(
         new Reference(new NodeId(0, 13815), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
@@ -5019,7 +5669,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode130() {
+  void loadNode146() {
     var node =
         new CertificateGroupTypeNode(
             this.context,
@@ -5041,16 +5691,19 @@ class ObjectNodeLoader {
             new NodeId(0, 13848), new NodeId(0, 46), new NodeId(0, 13881).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 13848), new NodeId(0, 9006), new NodeId(0, 13225).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 13848), new NodeId(0, 40), new NodeId(0, 12555).expanded(), true));
     node.addReference(
         new Reference(new NodeId(0, 13848), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13848), new NodeId(0, 35), new NodeId(0, 13813).expanded(), false));
+            new NodeId(0, 13848), new NodeId(0, 47), new NodeId(0, 13813).expanded(), false));
     this.nodeManager.addNode(node);
   }
 
-  void loadNode131() {
+  void loadNode147() {
     var node =
         new TrustListTypeNode(
             this.context,
@@ -5102,6 +5755,15 @@ class ObjectNodeLoader {
             new NodeId(0, 13849), new NodeId(0, 47), new NodeId(0, 13871).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 13849), new NodeId(0, 47), new NodeId(0, 13874).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13849), new NodeId(0, 47), new NodeId(0, 13877).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13849), new NodeId(0, 47), new NodeId(0, 13879).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 13849), new NodeId(0, 40), new NodeId(0, 12522).expanded(), true));
     node.addReference(
         new Reference(new NodeId(0, 13849), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
@@ -5111,7 +5773,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode132() {
+  void loadNode148() {
     var node =
         new CertificateGroupTypeNode(
             this.context,
@@ -5133,16 +5795,19 @@ class ObjectNodeLoader {
             new NodeId(0, 13882), new NodeId(0, 46), new NodeId(0, 13915).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 13882), new NodeId(0, 9006), new NodeId(0, 13225).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 13882), new NodeId(0, 40), new NodeId(0, 12555).expanded(), true));
     node.addReference(
         new Reference(new NodeId(0, 13882), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13882), new NodeId(0, 35), new NodeId(0, 13813).expanded(), false));
+            new NodeId(0, 13882), new NodeId(0, 47), new NodeId(0, 13813).expanded(), false));
     this.nodeManager.addNode(node);
   }
 
-  void loadNode133() {
+  void loadNode149() {
     var node =
         new TrustListTypeNode(
             this.context,
@@ -5194,6 +5859,15 @@ class ObjectNodeLoader {
             new NodeId(0, 13883), new NodeId(0, 47), new NodeId(0, 13905).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 13883), new NodeId(0, 47), new NodeId(0, 13908).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13883), new NodeId(0, 47), new NodeId(0, 13911).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13883), new NodeId(0, 47), new NodeId(0, 13913).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 13883), new NodeId(0, 40), new NodeId(0, 12522).expanded(), true));
     node.addReference(
         new Reference(new NodeId(0, 13883), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
@@ -5203,7 +5877,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode134() {
+  void loadNode150() {
     var node =
         new CertificateGroupTypeNode(
             this.context,
@@ -5225,6 +5899,9 @@ class ObjectNodeLoader {
             new NodeId(0, 13916), new NodeId(0, 46), new NodeId(0, 13949).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 13916), new NodeId(0, 9006), new NodeId(0, 13225).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 13916), new NodeId(0, 40), new NodeId(0, 12555).expanded(), true));
     node.addReference(
         new Reference(
@@ -5235,7 +5912,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode135() {
+  void loadNode151() {
     var node =
         new TrustListTypeNode(
             this.context,
@@ -5287,6 +5964,15 @@ class ObjectNodeLoader {
             new NodeId(0, 13917), new NodeId(0, 47), new NodeId(0, 13939).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 13917), new NodeId(0, 47), new NodeId(0, 13942).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13917), new NodeId(0, 47), new NodeId(0, 13945).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13917), new NodeId(0, 47), new NodeId(0, 13947).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 13917), new NodeId(0, 40), new NodeId(0, 12522).expanded(), true));
     node.addReference(
         new Reference(new NodeId(0, 13917), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
@@ -5296,7 +5982,224 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode136() {
+  void loadNode152() {
+    var node =
+        new ApplicationConfigurationTypeNode(
+            this.context,
+            new NodeId(0, 16663),
+            new QualifiedName(0, "<ApplicationName>"),
+            new LocalizedText("", "<ApplicationName>"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16663), new NodeId(0, 47), new NodeId(0, 16707).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16663), new NodeId(0, 46), new NodeId(0, 18525).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16663), new NodeId(0, 46), new NodeId(0, 18526).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16663), new NodeId(0, 46), new NodeId(0, 18527).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16663), new NodeId(0, 46), new NodeId(0, 18528).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16663), new NodeId(0, 46), new NodeId(0, 18529).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16663), new NodeId(0, 46), new NodeId(0, 18530).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16663), new NodeId(0, 46), new NodeId(0, 18531).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16663), new NodeId(0, 47), new NodeId(0, 18533).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16663), new NodeId(0, 47), new NodeId(0, 18539).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16663), new NodeId(0, 47), new NodeId(0, 18541).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16663), new NodeId(0, 47), new NodeId(0, 18544).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16663), new NodeId(0, 46), new NodeId(0, 18592).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16663), new NodeId(0, 40), new NodeId(0, 25731).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16663), new NodeId(0, 37), new NodeId(0, 11508).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16663), new NodeId(0, 35), new NodeId(0, 16662).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode153() {
+    var node =
+        new CertificateGroupFolderTypeNode(
+            this.context,
+            new NodeId(0, 16707),
+            new QualifiedName(0, "CertificateGroups"),
+            new LocalizedText("", "CertificateGroups"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16707), new NodeId(0, 47), new NodeId(0, 16708).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16707), new NodeId(0, 40), new NodeId(0, 13813).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 16707), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16707), new NodeId(0, 47), new NodeId(0, 16663).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode154() {
+    var node =
+        new CertificateGroupTypeNode(
+            this.context,
+            new NodeId(0, 16708),
+            new QualifiedName(0, "DefaultApplicationGroup"),
+            new LocalizedText("", "DefaultApplicationGroup"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16708), new NodeId(0, 47), new NodeId(0, 16709).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16708), new NodeId(0, 46), new NodeId(0, 16751).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16708), new NodeId(0, 40), new NodeId(0, 12555).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 16708), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16708), new NodeId(0, 47), new NodeId(0, 16707).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode155() {
+    var node =
+        new TrustListTypeNode(
+            this.context,
+            new NodeId(0, 16709),
+            new QualifiedName(0, "TrustList"),
+            new LocalizedText("", "TrustList"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16709), new NodeId(0, 46), new NodeId(0, 16710).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16709), new NodeId(0, 46), new NodeId(0, 16711).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16709), new NodeId(0, 46), new NodeId(0, 16712).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16709), new NodeId(0, 46), new NodeId(0, 16713).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16709), new NodeId(0, 47), new NodeId(0, 16717).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16709), new NodeId(0, 47), new NodeId(0, 16724).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16709), new NodeId(0, 47), new NodeId(0, 16726).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16709), new NodeId(0, 47), new NodeId(0, 16729).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16709), new NodeId(0, 47), new NodeId(0, 16732).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16709), new NodeId(0, 47), new NodeId(0, 16735).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16709), new NodeId(0, 46), new NodeId(0, 16737).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16709), new NodeId(0, 47), new NodeId(0, 16741).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16709), new NodeId(0, 47), new NodeId(0, 16744).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16709), new NodeId(0, 47), new NodeId(0, 16747).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16709), new NodeId(0, 47), new NodeId(0, 16749).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16709), new NodeId(0, 40), new NodeId(0, 12522).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 16709), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16709), new NodeId(0, 47), new NodeId(0, 16708).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode156() {
+    var node =
+        new ApplicationConfigurationFolderTypeNode(
+            this.context,
+            new NodeId(0, 16706),
+            new QualifiedName(0, "ManagedApplications"),
+            new LocalizedText("", "ManagedApplications"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16706), new NodeId(0, 35), new NodeId(0, 24226).expanded(), false));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16706), new NodeId(0, 40), new NodeId(0, 16662).expanded(), true));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode157() {
     var node =
         new CertificateGroupFolderTypeNode(
             this.context,
@@ -5312,7 +6215,7 @@ class ObjectNodeLoader {
             UByte.valueOf(0));
     node.addReference(
         new Reference(
-            new NodeId(0, 13950), new NodeId(0, 35), new NodeId(0, 13951).expanded(), true));
+            new NodeId(0, 13950), new NodeId(0, 47), new NodeId(0, 13951).expanded(), true));
     node.addReference(
         new Reference(
             new NodeId(0, 13950), new NodeId(0, 40), new NodeId(0, 13813).expanded(), true));
@@ -5324,7 +6227,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode137() {
+  void loadNode158() {
     var node =
         new CertificateGroupTypeNode(
             this.context,
@@ -5346,16 +6249,19 @@ class ObjectNodeLoader {
             new NodeId(0, 13951), new NodeId(0, 46), new NodeId(0, 13984).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 13951), new NodeId(0, 9006), new NodeId(0, 13225).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 13951), new NodeId(0, 40), new NodeId(0, 12555).expanded(), true));
     node.addReference(
         new Reference(new NodeId(0, 13951), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13951), new NodeId(0, 35), new NodeId(0, 13950).expanded(), false));
+            new NodeId(0, 13951), new NodeId(0, 47), new NodeId(0, 13950).expanded(), false));
     this.nodeManager.addNode(node);
   }
 
-  void loadNode138() {
+  void loadNode159() {
     var node =
         new TrustListTypeNode(
             this.context,
@@ -5407,6 +6313,15 @@ class ObjectNodeLoader {
             new NodeId(0, 13952), new NodeId(0, 47), new NodeId(0, 13974).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 13952), new NodeId(0, 47), new NodeId(0, 13977).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13952), new NodeId(0, 47), new NodeId(0, 13980).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13952), new NodeId(0, 47), new NodeId(0, 13982).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 13952), new NodeId(0, 40), new NodeId(0, 12522).expanded(), true));
     node.addReference(
         new Reference(new NodeId(0, 13952), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
@@ -5416,13 +6331,13 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode139() {
+  void loadNode160() {
     var node =
-        new ServerConfigurationTypeNode(
+        new TransactionDiagnosticsTypeNode(
             this.context,
-            new NodeId(0, 12637),
-            new QualifiedName(0, "ServerConfiguration"),
-            new LocalizedText("", "ServerConfiguration"),
+            new NodeId(0, 32299),
+            new QualifiedName(0, "TransactionDiagnostics"),
+            new LocalizedText("", "TransactionDiagnostics"),
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
@@ -5432,7 +6347,65 @@ class ObjectNodeLoader {
             UByte.valueOf(0));
     node.addReference(
         new Reference(
+            new NodeId(0, 32299), new NodeId(0, 46), new NodeId(0, 32300).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32299), new NodeId(0, 46), new NodeId(0, 32301).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32299), new NodeId(0, 46), new NodeId(0, 32302).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32299), new NodeId(0, 46), new NodeId(0, 32303).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32299), new NodeId(0, 46), new NodeId(0, 32304).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32299), new NodeId(0, 46), new NodeId(0, 32305).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32299), new NodeId(0, 40), new NodeId(0, 32286).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 32299), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32299), new NodeId(0, 47), new NodeId(0, 12581).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode161() {
+    var node =
+        new ServerConfigurationTypeNode(
+            this.context,
+            new NodeId(0, 12637),
+            new QualifiedName(0, "ServerConfiguration"),
+            new LocalizedText("", "ServerConfiguration"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(new NodeId(0, 15644), new PermissionType(UInteger.valueOf(1))),
+              new RolePermissionType(
+                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(65423))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65423)))
+            },
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
             new NodeId(0, 12637), new NodeId(0, 47), new NodeId(0, 14053).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 12637), new NodeId(0, 46), new NodeId(0, 25706).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 12637), new NodeId(0, 46), new NodeId(0, 25725).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 12637), new NodeId(0, 46), new NodeId(0, 25707).expanded(), true));
     node.addReference(
         new Reference(
             new NodeId(0, 12637), new NodeId(0, 46), new NodeId(0, 12710).expanded(), true));
@@ -5447,16 +6420,28 @@ class ObjectNodeLoader {
             new NodeId(0, 12637), new NodeId(0, 46), new NodeId(0, 12641).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 12637), new NodeId(0, 46), new NodeId(0, 23597).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 12637), new NodeId(0, 47), new NodeId(0, 13737).expanded(), true));
     node.addReference(
         new Reference(
             new NodeId(0, 12637), new NodeId(0, 47), new NodeId(0, 12740).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 12637), new NodeId(0, 47), new NodeId(0, 25708).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 12637), new NodeId(0, 47), new NodeId(0, 12737).expanded(), true));
     node.addReference(
         new Reference(
             new NodeId(0, 12637), new NodeId(0, 47), new NodeId(0, 12777).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 12637), new NodeId(0, 47), new NodeId(0, 25709).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 12637), new NodeId(0, 47), new NodeId(0, 32336).expanded(), true));
     node.addReference(
         new Reference(
             new NodeId(0, 12637), new NodeId(0, 47), new NodeId(0, 2253).expanded(), false));
@@ -5466,7 +6451,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode140() {
+  void loadNode162() {
     var node =
         new CertificateGroupFolderTypeNode(
             this.context,
@@ -5476,7 +6461,13 @@ class ObjectNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(new NodeId(0, 15644), new PermissionType(UInteger.valueOf(1))),
+              new RolePermissionType(
+                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(65423))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65423)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             UByte.valueOf(0));
@@ -5498,7 +6489,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode141() {
+  void loadNode163() {
     var node =
         new CertificateGroupTypeNode(
             this.context,
@@ -5508,9 +6499,12 @@ class ObjectNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65423)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             UByte.valueOf(0));
     node.addReference(
         new Reference(
@@ -5520,6 +6514,9 @@ class ObjectNodeLoader {
             new NodeId(0, 14156), new NodeId(0, 46), new NodeId(0, 14161).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 14156), new NodeId(0, 9006), new NodeId(0, 13225).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 14156), new NodeId(0, 40), new NodeId(0, 12555).expanded(), true));
     node.addReference(
         new Reference(
@@ -5527,7 +6524,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode142() {
+  void loadNode164() {
     var node =
         new TrustListTypeNode(
             this.context,
@@ -5537,9 +6534,12 @@ class ObjectNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65423)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             UByte.valueOf(0));
     node.addReference(
         new Reference(
@@ -5595,7 +6595,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode143() {
+  void loadNode165() {
     var node =
         new CertificateGroupTypeNode(
             this.context,
@@ -5605,9 +6605,12 @@ class ObjectNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65423)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             UByte.valueOf(0));
     node.addReference(
         new Reference(
@@ -5617,6 +6620,9 @@ class ObjectNodeLoader {
             new NodeId(0, 14088), new NodeId(0, 46), new NodeId(0, 14121).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 14088), new NodeId(0, 9006), new NodeId(0, 13225).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 14088), new NodeId(0, 40), new NodeId(0, 12555).expanded(), true));
     node.addReference(
         new Reference(
@@ -5624,7 +6630,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode144() {
+  void loadNode166() {
     var node =
         new TrustListTypeNode(
             this.context,
@@ -5634,9 +6640,12 @@ class ObjectNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65423)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             UByte.valueOf(0));
     node.addReference(
         new Reference(
@@ -5692,7 +6701,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode145() {
+  void loadNode167() {
     var node =
         new CertificateGroupTypeNode(
             this.context,
@@ -5702,9 +6711,12 @@ class ObjectNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65423)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             UByte.valueOf(0));
     node.addReference(
         new Reference(
@@ -5714,6 +6726,9 @@ class ObjectNodeLoader {
             new NodeId(0, 14122), new NodeId(0, 46), new NodeId(0, 14155).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 14122), new NodeId(0, 9006), new NodeId(0, 13225).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 14122), new NodeId(0, 40), new NodeId(0, 12555).expanded(), true));
     node.addReference(
         new Reference(
@@ -5721,7 +6736,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode146() {
+  void loadNode168() {
     var node =
         new TrustListTypeNode(
             this.context,
@@ -5731,9 +6746,12 @@ class ObjectNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65423)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             UByte.valueOf(0));
     node.addReference(
         new Reference(
@@ -5789,7 +6807,51 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode147() {
+  void loadNode169() {
+    var node =
+        new TransactionDiagnosticsTypeNode(
+            this.context,
+            new NodeId(0, 32336),
+            new QualifiedName(0, "TransactionDiagnostics"),
+            new LocalizedText("", "TransactionDiagnostics"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65423)))
+            },
+            null,
+            new AccessRestrictionType(UShort.valueOf(1)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32336), new NodeId(0, 46), new NodeId(0, 32337).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32336), new NodeId(0, 46), new NodeId(0, 32338).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32336), new NodeId(0, 46), new NodeId(0, 32339).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32336), new NodeId(0, 46), new NodeId(0, 32340).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32336), new NodeId(0, 46), new NodeId(0, 32341).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32336), new NodeId(0, 46), new NodeId(0, 32342).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32336), new NodeId(0, 40), new NodeId(0, 32286).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32336), new NodeId(0, 47), new NodeId(0, 12637).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode170() {
     var node =
         new KeyCredentialConfigurationTypeNode(
             this.context,
@@ -5821,7 +6883,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode148() {
+  void loadNode171() {
     var node =
         new KeyCredentialConfigurationFolderTypeNode(
             this.context,
@@ -5837,6 +6899,9 @@ class ObjectNodeLoader {
             UByte.valueOf(0));
     node.addReference(
         new Reference(
+            new NodeId(0, 18155), new NodeId(0, 47), new NodeId(0, 17528).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 18155), new NodeId(0, 47), new NodeId(0, 12637).expanded(), false));
     node.addReference(
         new Reference(
@@ -5844,7 +6909,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode149() {
+  void loadNode172() {
     var node =
         new AuthorizationServiceConfigurationTypeNode(
             this.context,
@@ -5879,7 +6944,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode150() {
+  void loadNode173() {
     var node =
         new FolderTypeNode(
             this.context,
@@ -5901,14 +6966,17 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode151() {
+  void loadNode174() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 2341),
             new QualifiedName(0, "Interpolative"),
             new LocalizedText("", "Interpolative"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "At the beginning of each interval, retrieve the calculated value from the data"
+                    + " points on either side of the requested timestamp."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -5921,14 +6989,14 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode152() {
+  void loadNode175() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 2342),
             new QualifiedName(0, "Average"),
             new LocalizedText("", "Average"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText("", "Retrieve the average value of the data over the interval."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -5941,14 +7009,17 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode153() {
+  void loadNode176() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 2343),
             new QualifiedName(0, "TimeAverage"),
             new LocalizedText("", "TimeAverage"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Retrieve the time weighted average data over the interval using Interpolated"
+                    + " Bounding Values."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -5961,14 +7032,17 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode154() {
+  void loadNode177() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 11285),
             new QualifiedName(0, "TimeAverage2"),
             new LocalizedText("", "TimeAverage2"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Retrieve the time weighted average data over the interval using Simple Bounding"
+                    + " Values."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -5981,14 +7055,17 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode155() {
+  void loadNode178() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 2344),
             new QualifiedName(0, "Total"),
             new LocalizedText("", "Total"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Retrieve the total (time integral) of the data over the interval using"
+                    + " Interpolated Bounding Values."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -6001,14 +7078,17 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode156() {
+  void loadNode179() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 11304),
             new QualifiedName(0, "Total2"),
             new LocalizedText("", "Total2"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Retrieve the total (time integral) of the data over the interval using Simple"
+                    + " Bounding Values."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -6021,14 +7101,17 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode157() {
+  void loadNode180() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 2346),
             new QualifiedName(0, "Minimum"),
             new LocalizedText("", "Minimum"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Retrieve the minimum raw value in the interval with the timestamp of the start of"
+                    + " the interval."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -6041,14 +7124,17 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode158() {
+  void loadNode181() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 2347),
             new QualifiedName(0, "Maximum"),
             new LocalizedText("", "Maximum"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Retrieve the maximum raw value in the interval with the timestamp of the start of"
+                    + " the interval."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -6061,14 +7147,17 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode159() {
+  void loadNode182() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 2348),
             new QualifiedName(0, "MinimumActualTime"),
             new LocalizedText("", "MinimumActualTime"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Retrieve the minimum value in the interval and the Timestamp of the minimum"
+                    + " value."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -6081,14 +7170,17 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode160() {
+  void loadNode183() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 2349),
             new QualifiedName(0, "MaximumActualTime"),
             new LocalizedText("", "MaximumActualTime"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Retrieve the maximum value in the interval and the Timestamp of the maximum"
+                    + " value."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -6101,14 +7193,16 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode161() {
+  void loadNode184() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 2350),
             new QualifiedName(0, "Range"),
             new LocalizedText("", "Range"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Retrieve the difference between the minimum and maximum Value over the interval."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -6121,14 +7215,16 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode162() {
+  void loadNode185() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 11286),
             new QualifiedName(0, "Minimum2"),
             new LocalizedText("", "Minimum2"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Retrieve the minimum value in the interval including the Simple Bounding Values."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -6141,14 +7237,16 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode163() {
+  void loadNode186() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 11287),
             new QualifiedName(0, "Maximum2"),
             new LocalizedText("", "Maximum2"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Retrieve the maximum value in the interval including the Simple Bounding Values."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -6161,14 +7259,17 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode164() {
+  void loadNode187() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 11305),
             new QualifiedName(0, "MinimumActualTime2"),
             new LocalizedText("", "MinimumActualTime2"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Retrieve the minimum value with the actual timestamp including the Simple Bounding"
+                    + " Values."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -6181,14 +7282,17 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode165() {
+  void loadNode188() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 11306),
             new QualifiedName(0, "MaximumActualTime2"),
             new LocalizedText("", "MaximumActualTime2"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Retrieve the maximum value with the actual timestamp including the Simple Bounding"
+                    + " Values."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -6201,14 +7305,17 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode166() {
+  void loadNode189() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 11288),
             new QualifiedName(0, "Range2"),
             new LocalizedText("", "Range2"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Retrieve the difference between the Minimum2 and Maximum2 value over the"
+                    + " interval."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -6221,14 +7328,14 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode167() {
+  void loadNode190() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 2351),
             new QualifiedName(0, "AnnotationCount"),
             new LocalizedText("", "AnnotationCount"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText("", "Retrieve the number of Annotations in the interval."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -6241,14 +7348,14 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode168() {
+  void loadNode191() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 2352),
             new QualifiedName(0, "Count"),
             new LocalizedText("", "Count"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText("", "Retrieve the number of raw values over the interval."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -6261,14 +7368,17 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode169() {
+  void loadNode192() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 11307),
             new QualifiedName(0, "DurationInStateZero"),
             new LocalizedText("", "DurationInStateZero"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Retrieve the time a Boolean or numeric was in a zero state using Simple Bounding"
+                    + " Values."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -6281,14 +7391,17 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode170() {
+  void loadNode193() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 11308),
             new QualifiedName(0, "DurationInStateNonZero"),
             new LocalizedText("", "DurationInStateNonZero"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Retrieve the time a Boolean or numeric was in a non-zero state using Simple"
+                    + " Bounding Values."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -6301,14 +7414,17 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode171() {
+  void loadNode194() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 2355),
             new QualifiedName(0, "NumberOfTransitions"),
             new LocalizedText("", "NumberOfTransitions"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Retrieve the number of changes between zero and non-zero that a Boolean or Numeric"
+                    + " value experienced in the interval."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -6321,14 +7437,17 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode172() {
+  void loadNode195() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 2357),
             new QualifiedName(0, "Start"),
             new LocalizedText("", "Start"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Retrieve the value at the beginning of the interval using Interpolated Bounding"
+                    + " Values."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -6341,14 +7460,17 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode173() {
+  void loadNode196() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 2358),
             new QualifiedName(0, "End"),
             new LocalizedText("", "End"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Retrieve the value at the end of the interval using Interpolated Bounding"
+                    + " Values."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -6361,14 +7483,15 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode174() {
+  void loadNode197() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 2359),
             new QualifiedName(0, "Delta"),
             new LocalizedText("", "Delta"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "", "Retrieve the difference between the Start and End value in the interval."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -6381,14 +7504,17 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode175() {
+  void loadNode198() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 11505),
             new QualifiedName(0, "StartBound"),
             new LocalizedText("", "StartBound"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Retrieve the value at the beginning of the interval using Simple Bounding"
+                    + " Values."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -6401,14 +7527,15 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode176() {
+  void loadNode199() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 11506),
             new QualifiedName(0, "EndBound"),
             new LocalizedText("", "EndBound"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "", "Retrieve the value at the end of the interval using Simple Bounding Values."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -6421,14 +7548,17 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode177() {
+  void loadNode200() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 11507),
             new QualifiedName(0, "DeltaBounds"),
             new LocalizedText("", "DeltaBounds"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Retrieve the difference between the StartBound and EndBound value in the"
+                    + " interval."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -6441,14 +7571,17 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode178() {
+  void loadNode201() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 2360),
             new QualifiedName(0, "DurationGood"),
             new LocalizedText("", "DurationGood"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Retrieve the total duration of time in the interval during which the data is"
+                    + " good."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -6461,14 +7594,17 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode179() {
+  void loadNode202() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 2361),
             new QualifiedName(0, "DurationBad"),
             new LocalizedText("", "DurationBad"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Retrieve the total duration of time in the interval during which the data is"
+                    + " bad."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -6481,14 +7617,17 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode180() {
+  void loadNode203() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 2362),
             new QualifiedName(0, "PercentGood"),
             new LocalizedText("", "PercentGood"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Retrieve the percent of data (0 to 100) in the interval which has a good"
+                    + " StatusCode."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -6501,14 +7640,17 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode181() {
+  void loadNode204() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 2363),
             new QualifiedName(0, "PercentBad"),
             new LocalizedText("", "PercentBad"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Retrieve the percent of data (0 to 100) in the interval which has a bad"
+                    + " StatusCode."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -6521,14 +7663,14 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode182() {
+  void loadNode205() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 2364),
             new QualifiedName(0, "WorstQuality"),
             new LocalizedText("", "WorstQuality"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText("", "Retrieve the worst StatusCode of data in the interval."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -6541,14 +7683,17 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode183() {
+  void loadNode206() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 11292),
             new QualifiedName(0, "WorstQuality2"),
             new LocalizedText("", "WorstQuality2"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Retrieve the worst StatusCode of data in the interval including the Simple"
+                    + " Bounding Values."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -6561,14 +7706,17 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode184() {
+  void loadNode207() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 11426),
             new QualifiedName(0, "StandardDeviationSample"),
             new LocalizedText("", "StandardDeviationSample"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Retrieve the standard deviation for the interval for a sample of the population"
+                    + " (n-1)."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -6581,14 +7729,17 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode185() {
+  void loadNode208() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 11427),
             new QualifiedName(0, "StandardDeviationPopulation"),
             new LocalizedText("", "StandardDeviationPopulation"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Retrieve the standard deviation for the interval for a complete population (n)"
+                    + " which includes Simple Bounding Values."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -6601,14 +7752,17 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode186() {
+  void loadNode209() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 11428),
             new QualifiedName(0, "VarianceSample"),
             new LocalizedText("", "VarianceSample"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Retrieve the variance for the interval as calculated by the"
+                    + " StandardDeviationSample."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -6621,14 +7775,17 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode187() {
+  void loadNode210() {
     var node =
         new AggregateFunctionTypeNode(
             this.context,
             new NodeId(0, 11429),
             new QualifiedName(0, "VariancePopulation"),
             new LocalizedText("", "VariancePopulation"),
-            LocalizedText.NULL_VALUE,
+            new LocalizedText(
+                "",
+                "Retrieve the variance for the interval as calculated by the"
+                    + " StandardDeviationPopulation which includes Simple Bounding Values."),
             UInteger.valueOf(0),
             UInteger.valueOf(0),
             null,
@@ -6641,7 +7798,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode188() {
+  void loadNode211() {
     var node =
         new SecurityGroupFolderTypeNode(
             this.context,
@@ -6672,7 +7829,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode189() {
+  void loadNode212() {
     var node =
         new PubSubKeyPushTargetFolderTypeNode(
             this.context,
@@ -6703,7 +7860,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode190() {
+  void loadNode213() {
     var node =
         new SecurityGroupFolderTypeNode(
             this.context,
@@ -6744,7 +7901,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode191() {
+  void loadNode214() {
     var node =
         new SecurityGroupTypeNode(
             this.context,
@@ -6785,7 +7942,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode192() {
+  void loadNode215() {
     var node =
         new SecurityGroupTypeNode(
             this.context,
@@ -6826,7 +7983,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode193() {
+  void loadNode216() {
     var node =
         new PubSubKeyPushTargetFolderTypeNode(
             this.context,
@@ -6864,7 +8021,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode194() {
+  void loadNode217() {
     var node =
         new PubSubKeyPushTargetTypeNode(
             this.context,
@@ -6923,7 +8080,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode195() {
+  void loadNode218() {
     var node =
         new PubSubConnectionTypeNode(
             this.context,
@@ -6964,7 +8121,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode196() {
+  void loadNode219() {
     var node =
         new NetworkAddressTypeNode(
             this.context,
@@ -6992,7 +8149,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode197() {
+  void loadNode220() {
     var node =
         new PubSubStatusTypeNode(
             this.context,
@@ -7020,7 +8177,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode198() {
+  void loadNode221() {
     var node =
         new DataSetFolderTypeNode(
             this.context,
@@ -7045,7 +8202,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode199() {
+  void loadNode222() {
     var node =
         new SubscribedDataSetFolderTypeNode(
             this.context,
@@ -7070,7 +8227,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode200() {
+  void loadNode223() {
     var node =
         new PubSubConfigurationTypeNode(
             this.context,
@@ -7131,7 +8288,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode201() {
+  void loadNode224() {
     var node =
         new PubSubStatusTypeNode(
             this.context,
@@ -7159,7 +8316,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode202() {
+  void loadNode225() {
     var node =
         new PubSubDiagnosticsRootTypeNode(
             this.context,
@@ -7205,7 +8362,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode203() {
+  void loadNode226() {
     var node =
         new BaseObjectTypeNode(
             this.context,
@@ -7247,7 +8404,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode204() {
+  void loadNode227() {
     var node =
         new BaseObjectTypeNode(
             this.context,
@@ -7283,13 +8440,13 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode205() {
+  void loadNode228() {
     var node =
         new PubSubCapabilitiesTypeNode(
             this.context,
             new NodeId(0, 23642),
             new QualifiedName(0, "PubSubCapablities"),
-            new LocalizedText("", "PubSubCapablities"),
+            new LocalizedText("", "PubSubCapabilities"),
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
@@ -7326,7 +8483,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode206() {
+  void loadNode229() {
     var node =
         new FolderTypeNode(
             this.context,
@@ -7353,7 +8510,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode207() {
+  void loadNode230() {
     var node =
         new PublishSubscribeTypeNode(
             this.context,
@@ -7363,7 +8520,12 @@ class ObjectNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+              new RolePermissionType(
+                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(65423)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             UByte.valueOf(0));
@@ -7420,6 +8582,12 @@ class ObjectNodeLoader {
             new NodeId(0, 14443), new NodeId(0, 46), new NodeId(0, 25481).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 14443), new NodeId(0, 46), new NodeId(0, 32403).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 14443), new NodeId(0, 46), new NodeId(0, 32404).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 14443), new NodeId(0, 47), new NodeId(0, 2253).expanded(), false));
     node.addReference(
         new Reference(
@@ -7427,7 +8595,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode208() {
+  void loadNode231() {
     var node =
         new SecurityGroupFolderTypeNode(
             this.context,
@@ -7437,9 +8605,14 @@ class ObjectNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+              new RolePermissionType(
+                  new NodeId(0, 25565), new PermissionType(UInteger.valueOf(65423)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             UByte.valueOf(0));
     node.addReference(
         new Reference(
@@ -7456,7 +8629,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode209() {
+  void loadNode232() {
     var node =
         new PubSubKeyPushTargetFolderTypeNode(
             this.context,
@@ -7466,9 +8639,12 @@ class ObjectNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 25565), new PermissionType(UInteger.valueOf(65423)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             UByte.valueOf(0));
     node.addReference(
         new Reference(
@@ -7485,7 +8661,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode210() {
+  void loadNode233() {
     var node =
         new DataSetFolderTypeNode(
             this.context,
@@ -7508,7 +8684,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode211() {
+  void loadNode234() {
     var node =
         new SubscribedDataSetFolderTypeNode(
             this.context,
@@ -7531,7 +8707,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode212() {
+  void loadNode235() {
     var node =
         new PubSubConfigurationTypeNode(
             this.context,
@@ -7541,7 +8717,12 @@ class ObjectNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+              new RolePermissionType(
+                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(65423)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             UByte.valueOf(0));
@@ -7590,7 +8771,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode213() {
+  void loadNode236() {
     var node =
         new PubSubStatusTypeNode(
             this.context,
@@ -7616,7 +8797,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode214() {
+  void loadNode237() {
     var node =
         new PubSubDiagnosticsRootTypeNode(
             this.context,
@@ -7626,7 +8807,12 @@ class ObjectNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+              new RolePermissionType(
+                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(65423)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             UByte.valueOf(0));
@@ -7660,7 +8846,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode215() {
+  void loadNode238() {
     var node =
         new BaseObjectTypeNode(
             this.context,
@@ -7700,7 +8886,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode216() {
+  void loadNode239() {
     var node =
         new BaseObjectTypeNode(
             this.context,
@@ -7734,13 +8920,13 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode217() {
+  void loadNode240() {
     var node =
         new PubSubCapabilitiesTypeNode(
             this.context,
             new NodeId(0, 23678),
             new QualifiedName(0, "PubSubCapablities"),
-            new LocalizedText("", "PubSubCapablities"),
+            new LocalizedText("", "PubSubCapabilities"),
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
@@ -7768,6 +8954,36 @@ class ObjectNodeLoader {
             new NodeId(0, 23678), new NodeId(0, 46), new NodeId(0, 23684).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 23678), new NodeId(0, 46), new NodeId(0, 32398).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 23678), new NodeId(0, 46), new NodeId(0, 32839).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 23678), new NodeId(0, 46), new NodeId(0, 32840).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 23678), new NodeId(0, 46), new NodeId(0, 32841).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 23678), new NodeId(0, 46), new NodeId(0, 32842).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 23678), new NodeId(0, 46), new NodeId(0, 32399).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 23678), new NodeId(0, 46), new NodeId(0, 32400).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 23678), new NodeId(0, 46), new NodeId(0, 32401).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 23678), new NodeId(0, 46), new NodeId(0, 32402).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 23678), new NodeId(0, 46), new NodeId(0, 32843).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 23678), new NodeId(0, 40), new NodeId(0, 23832).expanded(), true));
     node.addReference(
         new Reference(
@@ -7775,7 +8991,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode218() {
+  void loadNode241() {
     var node =
         new FolderTypeNode(
             this.context,
@@ -7797,7 +9013,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode219() {
+  void loadNode242() {
     var node =
         new DataSetWriterTypeNode(
             this.context,
@@ -7835,7 +9051,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode220() {
+  void loadNode243() {
     var node =
         new PubSubStatusTypeNode(
             this.context,
@@ -7863,7 +9079,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode221() {
+  void loadNode244() {
     var node =
         new ExtensionFieldsTypeNode(
             this.context,
@@ -7894,7 +9110,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode222() {
+  void loadNode245() {
     var node =
         new DataSetFolderTypeNode(
             this.context,
@@ -7941,7 +9157,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode223() {
+  void loadNode246() {
     var node =
         new PublishedDataSetTypeNode(
             this.context,
@@ -7973,7 +9189,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode224() {
+  void loadNode247() {
     var node =
         new NetworkAddressTypeNode(
             this.context,
@@ -8001,7 +9217,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode225() {
+  void loadNode248() {
     var node =
         new ConnectionTransportTypeNode(
             this.context,
@@ -8026,7 +9242,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode226() {
+  void loadNode249() {
     var node =
         new WriterGroupTypeNode(
             this.context,
@@ -8082,7 +9298,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode227() {
+  void loadNode250() {
     var node =
         new PubSubStatusTypeNode(
             this.context,
@@ -8110,7 +9326,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode228() {
+  void loadNode251() {
     var node =
         new ReaderGroupTypeNode(
             this.context,
@@ -8148,7 +9364,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode229() {
+  void loadNode252() {
     var node =
         new PubSubStatusTypeNode(
             this.context,
@@ -8176,7 +9392,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode230() {
+  void loadNode253() {
     var node =
         new PubSubStatusTypeNode(
             this.context,
@@ -8204,7 +9420,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode231() {
+  void loadNode254() {
     var node =
         new PubSubDiagnosticsConnectionTypeNode(
             this.context,
@@ -8250,7 +9466,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode232() {
+  void loadNode255() {
     var node =
         new BaseObjectTypeNode(
             this.context,
@@ -8292,7 +9508,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode233() {
+  void loadNode256() {
     var node =
         new BaseObjectTypeNode(
             this.context,
@@ -8319,7 +9535,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode234() {
+  void loadNode257() {
     var node =
         new PubSubStatusTypeNode(
             this.context,
@@ -8347,7 +9563,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode235() {
+  void loadNode258() {
     var node =
         new WriterGroupTransportTypeNode(
             this.context,
@@ -8372,7 +9588,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode236() {
+  void loadNode259() {
     var node =
         new WriterGroupMessageTypeNode(
             this.context,
@@ -8397,7 +9613,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode237() {
+  void loadNode260() {
     var node =
         new DataSetWriterTypeNode(
             this.context,
@@ -8435,7 +9651,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode238() {
+  void loadNode261() {
     var node =
         new PubSubStatusTypeNode(
             this.context,
@@ -8463,7 +9679,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode239() {
+  void loadNode262() {
     var node =
         new PubSubDiagnosticsWriterGroupTypeNode(
             this.context,
@@ -8509,7 +9725,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode240() {
+  void loadNode263() {
     var node =
         new BaseObjectTypeNode(
             this.context,
@@ -8560,7 +9776,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode241() {
+  void loadNode264() {
     var node =
         new BaseObjectTypeNode(
             this.context,
@@ -8590,7 +9806,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode242() {
+  void loadNode265() {
     var node =
         new DataSetReaderTypeNode(
             this.context,
@@ -8649,7 +9865,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode243() {
+  void loadNode266() {
     var node =
         new PubSubStatusTypeNode(
             this.context,
@@ -8677,7 +9893,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode244() {
+  void loadNode267() {
     var node =
         new SubscribedDataSetTypeNode(
             this.context,
@@ -8702,7 +9918,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode245() {
+  void loadNode268() {
     var node =
         new PubSubDiagnosticsReaderGroupTypeNode(
             this.context,
@@ -8748,7 +9964,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode246() {
+  void loadNode269() {
     var node =
         new BaseObjectTypeNode(
             this.context,
@@ -8793,7 +10009,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode247() {
+  void loadNode270() {
     var node =
         new BaseObjectTypeNode(
             this.context,
@@ -8823,7 +10039,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode248() {
+  void loadNode271() {
     var node =
         new ReaderGroupTransportTypeNode(
             this.context,
@@ -8848,7 +10064,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode249() {
+  void loadNode272() {
     var node =
         new ReaderGroupMessageTypeNode(
             this.context,
@@ -8873,7 +10089,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode250() {
+  void loadNode273() {
     var node =
         new DataSetWriterTransportTypeNode(
             this.context,
@@ -8898,7 +10114,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode251() {
+  void loadNode274() {
     var node =
         new DataSetWriterMessageTypeNode(
             this.context,
@@ -8923,7 +10139,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode252() {
+  void loadNode275() {
     var node =
         new PubSubStatusTypeNode(
             this.context,
@@ -8951,7 +10167,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode253() {
+  void loadNode276() {
     var node =
         new PubSubDiagnosticsDataSetWriterTypeNode(
             this.context,
@@ -8997,7 +10213,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode254() {
+  void loadNode277() {
     var node =
         new BaseObjectTypeNode(
             this.context,
@@ -9042,7 +10258,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode255() {
+  void loadNode278() {
     var node =
         new BaseObjectTypeNode(
             this.context,
@@ -9066,7 +10282,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode256() {
+  void loadNode279() {
     var node =
         new DataSetReaderTransportTypeNode(
             this.context,
@@ -9091,7 +10307,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode257() {
+  void loadNode280() {
     var node =
         new DataSetReaderMessageTypeNode(
             this.context,
@@ -9116,7 +10332,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode258() {
+  void loadNode281() {
     var node =
         new PubSubStatusTypeNode(
             this.context,
@@ -9144,7 +10360,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode259() {
+  void loadNode282() {
     var node =
         new PubSubDiagnosticsDataSetReaderTypeNode(
             this.context,
@@ -9190,7 +10406,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode260() {
+  void loadNode283() {
     var node =
         new BaseObjectTypeNode(
             this.context,
@@ -9235,7 +10451,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode261() {
+  void loadNode284() {
     var node =
         new BaseObjectTypeNode(
             this.context,
@@ -9259,7 +10475,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode262() {
+  void loadNode285() {
     var node =
         new SubscribedDataSetTypeNode(
             this.context,
@@ -9284,7 +10500,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode263() {
+  void loadNode286() {
     var node =
         new SubscribedDataSetFolderTypeNode(
             this.context,
@@ -9322,7 +10538,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode264() {
+  void loadNode287() {
     var node =
         new StandaloneSubscribedDataSetTypeNode(
             this.context,
@@ -9357,7 +10573,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode265() {
+  void loadNode288() {
     var node =
         new SubscribedDataSetTypeNode(
             this.context,
@@ -9382,7 +10598,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode266() {
+  void loadNode289() {
     var node =
         new SubscribedDataSetTypeNode(
             this.context,
@@ -9407,7 +10623,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode267() {
+  void loadNode290() {
     var node =
         new BaseObjectTypeNode(
             this.context,
@@ -9449,7 +10665,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode268() {
+  void loadNode291() {
     var node =
         new BaseObjectTypeNode(
             this.context,
@@ -9473,7 +10689,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode269() {
+  void loadNode292() {
     var node =
         new BaseObjectTypeNode(
             this.context,
@@ -9509,7 +10725,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode270() {
+  void loadNode293() {
     var node =
         new BaseObjectTypeNode(
             this.context,
@@ -9536,7 +10752,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode271() {
+  void loadNode294() {
     var node =
         new BaseObjectTypeNode(
             this.context,
@@ -9569,7 +10785,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode272() {
+  void loadNode295() {
     var node =
         new BaseObjectTypeNode(
             this.context,
@@ -9605,7 +10821,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode273() {
+  void loadNode296() {
     var node =
         new BaseObjectTypeNode(
             this.context,
@@ -9638,7 +10854,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode274() {
+  void loadNode297() {
     var node =
         new BaseObjectTypeNode(
             this.context,
@@ -9668,7 +10884,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode275() {
+  void loadNode298() {
     var node =
         new BaseObjectTypeNode(
             this.context,
@@ -9695,7 +10911,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode276() {
+  void loadNode299() {
     var node =
         new BaseObjectTypeNode(
             this.context,
@@ -9731,7 +10947,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode277() {
+  void loadNode300() {
     var node =
         new BaseObjectTypeNode(
             this.context,
@@ -9761,7 +10977,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode278() {
+  void loadNode301() {
     var node =
         new BaseObjectTypeNode(
             this.context,
@@ -9803,7 +11019,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode279() {
+  void loadNode302() {
     var node =
         new NetworkAddressTypeNode(
             this.context,
@@ -9831,7 +11047,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode280() {
+  void loadNode303() {
     var node =
         new NetworkAddressTypeNode(
             this.context,
@@ -9859,7 +11075,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode281() {
+  void loadNode304() {
     var node =
         new NetworkAddressTypeNode(
             this.context,
@@ -9887,7 +11103,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode282() {
+  void loadNode305() {
     var node =
         new AliasNameTypeNode(
             this.context,
@@ -9913,7 +11129,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode283() {
+  void loadNode306() {
     var node =
         new AliasNameCategoryTypeNode(
             this.context,
@@ -9932,6 +11148,9 @@ class ObjectNodeLoader {
             new NodeId(0, 23458), new NodeId(0, 47), new NodeId(0, 23459).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 23458), new NodeId(0, 46), new NodeId(0, 32849).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 23458), new NodeId(0, 40), new NodeId(0, 23456).expanded(), true));
     node.addReference(
         new Reference(
@@ -9942,7 +11161,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode284() {
+  void loadNode307() {
     var node =
         new AliasNameCategoryTypeNode(
             this.context,
@@ -9961,6 +11180,9 @@ class ObjectNodeLoader {
             new NodeId(0, 23470), new NodeId(0, 47), new NodeId(0, 23476).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 23470), new NodeId(0, 46), new NodeId(0, 32852).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 23470), new NodeId(0, 35), new NodeId(0, 85).expanded(), false));
     node.addReference(
         new Reference(
@@ -9968,7 +11190,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode285() {
+  void loadNode308() {
     var node =
         new AliasNameCategoryTypeNode(
             this.context,
@@ -9994,7 +11216,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode286() {
+  void loadNode309() {
     var node =
         new AliasNameCategoryTypeNode(
             this.context,
@@ -10020,7 +11242,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode287() {
+  void loadNode310() {
     var node =
         new UserManagementTypeNode(
             this.context,
@@ -10030,7 +11252,12 @@ class ObjectNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65423)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             UByte.valueOf(0));
@@ -10067,7 +11294,230 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode288() {
+  void loadNode311() {
+    var node =
+        new ApplicationConfigurationTypeNode(
+            this.context,
+            new NodeId(0, 26878),
+            new QualifiedName(0, "<ApplicationName>"),
+            new LocalizedText("", "<ApplicationName>"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26878), new NodeId(0, 47), new NodeId(0, 26879).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26878), new NodeId(0, 46), new NodeId(0, 27997).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26878), new NodeId(0, 46), new NodeId(0, 27998).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26878), new NodeId(0, 46), new NodeId(0, 27999).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26878), new NodeId(0, 46), new NodeId(0, 28000).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26878), new NodeId(0, 46), new NodeId(0, 28001).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26878), new NodeId(0, 46), new NodeId(0, 28002).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26878), new NodeId(0, 46), new NodeId(0, 28003).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26878), new NodeId(0, 47), new NodeId(0, 28005).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26878), new NodeId(0, 47), new NodeId(0, 28008).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26878), new NodeId(0, 47), new NodeId(0, 28010).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26878), new NodeId(0, 47), new NodeId(0, 28013).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26878), new NodeId(0, 46), new NodeId(0, 27996).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26878), new NodeId(0, 40), new NodeId(0, 25731).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26878), new NodeId(0, 37), new NodeId(0, 11508).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26878), new NodeId(0, 47), new NodeId(0, 26871).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode312() {
+    var node =
+        new CertificateGroupFolderTypeNode(
+            this.context,
+            new NodeId(0, 26879),
+            new QualifiedName(0, "CertificateGroups"),
+            new LocalizedText("", "CertificateGroups"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26879), new NodeId(0, 47), new NodeId(0, 26880).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26879), new NodeId(0, 40), new NodeId(0, 13813).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 26879), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26879), new NodeId(0, 47), new NodeId(0, 26878).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode313() {
+    var node =
+        new CertificateGroupTypeNode(
+            this.context,
+            new NodeId(0, 26880),
+            new QualifiedName(0, "DefaultApplicationGroup"),
+            new LocalizedText("", "DefaultApplicationGroup"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26880), new NodeId(0, 47), new NodeId(0, 26881).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26880), new NodeId(0, 46), new NodeId(0, 26917).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26880), new NodeId(0, 40), new NodeId(0, 12555).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 26880), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26880), new NodeId(0, 47), new NodeId(0, 26879).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode314() {
+    var node =
+        new TrustListTypeNode(
+            this.context,
+            new NodeId(0, 26881),
+            new QualifiedName(0, "TrustList"),
+            new LocalizedText("", "TrustList"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26881), new NodeId(0, 46), new NodeId(0, 26882).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26881), new NodeId(0, 46), new NodeId(0, 26883).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26881), new NodeId(0, 46), new NodeId(0, 26884).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26881), new NodeId(0, 46), new NodeId(0, 26885).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26881), new NodeId(0, 47), new NodeId(0, 26889).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26881), new NodeId(0, 47), new NodeId(0, 26892).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26881), new NodeId(0, 47), new NodeId(0, 26894).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26881), new NodeId(0, 47), new NodeId(0, 26897).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26881), new NodeId(0, 47), new NodeId(0, 26899).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26881), new NodeId(0, 47), new NodeId(0, 26902).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26881), new NodeId(0, 46), new NodeId(0, 26904).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26881), new NodeId(0, 47), new NodeId(0, 26907).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26881), new NodeId(0, 47), new NodeId(0, 26910).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26881), new NodeId(0, 47), new NodeId(0, 26913).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26881), new NodeId(0, 47), new NodeId(0, 26915).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26881), new NodeId(0, 40), new NodeId(0, 12522).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 26881), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26881), new NodeId(0, 47), new NodeId(0, 26880).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode315() {
+    var node =
+        new ProvisionableDeviceTypeNode(
+            this.context,
+            new NodeId(0, 29878),
+            new QualifiedName(0, "ProvisionableDevice"),
+            new LocalizedText("", "ProvisionableDevice"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 29878), new NodeId(0, 46), new NodeId(0, 29879).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 29878), new NodeId(0, 47), new NodeId(0, 29880).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 29878), new NodeId(0, 35), new NodeId(0, 24226).expanded(), false));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 29878), new NodeId(0, 40), new NodeId(0, 26871).expanded(), true));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode316() {
     var node =
         new FolderTypeNode(
             this.context,
@@ -10089,7 +11539,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode289() {
+  void loadNode317() {
     var node =
         new FolderTypeNode(
             this.context,
@@ -10111,7 +11561,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode290() {
+  void loadNode318() {
     var node =
         new FolderTypeNode(
             this.context,
@@ -10133,7 +11583,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode291() {
+  void loadNode319() {
     var node =
         new FolderTypeNode(
             this.context,
@@ -10155,7 +11605,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode292() {
+  void loadNode320() {
     var node =
         new FolderTypeNode(
             this.context,
@@ -10177,7 +11627,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode293() {
+  void loadNode321() {
     var node =
         new FolderTypeNode(
             this.context,
@@ -10199,7 +11649,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode294() {
+  void loadNode322() {
     var node =
         new FolderTypeNode(
             this.context,
@@ -10221,7 +11671,93 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode295() {
+  void loadNode323() {
+    var node =
+        new LldpInformationTypeNode(
+            this.context,
+            new NodeId(0, 18958),
+            new QualifiedName(0, "LLDP"),
+            new LocalizedText("", "LLDP"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18958), new NodeId(0, 47), new NodeId(0, 18965).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18958), new NodeId(0, 47), new NodeId(0, 18972).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18958), new NodeId(0, 35), new NodeId(0, 24227).expanded(), false));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18958), new NodeId(0, 40), new NodeId(0, 18973).expanded(), true));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode324() {
+    var node =
+        new LldpLocalSystemTypeNode(
+            this.context,
+            new NodeId(0, 18965),
+            new QualifiedName(0, "LocalSystemData"),
+            new LocalizedText("", "LocalSystemData"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18965), new NodeId(0, 46), new NodeId(0, 18966).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18965), new NodeId(0, 46), new NodeId(0, 18967).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18965), new NodeId(0, 46), new NodeId(0, 18968).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18965), new NodeId(0, 46), new NodeId(0, 18969).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18965), new NodeId(0, 40), new NodeId(0, 19002).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18965), new NodeId(0, 47), new NodeId(0, 18958).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode325() {
+    var node =
+        new FolderTypeNode(
+            this.context,
+            new NodeId(0, 18972),
+            new QualifiedName(0, "Ports"),
+            new LocalizedText("", "Ports"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(new NodeId(0, 18972), new NodeId(0, 40), new NodeId(0, 61).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18972), new NodeId(0, 47), new NodeId(0, 18958).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode326() {
     var node =
         new BaseObjectTypeNode(
             this.context,
@@ -10249,7 +11785,220 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode296() {
+  void loadNode327() {
+    var node =
+        new LldpRemoteStatisticsTypeNode(
+            this.context,
+            new NodeId(0, 18974),
+            new QualifiedName(0, "RemoteStatistics"),
+            new LocalizedText("", "RemoteStatistics"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18974), new NodeId(0, 47), new NodeId(0, 18975).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18974), new NodeId(0, 47), new NodeId(0, 18976).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18974), new NodeId(0, 47), new NodeId(0, 18977).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18974), new NodeId(0, 47), new NodeId(0, 18978).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18974), new NodeId(0, 47), new NodeId(0, 18979).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18974), new NodeId(0, 40), new NodeId(0, 18996).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 18974), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18974), new NodeId(0, 47), new NodeId(0, 18973).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode328() {
+    var node =
+        new LldpLocalSystemTypeNode(
+            this.context,
+            new NodeId(0, 18980),
+            new QualifiedName(0, "LocalSystemData"),
+            new LocalizedText("", "LocalSystemData"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18980), new NodeId(0, 46), new NodeId(0, 18981).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18980), new NodeId(0, 46), new NodeId(0, 18982).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18980), new NodeId(0, 46), new NodeId(0, 18983).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18980), new NodeId(0, 46), new NodeId(0, 18984).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18980), new NodeId(0, 40), new NodeId(0, 19002).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 18980), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18980), new NodeId(0, 47), new NodeId(0, 18973).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode329() {
+    var node =
+        new FolderTypeNode(
+            this.context,
+            new NodeId(0, 18987),
+            new QualifiedName(0, "Ports"),
+            new LocalizedText("", "Ports"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18987), new NodeId(0, 35), new NodeId(0, 18988).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 18987), new NodeId(0, 40), new NodeId(0, 61).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 18987), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18987), new NodeId(0, 47), new NodeId(0, 18973).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode330() {
+    var node =
+        new LldpPortInformationTypeNode(
+            this.context,
+            new NodeId(0, 18988),
+            new QualifiedName(0, "<LldpPortInformation>"),
+            new LocalizedText("", "<LldpPortInformation>"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18988), new NodeId(0, 46), new NodeId(0, 18989).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18988), new NodeId(0, 46), new NodeId(0, 18990).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18988), new NodeId(0, 46), new NodeId(0, 18991).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18988), new NodeId(0, 46), new NodeId(0, 18992).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18988), new NodeId(0, 40), new NodeId(0, 19009).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18988), new NodeId(0, 37), new NodeId(0, 11508).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18988), new NodeId(0, 35), new NodeId(0, 18987).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode331() {
+    var node =
+        new FolderTypeNode(
+            this.context,
+            new NodeId(0, 19016),
+            new QualifiedName(0, "RemoteSystemsData"),
+            new LocalizedText("", "RemoteSystemsData"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19016), new NodeId(0, 35), new NodeId(0, 19017).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 19016), new NodeId(0, 40), new NodeId(0, 61).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 19016), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19016), new NodeId(0, 47), new NodeId(0, 19009).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode332() {
+    var node =
+        new LldpRemoteSystemTypeNode(
+            this.context,
+            new NodeId(0, 19017),
+            new QualifiedName(0, "<LldpRemoteSystem>"),
+            new LocalizedText("", "<LldpRemoteSystem>"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19017), new NodeId(0, 47), new NodeId(0, 19018).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19017), new NodeId(0, 47), new NodeId(0, 19019).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19017), new NodeId(0, 47), new NodeId(0, 19020).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19017), new NodeId(0, 47), new NodeId(0, 19021).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19017), new NodeId(0, 47), new NodeId(0, 19022).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19017), new NodeId(0, 47), new NodeId(0, 19023).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19017), new NodeId(0, 40), new NodeId(0, 19033).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19017), new NodeId(0, 37), new NodeId(0, 11508).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19017), new NodeId(0, 35), new NodeId(0, 19016).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode333() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -10274,7 +12023,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode297() {
+  void loadNode334() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -10299,7 +12048,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode298() {
+  void loadNode335() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -10324,7 +12073,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode299() {
+  void loadNode336() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -10349,7 +12098,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode300() {
+  void loadNode337() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -10374,7 +12123,32 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode301() {
+  void loadNode338() {
+    var node =
+        new DataTypeEncodingTypeNode(
+            this.context,
+            new NodeId(0, 32422),
+            new QualifiedName(0, "Default Binary"),
+            new LocalizedText("", "Default Binary"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32422), new NodeId(0, 38), new NodeId(0, 32421).expanded(), false));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32422), new NodeId(0, 39), new NodeId(0, 32423).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 32422), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode339() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -10399,7 +12173,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode302() {
+  void loadNode340() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -10424,7 +12198,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode303() {
+  void loadNode341() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -10449,7 +12223,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode304() {
+  void loadNode342() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -10474,7 +12248,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode305() {
+  void loadNode343() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -10499,7 +12273,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode306() {
+  void loadNode344() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -10524,7 +12298,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode307() {
+  void loadNode345() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -10549,7 +12323,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode308() {
+  void loadNode346() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -10574,7 +12348,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode309() {
+  void loadNode347() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -10599,7 +12373,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode310() {
+  void loadNode348() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -10624,7 +12398,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode311() {
+  void loadNode349() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -10649,7 +12423,82 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode312() {
+  void loadNode350() {
+    var node =
+        new DataTypeEncodingTypeNode(
+            this.context,
+            new NodeId(0, 32560),
+            new QualifiedName(0, "Default Binary"),
+            new LocalizedText("", "Default Binary"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32560), new NodeId(0, 38), new NodeId(0, 32434).expanded(), false));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32560), new NodeId(0, 39), new NodeId(0, 32563).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 32560), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode351() {
+    var node =
+        new DataTypeEncodingTypeNode(
+            this.context,
+            new NodeId(0, 32561),
+            new QualifiedName(0, "Default Binary"),
+            new LocalizedText("", "Default Binary"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32561), new NodeId(0, 38), new NodeId(0, 32435).expanded(), false));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32561), new NodeId(0, 39), new NodeId(0, 32566).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 32561), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode352() {
+    var node =
+        new DataTypeEncodingTypeNode(
+            this.context,
+            new NodeId(0, 32562),
+            new QualifiedName(0, "Default Binary"),
+            new LocalizedText("", "Default Binary"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32562), new NodeId(0, 38), new NodeId(0, 32438).expanded(), false));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32562), new NodeId(0, 39), new NodeId(0, 32569).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 32562), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode353() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -10674,7 +12523,32 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode313() {
+  void loadNode354() {
+    var node =
+        new DataTypeEncodingTypeNode(
+            this.context,
+            new NodeId(0, 32382),
+            new QualifiedName(0, "Default Binary"),
+            new LocalizedText("", "Default Binary"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32382), new NodeId(0, 38), new NodeId(0, 32285).expanded(), false));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32382), new NodeId(0, 39), new NodeId(0, 32383).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 32382), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode355() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -10699,7 +12573,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode314() {
+  void loadNode356() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -10724,7 +12598,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode315() {
+  void loadNode357() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -10749,7 +12623,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode316() {
+  void loadNode358() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -10774,7 +12648,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode317() {
+  void loadNode359() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -10799,7 +12673,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode318() {
+  void loadNode360() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -10824,7 +12698,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode319() {
+  void loadNode361() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -10849,7 +12723,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode320() {
+  void loadNode362() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -10874,7 +12748,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode321() {
+  void loadNode363() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -10899,7 +12773,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode322() {
+  void loadNode364() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -10924,7 +12798,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode323() {
+  void loadNode365() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -10949,7 +12823,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode324() {
+  void loadNode366() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -10974,7 +12848,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode325() {
+  void loadNode367() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -10999,7 +12873,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode326() {
+  void loadNode368() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11024,7 +12898,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode327() {
+  void loadNode369() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11049,7 +12923,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode328() {
+  void loadNode370() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11074,7 +12948,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode329() {
+  void loadNode371() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11099,7 +12973,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode330() {
+  void loadNode372() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11124,7 +12998,107 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode331() {
+  void loadNode373() {
+    var node =
+        new DataTypeEncodingTypeNode(
+            this.context,
+            new NodeId(0, 18598),
+            new QualifiedName(0, "Default Binary"),
+            new LocalizedText("", "Default Binary"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18598), new NodeId(0, 38), new NodeId(0, 18593).expanded(), false));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18598), new NodeId(0, 39), new NodeId(0, 18601).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 18598), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode374() {
+    var node =
+        new DataTypeEncodingTypeNode(
+            this.context,
+            new NodeId(0, 18599),
+            new QualifiedName(0, "Default Binary"),
+            new LocalizedText("", "Default Binary"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18599), new NodeId(0, 38), new NodeId(0, 18594).expanded(), false));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18599), new NodeId(0, 39), new NodeId(0, 18604).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 18599), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode375() {
+    var node =
+        new DataTypeEncodingTypeNode(
+            this.context,
+            new NodeId(0, 18600),
+            new QualifiedName(0, "Default Binary"),
+            new LocalizedText("", "Default Binary"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18600), new NodeId(0, 38), new NodeId(0, 18597).expanded(), false));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18600), new NodeId(0, 39), new NodeId(0, 18607).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 18600), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode376() {
+    var node =
+        new DataTypeEncodingTypeNode(
+            this.context,
+            new NodeId(0, 18795),
+            new QualifiedName(0, "Default Binary"),
+            new LocalizedText("", "Default Binary"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18795), new NodeId(0, 38), new NodeId(0, 18793).expanded(), false));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18795), new NodeId(0, 39), new NodeId(0, 18931).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 18795), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode377() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11149,7 +13123,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode332() {
+  void loadNode378() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11174,7 +13148,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode333() {
+  void loadNode379() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11199,7 +13173,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode334() {
+  void loadNode380() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11224,7 +13198,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode335() {
+  void loadNode381() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11249,7 +13223,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode336() {
+  void loadNode382() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11274,7 +13248,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode337() {
+  void loadNode383() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11299,7 +13273,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode338() {
+  void loadNode384() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11324,7 +13298,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode339() {
+  void loadNode385() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11349,7 +13323,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode340() {
+  void loadNode386() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11374,7 +13348,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode341() {
+  void loadNode387() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11399,7 +13373,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode342() {
+  void loadNode388() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11424,7 +13398,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode343() {
+  void loadNode389() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11449,7 +13423,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode344() {
+  void loadNode390() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11474,7 +13448,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode345() {
+  void loadNode391() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11499,7 +13473,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode346() {
+  void loadNode392() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11524,7 +13498,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode347() {
+  void loadNode393() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11549,7 +13523,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode348() {
+  void loadNode394() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11574,7 +13548,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode349() {
+  void loadNode395() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11599,7 +13573,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode350() {
+  void loadNode396() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11624,7 +13598,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode351() {
+  void loadNode397() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11649,7 +13623,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode352() {
+  void loadNode398() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11674,7 +13648,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode353() {
+  void loadNode399() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11699,7 +13673,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode354() {
+  void loadNode400() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11724,7 +13698,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode355() {
+  void loadNode401() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11749,7 +13723,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode356() {
+  void loadNode402() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11774,7 +13748,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode357() {
+  void loadNode403() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11799,7 +13773,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode358() {
+  void loadNode404() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11824,7 +13798,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode359() {
+  void loadNode405() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11849,7 +13823,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode360() {
+  void loadNode406() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11874,7 +13848,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode361() {
+  void loadNode407() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11899,7 +13873,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode362() {
+  void loadNode408() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11924,7 +13898,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode363() {
+  void loadNode409() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11949,7 +13923,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode364() {
+  void loadNode410() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11974,7 +13948,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode365() {
+  void loadNode411() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -11999,7 +13973,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode366() {
+  void loadNode412() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12024,7 +13998,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode367() {
+  void loadNode413() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12049,7 +14023,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode368() {
+  void loadNode414() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12074,7 +14048,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode369() {
+  void loadNode415() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12099,7 +14073,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode370() {
+  void loadNode416() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12124,7 +14098,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode371() {
+  void loadNode417() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12149,7 +14123,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode372() {
+  void loadNode418() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12174,7 +14148,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode373() {
+  void loadNode419() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12199,7 +14173,32 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode374() {
+  void loadNode420() {
+    var node =
+        new DataTypeEncodingTypeNode(
+            this.context,
+            new NodeId(0, 18930),
+            new QualifiedName(0, "Default Binary"),
+            new LocalizedText("", "Default Binary"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18930), new NodeId(0, 38), new NodeId(0, 18794).expanded(), false));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18930), new NodeId(0, 39), new NodeId(0, 18934).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 18930), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode421() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12224,7 +14223,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode375() {
+  void loadNode422() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12249,7 +14248,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode376() {
+  void loadNode423() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12274,7 +14273,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode377() {
+  void loadNode424() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12299,7 +14298,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode378() {
+  void loadNode425() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12324,7 +14323,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode379() {
+  void loadNode426() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12349,7 +14348,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode380() {
+  void loadNode427() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12374,7 +14373,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode381() {
+  void loadNode428() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12399,7 +14398,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode382() {
+  void loadNode429() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12424,7 +14423,132 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode383() {
+  void loadNode430() {
+    var node =
+        new DataTypeEncodingTypeNode(
+            this.context,
+            new NodeId(0, 19079),
+            new QualifiedName(0, "Default Binary"),
+            new LocalizedText("", "Default Binary"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19079), new NodeId(0, 38), new NodeId(0, 18953).expanded(), false));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19079), new NodeId(0, 39), new NodeId(0, 19085).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 19079), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode431() {
+    var node =
+        new DataTypeEncodingTypeNode(
+            this.context,
+            new NodeId(0, 19080),
+            new QualifiedName(0, "Default Binary"),
+            new LocalizedText("", "Default Binary"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19080), new NodeId(0, 38), new NodeId(0, 18954).expanded(), false));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19080), new NodeId(0, 39), new NodeId(0, 19088).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 19080), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode432() {
+    var node =
+        new DataTypeEncodingTypeNode(
+            this.context,
+            new NodeId(0, 19081),
+            new QualifiedName(0, "Default Binary"),
+            new LocalizedText("", "Default Binary"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19081), new NodeId(0, 38), new NodeId(0, 18955).expanded(), false));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19081), new NodeId(0, 39), new NodeId(0, 19097).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 19081), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode433() {
+    var node =
+        new DataTypeEncodingTypeNode(
+            this.context,
+            new NodeId(0, 32661),
+            new QualifiedName(0, "Default Binary"),
+            new LocalizedText("", "Default Binary"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32661), new NodeId(0, 38), new NodeId(0, 32659).expanded(), false));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32661), new NodeId(0, 39), new NodeId(0, 32663).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 32661), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode434() {
+    var node =
+        new DataTypeEncodingTypeNode(
+            this.context,
+            new NodeId(0, 32662),
+            new QualifiedName(0, "Default Binary"),
+            new LocalizedText("", "Default Binary"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32662), new NodeId(0, 38), new NodeId(0, 32660).expanded(), false));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32662), new NodeId(0, 39), new NodeId(0, 32666).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 32662), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode435() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12448,7 +14572,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode384() {
+  void loadNode436() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12472,7 +14596,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode385() {
+  void loadNode437() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12497,7 +14621,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode386() {
+  void loadNode438() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12521,7 +14645,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode387() {
+  void loadNode439() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12545,7 +14669,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode388() {
+  void loadNode440() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12568,7 +14692,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode389() {
+  void loadNode441() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12593,7 +14717,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode390() {
+  void loadNode442() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12618,7 +14742,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode391() {
+  void loadNode443() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12643,7 +14767,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode392() {
+  void loadNode444() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12668,7 +14792,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode393() {
+  void loadNode445() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12691,7 +14815,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode394() {
+  void loadNode446() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12716,7 +14840,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode395() {
+  void loadNode447() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12739,7 +14863,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode396() {
+  void loadNode448() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12762,7 +14886,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode397() {
+  void loadNode449() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12785,7 +14909,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode398() {
+  void loadNode450() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12810,7 +14934,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode399() {
+  void loadNode451() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12835,7 +14959,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode400() {
+  void loadNode452() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12858,7 +14982,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode401() {
+  void loadNode453() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12881,7 +15005,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode402() {
+  void loadNode454() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12904,7 +15028,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode403() {
+  void loadNode455() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12927,7 +15051,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode404() {
+  void loadNode456() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12950,7 +15074,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode405() {
+  void loadNode457() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12973,7 +15097,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode406() {
+  void loadNode458() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -12996,7 +15120,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode407() {
+  void loadNode459() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13019,7 +15143,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode408() {
+  void loadNode460() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13042,7 +15166,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode409() {
+  void loadNode461() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13065,7 +15189,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode410() {
+  void loadNode462() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13089,7 +15213,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode411() {
+  void loadNode463() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13113,7 +15237,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode412() {
+  void loadNode464() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13136,7 +15260,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode413() {
+  void loadNode465() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13159,7 +15283,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode414() {
+  void loadNode466() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13182,7 +15306,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode415() {
+  void loadNode467() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13205,7 +15329,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode416() {
+  void loadNode468() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13228,7 +15352,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode417() {
+  void loadNode469() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13251,7 +15375,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode418() {
+  void loadNode470() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13274,7 +15398,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode419() {
+  void loadNode471() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13297,7 +15421,32 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode420() {
+  void loadNode472() {
+    var node =
+        new DataTypeEncodingTypeNode(
+            this.context,
+            new NodeId(0, 11226),
+            new QualifiedName(0, "Default Binary"),
+            new LocalizedText("", "Default Binary"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 11226), new NodeId(0, 38), new NodeId(0, 11216).expanded(), false));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 11226), new NodeId(0, 39), new NodeId(0, 15018).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 11226), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode473() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13320,7 +15469,32 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode421() {
+  void loadNode474() {
+    var node =
+        new DataTypeEncodingTypeNode(
+            this.context,
+            new NodeId(0, 32825),
+            new QualifiedName(0, "Default Binary"),
+            new LocalizedText("", "Default Binary"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            UByte.valueOf(0));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32825), new NodeId(0, 38), new NodeId(0, 32824).expanded(), false));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32825), new NodeId(0, 39), new NodeId(0, 32826).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 32825), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode475() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13343,7 +15517,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode422() {
+  void loadNode476() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13366,7 +15540,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode423() {
+  void loadNode477() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13389,7 +15563,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode424() {
+  void loadNode478() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13412,7 +15586,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode425() {
+  void loadNode479() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13435,7 +15609,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode426() {
+  void loadNode480() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13458,7 +15632,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode427() {
+  void loadNode481() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13483,7 +15657,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode428() {
+  void loadNode482() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13508,7 +15682,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode429() {
+  void loadNode483() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13531,7 +15705,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode430() {
+  void loadNode484() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13554,7 +15728,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode431() {
+  void loadNode485() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13577,7 +15751,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode432() {
+  void loadNode486() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13600,7 +15774,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode433() {
+  void loadNode487() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13623,7 +15797,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode434() {
+  void loadNode488() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13646,7 +15820,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode435() {
+  void loadNode489() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13669,7 +15843,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode436() {
+  void loadNode490() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13692,7 +15866,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode437() {
+  void loadNode491() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13715,7 +15889,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode438() {
+  void loadNode492() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13738,7 +15912,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode439() {
+  void loadNode493() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13761,7 +15935,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode440() {
+  void loadNode494() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13784,7 +15958,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode441() {
+  void loadNode495() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13809,7 +15983,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode442() {
+  void loadNode496() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13834,7 +16008,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode443() {
+  void loadNode497() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13859,7 +16033,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode444() {
+  void loadNode498() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13884,7 +16058,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode445() {
+  void loadNode499() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13907,7 +16081,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode446() {
+  void loadNode500() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13932,7 +16106,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode447() {
+  void loadNode501() {
     var node =
         new DataTypeEncodingTypeNode(
             this.context,
@@ -13955,7 +16129,7 @@ class ObjectNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode448() {
+  void loadNode502() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -13983,7 +16157,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode449() {
+  void loadNode503() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14011,7 +16185,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode450() {
+  void loadNode504() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14039,7 +16213,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode451() {
+  void loadNode505() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14067,7 +16241,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode452() {
+  void loadNode506() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14095,7 +16269,35 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode453() {
+  void loadNode507() {
+    if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
+      var node =
+          new DataTypeEncodingTypeNode(
+              this.context,
+              new NodeId(0, 32426),
+              new QualifiedName(0, "Default XML"),
+              new LocalizedText("", "Default XML"),
+              LocalizedText.NULL_VALUE,
+              UInteger.valueOf(0),
+              UInteger.valueOf(0),
+              null,
+              null,
+              new AccessRestrictionType(UShort.valueOf(0)),
+              UByte.valueOf(0));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32426), new NodeId(0, 38), new NodeId(0, 32421).expanded(), false));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32426), new NodeId(0, 39), new NodeId(0, 32427).expanded(), true));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32426), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+      this.nodeManager.addNode(node);
+    }
+  }
+
+  void loadNode508() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14123,7 +16325,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode454() {
+  void loadNode509() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14151,7 +16353,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode455() {
+  void loadNode510() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14179,7 +16381,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode456() {
+  void loadNode511() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14207,7 +16409,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode457() {
+  void loadNode512() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14235,7 +16437,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode458() {
+  void loadNode513() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14263,7 +16465,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode459() {
+  void loadNode514() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14291,7 +16493,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode460() {
+  void loadNode515() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14319,7 +16521,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode461() {
+  void loadNode516() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14347,7 +16549,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode462() {
+  void loadNode517() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14375,7 +16577,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode463() {
+  void loadNode518() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14403,7 +16605,91 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode464() {
+  void loadNode519() {
+    if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
+      var node =
+          new DataTypeEncodingTypeNode(
+              this.context,
+              new NodeId(0, 32572),
+              new QualifiedName(0, "Default XML"),
+              new LocalizedText("", "Default XML"),
+              LocalizedText.NULL_VALUE,
+              UInteger.valueOf(0),
+              UInteger.valueOf(0),
+              null,
+              null,
+              new AccessRestrictionType(UShort.valueOf(0)),
+              UByte.valueOf(0));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32572), new NodeId(0, 38), new NodeId(0, 32434).expanded(), false));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32572), new NodeId(0, 39), new NodeId(0, 32575).expanded(), true));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32572), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+      this.nodeManager.addNode(node);
+    }
+  }
+
+  void loadNode520() {
+    if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
+      var node =
+          new DataTypeEncodingTypeNode(
+              this.context,
+              new NodeId(0, 32573),
+              new QualifiedName(0, "Default XML"),
+              new LocalizedText("", "Default XML"),
+              LocalizedText.NULL_VALUE,
+              UInteger.valueOf(0),
+              UInteger.valueOf(0),
+              null,
+              null,
+              new AccessRestrictionType(UShort.valueOf(0)),
+              UByte.valueOf(0));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32573), new NodeId(0, 38), new NodeId(0, 32435).expanded(), false));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32573), new NodeId(0, 39), new NodeId(0, 32578).expanded(), true));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32573), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+      this.nodeManager.addNode(node);
+    }
+  }
+
+  void loadNode521() {
+    if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
+      var node =
+          new DataTypeEncodingTypeNode(
+              this.context,
+              new NodeId(0, 32574),
+              new QualifiedName(0, "Default XML"),
+              new LocalizedText("", "Default XML"),
+              LocalizedText.NULL_VALUE,
+              UInteger.valueOf(0),
+              UInteger.valueOf(0),
+              null,
+              null,
+              new AccessRestrictionType(UShort.valueOf(0)),
+              UByte.valueOf(0));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32574), new NodeId(0, 38), new NodeId(0, 32438).expanded(), false));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32574), new NodeId(0, 39), new NodeId(0, 32581).expanded(), true));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32574), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+      this.nodeManager.addNode(node);
+    }
+  }
+
+  void loadNode522() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14431,7 +16717,35 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode465() {
+  void loadNode523() {
+    if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
+      var node =
+          new DataTypeEncodingTypeNode(
+              this.context,
+              new NodeId(0, 32386),
+              new QualifiedName(0, "Default XML"),
+              new LocalizedText("", "Default XML"),
+              LocalizedText.NULL_VALUE,
+              UInteger.valueOf(0),
+              UInteger.valueOf(0),
+              null,
+              null,
+              new AccessRestrictionType(UShort.valueOf(0)),
+              UByte.valueOf(0));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32386), new NodeId(0, 38), new NodeId(0, 32285).expanded(), false));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32386), new NodeId(0, 39), new NodeId(0, 32387).expanded(), true));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32386), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+      this.nodeManager.addNode(node);
+    }
+  }
+
+  void loadNode524() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14459,7 +16773,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode466() {
+  void loadNode525() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14487,7 +16801,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode467() {
+  void loadNode526() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14515,7 +16829,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode468() {
+  void loadNode527() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14543,7 +16857,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode469() {
+  void loadNode528() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14571,7 +16885,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode470() {
+  void loadNode529() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14599,7 +16913,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode471() {
+  void loadNode530() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14627,7 +16941,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode472() {
+  void loadNode531() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14655,7 +16969,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode473() {
+  void loadNode532() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14683,7 +16997,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode474() {
+  void loadNode533() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14711,7 +17025,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode475() {
+  void loadNode534() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14739,7 +17053,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode476() {
+  void loadNode535() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14767,7 +17081,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode477() {
+  void loadNode536() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14795,7 +17109,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode478() {
+  void loadNode537() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14823,7 +17137,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode479() {
+  void loadNode538() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14851,7 +17165,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode480() {
+  void loadNode539() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14879,7 +17193,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode481() {
+  void loadNode540() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14907,7 +17221,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode482() {
+  void loadNode541() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14935,7 +17249,119 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode483() {
+  void loadNode542() {
+    if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
+      var node =
+          new DataTypeEncodingTypeNode(
+              this.context,
+              new NodeId(0, 18610),
+              new QualifiedName(0, "Default XML"),
+              new LocalizedText("", "Default XML"),
+              LocalizedText.NULL_VALUE,
+              UInteger.valueOf(0),
+              UInteger.valueOf(0),
+              null,
+              null,
+              new AccessRestrictionType(UShort.valueOf(0)),
+              UByte.valueOf(0));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 18610), new NodeId(0, 38), new NodeId(0, 18593).expanded(), false));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 18610), new NodeId(0, 39), new NodeId(0, 18613).expanded(), true));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 18610), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+      this.nodeManager.addNode(node);
+    }
+  }
+
+  void loadNode543() {
+    if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
+      var node =
+          new DataTypeEncodingTypeNode(
+              this.context,
+              new NodeId(0, 18611),
+              new QualifiedName(0, "Default XML"),
+              new LocalizedText("", "Default XML"),
+              LocalizedText.NULL_VALUE,
+              UInteger.valueOf(0),
+              UInteger.valueOf(0),
+              null,
+              null,
+              new AccessRestrictionType(UShort.valueOf(0)),
+              UByte.valueOf(0));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 18611), new NodeId(0, 38), new NodeId(0, 18594).expanded(), false));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 18611), new NodeId(0, 39), new NodeId(0, 18616).expanded(), true));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 18611), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+      this.nodeManager.addNode(node);
+    }
+  }
+
+  void loadNode544() {
+    if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
+      var node =
+          new DataTypeEncodingTypeNode(
+              this.context,
+              new NodeId(0, 18612),
+              new QualifiedName(0, "Default XML"),
+              new LocalizedText("", "Default XML"),
+              LocalizedText.NULL_VALUE,
+              UInteger.valueOf(0),
+              UInteger.valueOf(0),
+              null,
+              null,
+              new AccessRestrictionType(UShort.valueOf(0)),
+              UByte.valueOf(0));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 18612), new NodeId(0, 38), new NodeId(0, 18597).expanded(), false));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 18612), new NodeId(0, 39), new NodeId(0, 18619).expanded(), true));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 18612), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+      this.nodeManager.addNode(node);
+    }
+  }
+
+  void loadNode545() {
+    if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
+      var node =
+          new DataTypeEncodingTypeNode(
+              this.context,
+              new NodeId(0, 18937),
+              new QualifiedName(0, "Default XML"),
+              new LocalizedText("", "Default XML"),
+              LocalizedText.NULL_VALUE,
+              UInteger.valueOf(0),
+              UInteger.valueOf(0),
+              null,
+              null,
+              new AccessRestrictionType(UShort.valueOf(0)),
+              UByte.valueOf(0));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 18937), new NodeId(0, 38), new NodeId(0, 18793).expanded(), false));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 18937), new NodeId(0, 39), new NodeId(0, 18939).expanded(), true));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 18937), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+      this.nodeManager.addNode(node);
+    }
+  }
+
+  void loadNode546() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14963,7 +17389,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode484() {
+  void loadNode547() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -14991,7 +17417,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode485() {
+  void loadNode548() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15019,7 +17445,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode486() {
+  void loadNode549() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15047,7 +17473,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode487() {
+  void loadNode550() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15075,7 +17501,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode488() {
+  void loadNode551() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15103,7 +17529,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode489() {
+  void loadNode552() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15131,7 +17557,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode490() {
+  void loadNode553() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15159,7 +17585,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode491() {
+  void loadNode554() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15187,7 +17613,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode492() {
+  void loadNode555() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15215,7 +17641,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode493() {
+  void loadNode556() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15243,7 +17669,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode494() {
+  void loadNode557() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15271,7 +17697,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode495() {
+  void loadNode558() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15299,7 +17725,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode496() {
+  void loadNode559() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15327,7 +17753,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode497() {
+  void loadNode560() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15355,7 +17781,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode498() {
+  void loadNode561() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15383,7 +17809,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode499() {
+  void loadNode562() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15411,7 +17837,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode500() {
+  void loadNode563() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15439,7 +17865,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode501() {
+  void loadNode564() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15467,7 +17893,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode502() {
+  void loadNode565() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15495,7 +17921,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode503() {
+  void loadNode566() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15523,7 +17949,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode504() {
+  void loadNode567() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15551,7 +17977,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode505() {
+  void loadNode568() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15579,7 +18005,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode506() {
+  void loadNode569() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15607,7 +18033,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode507() {
+  void loadNode570() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15635,7 +18061,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode508() {
+  void loadNode571() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15663,7 +18089,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode509() {
+  void loadNode572() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15691,7 +18117,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode510() {
+  void loadNode573() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15719,7 +18145,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode511() {
+  void loadNode574() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15747,7 +18173,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode512() {
+  void loadNode575() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15775,7 +18201,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode513() {
+  void loadNode576() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15803,7 +18229,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode514() {
+  void loadNode577() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15831,7 +18257,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode515() {
+  void loadNode578() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15859,7 +18285,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode516() {
+  void loadNode579() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15887,7 +18313,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode517() {
+  void loadNode580() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15915,7 +18341,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode518() {
+  void loadNode581() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15943,7 +18369,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode519() {
+  void loadNode582() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15971,7 +18397,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode520() {
+  void loadNode583() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -15999,7 +18425,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode521() {
+  void loadNode584() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16027,7 +18453,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode522() {
+  void loadNode585() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16055,7 +18481,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode523() {
+  void loadNode586() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16083,7 +18509,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode524() {
+  void loadNode587() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16111,7 +18537,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode525() {
+  void loadNode588() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16139,7 +18565,35 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode526() {
+  void loadNode589() {
+    if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
+      var node =
+          new DataTypeEncodingTypeNode(
+              this.context,
+              new NodeId(0, 18938),
+              new QualifiedName(0, "Default XML"),
+              new LocalizedText("", "Default XML"),
+              LocalizedText.NULL_VALUE,
+              UInteger.valueOf(0),
+              UInteger.valueOf(0),
+              null,
+              null,
+              new AccessRestrictionType(UShort.valueOf(0)),
+              UByte.valueOf(0));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 18938), new NodeId(0, 38), new NodeId(0, 18794).expanded(), false));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 18938), new NodeId(0, 39), new NodeId(0, 18942).expanded(), true));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 18938), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+      this.nodeManager.addNode(node);
+    }
+  }
+
+  void loadNode590() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16167,7 +18621,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode527() {
+  void loadNode591() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16195,7 +18649,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode528() {
+  void loadNode592() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16223,7 +18677,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode529() {
+  void loadNode593() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16251,7 +18705,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode530() {
+  void loadNode594() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16279,7 +18733,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode531() {
+  void loadNode595() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16307,7 +18761,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode532() {
+  void loadNode596() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16335,7 +18789,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode533() {
+  void loadNode597() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16363,7 +18817,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode534() {
+  void loadNode598() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16391,7 +18845,147 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode535() {
+  void loadNode599() {
+    if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
+      var node =
+          new DataTypeEncodingTypeNode(
+              this.context,
+              new NodeId(0, 19100),
+              new QualifiedName(0, "Default XML"),
+              new LocalizedText("", "Default XML"),
+              LocalizedText.NULL_VALUE,
+              UInteger.valueOf(0),
+              UInteger.valueOf(0),
+              null,
+              null,
+              new AccessRestrictionType(UShort.valueOf(0)),
+              UByte.valueOf(0));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 19100), new NodeId(0, 38), new NodeId(0, 18953).expanded(), false));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 19100), new NodeId(0, 39), new NodeId(0, 19103).expanded(), true));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 19100), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+      this.nodeManager.addNode(node);
+    }
+  }
+
+  void loadNode600() {
+    if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
+      var node =
+          new DataTypeEncodingTypeNode(
+              this.context,
+              new NodeId(0, 19101),
+              new QualifiedName(0, "Default XML"),
+              new LocalizedText("", "Default XML"),
+              LocalizedText.NULL_VALUE,
+              UInteger.valueOf(0),
+              UInteger.valueOf(0),
+              null,
+              null,
+              new AccessRestrictionType(UShort.valueOf(0)),
+              UByte.valueOf(0));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 19101), new NodeId(0, 38), new NodeId(0, 18954).expanded(), false));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 19101), new NodeId(0, 39), new NodeId(0, 19106).expanded(), true));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 19101), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+      this.nodeManager.addNode(node);
+    }
+  }
+
+  void loadNode601() {
+    if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
+      var node =
+          new DataTypeEncodingTypeNode(
+              this.context,
+              new NodeId(0, 19102),
+              new QualifiedName(0, "Default XML"),
+              new LocalizedText("", "Default XML"),
+              LocalizedText.NULL_VALUE,
+              UInteger.valueOf(0),
+              UInteger.valueOf(0),
+              null,
+              null,
+              new AccessRestrictionType(UShort.valueOf(0)),
+              UByte.valueOf(0));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 19102), new NodeId(0, 38), new NodeId(0, 18955).expanded(), false));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 19102), new NodeId(0, 39), new NodeId(0, 19291).expanded(), true));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 19102), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+      this.nodeManager.addNode(node);
+    }
+  }
+
+  void loadNode602() {
+    if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
+      var node =
+          new DataTypeEncodingTypeNode(
+              this.context,
+              new NodeId(0, 32669),
+              new QualifiedName(0, "Default XML"),
+              new LocalizedText("", "Default XML"),
+              LocalizedText.NULL_VALUE,
+              UInteger.valueOf(0),
+              UInteger.valueOf(0),
+              null,
+              null,
+              new AccessRestrictionType(UShort.valueOf(0)),
+              UByte.valueOf(0));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32669), new NodeId(0, 38), new NodeId(0, 32659).expanded(), false));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32669), new NodeId(0, 39), new NodeId(0, 32671).expanded(), true));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32669), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+      this.nodeManager.addNode(node);
+    }
+  }
+
+  void loadNode603() {
+    if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
+      var node =
+          new DataTypeEncodingTypeNode(
+              this.context,
+              new NodeId(0, 32670),
+              new QualifiedName(0, "Default XML"),
+              new LocalizedText("", "Default XML"),
+              LocalizedText.NULL_VALUE,
+              UInteger.valueOf(0),
+              UInteger.valueOf(0),
+              null,
+              null,
+              new AccessRestrictionType(UShort.valueOf(0)),
+              UByte.valueOf(0));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32670), new NodeId(0, 38), new NodeId(0, 32660).expanded(), false));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32670), new NodeId(0, 39), new NodeId(0, 32674).expanded(), true));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32670), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+      this.nodeManager.addNode(node);
+    }
+  }
+
+  void loadNode604() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16419,7 +19013,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode536() {
+  void loadNode605() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16447,7 +19041,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode537() {
+  void loadNode606() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16475,7 +19069,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode538() {
+  void loadNode607() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16503,7 +19097,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode539() {
+  void loadNode608() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16531,7 +19125,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode540() {
+  void loadNode609() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16558,7 +19152,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode541() {
+  void loadNode610() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16586,7 +19180,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode542() {
+  void loadNode611() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16614,7 +19208,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode543() {
+  void loadNode612() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16642,7 +19236,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode544() {
+  void loadNode613() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16670,7 +19264,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode545() {
+  void loadNode614() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16697,7 +19291,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode546() {
+  void loadNode615() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16725,7 +19319,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode547() {
+  void loadNode616() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16752,7 +19346,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode548() {
+  void loadNode617() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16779,7 +19373,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode549() {
+  void loadNode618() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16806,7 +19400,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode550() {
+  void loadNode619() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16834,7 +19428,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode551() {
+  void loadNode620() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16862,7 +19456,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode552() {
+  void loadNode621() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16889,7 +19483,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode553() {
+  void loadNode622() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16916,7 +19510,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode554() {
+  void loadNode623() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16943,7 +19537,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode555() {
+  void loadNode624() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16970,7 +19564,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode556() {
+  void loadNode625() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -16997,7 +19591,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode557() {
+  void loadNode626() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17024,7 +19618,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode558() {
+  void loadNode627() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17051,7 +19645,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode559() {
+  void loadNode628() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17078,7 +19672,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode560() {
+  void loadNode629() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17105,7 +19699,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode561() {
+  void loadNode630() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17132,7 +19726,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode562() {
+  void loadNode631() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17159,7 +19753,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode563() {
+  void loadNode632() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17186,7 +19780,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode564() {
+  void loadNode633() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17213,7 +19807,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode565() {
+  void loadNode634() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17240,7 +19834,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode566() {
+  void loadNode635() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17267,7 +19861,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode567() {
+  void loadNode636() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17294,7 +19888,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode568() {
+  void loadNode637() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17321,7 +19915,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode569() {
+  void loadNode638() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17348,7 +19942,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode570() {
+  void loadNode639() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17375,7 +19969,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode571() {
+  void loadNode640() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17402,7 +19996,35 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode572() {
+  void loadNode641() {
+    if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
+      var node =
+          new DataTypeEncodingTypeNode(
+              this.context,
+              new NodeId(0, 11218),
+              new QualifiedName(0, "Default XML"),
+              new LocalizedText("", "Default XML"),
+              LocalizedText.NULL_VALUE,
+              UInteger.valueOf(0),
+              UInteger.valueOf(0),
+              null,
+              null,
+              new AccessRestrictionType(UShort.valueOf(0)),
+              UByte.valueOf(0));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 11218), new NodeId(0, 38), new NodeId(0, 11216).expanded(), false));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 11218), new NodeId(0, 39), new NodeId(0, 15021).expanded(), true));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 11218), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+      this.nodeManager.addNode(node);
+    }
+  }
+
+  void loadNode642() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17429,7 +20051,35 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode573() {
+  void loadNode643() {
+    if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
+      var node =
+          new DataTypeEncodingTypeNode(
+              this.context,
+              new NodeId(0, 32829),
+              new QualifiedName(0, "Default XML"),
+              new LocalizedText("", "Default XML"),
+              LocalizedText.NULL_VALUE,
+              UInteger.valueOf(0),
+              UInteger.valueOf(0),
+              null,
+              null,
+              new AccessRestrictionType(UShort.valueOf(0)),
+              UByte.valueOf(0));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32829), new NodeId(0, 38), new NodeId(0, 32824).expanded(), false));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32829), new NodeId(0, 39), new NodeId(0, 32830).expanded(), true));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32829), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+      this.nodeManager.addNode(node);
+    }
+  }
+
+  void loadNode644() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17456,7 +20106,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode574() {
+  void loadNode645() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17483,7 +20133,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode575() {
+  void loadNode646() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17510,7 +20160,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode576() {
+  void loadNode647() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17537,7 +20187,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode577() {
+  void loadNode648() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17564,7 +20214,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode578() {
+  void loadNode649() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17591,7 +20241,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode579() {
+  void loadNode650() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17619,7 +20269,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode580() {
+  void loadNode651() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17647,7 +20297,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode581() {
+  void loadNode652() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17674,7 +20324,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode582() {
+  void loadNode653() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17701,7 +20351,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode583() {
+  void loadNode654() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17728,7 +20378,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode584() {
+  void loadNode655() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17755,7 +20405,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode585() {
+  void loadNode656() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17782,7 +20432,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode586() {
+  void loadNode657() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17809,7 +20459,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode587() {
+  void loadNode658() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17836,7 +20486,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode588() {
+  void loadNode659() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17863,7 +20513,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode589() {
+  void loadNode660() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17890,7 +20540,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode590() {
+  void loadNode661() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17917,7 +20567,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode591() {
+  void loadNode662() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17944,7 +20594,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode592() {
+  void loadNode663() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17971,7 +20621,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode593() {
+  void loadNode664() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -17999,7 +20649,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode594() {
+  void loadNode665() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18027,7 +20677,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode595() {
+  void loadNode666() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18055,7 +20705,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode596() {
+  void loadNode667() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18083,7 +20733,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode597() {
+  void loadNode668() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18110,7 +20760,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode598() {
+  void loadNode669() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18138,7 +20788,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode599() {
+  void loadNode670() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.XML_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18165,7 +20815,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode600() {
+  void loadNode671() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18190,7 +20840,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode601() {
+  void loadNode672() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18215,7 +20865,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode602() {
+  void loadNode673() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18240,7 +20890,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode603() {
+  void loadNode674() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18265,7 +20915,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode604() {
+  void loadNode675() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18290,7 +20940,32 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode605() {
+  void loadNode676() {
+    if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
+      var node =
+          new DataTypeEncodingTypeNode(
+              this.context,
+              new NodeId(0, 32430),
+              new QualifiedName(0, "Default JSON"),
+              new LocalizedText("", "Default JSON"),
+              LocalizedText.NULL_VALUE,
+              UInteger.valueOf(0),
+              UInteger.valueOf(0),
+              null,
+              null,
+              new AccessRestrictionType(UShort.valueOf(0)),
+              UByte.valueOf(0));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32430), new NodeId(0, 38), new NodeId(0, 32421).expanded(), false));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32430), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+      this.nodeManager.addNode(node);
+    }
+  }
+
+  void loadNode677() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18315,7 +20990,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode606() {
+  void loadNode678() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18340,7 +21015,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode607() {
+  void loadNode679() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18365,7 +21040,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode608() {
+  void loadNode680() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18390,7 +21065,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode609() {
+  void loadNode681() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18415,7 +21090,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode610() {
+  void loadNode682() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18440,7 +21115,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode611() {
+  void loadNode683() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18465,7 +21140,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode612() {
+  void loadNode684() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18490,7 +21165,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode613() {
+  void loadNode685() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18515,7 +21190,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode614() {
+  void loadNode686() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18540,7 +21215,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode615() {
+  void loadNode687() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18565,7 +21240,82 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode616() {
+  void loadNode688() {
+    if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
+      var node =
+          new DataTypeEncodingTypeNode(
+              this.context,
+              new NodeId(0, 32584),
+              new QualifiedName(0, "Default JSON"),
+              new LocalizedText("", "Default JSON"),
+              LocalizedText.NULL_VALUE,
+              UInteger.valueOf(0),
+              UInteger.valueOf(0),
+              null,
+              null,
+              new AccessRestrictionType(UShort.valueOf(0)),
+              UByte.valueOf(0));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32584), new NodeId(0, 38), new NodeId(0, 32434).expanded(), false));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32584), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+      this.nodeManager.addNode(node);
+    }
+  }
+
+  void loadNode689() {
+    if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
+      var node =
+          new DataTypeEncodingTypeNode(
+              this.context,
+              new NodeId(0, 32585),
+              new QualifiedName(0, "Default JSON"),
+              new LocalizedText("", "Default JSON"),
+              LocalizedText.NULL_VALUE,
+              UInteger.valueOf(0),
+              UInteger.valueOf(0),
+              null,
+              null,
+              new AccessRestrictionType(UShort.valueOf(0)),
+              UByte.valueOf(0));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32585), new NodeId(0, 38), new NodeId(0, 32435).expanded(), false));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32585), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+      this.nodeManager.addNode(node);
+    }
+  }
+
+  void loadNode690() {
+    if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
+      var node =
+          new DataTypeEncodingTypeNode(
+              this.context,
+              new NodeId(0, 32586),
+              new QualifiedName(0, "Default JSON"),
+              new LocalizedText("", "Default JSON"),
+              LocalizedText.NULL_VALUE,
+              UInteger.valueOf(0),
+              UInteger.valueOf(0),
+              null,
+              null,
+              new AccessRestrictionType(UShort.valueOf(0)),
+              UByte.valueOf(0));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32586), new NodeId(0, 38), new NodeId(0, 32438).expanded(), false));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32586), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+      this.nodeManager.addNode(node);
+    }
+  }
+
+  void loadNode691() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18590,7 +21340,32 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode617() {
+  void loadNode692() {
+    if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
+      var node =
+          new DataTypeEncodingTypeNode(
+              this.context,
+              new NodeId(0, 32390),
+              new QualifiedName(0, "Default JSON"),
+              new LocalizedText("", "Default JSON"),
+              LocalizedText.NULL_VALUE,
+              UInteger.valueOf(0),
+              UInteger.valueOf(0),
+              null,
+              null,
+              new AccessRestrictionType(UShort.valueOf(0)),
+              UByte.valueOf(0));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32390), new NodeId(0, 38), new NodeId(0, 32285).expanded(), false));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32390), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+      this.nodeManager.addNode(node);
+    }
+  }
+
+  void loadNode693() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18615,7 +21390,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode618() {
+  void loadNode694() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18640,7 +21415,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode619() {
+  void loadNode695() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18665,7 +21440,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode620() {
+  void loadNode696() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18690,7 +21465,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode621() {
+  void loadNode697() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18715,7 +21490,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode622() {
+  void loadNode698() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18740,7 +21515,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode623() {
+  void loadNode699() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18765,7 +21540,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode624() {
+  void loadNode700() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18790,7 +21565,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode625() {
+  void loadNode701() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18815,7 +21590,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode626() {
+  void loadNode702() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18840,7 +21615,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode627() {
+  void loadNode703() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18865,7 +21640,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode628() {
+  void loadNode704() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18890,7 +21665,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode629() {
+  void loadNode705() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18915,7 +21690,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode630() {
+  void loadNode706() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18940,7 +21715,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode631() {
+  void loadNode707() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18965,7 +21740,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode632() {
+  void loadNode708() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -18990,7 +21765,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode633() {
+  void loadNode709() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19015,7 +21790,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode634() {
+  void loadNode710() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19040,7 +21815,107 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode635() {
+  void loadNode711() {
+    if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
+      var node =
+          new DataTypeEncodingTypeNode(
+              this.context,
+              new NodeId(0, 18622),
+              new QualifiedName(0, "Default JSON"),
+              new LocalizedText("", "Default JSON"),
+              LocalizedText.NULL_VALUE,
+              UInteger.valueOf(0),
+              UInteger.valueOf(0),
+              null,
+              null,
+              new AccessRestrictionType(UShort.valueOf(0)),
+              UByte.valueOf(0));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 18622), new NodeId(0, 38), new NodeId(0, 18593).expanded(), false));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 18622), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+      this.nodeManager.addNode(node);
+    }
+  }
+
+  void loadNode712() {
+    if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
+      var node =
+          new DataTypeEncodingTypeNode(
+              this.context,
+              new NodeId(0, 18623),
+              new QualifiedName(0, "Default JSON"),
+              new LocalizedText("", "Default JSON"),
+              LocalizedText.NULL_VALUE,
+              UInteger.valueOf(0),
+              UInteger.valueOf(0),
+              null,
+              null,
+              new AccessRestrictionType(UShort.valueOf(0)),
+              UByte.valueOf(0));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 18623), new NodeId(0, 38), new NodeId(0, 18594).expanded(), false));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 18623), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+      this.nodeManager.addNode(node);
+    }
+  }
+
+  void loadNode713() {
+    if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
+      var node =
+          new DataTypeEncodingTypeNode(
+              this.context,
+              new NodeId(0, 18624),
+              new QualifiedName(0, "Default JSON"),
+              new LocalizedText("", "Default JSON"),
+              LocalizedText.NULL_VALUE,
+              UInteger.valueOf(0),
+              UInteger.valueOf(0),
+              null,
+              null,
+              new AccessRestrictionType(UShort.valueOf(0)),
+              UByte.valueOf(0));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 18624), new NodeId(0, 38), new NodeId(0, 18597).expanded(), false));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 18624), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+      this.nodeManager.addNode(node);
+    }
+  }
+
+  void loadNode714() {
+    if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
+      var node =
+          new DataTypeEncodingTypeNode(
+              this.context,
+              new NodeId(0, 18945),
+              new QualifiedName(0, "Default JSON"),
+              new LocalizedText("", "Default JSON"),
+              LocalizedText.NULL_VALUE,
+              UInteger.valueOf(0),
+              UInteger.valueOf(0),
+              null,
+              null,
+              new AccessRestrictionType(UShort.valueOf(0)),
+              UByte.valueOf(0));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 18945), new NodeId(0, 38), new NodeId(0, 18793).expanded(), false));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 18945), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+      this.nodeManager.addNode(node);
+    }
+  }
+
+  void loadNode715() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19065,7 +21940,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode636() {
+  void loadNode716() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19090,7 +21965,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode637() {
+  void loadNode717() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19115,7 +21990,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode638() {
+  void loadNode718() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19140,7 +22015,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode639() {
+  void loadNode719() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19165,7 +22040,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode640() {
+  void loadNode720() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19190,7 +22065,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode641() {
+  void loadNode721() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19215,7 +22090,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode642() {
+  void loadNode722() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19240,7 +22115,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode643() {
+  void loadNode723() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19265,7 +22140,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode644() {
+  void loadNode724() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19290,7 +22165,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode645() {
+  void loadNode725() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19315,7 +22190,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode646() {
+  void loadNode726() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19340,7 +22215,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode647() {
+  void loadNode727() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19365,7 +22240,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode648() {
+  void loadNode728() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19390,7 +22265,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode649() {
+  void loadNode729() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19415,7 +22290,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode650() {
+  void loadNode730() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19440,7 +22315,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode651() {
+  void loadNode731() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19465,7 +22340,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode652() {
+  void loadNode732() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19490,7 +22365,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode653() {
+  void loadNode733() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19515,7 +22390,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode654() {
+  void loadNode734() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19540,7 +22415,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode655() {
+  void loadNode735() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19565,7 +22440,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode656() {
+  void loadNode736() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19590,7 +22465,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode657() {
+  void loadNode737() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19615,7 +22490,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode658() {
+  void loadNode738() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19640,7 +22515,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode659() {
+  void loadNode739() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19665,7 +22540,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode660() {
+  void loadNode740() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19690,7 +22565,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode661() {
+  void loadNode741() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19715,7 +22590,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode662() {
+  void loadNode742() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19740,7 +22615,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode663() {
+  void loadNode743() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19765,7 +22640,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode664() {
+  void loadNode744() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19790,7 +22665,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode665() {
+  void loadNode745() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19815,7 +22690,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode666() {
+  void loadNode746() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19840,7 +22715,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode667() {
+  void loadNode747() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19865,7 +22740,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode668() {
+  void loadNode748() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19890,7 +22765,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode669() {
+  void loadNode749() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19915,7 +22790,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode670() {
+  void loadNode750() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19940,7 +22815,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode671() {
+  void loadNode751() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19965,7 +22840,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode672() {
+  void loadNode752() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -19990,7 +22865,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode673() {
+  void loadNode753() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20015,7 +22890,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode674() {
+  void loadNode754() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20040,7 +22915,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode675() {
+  void loadNode755() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20065,7 +22940,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode676() {
+  void loadNode756() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20090,7 +22965,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode677() {
+  void loadNode757() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20115,7 +22990,32 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode678() {
+  void loadNode758() {
+    if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
+      var node =
+          new DataTypeEncodingTypeNode(
+              this.context,
+              new NodeId(0, 18946),
+              new QualifiedName(0, "Default JSON"),
+              new LocalizedText("", "Default JSON"),
+              LocalizedText.NULL_VALUE,
+              UInteger.valueOf(0),
+              UInteger.valueOf(0),
+              null,
+              null,
+              new AccessRestrictionType(UShort.valueOf(0)),
+              UByte.valueOf(0));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 18946), new NodeId(0, 38), new NodeId(0, 18794).expanded(), false));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 18946), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+      this.nodeManager.addNode(node);
+    }
+  }
+
+  void loadNode759() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20140,7 +23040,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode679() {
+  void loadNode760() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20165,7 +23065,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode680() {
+  void loadNode761() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20190,7 +23090,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode681() {
+  void loadNode762() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20215,7 +23115,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode682() {
+  void loadNode763() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20240,7 +23140,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode683() {
+  void loadNode764() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20265,7 +23165,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode684() {
+  void loadNode765() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20290,7 +23190,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode685() {
+  void loadNode766() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20315,7 +23215,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode686() {
+  void loadNode767() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20340,7 +23240,132 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode687() {
+  void loadNode768() {
+    if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
+      var node =
+          new DataTypeEncodingTypeNode(
+              this.context,
+              new NodeId(0, 19299),
+              new QualifiedName(0, "Default JSON"),
+              new LocalizedText("", "Default JSON"),
+              LocalizedText.NULL_VALUE,
+              UInteger.valueOf(0),
+              UInteger.valueOf(0),
+              null,
+              null,
+              new AccessRestrictionType(UShort.valueOf(0)),
+              UByte.valueOf(0));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 19299), new NodeId(0, 38), new NodeId(0, 18953).expanded(), false));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 19299), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+      this.nodeManager.addNode(node);
+    }
+  }
+
+  void loadNode769() {
+    if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
+      var node =
+          new DataTypeEncodingTypeNode(
+              this.context,
+              new NodeId(0, 19300),
+              new QualifiedName(0, "Default JSON"),
+              new LocalizedText("", "Default JSON"),
+              LocalizedText.NULL_VALUE,
+              UInteger.valueOf(0),
+              UInteger.valueOf(0),
+              null,
+              null,
+              new AccessRestrictionType(UShort.valueOf(0)),
+              UByte.valueOf(0));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 19300), new NodeId(0, 38), new NodeId(0, 18954).expanded(), false));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 19300), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+      this.nodeManager.addNode(node);
+    }
+  }
+
+  void loadNode770() {
+    if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
+      var node =
+          new DataTypeEncodingTypeNode(
+              this.context,
+              new NodeId(0, 19301),
+              new QualifiedName(0, "Default JSON"),
+              new LocalizedText("", "Default JSON"),
+              LocalizedText.NULL_VALUE,
+              UInteger.valueOf(0),
+              UInteger.valueOf(0),
+              null,
+              null,
+              new AccessRestrictionType(UShort.valueOf(0)),
+              UByte.valueOf(0));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 19301), new NodeId(0, 38), new NodeId(0, 18955).expanded(), false));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 19301), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+      this.nodeManager.addNode(node);
+    }
+  }
+
+  void loadNode771() {
+    if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
+      var node =
+          new DataTypeEncodingTypeNode(
+              this.context,
+              new NodeId(0, 32677),
+              new QualifiedName(0, "Default JSON"),
+              new LocalizedText("", "Default JSON"),
+              LocalizedText.NULL_VALUE,
+              UInteger.valueOf(0),
+              UInteger.valueOf(0),
+              null,
+              null,
+              new AccessRestrictionType(UShort.valueOf(0)),
+              UByte.valueOf(0));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32677), new NodeId(0, 38), new NodeId(0, 32659).expanded(), false));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32677), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+      this.nodeManager.addNode(node);
+    }
+  }
+
+  void loadNode772() {
+    if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
+      var node =
+          new DataTypeEncodingTypeNode(
+              this.context,
+              new NodeId(0, 32678),
+              new QualifiedName(0, "Default JSON"),
+              new LocalizedText("", "Default JSON"),
+              LocalizedText.NULL_VALUE,
+              UInteger.valueOf(0),
+              UInteger.valueOf(0),
+              null,
+              null,
+              new AccessRestrictionType(UShort.valueOf(0)),
+              UByte.valueOf(0));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32678), new NodeId(0, 38), new NodeId(0, 32660).expanded(), false));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32678), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+      this.nodeManager.addNode(node);
+    }
+  }
+
+  void loadNode773() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20365,7 +23390,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode688() {
+  void loadNode774() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20390,7 +23415,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode689() {
+  void loadNode775() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20415,7 +23440,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode690() {
+  void loadNode776() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20440,7 +23465,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode691() {
+  void loadNode777() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20465,7 +23490,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode692() {
+  void loadNode778() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20490,7 +23515,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode693() {
+  void loadNode779() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20515,7 +23540,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode694() {
+  void loadNode780() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20540,7 +23565,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode695() {
+  void loadNode781() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20565,7 +23590,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode696() {
+  void loadNode782() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20590,7 +23615,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode697() {
+  void loadNode783() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20615,7 +23640,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode698() {
+  void loadNode784() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20640,7 +23665,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode699() {
+  void loadNode785() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20665,7 +23690,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode700() {
+  void loadNode786() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20690,7 +23715,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode701() {
+  void loadNode787() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20715,7 +23740,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode702() {
+  void loadNode788() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20740,7 +23765,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode703() {
+  void loadNode789() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20765,7 +23790,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode704() {
+  void loadNode790() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20790,7 +23815,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode705() {
+  void loadNode791() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20815,7 +23840,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode706() {
+  void loadNode792() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20840,7 +23865,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode707() {
+  void loadNode793() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20865,7 +23890,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode708() {
+  void loadNode794() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20890,7 +23915,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode709() {
+  void loadNode795() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20915,7 +23940,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode710() {
+  void loadNode796() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20940,7 +23965,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode711() {
+  void loadNode797() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20965,7 +23990,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode712() {
+  void loadNode798() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -20990,7 +24015,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode713() {
+  void loadNode799() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21015,7 +24040,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode714() {
+  void loadNode800() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21040,7 +24065,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode715() {
+  void loadNode801() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21065,7 +24090,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode716() {
+  void loadNode802() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21090,7 +24115,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode717() {
+  void loadNode803() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21115,7 +24140,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode718() {
+  void loadNode804() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21140,7 +24165,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode719() {
+  void loadNode805() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21165,7 +24190,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode720() {
+  void loadNode806() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21190,7 +24215,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode721() {
+  void loadNode807() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21215,7 +24240,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode722() {
+  void loadNode808() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21240,7 +24265,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode723() {
+  void loadNode809() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21265,7 +24290,32 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode724() {
+  void loadNode810() {
+    if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
+      var node =
+          new DataTypeEncodingTypeNode(
+              this.context,
+              new NodeId(0, 15271),
+              new QualifiedName(0, "Default JSON"),
+              new LocalizedText("", "Default JSON"),
+              LocalizedText.NULL_VALUE,
+              UInteger.valueOf(0),
+              UInteger.valueOf(0),
+              null,
+              null,
+              new AccessRestrictionType(UShort.valueOf(0)),
+              UByte.valueOf(0));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 15271), new NodeId(0, 38), new NodeId(0, 11216).expanded(), false));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 15271), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+      this.nodeManager.addNode(node);
+    }
+  }
+
+  void loadNode811() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21290,7 +24340,32 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode725() {
+  void loadNode812() {
+    if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
+      var node =
+          new DataTypeEncodingTypeNode(
+              this.context,
+              new NodeId(0, 32833),
+              new QualifiedName(0, "Default JSON"),
+              new LocalizedText("", "Default JSON"),
+              LocalizedText.NULL_VALUE,
+              UInteger.valueOf(0),
+              UInteger.valueOf(0),
+              null,
+              null,
+              new AccessRestrictionType(UShort.valueOf(0)),
+              UByte.valueOf(0));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32833), new NodeId(0, 38), new NodeId(0, 32824).expanded(), false));
+      node.addReference(
+          new Reference(
+              new NodeId(0, 32833), new NodeId(0, 40), new NodeId(0, 76).expanded(), true));
+      this.nodeManager.addNode(node);
+    }
+  }
+
+  void loadNode813() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21315,7 +24390,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode726() {
+  void loadNode814() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21340,7 +24415,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode727() {
+  void loadNode815() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21365,7 +24440,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode728() {
+  void loadNode816() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21390,7 +24465,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode729() {
+  void loadNode817() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21415,7 +24490,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode730() {
+  void loadNode818() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21440,7 +24515,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode731() {
+  void loadNode819() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21465,7 +24540,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode732() {
+  void loadNode820() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21490,7 +24565,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode733() {
+  void loadNode821() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21515,7 +24590,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode734() {
+  void loadNode822() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21540,7 +24615,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode735() {
+  void loadNode823() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21565,7 +24640,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode736() {
+  void loadNode824() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21590,7 +24665,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode737() {
+  void loadNode825() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21615,7 +24690,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode738() {
+  void loadNode826() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21640,7 +24715,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode739() {
+  void loadNode827() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21665,7 +24740,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode740() {
+  void loadNode828() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21690,7 +24765,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode741() {
+  void loadNode829() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21715,7 +24790,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode742() {
+  void loadNode830() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21740,7 +24815,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode743() {
+  void loadNode831() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21765,7 +24840,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode744() {
+  void loadNode832() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21790,7 +24865,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode745() {
+  void loadNode833() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21815,7 +24890,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode746() {
+  void loadNode834() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21840,7 +24915,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode747() {
+  void loadNode835() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21865,7 +24940,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode748() {
+  void loadNode836() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21890,7 +24965,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode749() {
+  void loadNode837() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21915,7 +24990,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode750() {
+  void loadNode838() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -21940,7 +25015,7 @@ class ObjectNodeLoader {
     }
   }
 
-  void loadNode751() {
+  void loadNode839() {
     if (context.getServer().getEncodingManager().hasEncoding(DataTypeEncoding.JSON_ENCODING_NAME)) {
       var node =
           new DataTypeEncodingTypeNode(
@@ -22718,5 +25793,93 @@ class ObjectNodeLoader {
     loadNode749();
     loadNode750();
     loadNode751();
+    loadNode752();
+    loadNode753();
+    loadNode754();
+    loadNode755();
+    loadNode756();
+    loadNode757();
+    loadNode758();
+    loadNode759();
+    loadNode760();
+    loadNode761();
+    loadNode762();
+    loadNode763();
+    loadNode764();
+    loadNode765();
+    loadNode766();
+    loadNode767();
+    loadNode768();
+    loadNode769();
+    loadNode770();
+    loadNode771();
+    loadNode772();
+    loadNode773();
+    loadNode774();
+    loadNode775();
+    loadNode776();
+    loadNode777();
+    loadNode778();
+    loadNode779();
+    loadNode780();
+    loadNode781();
+    loadNode782();
+    loadNode783();
+    loadNode784();
+    loadNode785();
+    loadNode786();
+    loadNode787();
+    loadNode788();
+    loadNode789();
+    loadNode790();
+    loadNode791();
+    loadNode792();
+    loadNode793();
+    loadNode794();
+    loadNode795();
+    loadNode796();
+    loadNode797();
+    loadNode798();
+    loadNode799();
+    loadNode800();
+    loadNode801();
+    loadNode802();
+    loadNode803();
+    loadNode804();
+    loadNode805();
+    loadNode806();
+    loadNode807();
+    loadNode808();
+    loadNode809();
+    loadNode810();
+    loadNode811();
+    loadNode812();
+    loadNode813();
+    loadNode814();
+    loadNode815();
+    loadNode816();
+    loadNode817();
+    loadNode818();
+    loadNode819();
+    loadNode820();
+    loadNode821();
+    loadNode822();
+    loadNode823();
+    loadNode824();
+    loadNode825();
+    loadNode826();
+    loadNode827();
+    loadNode828();
+    loadNode829();
+    loadNode830();
+    loadNode831();
+    loadNode832();
+    loadNode833();
+    loadNode834();
+    loadNode835();
+    loadNode836();
+    loadNode837();
+    loadNode838();
+    loadNode839();
   }
 }

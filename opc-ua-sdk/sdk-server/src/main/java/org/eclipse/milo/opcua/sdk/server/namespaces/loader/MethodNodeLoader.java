@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -21,6 +21,8 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.PermissionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 
 class MethodNodeLoader {
   private final UaNodeContext context;
@@ -201,6 +203,29 @@ class MethodNodeLoader {
     var node =
         new UaMethodNode(
             this.context,
+            new NodeId(0, 32416),
+            new QualifiedName(0, "Failover"),
+            new LocalizedText("", "Failover"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(new NodeId(0, 32416), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32416), new NodeId(0, 47), new NodeId(0, 32411).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode7() {
+    var node =
+        new UaMethodNode(
+            this.context,
             new NodeId(0, 11580),
             new QualifiedName(0, "Open"),
             new LocalizedText("", "Open"),
@@ -226,7 +251,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode7() {
+  void loadNode8() {
     var node =
         new UaMethodNode(
             this.context,
@@ -252,7 +277,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode8() {
+  void loadNode9() {
     var node =
         new UaMethodNode(
             this.context,
@@ -281,7 +306,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode9() {
+  void loadNode10() {
     var node =
         new UaMethodNode(
             this.context,
@@ -307,7 +332,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode10() {
+  void loadNode11() {
     var node =
         new UaMethodNode(
             this.context,
@@ -336,7 +361,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode11() {
+  void loadNode12() {
     var node =
         new UaMethodNode(
             this.context,
@@ -362,7 +387,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode12() {
+  void loadNode13() {
     var node =
         new UaMethodNode(
             this.context,
@@ -385,7 +410,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode13() {
+  void loadNode14() {
     var node =
         new UaMethodNode(
             this.context,
@@ -414,7 +439,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode14() {
+  void loadNode15() {
     var node =
         new UaMethodNode(
             this.context,
@@ -440,7 +465,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode15() {
+  void loadNode16() {
     var node =
         new UaMethodNode(
             this.context,
@@ -469,7 +494,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode16() {
+  void loadNode17() {
     var node =
         new UaMethodNode(
             this.context,
@@ -495,7 +520,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode17() {
+  void loadNode18() {
     var node =
         new UaMethodNode(
             this.context,
@@ -524,7 +549,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode18() {
+  void loadNode19() {
     var node =
         new UaMethodNode(
             this.context,
@@ -550,7 +575,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode19() {
+  void loadNode20() {
     var node =
         new UaMethodNode(
             this.context,
@@ -560,9 +585,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -577,7 +605,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode20() {
+  void loadNode21() {
     var node =
         new UaMethodNode(
             this.context,
@@ -587,9 +615,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -601,7 +632,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode21() {
+  void loadNode22() {
     var node =
         new UaMethodNode(
             this.context,
@@ -611,7 +642,14 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+              new RolePermissionType(
+                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(61455))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true,
@@ -628,7 +666,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode22() {
+  void loadNode23() {
     var node =
         new UaMethodNode(
             this.context,
@@ -638,7 +676,14 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+              new RolePermissionType(
+                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(61455))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true,
@@ -652,7 +697,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode23() {
+  void loadNode24() {
     var node =
         new UaMethodNode(
             this.context,
@@ -662,7 +707,14 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+              new RolePermissionType(
+                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(61455))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true,
@@ -679,7 +731,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode24() {
+  void loadNode25() {
     var node =
         new UaMethodNode(
             this.context,
@@ -689,9 +741,14 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(61455))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -703,7 +760,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode25() {
+  void loadNode26() {
     var node =
         new UaMethodNode(
             this.context,
@@ -732,7 +789,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode26() {
+  void loadNode27() {
     var node =
         new UaMethodNode(
             this.context,
@@ -761,7 +818,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode27() {
+  void loadNode28() {
     var node =
         new UaMethodNode(
             this.context,
@@ -787,7 +844,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode28() {
+  void loadNode29() {
     var node =
         new UaMethodNode(
             this.context,
@@ -816,7 +873,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode29() {
+  void loadNode30() {
     var node =
         new UaMethodNode(
             this.context,
@@ -845,7 +902,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode30() {
+  void loadNode31() {
     var node =
         new UaMethodNode(
             this.context,
@@ -871,7 +928,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode31() {
+  void loadNode32() {
     var node =
         new UaMethodNode(
             this.context,
@@ -900,7 +957,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode32() {
+  void loadNode33() {
     var node =
         new UaMethodNode(
             this.context,
@@ -926,7 +983,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode33() {
+  void loadNode34() {
     var node =
         new UaMethodNode(
             this.context,
@@ -955,7 +1012,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode34() {
+  void loadNode35() {
     var node =
         new UaMethodNode(
             this.context,
@@ -981,7 +1038,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode35() {
+  void loadNode36() {
     var node =
         new UaMethodNode(
             this.context,
@@ -1010,7 +1067,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode36() {
+  void loadNode37() {
     var node =
         new UaMethodNode(
             this.context,
@@ -1039,7 +1096,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode37() {
+  void loadNode38() {
     var node =
         new UaMethodNode(
             this.context,
@@ -1065,7 +1122,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode38() {
+  void loadNode39() {
     var node =
         new UaMethodNode(
             this.context,
@@ -1094,7 +1151,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode39() {
+  void loadNode40() {
     var node =
         new UaMethodNode(
             this.context,
@@ -1121,7 +1178,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode40() {
+  void loadNode41() {
     var node =
         new UaMethodNode(
             this.context,
@@ -1148,7 +1205,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode41() {
+  void loadNode42() {
     var node =
         new UaMethodNode(
             this.context,
@@ -1172,7 +1229,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode42() {
+  void loadNode43() {
     var node =
         new UaMethodNode(
             this.context,
@@ -1199,7 +1256,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode43() {
+  void loadNode44() {
     var node =
         new UaMethodNode(
             this.context,
@@ -1228,7 +1285,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode44() {
+  void loadNode45() {
     var node =
         new UaMethodNode(
             this.context,
@@ -1257,7 +1314,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode45() {
+  void loadNode46() {
     var node =
         new UaMethodNode(
             this.context,
@@ -1286,7 +1343,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode46() {
+  void loadNode47() {
     var node =
         new UaMethodNode(
             this.context,
@@ -1309,7 +1366,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode47() {
+  void loadNode48() {
     var node =
         new UaMethodNode(
             this.context,
@@ -1332,7 +1389,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode48() {
+  void loadNode49() {
     var node =
         new UaMethodNode(
             this.context,
@@ -1361,7 +1418,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode49() {
+  void loadNode50() {
     var node =
         new UaMethodNode(
             this.context,
@@ -1387,7 +1444,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode50() {
+  void loadNode51() {
     var node =
         new UaMethodNode(
             this.context,
@@ -1413,7 +1470,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode51() {
+  void loadNode52() {
     var node =
         new UaMethodNode(
             this.context,
@@ -1439,7 +1496,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode52() {
+  void loadNode53() {
     var node =
         new UaMethodNode(
             this.context,
@@ -1465,7 +1522,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode53() {
+  void loadNode54() {
     var node =
         new UaMethodNode(
             this.context,
@@ -1491,7 +1548,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode54() {
+  void loadNode55() {
     var node =
         new UaMethodNode(
             this.context,
@@ -1517,7 +1574,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode55() {
+  void loadNode56() {
     var node =
         new UaMethodNode(
             this.context,
@@ -1543,295 +1600,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode56() {
-    var node =
-        new UaMethodNode(
-            this.context,
-            new NodeId(0, 15648),
-            new QualifiedName(0, "AddIdentity"),
-            new LocalizedText("", "AddIdentity"),
-            LocalizedText.NULL_VALUE,
-            UInteger.valueOf(0),
-            UInteger.valueOf(0),
-            null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
-            true,
-            true);
-    node.addReference(
-        new Reference(
-            new NodeId(0, 15648), new NodeId(0, 46), new NodeId(0, 15649).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 15648), new NodeId(0, 47), new NodeId(0, 15644).expanded(), false));
-    this.nodeManager.addNode(node);
-  }
-
   void loadNode57() {
-    var node =
-        new UaMethodNode(
-            this.context,
-            new NodeId(0, 15650),
-            new QualifiedName(0, "RemoveIdentity"),
-            new LocalizedText("", "RemoveIdentity"),
-            LocalizedText.NULL_VALUE,
-            UInteger.valueOf(0),
-            UInteger.valueOf(0),
-            null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
-            true,
-            true);
-    node.addReference(
-        new Reference(
-            new NodeId(0, 15650), new NodeId(0, 46), new NodeId(0, 15651).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 15650), new NodeId(0, 47), new NodeId(0, 15644).expanded(), false));
-    this.nodeManager.addNode(node);
-  }
-
-  void loadNode58() {
-    var node =
-        new UaMethodNode(
-            this.context,
-            new NodeId(0, 16195),
-            new QualifiedName(0, "AddApplication"),
-            new LocalizedText("", "AddApplication"),
-            LocalizedText.NULL_VALUE,
-            UInteger.valueOf(0),
-            UInteger.valueOf(0),
-            null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
-            true,
-            true);
-    node.addReference(
-        new Reference(
-            new NodeId(0, 16195), new NodeId(0, 46), new NodeId(0, 16196).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 16195), new NodeId(0, 47), new NodeId(0, 15644).expanded(), false));
-    this.nodeManager.addNode(node);
-  }
-
-  void loadNode59() {
-    var node =
-        new UaMethodNode(
-            this.context,
-            new NodeId(0, 16197),
-            new QualifiedName(0, "RemoveApplication"),
-            new LocalizedText("", "RemoveApplication"),
-            LocalizedText.NULL_VALUE,
-            UInteger.valueOf(0),
-            UInteger.valueOf(0),
-            null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
-            true,
-            true);
-    node.addReference(
-        new Reference(
-            new NodeId(0, 16197), new NodeId(0, 46), new NodeId(0, 16198).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 16197), new NodeId(0, 47), new NodeId(0, 15644).expanded(), false));
-    this.nodeManager.addNode(node);
-  }
-
-  void loadNode60() {
-    var node =
-        new UaMethodNode(
-            this.context,
-            new NodeId(0, 16199),
-            new QualifiedName(0, "AddEndpoint"),
-            new LocalizedText("", "AddEndpoint"),
-            LocalizedText.NULL_VALUE,
-            UInteger.valueOf(0),
-            UInteger.valueOf(0),
-            null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
-            true,
-            true);
-    node.addReference(
-        new Reference(
-            new NodeId(0, 16199), new NodeId(0, 46), new NodeId(0, 16200).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 16199), new NodeId(0, 47), new NodeId(0, 15644).expanded(), false));
-    this.nodeManager.addNode(node);
-  }
-
-  void loadNode61() {
-    var node =
-        new UaMethodNode(
-            this.context,
-            new NodeId(0, 16201),
-            new QualifiedName(0, "RemoveEndpoint"),
-            new LocalizedText("", "RemoveEndpoint"),
-            LocalizedText.NULL_VALUE,
-            UInteger.valueOf(0),
-            UInteger.valueOf(0),
-            null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
-            true,
-            true);
-    node.addReference(
-        new Reference(
-            new NodeId(0, 16201), new NodeId(0, 46), new NodeId(0, 16202).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 16201), new NodeId(0, 47), new NodeId(0, 15644).expanded(), false));
-    this.nodeManager.addNode(node);
-  }
-
-  void loadNode62() {
-    var node =
-        new UaMethodNode(
-            this.context,
-            new NodeId(0, 15660),
-            new QualifiedName(0, "AddIdentity"),
-            new LocalizedText("", "AddIdentity"),
-            LocalizedText.NULL_VALUE,
-            UInteger.valueOf(0),
-            UInteger.valueOf(0),
-            null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
-            true,
-            true);
-    node.addReference(
-        new Reference(
-            new NodeId(0, 15660), new NodeId(0, 46), new NodeId(0, 15661).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 15660), new NodeId(0, 47), new NodeId(0, 15656).expanded(), false));
-    this.nodeManager.addNode(node);
-  }
-
-  void loadNode63() {
-    var node =
-        new UaMethodNode(
-            this.context,
-            new NodeId(0, 15662),
-            new QualifiedName(0, "RemoveIdentity"),
-            new LocalizedText("", "RemoveIdentity"),
-            LocalizedText.NULL_VALUE,
-            UInteger.valueOf(0),
-            UInteger.valueOf(0),
-            null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
-            true,
-            true);
-    node.addReference(
-        new Reference(
-            new NodeId(0, 15662), new NodeId(0, 46), new NodeId(0, 15663).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 15662), new NodeId(0, 47), new NodeId(0, 15656).expanded(), false));
-    this.nodeManager.addNode(node);
-  }
-
-  void loadNode64() {
-    var node =
-        new UaMethodNode(
-            this.context,
-            new NodeId(0, 16206),
-            new QualifiedName(0, "AddApplication"),
-            new LocalizedText("", "AddApplication"),
-            LocalizedText.NULL_VALUE,
-            UInteger.valueOf(0),
-            UInteger.valueOf(0),
-            null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
-            true,
-            true);
-    node.addReference(
-        new Reference(
-            new NodeId(0, 16206), new NodeId(0, 46), new NodeId(0, 16207).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 16206), new NodeId(0, 47), new NodeId(0, 15656).expanded(), false));
-    this.nodeManager.addNode(node);
-  }
-
-  void loadNode65() {
-    var node =
-        new UaMethodNode(
-            this.context,
-            new NodeId(0, 16208),
-            new QualifiedName(0, "RemoveApplication"),
-            new LocalizedText("", "RemoveApplication"),
-            LocalizedText.NULL_VALUE,
-            UInteger.valueOf(0),
-            UInteger.valueOf(0),
-            null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
-            true,
-            true);
-    node.addReference(
-        new Reference(
-            new NodeId(0, 16208), new NodeId(0, 46), new NodeId(0, 16209).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 16208), new NodeId(0, 47), new NodeId(0, 15656).expanded(), false));
-    this.nodeManager.addNode(node);
-  }
-
-  void loadNode66() {
-    var node =
-        new UaMethodNode(
-            this.context,
-            new NodeId(0, 16210),
-            new QualifiedName(0, "AddEndpoint"),
-            new LocalizedText("", "AddEndpoint"),
-            LocalizedText.NULL_VALUE,
-            UInteger.valueOf(0),
-            UInteger.valueOf(0),
-            null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
-            true,
-            true);
-    node.addReference(
-        new Reference(
-            new NodeId(0, 16210), new NodeId(0, 46), new NodeId(0, 16211).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 16210), new NodeId(0, 47), new NodeId(0, 15656).expanded(), false));
-    this.nodeManager.addNode(node);
-  }
-
-  void loadNode67() {
-    var node =
-        new UaMethodNode(
-            this.context,
-            new NodeId(0, 16212),
-            new QualifiedName(0, "RemoveEndpoint"),
-            new LocalizedText("", "RemoveEndpoint"),
-            LocalizedText.NULL_VALUE,
-            UInteger.valueOf(0),
-            UInteger.valueOf(0),
-            null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
-            true,
-            true);
-    node.addReference(
-        new Reference(
-            new NodeId(0, 16212), new NodeId(0, 46), new NodeId(0, 16213).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 16212), new NodeId(0, 47), new NodeId(0, 15656).expanded(), false));
-    this.nodeManager.addNode(node);
-  }
-
-  void loadNode68() {
     var node =
         new UaMethodNode(
             this.context,
@@ -1841,9 +1610,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -1855,7 +1627,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode69() {
+  void loadNode58() {
     var node =
         new UaMethodNode(
             this.context,
@@ -1865,9 +1637,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -1879,7 +1654,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode70() {
+  void loadNode59() {
     var node =
         new UaMethodNode(
             this.context,
@@ -1889,9 +1664,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -1903,7 +1681,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode71() {
+  void loadNode60() {
     var node =
         new UaMethodNode(
             this.context,
@@ -1913,9 +1691,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -1927,7 +1708,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode72() {
+  void loadNode61() {
     var node =
         new UaMethodNode(
             this.context,
@@ -1937,9 +1718,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -1951,7 +1735,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode73() {
+  void loadNode62() {
     var node =
         new UaMethodNode(
             this.context,
@@ -1961,9 +1745,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -1975,7 +1762,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode74() {
+  void loadNode63() {
     var node =
         new UaMethodNode(
             this.context,
@@ -1985,9 +1772,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -1999,7 +1789,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode75() {
+  void loadNode64() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2009,9 +1799,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2023,7 +1816,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode76() {
+  void loadNode65() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2033,9 +1826,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2047,7 +1843,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode77() {
+  void loadNode66() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2057,9 +1853,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2071,7 +1870,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode78() {
+  void loadNode67() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2081,9 +1880,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2095,7 +1897,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode79() {
+  void loadNode68() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2105,9 +1907,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2119,7 +1924,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode80() {
+  void loadNode69() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2129,9 +1934,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2143,7 +1951,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode81() {
+  void loadNode70() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2153,9 +1961,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2167,7 +1978,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode82() {
+  void loadNode71() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2177,9 +1988,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2191,7 +2005,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode83() {
+  void loadNode72() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2201,9 +2015,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2215,7 +2032,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode84() {
+  void loadNode73() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2225,9 +2042,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2239,7 +2059,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode85() {
+  void loadNode74() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2249,9 +2069,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2263,7 +2086,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode86() {
+  void loadNode75() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2273,9 +2096,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2287,7 +2113,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode87() {
+  void loadNode76() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2297,9 +2123,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2311,7 +2140,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode88() {
+  void loadNode77() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2321,9 +2150,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2335,7 +2167,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode89() {
+  void loadNode78() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2345,9 +2177,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2359,7 +2194,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode90() {
+  void loadNode79() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2369,9 +2204,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2383,7 +2221,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode91() {
+  void loadNode80() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2393,9 +2231,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2407,7 +2248,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode92() {
+  void loadNode81() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2417,9 +2258,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2431,7 +2275,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode93() {
+  void loadNode82() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2441,9 +2285,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2455,7 +2302,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode94() {
+  void loadNode83() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2465,9 +2312,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2479,7 +2329,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode95() {
+  void loadNode84() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2489,9 +2339,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2503,7 +2356,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode96() {
+  void loadNode85() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2513,9 +2366,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2527,7 +2383,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode97() {
+  void loadNode86() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2537,9 +2393,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2551,7 +2410,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode98() {
+  void loadNode87() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2561,9 +2420,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2575,7 +2437,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode99() {
+  void loadNode88() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2585,9 +2447,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2599,7 +2464,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode100() {
+  void loadNode89() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2609,9 +2474,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2623,7 +2491,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode101() {
+  void loadNode90() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2633,9 +2501,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2647,7 +2518,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode102() {
+  void loadNode91() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2657,9 +2528,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2671,7 +2545,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode103() {
+  void loadNode92() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2681,9 +2555,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2695,7 +2572,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode104() {
+  void loadNode93() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2705,9 +2582,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2719,7 +2599,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode105() {
+  void loadNode94() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2729,9 +2609,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2743,7 +2626,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode106() {
+  void loadNode95() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2753,9 +2636,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2767,7 +2653,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode107() {
+  void loadNode96() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2777,9 +2663,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2791,7 +2680,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode108() {
+  void loadNode97() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2801,9 +2690,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2815,7 +2707,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode109() {
+  void loadNode98() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2825,9 +2717,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -2839,151 +2734,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode110() {
-    var node =
-        new UaMethodNode(
-            this.context,
-            new NodeId(0, 25591),
-            new QualifiedName(0, "AddIdentity"),
-            new LocalizedText("", "AddIdentity"),
-            LocalizedText.NULL_VALUE,
-            UInteger.valueOf(0),
-            UInteger.valueOf(0),
-            null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
-            true,
-            true);
-    node.addReference(
-        new Reference(
-            new NodeId(0, 25591), new NodeId(0, 46), new NodeId(0, 25592).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 25591), new NodeId(0, 47), new NodeId(0, 25584).expanded(), false));
-    this.nodeManager.addNode(node);
-  }
-
-  void loadNode111() {
-    var node =
-        new UaMethodNode(
-            this.context,
-            new NodeId(0, 25593),
-            new QualifiedName(0, "RemoveIdentity"),
-            new LocalizedText("", "RemoveIdentity"),
-            LocalizedText.NULL_VALUE,
-            UInteger.valueOf(0),
-            UInteger.valueOf(0),
-            null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
-            true,
-            true);
-    node.addReference(
-        new Reference(
-            new NodeId(0, 25593), new NodeId(0, 46), new NodeId(0, 25594).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 25593), new NodeId(0, 47), new NodeId(0, 25584).expanded(), false));
-    this.nodeManager.addNode(node);
-  }
-
-  void loadNode112() {
-    var node =
-        new UaMethodNode(
-            this.context,
-            new NodeId(0, 25595),
-            new QualifiedName(0, "AddApplication"),
-            new LocalizedText("", "AddApplication"),
-            LocalizedText.NULL_VALUE,
-            UInteger.valueOf(0),
-            UInteger.valueOf(0),
-            null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
-            true,
-            true);
-    node.addReference(
-        new Reference(
-            new NodeId(0, 25595), new NodeId(0, 46), new NodeId(0, 25596).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 25595), new NodeId(0, 47), new NodeId(0, 25584).expanded(), false));
-    this.nodeManager.addNode(node);
-  }
-
-  void loadNode113() {
-    var node =
-        new UaMethodNode(
-            this.context,
-            new NodeId(0, 25597),
-            new QualifiedName(0, "RemoveApplication"),
-            new LocalizedText("", "RemoveApplication"),
-            LocalizedText.NULL_VALUE,
-            UInteger.valueOf(0),
-            UInteger.valueOf(0),
-            null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
-            true,
-            true);
-    node.addReference(
-        new Reference(
-            new NodeId(0, 25597), new NodeId(0, 46), new NodeId(0, 25598).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 25597), new NodeId(0, 47), new NodeId(0, 25584).expanded(), false));
-    this.nodeManager.addNode(node);
-  }
-
-  void loadNode114() {
-    var node =
-        new UaMethodNode(
-            this.context,
-            new NodeId(0, 25599),
-            new QualifiedName(0, "AddEndpoint"),
-            new LocalizedText("", "AddEndpoint"),
-            LocalizedText.NULL_VALUE,
-            UInteger.valueOf(0),
-            UInteger.valueOf(0),
-            null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
-            true,
-            true);
-    node.addReference(
-        new Reference(
-            new NodeId(0, 25599), new NodeId(0, 46), new NodeId(0, 25600).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 25599), new NodeId(0, 47), new NodeId(0, 25584).expanded(), false));
-    this.nodeManager.addNode(node);
-  }
-
-  void loadNode115() {
-    var node =
-        new UaMethodNode(
-            this.context,
-            new NodeId(0, 25601),
-            new QualifiedName(0, "RemoveEndpoint"),
-            new LocalizedText("", "RemoveEndpoint"),
-            LocalizedText.NULL_VALUE,
-            UInteger.valueOf(0),
-            UInteger.valueOf(0),
-            null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
-            true,
-            true);
-    node.addReference(
-        new Reference(
-            new NodeId(0, 25601), new NodeId(0, 46), new NodeId(0, 25602).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 25601), new NodeId(0, 47), new NodeId(0, 25584).expanded(), false));
-    this.nodeManager.addNode(node);
-  }
-
-  void loadNode116() {
+  void loadNode99() {
     var node =
         new UaMethodNode(
             this.context,
@@ -2993,9 +2744,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -3007,7 +2761,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode117() {
+  void loadNode100() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3017,9 +2771,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -3031,7 +2788,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode118() {
+  void loadNode101() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3041,9 +2798,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -3055,7 +2815,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode119() {
+  void loadNode102() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3065,9 +2825,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -3079,7 +2842,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode120() {
+  void loadNode103() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3089,9 +2852,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -3103,7 +2869,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode121() {
+  void loadNode104() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3113,9 +2879,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -3127,7 +2896,169 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode122() {
+  void loadNode105() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 25591),
+            new QualifiedName(0, "AddIdentity"),
+            new LocalizedText("", "AddIdentity"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
+            null,
+            new AccessRestrictionType(UShort.valueOf(3)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25591), new NodeId(0, 46), new NodeId(0, 25592).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25591), new NodeId(0, 47), new NodeId(0, 25584).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode106() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 25593),
+            new QualifiedName(0, "RemoveIdentity"),
+            new LocalizedText("", "RemoveIdentity"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
+            null,
+            new AccessRestrictionType(UShort.valueOf(3)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25593), new NodeId(0, 46), new NodeId(0, 25594).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25593), new NodeId(0, 47), new NodeId(0, 25584).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode107() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 25595),
+            new QualifiedName(0, "AddApplication"),
+            new LocalizedText("", "AddApplication"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
+            null,
+            new AccessRestrictionType(UShort.valueOf(3)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25595), new NodeId(0, 46), new NodeId(0, 25596).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25595), new NodeId(0, 47), new NodeId(0, 25584).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode108() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 25597),
+            new QualifiedName(0, "RemoveApplication"),
+            new LocalizedText("", "RemoveApplication"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
+            null,
+            new AccessRestrictionType(UShort.valueOf(3)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25597), new NodeId(0, 46), new NodeId(0, 25598).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25597), new NodeId(0, 47), new NodeId(0, 25584).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode109() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 25599),
+            new QualifiedName(0, "AddEndpoint"),
+            new LocalizedText("", "AddEndpoint"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
+            null,
+            new AccessRestrictionType(UShort.valueOf(3)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25599), new NodeId(0, 46), new NodeId(0, 25600).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25599), new NodeId(0, 47), new NodeId(0, 25584).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode110() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 25601),
+            new QualifiedName(0, "RemoveEndpoint"),
+            new LocalizedText("", "RemoveEndpoint"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
+            null,
+            new AccessRestrictionType(UShort.valueOf(3)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25601), new NodeId(0, 46), new NodeId(0, 25602).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25601), new NodeId(0, 47), new NodeId(0, 25584).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode111() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3153,7 +3084,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode123() {
+  void loadNode112() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3179,7 +3110,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode124() {
+  void loadNode113() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3208,7 +3139,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode125() {
+  void loadNode114() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3238,7 +3169,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode126() {
+  void loadNode115() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3268,7 +3199,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode127() {
+  void loadNode116() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3297,7 +3228,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode128() {
+  void loadNode117() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3319,14 +3250,14 @@ class MethodNodeLoader {
         new Reference(
             new NodeId(0, 24312), new NodeId(0, 3065), new NodeId(0, 8927).expanded(), true));
     node.addReference(
-        new Reference(new NodeId(0, 24312), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+        new Reference(new NodeId(0, 24312), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
     node.addReference(
         new Reference(
             new NodeId(0, 24312), new NodeId(0, 47), new NodeId(0, 2830).expanded(), false));
     this.nodeManager.addNode(node);
   }
 
-  void loadNode129() {
+  void loadNode118() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3355,7 +3286,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode130() {
+  void loadNode119() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3384,7 +3315,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode131() {
+  void loadNode120() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3413,7 +3344,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode132() {
+  void loadNode121() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3439,7 +3370,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode133() {
+  void loadNode122() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3465,7 +3396,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode134() {
+  void loadNode123() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3491,7 +3422,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode135() {
+  void loadNode124() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3517,7 +3448,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode136() {
+  void loadNode125() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3546,7 +3477,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode137() {
+  void loadNode126() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3572,7 +3503,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode138() {
+  void loadNode127() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3601,7 +3532,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode139() {
+  void loadNode128() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3627,7 +3558,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode140() {
+  void loadNode129() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3656,7 +3587,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode141() {
+  void loadNode130() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3682,7 +3613,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode142() {
+  void loadNode131() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3711,7 +3642,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode143() {
+  void loadNode132() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3737,7 +3668,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode144() {
+  void loadNode133() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3766,7 +3697,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode145() {
+  void loadNode134() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3792,7 +3723,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode146() {
+  void loadNode135() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3818,7 +3749,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode147() {
+  void loadNode136() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3844,7 +3775,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode148() {
+  void loadNode137() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3873,7 +3804,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode149() {
+  void loadNode138() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3902,7 +3833,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode150() {
+  void loadNode139() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3937,7 +3868,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode151() {
+  void loadNode140() {
     var node =
         new UaMethodNode(
             this.context,
@@ -3972,7 +3903,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode152() {
+  void loadNode141() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4004,7 +3935,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode153() {
+  void loadNode142() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4039,7 +3970,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode154() {
+  void loadNode143() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4071,7 +4002,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode155() {
+  void loadNode144() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4106,7 +4037,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode156() {
+  void loadNode145() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4132,7 +4063,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode157() {
+  void loadNode146() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4159,7 +4090,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode158() {
+  void loadNode147() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4186,7 +4117,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode159() {
+  void loadNode148() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4213,7 +4144,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode160() {
+  void loadNode149() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4246,7 +4177,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode161() {
+  void loadNode150() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4279,7 +4210,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode162() {
+  void loadNode151() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4308,7 +4239,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode163() {
+  void loadNode152() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4330,14 +4261,14 @@ class MethodNodeLoader {
         new Reference(
             new NodeId(0, 12546), new NodeId(0, 46), new NodeId(0, 12547).expanded(), true));
     node.addReference(
-        new Reference(new NodeId(0, 12546), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+        new Reference(new NodeId(0, 12546), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
     node.addReference(
         new Reference(
             new NodeId(0, 12546), new NodeId(0, 47), new NodeId(0, 12522).expanded(), false));
     this.nodeManager.addNode(node);
   }
 
-  void loadNode164() {
+  void loadNode153() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4356,14 +4287,14 @@ class MethodNodeLoader {
         new Reference(
             new NodeId(0, 12548), new NodeId(0, 46), new NodeId(0, 12549).expanded(), true));
     node.addReference(
-        new Reference(new NodeId(0, 12548), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+        new Reference(new NodeId(0, 12548), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
     node.addReference(
         new Reference(
             new NodeId(0, 12548), new NodeId(0, 47), new NodeId(0, 12522).expanded(), false));
     this.nodeManager.addNode(node);
   }
 
-  void loadNode165() {
+  void loadNode154() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4382,14 +4313,14 @@ class MethodNodeLoader {
         new Reference(
             new NodeId(0, 12550), new NodeId(0, 46), new NodeId(0, 12551).expanded(), true));
     node.addReference(
-        new Reference(new NodeId(0, 12550), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+        new Reference(new NodeId(0, 12550), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
     node.addReference(
         new Reference(
             new NodeId(0, 12550), new NodeId(0, 47), new NodeId(0, 12522).expanded(), false));
     this.nodeManager.addNode(node);
   }
 
-  void loadNode166() {
+  void loadNode155() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4418,7 +4349,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode167() {
+  void loadNode156() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4444,7 +4375,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode168() {
+  void loadNode157() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4473,7 +4404,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode169() {
+  void loadNode158() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4499,7 +4430,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode170() {
+  void loadNode159() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4528,7 +4459,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode171() {
+  void loadNode160() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4554,7 +4485,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode172() {
+  void loadNode161() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4583,7 +4514,88 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode173() {
+  void loadNode162() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 13624),
+            new QualifiedName(0, "CloseAndUpdate"),
+            new LocalizedText("", "CloseAndUpdate"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13624), new NodeId(0, 46), new NodeId(0, 13625).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13624), new NodeId(0, 46), new NodeId(0, 13626).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 13624), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13624), new NodeId(0, 47), new NodeId(0, 13599).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode163() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 13627),
+            new QualifiedName(0, "AddCertificate"),
+            new LocalizedText("", "AddCertificate"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13627), new NodeId(0, 46), new NodeId(0, 13628).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 13627), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13627), new NodeId(0, 47), new NodeId(0, 13599).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode164() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 13629),
+            new QualifiedName(0, "RemoveCertificate"),
+            new LocalizedText("", "RemoveCertificate"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13629), new NodeId(0, 46), new NodeId(0, 13630).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 13629), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13629), new NodeId(0, 47), new NodeId(0, 13599).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode165() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4609,7 +4621,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode174() {
+  void loadNode166() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4635,7 +4647,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode175() {
+  void loadNode167() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4661,7 +4673,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode176() {
+  void loadNode168() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4690,7 +4702,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode177() {
+  void loadNode169() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4719,7 +4731,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode178() {
+  void loadNode170() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4745,7 +4757,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode179() {
+  void loadNode171() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4771,7 +4783,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode180() {
+  void loadNode172() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4800,7 +4812,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode181() {
+  void loadNode173() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4829,7 +4841,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode182() {
+  void loadNode174() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4858,7 +4870,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode183() {
+  void loadNode175() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4884,7 +4896,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode184() {
+  void loadNode176() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4913,7 +4925,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode185() {
+  void loadNode177() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4939,7 +4951,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode186() {
+  void loadNode178() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4968,7 +4980,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode187() {
+  void loadNode179() {
     var node =
         new UaMethodNode(
             this.context,
@@ -4994,7 +5006,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode188() {
+  void loadNode180() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5023,7 +5035,88 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode189() {
+  void loadNode181() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 13840),
+            new QualifiedName(0, "CloseAndUpdate"),
+            new LocalizedText("", "CloseAndUpdate"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13840), new NodeId(0, 46), new NodeId(0, 13841).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13840), new NodeId(0, 46), new NodeId(0, 13842).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 13840), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13840), new NodeId(0, 47), new NodeId(0, 13815).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode182() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 13843),
+            new QualifiedName(0, "AddCertificate"),
+            new LocalizedText("", "AddCertificate"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13843), new NodeId(0, 46), new NodeId(0, 13844).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 13843), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13843), new NodeId(0, 47), new NodeId(0, 13815).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode183() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 13845),
+            new QualifiedName(0, "RemoveCertificate"),
+            new LocalizedText("", "RemoveCertificate"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13845), new NodeId(0, 46), new NodeId(0, 13846).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 13845), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13845), new NodeId(0, 47), new NodeId(0, 13815).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode184() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5052,7 +5145,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode190() {
+  void loadNode185() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5078,7 +5171,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode191() {
+  void loadNode186() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5107,7 +5200,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode192() {
+  void loadNode187() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5133,7 +5226,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode193() {
+  void loadNode188() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5162,7 +5255,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode194() {
+  void loadNode189() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5188,7 +5281,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode195() {
+  void loadNode190() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5217,7 +5310,88 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode196() {
+  void loadNode191() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 13874),
+            new QualifiedName(0, "CloseAndUpdate"),
+            new LocalizedText("", "CloseAndUpdate"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13874), new NodeId(0, 46), new NodeId(0, 13875).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13874), new NodeId(0, 46), new NodeId(0, 13876).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 13874), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13874), new NodeId(0, 47), new NodeId(0, 13849).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode192() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 13877),
+            new QualifiedName(0, "AddCertificate"),
+            new LocalizedText("", "AddCertificate"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13877), new NodeId(0, 46), new NodeId(0, 13878).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 13877), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13877), new NodeId(0, 47), new NodeId(0, 13849).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode193() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 13879),
+            new QualifiedName(0, "RemoveCertificate"),
+            new LocalizedText("", "RemoveCertificate"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13879), new NodeId(0, 46), new NodeId(0, 13880).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 13879), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13879), new NodeId(0, 47), new NodeId(0, 13849).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode194() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5246,7 +5420,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode197() {
+  void loadNode195() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5272,7 +5446,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode198() {
+  void loadNode196() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5301,7 +5475,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode199() {
+  void loadNode197() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5327,7 +5501,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode200() {
+  void loadNode198() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5356,7 +5530,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode201() {
+  void loadNode199() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5382,7 +5556,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode202() {
+  void loadNode200() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5411,7 +5585,88 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
+  void loadNode201() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 13908),
+            new QualifiedName(0, "CloseAndUpdate"),
+            new LocalizedText("", "CloseAndUpdate"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13908), new NodeId(0, 46), new NodeId(0, 13909).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13908), new NodeId(0, 46), new NodeId(0, 13910).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 13908), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13908), new NodeId(0, 47), new NodeId(0, 13883).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode202() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 13911),
+            new QualifiedName(0, "AddCertificate"),
+            new LocalizedText("", "AddCertificate"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13911), new NodeId(0, 46), new NodeId(0, 13912).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 13911), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13911), new NodeId(0, 47), new NodeId(0, 13883).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
   void loadNode203() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 13913),
+            new QualifiedName(0, "RemoveCertificate"),
+            new LocalizedText("", "RemoveCertificate"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13913), new NodeId(0, 46), new NodeId(0, 13914).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 13913), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13913), new NodeId(0, 47), new NodeId(0, 13883).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode204() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5440,7 +5695,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode204() {
+  void loadNode205() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5466,7 +5721,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode205() {
+  void loadNode206() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5495,7 +5750,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode206() {
+  void loadNode207() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5521,7 +5776,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode207() {
+  void loadNode208() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5550,7 +5805,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode208() {
+  void loadNode209() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5576,7 +5831,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode209() {
+  void loadNode210() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5605,7 +5860,470 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode210() {
+  void loadNode211() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 13942),
+            new QualifiedName(0, "CloseAndUpdate"),
+            new LocalizedText("", "CloseAndUpdate"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13942), new NodeId(0, 46), new NodeId(0, 13943).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13942), new NodeId(0, 46), new NodeId(0, 13944).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 13942), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13942), new NodeId(0, 47), new NodeId(0, 13917).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode212() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 13945),
+            new QualifiedName(0, "AddCertificate"),
+            new LocalizedText("", "AddCertificate"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13945), new NodeId(0, 46), new NodeId(0, 13946).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 13945), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13945), new NodeId(0, 47), new NodeId(0, 13917).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode213() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 13947),
+            new QualifiedName(0, "RemoveCertificate"),
+            new LocalizedText("", "RemoveCertificate"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13947), new NodeId(0, 46), new NodeId(0, 13948).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 13947), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13947), new NodeId(0, 47), new NodeId(0, 13917).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode214() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 16717),
+            new QualifiedName(0, "Open"),
+            new LocalizedText("", "Open"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16717), new NodeId(0, 46), new NodeId(0, 16722).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16717), new NodeId(0, 46), new NodeId(0, 16723).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 16717), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16717), new NodeId(0, 47), new NodeId(0, 16709).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode215() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 16724),
+            new QualifiedName(0, "Close"),
+            new LocalizedText("", "Close"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16724), new NodeId(0, 46), new NodeId(0, 16725).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 16724), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16724), new NodeId(0, 47), new NodeId(0, 16709).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode216() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 16726),
+            new QualifiedName(0, "Read"),
+            new LocalizedText("", "Read"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16726), new NodeId(0, 46), new NodeId(0, 16727).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16726), new NodeId(0, 46), new NodeId(0, 16728).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 16726), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16726), new NodeId(0, 47), new NodeId(0, 16709).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode217() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 16729),
+            new QualifiedName(0, "Write"),
+            new LocalizedText("", "Write"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16729), new NodeId(0, 46), new NodeId(0, 16730).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 16729), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16729), new NodeId(0, 47), new NodeId(0, 16709).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode218() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 16732),
+            new QualifiedName(0, "GetPosition"),
+            new LocalizedText("", "GetPosition"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16732), new NodeId(0, 46), new NodeId(0, 16733).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16732), new NodeId(0, 46), new NodeId(0, 16734).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 16732), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16732), new NodeId(0, 47), new NodeId(0, 16709).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode219() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 16735),
+            new QualifiedName(0, "SetPosition"),
+            new LocalizedText("", "SetPosition"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16735), new NodeId(0, 46), new NodeId(0, 16736).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 16735), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16735), new NodeId(0, 47), new NodeId(0, 16709).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode220() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 16741),
+            new QualifiedName(0, "OpenWithMasks"),
+            new LocalizedText("", "OpenWithMasks"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16741), new NodeId(0, 46), new NodeId(0, 16742).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16741), new NodeId(0, 46), new NodeId(0, 16743).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 16741), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16741), new NodeId(0, 47), new NodeId(0, 16709).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode221() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 16744),
+            new QualifiedName(0, "CloseAndUpdate"),
+            new LocalizedText("", "CloseAndUpdate"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16744), new NodeId(0, 46), new NodeId(0, 16745).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16744), new NodeId(0, 46), new NodeId(0, 16746).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 16744), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16744), new NodeId(0, 47), new NodeId(0, 16709).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode222() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 16747),
+            new QualifiedName(0, "AddCertificate"),
+            new LocalizedText("", "AddCertificate"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16747), new NodeId(0, 46), new NodeId(0, 16748).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 16747), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16747), new NodeId(0, 47), new NodeId(0, 16709).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode223() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 16749),
+            new QualifiedName(0, "RemoveCertificate"),
+            new LocalizedText("", "RemoveCertificate"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16749), new NodeId(0, 46), new NodeId(0, 16750).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 16749), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16749), new NodeId(0, 47), new NodeId(0, 16709).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode224() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 18533),
+            new QualifiedName(0, "UpdateCertificate"),
+            new LocalizedText("", "UpdateCertificate"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18533), new NodeId(0, 46), new NodeId(0, 18534).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18533), new NodeId(0, 46), new NodeId(0, 18535).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 18533), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18533), new NodeId(0, 47), new NodeId(0, 16663).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode225() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 18539),
+            new QualifiedName(0, "ApplyChanges"),
+            new LocalizedText("", "ApplyChanges"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(new NodeId(0, 18539), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18539), new NodeId(0, 47), new NodeId(0, 16663).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode226() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 18541),
+            new QualifiedName(0, "CreateSigningRequest"),
+            new LocalizedText("", "CreateSigningRequest"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18541), new NodeId(0, 46), new NodeId(0, 18542).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18541), new NodeId(0, 46), new NodeId(0, 18543).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 18541), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18541), new NodeId(0, 47), new NodeId(0, 16663).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode227() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 18544),
+            new QualifiedName(0, "GetRejectedList"),
+            new LocalizedText("", "GetRejectedList"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18544), new NodeId(0, 46), new NodeId(0, 18545).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 18544), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18544), new NodeId(0, 47), new NodeId(0, 16663).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode228() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5634,7 +6352,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode211() {
+  void loadNode229() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5660,7 +6378,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode212() {
+  void loadNode230() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5689,7 +6407,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode213() {
+  void loadNode231() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5715,7 +6433,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode214() {
+  void loadNode232() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5744,7 +6462,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode215() {
+  void loadNode233() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5770,7 +6488,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode216() {
+  void loadNode234() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5799,7 +6517,88 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode217() {
+  void loadNode235() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 13977),
+            new QualifiedName(0, "CloseAndUpdate"),
+            new LocalizedText("", "CloseAndUpdate"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13977), new NodeId(0, 46), new NodeId(0, 13978).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13977), new NodeId(0, 46), new NodeId(0, 13979).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 13977), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13977), new NodeId(0, 47), new NodeId(0, 13952).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode236() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 13980),
+            new QualifiedName(0, "AddCertificate"),
+            new LocalizedText("", "AddCertificate"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13980), new NodeId(0, 46), new NodeId(0, 13981).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 13980), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13980), new NodeId(0, 47), new NodeId(0, 13952).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode237() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 13982),
+            new QualifiedName(0, "RemoveCertificate"),
+            new LocalizedText("", "RemoveCertificate"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13982), new NodeId(0, 46), new NodeId(0, 13983).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 13982), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 13982), new NodeId(0, 47), new NodeId(0, 13952).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode238() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5828,7 +6627,36 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode218() {
+  void loadNode239() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 32296),
+            new QualifiedName(0, "GetCertificates"),
+            new LocalizedText("", "GetCertificates"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32296), new NodeId(0, 46), new NodeId(0, 32297).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32296), new NodeId(0, 46), new NodeId(0, 32298).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 32296), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32296), new NodeId(0, 47), new NodeId(0, 12581).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode240() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5851,7 +6679,30 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode219() {
+  void loadNode241() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 25698),
+            new QualifiedName(0, "CancelChanges"),
+            new LocalizedText("", "CancelChanges"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(new NodeId(0, 25698), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25698), new NodeId(0, 47), new NodeId(0, 12581).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode242() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5880,7 +6731,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode220() {
+  void loadNode243() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5906,7 +6757,30 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode221() {
+  void loadNode244() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 25699),
+            new QualifiedName(0, "ResetToServerDefaults"),
+            new LocalizedText("", "ResetToServerDefaults"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(new NodeId(0, 25699), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25699), new NodeId(0, 47), new NodeId(0, 12581).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode245() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5916,9 +6790,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -5933,7 +6810,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode222() {
+  void loadNode246() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5943,9 +6820,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -5957,7 +6837,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode223() {
+  void loadNode247() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5967,9 +6847,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -5984,7 +6867,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode224() {
+  void loadNode248() {
     var node =
         new UaMethodNode(
             this.context,
@@ -5994,9 +6877,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -6008,7 +6894,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode225() {
+  void loadNode249() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6018,9 +6904,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -6035,7 +6924,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode226() {
+  void loadNode250() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6045,9 +6934,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -6059,7 +6951,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode227() {
+  void loadNode251() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6069,9 +6961,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -6086,7 +6981,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode228() {
+  void loadNode252() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6096,9 +6991,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -6113,7 +7011,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode229() {
+  void loadNode253() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6123,9 +7021,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -6137,7 +7038,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode230() {
+  void loadNode254() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6147,9 +7048,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -6161,7 +7065,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode231() {
+  void loadNode255() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6171,9 +7075,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -6188,7 +7095,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode232() {
+  void loadNode256() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6198,9 +7105,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -6212,7 +7122,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode233() {
+  void loadNode257() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6222,9 +7132,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -6239,7 +7152,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode234() {
+  void loadNode258() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6249,9 +7162,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -6263,7 +7179,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode235() {
+  void loadNode259() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6273,9 +7189,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -6290,7 +7209,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode236() {
+  void loadNode260() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6300,9 +7219,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -6314,7 +7236,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode237() {
+  void loadNode261() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6324,9 +7246,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -6341,7 +7266,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode238() {
+  void loadNode262() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6351,9 +7276,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -6368,7 +7296,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode239() {
+  void loadNode263() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6378,9 +7306,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -6392,7 +7323,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode240() {
+  void loadNode264() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6402,9 +7333,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -6416,7 +7350,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode241() {
+  void loadNode265() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6426,9 +7360,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -6443,7 +7380,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode242() {
+  void loadNode266() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6453,9 +7390,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -6467,7 +7407,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode243() {
+  void loadNode267() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6477,9 +7417,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -6494,7 +7437,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode244() {
+  void loadNode268() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6504,9 +7447,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -6518,7 +7464,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode245() {
+  void loadNode269() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6528,9 +7474,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -6545,7 +7494,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode246() {
+  void loadNode270() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6555,9 +7504,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -6569,7 +7521,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode247() {
+  void loadNode271() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6579,9 +7531,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -6596,7 +7551,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode248() {
+  void loadNode272() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6606,9 +7561,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -6623,7 +7581,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode249() {
+  void loadNode273() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6633,9 +7591,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -6647,7 +7608,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode250() {
+  void loadNode274() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6657,9 +7618,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -6671,7 +7635,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode251() {
+  void loadNode275() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6681,9 +7645,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -6698,7 +7665,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode252() {
+  void loadNode276() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6708,9 +7675,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(5)),
             true,
             true);
     node.addReference(
@@ -6719,7 +7689,31 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode253() {
+  void loadNode277() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 25708),
+            new QualifiedName(0, "CancelChanges"),
+            new LocalizedText("", "CancelChanges"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
+            null,
+            new AccessRestrictionType(UShort.valueOf(5)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25708), new NodeId(0, 47), new NodeId(0, 12637).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode278() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6729,9 +7723,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -6746,7 +7743,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode254() {
+  void loadNode279() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6756,9 +7753,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -6770,7 +7770,31 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode255() {
+  void loadNode280() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 25709),
+            new QualifiedName(0, "ResetToServerDefaults"),
+            new LocalizedText("", "ResetToServerDefaults"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
+            null,
+            new AccessRestrictionType(UShort.valueOf(1)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25709), new NodeId(0, 47), new NodeId(0, 12637).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode281() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6799,7 +7823,37 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode256() {
+  void loadNode282() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 17528),
+            new QualifiedName(0, "CreateCredential"),
+            new LocalizedText("", "CreateCredential"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
+            null,
+            new AccessRestrictionType(UShort.valueOf(3)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 17528), new NodeId(0, 46), new NodeId(0, 17529).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 17528), new NodeId(0, 46), new NodeId(0, 17530).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 17528), new NodeId(0, 47), new NodeId(0, 18155).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode283() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6828,7 +7882,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode257() {
+  void loadNode284() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6854,7 +7908,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode258() {
+  void loadNode285() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6877,7 +7931,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode259() {
+  void loadNode286() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6906,7 +7960,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode260() {
+  void loadNode287() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6935,7 +7989,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode261() {
+  void loadNode288() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6964,7 +8018,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode262() {
+  void loadNode289() {
     var node =
         new UaMethodNode(
             this.context,
@@ -6990,7 +8044,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode263() {
+  void loadNode290() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7019,7 +8073,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode264() {
+  void loadNode291() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7045,7 +8099,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode265() {
+  void loadNode292() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7074,7 +8128,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode266() {
+  void loadNode293() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7100,7 +8154,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode267() {
+  void loadNode294() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7129,7 +8183,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode268() {
+  void loadNode295() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7155,7 +8209,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode269() {
+  void loadNode296() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7184,7 +8238,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode270() {
+  void loadNode297() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7210,7 +8264,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode271() {
+  void loadNode298() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7239,7 +8293,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode272() {
+  void loadNode299() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7265,7 +8319,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode273() {
+  void loadNode300() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7288,7 +8342,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode274() {
+  void loadNode301() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7311,7 +8365,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode275() {
+  void loadNode302() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7340,7 +8394,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode276() {
+  void loadNode303() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7369,7 +8423,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode277() {
+  void loadNode304() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7392,7 +8446,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode278() {
+  void loadNode305() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7421,7 +8475,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode279() {
+  void loadNode306() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7447,7 +8501,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode280() {
+  void loadNode307() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7476,7 +8530,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode281() {
+  void loadNode308() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7502,7 +8556,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode282() {
+  void loadNode309() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7531,7 +8585,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode283() {
+  void loadNode310() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7560,7 +8614,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode284() {
+  void loadNode311() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7583,7 +8637,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode285() {
+  void loadNode312() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7612,7 +8666,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode286() {
+  void loadNode313() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7638,7 +8692,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode287() {
+  void loadNode314() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7667,7 +8721,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode288() {
+  void loadNode315() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7693,7 +8747,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode289() {
+  void loadNode316() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7719,7 +8773,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode290() {
+  void loadNode317() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7748,7 +8802,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode291() {
+  void loadNode318() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7774,7 +8828,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode292() {
+  void loadNode319() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7803,7 +8857,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode293() {
+  void loadNode320() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7829,7 +8883,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode294() {
+  void loadNode321() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7858,7 +8912,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode295() {
+  void loadNode322() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7884,7 +8938,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode296() {
+  void loadNode323() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7913,7 +8967,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode297() {
+  void loadNode324() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7939,7 +8993,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode298() {
+  void loadNode325() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7968,7 +9022,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode299() {
+  void loadNode326() {
     var node =
         new UaMethodNode(
             this.context,
@@ -7997,7 +9051,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode300() {
+  void loadNode327() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8020,7 +9074,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode301() {
+  void loadNode328() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8030,9 +9084,14 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+              new RolePermissionType(
+                  new NodeId(0, 25565), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -8047,7 +9106,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode302() {
+  void loadNode329() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8057,9 +9116,14 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+              new RolePermissionType(
+                  new NodeId(0, 25565), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -8074,7 +9138,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode303() {
+  void loadNode330() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8084,9 +9148,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 25565), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -8101,7 +9168,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode304() {
+  void loadNode331() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8111,9 +9178,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 25565), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -8125,7 +9195,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode305() {
+  void loadNode332() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8135,9 +9205,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 25565), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -8152,7 +9225,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode306() {
+  void loadNode333() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8162,9 +9235,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 25565), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(1)),
             true,
             true);
     node.addReference(
@@ -8176,7 +9252,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode307() {
+  void loadNode334() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8186,9 +9262,15 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(new NodeId(0, 15644), new PermissionType(UInteger.valueOf(1))),
+              new RolePermissionType(
+                  new NodeId(0, 25584), new PermissionType(UInteger.valueOf(61455))),
+              new RolePermissionType(
+                  new NodeId(0, 25565), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -8200,7 +9282,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode308() {
+  void loadNode335() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8210,7 +9292,10 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true,
@@ -8227,7 +9312,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode309() {
+  void loadNode336() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8237,7 +9322,10 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true,
@@ -8251,7 +9339,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode310() {
+  void loadNode337() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8261,7 +9349,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+              new RolePermissionType(
+                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true,
@@ -8278,7 +9371,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode311() {
+  void loadNode338() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8288,7 +9381,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+              new RolePermissionType(
+                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true,
@@ -8302,7 +9400,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode312() {
+  void loadNode339() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8312,7 +9410,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+              new RolePermissionType(
+                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true,
@@ -8329,7 +9432,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode313() {
+  void loadNode340() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8339,7 +9442,10 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true,
@@ -8353,7 +9459,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode314() {
+  void loadNode341() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8363,7 +9469,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+              new RolePermissionType(
+                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true,
@@ -8380,7 +9491,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode315() {
+  void loadNode342() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8390,7 +9501,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+              new RolePermissionType(
+                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true,
@@ -8404,7 +9520,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode316() {
+  void loadNode343() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8414,7 +9530,10 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true,
@@ -8431,7 +9550,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode317() {
+  void loadNode344() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8441,7 +9560,10 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true,
@@ -8458,7 +9580,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode318() {
+  void loadNode345() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8468,7 +9590,10 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15716), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true,
@@ -8479,7 +9604,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode319() {
+  void loadNode346() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8508,7 +9633,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode320() {
+  void loadNode347() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8537,7 +9662,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode321() {
+  void loadNode348() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8566,7 +9691,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode322() {
+  void loadNode349() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8592,7 +9717,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode323() {
+  void loadNode350() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8621,7 +9746,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode324() {
+  void loadNode351() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8647,7 +9772,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode325() {
+  void loadNode352() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8676,7 +9801,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode326() {
+  void loadNode353() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8705,7 +9830,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode327() {
+  void loadNode354() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8734,7 +9859,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode328() {
+  void loadNode355() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8763,7 +9888,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode329() {
+  void loadNode356() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8792,7 +9917,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode330() {
+  void loadNode357() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8821,7 +9946,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode331() {
+  void loadNode358() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8850,7 +9975,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode332() {
+  void loadNode359() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8876,7 +10001,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode333() {
+  void loadNode360() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8905,7 +10030,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode334() {
+  void loadNode361() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8931,7 +10056,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode335() {
+  void loadNode362() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8960,7 +10085,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode336() {
+  void loadNode363() {
     var node =
         new UaMethodNode(
             this.context,
@@ -8989,7 +10114,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode337() {
+  void loadNode364() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9018,7 +10143,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode338() {
+  void loadNode365() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9047,7 +10172,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode339() {
+  void loadNode366() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9073,7 +10198,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode340() {
+  void loadNode367() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9102,7 +10227,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode341() {
+  void loadNode368() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9128,7 +10253,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode342() {
+  void loadNode369() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9151,7 +10276,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode343() {
+  void loadNode370() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9180,7 +10305,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode344() {
+  void loadNode371() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9209,7 +10334,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode345() {
+  void loadNode372() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9235,7 +10360,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode346() {
+  void loadNode373() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9258,7 +10383,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode347() {
+  void loadNode374() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9287,7 +10412,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode348() {
+  void loadNode375() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9313,7 +10438,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode349() {
+  void loadNode376() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9336,7 +10461,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode350() {
+  void loadNode377() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9365,7 +10490,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode351() {
+  void loadNode378() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9391,7 +10516,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode352() {
+  void loadNode379() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9414,7 +10539,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode353() {
+  void loadNode380() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9437,7 +10562,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode354() {
+  void loadNode381() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9466,7 +10591,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode355() {
+  void loadNode382() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9495,7 +10620,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode356() {
+  void loadNode383() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9524,7 +10649,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode357() {
+  void loadNode384() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9553,7 +10678,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode358() {
+  void loadNode385() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9582,7 +10707,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode359() {
+  void loadNode386() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9608,7 +10733,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode360() {
+  void loadNode387() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9637,7 +10762,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode361() {
+  void loadNode388() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9663,7 +10788,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode362() {
+  void loadNode389() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9692,7 +10817,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode363() {
+  void loadNode390() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9718,7 +10843,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode364() {
+  void loadNode391() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9747,7 +10872,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode365() {
+  void loadNode392() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9773,7 +10898,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode366() {
+  void loadNode393() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9796,7 +10921,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode367() {
+  void loadNode394() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9819,7 +10944,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode368() {
+  void loadNode395() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9842,7 +10967,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode369() {
+  void loadNode396() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9871,7 +10996,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode370() {
+  void loadNode397() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9900,7 +11025,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode371() {
+  void loadNode398() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9927,7 +11052,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode372() {
+  void loadNode399() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9954,7 +11079,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode373() {
+  void loadNode400() {
     var node =
         new UaMethodNode(
             this.context,
@@ -9981,7 +11106,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode374() {
+  void loadNode401() {
     var node =
         new UaMethodNode(
             this.context,
@@ -10007,7 +11132,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode375() {
+  void loadNode402() {
     var node =
         new UaMethodNode(
             this.context,
@@ -10033,7 +11158,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode376() {
+  void loadNode403() {
     var node =
         new UaMethodNode(
             this.context,
@@ -10059,7 +11184,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode377() {
+  void loadNode404() {
     var node =
         new UaMethodNode(
             this.context,
@@ -10085,7 +11210,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode378() {
+  void loadNode405() {
     var node =
         new UaMethodNode(
             this.context,
@@ -10095,9 +11220,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -10109,7 +11237,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode379() {
+  void loadNode406() {
     var node =
         new UaMethodNode(
             this.context,
@@ -10119,9 +11247,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -10133,7 +11264,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode380() {
+  void loadNode407() {
     var node =
         new UaMethodNode(
             this.context,
@@ -10143,9 +11274,12 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -10157,7 +11291,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode381() {
+  void loadNode408() {
     var node =
         new UaMethodNode(
             this.context,
@@ -10167,9 +11301,14 @@ class MethodNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(4097))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(61455)))
+            },
             null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
+            new AccessRestrictionType(UShort.valueOf(3)),
             true,
             true);
     node.addReference(
@@ -10181,7 +11320,465 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode382() {
+  void loadNode409() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 26873),
+            new QualifiedName(0, "RequestTickets"),
+            new LocalizedText("", "RequestTickets"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26873), new NodeId(0, 46), new NodeId(0, 26874).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 26873), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26873), new NodeId(0, 47), new NodeId(0, 26871).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode410() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 26875),
+            new QualifiedName(0, "SetRegistrarEndpoints"),
+            new LocalizedText("", "SetRegistrarEndpoints"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26875), new NodeId(0, 46), new NodeId(0, 26876).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 26875), new NodeId(0, 37), new NodeId(0, 80).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26875), new NodeId(0, 47), new NodeId(0, 26871).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode411() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 26889),
+            new QualifiedName(0, "Open"),
+            new LocalizedText("", "Open"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26889), new NodeId(0, 46), new NodeId(0, 26890).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26889), new NodeId(0, 46), new NodeId(0, 26891).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 26889), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26889), new NodeId(0, 47), new NodeId(0, 26881).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode412() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 26892),
+            new QualifiedName(0, "Close"),
+            new LocalizedText("", "Close"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26892), new NodeId(0, 46), new NodeId(0, 26893).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 26892), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26892), new NodeId(0, 47), new NodeId(0, 26881).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode413() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 26894),
+            new QualifiedName(0, "Read"),
+            new LocalizedText("", "Read"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26894), new NodeId(0, 46), new NodeId(0, 26895).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26894), new NodeId(0, 46), new NodeId(0, 26896).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 26894), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26894), new NodeId(0, 47), new NodeId(0, 26881).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode414() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 26897),
+            new QualifiedName(0, "Write"),
+            new LocalizedText("", "Write"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26897), new NodeId(0, 46), new NodeId(0, 26898).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 26897), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26897), new NodeId(0, 47), new NodeId(0, 26881).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode415() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 26899),
+            new QualifiedName(0, "GetPosition"),
+            new LocalizedText("", "GetPosition"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26899), new NodeId(0, 46), new NodeId(0, 26900).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26899), new NodeId(0, 46), new NodeId(0, 26901).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 26899), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26899), new NodeId(0, 47), new NodeId(0, 26881).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode416() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 26902),
+            new QualifiedName(0, "SetPosition"),
+            new LocalizedText("", "SetPosition"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26902), new NodeId(0, 46), new NodeId(0, 26903).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 26902), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26902), new NodeId(0, 47), new NodeId(0, 26881).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode417() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 26907),
+            new QualifiedName(0, "OpenWithMasks"),
+            new LocalizedText("", "OpenWithMasks"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26907), new NodeId(0, 46), new NodeId(0, 26908).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26907), new NodeId(0, 46), new NodeId(0, 26909).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 26907), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26907), new NodeId(0, 47), new NodeId(0, 26881).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode418() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 26910),
+            new QualifiedName(0, "CloseAndUpdate"),
+            new LocalizedText("", "CloseAndUpdate"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26910), new NodeId(0, 46), new NodeId(0, 26911).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26910), new NodeId(0, 46), new NodeId(0, 26912).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 26910), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26910), new NodeId(0, 47), new NodeId(0, 26881).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode419() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 26913),
+            new QualifiedName(0, "AddCertificate"),
+            new LocalizedText("", "AddCertificate"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26913), new NodeId(0, 46), new NodeId(0, 26914).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 26913), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26913), new NodeId(0, 47), new NodeId(0, 26881).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode420() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 26915),
+            new QualifiedName(0, "RemoveCertificate"),
+            new LocalizedText("", "RemoveCertificate"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26915), new NodeId(0, 46), new NodeId(0, 26916).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 26915), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26915), new NodeId(0, 47), new NodeId(0, 26881).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode421() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 28005),
+            new QualifiedName(0, "UpdateCertificate"),
+            new LocalizedText("", "UpdateCertificate"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 28005), new NodeId(0, 46), new NodeId(0, 28006).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 28005), new NodeId(0, 46), new NodeId(0, 28007).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 28005), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 28005), new NodeId(0, 47), new NodeId(0, 26878).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode422() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 28008),
+            new QualifiedName(0, "ApplyChanges"),
+            new LocalizedText("", "ApplyChanges"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(new NodeId(0, 28008), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 28008), new NodeId(0, 47), new NodeId(0, 26878).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode423() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 28010),
+            new QualifiedName(0, "CreateSigningRequest"),
+            new LocalizedText("", "CreateSigningRequest"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 28010), new NodeId(0, 46), new NodeId(0, 28011).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 28010), new NodeId(0, 46), new NodeId(0, 28012).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 28010), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 28010), new NodeId(0, 47), new NodeId(0, 26878).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode424() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 28013),
+            new QualifiedName(0, "GetRejectedList"),
+            new LocalizedText("", "GetRejectedList"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 28013), new NodeId(0, 46), new NodeId(0, 28014).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 28013), new NodeId(0, 37), new NodeId(0, 78).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 28013), new NodeId(0, 47), new NodeId(0, 26878).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode425() {
+    var node =
+        new UaMethodNode(
+            this.context,
+            new NodeId(0, 29880),
+            new QualifiedName(0, "RequestTickets"),
+            new LocalizedText("", "RequestTickets"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 29880), new NodeId(0, 46), new NodeId(0, 29881).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 29880), new NodeId(0, 47), new NodeId(0, 29878).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode426() {
     var node =
         new UaMethodNode(
             this.context,
@@ -10207,7 +11804,7 @@ class MethodNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode383() {
+  void loadNode427() {
     var node =
         new UaMethodNode(
             this.context,
@@ -10618,5 +12215,49 @@ class MethodNodeLoader {
     loadNode381();
     loadNode382();
     loadNode383();
+    loadNode384();
+    loadNode385();
+    loadNode386();
+    loadNode387();
+    loadNode388();
+    loadNode389();
+    loadNode390();
+    loadNode391();
+    loadNode392();
+    loadNode393();
+    loadNode394();
+    loadNode395();
+    loadNode396();
+    loadNode397();
+    loadNode398();
+    loadNode399();
+    loadNode400();
+    loadNode401();
+    loadNode402();
+    loadNode403();
+    loadNode404();
+    loadNode405();
+    loadNode406();
+    loadNode407();
+    loadNode408();
+    loadNode409();
+    loadNode410();
+    loadNode411();
+    loadNode412();
+    loadNode413();
+    loadNode414();
+    loadNode415();
+    loadNode416();
+    loadNode417();
+    loadNode418();
+    loadNode419();
+    loadNode420();
+    loadNode421();
+    loadNode422();
+    loadNode423();
+    loadNode424();
+    loadNode425();
+    loadNode426();
+    loadNode427();
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -1359,6 +1359,39 @@ class VariableTypeNodeLoader {
     var node =
         new UaVariableTypeNode(
             this.context,
+            new NodeId(0, 32431),
+            new QualifiedName(0, "BitFieldType"),
+            new LocalizedText("", "BitFieldType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            new DataValue(Variant.NULL_VALUE),
+            new NodeId(0, 28),
+            -1,
+            null,
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32431), new NodeId(0, 46), new NodeId(0, 32432).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32431), new NodeId(0, 47), new NodeId(0, 32433).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32431), new NodeId(0, 47), new NodeId(0, 15014).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32431), new NodeId(0, 45), new NodeId(0, 63).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode37() {
+    var node =
+        new UaVariableTypeNode(
+            this.context,
             new NodeId(0, 2365),
             new QualifiedName(0, "DataItemType"),
             new LocalizedText("", "DataItemType"),
@@ -1384,7 +1417,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode37() {
+  void loadNode38() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -1417,7 +1450,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode38() {
+  void loadNode39() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -1444,7 +1477,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode39() {
+  void loadNode40() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -1471,7 +1504,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode40() {
+  void loadNode41() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -1498,7 +1531,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode41() {
+  void loadNode42() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -1522,7 +1555,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode42() {
+  void loadNode43() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -1552,7 +1585,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode43() {
+  void loadNode44() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -1579,7 +1612,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode44() {
+  void loadNode45() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -1609,7 +1642,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode45() {
+  void loadNode46() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -1648,7 +1681,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode46() {
+  void loadNode47() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -1675,7 +1708,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode47() {
+  void loadNode48() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -1702,7 +1735,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode48() {
+  void loadNode49() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -1732,7 +1765,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode49() {
+  void loadNode50() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -1765,7 +1798,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode50() {
+  void loadNode51() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -1792,7 +1825,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode51() {
+  void loadNode52() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -1831,7 +1864,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode52() {
+  void loadNode53() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -1857,7 +1890,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode53() {
+  void loadNode54() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -1884,7 +1917,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode54() {
+  void loadNode55() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -1926,7 +1959,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode55() {
+  void loadNode56() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -1979,7 +2012,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode56() {
+  void loadNode57() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -2039,7 +2072,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode57() {
+  void loadNode58() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -2075,7 +2108,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode58() {
+  void loadNode59() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -2105,7 +2138,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode59() {
+  void loadNode60() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -2132,7 +2165,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode60() {
+  void loadNode61() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -2221,5 +2254,6 @@ class VariableTypeNodeLoader {
     loadNode58();
     loadNode59();
     loadNode60();
+    loadNode61();
   }
 }

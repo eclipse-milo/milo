@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -277,6 +277,9 @@ class ObjectTypeNodeLoader {
             new NodeId(0, 2013), new NodeId(0, 46), new NodeId(0, 24093).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 2013), new NodeId(0, 46), new NodeId(0, 31770).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 2013), new NodeId(0, 46), new NodeId(0, 24094).expanded(), true));
     node.addReference(
         new Reference(new NodeId(0, 2013), new NodeId(0, 45), new NodeId(0, 58).expanded(), false));
@@ -369,6 +372,9 @@ class ObjectTypeNodeLoader {
         new Reference(
             new NodeId(0, 2029), new NodeId(0, 47), new NodeId(0, 2032).expanded(), true));
     node.addReference(
+        new Reference(
+            new NodeId(0, 2029), new NodeId(0, 46), new NodeId(0, 19303).expanded(), true));
+    node.addReference(
         new Reference(new NodeId(0, 2029), new NodeId(0, 45), new NodeId(0, 58).expanded(), false));
     this.nodeManager.addNode(node);
   }
@@ -410,6 +416,9 @@ class ObjectTypeNodeLoader {
         new Reference(
             new NodeId(0, 2034), new NodeId(0, 46), new NodeId(0, 2035).expanded(), true));
     node.addReference(
+        new Reference(
+            new NodeId(0, 2034), new NodeId(0, 46), new NodeId(0, 32410).expanded(), true));
+    node.addReference(
         new Reference(new NodeId(0, 2034), new NodeId(0, 45), new NodeId(0, 58).expanded(), false));
     this.nodeManager.addNode(node);
   }
@@ -430,10 +439,10 @@ class ObjectTypeNodeLoader {
             false);
     node.addReference(
         new Reference(
-            new NodeId(0, 2036), new NodeId(0, 46), new NodeId(0, 2037).expanded(), true));
+            new NodeId(0, 2036), new NodeId(0, 46), new NodeId(0, 2038).expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 2036), new NodeId(0, 46), new NodeId(0, 2038).expanded(), true));
+            new NodeId(0, 2036), new NodeId(0, 46), new NodeId(0, 2037).expanded(), true));
     node.addReference(
         new Reference(
             new NodeId(0, 2036), new NodeId(0, 45), new NodeId(0, 2034).expanded(), false));
@@ -490,6 +499,35 @@ class ObjectTypeNodeLoader {
     var node =
         new UaObjectTypeNode(
             this.context,
+            new NodeId(0, 32411),
+            new QualifiedName(0, "NonTransparentBackupRedundancyType"),
+            new LocalizedText("", "NonTransparentBackupRedundancyType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32411), new NodeId(0, 46), new NodeId(0, 32413).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32411), new NodeId(0, 46), new NodeId(0, 32415).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32411), new NodeId(0, 47), new NodeId(0, 32416).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32411), new NodeId(0, 45), new NodeId(0, 2039).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode16() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
             new NodeId(0, 11564),
             new QualifiedName(0, "OperationLimitsType"),
             new LocalizedText("", "OperationLimitsType"),
@@ -542,7 +580,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode16() {
+  void loadNode17() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -601,7 +639,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode17() {
+  void loadNode18() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -624,7 +662,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode18() {
+  void loadNode19() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -676,11 +714,14 @@ class ObjectTypeNodeLoader {
             new NodeId(0, 11616), new NodeId(0, 46), new NodeId(0, 25267).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 11616), new NodeId(0, 46), new NodeId(0, 32419).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 11616), new NodeId(0, 45), new NodeId(0, 58).expanded(), false));
     this.nodeManager.addNode(node);
   }
 
-  void loadNode19() {
+  void loadNode20() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -703,7 +744,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode20() {
+  void loadNode21() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -745,11 +786,23 @@ class ObjectTypeNodeLoader {
         new Reference(
             new NodeId(0, 2041), new NodeId(0, 46), new NodeId(0, 2051).expanded(), true));
     node.addReference(
+        new Reference(
+            new NodeId(0, 2041), new NodeId(0, 46), new NodeId(0, 31771).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 2041), new NodeId(0, 46), new NodeId(0, 31772).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 2041), new NodeId(0, 46), new NodeId(0, 31773).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 2041), new NodeId(0, 46), new NodeId(0, 31774).expanded(), true));
+    node.addReference(
         new Reference(new NodeId(0, 2041), new NodeId(0, 45), new NodeId(0, 58).expanded(), false));
     this.nodeManager.addNode(node);
   }
 
-  void loadNode21() {
+  void loadNode22() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -784,7 +837,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode22() {
+  void loadNode23() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -807,7 +860,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode23() {
+  void loadNode24() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -830,7 +883,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode24() {
+  void loadNode25() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -871,7 +924,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode25() {
+  void loadNode26() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -894,7 +947,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode26() {
+  void loadNode27() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -926,7 +979,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode27() {
+  void loadNode28() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -949,7 +1002,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode28() {
+  void loadNode29() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -974,11 +1027,14 @@ class ObjectTypeNodeLoader {
             new NodeId(0, 2075), new NodeId(0, 46), new NodeId(0, 11485).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 2075), new NodeId(0, 46), new NodeId(0, 19304).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 2075), new NodeId(0, 45), new NodeId(0, 2069).expanded(), false));
     this.nodeManager.addNode(node);
   }
 
-  void loadNode29() {
+  void loadNode30() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1001,7 +1057,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode30() {
+  void loadNode31() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1024,7 +1080,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode31() {
+  void loadNode32() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1050,7 +1106,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode32() {
+  void loadNode33() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1070,7 +1126,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode33() {
+  void loadNode34() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1090,7 +1146,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode34() {
+  void loadNode35() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1110,7 +1166,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode35() {
+  void loadNode36() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1130,7 +1186,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode36() {
+  void loadNode37() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1150,7 +1206,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode37() {
+  void loadNode38() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1170,7 +1226,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode38() {
+  void loadNode39() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1193,7 +1249,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode39() {
+  void loadNode40() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1216,7 +1272,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode40() {
+  void loadNode41() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1239,7 +1295,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode41() {
+  void loadNode42() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1262,7 +1318,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode42() {
+  void loadNode43() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1282,7 +1338,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode43() {
+  void loadNode44() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1314,7 +1370,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode44() {
+  void loadNode45() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1337,7 +1393,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode45() {
+  void loadNode46() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1356,14 +1412,20 @@ class ObjectTypeNodeLoader {
             new NodeId(0, 2127), new NodeId(0, 46), new NodeId(0, 2128).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 2127), new NodeId(0, 46), new NodeId(0, 19305).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 2127), new NodeId(0, 46), new NodeId(0, 2129).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 2127), new NodeId(0, 46), new NodeId(0, 19306).expanded(), true));
     node.addReference(
         new Reference(
             new NodeId(0, 2127), new NodeId(0, 45), new NodeId(0, 2052).expanded(), false));
     this.nodeManager.addNode(node);
   }
 
-  void loadNode46() {
+  void loadNode47() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1383,7 +1445,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode47() {
+  void loadNode48() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1403,7 +1465,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode48() {
+  void loadNode49() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1426,7 +1488,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode49() {
+  void loadNode50() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1446,7 +1508,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode50() {
+  void loadNode51() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1469,7 +1531,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode51() {
+  void loadNode52() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1492,7 +1554,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode52() {
+  void loadNode53() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1512,7 +1574,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode53() {
+  void loadNode54() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1538,7 +1600,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode54() {
+  void loadNode55() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1561,7 +1623,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode55() {
+  void loadNode56() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1574,7 +1636,7 @@ class ObjectTypeNodeLoader {
             null,
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
-            false);
+            true);
     node.addReference(
         new Reference(
             new NodeId(0, 23926), new NodeId(0, 46), new NodeId(0, 23994).expanded(), true));
@@ -1596,7 +1658,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode56() {
+  void loadNode57() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1615,7 +1677,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode57() {
+  void loadNode58() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1640,7 +1702,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode58() {
+  void loadNode59() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1672,7 +1734,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode59() {
+  void loadNode60() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1694,7 +1756,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode60() {
+  void loadNode61() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1714,7 +1776,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode61() {
+  void loadNode62() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1736,7 +1798,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode62() {
+  void loadNode63() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1756,7 +1818,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode63() {
+  void loadNode64() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1785,7 +1847,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode64() {
+  void loadNode65() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1811,7 +1873,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode65() {
+  void loadNode66() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1849,7 +1911,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode66() {
+  void loadNode67() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1884,7 +1946,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode67() {
+  void loadNode68() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1949,7 +2011,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode68() {
+  void loadNode69() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1978,7 +2040,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode69() {
+  void loadNode70() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2034,7 +2096,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode70() {
+  void loadNode71() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2054,7 +2116,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode71() {
+  void loadNode72() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2077,7 +2139,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode72() {
+  void loadNode73() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2103,7 +2165,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode73() {
+  void loadNode74() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2123,7 +2185,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode74() {
+  void loadNode75() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2143,7 +2205,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode75() {
+  void loadNode76() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2163,7 +2225,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode76() {
+  void loadNode77() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2186,7 +2248,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode77() {
+  void loadNode78() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2215,7 +2277,175 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode78() {
+  void loadNode79() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 32439),
+            new QualifiedName(0, "SyntaxReferenceEntryType"),
+            new LocalizedText("", "SyntaxReferenceEntryType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32439), new NodeId(0, 46), new NodeId(0, 32441).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32439), new NodeId(0, 45), new NodeId(0, 17589).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode80() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 32442),
+            new QualifiedName(0, "UnitType"),
+            new LocalizedText("", "UnitType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32442), new NodeId(0, 46), new NodeId(0, 32443).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32442), new NodeId(0, 46), new NodeId(0, 32445).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32442), new NodeId(0, 46), new NodeId(0, 32446).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32442), new NodeId(0, 45), new NodeId(0, 58).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode81() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 32447),
+            new QualifiedName(0, "ServerUnitType"),
+            new LocalizedText("", "ServerUnitType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32447), new NodeId(0, 47), new NodeId(0, 32452).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32447), new NodeId(0, 46), new NodeId(0, 32461).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32447), new NodeId(0, 47), new NodeId(0, 32462).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32447), new NodeId(0, 45), new NodeId(0, 32442).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode82() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 32467),
+            new QualifiedName(0, "AlternativeUnitType"),
+            new LocalizedText("", "AlternativeUnitType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32467), new NodeId(0, 46), new NodeId(0, 32472).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32467), new NodeId(0, 46), new NodeId(0, 32473).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32467), new NodeId(0, 46), new NodeId(0, 32474).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32467), new NodeId(0, 45), new NodeId(0, 32442).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode83() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 32475),
+            new QualifiedName(0, "QuantityType"),
+            new LocalizedText("", "QuantityType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32475), new NodeId(0, 46), new NodeId(0, 32476).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32475), new NodeId(0, 46), new NodeId(0, 32478).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32475), new NodeId(0, 46), new NodeId(0, 32479).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32475), new NodeId(0, 46), new NodeId(0, 32480).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32475), new NodeId(0, 47), new NodeId(0, 32481).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32475), new NodeId(0, 45), new NodeId(0, 58).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode84() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 32502),
+            new QualifiedName(0, "QuantitiesFolderType"),
+            new LocalizedText("", "QuantitiesFolderType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32502), new NodeId(0, 35), new NodeId(0, 32503).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32502), new NodeId(0, 45), new NodeId(0, 61).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode85() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2252,6 +2482,9 @@ class ObjectTypeNodeLoader {
             new NodeId(0, 2782), new NodeId(0, 46), new NodeId(0, 3874).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 2782), new NodeId(0, 46), new NodeId(0, 32060).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 2782), new NodeId(0, 47), new NodeId(0, 9011).expanded(), true));
     node.addReference(
         new Reference(
@@ -2286,7 +2519,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode79() {
+  void loadNode86() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2336,7 +2569,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode80() {
+  void loadNode87() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2371,7 +2604,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode81() {
+  void loadNode88() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2484,7 +2717,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode82() {
+  void loadNode89() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2507,7 +2740,30 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode83() {
+  void loadNode90() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 32064),
+            new QualifiedName(0, "AlarmSuppressionGroupType"),
+            new LocalizedText("", "AlarmSuppressionGroupType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32064), new NodeId(0, 32059), new NodeId(0, 32226).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32064), new NodeId(0, 45), new NodeId(0, 16405).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode91() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2575,7 +2831,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode84() {
+  void loadNode92() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2643,7 +2899,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode85() {
+  void loadNode93() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2687,7 +2943,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode86() {
+  void loadNode94() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2713,7 +2969,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode87() {
+  void loadNode95() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2748,7 +3004,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode88() {
+  void loadNode96() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2768,7 +3024,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode89() {
+  void loadNode97() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2788,7 +3044,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode90() {
+  void loadNode98() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2814,7 +3070,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode91() {
+  void loadNode99() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2837,7 +3093,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode92() {
+  void loadNode100() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2863,7 +3119,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode93() {
+  void loadNode101() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2886,7 +3142,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode94() {
+  void loadNode102() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2906,7 +3162,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode95() {
+  void loadNode103() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2929,7 +3185,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode96() {
+  void loadNode104() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2949,7 +3205,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode97() {
+  void loadNode105() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2969,7 +3225,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode98() {
+  void loadNode106() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2989,7 +3245,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode99() {
+  void loadNode107() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3009,7 +3265,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode100() {
+  void loadNode108() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3041,7 +3297,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode101() {
+  void loadNode109() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3070,7 +3326,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode102() {
+  void loadNode110() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3090,7 +3346,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode103() {
+  void loadNode111() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3110,7 +3366,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode104() {
+  void loadNode112() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3130,7 +3386,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode105() {
+  void loadNode113() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3150,7 +3406,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode106() {
+  void loadNode114() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3170,7 +3426,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode107() {
+  void loadNode115() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3190,7 +3446,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode108() {
+  void loadNode116() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3210,7 +3466,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode109() {
+  void loadNode117() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3230,7 +3486,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode110() {
+  void loadNode118() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3250,7 +3506,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode111() {
+  void loadNode119() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3270,7 +3526,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode112() {
+  void loadNode120() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3290,7 +3546,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode113() {
+  void loadNode121() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3316,7 +3572,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode114() {
+  void loadNode122() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3339,7 +3595,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode115() {
+  void loadNode123() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3365,7 +3621,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode116() {
+  void loadNode124() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3391,7 +3647,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode117() {
+  void loadNode125() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3414,7 +3670,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode118() {
+  void loadNode126() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3434,7 +3690,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode119() {
+  void loadNode127() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3454,7 +3710,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode120() {
+  void loadNode128() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3474,7 +3730,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode121() {
+  void loadNode129() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3494,7 +3750,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode122() {
+  void loadNode130() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3514,7 +3770,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode123() {
+  void loadNode131() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3534,7 +3790,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode124() {
+  void loadNode132() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3554,7 +3810,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode125() {
+  void loadNode133() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3601,7 +3857,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode126() {
+  void loadNode134() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3708,7 +3964,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode127() {
+  void loadNode135() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3731,7 +3987,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode128() {
+  void loadNode136() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3754,7 +4010,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode129() {
+  void loadNode137() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3777,7 +4033,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode130() {
+  void loadNode138() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3825,11 +4081,90 @@ class ObjectTypeNodeLoader {
         new Reference(
             new NodeId(0, 2318), new NodeId(0, 46), new NodeId(0, 19092).expanded(), true));
     node.addReference(
+        new Reference(
+            new NodeId(0, 2318), new NodeId(0, 46), new NodeId(0, 32619).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 2318), new NodeId(0, 46), new NodeId(0, 32620).expanded(), true));
+    node.addReference(
         new Reference(new NodeId(0, 2318), new NodeId(0, 45), new NodeId(0, 58).expanded(), false));
     this.nodeManager.addNode(node);
   }
 
-  void loadNode131() {
+  void loadNode139() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 32621),
+            new QualifiedName(0, "HistoricalEventConfigurationType"),
+            new LocalizedText("", "HistoricalEventConfigurationType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32621), new NodeId(0, 47), new NodeId(0, 32622).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32621), new NodeId(0, 46), new NodeId(0, 32623).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32621), new NodeId(0, 46), new NodeId(0, 32624).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32621), new NodeId(0, 46), new NodeId(0, 18644).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32621), new NodeId(0, 45), new NodeId(0, 58).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode140() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 32625),
+            new QualifiedName(0, "HistoricalExternalEventSourceType"),
+            new LocalizedText("", "HistoricalExternalEventSourceType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32625), new NodeId(0, 46), new NodeId(0, 32626).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32625), new NodeId(0, 46), new NodeId(0, 32627).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32625), new NodeId(0, 46), new NodeId(0, 32628).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32625), new NodeId(0, 46), new NodeId(0, 32629).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32625), new NodeId(0, 46), new NodeId(0, 32630).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32625), new NodeId(0, 46), new NodeId(0, 32631).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32625), new NodeId(0, 46), new NodeId(0, 32632).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32625), new NodeId(0, 45), new NodeId(0, 58).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode141() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3896,7 +4231,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode132() {
+  void loadNode142() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3931,7 +4266,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode133() {
+  void loadNode143() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3963,7 +4298,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode134() {
+  void loadNode144() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3992,7 +4327,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode135() {
+  void loadNode145() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4015,7 +4350,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode136() {
+  void loadNode146() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4047,7 +4382,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode137() {
+  void loadNode147() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4073,7 +4408,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode138() {
+  void loadNode148() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4099,7 +4434,56 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode139() {
+  void loadNode149() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 32758),
+            new QualifiedName(0, "AuditHistoryConfigurationChangeEventType"),
+            new LocalizedText("", "AuditHistoryConfigurationChangeEventType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32758), new NodeId(0, 45), new NodeId(0, 2052).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode150() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 32803),
+            new QualifiedName(0, "AuditHistoryBulkInsertEventType"),
+            new LocalizedText("", "AuditHistoryBulkInsertEventType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32803), new NodeId(0, 46), new NodeId(0, 32821).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32803), new NodeId(0, 46), new NodeId(0, 32822).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32803), new NodeId(0, 46), new NodeId(0, 32823).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32803), new NodeId(0, 45), new NodeId(0, 2052).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode151() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4121,6 +4505,12 @@ class ObjectTypeNodeLoader {
             new NodeId(0, 12522), new NodeId(0, 46), new NodeId(0, 19296).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 12522), new NodeId(0, 46), new NodeId(0, 32254).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 12522), new NodeId(0, 46), new NodeId(0, 23563).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 12522), new NodeId(0, 47), new NodeId(0, 12543).expanded(), true));
     node.addReference(
         new Reference(
@@ -4137,7 +4527,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode140() {
+  void loadNode152() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4166,7 +4556,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode141() {
+  void loadNode153() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4197,11 +4587,14 @@ class ObjectTypeNodeLoader {
             new NodeId(0, 12555), new NodeId(0, 47), new NodeId(0, 20143).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 12555), new NodeId(0, 9006), new NodeId(0, 13225).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 12555), new NodeId(0, 45), new NodeId(0, 58).expanded(), false));
     this.nodeManager.addNode(node);
   }
 
-  void loadNode142() {
+  void loadNode154() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4217,13 +4610,13 @@ class ObjectTypeNodeLoader {
             false);
     node.addReference(
         new Reference(
-            new NodeId(0, 13813), new NodeId(0, 35), new NodeId(0, 13814).expanded(), true));
+            new NodeId(0, 13813), new NodeId(0, 47), new NodeId(0, 13814).expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13813), new NodeId(0, 35), new NodeId(0, 13848).expanded(), true));
+            new NodeId(0, 13813), new NodeId(0, 47), new NodeId(0, 13848).expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 13813), new NodeId(0, 35), new NodeId(0, 13882).expanded(), true));
+            new NodeId(0, 13813), new NodeId(0, 47), new NodeId(0, 13882).expanded(), true));
     node.addReference(
         new Reference(
             new NodeId(0, 13813), new NodeId(0, 35), new NodeId(0, 13916).expanded(), true));
@@ -4233,7 +4626,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode143() {
+  void loadNode155() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4253,7 +4646,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode144() {
+  void loadNode156() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4273,7 +4666,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode145() {
+  void loadNode157() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4293,7 +4686,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode146() {
+  void loadNode158() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4313,7 +4706,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode147() {
+  void loadNode159() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4333,7 +4726,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode148() {
+  void loadNode160() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4353,7 +4746,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode149() {
+  void loadNode161() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4373,7 +4766,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode150() {
+  void loadNode162() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4393,7 +4786,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode151() {
+  void loadNode163() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4413,7 +4806,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode152() {
+  void loadNode164() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4433,7 +4826,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode153() {
+  void loadNode165() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4453,7 +4846,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode154() {
+  void loadNode166() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4473,7 +4866,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode155() {
+  void loadNode167() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4493,7 +4886,27 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode156() {
+  void loadNode168() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 32260),
+            new QualifiedName(0, "TrustListUpdateRequestedAuditEventType"),
+            new LocalizedText("", "TrustListUpdateRequestedAuditEventType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32260), new NodeId(0, 45), new NodeId(0, 2127).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode169() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4509,11 +4922,75 @@ class ObjectTypeNodeLoader {
             true);
     node.addReference(
         new Reference(
+            new NodeId(0, 12561), new NodeId(0, 46), new NodeId(0, 32281).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 12561), new NodeId(0, 45), new NodeId(0, 2127).expanded(), false));
     this.nodeManager.addNode(node);
   }
 
-  void loadNode157() {
+  void loadNode170() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 32286),
+            new QualifiedName(0, "TransactionDiagnosticsType"),
+            new LocalizedText("", "TransactionDiagnosticsType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32286), new NodeId(0, 46), new NodeId(0, 32287).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32286), new NodeId(0, 46), new NodeId(0, 32288).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32286), new NodeId(0, 46), new NodeId(0, 32289).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32286), new NodeId(0, 46), new NodeId(0, 32290).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32286), new NodeId(0, 46), new NodeId(0, 32291).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32286), new NodeId(0, 46), new NodeId(0, 32292).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32286), new NodeId(0, 45), new NodeId(0, 58).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode171() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 16662),
+            new QualifiedName(0, "ApplicationConfigurationFolderType"),
+            new LocalizedText("", "ApplicationConfigurationFolderType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16662), new NodeId(0, 35), new NodeId(0, 16663).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 16662), new NodeId(0, 45), new NodeId(0, 61).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode172() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4532,6 +5009,18 @@ class ObjectTypeNodeLoader {
             new NodeId(0, 12581), new NodeId(0, 47), new NodeId(0, 13950).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 12581), new NodeId(0, 46), new NodeId(0, 25696).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 12581), new NodeId(0, 46), new NodeId(0, 25724).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 12581), new NodeId(0, 46), new NodeId(0, 25697).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 12581), new NodeId(0, 46), new NodeId(0, 18660).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 12581), new NodeId(0, 46), new NodeId(0, 12708).expanded(), true));
     node.addReference(
         new Reference(
@@ -4544,10 +5033,25 @@ class ObjectTypeNodeLoader {
             new NodeId(0, 12581), new NodeId(0, 46), new NodeId(0, 12585).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 12581), new NodeId(0, 46), new NodeId(0, 23593).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 12581), new NodeId(0, 46), new NodeId(0, 18661).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 12581), new NodeId(0, 46), new NodeId(0, 19308).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 12581), new NodeId(0, 47), new NodeId(0, 12616).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 12581), new NodeId(0, 47), new NodeId(0, 32296).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 12581), new NodeId(0, 47), new NodeId(0, 12734).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 12581), new NodeId(0, 47), new NodeId(0, 25698).expanded(), true));
     node.addReference(
         new Reference(
             new NodeId(0, 12581), new NodeId(0, 47), new NodeId(0, 12731).expanded(), true));
@@ -4556,11 +5060,37 @@ class ObjectTypeNodeLoader {
             new NodeId(0, 12581), new NodeId(0, 47), new NodeId(0, 12775).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 12581), new NodeId(0, 47), new NodeId(0, 25699).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 12581), new NodeId(0, 47), new NodeId(0, 32299).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 12581), new NodeId(0, 45), new NodeId(0, 58).expanded(), false));
     this.nodeManager.addNode(node);
   }
 
-  void loadNode158() {
+  void loadNode173() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 32306),
+            new QualifiedName(0, "CertificateUpdateRequestedAuditEventType"),
+            new LocalizedText("", "CertificateUpdateRequestedAuditEventType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 32306), new NodeId(0, 45), new NodeId(0, 2127).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode174() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4586,7 +5116,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode159() {
+  void loadNode175() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4612,7 +5142,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode160() {
+  void loadNode176() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4637,6 +5167,9 @@ class ObjectTypeNodeLoader {
             new NodeId(0, 18001), new NodeId(0, 46), new NodeId(0, 18004).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 18001), new NodeId(0, 46), new NodeId(0, 18657).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 18001), new NodeId(0, 46), new NodeId(0, 18005).expanded(), true));
     node.addReference(
         new Reference(
@@ -4653,7 +5186,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode161() {
+  void loadNode177() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4676,7 +5209,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode162() {
+  void loadNode178() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4696,7 +5229,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode163() {
+  void loadNode179() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4719,7 +5252,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode164() {
+  void loadNode180() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4742,7 +5275,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode165() {
+  void loadNode181() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4771,7 +5304,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode166() {
+  void loadNode182() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4803,7 +5336,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode167() {
+  void loadNode183() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4835,7 +5368,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode168() {
+  void loadNode184() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4876,7 +5409,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode169() {
+  void loadNode185() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4917,7 +5450,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode170() {
+  void loadNode186() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4973,7 +5506,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode171() {
+  void loadNode187() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5011,7 +5544,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode172() {
+  void loadNode188() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5069,11 +5602,17 @@ class ObjectTypeNodeLoader {
             new NodeId(0, 14416), new NodeId(0, 46), new NodeId(0, 25433).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 14416), new NodeId(0, 46), new NodeId(0, 32396).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 14416), new NodeId(0, 46), new NodeId(0, 32397).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 14416), new NodeId(0, 45), new NodeId(0, 15906).expanded(), false));
     this.nodeManager.addNode(node);
   }
 
-  void loadNode173() {
+  void loadNode189() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5099,7 +5638,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode174() {
+  void loadNode190() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5137,7 +5676,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode175() {
+  void loadNode191() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5166,7 +5705,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode176() {
+  void loadNode192() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5195,7 +5734,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode177() {
+  void loadNode193() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5227,7 +5766,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode178() {
+  void loadNode194() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5274,7 +5813,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode179() {
+  void loadNode195() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5330,7 +5869,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode180() {
+  void loadNode196() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5350,7 +5889,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode181() {
+  void loadNode197() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5388,7 +5927,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode182() {
+  void loadNode198() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5444,7 +5983,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode183() {
+  void loadNode199() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5464,7 +6003,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode184() {
+  void loadNode200() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5484,7 +6023,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode185() {
+  void loadNode201() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5522,7 +6061,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode186() {
+  void loadNode202() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5542,7 +6081,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode187() {
+  void loadNode203() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5562,7 +6101,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode188() {
+  void loadNode204() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5606,7 +6145,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode189() {
+  void loadNode205() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5626,7 +6165,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode190() {
+  void loadNode206() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5646,7 +6185,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode191() {
+  void loadNode207() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5723,7 +6262,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode192() {
+  void loadNode208() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5743,7 +6282,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode193() {
+  void loadNode209() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5763,7 +6302,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode194() {
+  void loadNode210() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5783,7 +6322,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode195() {
+  void loadNode211() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5812,7 +6351,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode196() {
+  void loadNode212() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5832,7 +6371,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode197() {
+  void loadNode213() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5870,7 +6409,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode198() {
+  void loadNode214() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5899,7 +6438,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode199() {
+  void loadNode215() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5928,7 +6467,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode200() {
+  void loadNode216() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5969,7 +6508,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode201() {
+  void loadNode217() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5992,7 +6531,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode202() {
+  void loadNode218() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6015,7 +6554,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode203() {
+  void loadNode219() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6041,7 +6580,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode204() {
+  void loadNode220() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6067,7 +6606,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode205() {
+  void loadNode221() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6093,7 +6632,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode206() {
+  void loadNode222() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6119,7 +6658,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode207() {
+  void loadNode223() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6153,11 +6692,41 @@ class ObjectTypeNodeLoader {
             new NodeId(0, 23832), new NodeId(0, 46), new NodeId(0, 23838).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 23832), new NodeId(0, 46), new NodeId(0, 32651).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 23832), new NodeId(0, 46), new NodeId(0, 32844).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 23832), new NodeId(0, 46), new NodeId(0, 32845).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 23832), new NodeId(0, 46), new NodeId(0, 32846).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 23832), new NodeId(0, 46), new NodeId(0, 32847).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 23832), new NodeId(0, 46), new NodeId(0, 32652).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 23832), new NodeId(0, 46), new NodeId(0, 32653).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 23832), new NodeId(0, 46), new NodeId(0, 32654).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 23832), new NodeId(0, 46), new NodeId(0, 32655).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 23832), new NodeId(0, 46), new NodeId(0, 32848).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 23832), new NodeId(0, 45), new NodeId(0, 58).expanded(), false));
     this.nodeManager.addNode(node);
   }
 
-  void loadNode208() {
+  void loadNode224() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6186,7 +6755,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode209() {
+  void loadNode225() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6212,7 +6781,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode210() {
+  void loadNode226() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6235,7 +6804,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode211() {
+  void loadNode227() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6270,7 +6839,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode212() {
+  void loadNode228() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6302,7 +6871,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode213() {
+  void loadNode229() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6349,7 +6918,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode214() {
+  void loadNode230() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6372,7 +6941,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode215() {
+  void loadNode231() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6395,7 +6964,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode216() {
+  void loadNode232() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6421,7 +6990,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode217() {
+  void loadNode233() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6456,7 +7025,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode218() {
+  void loadNode234() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6497,7 +7066,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode219() {
+  void loadNode235() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6525,11 +7094,11 @@ class ObjectTypeNodeLoader {
             new NodeId(0, 24016), new NodeId(0, 46), new NodeId(0, 24023).expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 24016), new NodeId(0, 45), new NodeId(0, 17997).expanded(), false));
+            new NodeId(0, 24016), new NodeId(0, 45), new NodeId(0, 15319).expanded(), false));
     this.nodeManager.addNode(node);
   }
 
-  void loadNode220() {
+  void loadNode236() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6555,7 +7124,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode221() {
+  void loadNode237() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6587,7 +7156,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode222() {
+  void loadNode238() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6625,7 +7194,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode223() {
+  void loadNode239() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6660,7 +7229,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode224() {
+  void loadNode240() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6683,7 +7252,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode225() {
+  void loadNode241() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6706,7 +7275,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode226() {
+  void loadNode242() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6726,7 +7295,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode227() {
+  void loadNode243() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6751,11 +7320,14 @@ class ObjectTypeNodeLoader {
             new NodeId(0, 23456), new NodeId(0, 47), new NodeId(0, 23462).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 23456), new NodeId(0, 46), new NodeId(0, 32850).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 23456), new NodeId(0, 45), new NodeId(0, 61).expanded(), false));
     this.nodeManager.addNode(node);
   }
 
-  void loadNode228() {
+  void loadNode244() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6799,7 +7371,71 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode229() {
+  void loadNode245() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 25731),
+            new QualifiedName(0, "ApplicationConfigurationType"),
+            new LocalizedText("", "ApplicationConfigurationType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25731), new NodeId(0, 46), new NodeId(0, 26850).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25731), new NodeId(0, 46), new NodeId(0, 26851).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25731), new NodeId(0, 46), new NodeId(0, 26852).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25731), new NodeId(0, 46), new NodeId(0, 26849).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25731), new NodeId(0, 45), new NodeId(0, 12581).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode246() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 26871),
+            new QualifiedName(0, "ProvisionableDeviceType"),
+            new LocalizedText("", "ProvisionableDeviceType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26871), new NodeId(0, 46), new NodeId(0, 26872).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26871), new NodeId(0, 47), new NodeId(0, 26873).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26871), new NodeId(0, 47), new NodeId(0, 26875).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26871), new NodeId(0, 47), new NodeId(0, 26878).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 26871), new NodeId(0, 45), new NodeId(0, 58).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode247() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6831,7 +7467,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode230() {
+  void loadNode248() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6860,7 +7496,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode231() {
+  void loadNode249() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6883,7 +7519,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode232() {
+  void loadNode250() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6906,7 +7542,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode233() {
+  void loadNode251() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6929,7 +7565,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode234() {
+  void loadNode252() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6958,7 +7594,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode235() {
+  void loadNode253() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6993,7 +7629,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode236() {
+  void loadNode254() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7022,7 +7658,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode237() {
+  void loadNode255() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7054,7 +7690,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode238() {
+  void loadNode256() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7080,7 +7716,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode239() {
+  void loadNode257() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7103,7 +7739,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode240() {
+  void loadNode258() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7126,7 +7762,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode241() {
+  void loadNode259() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7152,7 +7788,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode242() {
+  void loadNode260() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7178,7 +7814,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode243() {
+  void loadNode261() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7210,7 +7846,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode244() {
+  void loadNode262() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7248,7 +7884,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode245() {
+  void loadNode263() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7274,6 +7910,214 @@ class ObjectTypeNodeLoader {
     node.addReference(
         new Reference(
             new NodeId(0, 25227), new NodeId(0, 45), new NodeId(0, 58).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode264() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 18973),
+            new QualifiedName(0, "LldpInformationType"),
+            new LocalizedText("", "LldpInformationType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18973), new NodeId(0, 47), new NodeId(0, 18974).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18973), new NodeId(0, 47), new NodeId(0, 18980).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18973), new NodeId(0, 47), new NodeId(0, 18987).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18973), new NodeId(0, 45), new NodeId(0, 58).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode265() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 18996),
+            new QualifiedName(0, "LldpRemoteStatisticsType"),
+            new LocalizedText("", "LldpRemoteStatisticsType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18996), new NodeId(0, 47), new NodeId(0, 18997).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18996), new NodeId(0, 47), new NodeId(0, 18998).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18996), new NodeId(0, 47), new NodeId(0, 18999).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18996), new NodeId(0, 47), new NodeId(0, 19000).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18996), new NodeId(0, 47), new NodeId(0, 19001).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 18996), new NodeId(0, 45), new NodeId(0, 58).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode266() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 19002),
+            new QualifiedName(0, "LldpLocalSystemType"),
+            new LocalizedText("", "LldpLocalSystemType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19002), new NodeId(0, 46), new NodeId(0, 19003).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19002), new NodeId(0, 46), new NodeId(0, 19004).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19002), new NodeId(0, 46), new NodeId(0, 19005).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19002), new NodeId(0, 46), new NodeId(0, 19006).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19002), new NodeId(0, 46), new NodeId(0, 19007).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19002), new NodeId(0, 46), new NodeId(0, 19008).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19002), new NodeId(0, 45), new NodeId(0, 58).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode267() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 19009),
+            new QualifiedName(0, "LldpPortInformationType"),
+            new LocalizedText("", "LldpPortInformationType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19009), new NodeId(0, 46), new NodeId(0, 19010).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19009), new NodeId(0, 46), new NodeId(0, 19011).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19009), new NodeId(0, 46), new NodeId(0, 19012).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19009), new NodeId(0, 46), new NodeId(0, 19013).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19009), new NodeId(0, 46), new NodeId(0, 19014).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19009), new NodeId(0, 46), new NodeId(0, 19015).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19009), new NodeId(0, 47), new NodeId(0, 19016).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19009), new NodeId(0, 45), new NodeId(0, 58).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode268() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 19033),
+            new QualifiedName(0, "LldpRemoteSystemType"),
+            new LocalizedText("", "LldpRemoteSystemType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19033), new NodeId(0, 47), new NodeId(0, 19034).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19033), new NodeId(0, 47), new NodeId(0, 19035).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19033), new NodeId(0, 47), new NodeId(0, 19036).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19033), new NodeId(0, 47), new NodeId(0, 19037).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19033), new NodeId(0, 47), new NodeId(0, 19038).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19033), new NodeId(0, 47), new NodeId(0, 19039).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19033), new NodeId(0, 47), new NodeId(0, 19040).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19033), new NodeId(0, 47), new NodeId(0, 19041).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19033), new NodeId(0, 47), new NodeId(0, 19042).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19033), new NodeId(0, 47), new NodeId(0, 19043).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19033), new NodeId(0, 47), new NodeId(0, 19044).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19033), new NodeId(0, 47), new NodeId(0, 19045).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19033), new NodeId(0, 47), new NodeId(0, 19046).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19033), new NodeId(0, 47), new NodeId(0, 19047).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19033), new NodeId(0, 47), new NodeId(0, 19078).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19033), new NodeId(0, 45), new NodeId(0, 58).expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -7524,5 +8368,28 @@ class ObjectTypeNodeLoader {
     loadNode243();
     loadNode244();
     loadNode245();
+    loadNode246();
+    loadNode247();
+    loadNode248();
+    loadNode249();
+    loadNode250();
+    loadNode251();
+    loadNode252();
+    loadNode253();
+    loadNode254();
+    loadNode255();
+    loadNode256();
+    loadNode257();
+    loadNode258();
+    loadNode259();
+    loadNode260();
+    loadNode261();
+    loadNode262();
+    loadNode263();
+    loadNode264();
+    loadNode265();
+    loadNode266();
+    loadNode267();
+    loadNode268();
   }
 }
