@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -73,13 +73,13 @@ public interface AuditOpenSecureChannelEventType extends AuditChannelEventType {
           -1,
           Double.class);
 
-  QualifiedProperty<String> CERTIFICATE_ERROR_EVENT_ID =
+  QualifiedProperty<ByteString> CERTIFICATE_ERROR_EVENT_ID =
       new QualifiedProperty<>(
           "http://opcfoundation.org/UA/",
           "CertificateErrorEventId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15"),
           -1,
-          String.class);
+          ByteString.class);
 
   /**
    * Get the local value of the ClientCertificate Node.
@@ -525,7 +525,7 @@ public interface AuditOpenSecureChannelEventType extends AuditChannelEventType {
    * @return the local value of the CertificateErrorEventId Node.
    * @throws UaException if an error occurs creating or getting the CertificateErrorEventId Node.
    */
-  String getCertificateErrorEventId() throws UaException;
+  ByteString getCertificateErrorEventId() throws UaException;
 
   /**
    * Set the local value of the CertificateErrorEventId Node.
@@ -535,25 +535,25 @@ public interface AuditOpenSecureChannelEventType extends AuditChannelEventType {
    * @param value the local value to set for the CertificateErrorEventId Node.
    * @throws UaException if an error occurs creating or getting the CertificateErrorEventId Node.
    */
-  void setCertificateErrorEventId(String value) throws UaException;
+  void setCertificateErrorEventId(ByteString value) throws UaException;
 
   /**
    * Read the value of the CertificateErrorEventId Node from the server and update the local value
    * if the operation succeeds.
    *
-   * @return the {@link String} value read from the server.
+   * @return the {@link ByteString} value read from the server.
    * @throws UaException if a service- or operation-level error occurs.
    */
-  String readCertificateErrorEventId() throws UaException;
+  ByteString readCertificateErrorEventId() throws UaException;
 
   /**
    * Write a new value for the CertificateErrorEventId Node to the server and update the local value
    * if the operation succeeds.
    *
-   * @param value the {@link String} value to write to the server.
+   * @param value the {@link ByteString} value to write to the server.
    * @throws UaException if a service- or operation-level error occurs.
    */
-  void writeCertificateErrorEventId(String value) throws UaException;
+  void writeCertificateErrorEventId(ByteString value) throws UaException;
 
   /**
    * An asynchronous implementation of {@link #readCertificateErrorEventId}.
@@ -561,7 +561,7 @@ public interface AuditOpenSecureChannelEventType extends AuditChannelEventType {
    * @return a CompletableFuture that completes successfully with the value or completes
    *     exceptionally if an operation- or service-level error occurs.
    */
-  CompletableFuture<? extends String> readCertificateErrorEventIdAsync();
+  CompletableFuture<? extends ByteString> readCertificateErrorEventIdAsync();
 
   /**
    * An asynchronous implementation of {@link #writeCertificateErrorEventId}.
@@ -569,7 +569,7 @@ public interface AuditOpenSecureChannelEventType extends AuditChannelEventType {
    * @return a CompletableFuture that completes successfully with the operation result or completes
    *     exceptionally if a service-level error occurs.
    */
-  CompletableFuture<StatusCode> writeCertificateErrorEventIdAsync(String value);
+  CompletableFuture<StatusCode> writeCertificateErrorEventIdAsync(ByteString value);
 
   /**
    * Get the CertificateErrorEventId {@link PropertyType} Node, or {@code null} if it does not

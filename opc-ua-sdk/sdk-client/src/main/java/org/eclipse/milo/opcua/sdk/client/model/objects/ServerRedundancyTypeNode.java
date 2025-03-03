@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -20,6 +20,7 @@ import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -30,6 +31,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.RedundancySupport;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.RedundantServerDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 
 public class ServerRedundancyTypeNode extends BaseObjectTypeNode implements ServerRedundancyType {
@@ -137,6 +139,75 @@ public class ServerRedundancyTypeNode extends BaseObjectTypeNode implements Serv
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "RedundancySupport",
+            ExpandedNodeId.parse("ns=0;i=46"),
+            false);
+    return future.thenApply(node -> (PropertyTypeNode) node);
+  }
+
+  @Override
+  public RedundantServerDataType[] getRedundantServerArray() throws UaException {
+    PropertyTypeNode node = getRedundantServerArrayNode();
+    return cast(node.getValue().getValue().getValue(), RedundantServerDataType[].class);
+  }
+
+  @Override
+  public void setRedundantServerArray(RedundantServerDataType[] value) throws UaException {
+    PropertyTypeNode node = getRedundantServerArrayNode();
+    ExtensionObject[] encoded =
+        ExtensionObject.encodeArray(client.getStaticEncodingContext(), value);
+    node.setValue(new Variant(encoded));
+  }
+
+  @Override
+  public RedundantServerDataType[] readRedundantServerArray() throws UaException {
+    try {
+      return readRedundantServerArrayAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    }
+  }
+
+  @Override
+  public void writeRedundantServerArray(RedundantServerDataType[] value) throws UaException {
+    try {
+      writeRedundantServerArrayAsync(value).get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends RedundantServerDataType[]> readRedundantServerArrayAsync() {
+    return getRedundantServerArrayNodeAsync()
+        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
+        .thenApply(v -> cast(v.getValue().getValue(), RedundantServerDataType[].class));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeRedundantServerArrayAsync(
+      RedundantServerDataType[] redundantServerArray) {
+    ExtensionObject[] encoded =
+        ExtensionObject.encodeArray(client.getStaticEncodingContext(), redundantServerArray);
+    DataValue value = DataValue.valueOnly(new Variant(encoded));
+    return getRedundantServerArrayNodeAsync()
+        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  }
+
+  @Override
+  public PropertyTypeNode getRedundantServerArrayNode() throws UaException {
+    try {
+      return getRedundantServerArrayNodeAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends PropertyTypeNode> getRedundantServerArrayNodeAsync() {
+    CompletableFuture<UaNode> future =
+        getMemberNodeAsync(
+            "http://opcfoundation.org/UA/",
+            "RedundantServerArray",
             ExpandedNodeId.parse("ns=0;i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);

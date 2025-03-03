@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -31,10 +31,26 @@ public interface AuditUpdateMethodEventType extends AuditEventType {
           -1,
           NodeId.class);
 
+  QualifiedProperty<StatusCode> STATUS_CODE_ID =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "StatusCodeId",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=19"),
+          -1,
+          StatusCode.class);
+
   QualifiedProperty<Object[]> INPUT_ARGUMENTS =
       new QualifiedProperty<>(
           "http://opcfoundation.org/UA/",
           "InputArguments",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
+          1,
+          Object[].class);
+
+  QualifiedProperty<Object[]> OUTPUT_ARGUMENTS =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "OutputArguments",
           ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
           1,
           Object[].class);
@@ -112,6 +128,78 @@ public interface AuditUpdateMethodEventType extends AuditEventType {
   CompletableFuture<? extends PropertyType> getMethodIdNodeAsync();
 
   /**
+   * Get the local value of the StatusCodeId Node.
+   *
+   * <p>The returned value is the last seen; it is not read live from the server.
+   *
+   * @return the local value of the StatusCodeId Node.
+   * @throws UaException if an error occurs creating or getting the StatusCodeId Node.
+   */
+  StatusCode getStatusCodeId() throws UaException;
+
+  /**
+   * Set the local value of the StatusCodeId Node.
+   *
+   * <p>The value is only updated locally; it is not written to the server.
+   *
+   * @param value the local value to set for the StatusCodeId Node.
+   * @throws UaException if an error occurs creating or getting the StatusCodeId Node.
+   */
+  void setStatusCodeId(StatusCode value) throws UaException;
+
+  /**
+   * Read the value of the StatusCodeId Node from the server and update the local value if the
+   * operation succeeds.
+   *
+   * @return the {@link StatusCode} value read from the server.
+   * @throws UaException if a service- or operation-level error occurs.
+   */
+  StatusCode readStatusCodeId() throws UaException;
+
+  /**
+   * Write a new value for the StatusCodeId Node to the server and update the local value if the
+   * operation succeeds.
+   *
+   * @param value the {@link StatusCode} value to write to the server.
+   * @throws UaException if a service- or operation-level error occurs.
+   */
+  void writeStatusCodeId(StatusCode value) throws UaException;
+
+  /**
+   * An asynchronous implementation of {@link #readStatusCodeId}.
+   *
+   * @return a CompletableFuture that completes successfully with the value or completes
+   *     exceptionally if an operation- or service-level error occurs.
+   */
+  CompletableFuture<? extends StatusCode> readStatusCodeIdAsync();
+
+  /**
+   * An asynchronous implementation of {@link #writeStatusCodeId}.
+   *
+   * @return a CompletableFuture that completes successfully with the operation result or completes
+   *     exceptionally if a service-level error occurs.
+   */
+  CompletableFuture<StatusCode> writeStatusCodeIdAsync(StatusCode value);
+
+  /**
+   * Get the StatusCodeId {@link PropertyType} Node, or {@code null} if it does not exist.
+   *
+   * <p>The Node is created when first accessed and cached for subsequent calls.
+   *
+   * @return the StatusCodeId {@link PropertyType} Node, or {@code null} if it does not exist.
+   * @throws UaException if an error occurs creating or getting the Node.
+   */
+  PropertyType getStatusCodeIdNode() throws UaException;
+
+  /**
+   * Asynchronous implementation of {@link #getStatusCodeIdNode()}.
+   *
+   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
+   *     exceptionally if an error occurs creating or getting the Node.
+   */
+  CompletableFuture<? extends PropertyType> getStatusCodeIdNodeAsync();
+
+  /**
    * Get the local value of the InputArguments Node.
    *
    * <p>The returned value is the last seen; it is not read live from the server.
@@ -182,4 +270,76 @@ public interface AuditUpdateMethodEventType extends AuditEventType {
    *     exceptionally if an error occurs creating or getting the Node.
    */
   CompletableFuture<? extends PropertyType> getInputArgumentsNodeAsync();
+
+  /**
+   * Get the local value of the OutputArguments Node.
+   *
+   * <p>The returned value is the last seen; it is not read live from the server.
+   *
+   * @return the local value of the OutputArguments Node.
+   * @throws UaException if an error occurs creating or getting the OutputArguments Node.
+   */
+  Object[] getOutputArguments() throws UaException;
+
+  /**
+   * Set the local value of the OutputArguments Node.
+   *
+   * <p>The value is only updated locally; it is not written to the server.
+   *
+   * @param value the local value to set for the OutputArguments Node.
+   * @throws UaException if an error occurs creating or getting the OutputArguments Node.
+   */
+  void setOutputArguments(Object[] value) throws UaException;
+
+  /**
+   * Read the value of the OutputArguments Node from the server and update the local value if the
+   * operation succeeds.
+   *
+   * @return the {@link Object[]} value read from the server.
+   * @throws UaException if a service- or operation-level error occurs.
+   */
+  Object[] readOutputArguments() throws UaException;
+
+  /**
+   * Write a new value for the OutputArguments Node to the server and update the local value if the
+   * operation succeeds.
+   *
+   * @param value the {@link Object[]} value to write to the server.
+   * @throws UaException if a service- or operation-level error occurs.
+   */
+  void writeOutputArguments(Object[] value) throws UaException;
+
+  /**
+   * An asynchronous implementation of {@link #readOutputArguments}.
+   *
+   * @return a CompletableFuture that completes successfully with the value or completes
+   *     exceptionally if an operation- or service-level error occurs.
+   */
+  CompletableFuture<? extends Object[]> readOutputArgumentsAsync();
+
+  /**
+   * An asynchronous implementation of {@link #writeOutputArguments}.
+   *
+   * @return a CompletableFuture that completes successfully with the operation result or completes
+   *     exceptionally if a service-level error occurs.
+   */
+  CompletableFuture<StatusCode> writeOutputArgumentsAsync(Object[] value);
+
+  /**
+   * Get the OutputArguments {@link PropertyType} Node, or {@code null} if it does not exist.
+   *
+   * <p>The Node is created when first accessed and cached for subsequent calls.
+   *
+   * @return the OutputArguments {@link PropertyType} Node, or {@code null} if it does not exist.
+   * @throws UaException if an error occurs creating or getting the Node.
+   */
+  PropertyType getOutputArgumentsNode() throws UaException;
+
+  /**
+   * Asynchronous implementation of {@link #getOutputArgumentsNode()}.
+   *
+   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
+   *     exceptionally if an error occurs creating or getting the Node.
+   */
+  CompletableFuture<? extends PropertyType> getOutputArgumentsNodeAsync();
 }

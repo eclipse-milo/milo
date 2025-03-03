@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -123,6 +123,70 @@ public class AuditUpdateMethodEventTypeNode extends AuditEventTypeNode
   }
 
   @Override
+  public StatusCode getStatusCodeId() throws UaException {
+    PropertyTypeNode node = getStatusCodeIdNode();
+    return (StatusCode) node.getValue().getValue().getValue();
+  }
+
+  @Override
+  public void setStatusCodeId(StatusCode value) throws UaException {
+    PropertyTypeNode node = getStatusCodeIdNode();
+    node.setValue(new Variant(value));
+  }
+
+  @Override
+  public StatusCode readStatusCodeId() throws UaException {
+    try {
+      return readStatusCodeIdAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    }
+  }
+
+  @Override
+  public void writeStatusCodeId(StatusCode value) throws UaException {
+    try {
+      writeStatusCodeIdAsync(value).get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends StatusCode> readStatusCodeIdAsync() {
+    return getStatusCodeIdNodeAsync()
+        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
+        .thenApply(v -> (StatusCode) v.getValue().getValue());
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeStatusCodeIdAsync(StatusCode statusCodeId) {
+    DataValue value = DataValue.valueOnly(new Variant(statusCodeId));
+    return getStatusCodeIdNodeAsync()
+        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  }
+
+  @Override
+  public PropertyTypeNode getStatusCodeIdNode() throws UaException {
+    try {
+      return getStatusCodeIdNodeAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends PropertyTypeNode> getStatusCodeIdNodeAsync() {
+    CompletableFuture<UaNode> future =
+        getMemberNodeAsync(
+            "http://opcfoundation.org/UA/",
+            "StatusCodeId",
+            ExpandedNodeId.parse("ns=0;i=46"),
+            false);
+    return future.thenApply(node -> (PropertyTypeNode) node);
+  }
+
+  @Override
   public Object[] getInputArguments() throws UaException {
     PropertyTypeNode node = getInputArgumentsNode();
     return (Object[]) node.getValue().getValue().getValue();
@@ -181,6 +245,70 @@ public class AuditUpdateMethodEventTypeNode extends AuditEventTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "InputArguments",
+            ExpandedNodeId.parse("ns=0;i=46"),
+            false);
+    return future.thenApply(node -> (PropertyTypeNode) node);
+  }
+
+  @Override
+  public Object[] getOutputArguments() throws UaException {
+    PropertyTypeNode node = getOutputArgumentsNode();
+    return (Object[]) node.getValue().getValue().getValue();
+  }
+
+  @Override
+  public void setOutputArguments(Object[] value) throws UaException {
+    PropertyTypeNode node = getOutputArgumentsNode();
+    node.setValue(new Variant(value));
+  }
+
+  @Override
+  public Object[] readOutputArguments() throws UaException {
+    try {
+      return readOutputArgumentsAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    }
+  }
+
+  @Override
+  public void writeOutputArguments(Object[] value) throws UaException {
+    try {
+      writeOutputArgumentsAsync(value).get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends Object[]> readOutputArgumentsAsync() {
+    return getOutputArgumentsNodeAsync()
+        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
+        .thenApply(v -> (Object[]) v.getValue().getValue());
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeOutputArgumentsAsync(Object[] outputArguments) {
+    DataValue value = DataValue.valueOnly(new Variant(outputArguments));
+    return getOutputArgumentsNodeAsync()
+        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  }
+
+  @Override
+  public PropertyTypeNode getOutputArgumentsNode() throws UaException {
+    try {
+      return getOutputArgumentsNodeAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends PropertyTypeNode> getOutputArgumentsNodeAsync() {
+    CompletableFuture<UaNode> future =
+        getMemberNodeAsync(
+            "http://opcfoundation.org/UA/",
+            "OutputArguments",
             ExpandedNodeId.parse("ns=0;i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);

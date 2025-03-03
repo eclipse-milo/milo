@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -61,70 +61,6 @@ public class TransparentRedundancyTypeNode extends ServerRedundancyTypeNode
         userRolePermissions,
         accessRestrictions,
         eventNotifier);
-  }
-
-  @Override
-  public String getCurrentServerId() throws UaException {
-    PropertyTypeNode node = getCurrentServerIdNode();
-    return (String) node.getValue().getValue().getValue();
-  }
-
-  @Override
-  public void setCurrentServerId(String value) throws UaException {
-    PropertyTypeNode node = getCurrentServerIdNode();
-    node.setValue(new Variant(value));
-  }
-
-  @Override
-  public String readCurrentServerId() throws UaException {
-    try {
-      return readCurrentServerIdAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
-    }
-  }
-
-  @Override
-  public void writeCurrentServerId(String value) throws UaException {
-    try {
-      writeCurrentServerIdAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends String> readCurrentServerIdAsync() {
-    return getCurrentServerIdNodeAsync()
-        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (String) v.getValue().getValue());
-  }
-
-  @Override
-  public CompletableFuture<StatusCode> writeCurrentServerIdAsync(String currentServerId) {
-    DataValue value = DataValue.valueOnly(new Variant(currentServerId));
-    return getCurrentServerIdNodeAsync()
-        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
-  }
-
-  @Override
-  public PropertyTypeNode getCurrentServerIdNode() throws UaException {
-    try {
-      return getCurrentServerIdNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
-    }
-  }
-
-  @Override
-  public CompletableFuture<? extends PropertyTypeNode> getCurrentServerIdNodeAsync() {
-    CompletableFuture<UaNode> future =
-        getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "CurrentServerId",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
-    return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
   @Override
@@ -191,6 +127,70 @@ public class TransparentRedundancyTypeNode extends ServerRedundancyTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "RedundantServerArray",
+            ExpandedNodeId.parse("ns=0;i=46"),
+            false);
+    return future.thenApply(node -> (PropertyTypeNode) node);
+  }
+
+  @Override
+  public String getCurrentServerId() throws UaException {
+    PropertyTypeNode node = getCurrentServerIdNode();
+    return (String) node.getValue().getValue().getValue();
+  }
+
+  @Override
+  public void setCurrentServerId(String value) throws UaException {
+    PropertyTypeNode node = getCurrentServerIdNode();
+    node.setValue(new Variant(value));
+  }
+
+  @Override
+  public String readCurrentServerId() throws UaException {
+    try {
+      return readCurrentServerIdAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    }
+  }
+
+  @Override
+  public void writeCurrentServerId(String value) throws UaException {
+    try {
+      writeCurrentServerIdAsync(value).get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends String> readCurrentServerIdAsync() {
+    return getCurrentServerIdNodeAsync()
+        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
+        .thenApply(v -> (String) v.getValue().getValue());
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeCurrentServerIdAsync(String currentServerId) {
+    DataValue value = DataValue.valueOnly(new Variant(currentServerId));
+    return getCurrentServerIdNodeAsync()
+        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  }
+
+  @Override
+  public PropertyTypeNode getCurrentServerIdNode() throws UaException {
+    try {
+      return getCurrentServerIdNodeAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends PropertyTypeNode> getCurrentServerIdNodeAsync() {
+    CompletableFuture<UaNode> future =
+        getMemberNodeAsync(
+            "http://opcfoundation.org/UA/",
+            "CurrentServerId",
             ExpandedNodeId.parse("ns=0;i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);

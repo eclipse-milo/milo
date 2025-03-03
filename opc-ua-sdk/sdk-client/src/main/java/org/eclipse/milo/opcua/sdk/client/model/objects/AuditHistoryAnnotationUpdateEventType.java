@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -14,14 +14,14 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyType;
 import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.PerformUpdateType;
+import org.eclipse.milo.opcua.stack.core.types.structured.Annotation;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.6.4">https://reference.opcfoundation.org/v105/Core/docs/Part11/5.6.4</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.8.4">https://reference.opcfoundation.org/v105/Core/docs/Part11/5.8.4</a>
  */
 public interface AuditHistoryAnnotationUpdateEventType extends AuditHistoryUpdateEventType {
   QualifiedProperty<PerformUpdateType> PERFORM_INSERT_REPLACE =
@@ -32,21 +32,21 @@ public interface AuditHistoryAnnotationUpdateEventType extends AuditHistoryUpdat
           -1,
           PerformUpdateType.class);
 
-  QualifiedProperty<DataValue[]> NEW_VALUES =
+  QualifiedProperty<Annotation[]> NEW_VALUES =
       new QualifiedProperty<>(
           "http://opcfoundation.org/UA/",
           "NewValues",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=23"),
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=891"),
           1,
-          DataValue[].class);
+          Annotation[].class);
 
-  QualifiedProperty<DataValue[]> OLD_VALUES =
+  QualifiedProperty<Annotation[]> OLD_VALUES =
       new QualifiedProperty<>(
           "http://opcfoundation.org/UA/",
           "OldValues",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=23"),
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=891"),
           1,
-          DataValue[].class);
+          Annotation[].class);
 
   /**
    * Get the local value of the PerformInsertReplace Node.
@@ -129,7 +129,7 @@ public interface AuditHistoryAnnotationUpdateEventType extends AuditHistoryUpdat
    * @return the local value of the NewValues Node.
    * @throws UaException if an error occurs creating or getting the NewValues Node.
    */
-  DataValue[] getNewValues() throws UaException;
+  Annotation[] getNewValues() throws UaException;
 
   /**
    * Set the local value of the NewValues Node.
@@ -139,25 +139,25 @@ public interface AuditHistoryAnnotationUpdateEventType extends AuditHistoryUpdat
    * @param value the local value to set for the NewValues Node.
    * @throws UaException if an error occurs creating or getting the NewValues Node.
    */
-  void setNewValues(DataValue[] value) throws UaException;
+  void setNewValues(Annotation[] value) throws UaException;
 
   /**
    * Read the value of the NewValues Node from the server and update the local value if the
    * operation succeeds.
    *
-   * @return the {@link DataValue[]} value read from the server.
+   * @return the {@link Annotation[]} value read from the server.
    * @throws UaException if a service- or operation-level error occurs.
    */
-  DataValue[] readNewValues() throws UaException;
+  Annotation[] readNewValues() throws UaException;
 
   /**
    * Write a new value for the NewValues Node to the server and update the local value if the
    * operation succeeds.
    *
-   * @param value the {@link DataValue[]} value to write to the server.
+   * @param value the {@link Annotation[]} value to write to the server.
    * @throws UaException if a service- or operation-level error occurs.
    */
-  void writeNewValues(DataValue[] value) throws UaException;
+  void writeNewValues(Annotation[] value) throws UaException;
 
   /**
    * An asynchronous implementation of {@link #readNewValues}.
@@ -165,7 +165,7 @@ public interface AuditHistoryAnnotationUpdateEventType extends AuditHistoryUpdat
    * @return a CompletableFuture that completes successfully with the value or completes
    *     exceptionally if an operation- or service-level error occurs.
    */
-  CompletableFuture<? extends DataValue[]> readNewValuesAsync();
+  CompletableFuture<? extends Annotation[]> readNewValuesAsync();
 
   /**
    * An asynchronous implementation of {@link #writeNewValues}.
@@ -173,7 +173,7 @@ public interface AuditHistoryAnnotationUpdateEventType extends AuditHistoryUpdat
    * @return a CompletableFuture that completes successfully with the operation result or completes
    *     exceptionally if a service-level error occurs.
    */
-  CompletableFuture<StatusCode> writeNewValuesAsync(DataValue[] value);
+  CompletableFuture<StatusCode> writeNewValuesAsync(Annotation[] value);
 
   /**
    * Get the NewValues {@link PropertyType} Node, or {@code null} if it does not exist.
@@ -201,7 +201,7 @@ public interface AuditHistoryAnnotationUpdateEventType extends AuditHistoryUpdat
    * @return the local value of the OldValues Node.
    * @throws UaException if an error occurs creating or getting the OldValues Node.
    */
-  DataValue[] getOldValues() throws UaException;
+  Annotation[] getOldValues() throws UaException;
 
   /**
    * Set the local value of the OldValues Node.
@@ -211,25 +211,25 @@ public interface AuditHistoryAnnotationUpdateEventType extends AuditHistoryUpdat
    * @param value the local value to set for the OldValues Node.
    * @throws UaException if an error occurs creating or getting the OldValues Node.
    */
-  void setOldValues(DataValue[] value) throws UaException;
+  void setOldValues(Annotation[] value) throws UaException;
 
   /**
    * Read the value of the OldValues Node from the server and update the local value if the
    * operation succeeds.
    *
-   * @return the {@link DataValue[]} value read from the server.
+   * @return the {@link Annotation[]} value read from the server.
    * @throws UaException if a service- or operation-level error occurs.
    */
-  DataValue[] readOldValues() throws UaException;
+  Annotation[] readOldValues() throws UaException;
 
   /**
    * Write a new value for the OldValues Node to the server and update the local value if the
    * operation succeeds.
    *
-   * @param value the {@link DataValue[]} value to write to the server.
+   * @param value the {@link Annotation[]} value to write to the server.
    * @throws UaException if a service- or operation-level error occurs.
    */
-  void writeOldValues(DataValue[] value) throws UaException;
+  void writeOldValues(Annotation[] value) throws UaException;
 
   /**
    * An asynchronous implementation of {@link #readOldValues}.
@@ -237,7 +237,7 @@ public interface AuditHistoryAnnotationUpdateEventType extends AuditHistoryUpdat
    * @return a CompletableFuture that completes successfully with the value or completes
    *     exceptionally if an operation- or service-level error occurs.
    */
-  CompletableFuture<? extends DataValue[]> readOldValuesAsync();
+  CompletableFuture<? extends Annotation[]> readOldValuesAsync();
 
   /**
    * An asynchronous implementation of {@link #writeOldValues}.
@@ -245,7 +245,7 @@ public interface AuditHistoryAnnotationUpdateEventType extends AuditHistoryUpdat
    * @return a CompletableFuture that completes successfully with the operation result or completes
    *     exceptionally if a service-level error occurs.
    */
-  CompletableFuture<StatusCode> writeOldValuesAsync(DataValue[] value);
+  CompletableFuture<StatusCode> writeOldValuesAsync(Annotation[] value);
 
   /**
    * Get the OldValues {@link PropertyType} Node, or {@code null} if it does not exist.

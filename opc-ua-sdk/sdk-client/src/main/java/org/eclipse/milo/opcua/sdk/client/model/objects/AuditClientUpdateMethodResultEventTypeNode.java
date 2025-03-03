@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -20,7 +20,6 @@ import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -30,7 +29,6 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 
 public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEventTypeNode
@@ -64,19 +62,19 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   }
 
   @Override
-  public NodeId getObjectId() throws UaException {
+  public ExpandedNodeId getObjectId() throws UaException {
     PropertyTypeNode node = getObjectIdNode();
-    return (NodeId) node.getValue().getValue().getValue();
+    return (ExpandedNodeId) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setObjectId(NodeId value) throws UaException {
+  public void setObjectId(ExpandedNodeId value) throws UaException {
     PropertyTypeNode node = getObjectIdNode();
     node.setValue(new Variant(value));
   }
 
   @Override
-  public NodeId readObjectId() throws UaException {
+  public ExpandedNodeId readObjectId() throws UaException {
     try {
       return readObjectIdAsync().get();
     } catch (ExecutionException | InterruptedException e) {
@@ -85,7 +83,7 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   }
 
   @Override
-  public void writeObjectId(NodeId value) throws UaException {
+  public void writeObjectId(ExpandedNodeId value) throws UaException {
     try {
       writeObjectIdAsync(value).get();
     } catch (ExecutionException | InterruptedException e) {
@@ -94,14 +92,14 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   }
 
   @Override
-  public CompletableFuture<? extends NodeId> readObjectIdAsync() {
+  public CompletableFuture<? extends ExpandedNodeId> readObjectIdAsync() {
     return getObjectIdNodeAsync()
         .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (NodeId) v.getValue().getValue());
+        .thenApply(v -> (ExpandedNodeId) v.getValue().getValue());
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeObjectIdAsync(NodeId objectId) {
+  public CompletableFuture<StatusCode> writeObjectIdAsync(ExpandedNodeId objectId) {
     DataValue value = DataValue.valueOnly(new Variant(objectId));
     return getObjectIdNodeAsync()
         .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
@@ -125,19 +123,19 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   }
 
   @Override
-  public NodeId getMethodId() throws UaException {
+  public ExpandedNodeId getMethodId() throws UaException {
     PropertyTypeNode node = getMethodIdNode();
-    return (NodeId) node.getValue().getValue().getValue();
+    return (ExpandedNodeId) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setMethodId(NodeId value) throws UaException {
+  public void setMethodId(ExpandedNodeId value) throws UaException {
     PropertyTypeNode node = getMethodIdNode();
     node.setValue(new Variant(value));
   }
 
   @Override
-  public NodeId readMethodId() throws UaException {
+  public ExpandedNodeId readMethodId() throws UaException {
     try {
       return readMethodIdAsync().get();
     } catch (ExecutionException | InterruptedException e) {
@@ -146,7 +144,7 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   }
 
   @Override
-  public void writeMethodId(NodeId value) throws UaException {
+  public void writeMethodId(ExpandedNodeId value) throws UaException {
     try {
       writeMethodIdAsync(value).get();
     } catch (ExecutionException | InterruptedException e) {
@@ -155,14 +153,14 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   }
 
   @Override
-  public CompletableFuture<? extends NodeId> readMethodIdAsync() {
+  public CompletableFuture<? extends ExpandedNodeId> readMethodIdAsync() {
     return getMethodIdNodeAsync()
         .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (NodeId) v.getValue().getValue());
+        .thenApply(v -> (ExpandedNodeId) v.getValue().getValue());
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeMethodIdAsync(NodeId methodId) {
+  public CompletableFuture<StatusCode> writeMethodIdAsync(ExpandedNodeId methodId) {
     DataValue value = DataValue.valueOnly(new Variant(methodId));
     return getMethodIdNodeAsync()
         .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
@@ -250,21 +248,19 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   }
 
   @Override
-  public Argument[] getInputArguments() throws UaException {
+  public Object[] getInputArguments() throws UaException {
     PropertyTypeNode node = getInputArgumentsNode();
-    return cast(node.getValue().getValue().getValue(), Argument[].class);
+    return (Object[]) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setInputArguments(Argument[] value) throws UaException {
+  public void setInputArguments(Object[] value) throws UaException {
     PropertyTypeNode node = getInputArgumentsNode();
-    ExtensionObject[] encoded =
-        ExtensionObject.encodeArray(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
+    node.setValue(new Variant(value));
   }
 
   @Override
-  public Argument[] readInputArguments() throws UaException {
+  public Object[] readInputArguments() throws UaException {
     try {
       return readInputArgumentsAsync().get();
     } catch (ExecutionException | InterruptedException e) {
@@ -273,7 +269,7 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   }
 
   @Override
-  public void writeInputArguments(Argument[] value) throws UaException {
+  public void writeInputArguments(Object[] value) throws UaException {
     try {
       writeInputArgumentsAsync(value).get();
     } catch (ExecutionException | InterruptedException e) {
@@ -282,17 +278,15 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   }
 
   @Override
-  public CompletableFuture<? extends Argument[]> readInputArgumentsAsync() {
+  public CompletableFuture<? extends Object[]> readInputArgumentsAsync() {
     return getInputArgumentsNodeAsync()
         .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), Argument[].class));
+        .thenApply(v -> (Object[]) v.getValue().getValue());
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeInputArgumentsAsync(Argument[] inputArguments) {
-    ExtensionObject[] encoded =
-        ExtensionObject.encodeArray(client.getStaticEncodingContext(), inputArguments);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
+  public CompletableFuture<StatusCode> writeInputArgumentsAsync(Object[] inputArguments) {
+    DataValue value = DataValue.valueOnly(new Variant(inputArguments));
     return getInputArgumentsNodeAsync()
         .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
   }
@@ -318,21 +312,19 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   }
 
   @Override
-  public Argument[] getOutputArguments() throws UaException {
+  public Object[] getOutputArguments() throws UaException {
     PropertyTypeNode node = getOutputArgumentsNode();
-    return cast(node.getValue().getValue().getValue(), Argument[].class);
+    return (Object[]) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setOutputArguments(Argument[] value) throws UaException {
+  public void setOutputArguments(Object[] value) throws UaException {
     PropertyTypeNode node = getOutputArgumentsNode();
-    ExtensionObject[] encoded =
-        ExtensionObject.encodeArray(client.getStaticEncodingContext(), value);
-    node.setValue(new Variant(encoded));
+    node.setValue(new Variant(value));
   }
 
   @Override
-  public Argument[] readOutputArguments() throws UaException {
+  public Object[] readOutputArguments() throws UaException {
     try {
       return readOutputArgumentsAsync().get();
     } catch (ExecutionException | InterruptedException e) {
@@ -341,7 +333,7 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   }
 
   @Override
-  public void writeOutputArguments(Argument[] value) throws UaException {
+  public void writeOutputArguments(Object[] value) throws UaException {
     try {
       writeOutputArgumentsAsync(value).get();
     } catch (ExecutionException | InterruptedException e) {
@@ -350,17 +342,15 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   }
 
   @Override
-  public CompletableFuture<? extends Argument[]> readOutputArgumentsAsync() {
+  public CompletableFuture<? extends Object[]> readOutputArgumentsAsync() {
     return getOutputArgumentsNodeAsync()
         .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> cast(v.getValue().getValue(), Argument[].class));
+        .thenApply(v -> (Object[]) v.getValue().getValue());
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeOutputArgumentsAsync(Argument[] outputArguments) {
-    ExtensionObject[] encoded =
-        ExtensionObject.encodeArray(client.getStaticEncodingContext(), outputArguments);
-    DataValue value = DataValue.valueOnly(new Variant(encoded));
+  public CompletableFuture<StatusCode> writeOutputArgumentsAsync(Object[] outputArguments) {
+    DataValue value = DataValue.valueOnly(new Variant(outputArguments));
     return getOutputArgumentsNodeAsync()
         .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -21,7 +21,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.6.7">https://reference.opcfoundation.org/v105/Core/docs/Part11/5.6.7</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.8.7">https://reference.opcfoundation.org/v105/Core/docs/Part11/5.8.7</a>
  */
 public interface AuditHistoryAtTimeDeleteEventType extends AuditHistoryDeleteEventType {
   QualifiedProperty<DateTime[]> REQ_TIMES =

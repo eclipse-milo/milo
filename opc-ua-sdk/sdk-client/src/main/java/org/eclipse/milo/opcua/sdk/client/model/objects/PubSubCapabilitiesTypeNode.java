@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -512,6 +512,265 @@ public class PubSubCapabilitiesTypeNode extends BaseObjectTypeNode
   }
 
   @Override
+  public UInteger getMaxSecurityGroups() throws UaException {
+    PropertyTypeNode node = getMaxSecurityGroupsNode();
+    return (UInteger) node.getValue().getValue().getValue();
+  }
+
+  @Override
+  public void setMaxSecurityGroups(UInteger value) throws UaException {
+    PropertyTypeNode node = getMaxSecurityGroupsNode();
+    node.setValue(new Variant(value));
+  }
+
+  @Override
+  public UInteger readMaxSecurityGroups() throws UaException {
+    try {
+      return readMaxSecurityGroupsAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    }
+  }
+
+  @Override
+  public void writeMaxSecurityGroups(UInteger value) throws UaException {
+    try {
+      writeMaxSecurityGroupsAsync(value).get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends UInteger> readMaxSecurityGroupsAsync() {
+    return getMaxSecurityGroupsNodeAsync()
+        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
+        .thenApply(v -> (UInteger) v.getValue().getValue());
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeMaxSecurityGroupsAsync(UInteger maxSecurityGroups) {
+    DataValue value = DataValue.valueOnly(new Variant(maxSecurityGroups));
+    return getMaxSecurityGroupsNodeAsync()
+        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  }
+
+  @Override
+  public PropertyTypeNode getMaxSecurityGroupsNode() throws UaException {
+    try {
+      return getMaxSecurityGroupsNodeAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends PropertyTypeNode> getMaxSecurityGroupsNodeAsync() {
+    CompletableFuture<UaNode> future =
+        getMemberNodeAsync(
+            "http://opcfoundation.org/UA/",
+            "MaxSecurityGroups",
+            ExpandedNodeId.parse("ns=0;i=46"),
+            false);
+    return future.thenApply(node -> (PropertyTypeNode) node);
+  }
+
+  @Override
+  public UInteger getMaxPushTargets() throws UaException {
+    PropertyTypeNode node = getMaxPushTargetsNode();
+    return (UInteger) node.getValue().getValue().getValue();
+  }
+
+  @Override
+  public void setMaxPushTargets(UInteger value) throws UaException {
+    PropertyTypeNode node = getMaxPushTargetsNode();
+    node.setValue(new Variant(value));
+  }
+
+  @Override
+  public UInteger readMaxPushTargets() throws UaException {
+    try {
+      return readMaxPushTargetsAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    }
+  }
+
+  @Override
+  public void writeMaxPushTargets(UInteger value) throws UaException {
+    try {
+      writeMaxPushTargetsAsync(value).get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends UInteger> readMaxPushTargetsAsync() {
+    return getMaxPushTargetsNodeAsync()
+        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
+        .thenApply(v -> (UInteger) v.getValue().getValue());
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeMaxPushTargetsAsync(UInteger maxPushTargets) {
+    DataValue value = DataValue.valueOnly(new Variant(maxPushTargets));
+    return getMaxPushTargetsNodeAsync()
+        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  }
+
+  @Override
+  public PropertyTypeNode getMaxPushTargetsNode() throws UaException {
+    try {
+      return getMaxPushTargetsNodeAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends PropertyTypeNode> getMaxPushTargetsNodeAsync() {
+    CompletableFuture<UaNode> future =
+        getMemberNodeAsync(
+            "http://opcfoundation.org/UA/",
+            "MaxPushTargets",
+            ExpandedNodeId.parse("ns=0;i=46"),
+            false);
+    return future.thenApply(node -> (PropertyTypeNode) node);
+  }
+
+  @Override
+  public UInteger getMaxPublishedDataSets() throws UaException {
+    PropertyTypeNode node = getMaxPublishedDataSetsNode();
+    return (UInteger) node.getValue().getValue().getValue();
+  }
+
+  @Override
+  public void setMaxPublishedDataSets(UInteger value) throws UaException {
+    PropertyTypeNode node = getMaxPublishedDataSetsNode();
+    node.setValue(new Variant(value));
+  }
+
+  @Override
+  public UInteger readMaxPublishedDataSets() throws UaException {
+    try {
+      return readMaxPublishedDataSetsAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    }
+  }
+
+  @Override
+  public void writeMaxPublishedDataSets(UInteger value) throws UaException {
+    try {
+      writeMaxPublishedDataSetsAsync(value).get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends UInteger> readMaxPublishedDataSetsAsync() {
+    return getMaxPublishedDataSetsNodeAsync()
+        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
+        .thenApply(v -> (UInteger) v.getValue().getValue());
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeMaxPublishedDataSetsAsync(
+      UInteger maxPublishedDataSets) {
+    DataValue value = DataValue.valueOnly(new Variant(maxPublishedDataSets));
+    return getMaxPublishedDataSetsNodeAsync()
+        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  }
+
+  @Override
+  public PropertyTypeNode getMaxPublishedDataSetsNode() throws UaException {
+    try {
+      return getMaxPublishedDataSetsNodeAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends PropertyTypeNode> getMaxPublishedDataSetsNodeAsync() {
+    CompletableFuture<UaNode> future =
+        getMemberNodeAsync(
+            "http://opcfoundation.org/UA/",
+            "MaxPublishedDataSets",
+            ExpandedNodeId.parse("ns=0;i=46"),
+            false);
+    return future.thenApply(node -> (PropertyTypeNode) node);
+  }
+
+  @Override
+  public UInteger getMaxStandaloneSubscribedDataSets() throws UaException {
+    PropertyTypeNode node = getMaxStandaloneSubscribedDataSetsNode();
+    return (UInteger) node.getValue().getValue().getValue();
+  }
+
+  @Override
+  public void setMaxStandaloneSubscribedDataSets(UInteger value) throws UaException {
+    PropertyTypeNode node = getMaxStandaloneSubscribedDataSetsNode();
+    node.setValue(new Variant(value));
+  }
+
+  @Override
+  public UInteger readMaxStandaloneSubscribedDataSets() throws UaException {
+    try {
+      return readMaxStandaloneSubscribedDataSetsAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    }
+  }
+
+  @Override
+  public void writeMaxStandaloneSubscribedDataSets(UInteger value) throws UaException {
+    try {
+      writeMaxStandaloneSubscribedDataSetsAsync(value).get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends UInteger> readMaxStandaloneSubscribedDataSetsAsync() {
+    return getMaxStandaloneSubscribedDataSetsNodeAsync()
+        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
+        .thenApply(v -> (UInteger) v.getValue().getValue());
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeMaxStandaloneSubscribedDataSetsAsync(
+      UInteger maxStandaloneSubscribedDataSets) {
+    DataValue value = DataValue.valueOnly(new Variant(maxStandaloneSubscribedDataSets));
+    return getMaxStandaloneSubscribedDataSetsNodeAsync()
+        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  }
+
+  @Override
+  public PropertyTypeNode getMaxStandaloneSubscribedDataSetsNode() throws UaException {
+    try {
+      return getMaxStandaloneSubscribedDataSetsNodeAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends PropertyTypeNode>
+      getMaxStandaloneSubscribedDataSetsNodeAsync() {
+    CompletableFuture<UaNode> future =
+        getMemberNodeAsync(
+            "http://opcfoundation.org/UA/",
+            "MaxStandaloneSubscribedDataSets",
+            ExpandedNodeId.parse("ns=0;i=46"),
+            false);
+    return future.thenApply(node -> (PropertyTypeNode) node);
+  }
+
+  @Override
   public UInteger getMaxNetworkMessageSizeDatagram() throws UaException {
     PropertyTypeNode node = getMaxNetworkMessageSizeDatagramNode();
     return (UInteger) node.getValue().getValue().getValue();
@@ -766,6 +1025,71 @@ public class PubSubCapabilitiesTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "SupportSecurityKeyPush",
+            ExpandedNodeId.parse("ns=0;i=46"),
+            false);
+    return future.thenApply(node -> (PropertyTypeNode) node);
+  }
+
+  @Override
+  public Boolean getSupportSecurityKeyServer() throws UaException {
+    PropertyTypeNode node = getSupportSecurityKeyServerNode();
+    return (Boolean) node.getValue().getValue().getValue();
+  }
+
+  @Override
+  public void setSupportSecurityKeyServer(Boolean value) throws UaException {
+    PropertyTypeNode node = getSupportSecurityKeyServerNode();
+    node.setValue(new Variant(value));
+  }
+
+  @Override
+  public Boolean readSupportSecurityKeyServer() throws UaException {
+    try {
+      return readSupportSecurityKeyServerAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    }
+  }
+
+  @Override
+  public void writeSupportSecurityKeyServer(Boolean value) throws UaException {
+    try {
+      writeSupportSecurityKeyServerAsync(value).get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends Boolean> readSupportSecurityKeyServerAsync() {
+    return getSupportSecurityKeyServerNodeAsync()
+        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
+        .thenApply(v -> (Boolean) v.getValue().getValue());
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeSupportSecurityKeyServerAsync(
+      Boolean supportSecurityKeyServer) {
+    DataValue value = DataValue.valueOnly(new Variant(supportSecurityKeyServer));
+    return getSupportSecurityKeyServerNodeAsync()
+        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  }
+
+  @Override
+  public PropertyTypeNode getSupportSecurityKeyServerNode() throws UaException {
+    try {
+      return getSupportSecurityKeyServerNodeAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends PropertyTypeNode> getSupportSecurityKeyServerNodeAsync() {
+    CompletableFuture<UaNode> future =
+        getMemberNodeAsync(
+            "http://opcfoundation.org/UA/",
+            "SupportSecurityKeyServer",
             ExpandedNodeId.parse("ns=0;i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);

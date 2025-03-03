@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -20,7 +20,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.12">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.12</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.12/#9.1.12.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.12/#9.1.12.1</a>
  */
 public interface PubSubCapabilitiesType extends BaseObjectType {
   QualifiedProperty<UInteger> MAX_PUB_SUB_CONNECTIONS =
@@ -79,6 +79,38 @@ public interface PubSubCapabilitiesType extends BaseObjectType {
           -1,
           UInteger.class);
 
+  QualifiedProperty<UInteger> MAX_SECURITY_GROUPS =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "MaxSecurityGroups",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          -1,
+          UInteger.class);
+
+  QualifiedProperty<UInteger> MAX_PUSH_TARGETS =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "MaxPushTargets",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          -1,
+          UInteger.class);
+
+  QualifiedProperty<UInteger> MAX_PUBLISHED_DATA_SETS =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "MaxPublishedDataSets",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          -1,
+          UInteger.class);
+
+  QualifiedProperty<UInteger> MAX_STANDALONE_SUBSCRIBED_DATA_SETS =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "MaxStandaloneSubscribedDataSets",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          -1,
+          UInteger.class);
+
   QualifiedProperty<UInteger> MAX_NETWORK_MESSAGE_SIZE_DATAGRAM =
       new QualifiedProperty<>(
           "http://opcfoundation.org/UA/",
@@ -107,6 +139,14 @@ public interface PubSubCapabilitiesType extends BaseObjectType {
       new QualifiedProperty<>(
           "http://opcfoundation.org/UA/",
           "SupportSecurityKeyPush",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          -1,
+          Boolean.class);
+
+  QualifiedProperty<Boolean> SUPPORT_SECURITY_KEY_SERVER =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "SupportSecurityKeyServer",
           ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
           -1,
           Boolean.class);
@@ -620,6 +660,299 @@ public interface PubSubCapabilitiesType extends BaseObjectType {
   CompletableFuture<? extends PropertyType> getMaxDataSetWritersPerGroupNodeAsync();
 
   /**
+   * Get the local value of the MaxSecurityGroups Node.
+   *
+   * <p>The returned value is the last seen; it is not read live from the server.
+   *
+   * @return the local value of the MaxSecurityGroups Node.
+   * @throws UaException if an error occurs creating or getting the MaxSecurityGroups Node.
+   */
+  UInteger getMaxSecurityGroups() throws UaException;
+
+  /**
+   * Set the local value of the MaxSecurityGroups Node.
+   *
+   * <p>The value is only updated locally; it is not written to the server.
+   *
+   * @param value the local value to set for the MaxSecurityGroups Node.
+   * @throws UaException if an error occurs creating or getting the MaxSecurityGroups Node.
+   */
+  void setMaxSecurityGroups(UInteger value) throws UaException;
+
+  /**
+   * Read the value of the MaxSecurityGroups Node from the server and update the local value if the
+   * operation succeeds.
+   *
+   * @return the {@link UInteger} value read from the server.
+   * @throws UaException if a service- or operation-level error occurs.
+   */
+  UInteger readMaxSecurityGroups() throws UaException;
+
+  /**
+   * Write a new value for the MaxSecurityGroups Node to the server and update the local value if
+   * the operation succeeds.
+   *
+   * @param value the {@link UInteger} value to write to the server.
+   * @throws UaException if a service- or operation-level error occurs.
+   */
+  void writeMaxSecurityGroups(UInteger value) throws UaException;
+
+  /**
+   * An asynchronous implementation of {@link #readMaxSecurityGroups}.
+   *
+   * @return a CompletableFuture that completes successfully with the value or completes
+   *     exceptionally if an operation- or service-level error occurs.
+   */
+  CompletableFuture<? extends UInteger> readMaxSecurityGroupsAsync();
+
+  /**
+   * An asynchronous implementation of {@link #writeMaxSecurityGroups}.
+   *
+   * @return a CompletableFuture that completes successfully with the operation result or completes
+   *     exceptionally if a service-level error occurs.
+   */
+  CompletableFuture<StatusCode> writeMaxSecurityGroupsAsync(UInteger value);
+
+  /**
+   * Get the MaxSecurityGroups {@link PropertyType} Node, or {@code null} if it does not exist.
+   *
+   * <p>The Node is created when first accessed and cached for subsequent calls.
+   *
+   * @return the MaxSecurityGroups {@link PropertyType} Node, or {@code null} if it does not exist.
+   * @throws UaException if an error occurs creating or getting the Node.
+   */
+  PropertyType getMaxSecurityGroupsNode() throws UaException;
+
+  /**
+   * Asynchronous implementation of {@link #getMaxSecurityGroupsNode()}.
+   *
+   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
+   *     exceptionally if an error occurs creating or getting the Node.
+   */
+  CompletableFuture<? extends PropertyType> getMaxSecurityGroupsNodeAsync();
+
+  /**
+   * Get the local value of the MaxPushTargets Node.
+   *
+   * <p>The returned value is the last seen; it is not read live from the server.
+   *
+   * @return the local value of the MaxPushTargets Node.
+   * @throws UaException if an error occurs creating or getting the MaxPushTargets Node.
+   */
+  UInteger getMaxPushTargets() throws UaException;
+
+  /**
+   * Set the local value of the MaxPushTargets Node.
+   *
+   * <p>The value is only updated locally; it is not written to the server.
+   *
+   * @param value the local value to set for the MaxPushTargets Node.
+   * @throws UaException if an error occurs creating or getting the MaxPushTargets Node.
+   */
+  void setMaxPushTargets(UInteger value) throws UaException;
+
+  /**
+   * Read the value of the MaxPushTargets Node from the server and update the local value if the
+   * operation succeeds.
+   *
+   * @return the {@link UInteger} value read from the server.
+   * @throws UaException if a service- or operation-level error occurs.
+   */
+  UInteger readMaxPushTargets() throws UaException;
+
+  /**
+   * Write a new value for the MaxPushTargets Node to the server and update the local value if the
+   * operation succeeds.
+   *
+   * @param value the {@link UInteger} value to write to the server.
+   * @throws UaException if a service- or operation-level error occurs.
+   */
+  void writeMaxPushTargets(UInteger value) throws UaException;
+
+  /**
+   * An asynchronous implementation of {@link #readMaxPushTargets}.
+   *
+   * @return a CompletableFuture that completes successfully with the value or completes
+   *     exceptionally if an operation- or service-level error occurs.
+   */
+  CompletableFuture<? extends UInteger> readMaxPushTargetsAsync();
+
+  /**
+   * An asynchronous implementation of {@link #writeMaxPushTargets}.
+   *
+   * @return a CompletableFuture that completes successfully with the operation result or completes
+   *     exceptionally if a service-level error occurs.
+   */
+  CompletableFuture<StatusCode> writeMaxPushTargetsAsync(UInteger value);
+
+  /**
+   * Get the MaxPushTargets {@link PropertyType} Node, or {@code null} if it does not exist.
+   *
+   * <p>The Node is created when first accessed and cached for subsequent calls.
+   *
+   * @return the MaxPushTargets {@link PropertyType} Node, or {@code null} if it does not exist.
+   * @throws UaException if an error occurs creating or getting the Node.
+   */
+  PropertyType getMaxPushTargetsNode() throws UaException;
+
+  /**
+   * Asynchronous implementation of {@link #getMaxPushTargetsNode()}.
+   *
+   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
+   *     exceptionally if an error occurs creating or getting the Node.
+   */
+  CompletableFuture<? extends PropertyType> getMaxPushTargetsNodeAsync();
+
+  /**
+   * Get the local value of the MaxPublishedDataSets Node.
+   *
+   * <p>The returned value is the last seen; it is not read live from the server.
+   *
+   * @return the local value of the MaxPublishedDataSets Node.
+   * @throws UaException if an error occurs creating or getting the MaxPublishedDataSets Node.
+   */
+  UInteger getMaxPublishedDataSets() throws UaException;
+
+  /**
+   * Set the local value of the MaxPublishedDataSets Node.
+   *
+   * <p>The value is only updated locally; it is not written to the server.
+   *
+   * @param value the local value to set for the MaxPublishedDataSets Node.
+   * @throws UaException if an error occurs creating or getting the MaxPublishedDataSets Node.
+   */
+  void setMaxPublishedDataSets(UInteger value) throws UaException;
+
+  /**
+   * Read the value of the MaxPublishedDataSets Node from the server and update the local value if
+   * the operation succeeds.
+   *
+   * @return the {@link UInteger} value read from the server.
+   * @throws UaException if a service- or operation-level error occurs.
+   */
+  UInteger readMaxPublishedDataSets() throws UaException;
+
+  /**
+   * Write a new value for the MaxPublishedDataSets Node to the server and update the local value if
+   * the operation succeeds.
+   *
+   * @param value the {@link UInteger} value to write to the server.
+   * @throws UaException if a service- or operation-level error occurs.
+   */
+  void writeMaxPublishedDataSets(UInteger value) throws UaException;
+
+  /**
+   * An asynchronous implementation of {@link #readMaxPublishedDataSets}.
+   *
+   * @return a CompletableFuture that completes successfully with the value or completes
+   *     exceptionally if an operation- or service-level error occurs.
+   */
+  CompletableFuture<? extends UInteger> readMaxPublishedDataSetsAsync();
+
+  /**
+   * An asynchronous implementation of {@link #writeMaxPublishedDataSets}.
+   *
+   * @return a CompletableFuture that completes successfully with the operation result or completes
+   *     exceptionally if a service-level error occurs.
+   */
+  CompletableFuture<StatusCode> writeMaxPublishedDataSetsAsync(UInteger value);
+
+  /**
+   * Get the MaxPublishedDataSets {@link PropertyType} Node, or {@code null} if it does not exist.
+   *
+   * <p>The Node is created when first accessed and cached for subsequent calls.
+   *
+   * @return the MaxPublishedDataSets {@link PropertyType} Node, or {@code null} if it does not
+   *     exist.
+   * @throws UaException if an error occurs creating or getting the Node.
+   */
+  PropertyType getMaxPublishedDataSetsNode() throws UaException;
+
+  /**
+   * Asynchronous implementation of {@link #getMaxPublishedDataSetsNode()}.
+   *
+   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
+   *     exceptionally if an error occurs creating or getting the Node.
+   */
+  CompletableFuture<? extends PropertyType> getMaxPublishedDataSetsNodeAsync();
+
+  /**
+   * Get the local value of the MaxStandaloneSubscribedDataSets Node.
+   *
+   * <p>The returned value is the last seen; it is not read live from the server.
+   *
+   * @return the local value of the MaxStandaloneSubscribedDataSets Node.
+   * @throws UaException if an error occurs creating or getting the MaxStandaloneSubscribedDataSets
+   *     Node.
+   */
+  UInteger getMaxStandaloneSubscribedDataSets() throws UaException;
+
+  /**
+   * Set the local value of the MaxStandaloneSubscribedDataSets Node.
+   *
+   * <p>The value is only updated locally; it is not written to the server.
+   *
+   * @param value the local value to set for the MaxStandaloneSubscribedDataSets Node.
+   * @throws UaException if an error occurs creating or getting the MaxStandaloneSubscribedDataSets
+   *     Node.
+   */
+  void setMaxStandaloneSubscribedDataSets(UInteger value) throws UaException;
+
+  /**
+   * Read the value of the MaxStandaloneSubscribedDataSets Node from the server and update the local
+   * value if the operation succeeds.
+   *
+   * @return the {@link UInteger} value read from the server.
+   * @throws UaException if a service- or operation-level error occurs.
+   */
+  UInteger readMaxStandaloneSubscribedDataSets() throws UaException;
+
+  /**
+   * Write a new value for the MaxStandaloneSubscribedDataSets Node to the server and update the
+   * local value if the operation succeeds.
+   *
+   * @param value the {@link UInteger} value to write to the server.
+   * @throws UaException if a service- or operation-level error occurs.
+   */
+  void writeMaxStandaloneSubscribedDataSets(UInteger value) throws UaException;
+
+  /**
+   * An asynchronous implementation of {@link #readMaxStandaloneSubscribedDataSets}.
+   *
+   * @return a CompletableFuture that completes successfully with the value or completes
+   *     exceptionally if an operation- or service-level error occurs.
+   */
+  CompletableFuture<? extends UInteger> readMaxStandaloneSubscribedDataSetsAsync();
+
+  /**
+   * An asynchronous implementation of {@link #writeMaxStandaloneSubscribedDataSets}.
+   *
+   * @return a CompletableFuture that completes successfully with the operation result or completes
+   *     exceptionally if a service-level error occurs.
+   */
+  CompletableFuture<StatusCode> writeMaxStandaloneSubscribedDataSetsAsync(UInteger value);
+
+  /**
+   * Get the MaxStandaloneSubscribedDataSets {@link PropertyType} Node, or {@code null} if it does
+   * not exist.
+   *
+   * <p>The Node is created when first accessed and cached for subsequent calls.
+   *
+   * @return the MaxStandaloneSubscribedDataSets {@link PropertyType} Node, or {@code null} if it
+   *     does not exist.
+   * @throws UaException if an error occurs creating or getting the Node.
+   */
+  PropertyType getMaxStandaloneSubscribedDataSetsNode() throws UaException;
+
+  /**
+   * Asynchronous implementation of {@link #getMaxStandaloneSubscribedDataSetsNode()}.
+   *
+   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
+   *     exceptionally if an error occurs creating or getting the Node.
+   */
+  CompletableFuture<? extends PropertyType> getMaxStandaloneSubscribedDataSetsNodeAsync();
+
+  /**
    * Get the local value of the MaxNetworkMessageSizeDatagram Node.
    *
    * <p>The returned value is the last seen; it is not read live from the server.
@@ -916,4 +1249,78 @@ public interface PubSubCapabilitiesType extends BaseObjectType {
    *     exceptionally if an error occurs creating or getting the Node.
    */
   CompletableFuture<? extends PropertyType> getSupportSecurityKeyPushNodeAsync();
+
+  /**
+   * Get the local value of the SupportSecurityKeyServer Node.
+   *
+   * <p>The returned value is the last seen; it is not read live from the server.
+   *
+   * @return the local value of the SupportSecurityKeyServer Node.
+   * @throws UaException if an error occurs creating or getting the SupportSecurityKeyServer Node.
+   */
+  Boolean getSupportSecurityKeyServer() throws UaException;
+
+  /**
+   * Set the local value of the SupportSecurityKeyServer Node.
+   *
+   * <p>The value is only updated locally; it is not written to the server.
+   *
+   * @param value the local value to set for the SupportSecurityKeyServer Node.
+   * @throws UaException if an error occurs creating or getting the SupportSecurityKeyServer Node.
+   */
+  void setSupportSecurityKeyServer(Boolean value) throws UaException;
+
+  /**
+   * Read the value of the SupportSecurityKeyServer Node from the server and update the local value
+   * if the operation succeeds.
+   *
+   * @return the {@link Boolean} value read from the server.
+   * @throws UaException if a service- or operation-level error occurs.
+   */
+  Boolean readSupportSecurityKeyServer() throws UaException;
+
+  /**
+   * Write a new value for the SupportSecurityKeyServer Node to the server and update the local
+   * value if the operation succeeds.
+   *
+   * @param value the {@link Boolean} value to write to the server.
+   * @throws UaException if a service- or operation-level error occurs.
+   */
+  void writeSupportSecurityKeyServer(Boolean value) throws UaException;
+
+  /**
+   * An asynchronous implementation of {@link #readSupportSecurityKeyServer}.
+   *
+   * @return a CompletableFuture that completes successfully with the value or completes
+   *     exceptionally if an operation- or service-level error occurs.
+   */
+  CompletableFuture<? extends Boolean> readSupportSecurityKeyServerAsync();
+
+  /**
+   * An asynchronous implementation of {@link #writeSupportSecurityKeyServer}.
+   *
+   * @return a CompletableFuture that completes successfully with the operation result or completes
+   *     exceptionally if a service-level error occurs.
+   */
+  CompletableFuture<StatusCode> writeSupportSecurityKeyServerAsync(Boolean value);
+
+  /**
+   * Get the SupportSecurityKeyServer {@link PropertyType} Node, or {@code null} if it does not
+   * exist.
+   *
+   * <p>The Node is created when first accessed and cached for subsequent calls.
+   *
+   * @return the SupportSecurityKeyServer {@link PropertyType} Node, or {@code null} if it does not
+   *     exist.
+   * @throws UaException if an error occurs creating or getting the Node.
+   */
+  PropertyType getSupportSecurityKeyServerNode() throws UaException;
+
+  /**
+   * Asynchronous implementation of {@link #getSupportSecurityKeyServerNode()}.
+   *
+   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
+   *     exceptionally if an error occurs creating or getting the Node.
+   */
+  CompletableFuture<? extends PropertyType> getSupportSecurityKeyServerNodeAsync();
 }

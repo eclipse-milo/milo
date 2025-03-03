@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -19,7 +19,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/8.6.4">https://reference.opcfoundation.org/v105/Core/docs/Part12/8.6.4</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/8.6.5">https://reference.opcfoundation.org/v105/Core/docs/Part12/8.6.5</a>
  */
 public interface KeyCredentialConfigurationType extends BaseObjectType {
   QualifiedProperty<String> RESOURCE_URI =
@@ -45,6 +45,14 @@ public interface KeyCredentialConfigurationType extends BaseObjectType {
           ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
           1,
           String[].class);
+
+  QualifiedProperty<String> CREDENTIAL_ID =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "CredentialId",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          -1,
+          String.class);
 
   QualifiedProperty<StatusCode> SERVICE_STATUS =
       new QualifiedProperty<>(
@@ -269,6 +277,78 @@ public interface KeyCredentialConfigurationType extends BaseObjectType {
    *     exceptionally if an error occurs creating or getting the Node.
    */
   CompletableFuture<? extends PropertyType> getEndpointUrlsNodeAsync();
+
+  /**
+   * Get the local value of the CredentialId Node.
+   *
+   * <p>The returned value is the last seen; it is not read live from the server.
+   *
+   * @return the local value of the CredentialId Node.
+   * @throws UaException if an error occurs creating or getting the CredentialId Node.
+   */
+  String getCredentialId() throws UaException;
+
+  /**
+   * Set the local value of the CredentialId Node.
+   *
+   * <p>The value is only updated locally; it is not written to the server.
+   *
+   * @param value the local value to set for the CredentialId Node.
+   * @throws UaException if an error occurs creating or getting the CredentialId Node.
+   */
+  void setCredentialId(String value) throws UaException;
+
+  /**
+   * Read the value of the CredentialId Node from the server and update the local value if the
+   * operation succeeds.
+   *
+   * @return the {@link String} value read from the server.
+   * @throws UaException if a service- or operation-level error occurs.
+   */
+  String readCredentialId() throws UaException;
+
+  /**
+   * Write a new value for the CredentialId Node to the server and update the local value if the
+   * operation succeeds.
+   *
+   * @param value the {@link String} value to write to the server.
+   * @throws UaException if a service- or operation-level error occurs.
+   */
+  void writeCredentialId(String value) throws UaException;
+
+  /**
+   * An asynchronous implementation of {@link #readCredentialId}.
+   *
+   * @return a CompletableFuture that completes successfully with the value or completes
+   *     exceptionally if an operation- or service-level error occurs.
+   */
+  CompletableFuture<? extends String> readCredentialIdAsync();
+
+  /**
+   * An asynchronous implementation of {@link #writeCredentialId}.
+   *
+   * @return a CompletableFuture that completes successfully with the operation result or completes
+   *     exceptionally if a service-level error occurs.
+   */
+  CompletableFuture<StatusCode> writeCredentialIdAsync(String value);
+
+  /**
+   * Get the CredentialId {@link PropertyType} Node, or {@code null} if it does not exist.
+   *
+   * <p>The Node is created when first accessed and cached for subsequent calls.
+   *
+   * @return the CredentialId {@link PropertyType} Node, or {@code null} if it does not exist.
+   * @throws UaException if an error occurs creating or getting the Node.
+   */
+  PropertyType getCredentialIdNode() throws UaException;
+
+  /**
+   * Asynchronous implementation of {@link #getCredentialIdNode()}.
+   *
+   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
+   *     exceptionally if an error occurs creating or getting the Node.
+   */
+  CompletableFuture<? extends PropertyType> getCredentialIdNodeAsync();
 
   /**
    * Get the local value of the ServiceStatus Node.

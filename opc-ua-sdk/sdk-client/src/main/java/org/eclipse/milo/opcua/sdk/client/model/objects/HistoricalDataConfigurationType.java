@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -17,6 +17,7 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ExceptionDeviationFormat;
 
 /**
@@ -95,6 +96,22 @@ public interface HistoricalDataConfigurationType extends BaseObjectType {
           ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
           -1,
           Boolean.class);
+
+  QualifiedProperty<Double> MAX_TIME_STORED_VALUES =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "MaxTimeStoredValues",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=290"),
+          -1,
+          Double.class);
+
+  QualifiedProperty<UInteger> MAX_COUNT_STORED_VALUES =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "MaxCountStoredValues",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=7"),
+          -1,
+          UInteger.class);
 
   /**
    * Get the local value of the Stepped Node.
@@ -748,6 +765,152 @@ public interface HistoricalDataConfigurationType extends BaseObjectType {
    *     exceptionally if an error occurs creating or getting the Node.
    */
   CompletableFuture<? extends PropertyType> getServerTimestampSupportedNodeAsync();
+
+  /**
+   * Get the local value of the MaxTimeStoredValues Node.
+   *
+   * <p>The returned value is the last seen; it is not read live from the server.
+   *
+   * @return the local value of the MaxTimeStoredValues Node.
+   * @throws UaException if an error occurs creating or getting the MaxTimeStoredValues Node.
+   */
+  Double getMaxTimeStoredValues() throws UaException;
+
+  /**
+   * Set the local value of the MaxTimeStoredValues Node.
+   *
+   * <p>The value is only updated locally; it is not written to the server.
+   *
+   * @param value the local value to set for the MaxTimeStoredValues Node.
+   * @throws UaException if an error occurs creating or getting the MaxTimeStoredValues Node.
+   */
+  void setMaxTimeStoredValues(Double value) throws UaException;
+
+  /**
+   * Read the value of the MaxTimeStoredValues Node from the server and update the local value if
+   * the operation succeeds.
+   *
+   * @return the {@link Double} value read from the server.
+   * @throws UaException if a service- or operation-level error occurs.
+   */
+  Double readMaxTimeStoredValues() throws UaException;
+
+  /**
+   * Write a new value for the MaxTimeStoredValues Node to the server and update the local value if
+   * the operation succeeds.
+   *
+   * @param value the {@link Double} value to write to the server.
+   * @throws UaException if a service- or operation-level error occurs.
+   */
+  void writeMaxTimeStoredValues(Double value) throws UaException;
+
+  /**
+   * An asynchronous implementation of {@link #readMaxTimeStoredValues}.
+   *
+   * @return a CompletableFuture that completes successfully with the value or completes
+   *     exceptionally if an operation- or service-level error occurs.
+   */
+  CompletableFuture<? extends Double> readMaxTimeStoredValuesAsync();
+
+  /**
+   * An asynchronous implementation of {@link #writeMaxTimeStoredValues}.
+   *
+   * @return a CompletableFuture that completes successfully with the operation result or completes
+   *     exceptionally if a service-level error occurs.
+   */
+  CompletableFuture<StatusCode> writeMaxTimeStoredValuesAsync(Double value);
+
+  /**
+   * Get the MaxTimeStoredValues {@link PropertyType} Node, or {@code null} if it does not exist.
+   *
+   * <p>The Node is created when first accessed and cached for subsequent calls.
+   *
+   * @return the MaxTimeStoredValues {@link PropertyType} Node, or {@code null} if it does not
+   *     exist.
+   * @throws UaException if an error occurs creating or getting the Node.
+   */
+  PropertyType getMaxTimeStoredValuesNode() throws UaException;
+
+  /**
+   * Asynchronous implementation of {@link #getMaxTimeStoredValuesNode()}.
+   *
+   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
+   *     exceptionally if an error occurs creating or getting the Node.
+   */
+  CompletableFuture<? extends PropertyType> getMaxTimeStoredValuesNodeAsync();
+
+  /**
+   * Get the local value of the MaxCountStoredValues Node.
+   *
+   * <p>The returned value is the last seen; it is not read live from the server.
+   *
+   * @return the local value of the MaxCountStoredValues Node.
+   * @throws UaException if an error occurs creating or getting the MaxCountStoredValues Node.
+   */
+  UInteger getMaxCountStoredValues() throws UaException;
+
+  /**
+   * Set the local value of the MaxCountStoredValues Node.
+   *
+   * <p>The value is only updated locally; it is not written to the server.
+   *
+   * @param value the local value to set for the MaxCountStoredValues Node.
+   * @throws UaException if an error occurs creating or getting the MaxCountStoredValues Node.
+   */
+  void setMaxCountStoredValues(UInteger value) throws UaException;
+
+  /**
+   * Read the value of the MaxCountStoredValues Node from the server and update the local value if
+   * the operation succeeds.
+   *
+   * @return the {@link UInteger} value read from the server.
+   * @throws UaException if a service- or operation-level error occurs.
+   */
+  UInteger readMaxCountStoredValues() throws UaException;
+
+  /**
+   * Write a new value for the MaxCountStoredValues Node to the server and update the local value if
+   * the operation succeeds.
+   *
+   * @param value the {@link UInteger} value to write to the server.
+   * @throws UaException if a service- or operation-level error occurs.
+   */
+  void writeMaxCountStoredValues(UInteger value) throws UaException;
+
+  /**
+   * An asynchronous implementation of {@link #readMaxCountStoredValues}.
+   *
+   * @return a CompletableFuture that completes successfully with the value or completes
+   *     exceptionally if an operation- or service-level error occurs.
+   */
+  CompletableFuture<? extends UInteger> readMaxCountStoredValuesAsync();
+
+  /**
+   * An asynchronous implementation of {@link #writeMaxCountStoredValues}.
+   *
+   * @return a CompletableFuture that completes successfully with the operation result or completes
+   *     exceptionally if a service-level error occurs.
+   */
+  CompletableFuture<StatusCode> writeMaxCountStoredValuesAsync(UInteger value);
+
+  /**
+   * Get the MaxCountStoredValues {@link PropertyType} Node, or {@code null} if it does not exist.
+   *
+   * <p>The Node is created when first accessed and cached for subsequent calls.
+   *
+   * @return the MaxCountStoredValues {@link PropertyType} Node, or {@code null} if it does not
+   *     exist.
+   * @throws UaException if an error occurs creating or getting the Node.
+   */
+  PropertyType getMaxCountStoredValuesNode() throws UaException;
+
+  /**
+   * Asynchronous implementation of {@link #getMaxCountStoredValuesNode()}.
+   *
+   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
+   *     exceptionally if an error occurs creating or getting the Node.
+   */
+  CompletableFuture<? extends PropertyType> getMaxCountStoredValuesNodeAsync();
 
   /**
    * Get the AggregateConfiguration {@link AggregateConfigurationType} Node, or {@code null} if it

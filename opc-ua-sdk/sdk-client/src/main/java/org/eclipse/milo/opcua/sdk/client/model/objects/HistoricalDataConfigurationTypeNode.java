@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -647,6 +647,135 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ServerTimestampSupported",
+            ExpandedNodeId.parse("ns=0;i=46"),
+            false);
+    return future.thenApply(node -> (PropertyTypeNode) node);
+  }
+
+  @Override
+  public Double getMaxTimeStoredValues() throws UaException {
+    PropertyTypeNode node = getMaxTimeStoredValuesNode();
+    return (Double) node.getValue().getValue().getValue();
+  }
+
+  @Override
+  public void setMaxTimeStoredValues(Double value) throws UaException {
+    PropertyTypeNode node = getMaxTimeStoredValuesNode();
+    node.setValue(new Variant(value));
+  }
+
+  @Override
+  public Double readMaxTimeStoredValues() throws UaException {
+    try {
+      return readMaxTimeStoredValuesAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    }
+  }
+
+  @Override
+  public void writeMaxTimeStoredValues(Double value) throws UaException {
+    try {
+      writeMaxTimeStoredValuesAsync(value).get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends Double> readMaxTimeStoredValuesAsync() {
+    return getMaxTimeStoredValuesNodeAsync()
+        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
+        .thenApply(v -> (Double) v.getValue().getValue());
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeMaxTimeStoredValuesAsync(Double maxTimeStoredValues) {
+    DataValue value = DataValue.valueOnly(new Variant(maxTimeStoredValues));
+    return getMaxTimeStoredValuesNodeAsync()
+        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  }
+
+  @Override
+  public PropertyTypeNode getMaxTimeStoredValuesNode() throws UaException {
+    try {
+      return getMaxTimeStoredValuesNodeAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends PropertyTypeNode> getMaxTimeStoredValuesNodeAsync() {
+    CompletableFuture<UaNode> future =
+        getMemberNodeAsync(
+            "http://opcfoundation.org/UA/",
+            "MaxTimeStoredValues",
+            ExpandedNodeId.parse("ns=0;i=46"),
+            false);
+    return future.thenApply(node -> (PropertyTypeNode) node);
+  }
+
+  @Override
+  public UInteger getMaxCountStoredValues() throws UaException {
+    PropertyTypeNode node = getMaxCountStoredValuesNode();
+    return (UInteger) node.getValue().getValue().getValue();
+  }
+
+  @Override
+  public void setMaxCountStoredValues(UInteger value) throws UaException {
+    PropertyTypeNode node = getMaxCountStoredValuesNode();
+    node.setValue(new Variant(value));
+  }
+
+  @Override
+  public UInteger readMaxCountStoredValues() throws UaException {
+    try {
+      return readMaxCountStoredValuesAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    }
+  }
+
+  @Override
+  public void writeMaxCountStoredValues(UInteger value) throws UaException {
+    try {
+      writeMaxCountStoredValuesAsync(value).get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends UInteger> readMaxCountStoredValuesAsync() {
+    return getMaxCountStoredValuesNodeAsync()
+        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
+        .thenApply(v -> (UInteger) v.getValue().getValue());
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeMaxCountStoredValuesAsync(
+      UInteger maxCountStoredValues) {
+    DataValue value = DataValue.valueOnly(new Variant(maxCountStoredValues));
+    return getMaxCountStoredValuesNodeAsync()
+        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  }
+
+  @Override
+  public PropertyTypeNode getMaxCountStoredValuesNode() throws UaException {
+    try {
+      return getMaxCountStoredValuesNodeAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends PropertyTypeNode> getMaxCountStoredValuesNodeAsync() {
+    CompletableFuture<UaNode> future =
+        getMemberNodeAsync(
+            "http://opcfoundation.org/UA/",
+            "MaxCountStoredValues",
             ExpandedNodeId.parse("ns=0;i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -805,6 +805,70 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ConfigurationVersion",
+            ExpandedNodeId.parse("ns=0;i=46"),
+            false);
+    return future.thenApply(node -> (PropertyTypeNode) node);
+  }
+
+  @Override
+  public String getModelVersion() throws UaException {
+    PropertyTypeNode node = getModelVersionNode();
+    return (String) node.getValue().getValue().getValue();
+  }
+
+  @Override
+  public void setModelVersion(String value) throws UaException {
+    PropertyTypeNode node = getModelVersionNode();
+    node.setValue(new Variant(value));
+  }
+
+  @Override
+  public String readModelVersion() throws UaException {
+    try {
+      return readModelVersionAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    }
+  }
+
+  @Override
+  public void writeModelVersion(String value) throws UaException {
+    try {
+      writeModelVersionAsync(value).get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends String> readModelVersionAsync() {
+    return getModelVersionNodeAsync()
+        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
+        .thenApply(v -> (String) v.getValue().getValue());
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeModelVersionAsync(String modelVersion) {
+    DataValue value = DataValue.valueOnly(new Variant(modelVersion));
+    return getModelVersionNodeAsync()
+        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  }
+
+  @Override
+  public PropertyTypeNode getModelVersionNode() throws UaException {
+    try {
+      return getModelVersionNodeAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends PropertyTypeNode> getModelVersionNodeAsync() {
+    CompletableFuture<UaNode> future =
+        getMemberNodeAsync(
+            "http://opcfoundation.org/UA/",
+            "ModelVersion",
             ExpandedNodeId.parse("ns=0;i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);

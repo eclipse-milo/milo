@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -20,6 +20,7 @@ import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -30,6 +31,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.PerformUpdateType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.Annotation;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 
 public class AuditHistoryAnnotationUpdateEventTypeNode extends AuditHistoryUpdateEventTypeNode
@@ -144,19 +146,21 @@ public class AuditHistoryAnnotationUpdateEventTypeNode extends AuditHistoryUpdat
   }
 
   @Override
-  public DataValue[] getNewValues() throws UaException {
+  public Annotation[] getNewValues() throws UaException {
     PropertyTypeNode node = getNewValuesNode();
-    return (DataValue[]) node.getValue().getValue().getValue();
+    return cast(node.getValue().getValue().getValue(), Annotation[].class);
   }
 
   @Override
-  public void setNewValues(DataValue[] value) throws UaException {
+  public void setNewValues(Annotation[] value) throws UaException {
     PropertyTypeNode node = getNewValuesNode();
-    node.setValue(new Variant(value));
+    ExtensionObject[] encoded =
+        ExtensionObject.encodeArray(client.getStaticEncodingContext(), value);
+    node.setValue(new Variant(encoded));
   }
 
   @Override
-  public DataValue[] readNewValues() throws UaException {
+  public Annotation[] readNewValues() throws UaException {
     try {
       return readNewValuesAsync().get();
     } catch (ExecutionException | InterruptedException e) {
@@ -165,7 +169,7 @@ public class AuditHistoryAnnotationUpdateEventTypeNode extends AuditHistoryUpdat
   }
 
   @Override
-  public void writeNewValues(DataValue[] value) throws UaException {
+  public void writeNewValues(Annotation[] value) throws UaException {
     try {
       writeNewValuesAsync(value).get();
     } catch (ExecutionException | InterruptedException e) {
@@ -174,15 +178,17 @@ public class AuditHistoryAnnotationUpdateEventTypeNode extends AuditHistoryUpdat
   }
 
   @Override
-  public CompletableFuture<? extends DataValue[]> readNewValuesAsync() {
+  public CompletableFuture<? extends Annotation[]> readNewValuesAsync() {
     return getNewValuesNodeAsync()
         .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (DataValue[]) v.getValue().getValue());
+        .thenApply(v -> cast(v.getValue().getValue(), Annotation[].class));
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeNewValuesAsync(DataValue[] newValues) {
-    DataValue value = DataValue.valueOnly(new Variant(newValues));
+  public CompletableFuture<StatusCode> writeNewValuesAsync(Annotation[] newValues) {
+    ExtensionObject[] encoded =
+        ExtensionObject.encodeArray(client.getStaticEncodingContext(), newValues);
+    DataValue value = DataValue.valueOnly(new Variant(encoded));
     return getNewValuesNodeAsync()
         .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
   }
@@ -205,19 +211,21 @@ public class AuditHistoryAnnotationUpdateEventTypeNode extends AuditHistoryUpdat
   }
 
   @Override
-  public DataValue[] getOldValues() throws UaException {
+  public Annotation[] getOldValues() throws UaException {
     PropertyTypeNode node = getOldValuesNode();
-    return (DataValue[]) node.getValue().getValue().getValue();
+    return cast(node.getValue().getValue().getValue(), Annotation[].class);
   }
 
   @Override
-  public void setOldValues(DataValue[] value) throws UaException {
+  public void setOldValues(Annotation[] value) throws UaException {
     PropertyTypeNode node = getOldValuesNode();
-    node.setValue(new Variant(value));
+    ExtensionObject[] encoded =
+        ExtensionObject.encodeArray(client.getStaticEncodingContext(), value);
+    node.setValue(new Variant(encoded));
   }
 
   @Override
-  public DataValue[] readOldValues() throws UaException {
+  public Annotation[] readOldValues() throws UaException {
     try {
       return readOldValuesAsync().get();
     } catch (ExecutionException | InterruptedException e) {
@@ -226,7 +234,7 @@ public class AuditHistoryAnnotationUpdateEventTypeNode extends AuditHistoryUpdat
   }
 
   @Override
-  public void writeOldValues(DataValue[] value) throws UaException {
+  public void writeOldValues(Annotation[] value) throws UaException {
     try {
       writeOldValuesAsync(value).get();
     } catch (ExecutionException | InterruptedException e) {
@@ -235,15 +243,17 @@ public class AuditHistoryAnnotationUpdateEventTypeNode extends AuditHistoryUpdat
   }
 
   @Override
-  public CompletableFuture<? extends DataValue[]> readOldValuesAsync() {
+  public CompletableFuture<? extends Annotation[]> readOldValuesAsync() {
     return getOldValuesNodeAsync()
         .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (DataValue[]) v.getValue().getValue());
+        .thenApply(v -> cast(v.getValue().getValue(), Annotation[].class));
   }
 
   @Override
-  public CompletableFuture<StatusCode> writeOldValuesAsync(DataValue[] oldValues) {
-    DataValue value = DataValue.valueOnly(new Variant(oldValues));
+  public CompletableFuture<StatusCode> writeOldValuesAsync(Annotation[] oldValues) {
+    ExtensionObject[] encoded =
+        ExtensionObject.encodeArray(client.getStaticEncodingContext(), oldValues);
+    DataValue value = DataValue.valueOnly(new Variant(encoded));
     return getOldValuesNodeAsync()
         .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -15,13 +15,14 @@ import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyType;
 import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.3">https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.3</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.4">https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.4</a>
  */
 public interface ServerConfigurationType extends BaseObjectType {
   QualifiedProperty<String> APPLICATION_URI =
@@ -47,6 +48,14 @@ public interface ServerConfigurationType extends BaseObjectType {
           ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=307"),
           -1,
           ApplicationType.class);
+
+  QualifiedProperty<LocalizedText[]> APPLICATION_NAMES =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ApplicationNames",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=21"),
+          1,
+          LocalizedText[].class);
 
   QualifiedProperty<String[]> SERVER_CAPABILITIES =
       new QualifiedProperty<>(
@@ -84,6 +93,22 @@ public interface ServerConfigurationType extends BaseObjectType {
       new QualifiedProperty<>(
           "http://opcfoundation.org/UA/",
           "HasSecureElement",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          -1,
+          Boolean.class);
+
+  QualifiedProperty<Boolean> SUPPORTS_TRANSACTIONS =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "SupportsTransactions",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          -1,
+          Boolean.class);
+
+  QualifiedProperty<Boolean> IN_APPLICATION_SETUP =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "InApplicationSetup",
           ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
           -1,
           Boolean.class);
@@ -303,6 +328,78 @@ public interface ServerConfigurationType extends BaseObjectType {
    *     exceptionally if an error occurs creating or getting the Node.
    */
   CompletableFuture<? extends PropertyType> getApplicationTypeNodeAsync();
+
+  /**
+   * Get the local value of the ApplicationNames Node.
+   *
+   * <p>The returned value is the last seen; it is not read live from the server.
+   *
+   * @return the local value of the ApplicationNames Node.
+   * @throws UaException if an error occurs creating or getting the ApplicationNames Node.
+   */
+  LocalizedText[] getApplicationNames() throws UaException;
+
+  /**
+   * Set the local value of the ApplicationNames Node.
+   *
+   * <p>The value is only updated locally; it is not written to the server.
+   *
+   * @param value the local value to set for the ApplicationNames Node.
+   * @throws UaException if an error occurs creating or getting the ApplicationNames Node.
+   */
+  void setApplicationNames(LocalizedText[] value) throws UaException;
+
+  /**
+   * Read the value of the ApplicationNames Node from the server and update the local value if the
+   * operation succeeds.
+   *
+   * @return the {@link LocalizedText[]} value read from the server.
+   * @throws UaException if a service- or operation-level error occurs.
+   */
+  LocalizedText[] readApplicationNames() throws UaException;
+
+  /**
+   * Write a new value for the ApplicationNames Node to the server and update the local value if the
+   * operation succeeds.
+   *
+   * @param value the {@link LocalizedText[]} value to write to the server.
+   * @throws UaException if a service- or operation-level error occurs.
+   */
+  void writeApplicationNames(LocalizedText[] value) throws UaException;
+
+  /**
+   * An asynchronous implementation of {@link #readApplicationNames}.
+   *
+   * @return a CompletableFuture that completes successfully with the value or completes
+   *     exceptionally if an operation- or service-level error occurs.
+   */
+  CompletableFuture<? extends LocalizedText[]> readApplicationNamesAsync();
+
+  /**
+   * An asynchronous implementation of {@link #writeApplicationNames}.
+   *
+   * @return a CompletableFuture that completes successfully with the operation result or completes
+   *     exceptionally if a service-level error occurs.
+   */
+  CompletableFuture<StatusCode> writeApplicationNamesAsync(LocalizedText[] value);
+
+  /**
+   * Get the ApplicationNames {@link PropertyType} Node, or {@code null} if it does not exist.
+   *
+   * <p>The Node is created when first accessed and cached for subsequent calls.
+   *
+   * @return the ApplicationNames {@link PropertyType} Node, or {@code null} if it does not exist.
+   * @throws UaException if an error occurs creating or getting the Node.
+   */
+  PropertyType getApplicationNamesNode() throws UaException;
+
+  /**
+   * Asynchronous implementation of {@link #getApplicationNamesNode()}.
+   *
+   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
+   *     exceptionally if an error occurs creating or getting the Node.
+   */
+  CompletableFuture<? extends PropertyType> getApplicationNamesNodeAsync();
 
   /**
    * Get the local value of the ServerCapabilities Node.
@@ -666,6 +763,151 @@ public interface ServerConfigurationType extends BaseObjectType {
    *     exceptionally if an error occurs creating or getting the Node.
    */
   CompletableFuture<? extends PropertyType> getHasSecureElementNodeAsync();
+
+  /**
+   * Get the local value of the SupportsTransactions Node.
+   *
+   * <p>The returned value is the last seen; it is not read live from the server.
+   *
+   * @return the local value of the SupportsTransactions Node.
+   * @throws UaException if an error occurs creating or getting the SupportsTransactions Node.
+   */
+  Boolean getSupportsTransactions() throws UaException;
+
+  /**
+   * Set the local value of the SupportsTransactions Node.
+   *
+   * <p>The value is only updated locally; it is not written to the server.
+   *
+   * @param value the local value to set for the SupportsTransactions Node.
+   * @throws UaException if an error occurs creating or getting the SupportsTransactions Node.
+   */
+  void setSupportsTransactions(Boolean value) throws UaException;
+
+  /**
+   * Read the value of the SupportsTransactions Node from the server and update the local value if
+   * the operation succeeds.
+   *
+   * @return the {@link Boolean} value read from the server.
+   * @throws UaException if a service- or operation-level error occurs.
+   */
+  Boolean readSupportsTransactions() throws UaException;
+
+  /**
+   * Write a new value for the SupportsTransactions Node to the server and update the local value if
+   * the operation succeeds.
+   *
+   * @param value the {@link Boolean} value to write to the server.
+   * @throws UaException if a service- or operation-level error occurs.
+   */
+  void writeSupportsTransactions(Boolean value) throws UaException;
+
+  /**
+   * An asynchronous implementation of {@link #readSupportsTransactions}.
+   *
+   * @return a CompletableFuture that completes successfully with the value or completes
+   *     exceptionally if an operation- or service-level error occurs.
+   */
+  CompletableFuture<? extends Boolean> readSupportsTransactionsAsync();
+
+  /**
+   * An asynchronous implementation of {@link #writeSupportsTransactions}.
+   *
+   * @return a CompletableFuture that completes successfully with the operation result or completes
+   *     exceptionally if a service-level error occurs.
+   */
+  CompletableFuture<StatusCode> writeSupportsTransactionsAsync(Boolean value);
+
+  /**
+   * Get the SupportsTransactions {@link PropertyType} Node, or {@code null} if it does not exist.
+   *
+   * <p>The Node is created when first accessed and cached for subsequent calls.
+   *
+   * @return the SupportsTransactions {@link PropertyType} Node, or {@code null} if it does not
+   *     exist.
+   * @throws UaException if an error occurs creating or getting the Node.
+   */
+  PropertyType getSupportsTransactionsNode() throws UaException;
+
+  /**
+   * Asynchronous implementation of {@link #getSupportsTransactionsNode()}.
+   *
+   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
+   *     exceptionally if an error occurs creating or getting the Node.
+   */
+  CompletableFuture<? extends PropertyType> getSupportsTransactionsNodeAsync();
+
+  /**
+   * Get the local value of the InApplicationSetup Node.
+   *
+   * <p>The returned value is the last seen; it is not read live from the server.
+   *
+   * @return the local value of the InApplicationSetup Node.
+   * @throws UaException if an error occurs creating or getting the InApplicationSetup Node.
+   */
+  Boolean getInApplicationSetup() throws UaException;
+
+  /**
+   * Set the local value of the InApplicationSetup Node.
+   *
+   * <p>The value is only updated locally; it is not written to the server.
+   *
+   * @param value the local value to set for the InApplicationSetup Node.
+   * @throws UaException if an error occurs creating or getting the InApplicationSetup Node.
+   */
+  void setInApplicationSetup(Boolean value) throws UaException;
+
+  /**
+   * Read the value of the InApplicationSetup Node from the server and update the local value if the
+   * operation succeeds.
+   *
+   * @return the {@link Boolean} value read from the server.
+   * @throws UaException if a service- or operation-level error occurs.
+   */
+  Boolean readInApplicationSetup() throws UaException;
+
+  /**
+   * Write a new value for the InApplicationSetup Node to the server and update the local value if
+   * the operation succeeds.
+   *
+   * @param value the {@link Boolean} value to write to the server.
+   * @throws UaException if a service- or operation-level error occurs.
+   */
+  void writeInApplicationSetup(Boolean value) throws UaException;
+
+  /**
+   * An asynchronous implementation of {@link #readInApplicationSetup}.
+   *
+   * @return a CompletableFuture that completes successfully with the value or completes
+   *     exceptionally if an operation- or service-level error occurs.
+   */
+  CompletableFuture<? extends Boolean> readInApplicationSetupAsync();
+
+  /**
+   * An asynchronous implementation of {@link #writeInApplicationSetup}.
+   *
+   * @return a CompletableFuture that completes successfully with the operation result or completes
+   *     exceptionally if a service-level error occurs.
+   */
+  CompletableFuture<StatusCode> writeInApplicationSetupAsync(Boolean value);
+
+  /**
+   * Get the InApplicationSetup {@link PropertyType} Node, or {@code null} if it does not exist.
+   *
+   * <p>The Node is created when first accessed and cached for subsequent calls.
+   *
+   * @return the InApplicationSetup {@link PropertyType} Node, or {@code null} if it does not exist.
+   * @throws UaException if an error occurs creating or getting the Node.
+   */
+  PropertyType getInApplicationSetupNode() throws UaException;
+
+  /**
+   * Asynchronous implementation of {@link #getInApplicationSetupNode()}.
+   *
+   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
+   *     exceptionally if an error occurs creating or getting the Node.
+   */
+  CompletableFuture<? extends PropertyType> getInApplicationSetupNodeAsync();
 
   /**
    * Get the CertificateGroups {@link CertificateGroupFolderType} Node, or {@code null} if it does

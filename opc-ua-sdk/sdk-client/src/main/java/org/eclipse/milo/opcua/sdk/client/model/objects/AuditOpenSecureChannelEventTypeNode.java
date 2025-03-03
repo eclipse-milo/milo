@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -482,19 +482,19 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
   }
 
   @Override
-  public String getCertificateErrorEventId() throws UaException {
+  public ByteString getCertificateErrorEventId() throws UaException {
     PropertyTypeNode node = getCertificateErrorEventIdNode();
-    return (String) node.getValue().getValue().getValue();
+    return (ByteString) node.getValue().getValue().getValue();
   }
 
   @Override
-  public void setCertificateErrorEventId(String value) throws UaException {
+  public void setCertificateErrorEventId(ByteString value) throws UaException {
     PropertyTypeNode node = getCertificateErrorEventIdNode();
     node.setValue(new Variant(value));
   }
 
   @Override
-  public String readCertificateErrorEventId() throws UaException {
+  public ByteString readCertificateErrorEventId() throws UaException {
     try {
       return readCertificateErrorEventIdAsync().get();
     } catch (ExecutionException | InterruptedException e) {
@@ -503,7 +503,7 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
   }
 
   @Override
-  public void writeCertificateErrorEventId(String value) throws UaException {
+  public void writeCertificateErrorEventId(ByteString value) throws UaException {
     try {
       writeCertificateErrorEventIdAsync(value).get();
     } catch (ExecutionException | InterruptedException e) {
@@ -512,15 +512,15 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
   }
 
   @Override
-  public CompletableFuture<? extends String> readCertificateErrorEventIdAsync() {
+  public CompletableFuture<? extends ByteString> readCertificateErrorEventIdAsync() {
     return getCertificateErrorEventIdNodeAsync()
         .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(v -> (String) v.getValue().getValue());
+        .thenApply(v -> (ByteString) v.getValue().getValue());
   }
 
   @Override
   public CompletableFuture<StatusCode> writeCertificateErrorEventIdAsync(
-      String certificateErrorEventId) {
+      ByteString certificateErrorEventId) {
     DataValue value = DataValue.valueOnly(new Variant(certificateErrorEventId));
     return getCertificateErrorEventIdNodeAsync()
         .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));

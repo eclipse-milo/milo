@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -15,30 +15,28 @@ import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyType;
 import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 
 /**
  * @see <a
  *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.37">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.37</a>
  */
 public interface AuditClientUpdateMethodResultEventType extends AuditClientEventType {
-  QualifiedProperty<NodeId> OBJECT_ID =
+  QualifiedProperty<ExpandedNodeId> OBJECT_ID =
       new QualifiedProperty<>(
           "http://opcfoundation.org/UA/",
           "ObjectId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=18"),
           -1,
-          NodeId.class);
+          ExpandedNodeId.class);
 
-  QualifiedProperty<NodeId> METHOD_ID =
+  QualifiedProperty<ExpandedNodeId> METHOD_ID =
       new QualifiedProperty<>(
           "http://opcfoundation.org/UA/",
           "MethodId",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=18"),
           -1,
-          NodeId.class);
+          ExpandedNodeId.class);
 
   QualifiedProperty<StatusCode> STATUS_CODE_ID =
       new QualifiedProperty<>(
@@ -48,21 +46,21 @@ public interface AuditClientUpdateMethodResultEventType extends AuditClientEvent
           -1,
           StatusCode.class);
 
-  QualifiedProperty<Argument[]> INPUT_ARGUMENTS =
+  QualifiedProperty<Object[]> INPUT_ARGUMENTS =
       new QualifiedProperty<>(
           "http://opcfoundation.org/UA/",
           "InputArguments",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=296"),
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
           1,
-          Argument[].class);
+          Object[].class);
 
-  QualifiedProperty<Argument[]> OUTPUT_ARGUMENTS =
+  QualifiedProperty<Object[]> OUTPUT_ARGUMENTS =
       new QualifiedProperty<>(
           "http://opcfoundation.org/UA/",
           "OutputArguments",
-          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=296"),
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=24"),
           1,
-          Argument[].class);
+          Object[].class);
 
   /**
    * Get the local value of the ObjectId Node.
@@ -72,7 +70,7 @@ public interface AuditClientUpdateMethodResultEventType extends AuditClientEvent
    * @return the local value of the ObjectId Node.
    * @throws UaException if an error occurs creating or getting the ObjectId Node.
    */
-  NodeId getObjectId() throws UaException;
+  ExpandedNodeId getObjectId() throws UaException;
 
   /**
    * Set the local value of the ObjectId Node.
@@ -82,25 +80,25 @@ public interface AuditClientUpdateMethodResultEventType extends AuditClientEvent
    * @param value the local value to set for the ObjectId Node.
    * @throws UaException if an error occurs creating or getting the ObjectId Node.
    */
-  void setObjectId(NodeId value) throws UaException;
+  void setObjectId(ExpandedNodeId value) throws UaException;
 
   /**
    * Read the value of the ObjectId Node from the server and update the local value if the operation
    * succeeds.
    *
-   * @return the {@link NodeId} value read from the server.
+   * @return the {@link ExpandedNodeId} value read from the server.
    * @throws UaException if a service- or operation-level error occurs.
    */
-  NodeId readObjectId() throws UaException;
+  ExpandedNodeId readObjectId() throws UaException;
 
   /**
    * Write a new value for the ObjectId Node to the server and update the local value if the
    * operation succeeds.
    *
-   * @param value the {@link NodeId} value to write to the server.
+   * @param value the {@link ExpandedNodeId} value to write to the server.
    * @throws UaException if a service- or operation-level error occurs.
    */
-  void writeObjectId(NodeId value) throws UaException;
+  void writeObjectId(ExpandedNodeId value) throws UaException;
 
   /**
    * An asynchronous implementation of {@link #readObjectId}.
@@ -108,7 +106,7 @@ public interface AuditClientUpdateMethodResultEventType extends AuditClientEvent
    * @return a CompletableFuture that completes successfully with the value or completes
    *     exceptionally if an operation- or service-level error occurs.
    */
-  CompletableFuture<? extends NodeId> readObjectIdAsync();
+  CompletableFuture<? extends ExpandedNodeId> readObjectIdAsync();
 
   /**
    * An asynchronous implementation of {@link #writeObjectId}.
@@ -116,7 +114,7 @@ public interface AuditClientUpdateMethodResultEventType extends AuditClientEvent
    * @return a CompletableFuture that completes successfully with the operation result or completes
    *     exceptionally if a service-level error occurs.
    */
-  CompletableFuture<StatusCode> writeObjectIdAsync(NodeId value);
+  CompletableFuture<StatusCode> writeObjectIdAsync(ExpandedNodeId value);
 
   /**
    * Get the ObjectId {@link PropertyType} Node, or {@code null} if it does not exist.
@@ -144,7 +142,7 @@ public interface AuditClientUpdateMethodResultEventType extends AuditClientEvent
    * @return the local value of the MethodId Node.
    * @throws UaException if an error occurs creating or getting the MethodId Node.
    */
-  NodeId getMethodId() throws UaException;
+  ExpandedNodeId getMethodId() throws UaException;
 
   /**
    * Set the local value of the MethodId Node.
@@ -154,25 +152,25 @@ public interface AuditClientUpdateMethodResultEventType extends AuditClientEvent
    * @param value the local value to set for the MethodId Node.
    * @throws UaException if an error occurs creating or getting the MethodId Node.
    */
-  void setMethodId(NodeId value) throws UaException;
+  void setMethodId(ExpandedNodeId value) throws UaException;
 
   /**
    * Read the value of the MethodId Node from the server and update the local value if the operation
    * succeeds.
    *
-   * @return the {@link NodeId} value read from the server.
+   * @return the {@link ExpandedNodeId} value read from the server.
    * @throws UaException if a service- or operation-level error occurs.
    */
-  NodeId readMethodId() throws UaException;
+  ExpandedNodeId readMethodId() throws UaException;
 
   /**
    * Write a new value for the MethodId Node to the server and update the local value if the
    * operation succeeds.
    *
-   * @param value the {@link NodeId} value to write to the server.
+   * @param value the {@link ExpandedNodeId} value to write to the server.
    * @throws UaException if a service- or operation-level error occurs.
    */
-  void writeMethodId(NodeId value) throws UaException;
+  void writeMethodId(ExpandedNodeId value) throws UaException;
 
   /**
    * An asynchronous implementation of {@link #readMethodId}.
@@ -180,7 +178,7 @@ public interface AuditClientUpdateMethodResultEventType extends AuditClientEvent
    * @return a CompletableFuture that completes successfully with the value or completes
    *     exceptionally if an operation- or service-level error occurs.
    */
-  CompletableFuture<? extends NodeId> readMethodIdAsync();
+  CompletableFuture<? extends ExpandedNodeId> readMethodIdAsync();
 
   /**
    * An asynchronous implementation of {@link #writeMethodId}.
@@ -188,7 +186,7 @@ public interface AuditClientUpdateMethodResultEventType extends AuditClientEvent
    * @return a CompletableFuture that completes successfully with the operation result or completes
    *     exceptionally if a service-level error occurs.
    */
-  CompletableFuture<StatusCode> writeMethodIdAsync(NodeId value);
+  CompletableFuture<StatusCode> writeMethodIdAsync(ExpandedNodeId value);
 
   /**
    * Get the MethodId {@link PropertyType} Node, or {@code null} if it does not exist.
@@ -288,7 +286,7 @@ public interface AuditClientUpdateMethodResultEventType extends AuditClientEvent
    * @return the local value of the InputArguments Node.
    * @throws UaException if an error occurs creating or getting the InputArguments Node.
    */
-  Argument[] getInputArguments() throws UaException;
+  Object[] getInputArguments() throws UaException;
 
   /**
    * Set the local value of the InputArguments Node.
@@ -298,25 +296,25 @@ public interface AuditClientUpdateMethodResultEventType extends AuditClientEvent
    * @param value the local value to set for the InputArguments Node.
    * @throws UaException if an error occurs creating or getting the InputArguments Node.
    */
-  void setInputArguments(Argument[] value) throws UaException;
+  void setInputArguments(Object[] value) throws UaException;
 
   /**
    * Read the value of the InputArguments Node from the server and update the local value if the
    * operation succeeds.
    *
-   * @return the {@link Argument[]} value read from the server.
+   * @return the {@link Object[]} value read from the server.
    * @throws UaException if a service- or operation-level error occurs.
    */
-  Argument[] readInputArguments() throws UaException;
+  Object[] readInputArguments() throws UaException;
 
   /**
    * Write a new value for the InputArguments Node to the server and update the local value if the
    * operation succeeds.
    *
-   * @param value the {@link Argument[]} value to write to the server.
+   * @param value the {@link Object[]} value to write to the server.
    * @throws UaException if a service- or operation-level error occurs.
    */
-  void writeInputArguments(Argument[] value) throws UaException;
+  void writeInputArguments(Object[] value) throws UaException;
 
   /**
    * An asynchronous implementation of {@link #readInputArguments}.
@@ -324,7 +322,7 @@ public interface AuditClientUpdateMethodResultEventType extends AuditClientEvent
    * @return a CompletableFuture that completes successfully with the value or completes
    *     exceptionally if an operation- or service-level error occurs.
    */
-  CompletableFuture<? extends Argument[]> readInputArgumentsAsync();
+  CompletableFuture<? extends Object[]> readInputArgumentsAsync();
 
   /**
    * An asynchronous implementation of {@link #writeInputArguments}.
@@ -332,7 +330,7 @@ public interface AuditClientUpdateMethodResultEventType extends AuditClientEvent
    * @return a CompletableFuture that completes successfully with the operation result or completes
    *     exceptionally if a service-level error occurs.
    */
-  CompletableFuture<StatusCode> writeInputArgumentsAsync(Argument[] value);
+  CompletableFuture<StatusCode> writeInputArgumentsAsync(Object[] value);
 
   /**
    * Get the InputArguments {@link PropertyType} Node, or {@code null} if it does not exist.
@@ -360,7 +358,7 @@ public interface AuditClientUpdateMethodResultEventType extends AuditClientEvent
    * @return the local value of the OutputArguments Node.
    * @throws UaException if an error occurs creating or getting the OutputArguments Node.
    */
-  Argument[] getOutputArguments() throws UaException;
+  Object[] getOutputArguments() throws UaException;
 
   /**
    * Set the local value of the OutputArguments Node.
@@ -370,25 +368,25 @@ public interface AuditClientUpdateMethodResultEventType extends AuditClientEvent
    * @param value the local value to set for the OutputArguments Node.
    * @throws UaException if an error occurs creating or getting the OutputArguments Node.
    */
-  void setOutputArguments(Argument[] value) throws UaException;
+  void setOutputArguments(Object[] value) throws UaException;
 
   /**
    * Read the value of the OutputArguments Node from the server and update the local value if the
    * operation succeeds.
    *
-   * @return the {@link Argument[]} value read from the server.
+   * @return the {@link Object[]} value read from the server.
    * @throws UaException if a service- or operation-level error occurs.
    */
-  Argument[] readOutputArguments() throws UaException;
+  Object[] readOutputArguments() throws UaException;
 
   /**
    * Write a new value for the OutputArguments Node to the server and update the local value if the
    * operation succeeds.
    *
-   * @param value the {@link Argument[]} value to write to the server.
+   * @param value the {@link Object[]} value to write to the server.
    * @throws UaException if a service- or operation-level error occurs.
    */
-  void writeOutputArguments(Argument[] value) throws UaException;
+  void writeOutputArguments(Object[] value) throws UaException;
 
   /**
    * An asynchronous implementation of {@link #readOutputArguments}.
@@ -396,7 +394,7 @@ public interface AuditClientUpdateMethodResultEventType extends AuditClientEvent
    * @return a CompletableFuture that completes successfully with the value or completes
    *     exceptionally if an operation- or service-level error occurs.
    */
-  CompletableFuture<? extends Argument[]> readOutputArgumentsAsync();
+  CompletableFuture<? extends Object[]> readOutputArgumentsAsync();
 
   /**
    * An asynchronous implementation of {@link #writeOutputArguments}.
@@ -404,7 +402,7 @@ public interface AuditClientUpdateMethodResultEventType extends AuditClientEvent
    * @return a CompletableFuture that completes successfully with the operation result or completes
    *     exceptionally if a service-level error occurs.
    */
-  CompletableFuture<StatusCode> writeOutputArgumentsAsync(Argument[] value);
+  CompletableFuture<StatusCode> writeOutputArgumentsAsync(Object[] value);
 
   /**
    * Get the OutputArguments {@link PropertyType} Node, or {@code null} if it does not exist.

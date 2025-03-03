@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -262,6 +262,70 @@ public class AuditActivateSessionEventTypeNode extends AuditSessionEventTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "SecureChannelId",
+            ExpandedNodeId.parse("ns=0;i=46"),
+            false);
+    return future.thenApply(node -> (PropertyTypeNode) node);
+  }
+
+  @Override
+  public NodeId[] getCurrentRoleIds() throws UaException {
+    PropertyTypeNode node = getCurrentRoleIdsNode();
+    return (NodeId[]) node.getValue().getValue().getValue();
+  }
+
+  @Override
+  public void setCurrentRoleIds(NodeId[] value) throws UaException {
+    PropertyTypeNode node = getCurrentRoleIdsNode();
+    node.setValue(new Variant(value));
+  }
+
+  @Override
+  public NodeId[] readCurrentRoleIds() throws UaException {
+    try {
+      return readCurrentRoleIdsAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    }
+  }
+
+  @Override
+  public void writeCurrentRoleIds(NodeId[] value) throws UaException {
+    try {
+      writeCurrentRoleIdsAsync(value).get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends NodeId[]> readCurrentRoleIdsAsync() {
+    return getCurrentRoleIdsNodeAsync()
+        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
+        .thenApply(v -> (NodeId[]) v.getValue().getValue());
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeCurrentRoleIdsAsync(NodeId[] currentRoleIds) {
+    DataValue value = DataValue.valueOnly(new Variant(currentRoleIds));
+    return getCurrentRoleIdsNodeAsync()
+        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  }
+
+  @Override
+  public PropertyTypeNode getCurrentRoleIdsNode() throws UaException {
+    try {
+      return getCurrentRoleIdsNodeAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends PropertyTypeNode> getCurrentRoleIdsNodeAsync() {
+    CompletableFuture<UaNode> future =
+        getMemberNodeAsync(
+            "http://opcfoundation.org/UA/",
+            "CurrentRoleIds",
             ExpandedNodeId.parse("ns=0;i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);

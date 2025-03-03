@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -262,6 +262,71 @@ public class ServerConfigurationTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ApplicationType",
+            ExpandedNodeId.parse("ns=0;i=46"),
+            false);
+    return future.thenApply(node -> (PropertyTypeNode) node);
+  }
+
+  @Override
+  public LocalizedText[] getApplicationNames() throws UaException {
+    PropertyTypeNode node = getApplicationNamesNode();
+    return (LocalizedText[]) node.getValue().getValue().getValue();
+  }
+
+  @Override
+  public void setApplicationNames(LocalizedText[] value) throws UaException {
+    PropertyTypeNode node = getApplicationNamesNode();
+    node.setValue(new Variant(value));
+  }
+
+  @Override
+  public LocalizedText[] readApplicationNames() throws UaException {
+    try {
+      return readApplicationNamesAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    }
+  }
+
+  @Override
+  public void writeApplicationNames(LocalizedText[] value) throws UaException {
+    try {
+      writeApplicationNamesAsync(value).get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends LocalizedText[]> readApplicationNamesAsync() {
+    return getApplicationNamesNodeAsync()
+        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
+        .thenApply(v -> (LocalizedText[]) v.getValue().getValue());
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeApplicationNamesAsync(
+      LocalizedText[] applicationNames) {
+    DataValue value = DataValue.valueOnly(new Variant(applicationNames));
+    return getApplicationNamesNodeAsync()
+        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  }
+
+  @Override
+  public PropertyTypeNode getApplicationNamesNode() throws UaException {
+    try {
+      return getApplicationNamesNodeAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends PropertyTypeNode> getApplicationNamesNodeAsync() {
+    CompletableFuture<UaNode> future =
+        getMemberNodeAsync(
+            "http://opcfoundation.org/UA/",
+            "ApplicationNames",
             ExpandedNodeId.parse("ns=0;i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
@@ -583,6 +648,135 @@ public class ServerConfigurationTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "HasSecureElement",
+            ExpandedNodeId.parse("ns=0;i=46"),
+            false);
+    return future.thenApply(node -> (PropertyTypeNode) node);
+  }
+
+  @Override
+  public Boolean getSupportsTransactions() throws UaException {
+    PropertyTypeNode node = getSupportsTransactionsNode();
+    return (Boolean) node.getValue().getValue().getValue();
+  }
+
+  @Override
+  public void setSupportsTransactions(Boolean value) throws UaException {
+    PropertyTypeNode node = getSupportsTransactionsNode();
+    node.setValue(new Variant(value));
+  }
+
+  @Override
+  public Boolean readSupportsTransactions() throws UaException {
+    try {
+      return readSupportsTransactionsAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    }
+  }
+
+  @Override
+  public void writeSupportsTransactions(Boolean value) throws UaException {
+    try {
+      writeSupportsTransactionsAsync(value).get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends Boolean> readSupportsTransactionsAsync() {
+    return getSupportsTransactionsNodeAsync()
+        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
+        .thenApply(v -> (Boolean) v.getValue().getValue());
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeSupportsTransactionsAsync(
+      Boolean supportsTransactions) {
+    DataValue value = DataValue.valueOnly(new Variant(supportsTransactions));
+    return getSupportsTransactionsNodeAsync()
+        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  }
+
+  @Override
+  public PropertyTypeNode getSupportsTransactionsNode() throws UaException {
+    try {
+      return getSupportsTransactionsNodeAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends PropertyTypeNode> getSupportsTransactionsNodeAsync() {
+    CompletableFuture<UaNode> future =
+        getMemberNodeAsync(
+            "http://opcfoundation.org/UA/",
+            "SupportsTransactions",
+            ExpandedNodeId.parse("ns=0;i=46"),
+            false);
+    return future.thenApply(node -> (PropertyTypeNode) node);
+  }
+
+  @Override
+  public Boolean getInApplicationSetup() throws UaException {
+    PropertyTypeNode node = getInApplicationSetupNode();
+    return (Boolean) node.getValue().getValue().getValue();
+  }
+
+  @Override
+  public void setInApplicationSetup(Boolean value) throws UaException {
+    PropertyTypeNode node = getInApplicationSetupNode();
+    node.setValue(new Variant(value));
+  }
+
+  @Override
+  public Boolean readInApplicationSetup() throws UaException {
+    try {
+      return readInApplicationSetupAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    }
+  }
+
+  @Override
+  public void writeInApplicationSetup(Boolean value) throws UaException {
+    try {
+      writeInApplicationSetupAsync(value).get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends Boolean> readInApplicationSetupAsync() {
+    return getInApplicationSetupNodeAsync()
+        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
+        .thenApply(v -> (Boolean) v.getValue().getValue());
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeInApplicationSetupAsync(Boolean inApplicationSetup) {
+    DataValue value = DataValue.valueOnly(new Variant(inApplicationSetup));
+    return getInApplicationSetupNodeAsync()
+        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  }
+
+  @Override
+  public PropertyTypeNode getInApplicationSetupNode() throws UaException {
+    try {
+      return getInApplicationSetupNodeAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends PropertyTypeNode> getInApplicationSetupNodeAsync() {
+    CompletableFuture<UaNode> future =
+        getMemberNodeAsync(
+            "http://opcfoundation.org/UA/",
+            "InApplicationSetup",
             ExpandedNodeId.parse("ns=0;i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);

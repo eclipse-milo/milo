@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -31,7 +31,7 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 
-public class CertificateUpdatedAuditEventTypeNode extends AuditEventTypeNode
+public class CertificateUpdatedAuditEventTypeNode extends AuditUpdateMethodEventTypeNode
     implements CertificateUpdatedAuditEventType {
   public CertificateUpdatedAuditEventTypeNode(
       OpcUaClient client,

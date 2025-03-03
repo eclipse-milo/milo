@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -20,9 +20,9 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.14">https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.14</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.18">https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.18</a>
  */
-public interface CertificateUpdatedAuditEventType extends AuditEventType {
+public interface CertificateUpdatedAuditEventType extends AuditUpdateMethodEventType {
   QualifiedProperty<NodeId> CERTIFICATE_GROUP =
       new QualifiedProperty<>(
           "http://opcfoundation.org/UA/",

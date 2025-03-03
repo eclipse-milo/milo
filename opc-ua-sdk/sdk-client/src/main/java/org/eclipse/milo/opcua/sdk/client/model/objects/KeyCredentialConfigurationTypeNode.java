@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -245,6 +245,70 @@ public class KeyCredentialConfigurationTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "EndpointUrls",
+            ExpandedNodeId.parse("ns=0;i=46"),
+            false);
+    return future.thenApply(node -> (PropertyTypeNode) node);
+  }
+
+  @Override
+  public String getCredentialId() throws UaException {
+    PropertyTypeNode node = getCredentialIdNode();
+    return (String) node.getValue().getValue().getValue();
+  }
+
+  @Override
+  public void setCredentialId(String value) throws UaException {
+    PropertyTypeNode node = getCredentialIdNode();
+    node.setValue(new Variant(value));
+  }
+
+  @Override
+  public String readCredentialId() throws UaException {
+    try {
+      return readCredentialIdAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    }
+  }
+
+  @Override
+  public void writeCredentialId(String value) throws UaException {
+    try {
+      writeCredentialIdAsync(value).get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends String> readCredentialIdAsync() {
+    return getCredentialIdNodeAsync()
+        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
+        .thenApply(v -> (String) v.getValue().getValue());
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeCredentialIdAsync(String credentialId) {
+    DataValue value = DataValue.valueOnly(new Variant(credentialId));
+    return getCredentialIdNodeAsync()
+        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  }
+
+  @Override
+  public PropertyTypeNode getCredentialIdNode() throws UaException {
+    try {
+      return getCredentialIdNodeAsync().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends PropertyTypeNode> getCredentialIdNodeAsync() {
+    CompletableFuture<UaNode> future =
+        getMemberNodeAsync(
+            "http://opcfoundation.org/UA/",
+            "CredentialId",
             ExpandedNodeId.parse("ns=0;i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
