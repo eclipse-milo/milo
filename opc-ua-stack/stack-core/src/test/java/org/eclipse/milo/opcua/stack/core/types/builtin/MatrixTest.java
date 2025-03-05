@@ -66,9 +66,12 @@ class MatrixTest {
   }
 
   @Test
-  void matrixEquals() {
-    assertEquals(primitiveMatrix2d, new Matrix(primitiveInt2d));
-    assertEquals(boxedMatrix2d, new Matrix(boxedInt2d));
+  void primitiveBoxedEquality() {
+    int[][] primitive = new int[][] {{1, 2}, {3, 4}};
+    Integer[][] boxed = new Integer[][] {{1, 2}, {3, 4}};
+
+    assertEquals(new Matrix(primitive), new Matrix(boxed));
+    assertEquals(new Matrix(boxed), new Matrix(primitive));
   }
 
   @Test

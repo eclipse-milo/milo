@@ -121,7 +121,33 @@ public final class Variant {
 
     Variant variant = (Variant) o;
 
-    return Objects.deepEquals(value, variant.value);
+    final Object thisValue = value;
+    final Object thatValue = variant.value;
+
+    if (thisValue == thatValue) {
+      return true;
+    } else if (thisValue == null || thatValue == null) {
+      return false;
+    } else {
+      Class<?> thisClass = thisValue.getClass();
+      Class<?> thatClass = thatValue.getClass();
+
+      if (thisClass.isArray() && thatClass.isArray()) {
+        boolean thisIsPrimitive = thisClass.getComponentType().isPrimitive();
+        boolean thatIsPrimitive = thatClass.getComponentType().isPrimitive();
+
+        if (thisIsPrimitive != thatIsPrimitive) {
+          Object thisBoxed = ArrayUtil.box(thisValue);
+          Object thatBoxed = ArrayUtil.box(thatValue);
+
+          return Objects.deepEquals(thisBoxed, thatBoxed);
+        } else {
+          return Objects.deepEquals(thisValue, thatValue);
+        }
+      } else {
+        return Objects.equals(thisValue, thatValue);
+      }
+    }
   }
 
   @Override
@@ -190,6 +216,9 @@ public final class Variant {
       checkArgument(!DiagnosticInfo.class.equals(clazz), "Variant cannot contain DiagnosticInfo");
       checkArgument(
           variant.getDataType().isPresent(), "Variant cannot contain %s", value.getClass());
+      checkArgument(
+          !clazzIsArray || ArrayUtil.getValueRank(value) == 1,
+          "Multi-dimensional arrays must be wrapped in Matrix");
     }
 
     return variant;

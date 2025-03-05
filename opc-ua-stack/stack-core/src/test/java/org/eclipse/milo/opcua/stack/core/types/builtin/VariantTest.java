@@ -67,6 +67,32 @@ public class VariantTest {
     assertEquals(OpcUaDataType.Float, v.getDataType().orElseThrow());
   }
 
+  @Test
+  void multiDimensionalArraysMustUseMatrix() {
+    assertThrows(IllegalArgumentException.class, () -> Variant.of(new int[2][2]));
+    assertThrows(IllegalArgumentException.class, () -> Variant.of(new int[2][2][2]));
+  }
+
+  @Test
+  void scalarEquality() {
+    assertEquals(Variant.of(1), Variant.of(1));
+  }
+
+  @Test
+  void arrayEquality() {
+    assertEquals(Variant.of(new int[] {1, 2, 3}), Variant.of(new int[] {1, 2, 3}));
+    assertEquals(Variant.of(new Integer[] {1, 2, 3}), Variant.of(new Integer[] {1, 2, 3}));
+  }
+
+  @Test
+  void primitiveBoxedEquality() {
+    int[] primitive = {1, 2, 3};
+    Integer[] boxed = {1, 2, 3};
+
+    assertEquals(Variant.of(primitive), Variant.of(boxed));
+    assertEquals(Variant.of(boxed), Variant.of(primitive));
+  }
+
   private static Stream<Arguments> getDataTypeSource() {
     return Stream.of(
         Arguments.of(true, OpcUaDataType.Boolean),

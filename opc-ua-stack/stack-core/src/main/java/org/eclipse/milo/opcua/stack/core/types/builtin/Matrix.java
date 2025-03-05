@@ -68,7 +68,7 @@ public class Matrix {
     this.dataType = deriveBuiltinType(flatArray);
     this.dataTypeId = deriveDataTypeId(flatArray);
 
-    assert dimensions.length > 1 && dataType != null;
+    assert flatArray != null && dimensions.length > 1 && dataType != null;
   }
 
   public Matrix(Object flatArray, int[] dimensions, OpcUaDataType dataType) {
@@ -192,9 +192,31 @@ public class Matrix {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     Matrix matrix = (Matrix) o;
-    return Objects.deepEquals(flatArray, matrix.flatArray)
-        && Arrays.equals(dimensions, matrix.dimensions)
-        && dataType == matrix.dataType;
+
+    final Object thisArray = flatArray;
+    final Object thatArray = matrix.flatArray;
+
+    if (thisArray == thatArray) {
+      return true;
+    } else if (thisArray == null || thatArray == null) {
+      return false;
+    } else {
+      boolean thisIsPrimitive = thisArray.getClass().getComponentType().isPrimitive();
+      boolean thatIsPrimitive = thatArray.getClass().getComponentType().isPrimitive();
+
+      if (thisIsPrimitive != thatIsPrimitive) {
+        Object thisBoxed = ArrayUtil.box(thisArray);
+        Object thatBoxed = ArrayUtil.box(thatArray);
+
+        return Objects.deepEquals(thisBoxed, thatBoxed)
+            && Arrays.equals(dimensions, matrix.dimensions)
+            && dataType == matrix.dataType;
+      } else {
+        return Objects.deepEquals(thisArray, thatArray)
+            && Arrays.equals(dimensions, matrix.dimensions)
+            && dataType == matrix.dataType;
+      }
+    }
   }
 
   @Override

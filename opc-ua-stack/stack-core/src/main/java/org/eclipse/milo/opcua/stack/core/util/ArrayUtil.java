@@ -134,6 +134,71 @@ public class ArrayUtil {
     return type;
   }
 
+  /**
+   * If the provided Object is a primitive array, return a boxed array of the same type, otherwise
+   * return the original Object.
+   *
+   * @param value the array to box.
+   * @return a boxed array of the same type, or the original Object if it is not a primitive array.
+   */
+  public static Object box(Object value) {
+    if (!value.getClass().isArray() || !value.getClass().getComponentType().isPrimitive()) {
+      return value;
+    }
+
+    if (value instanceof byte[] primitive) {
+      var boxed = new Byte[primitive.length];
+      for (int i = 0; i < boxed.length; i++) {
+        boxed[i] = primitive[i];
+      }
+      return boxed;
+    } else if (value instanceof short[] primitive) {
+      var boxed = new Short[primitive.length];
+      for (int i = 0; i < boxed.length; i++) {
+        boxed[i] = primitive[i];
+      }
+      return boxed;
+    } else if (value instanceof int[] primitive) {
+      var boxed = new Integer[primitive.length];
+      for (int i = 0; i < boxed.length; i++) {
+        boxed[i] = primitive[i];
+      }
+      return boxed;
+    } else if (value instanceof long[] primitive) {
+      var boxed = new Long[primitive.length];
+      for (int i = 0; i < boxed.length; i++) {
+        boxed[i] = primitive[i];
+      }
+      return boxed;
+    } else if (value instanceof float[] primitive) {
+      var boxed = new Float[primitive.length];
+      for (int i = 0; i < boxed.length; i++) {
+        boxed[i] = primitive[i];
+      }
+      return boxed;
+    } else if (value instanceof double[] primitive) {
+      var boxed = new Double[primitive.length];
+      for (int i = 0; i < boxed.length; i++) {
+        boxed[i] = primitive[i];
+      }
+      return boxed;
+    } else if (value instanceof char[] primitive) {
+      var boxed = new Character[primitive.length];
+      for (int i = 0; i < boxed.length; i++) {
+        boxed[i] = primitive[i];
+      }
+      return boxed;
+    } else if (value instanceof boolean[] primitive) {
+      var boxed = new Boolean[primitive.length];
+      for (int i = 0; i < boxed.length; i++) {
+        boxed[i] = primitive[i];
+      }
+      return boxed;
+    } else {
+      return value;
+    }
+  }
+
   private static int length(int[] tail) {
     int product = 1;
     for (int aTail : tail) {
