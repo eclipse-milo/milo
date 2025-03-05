@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.sdk.server.identity;
 
 import com.google.common.primitives.Bytes;
 import java.security.cert.X509Certificate;
+import java.util.Set;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity.X509UserIdentity;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -19,6 +20,7 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.SecurityAlgorithm;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SignatureData;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.eclipse.milo.opcua.stack.core.types.structured.X509IdentityToken;
@@ -27,6 +29,11 @@ import org.eclipse.milo.opcua.stack.core.util.SignatureUtil;
 import org.jspecify.annotations.Nullable;
 
 public abstract class AbstractX509IdentityValidator extends AbstractIdentityValidator {
+
+  @Override
+  public Set<UserTokenType> getSupportedTokenTypes() {
+    return Set.of(UserTokenType.Certificate);
+  }
 
   @Override
   protected X509UserIdentity validateX509Token(

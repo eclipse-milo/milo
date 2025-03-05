@@ -29,6 +29,8 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.eclipse.milo.opcua.sdk.server.EndpointConfig;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig;
+import org.eclipse.milo.opcua.sdk.server.identity.AnonymousIdentityValidator;
+import org.eclipse.milo.opcua.sdk.server.identity.CompositeValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.UsernameIdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.util.HostnameUtil;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -129,7 +131,6 @@ public final class TestServer {
 
     UsernameIdentityValidator identityValidator =
         new UsernameIdentityValidator(
-            true,
             authChallenge -> {
               String username = authChallenge.getUsername();
               String password = authChallenge.getPassword();
@@ -168,7 +169,8 @@ public final class TestServer {
                     "",
                     DateTime.now()))
             .setCertificateManager(certificateManager)
-            .setIdentityValidator(identityValidator)
+            .setIdentityValidator(
+                new CompositeValidator(AnonymousIdentityValidator.INSTANCE, identityValidator))
             .setProductUri("urn:eclipse:milo:example-server")
             .build();
 

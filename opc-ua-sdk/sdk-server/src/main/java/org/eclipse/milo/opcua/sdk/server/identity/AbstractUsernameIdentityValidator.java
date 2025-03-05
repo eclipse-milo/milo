@@ -12,15 +12,15 @@ package org.eclipse.milo.opcua.sdk.server.identity;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.Set;
 import org.eclipse.milo.opcua.sdk.server.Session;
-import org.eclipse.milo.opcua.sdk.server.identity.Identity.AnonymousIdentity;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity.UsernameIdentity;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.SecurityAlgorithm;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
-import org.eclipse.milo.opcua.stack.core.types.structured.AnonymousIdentityToken;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SignatureData;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserNameIdentityToken;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
@@ -29,14 +29,8 @@ import org.jspecify.annotations.Nullable;
 public abstract class AbstractUsernameIdentityValidator extends AbstractIdentityValidator {
 
   @Override
-  protected AnonymousIdentity validateAnonymousToken(
-      Session session,
-      AnonymousIdentityToken token,
-      UserTokenPolicy policy,
-      SignatureData signature)
-      throws UaException {
-
-    return authenticateAnonymousOrThrow(session);
+  public Set<UserTokenType> getSupportedTokenTypes() {
+    return Set.of(UserTokenType.UserName);
   }
 
   @Override
@@ -125,16 +119,6 @@ public abstract class AbstractUsernameIdentityValidator extends AbstractIdentity
     }
   }
 
-  private AnonymousIdentity authenticateAnonymousOrThrow(Session session) throws UaException {
-    AnonymousIdentity identity = authenticateAnonymous(session);
-
-    if (identity != null) {
-      return identity;
-    } else {
-      throw new UaException(StatusCodes.Bad_UserAccessDenied);
-    }
-  }
-
   private UsernameIdentity authenticateUsernameOrThrow(
       Session session, String username, String password) throws UaException {
     UsernameIdentity identity = authenticateUsernamePassword(session, username, password);
@@ -145,16 +129,6 @@ public abstract class AbstractUsernameIdentityValidator extends AbstractIdentity
       throw new UaException(StatusCodes.Bad_UserAccessDenied);
     }
   }
-
-  /**
-   * Create and return an {@link AnonymousIdentity} for the anonymous user, or {@code null} if
-   * anonymous authentication is not allowed.
-   *
-   * @param session the {@link Session} being activated.
-   * @return an {@link AnonymousIdentity}, or {@code null} if anonymous authentication is not
-   *     allowed.
-   */
-  protected abstract @Nullable AnonymousIdentity authenticateAnonymous(Session session);
 
   /**
    * Authenticate {@code username} with {@code password}, returning a {@link UsernameIdentity} if

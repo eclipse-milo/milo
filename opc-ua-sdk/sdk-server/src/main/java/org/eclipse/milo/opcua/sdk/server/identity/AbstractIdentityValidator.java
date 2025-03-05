@@ -44,42 +44,37 @@ public abstract class AbstractIdentityValidator implements IdentityValidator {
       Session session, UserIdentityToken token, UserTokenPolicy policy, SignatureData signature)
       throws UaException {
 
-    switch (policy.getTokenType()) {
-      case Anonymous:
-        {
-          if (token instanceof AnonymousIdentityToken) {
-            return validateAnonymousToken(
-                session, (AnonymousIdentityToken) token, policy, signature);
-          }
-          break;
+    return switch (policy.getTokenType()) {
+      case Anonymous -> {
+        if (token instanceof AnonymousIdentityToken) {
+          yield validateAnonymousToken(session, (AnonymousIdentityToken) token, policy, signature);
+        } else {
+          throw new UaException(StatusCodes.Bad_IdentityTokenInvalid);
         }
-      case UserName:
-        {
-          if (token instanceof UserNameIdentityToken) {
-            return validateUsernameToken(session, (UserNameIdentityToken) token, policy, signature);
-          }
-          break;
+      }
+      case UserName -> {
+        if (token instanceof UserNameIdentityToken) {
+          yield validateUsernameToken(session, (UserNameIdentityToken) token, policy, signature);
+        } else {
+          throw new UaException(StatusCodes.Bad_IdentityTokenInvalid);
         }
-      case Certificate:
-        {
-          if (token instanceof X509IdentityToken) {
-            return validateX509Token(session, (X509IdentityToken) token, policy, signature);
-          }
-          break;
+      }
+      case Certificate -> {
+        if (token instanceof X509IdentityToken) {
+          yield validateX509Token(session, (X509IdentityToken) token, policy, signature);
+        } else {
+          throw new UaException(StatusCodes.Bad_IdentityTokenInvalid);
         }
-      case IssuedToken:
-        {
-          if (token instanceof IssuedIdentityToken) {
-            return validateIssuedIdentityToken(
-                session, (IssuedIdentityToken) token, policy, signature);
-          }
-          break;
+      }
+      case IssuedToken -> {
+        if (token instanceof IssuedIdentityToken) {
+          yield validateIssuedIdentityToken(
+              session, (IssuedIdentityToken) token, policy, signature);
+        } else {
+          throw new UaException(StatusCodes.Bad_IdentityTokenInvalid);
         }
-      default:
-        throw new UaException(StatusCodes.Bad_IdentityTokenInvalid);
-    }
-
-    throw new UaException(StatusCodes.Bad_IdentityTokenInvalid);
+      }
+    };
   }
 
   /**

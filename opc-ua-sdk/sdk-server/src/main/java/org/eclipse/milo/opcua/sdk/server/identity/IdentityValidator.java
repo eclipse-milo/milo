@@ -10,8 +10,10 @@
 
 package org.eclipse.milo.opcua.sdk.server.identity;
 
+import java.util.Set;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ActivateSessionRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.SignatureData;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserIdentityToken;
@@ -32,4 +34,11 @@ public interface IdentityValidator {
   Identity validateIdentityToken(
       Session session, UserIdentityToken token, UserTokenPolicy policy, SignatureData signature)
       throws UaException;
+
+  /**
+   * Return the {@link Set} of {@link UserTokenType}s supported by this {@link IdentityValidator}.
+   *
+   * @return the {@link Set} of {@link UserTokenType}s supported by this {@link IdentityValidator}.
+   */
+  Set<UserTokenType> getSupportedTokenTypes();
 }

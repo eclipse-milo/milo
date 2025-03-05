@@ -16,23 +16,10 @@ import org.jspecify.annotations.Nullable;
 
 public class UsernameIdentityValidator extends AbstractUsernameIdentityValidator {
 
-  private final boolean anonymousAccessAllowed;
   private final Predicate<AuthenticationChallenge> predicate;
 
-  public UsernameIdentityValidator(
-      boolean anonymousAccessAllowed, Predicate<AuthenticationChallenge> predicate) {
-
-    this.anonymousAccessAllowed = anonymousAccessAllowed;
+  public UsernameIdentityValidator(Predicate<AuthenticationChallenge> predicate) {
     this.predicate = predicate;
-  }
-
-  @Override
-  protected Identity.@Nullable AnonymousIdentity authenticateAnonymous(Session session) {
-    if (anonymousAccessAllowed) {
-      return new DefaultAnonymousIdentity();
-    } else {
-      return null;
-    }
   }
 
   @Override

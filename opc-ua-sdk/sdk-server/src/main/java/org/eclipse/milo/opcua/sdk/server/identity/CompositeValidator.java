@@ -12,9 +12,12 @@ package org.eclipse.milo.opcua.sdk.server.identity;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SignatureData;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserIdentityToken;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
@@ -44,7 +47,10 @@ public class CompositeValidator implements IdentityValidator {
       Session session, UserIdentityToken token, UserTokenPolicy policy, SignatureData signature)
       throws UaException {
 
-    Iterator<IdentityValidator> iterator = validators.iterator();
+    Iterator<IdentityValidator> iterator =
+        validators.stream()
+            .filter(v -> v.getSupportedTokenTypes().contains(policy.getTokenType()))
+            .iterator();
 
     while (iterator.hasNext()) {
       IdentityValidator validator = iterator.next();
@@ -61,5 +67,12 @@ public class CompositeValidator implements IdentityValidator {
     }
 
     throw new UaException(StatusCodes.Bad_IdentityTokenInvalid);
+  }
+
+  @Override
+  public Set<UserTokenType> getSupportedTokenTypes() {
+    return validators.stream()
+        .flatMap(v -> v.getSupportedTokenTypes().stream())
+        .collect(Collectors.toSet());
   }
 }
