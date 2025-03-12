@@ -283,7 +283,7 @@ public class BinaryDataTypeDictionaryReader {
               return completedFuture(fragmentBuffer);
             }
           } else {
-            if (statusCode.getValue() != StatusCodes.Bad_IndexRangeNoData) {
+            if (statusCode.value() != StatusCodes.Bad_IndexRangeNoData) {
               logger.warn(
                   "Reading type dictionary fragments expected to "
                       + "terminate with Bad_IndexRangeNoData but got {}",

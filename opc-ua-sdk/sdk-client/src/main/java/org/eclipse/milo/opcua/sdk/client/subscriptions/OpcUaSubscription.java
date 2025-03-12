@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -274,7 +274,7 @@ public class OpcUaSubscription {
 
       StatusCode result = requireNonNull(response.getResults())[0];
 
-      if (result.isGood() || result.getValue() == StatusCodes.Bad_SubscriptionIdInvalid) {
+      if (result.isGood() || result.value() == StatusCodes.Bad_SubscriptionIdInvalid) {
         reset();
       }
 

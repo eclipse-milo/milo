@@ -114,7 +114,7 @@ public class JsonObjectCodec extends AbstractBsdCodec<JsonObject, JsonElement> {
       String xNodeId = ((ExpandedNodeId) value).toParseableString();
       return new JsonPrimitive(xNodeId);
     } else if (value instanceof StatusCode) {
-      long code = ((StatusCode) value).getValue();
+      long code = ((StatusCode) value).value();
       return new JsonPrimitive(code);
     } else {
       throw new RuntimeException("could not create JsonElement for value: " + value);

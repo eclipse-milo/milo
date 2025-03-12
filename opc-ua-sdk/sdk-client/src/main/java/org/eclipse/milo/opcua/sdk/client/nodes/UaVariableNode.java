@@ -449,7 +449,7 @@ public class UaVariableNode extends UaNode implements VariableNode {
 
     if (statusCode != null
         && statusCode.isBad()
-        && statusCode.getValue() != StatusCodes.Bad_AttributeIdInvalid) {
+        && statusCode.value() != StatusCodes.Bad_AttributeIdInvalid) {
 
       throw new UaException(statusCode, "read ArrayDimensions failed");
     } else {
@@ -522,7 +522,7 @@ public class UaVariableNode extends UaNode implements VariableNode {
 
     if (statusCode != null
         && statusCode.isBad()
-        && statusCode.getValue() != StatusCodes.Bad_AttributeIdInvalid) {
+        && statusCode.value() != StatusCodes.Bad_AttributeIdInvalid) {
 
       throw new UaException(statusCode, "read MinimumSamplingInterval failed");
     } else {

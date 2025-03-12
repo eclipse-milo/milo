@@ -1144,7 +1144,7 @@ public class SessionFsmFactory {
                                       String.format(
                                           "id=%s/%s",
                                           i,
-                                          StatusCodes.lookup(s.getValue())
+                                          StatusCodes.lookup(s.value())
                                               .map(sa -> sa[0])
                                               .orElse(s.toString())))
                               .toArray(String[]::new);
@@ -1193,10 +1193,10 @@ public class SessionFsmFactory {
 
                 // Bad_ServiceUnsupported is the correct response when transfers aren't
                 // supported but server implementations interpret the spec differently.
-                if (statusCode.getValue() == StatusCodes.Bad_NotImplemented
-                    || statusCode.getValue() == StatusCodes.Bad_NotSupported
-                    || statusCode.getValue() == StatusCodes.Bad_OutOfService
-                    || statusCode.getValue() == StatusCodes.Bad_ServiceUnsupported) {
+                if (statusCode.value() == StatusCodes.Bad_NotImplemented
+                    || statusCode.value() == StatusCodes.Bad_NotSupported
+                    || statusCode.value() == StatusCodes.Bad_OutOfService
+                    || statusCode.value() == StatusCodes.Bad_ServiceUnsupported) {
 
                   // One of the expected responses; continue moving through the FSM.
 
@@ -1321,7 +1321,7 @@ public class SessionFsmFactory {
 
     private static final Predicate<StatusCode> SESSION_ERROR =
         statusCode -> {
-          long status = statusCode.getValue();
+          long status = statusCode.value();
 
           return status == StatusCodes.Bad_SessionClosed
               || status == StatusCodes.Bad_SessionIdInvalid
@@ -1330,7 +1330,7 @@ public class SessionFsmFactory {
 
     private static final Predicate<StatusCode> SECURE_CHANNEL_ERROR =
         statusCode -> {
-          long status = statusCode.getValue();
+          long status = statusCode.value();
 
           return status == StatusCodes.Bad_SecureChannelIdInvalid
               || status == StatusCodes.Bad_SecurityChecksFailed

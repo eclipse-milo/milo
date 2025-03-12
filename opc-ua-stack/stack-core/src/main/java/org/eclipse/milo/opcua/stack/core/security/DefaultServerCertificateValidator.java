@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -84,7 +84,7 @@ public class DefaultServerCertificateValidator implements CertificateValidator {
     } catch (UaException e) {
       certificateChain.forEach(certificateQuarantine::addRejectedCertificate);
 
-      long statusCode = e.getStatusCode().getValue();
+      long statusCode = e.getStatusCode().value();
 
       LOGGER.debug("validateCertificateChain failed, underlying status: {}", statusCode, e);
 
@@ -111,7 +111,7 @@ public class DefaultServerCertificateValidator implements CertificateValidator {
           validationChecks,
           true);
     } catch (UaException e) {
-      long statusCode = e.getStatusCode().getValue();
+      long statusCode = e.getStatusCode().value();
 
       LOGGER.debug("validateCertificateChain failed, underlying status: {}", statusCode, e);
 

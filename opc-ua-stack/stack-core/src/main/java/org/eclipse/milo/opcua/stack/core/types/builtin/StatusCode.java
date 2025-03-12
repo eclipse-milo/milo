@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -10,16 +10,13 @@
 
 package org.eclipse.milo.opcua.stack.core.types.builtin;
 
-import com.google.common.base.MoreObjects;
-import com.google.common.base.MoreObjects.ToStringHelper;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 
-public final class StatusCode {
+public record StatusCode(long value) {
 
   private static final long SEVERITY_MASK = 0xC0000000L;
   private static final long SEVERITY_GOOD = 0x00000000L;
@@ -58,14 +55,8 @@ public final class StatusCode {
   public static final StatusCode BAD = new StatusCode(SEVERITY_BAD);
   public static final StatusCode UNCERTAIN = new StatusCode(SEVERITY_UNCERTAIN);
 
-  private final long value;
-
   public StatusCode(int value) {
-    this.value = value & 0xFFFFFFFFL;
-  }
-
-  public StatusCode(long value) {
-    this.value = value & 0xFFFFFFFFL;
+    this(value & 0xFFFFFFFFL);
   }
 
   public StatusCode(UInteger value) {
@@ -170,30 +161,11 @@ public final class StatusCode {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-
-    StatusCode that = (StatusCode) o;
-
-    return value == that.value;
-  }
-
-  @Override
-  public int hashCode() {
-    return (int) (value ^ (value >>> 32));
-  }
-
-  @Override
   public String toString() {
-    ToStringHelper helper = MoreObjects.toStringHelper(this);
-
-    StatusCodes.lookup(value).ifPresent(nameAndDesc -> helper.add("name", nameAndDesc[0]));
-
-    helper.add("value", String.format("0x%08X", value));
-    helper.add("quality", quality(this));
-
-    return helper.toString();
+    return new StringJoiner(", ", StatusCode.class.getSimpleName() + "[", "]")
+        .add("value=0x%08X".formatted(value))
+        .add("quality=" + quality(this))
+        .toString();
   }
 
   /**
@@ -240,25 +212,14 @@ public final class StatusCode {
      *
      * @return the underlying info bits value.
      */
-    int getBits();
+    int bits();
   }
 
   /**
    * Additional information bits that qualify the StatusCode when the {@link InfoType} is {@link
    * InfoType#DataValue}.
    */
-  public static class DataValueInfoBits implements InfoBits {
-
-    private final int bits;
-
-    public DataValueInfoBits(int bits) {
-      this.bits = bits;
-    }
-
-    @Override
-    public int getBits() {
-      return bits;
-    }
+  public record DataValueInfoBits(int bits) implements InfoBits {
 
     /**
      * @return the limit bits associated with the data value.
@@ -383,19 +344,6 @@ public final class StatusCode {
      */
     public boolean isHistoryMultiValue() {
       return (getHistorianBits() & 0b10000) == 0b10000;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
-      DataValueInfoBits that = (DataValueInfoBits) o;
-      return bits == that.bits;
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(bits);
     }
 
     @Override

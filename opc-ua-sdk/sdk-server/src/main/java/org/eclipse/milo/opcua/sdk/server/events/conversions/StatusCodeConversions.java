@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -28,17 +28,17 @@ final class StatusCodeConversions {
 
   @NonNull
   static Short statusCodeToInt16(@NonNull StatusCode s) {
-    return (short) ((s.getValue() >>> 16) & 0xFFFF);
+    return (short) ((s.value() >>> 16) & 0xFFFF);
   }
 
   @NonNull
   static Integer statusCodeToInt32(@NonNull StatusCode s) {
-    return (int) s.getValue();
+    return (int) s.value();
   }
 
   @NonNull
   static Long statusCodeToInt64(@NonNull StatusCode s) {
-    return s.getValue();
+    return s.value();
   }
 
   @NonNull
@@ -53,7 +53,7 @@ final class StatusCodeConversions {
 
   @NonNull
   static ULong statusCodeToUInt64(@NonNull StatusCode s) {
-    return ulong(s.getValue());
+    return ulong(s.value());
   }
 
   @Nullable

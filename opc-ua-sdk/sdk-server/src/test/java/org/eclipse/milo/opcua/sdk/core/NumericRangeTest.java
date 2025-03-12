@@ -85,7 +85,7 @@ public class NumericRangeTest {
             () ->
                 NumericRange.readFromValueAtRange(
                     new Variant(value), NumericRange.parse(length + ":" + (length + 1))));
-    assertEquals(StatusCodes.Bad_IndexRangeNoData, ex1.getStatusCode().getValue());
+    assertEquals(StatusCodes.Bad_IndexRangeNoData, ex1.getStatusCode().value());
 
     // Test when low bound is greater than length
     UaException ex2 =
@@ -94,7 +94,7 @@ public class NumericRangeTest {
             () ->
                 NumericRange.readFromValueAtRange(
                     new Variant(value), NumericRange.parse((length + 1) + ":" + (length + 2))));
-    assertEquals(StatusCodes.Bad_IndexRangeNoData, ex2.getStatusCode().getValue());
+    assertEquals(StatusCodes.Bad_IndexRangeNoData, ex2.getStatusCode().value());
   }
 
   private static Object[][] getLowBoundTestData() {

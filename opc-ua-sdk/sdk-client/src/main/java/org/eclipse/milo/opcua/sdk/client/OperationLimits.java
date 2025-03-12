@@ -186,7 +186,7 @@ public class OperationLimits {
     try {
       return readAllNodes(client);
     } catch (UaException e) {
-      if (e.getStatusCode().getValue() == StatusCodes.Bad_TooManyOperations) {
+      if (e.getStatusCode().value() == StatusCodes.Bad_TooManyOperations) {
         // Whelp, the read operation limit is so low we can't read all the nodes at once.
         // Read them individually instead.
         return readIndividualNodes(client);

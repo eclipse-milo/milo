@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -65,7 +65,7 @@ public class UaException extends Exception implements UaExceptionStatus {
     String message = super.getMessage();
 
     if (message == null || message.isEmpty()) {
-      Optional<String[]> lookup = StatusCodes.lookup(statusCode.getValue());
+      Optional<String[]> lookup = StatusCodes.lookup(statusCode.value());
 
       String status = lookup.map(nd -> nd[0]).orElse(statusCode.toString());
       String description = lookup.map(nd -> nd[1]).orElse("");
@@ -84,7 +84,7 @@ public class UaException extends Exception implements UaExceptionStatus {
   public String toString() {
     String clazzName = getClass().getSimpleName();
 
-    Optional<String[]> lookup = StatusCodes.lookup(statusCode.getValue());
+    Optional<String[]> lookup = StatusCodes.lookup(statusCode.value());
 
     String status = lookup.map(nd -> nd[0]).orElse(statusCode.toString());
 

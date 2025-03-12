@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -56,29 +56,33 @@ class StatusCodesTest {
 
   @Test
   void infoBitsNotUsed() {
-    assertSame(StatusCode.GOOD.getInfoType(), InfoType.NotUsed);
+    assertSame(InfoType.NotUsed, StatusCode.GOOD.getInfoType());
   }
 
   @Test
   void infoBitsDataValue() {
     StatusCode statusCode = StatusCode.GOOD.withDataValueInfoType();
-    assertSame(statusCode.getInfoType(), InfoType.DataValue);
+    assertSame(InfoType.DataValue, statusCode.getInfoType());
     assertEquals(
-        0,
-        statusCode.getDataValueInfoBits().map(StatusCode.DataValueInfoBits::getBits).orElseThrow());
+        0, statusCode.getDataValueInfoBits().map(StatusCode.DataValueInfoBits::bits).orElseThrow());
 
-    assertSame(statusCode.withoutDataValueInfoType().getInfoType(), InfoType.NotUsed);
+    assertSame(InfoType.NotUsed, statusCode.withoutDataValueInfoType().getInfoType());
   }
 
   @Test
   void infoBitsDataValueWithOverflow() {
     StatusCode withOverflow = StatusCode.GOOD.withOverflow();
-    assertSame(withOverflow.getInfoType(), InfoType.DataValue);
+    assertSame(InfoType.DataValue, withOverflow.getInfoType());
     assertTrue(
         withOverflow
             .getDataValueInfoBits()
             .map(StatusCode.DataValueInfoBits::isOverflow)
             .orElse(false));
     assertTrue(withOverflow.isOverflowSet());
+  }
+
+  @Test
+  void toStringValue() {
+    assertEquals("StatusCode[value=0x00000000, quality=good]", StatusCode.GOOD.toString());
   }
 }

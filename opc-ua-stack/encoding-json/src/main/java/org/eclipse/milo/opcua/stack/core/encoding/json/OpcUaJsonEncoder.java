@@ -547,7 +547,7 @@ public class OpcUaJsonEncoder implements UaEncoder {
     try {
       EncoderContext context = contextPeek();
       if (!reversible || context == EncoderContext.BUILTIN || (value != null && !value.isGood())) {
-        long code = value.getValue();
+        long code = value.value();
 
         if (reversible) {
           if (field != null) {
@@ -713,7 +713,7 @@ public class OpcUaJsonEncoder implements UaEncoder {
         encodeVariant("Value", v);
       }
       StatusCode s = value.statusCode();
-      if (s != null && s.getValue() != 0L) {
+      if (s != null && s.value() != 0L) {
         encodeStatusCode("Status", s);
       }
       DateTime sourceTime = value.sourceTime();
@@ -745,7 +745,7 @@ public class OpcUaJsonEncoder implements UaEncoder {
    */
   private static boolean allFieldsAreOmitted(DataValue value) {
     return (value.value() == null || value.value().isNull())
-        && (value.statusCode() == null || value.statusCode().getValue() == 0L)
+        && (value.statusCode() == null || value.statusCode().value() == 0L)
         && (value.sourceTime() == null || value.sourceTime().isNull())
         && (value.sourcePicoseconds() == null || value.sourcePicoseconds().intValue() == 0)
         && (value.serverTime() == null || value.serverTime().isNull())

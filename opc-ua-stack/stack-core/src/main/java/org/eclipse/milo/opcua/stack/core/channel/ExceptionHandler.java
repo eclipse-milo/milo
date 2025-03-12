@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -29,18 +29,18 @@ public class ExceptionHandler {
     if (cause instanceof UaException) {
       UaException ex = (UaException) cause;
       message = ex.getMessage();
-      statusCode = ex.getStatusCode().getValue();
+      statusCode = ex.getStatusCode().value();
     } else {
       Throwable innerCause = cause.getCause();
 
       if (innerCause instanceof UaException) {
         UaException ex = (UaException) innerCause;
         message = ex.getMessage();
-        statusCode = ex.getStatusCode().getValue();
+        statusCode = ex.getStatusCode().value();
       } else if (innerCause instanceof UaRuntimeException) {
         UaRuntimeException ex = (UaRuntimeException) innerCause;
         message = ex.getMessage();
-        statusCode = ex.getStatusCode().getValue();
+        statusCode = ex.getStatusCode().value();
       }
     }
 

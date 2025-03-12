@@ -582,7 +582,7 @@ public class OpcUaBinaryEncoder implements UaEncoder {
     if (value == null) {
       buffer.writeIntLE(0);
     } else {
-      buffer.writeIntLE((int) value.getValue());
+      buffer.writeIntLE((int) value.value());
     }
   }
 

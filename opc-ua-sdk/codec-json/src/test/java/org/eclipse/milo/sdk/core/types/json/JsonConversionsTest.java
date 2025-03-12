@@ -286,7 +286,7 @@ class JsonConversionsTest {
   @MethodSource("convertStatusCodeProvider")
   void convertStatusCode(StatusCode input) {
     var jsonValue = JsonConversions.fromStatusCode(input);
-    assertEquals(new JsonPrimitive(input.getValue()), jsonValue);
+    assertEquals(new JsonPrimitive(input.value()), jsonValue);
 
     StatusCode opcValue = JsonConversions.toStatusCode(jsonValue);
     assertEquals(input, opcValue);

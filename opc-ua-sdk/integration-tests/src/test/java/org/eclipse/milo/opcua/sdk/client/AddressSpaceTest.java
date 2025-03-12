@@ -237,7 +237,7 @@ public class AddressSpaceTest extends AbstractClientServerTest {
             UaException.class,
             () -> client.getAddressSpace().getNode(NodeId.parse("ns=2;s=DoesNotExist")));
 
-    assertEquals(StatusCodes.Bad_NodeIdUnknown, exception.getStatusCode().getValue());
+    assertEquals(StatusCodes.Bad_NodeIdUnknown, exception.getStatusCode().value());
   }
 
   @Test

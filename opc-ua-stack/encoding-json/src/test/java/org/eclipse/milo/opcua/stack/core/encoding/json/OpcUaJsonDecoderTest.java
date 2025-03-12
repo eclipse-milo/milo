@@ -472,10 +472,10 @@ class OpcUaJsonDecoderTest {
     decoder.reset(new StringReader("0"));
     assertEquals(StatusCode.GOOD, decoder.decodeStatusCode(null));
 
-    decoder.reset(new StringReader(String.valueOf(StatusCode.UNCERTAIN.getValue())));
+    decoder.reset(new StringReader(String.valueOf(StatusCode.UNCERTAIN.value())));
     assertEquals(StatusCode.UNCERTAIN, decoder.decodeStatusCode(null));
 
-    decoder.reset(new StringReader(String.valueOf(StatusCode.BAD.getValue())));
+    decoder.reset(new StringReader(String.valueOf(StatusCode.BAD.value())));
     assertEquals(StatusCode.BAD, decoder.decodeStatusCode(null));
 
     StatusCode[] statusCodes =
@@ -486,7 +486,7 @@ class OpcUaJsonDecoderTest {
         };
 
     for (StatusCode statusCode : statusCodes) {
-      decoder.reset(new StringReader(String.valueOf(statusCode.getValue())));
+      decoder.reset(new StringReader(String.valueOf(statusCode.value())));
       assertEquals(statusCode, decoder.decodeStatusCode(null));
     }
 
