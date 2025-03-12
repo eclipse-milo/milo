@@ -494,8 +494,8 @@ public class OpcUaBinaryEncoder implements UaEncoder {
   public void encodeLocalizedText(LocalizedText value) throws UaSerializationException {
     if (value == null) value = LocalizedText.NULL_VALUE;
 
-    String locale = value.getLocale();
-    String text = value.getText();
+    String locale = value.locale();
+    String text = value.text();
 
     int mask = 1 | 2;
     if (locale == null || locale.isEmpty()) {

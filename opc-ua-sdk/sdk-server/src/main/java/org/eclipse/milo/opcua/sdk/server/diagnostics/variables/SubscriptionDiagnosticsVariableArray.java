@@ -195,7 +195,7 @@ public abstract class SubscriptionDiagnosticsVariableArray extends AbstractLifec
 
       elementNode.setBrowseName(new QualifiedName(1, subscription.getId().toString()));
       elementNode.setDisplayName(
-          new LocalizedText(node.getDisplayName().getLocale(), subscription.getId().toString()));
+          new LocalizedText(node.getDisplayName().locale(), subscription.getId().toString()));
       elementNode.setArrayDimensions(null);
       elementNode.setValueRank(ValueRank.Scalar.getValue());
       elementNode.setDataType(NodeIds.SubscriptionDiagnosticsDataType);

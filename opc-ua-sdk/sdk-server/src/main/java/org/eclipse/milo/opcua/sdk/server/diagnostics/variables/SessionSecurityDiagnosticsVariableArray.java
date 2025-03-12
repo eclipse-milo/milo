@@ -192,7 +192,7 @@ public class SessionSecurityDiagnosticsVariableArray extends AbstractLifecycle {
 
       elementNode.setBrowseName(new QualifiedName(1, "SessionSecurityDiagnostics"));
       elementNode.setDisplayName(
-          new LocalizedText(node.getDisplayName().getLocale(), "SessionSecurityDiagnostics"));
+          new LocalizedText(node.getDisplayName().locale(), "SessionSecurityDiagnostics"));
       elementNode.setArrayDimensions(null);
       elementNode.setValueRank(ValueRank.Scalar.getValue());
       elementNode.setDataType(NodeIds.SessionSecurityDiagnosticsDataType);

@@ -69,7 +69,7 @@ public class GenerateEventMethod extends AbstractMethodInvocationHandler {
     eventNode.setEventId(ByteString.of(new byte[] {0, 1, 2, 3}));
     eventNode.setEventType(NodeIds.BaseEventType);
     eventNode.setSourceNode(getNode().getNodeId());
-    eventNode.setSourceName(getNode().getDisplayName().getText());
+    eventNode.setSourceName(getNode().getDisplayName().text());
     eventNode.setTime(DateTime.now());
     eventNode.setReceiveTime(DateTime.NULL_VALUE);
     eventNode.setMessage(LocalizedText.english("event message!"));

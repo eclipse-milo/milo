@@ -33,7 +33,7 @@ public class QualifiedNameConversionsTest {
 
     LocalizedText text = qualifiedNameToLocalizedText(name);
 
-    assertEquals("", text.getLocale());
-    assertEquals("foo", text.getText());
+    assertEquals("", text.locale());
+    assertEquals("foo", text.text());
   }
 }

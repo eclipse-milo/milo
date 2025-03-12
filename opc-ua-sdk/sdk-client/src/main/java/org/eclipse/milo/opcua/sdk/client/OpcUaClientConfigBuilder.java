@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -153,8 +153,7 @@ public class OpcUaClientConfigBuilder {
     if (sessionName == null) {
       sessionName =
           () ->
-              String.format(
-                  "UaSession:%s:%s", applicationName.getText(), System.currentTimeMillis());
+              String.format("UaSession:%s:%s", applicationName.text(), System.currentTimeMillis());
     }
 
     return new OpcUaClientConfigImpl(

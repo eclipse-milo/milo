@@ -209,7 +209,7 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
                     eventNode.setEventId(ByteString.of(new byte[] {0, 1, 2, 3}));
                     eventNode.setEventType(NodeIds.BaseEventType);
                     eventNode.setSourceNode(serverNode.getNodeId());
-                    eventNode.setSourceName(serverNode.getDisplayName().getText());
+                    eventNode.setSourceName(serverNode.getDisplayName().text());
                     eventNode.setTime(DateTime.now());
                     eventNode.setReceiveTime(DateTime.NULL_VALUE);
                     eventNode.setMessage(LocalizedText.english("event message!"));

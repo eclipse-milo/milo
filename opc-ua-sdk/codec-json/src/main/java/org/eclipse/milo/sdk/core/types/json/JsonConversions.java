@@ -185,8 +185,8 @@ public class JsonConversions {
 
   public static JsonElement fromLocalizedText(LocalizedText value) {
     var jsonObject = new JsonObject();
-    jsonObject.addProperty("Locale", value.getLocale());
-    jsonObject.addProperty("Text", value.getText());
+    jsonObject.addProperty("Locale", value.locale());
+    jsonObject.addProperty("Text", value.text());
     return jsonObject;
   }
 

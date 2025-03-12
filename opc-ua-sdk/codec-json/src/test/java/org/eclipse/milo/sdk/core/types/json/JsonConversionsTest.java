@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -321,8 +321,8 @@ class JsonConversionsTest {
   void convertLocalizedText(LocalizedText localizedText) {
     JsonElement jsonValue = JsonConversions.fromLocalizedText(localizedText);
     var expectedJsonObject = new JsonObject();
-    expectedJsonObject.addProperty("Locale", localizedText.getLocale());
-    expectedJsonObject.addProperty("Text", localizedText.getText());
+    expectedJsonObject.addProperty("Locale", localizedText.locale());
+    expectedJsonObject.addProperty("Text", localizedText.text());
     assertEquals(expectedJsonObject, jsonValue);
 
     LocalizedText opcValue = JsonConversions.toLocalizedText(jsonValue);
