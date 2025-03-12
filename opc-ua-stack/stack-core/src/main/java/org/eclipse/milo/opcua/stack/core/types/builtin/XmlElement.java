@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -10,20 +10,15 @@
 
 package org.eclipse.milo.opcua.stack.core.types.builtin;
 
-import com.google.common.base.MoreObjects;
-import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
-public final class XmlElement {
+@NullMarked
+public record XmlElement(@Nullable String fragment) {
 
   public static XmlElement NULL_VALUE = XmlElement.of(null);
 
-  private final String fragment;
-
-  public XmlElement(String fragment) {
-    this.fragment = fragment;
-  }
-
-  public String getFragment() {
+  public @Nullable String getFragment() {
     return fragment;
   }
 
@@ -31,7 +26,7 @@ public final class XmlElement {
     return fragment != null ? fragment : "";
   }
 
-  public static XmlElement of(String fragment) {
+  public static XmlElement of(@Nullable String fragment) {
     return new XmlElement(fragment);
   }
 
@@ -41,25 +36,5 @@ public final class XmlElement {
 
   public boolean isNotNull() {
     return !isNull();
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-
-    XmlElement that = (XmlElement) o;
-
-    return Objects.equals(fragment, that.fragment);
-  }
-
-  @Override
-  public int hashCode() {
-    return fragment != null ? fragment.hashCode() : 0;
-  }
-
-  @Override
-  public String toString() {
-    return MoreObjects.toStringHelper(this).add("fragment", fragment).toString();
   }
 }

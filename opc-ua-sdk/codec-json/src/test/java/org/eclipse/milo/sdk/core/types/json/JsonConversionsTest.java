@@ -219,7 +219,7 @@ class JsonConversionsTest {
     if (input.isNull()) {
       assertEquals(JsonNull.INSTANCE, jsonValue);
     } else {
-      assertEquals(new JsonPrimitive(input.getFragment()), jsonValue);
+      assertEquals(new JsonPrimitive(input.fragment()), jsonValue);
     }
 
     XmlElement opcValue = JsonConversions.toXmlElement(jsonValue);

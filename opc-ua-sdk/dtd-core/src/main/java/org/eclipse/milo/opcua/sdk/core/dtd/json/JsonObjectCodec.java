@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -105,7 +105,7 @@ public class JsonObjectCodec extends AbstractBsdCodec<JsonObject, JsonElement> {
       }
       return array;
     } else if (value instanceof XmlElement) {
-      String fragment = ((XmlElement) value).getFragment();
+      String fragment = ((XmlElement) value).fragment();
       return fragment != null ? new JsonPrimitive(fragment) : JsonNull.INSTANCE;
     } else if (value instanceof NodeId) {
       String nodeId = ((NodeId) value).toParseableString();

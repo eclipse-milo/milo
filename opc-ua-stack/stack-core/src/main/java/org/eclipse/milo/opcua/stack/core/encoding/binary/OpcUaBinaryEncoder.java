@@ -282,7 +282,7 @@ public class OpcUaBinaryEncoder implements UaEncoder {
     if (value == null || value.isNull()) {
       buffer.writeIntLE(-1);
     } else {
-      encodeByteString(new ByteString(value.getFragment().getBytes(StandardCharsets.UTF_8)));
+      encodeByteString(new ByteString(value.fragment().getBytes(StandardCharsets.UTF_8)));
     }
   }
 

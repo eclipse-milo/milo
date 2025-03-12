@@ -156,7 +156,7 @@ public class JsonConversions {
     if (value.isNull()) {
       return JsonNull.INSTANCE;
     } else {
-      return new JsonPrimitive(value.getFragment());
+      return new JsonPrimitive(value.fragment());
     }
   }
 

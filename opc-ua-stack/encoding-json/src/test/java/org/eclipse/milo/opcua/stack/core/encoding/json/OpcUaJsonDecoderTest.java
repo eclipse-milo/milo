@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -370,10 +370,10 @@ class OpcUaJsonDecoderTest {
     assertEquals(emptyElement, decoder.decodeXmlElement(null));
 
     var element = new XmlElement("<foo>bar</foo>");
-    decoder.reset(new StringReader(String.format("\"%s\"", element.getFragment())));
+    decoder.reset(new StringReader(String.format("\"%s\"", element.fragment())));
     assertEquals(element, decoder.decodeXmlElement(null));
 
-    decoder.reset(new StringReader(String.format("{\"foo\":\"%s\"}", element.getFragment())));
+    decoder.reset(new StringReader(String.format("{\"foo\":\"%s\"}", element.fragment())));
     decoder.jsonReader.beginObject();
     assertEquals(element, decoder.decodeXmlElement("foo"));
     decoder.jsonReader.endObject();
