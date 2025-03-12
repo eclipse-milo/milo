@@ -356,23 +356,23 @@ public class OpcUaBinaryEncoder implements UaEncoder {
     } else {
       int mask = 0x7F;
 
-      if (value.getSymbolicId() == -1) mask ^= 0x01;
-      if (value.getNamespaceUri() == -1) mask ^= 0x02;
-      if (value.getLocalizedText() == -1) mask ^= 0x04;
-      if (value.getLocale() == -1) mask ^= 0x08;
-      if (value.getAdditionalInfo() == null || value.getAdditionalInfo().isEmpty()) mask ^= 0x10;
-      if (value.getInnerStatusCode() == null) mask ^= 0x20;
-      if (value.getInnerDiagnosticInfo() == null) mask ^= 0x40;
+      if (value.symbolicId() == -1) mask ^= 0x01;
+      if (value.namespaceUri() == -1) mask ^= 0x02;
+      if (value.localizedText() == -1) mask ^= 0x04;
+      if (value.locale() == -1) mask ^= 0x08;
+      if (value.additionalInfo() == null || value.additionalInfo().isEmpty()) mask ^= 0x10;
+      if (value.innerStatusCode() == null) mask ^= 0x20;
+      if (value.innerDiagnosticInfo() == null) mask ^= 0x40;
 
       buffer.writeByte(mask);
 
-      if ((mask & 0x01) == 0x01) encodeInt32(value.getSymbolicId());
-      if ((mask & 0x02) == 0x02) encodeInt32(value.getNamespaceUri());
-      if ((mask & 0x04) == 0x04) encodeInt32(value.getLocalizedText());
-      if ((mask & 0x08) == 0x08) encodeInt32(value.getLocale());
-      if ((mask & 0x10) == 0x10) encodeString(value.getAdditionalInfo());
-      if ((mask & 0x20) == 0x20) encodeStatusCode(value.getInnerStatusCode());
-      if ((mask & 0x40) == 0x40) encodeDiagnosticInfo(value.getInnerDiagnosticInfo());
+      if ((mask & 0x01) == 0x01) encodeInt32(value.symbolicId());
+      if ((mask & 0x02) == 0x02) encodeInt32(value.namespaceUri());
+      if ((mask & 0x04) == 0x04) encodeInt32(value.localizedText());
+      if ((mask & 0x08) == 0x08) encodeInt32(value.locale());
+      if ((mask & 0x10) == 0x10) encodeString(value.additionalInfo());
+      if ((mask & 0x20) == 0x20) encodeStatusCode(value.innerStatusCode());
+      if ((mask & 0x40) == 0x40) encodeDiagnosticInfo(value.innerDiagnosticInfo());
     }
   }
 

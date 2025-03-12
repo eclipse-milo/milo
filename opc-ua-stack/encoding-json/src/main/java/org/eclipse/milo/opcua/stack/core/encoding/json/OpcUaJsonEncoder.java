@@ -1056,16 +1056,16 @@ public class OpcUaJsonEncoder implements UaEncoder {
 
         contextPush(EncoderContext.BUILTIN);
         jsonWriter.beginObject();
-        encodeInt32("SymbolicId", value.getSymbolicId());
-        encodeInt32("NamespaceUri", value.getNamespaceUri());
-        encodeInt32("Locale", value.getLocale());
-        encodeInt32("LocalizedText", value.getLocalizedText());
-        encodeString("AdditionalInfo", value.getAdditionalInfo());
-        if (value.getInnerStatusCode() != null) {
-          encodeStatusCode("InnerStatusCode", value.getInnerStatusCode());
+        encodeInt32("SymbolicId", value.symbolicId());
+        encodeInt32("NamespaceUri", value.namespaceUri());
+        encodeInt32("Locale", value.locale());
+        encodeInt32("LocalizedText", value.localizedText());
+        encodeString("AdditionalInfo", value.additionalInfo());
+        if (value.innerStatusCode() != null) {
+          encodeStatusCode("InnerStatusCode", value.innerStatusCode());
         }
-        if (value.getInnerDiagnosticInfo() != null) {
-          encodeDiagnosticInfo("InnerDiagnosticInfo", value.getInnerDiagnosticInfo());
+        if (value.innerDiagnosticInfo() != null) {
+          encodeDiagnosticInfo("InnerDiagnosticInfo", value.innerDiagnosticInfo());
         }
         jsonWriter.endObject();
         contextPop();
