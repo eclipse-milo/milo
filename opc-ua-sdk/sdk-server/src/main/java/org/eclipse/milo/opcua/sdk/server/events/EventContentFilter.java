@@ -473,7 +473,7 @@ public class EventContentFilter {
               indexRange,
               QualifiedName.NULL_VALUE);
 
-      return value.getValue().getValue();
+      return value.value().value();
     } else {
       return null;
     }
@@ -532,7 +532,7 @@ public class EventContentFilter {
     @Override
     public Object resolve(FilterOperand operand, BaseEventTypeNode eventNode) throws UaException {
       if (operand instanceof LiteralOperand) {
-        return ((LiteralOperand) operand).getValue().getValue();
+        return ((LiteralOperand) operand).getValue().value();
       } else if (operand instanceof ElementOperand) {
         UInteger index = ((ElementOperand) operand).getIndex();
 

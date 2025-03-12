@@ -73,7 +73,7 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
         Argument argument = getInputArguments()[i];
 
         Variant variant = inputArgumentValues[i];
-        Object value = variant.getValue();
+        Object value = variant.value();
 
         boolean dataTypeMatch = true;
 

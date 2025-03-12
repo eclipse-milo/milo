@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -288,12 +288,12 @@ public class DataTypeTreeBuilder {
       Boolean isAbstract = false;
       DataTypeDefinition definition = null;
 
-      if (isAbstractValue.getStatusCode() != null && isAbstractValue.getStatusCode().isGood()) {
-        isAbstract = (Boolean) isAbstractValue.getValue().getValue();
+      if (isAbstractValue.statusCode() != null && isAbstractValue.statusCode().isGood()) {
+        isAbstract = (Boolean) isAbstractValue.value().value();
       }
 
-      if (definitionValue.getStatusCode() != null && definitionValue.getStatusCode().isGood()) {
-        Object o = definitionValue.getValue().getValue();
+      if (definitionValue.statusCode() != null && definitionValue.statusCode().isGood()) {
+        Object o = definitionValue.value().value();
         if (o instanceof ExtensionObject xo) {
           try {
             Object decoded = xo.decode(client.getStaticEncodingContext());
@@ -336,19 +336,19 @@ public class DataTypeTreeBuilder {
                 NodeIds.OperationLimitsType_MaxNodesPerRead));
 
     DataValue maxNodesPerBrowse = dataValues.get(0);
-    if (maxNodesPerBrowse.getStatusCode() != null
-        && maxNodesPerBrowse.getStatusCode().isGood()
-        && maxNodesPerBrowse.getValue().getValue() instanceof UInteger) {
+    if (maxNodesPerBrowse.statusCode() != null
+        && maxNodesPerBrowse.statusCode().isGood()
+        && maxNodesPerBrowse.value().value() instanceof UInteger) {
 
-      operationLimits[0] = (UInteger) maxNodesPerBrowse.getValue().getValue();
+      operationLimits[0] = (UInteger) maxNodesPerBrowse.value().value();
     }
 
     DataValue maxNodesPerRead = dataValues.get(1);
-    if (maxNodesPerRead.getStatusCode() != null
-        && maxNodesPerRead.getStatusCode().isGood()
-        && dataValues.get(1).getValue().getValue() instanceof UInteger) {
+    if (maxNodesPerRead.statusCode() != null
+        && maxNodesPerRead.statusCode().isGood()
+        && dataValues.get(1).value().value() instanceof UInteger) {
 
-      operationLimits[1] = (UInteger) maxNodesPerRead.getValue().getValue();
+      operationLimits[1] = (UInteger) maxNodesPerRead.value().value();
     }
 
     return operationLimits;

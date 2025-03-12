@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -141,12 +141,12 @@ public class UaObjectNode extends UaNode implements ObjectNode {
   public UByte readEventNotifier() throws UaException {
     DataValue value = readAttribute(AttributeId.EventNotifier);
 
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null && statusCode.isBad()) {
       throw new UaException(statusCode, "read EventNotifier failed");
     } else {
-      UByte eventNotifier = (UByte) value.getValue().getValue();
+      UByte eventNotifier = (UByte) value.value().value();
       setEventNotifier(eventNotifier);
       return eventNotifier;
     }
@@ -630,7 +630,7 @@ public class UaObjectNode extends UaNode implements ObjectNode {
     switch (attributeId) {
       case EventNotifier:
         {
-          setEventNotifier((UByte) value.getValue().getValue());
+          setEventNotifier((UByte) value.value().value());
           break;
         }
       default:

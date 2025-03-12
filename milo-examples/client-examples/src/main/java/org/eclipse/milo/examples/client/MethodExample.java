@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -69,7 +69,7 @@ public class MethodExample implements ClientExample {
           StatusCode statusCode = result.getStatusCode();
 
           if (statusCode.isGood()) {
-            Double value = (Double) requireNonNull(result.getOutputArguments())[0].getValue();
+            Double value = (Double) requireNonNull(result.getOutputArguments())[0].value();
             return CompletableFuture.completedFuture(value);
           } else {
             StatusCode[] inputArgumentResults =

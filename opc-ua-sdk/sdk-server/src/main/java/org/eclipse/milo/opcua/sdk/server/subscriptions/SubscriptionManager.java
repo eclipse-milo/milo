@@ -894,13 +894,13 @@ public class SubscriptionManager {
       NodeId nodeId = readValueIds.get(i).getNodeId();
 
       DataValue dv0 = values.get(i);
-      if (dv0.getStatusCode() != null && dv0.getStatusCode().isBad()) {
-        attributesMap.put(nodeId, new NegativeResponse(dv0.getStatusCode()));
+      if (dv0.statusCode() != null && dv0.statusCode().isBad()) {
+        attributesMap.put(nodeId, new NegativeResponse(dv0.statusCode()));
       } else {
-        Object v0 = dv0.getValue().getValue();
-        Object v1 = values.get(i + 1).getValue().getValue();
-        Object v2 = values.get(i + 2).getValue().getValue();
-        Object v3 = values.get(i + 3).getValue().getValue();
+        Object v0 = dv0.value().value();
+        Object v1 = values.get(i + 1).value().value();
+        Object v2 = values.get(i + 2).value().value();
+        Object v3 = values.get(i + 3).value().value();
 
         NodeClass nodeClass = (NodeClass) v0;
         NodeId dataType = null;

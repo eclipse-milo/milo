@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -147,12 +147,12 @@ public class UaMethodNode extends UaNode implements MethodNode {
   public Boolean readExecutable() throws UaException {
     DataValue value = readAttribute(AttributeId.Executable);
 
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null && statusCode.isBad()) {
       throw new UaException(statusCode, "read Executable failed");
     } else {
-      Boolean executable = (Boolean) value.getValue().getValue();
+      Boolean executable = (Boolean) value.value().value();
       setExecutable(executable);
       return executable;
     }
@@ -168,12 +168,12 @@ public class UaMethodNode extends UaNode implements MethodNode {
   public Boolean readUserExecutable() throws UaException {
     DataValue value = readAttribute(AttributeId.UserExecutable);
 
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null && statusCode.isBad()) {
       throw new UaException(statusCode, "read UserExecutable failed");
     } else {
-      Boolean userExecutable = (Boolean) value.getValue().getValue();
+      Boolean userExecutable = (Boolean) value.value().value();
       setUserExecutable(userExecutable);
       return userExecutable;
     }
@@ -319,12 +319,12 @@ public class UaMethodNode extends UaNode implements MethodNode {
     switch (attributeId) {
       case Executable:
         {
-          setExecutable((Boolean) value.getValue().getValue());
+          setExecutable((Boolean) value.value().value());
           break;
         }
       case UserExecutable:
         {
-          setUserExecutable((Boolean) value.getValue().getValue());
+          setUserExecutable((Boolean) value.value().value());
           break;
         }
       default:

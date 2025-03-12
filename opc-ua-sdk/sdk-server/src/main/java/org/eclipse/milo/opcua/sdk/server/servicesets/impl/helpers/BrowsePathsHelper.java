@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -286,7 +286,7 @@ public class BrowsePathsHelper {
                 .getAddressSpaceManager()
                 .read(context, 0.0, TimestampsToReturn.Neither, List.of(readValueId));
 
-        browseNames.add((QualifiedName) values.get(0).getValue().getValue());
+        browseNames.add((QualifiedName) values.get(0).value().value());
       } catch (Exception ignored) {
         browseNames.add(QualifiedName.NULL_VALUE);
       }

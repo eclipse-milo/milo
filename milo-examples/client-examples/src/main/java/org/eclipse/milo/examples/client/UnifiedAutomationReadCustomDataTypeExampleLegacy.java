@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -61,7 +61,7 @@ public class UnifiedAutomationReadCustomDataTypeExampleLegacy implements ClientE
             .readValues(0.0, TimestampsToReturn.Neither, List.of(NodeId.parse("ns=3;s=Person1")))
             .get(0);
 
-    ExtensionObject xo = (ExtensionObject) dataValue.getValue().getValue();
+    ExtensionObject xo = (ExtensionObject) dataValue.value().value();
     assert xo != null;
 
     Object value = xo.decode(client.getDynamicEncodingContext());
@@ -78,7 +78,7 @@ public class UnifiedAutomationReadCustomDataTypeExampleLegacy implements ClientE
                 List.of(NodeId.parse("ns=3;s=Demo.Static.Scalar.WorkOrder")))
             .get(0);
 
-    ExtensionObject xo = (ExtensionObject) dataValue.getValue().getValue();
+    ExtensionObject xo = (ExtensionObject) dataValue.value().value();
     assert xo != null;
 
     Object value = xo.decode(client.getDynamicEncodingContext());

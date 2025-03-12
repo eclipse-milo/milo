@@ -63,7 +63,7 @@ public class VariantSerializationTest extends BinarySerializationFixture {
     writer.encodeVariant(v);
     Variant decoded = reader.decodeVariant();
 
-    ExtensionObject extensionObject = (ExtensionObject) decoded.getValue();
+    ExtensionObject extensionObject = (ExtensionObject) decoded.value();
     ServiceCounterDataType sc2 =
         (ServiceCounterDataType) extensionObject.decode(DefaultEncodingContext.INSTANCE);
 
@@ -114,6 +114,6 @@ public class VariantSerializationTest extends BinarySerializationFixture {
     Variant v = reader.decodeVariant();
 
     assertNotNull(v);
-    assertNull(v.getValue());
+    assertNull(v.value());
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -708,27 +708,27 @@ public class OpcUaJsonEncoder implements UaEncoder {
       contextPush(EncoderContext.BUILTIN);
       jsonWriter.beginObject();
 
-      Variant v = value.getValue();
+      Variant v = value.value();
       if (v != null && v.isNotNull()) {
         encodeVariant("Value", v);
       }
-      StatusCode s = value.getStatusCode();
+      StatusCode s = value.statusCode();
       if (s != null && s.getValue() != 0L) {
         encodeStatusCode("Status", s);
       }
-      DateTime sourceTime = value.getSourceTime();
+      DateTime sourceTime = value.sourceTime();
       if (sourceTime != null && sourceTime.isNotNull()) {
         encodeDateTime("SourceTimestamp", sourceTime);
       }
-      UShort sourcePicoseconds = value.getSourcePicoseconds();
+      UShort sourcePicoseconds = value.sourcePicoseconds();
       if (sourcePicoseconds != null && sourcePicoseconds.intValue() > 0) {
         encodeUInt16("SourcePicoseconds", sourcePicoseconds);
       }
-      DateTime serverTime = value.getServerTime();
+      DateTime serverTime = value.serverTime();
       if (serverTime != null && serverTime.isNotNull()) {
         encodeDateTime("ServerTimestamp", serverTime);
       }
-      UShort serverPicoseconds = value.getServerPicoseconds();
+      UShort serverPicoseconds = value.serverPicoseconds();
       if (serverPicoseconds != null && serverPicoseconds.intValue() > 0) {
         encodeUInt16("ServerPicoseconds", serverPicoseconds);
       }
@@ -744,12 +744,12 @@ public class OpcUaJsonEncoder implements UaEncoder {
    * @return {@code true} if all fields in {@code value} would be omitted from the encoding.
    */
   private static boolean allFieldsAreOmitted(DataValue value) {
-    return (value.getValue() == null || value.getValue().isNull())
-        && (value.getStatusCode() == null || value.getStatusCode().getValue() == 0L)
-        && (value.getSourceTime() == null || value.getSourceTime().isNull())
-        && (value.getSourcePicoseconds() == null || value.getSourcePicoseconds().intValue() == 0)
-        && (value.getServerTime() == null || value.getServerTime().isNull())
-        && (value.getServerPicoseconds() == null || value.getServerPicoseconds().intValue() == 0);
+    return (value.value() == null || value.value().isNull())
+        && (value.statusCode() == null || value.statusCode().getValue() == 0L)
+        && (value.sourceTime() == null || value.sourceTime().isNull())
+        && (value.sourcePicoseconds() == null || value.sourcePicoseconds().intValue() == 0)
+        && (value.serverTime() == null || value.serverTime().isNull())
+        && (value.serverPicoseconds() == null || value.serverPicoseconds().intValue() == 0);
   }
 
   @Override
@@ -763,8 +763,8 @@ public class OpcUaJsonEncoder implements UaEncoder {
         jsonWriter.name(field);
       }
 
-      assert value.getValue() != null;
-      encodeVariantValue(value.getValue());
+      assert value.value() != null;
+      encodeVariantValue(value.value());
     } catch (IOException e) {
       throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
     }

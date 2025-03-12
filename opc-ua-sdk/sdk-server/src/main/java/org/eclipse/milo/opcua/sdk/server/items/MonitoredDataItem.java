@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -91,7 +91,7 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
     if (queue.size() < queue.maxSize()) {
       queue.add(value);
     } else {
-      StatusCode statusCode = value.getStatusCode();
+      StatusCode statusCode = value.statusCode();
 
       if (getQueueSize() > 1) {
         /* Set overflow if queueSize > 1... */
@@ -123,8 +123,7 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
     if (lastValue == null) {
       setValue(new DataValue(Variant.NULL_VALUE, quality, DateTime.now(), DateTime.now()));
     } else {
-      DataValue value =
-          new DataValue(lastValue.getValue(), quality, DateTime.now(), DateTime.now());
+      DataValue value = new DataValue(lastValue.value(), quality, DateTime.now(), DateTime.now());
 
       setValue(value);
     }
@@ -173,8 +172,8 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
 
     // remove the source timestamp if not requested
     boolean sourceTimeUpdated = false;
-    DateTime sourceTime = value.getSourceTime();
-    UShort sourcePicoseconds = value.getSourcePicoseconds();
+    DateTime sourceTime = value.sourceTime();
+    UShort sourcePicoseconds = value.sourcePicoseconds();
     if (!includeSource && (sourceTime != null || sourcePicoseconds != null)) {
       sourceTime = null;
       sourcePicoseconds = null;
@@ -183,8 +182,8 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
 
     // remove server timestamp if not requested, add if requested but not present
     boolean serverTimeUpdated = false;
-    DateTime serverTime = value.getServerTime();
-    UShort serverPicoseconds = value.getServerPicoseconds();
+    DateTime serverTime = value.serverTime();
+    UShort serverPicoseconds = value.serverPicoseconds();
     if (!includeServer && (serverTime != null || serverPicoseconds != null)) {
       serverTime = null;
       serverPicoseconds = null;
@@ -198,8 +197,8 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
     if (sourceTimeUpdated || serverTimeUpdated) {
       value =
           new DataValue(
-              value.getValue(),
-              value.getStatusCode(),
+              value.value(),
+              value.statusCode(),
               sourceTime,
               sourcePicoseconds,
               serverTime,

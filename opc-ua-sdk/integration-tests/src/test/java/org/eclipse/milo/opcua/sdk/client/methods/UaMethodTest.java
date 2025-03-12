@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -77,8 +77,8 @@ public class UaMethodTest extends AbstractClientServerTest {
 
     UInteger[] expected0 = {monitoredItem.getMonitoredItemId().orElseThrow()};
     UInteger[] expected1 = {monitoredItem.getClientHandle().orElseThrow()};
-    assertArrayEquals(expected0, (UInteger[]) outputs[0].getValue());
-    assertArrayEquals(expected1, (UInteger[]) outputs[1].getValue());
+    assertArrayEquals(expected0, (UInteger[]) outputs[0].value());
+    assertArrayEquals(expected1, (UInteger[]) outputs[1].value());
   }
 
   @Test
@@ -94,8 +94,8 @@ public class UaMethodTest extends AbstractClientServerTest {
 
     UInteger[] expected0 = {monitoredItem.getMonitoredItemId().orElseThrow()};
     UInteger[] expected1 = {monitoredItem.getClientHandle().orElseThrow()};
-    assertArrayEquals(expected0, (UInteger[]) outputs[0].getValue());
-    assertArrayEquals(expected1, (UInteger[]) outputs[1].getValue());
+    assertArrayEquals(expected0, (UInteger[]) outputs[0].value());
+    assertArrayEquals(expected1, (UInteger[]) outputs[1].value());
   }
 
   @Test
@@ -127,7 +127,7 @@ public class UaMethodTest extends AbstractClientServerTest {
     Variant[] outputs =
         objectsNode.callMethod(new QualifiedName(2, "sqrt(x)"), new Variant[] {new Variant(16.0)});
 
-    assertEquals(4.0, outputs[0].getValue());
+    assertEquals(4.0, outputs[0].value());
   }
 
   @Test
@@ -139,7 +139,7 @@ public class UaMethodTest extends AbstractClientServerTest {
     Variant[] outputs =
         objectsNode.callMethod(new QualifiedName(2, "sqrt2(x)"), new Variant[] {new Variant(16.0)});
 
-    assertEquals(4.0, outputs[0].getValue());
+    assertEquals(4.0, outputs[0].value());
   }
 
   @Test

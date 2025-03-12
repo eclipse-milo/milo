@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -184,7 +184,7 @@ public abstract class ManagedAddressSpace implements AddressSpace {
             "write: nodeId={}, attributeId={}, value={}, result={}",
             node.getNodeId(),
             AttributeId.from(writeValue.getAttributeId()).map(Object::toString).orElse("unknown"),
-            writeValue.getValue().getValue(),
+            writeValue.getValue().value(),
             result);
       } else {
         results.add(new StatusCode(StatusCodes.Bad_NodeIdUnknown));

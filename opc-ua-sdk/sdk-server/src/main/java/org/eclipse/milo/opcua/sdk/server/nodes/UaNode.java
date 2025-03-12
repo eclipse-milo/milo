@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -410,7 +410,7 @@ public abstract class UaNode implements UaServerNode {
   }
 
   public Optional<Object> getProperty(QualifiedName browseName) {
-    return getPropertyNode(browseName).map(node -> node.getValue().getValue().getValue());
+    return getPropertyNode(browseName).map(node -> node.getValue().value().value());
   }
 
   public <T> void setProperty(QualifiedProperty<T> property, T value) {

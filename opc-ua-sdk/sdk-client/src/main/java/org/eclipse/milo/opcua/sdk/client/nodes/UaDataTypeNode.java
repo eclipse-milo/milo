@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -151,12 +151,12 @@ public class UaDataTypeNode extends UaNode implements DataTypeNode {
   public Boolean readIsAbstract() throws UaException {
     DataValue value = readAttribute(AttributeId.IsAbstract);
 
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null && statusCode.isBad()) {
       throw new UaException(statusCode, "read IsAbstract failed");
     } else {
-      Boolean isAbstract = (Boolean) value.getValue().getValue();
+      Boolean isAbstract = (Boolean) value.value().value();
       setIsAbstract(isAbstract);
       return isAbstract;
     }
@@ -173,12 +173,12 @@ public class UaDataTypeNode extends UaNode implements DataTypeNode {
   public DataTypeDefinition readDataTypeDefinition() throws UaException {
     DataValue value = readAttribute(AttributeId.DataTypeDefinition);
 
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null && statusCode.isBad()) {
       throw new UaException(statusCode, "read DataTypeDefinition failed");
     } else {
-      ExtensionObject xo = (ExtensionObject) value.getValue().getValue();
+      ExtensionObject xo = (ExtensionObject) value.value().value();
       if (xo == null || xo.isNull()) {
         setDataTypeDefinition(null);
       } else {
@@ -331,12 +331,12 @@ public class UaDataTypeNode extends UaNode implements DataTypeNode {
     switch (attributeId) {
       case IsAbstract:
         {
-          setIsAbstract((Boolean) value.getValue().getValue());
+          setIsAbstract((Boolean) value.value().value());
           break;
         }
       case DataTypeDefinition:
         {
-          ExtensionObject xo = (ExtensionObject) value.getValue().getValue();
+          ExtensionObject xo = (ExtensionObject) value.value().value();
           setDataTypeDefinition((DataTypeDefinition) xo.decode(client.getStaticEncodingContext()));
           break;
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -118,12 +118,12 @@ public class UaObjectTypeNode extends UaNode implements ObjectTypeNode {
   public Boolean readIsAbstract() throws UaException {
     DataValue value = readAttribute(AttributeId.IsAbstract);
 
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null && statusCode.isBad()) {
       throw new UaException(statusCode, "read IsAbstract failed");
     } else {
-      Boolean isAbstract = (Boolean) value.getValue().getValue();
+      Boolean isAbstract = (Boolean) value.value().value();
       setIsAbstract(isAbstract);
       return isAbstract;
     }
@@ -206,7 +206,7 @@ public class UaObjectTypeNode extends UaNode implements ObjectTypeNode {
     switch (attributeId) {
       case IsAbstract:
         {
-          setIsAbstract((Boolean) value.getValue().getValue());
+          setIsAbstract((Boolean) value.value().value());
           break;
         }
       default:

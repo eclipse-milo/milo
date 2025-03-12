@@ -48,7 +48,7 @@ public class AddressSpaceTest extends AbstractClientServerTest {
                   n.getNodeClass()));
 
           if (n instanceof UaVariableNode) {
-            System.out.println("└─ value = " + ((UaVariableNode) n).getValue().getValue());
+            System.out.println("└─ value = " + ((UaVariableNode) n).getValue().value());
           }
         });
   }

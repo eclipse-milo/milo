@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -133,7 +133,7 @@ public class UnifiedAutomationReadCustomDataTypeExample2 implements ClientExampl
     DataValue dataValue =
         client.readValues(0.0, TimestampsToReturn.Neither, List.of(nodeId)).get(0);
 
-    ExtensionObject xo = (ExtensionObject) dataValue.getValue().getValue();
+    ExtensionObject xo = (ExtensionObject) dataValue.value().value();
     assert xo != null;
 
     return (JsonStruct) xo.decode(client.getDynamicEncodingContext());
@@ -143,7 +143,7 @@ public class UnifiedAutomationReadCustomDataTypeExample2 implements ClientExampl
     DataValue dataValue =
         client.readValues(0.0, TimestampsToReturn.Neither, List.of(nodeId)).get(0);
 
-    ExtensionObject[] xos = (ExtensionObject[]) dataValue.getValue().getValue();
+    ExtensionObject[] xos = (ExtensionObject[]) dataValue.value().value();
     assert xos != null;
 
     EncodingContext ctx = client.getDynamicEncodingContext();

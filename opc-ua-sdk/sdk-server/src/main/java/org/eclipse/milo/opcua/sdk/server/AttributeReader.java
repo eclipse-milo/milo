@@ -90,8 +90,8 @@ public class AttributeReader {
       DataValue dv = (DataValue) value;
       DataValue.Builder dvb = dv.copy();
 
-      if (encodingName != null && encodingName.isNotNull() && dv.getValue().isNotNull()) {
-        final Object valueObject = dvb.value.getValue();
+      if (encodingName != null && encodingName.isNotNull() && dv.value().isNotNull()) {
+        final Object valueObject = dvb.value.value();
 
         Class<?> valueClazz = valueObject.getClass();
 
@@ -117,13 +117,13 @@ public class AttributeReader {
           NumericRange range = NumericRange.parse(indexRange);
 
           Object valueAtRange;
-          if (dv.getValue().getValue() instanceof Matrix matrix) {
+          if (dv.value().value() instanceof Matrix matrix) {
             valueAtRange = NumericRange.readFromValueAtRange(matrix.nestedArrayValue(), range);
             if (ArrayUtil.getValueRank(valueAtRange) > 1) {
               valueAtRange = new Matrix(valueAtRange);
             }
           } else {
-            valueAtRange = NumericRange.readFromValueAtRange(dv.getValue(), range);
+            valueAtRange = NumericRange.readFromValueAtRange(dv.value(), range);
           }
 
           return dvb.setValue(Variant.of(valueAtRange))

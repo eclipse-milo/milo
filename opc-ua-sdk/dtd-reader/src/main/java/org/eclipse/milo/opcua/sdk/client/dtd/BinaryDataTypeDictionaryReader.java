@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -247,10 +247,10 @@ public class BinaryDataTypeDictionaryReader {
 
     return valueFuture.thenComposeAsync(
         value -> {
-          StatusCode statusCode = value.getStatusCode();
+          StatusCode statusCode = value.statusCode();
 
           if (statusCode == null || statusCode.isGood()) {
-            ByteString fragmentBytes = (ByteString) value.getValue().getValue();
+            ByteString fragmentBytes = (ByteString) value.value().value();
 
             if (fragmentBytes != null) {
               int bytesRead = fragmentBytes.length();
@@ -498,7 +498,7 @@ public class BinaryDataTypeDictionaryReader {
                     AttributeId.Value.uid(),
                     null,
                     QualifiedName.NULL_VALUE))
-            .thenApply(dv -> (UInteger) dv.getValue().getValue());
+            .thenApply(dv -> (UInteger) dv.value().value());
 
     CompletableFuture<Integer> getPartitionSize =
         maxNodesPerRead
@@ -531,7 +531,7 @@ public class BinaryDataTypeDictionaryReader {
               values ->
                   values.stream()
                       .flatMap(List::stream)
-                      .map(v -> (String) v.getValue().getValue())
+                      .map(v -> (String) v.value().value())
                       .collect(Collectors.toList()));
         });
   }

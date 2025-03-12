@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -292,30 +292,30 @@ public class OpcUaBinaryEncoder implements UaEncoder {
     } else {
       int mask = 0x00;
 
-      if (value.getValue() != null && value.getValue().isNotNull()) {
+      if (value.value() != null && value.value().isNotNull()) {
         mask |= 0x01;
       }
 
-      if (!StatusCode.GOOD.equals(value.getStatusCode())) {
+      if (!StatusCode.GOOD.equals(value.statusCode())) {
         mask |= 0x02;
       }
 
-      if (value.getSourceTime() != null && !DateTime.MIN_VALUE.equals(value.getSourceTime())) {
+      if (value.sourceTime() != null && !DateTime.MIN_VALUE.equals(value.sourceTime())) {
 
         mask |= 0x04;
       }
 
-      if (value.getServerTime() != null && !DateTime.MIN_VALUE.equals(value.getServerTime())) {
+      if (value.serverTime() != null && !DateTime.MIN_VALUE.equals(value.serverTime())) {
 
         mask |= 0x08;
       }
 
-      if (value.getSourcePicoseconds() != null && value.getSourcePicoseconds().intValue() != 0) {
+      if (value.sourcePicoseconds() != null && value.sourcePicoseconds().intValue() != 0) {
 
         mask |= 0x10;
       }
 
-      if (value.getServerPicoseconds() != null && value.getServerPicoseconds().intValue() != 0) {
+      if (value.serverPicoseconds() != null && value.serverPicoseconds().intValue() != 0) {
 
         mask |= 0x20;
       }
@@ -324,28 +324,28 @@ public class OpcUaBinaryEncoder implements UaEncoder {
 
       // Value
       if ((mask & 0x01) == 0x01) {
-        encodeVariant(value.getValue());
+        encodeVariant(value.value());
       }
 
       // StatusCode
       if ((mask & 0x02) == 0x02) {
-        encodeStatusCode(value.getStatusCode());
+        encodeStatusCode(value.statusCode());
       }
 
       // SourceTimestamp and SourcePicoseconds
       if ((mask & 0x04) == 0x04) {
-        encodeDateTime(value.getSourceTime());
+        encodeDateTime(value.sourceTime());
       }
       if ((mask & 0x10) == 0x10) {
-        encodeUInt16(value.getSourcePicoseconds());
+        encodeUInt16(value.sourcePicoseconds());
       }
 
       // ServerTimestamp and ServerPicoseconds
       if ((mask & 0x08) == 0x08) {
-        encodeDateTime(value.getServerTime());
+        encodeDateTime(value.serverTime());
       }
       if ((mask & 0x20) == 0x20) {
-        encodeUInt16(value.getServerPicoseconds());
+        encodeUInt16(value.serverPicoseconds());
       }
     }
   }
@@ -587,7 +587,7 @@ public class OpcUaBinaryEncoder implements UaEncoder {
   }
 
   public void encodeVariant(Variant variant) throws UaSerializationException {
-    Object value = variant.getValue();
+    Object value = variant.value();
 
     if (value == null) {
       buffer.writeByte(0);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -52,8 +52,8 @@ public class DataChangeMonitoringFilter {
 
     if (deadbandType != DeadbandType.Absolute) return true;
 
-    Object last = lastValue.getValue().getValue();
-    Object current = currentValue.getValue().getValue();
+    Object last = lastValue.value().value();
+    Object current = currentValue.value().value();
 
     if (last == null || current == null) {
       return true;
@@ -97,14 +97,14 @@ public class DataChangeMonitoringFilter {
   }
 
   private static boolean statusChanged(DataValue lastValue, DataValue currentValue) {
-    return !Objects.equals(lastValue.getStatusCode(), currentValue.getStatusCode());
+    return !Objects.equals(lastValue.statusCode(), currentValue.statusCode());
   }
 
   private static boolean valueChanged(DataValue lastValue, DataValue currentValue) {
-    return !Objects.equals(lastValue.getValue(), currentValue.getValue());
+    return !Objects.equals(lastValue.value(), currentValue.value());
   }
 
   private static boolean timestampChanged(DataValue lastValue, DataValue currentValue) {
-    return !Objects.equals(lastValue.getSourceTime(), currentValue.getSourceTime());
+    return !Objects.equals(lastValue.sourceTime(), currentValue.sourceTime());
   }
 }

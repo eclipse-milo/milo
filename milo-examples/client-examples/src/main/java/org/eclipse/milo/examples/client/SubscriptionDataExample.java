@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -50,7 +50,7 @@ public class SubscriptionDataExample implements ClientExample {
               logger.info(
                   "subscription onDataReceived: nodeId={}, value={}",
                   items.get(i).getReadValueId().getNodeId(),
-                  values.get(i).getValue());
+                  values.get(i).value());
             }
           }
         });
@@ -66,7 +66,7 @@ public class SubscriptionDataExample implements ClientExample {
             logger.info(
                 "monitoredItem onDataReceived: nodeId={}, value={}",
                 item.getReadValueId().getNodeId(),
-                value.getValue()));
+                value.value()));
 
     // Add the MonitoredItem to the Subscription
     subscription.addMonitoredItem(monitoredItem);

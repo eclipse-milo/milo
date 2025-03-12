@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -53,8 +53,8 @@ public class ReadWriteCustomDataTypeNodeExample implements ClientExample {
     DataValue value = node.readValue();
     logger.info("Value={}", value);
 
-    Variant variant = value.getValue();
-    ExtensionObject xo = (ExtensionObject) variant.getValue();
+    Variant variant = value.value();
+    ExtensionObject xo = (ExtensionObject) variant.value();
     assert xo != null;
 
     CustomStructType decoded = (CustomStructType) xo.decode(client.getStaticEncodingContext());
@@ -80,8 +80,8 @@ public class ReadWriteCustomDataTypeNodeExample implements ClientExample {
     value = node.readValue();
     logger.info("Value={}", value);
 
-    variant = value.getValue();
-    xo = (ExtensionObject) variant.getValue();
+    variant = value.value();
+    xo = (ExtensionObject) variant.value();
     assert xo != null;
 
     decoded = (CustomStructType) xo.decode(client.getStaticEncodingContext());

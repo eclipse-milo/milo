@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -27,31 +27,31 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.util.ArrayUtil;
 import org.eclipse.milo.opcua.stack.core.util.TypeUtil;
+import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-public final class Variant {
+/**
+ * Create a new Variant with a given value.
+ *
+ * <p>This constructor offers no type safety and does not verify that {@code value} is allowed. See
+ * {@link #of(Object)} for an alternative that will verify the value, or use one of the type-safe
+ * static factory methods instead.
+ *
+ * <p>Variants can contain arrays of Variants, but they cannot directly contain another Variant.
+ *
+ * <p>DiagnosticInfo types only have meaning when returned in a response message with an associated
+ * StatusCode and table of strings. As a result, Variants cannot contain instances of
+ * DiagnosticInfo.
+ *
+ * @param value the value this Variant holds.
+ */
+@NullMarked
+public record Variant(@Nullable Object value) {
 
   public static final Variant NULL_VALUE = new Variant(null);
 
-  private final Object value;
-
-  /**
-   * Create a new Variant with a given value.
-   *
-   * <p>This constructor offers no type safety and does not verify that {@code value} is allowed.
-   * See {@link #of(Object)} for an alternative that will verify the value, or use one of the
-   * type-safe static factory methods instead.
-   *
-   * <p>Variants can contain arrays of Variants, but they cannot directly contain another Variant.
-   *
-   * <p>DiagnosticInfo types only have meaning when returned in a response message with an
-   * associated StatusCode and table of strings. As a result, Variants cannot contain instances of
-   * DiagnosticInfo.
-   *
-   * @param value the value this Variant holds.
-   */
-  public Variant(@Nullable Object value) {
-    this.value = value;
+  public @Nullable Object getValue() {
+    return value;
   }
 
   public Optional<ExpandedNodeId> getDataTypeId() {
@@ -100,10 +100,6 @@ public final class Variant {
     } else {
       return Optional.ofNullable(OpcUaDataType.fromBackingClass(type));
     }
-  }
-
-  public @Nullable Object getValue() {
-    return value;
   }
 
   public boolean isNull() {
@@ -186,8 +182,6 @@ public final class Variant {
     return helper.toString();
   }
 
-  // region Static factory methods
-
   /**
    * Create a Variant containing an arbitrary Object with minimal checks.
    *
@@ -232,6 +226,8 @@ public final class Variant {
   public static Variant ofNull() {
     return NULL_VALUE;
   }
+
+  // region Static factory methods
 
   /**
    * Create a Variant containing a Boolean value.

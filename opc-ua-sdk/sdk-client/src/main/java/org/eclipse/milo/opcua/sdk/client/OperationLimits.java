@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -200,19 +200,18 @@ public class OperationLimits {
     List<DataValue> values =
         client.readValues(0.0, TimestampsToReturn.Neither, OPERATION_LIMITS_NODES);
 
-    UInteger maxNodesPerRead = (UInteger) values.get(0).getValue().getValue();
-    UInteger maxNodesPerWrite = (UInteger) values.get(1).getValue().getValue();
-    UInteger maxNodesPerMethodCall = (UInteger) values.get(2).getValue().getValue();
-    UInteger maxNodesPerBrowse = (UInteger) values.get(3).getValue().getValue();
-    UInteger maxNodesPerRegisterNodes = (UInteger) values.get(4).getValue().getValue();
-    UInteger maxNodesPerTranslateBrowsePathsToNodeIds =
-        (UInteger) values.get(5).getValue().getValue();
-    UInteger maxNodesPerNodeManagement = (UInteger) values.get(6).getValue().getValue();
-    UInteger maxMonitoredItemsPerCall = (UInteger) values.get(7).getValue().getValue();
-    UInteger maxNodesPerHistoryReadData = (UInteger) values.get(8).getValue().getValue();
-    UInteger maxNodesPerHistoryReadEvents = (UInteger) values.get(9).getValue().getValue();
-    UInteger maxNodesPerHistoryUpdateData = (UInteger) values.get(10).getValue().getValue();
-    UInteger maxNodesPerHistoryUpdateEvents = (UInteger) values.get(11).getValue().getValue();
+    UInteger maxNodesPerRead = (UInteger) values.get(0).value().value();
+    UInteger maxNodesPerWrite = (UInteger) values.get(1).value().value();
+    UInteger maxNodesPerMethodCall = (UInteger) values.get(2).value().value();
+    UInteger maxNodesPerBrowse = (UInteger) values.get(3).value().value();
+    UInteger maxNodesPerRegisterNodes = (UInteger) values.get(4).value().value();
+    UInteger maxNodesPerTranslateBrowsePathsToNodeIds = (UInteger) values.get(5).value().value();
+    UInteger maxNodesPerNodeManagement = (UInteger) values.get(6).value().value();
+    UInteger maxMonitoredItemsPerCall = (UInteger) values.get(7).value().value();
+    UInteger maxNodesPerHistoryReadData = (UInteger) values.get(8).value().value();
+    UInteger maxNodesPerHistoryReadEvents = (UInteger) values.get(9).value().value();
+    UInteger maxNodesPerHistoryUpdateData = (UInteger) values.get(10).value().value();
+    UInteger maxNodesPerHistoryUpdateEvents = (UInteger) values.get(11).value().value();
 
     return new OperationLimits(
         maxNodesPerRead,
@@ -234,7 +233,7 @@ public class OperationLimits {
         nodeId -> {
           try {
             return (UInteger)
-                client.readValue(0.0, TimestampsToReturn.Neither, nodeId).getValue().getValue();
+                client.readValue(0.0, TimestampsToReturn.Neither, nodeId).value().value();
           } catch (UaException e) {
             return null;
           }

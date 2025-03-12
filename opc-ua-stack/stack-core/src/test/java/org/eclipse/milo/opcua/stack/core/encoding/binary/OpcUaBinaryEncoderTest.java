@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -107,7 +107,7 @@ public class OpcUaBinaryEncoderTest {
 
     var decoder = new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE).setBuffer(buffer);
     Variant decodedVariant = decoder.decodeVariant();
-    Matrix decodedMatrix = (Matrix) decodedVariant.getValue();
+    Matrix decodedMatrix = (Matrix) decodedVariant.value();
     assert decodedMatrix != null;
 
     assertEquals(matrix, decodedMatrix.transform(v -> ApplicationType.from((Integer) v)));
@@ -126,7 +126,7 @@ public class OpcUaBinaryEncoderTest {
 
     var decoder = new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE).setBuffer(buffer);
     Variant decodedVariant = decoder.decodeVariant();
-    Matrix decodedMatrix = (Matrix) decodedVariant.getValue();
+    Matrix decodedMatrix = (Matrix) decodedVariant.value();
     assert decodedMatrix != null;
 
     assertEquals(

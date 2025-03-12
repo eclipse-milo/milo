@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -326,9 +326,9 @@ public class BrowseHelper {
             .read(context, 0.0, TimestampsToReturn.Neither, readValueIds);
 
     for (int i = 0; i < values.size(); i += 3) {
-      QualifiedName browseName = (QualifiedName) values.get(i).getValue().getValue();
-      LocalizedText displayName = (LocalizedText) values.get(i + 1).getValue().getValue();
-      NodeClass nodeClass = (NodeClass) values.get(i + 2).getValue().getValue();
+      QualifiedName browseName = (QualifiedName) values.get(i).value().value();
+      LocalizedText displayName = (LocalizedText) values.get(i + 1).value().value();
+      NodeClass nodeClass = (NodeClass) values.get(i + 2).value().value();
 
       browseAttributes.add(new BrowseAttributes(browseName, displayName, nodeClass));
     }

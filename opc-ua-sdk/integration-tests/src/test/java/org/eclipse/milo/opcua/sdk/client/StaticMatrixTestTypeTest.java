@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -42,7 +42,7 @@ public class StaticMatrixTestTypeTest extends AbstractClientServerTest {
     DataValue value = testNode.readValue();
     assertNotNull(value);
 
-    ExtensionObject xo = (ExtensionObject) value.getValue().getValue();
+    ExtensionObject xo = (ExtensionObject) value.value().value();
     assert xo != null;
 
     MatrixTestType decoded = (MatrixTestType) xo.decode(client.getStaticEncodingContext());

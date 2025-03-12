@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -119,7 +119,7 @@ public class UaNodeTest extends AbstractClientServerTest {
 
     ReadResponse response = client.readAsync(0.0, TimestampsToReturn.Both, readValueIds).get();
 
-    Arrays.stream(response.getResults()).forEach(v -> System.out.println(v.getValue().getValue()));
+    Arrays.stream(response.getResults()).forEach(v -> System.out.println(v.value().value()));
   }
 
   @Test
@@ -139,11 +139,11 @@ public class UaNodeTest extends AbstractClientServerTest {
 
     UaVariableNode testNode = (UaVariableNode) addressSpace.getNode(new NodeId(2, "TestInt32"));
 
-    Integer i1 = (Integer) testNode.readValue().getValue().getValue();
+    Integer i1 = (Integer) testNode.readValue().value().value();
 
     testNode.writeValue(new Variant(i1 + 1));
 
-    Integer i2 = (Integer) testNode.readValue().getValue().getValue();
+    Integer i2 = (Integer) testNode.readValue().value().value();
 
     assertEquals(i1 + 1, i2);
 
@@ -163,8 +163,8 @@ public class UaNodeTest extends AbstractClientServerTest {
 
     values.forEach(
         v -> {
-          assertNotNull(v.getStatusCode());
-          assertTrue(v.getStatusCode().isGood() || v.getValue().isNull());
+          assertNotNull(v.statusCode());
+          assertTrue(v.statusCode().isGood() || v.value().isNull());
         });
   }
 
@@ -178,7 +178,7 @@ public class UaNodeTest extends AbstractClientServerTest {
 
     testNode.synchronize(EnumSet.of(AttributeId.Value));
 
-    assertEquals(42, testNode.readValue().getValue().getValue());
+    assertEquals(42, testNode.readValue().value().value());
   }
 
   @Test

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -45,7 +45,7 @@ public class UaVariableTypeNodeAttributeTest extends AbstractClientServerTest {
         AttributeTestHelper.USER_ROLE_PERMISSIONS, variableTypeNode.getUserRolePermissions());
     assertEquals(AttributeTestHelper.ACCESS_RESTRICTIONS, variableTypeNode.getAccessRestrictions());
 
-    assertEquals(new Variant(42), variableTypeNode.getValue().getValue());
+    assertEquals(new Variant(42), variableTypeNode.getValue().value());
     assertEquals(OpcUaDataType.Int32.getNodeId(), variableTypeNode.getDataType());
     assertEquals(-1, variableTypeNode.getValueRank());
     assertNull(variableTypeNode.getArrayDimensions());
@@ -71,7 +71,7 @@ public class UaVariableTypeNodeAttributeTest extends AbstractClientServerTest {
     assertEquals(
         AttributeTestHelper.ACCESS_RESTRICTIONS, variableTypeNode.readAccessRestrictions());
 
-    assertEquals(new Variant(42), variableTypeNode.readValue().getValue());
+    assertEquals(new Variant(42), variableTypeNode.readValue().value());
     assertEquals(OpcUaDataType.Int32.getNodeId(), variableTypeNode.readDataType());
     assertEquals(-1, variableTypeNode.readValueRank());
     assertNull(variableTypeNode.readArrayDimensions());

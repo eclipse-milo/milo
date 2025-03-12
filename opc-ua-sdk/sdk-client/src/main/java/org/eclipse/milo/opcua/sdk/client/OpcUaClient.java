@@ -427,8 +427,8 @@ public class OpcUaClient {
               .thenApply(response -> Objects.requireNonNull(response.getResults()))
               .thenApply(
                   results -> {
-                    String[] namespaceArray = (String[]) results[0].getValue().getValue();
-                    String[] serverArray = (String[]) results[1].getValue().getValue();
+                    String[] namespaceArray = (String[]) results[0].value().value();
+                    String[] serverArray = (String[]) results[1].value().value();
                     if (namespaceArray != null) {
                       updateNamespaceTable(namespaceArray);
                     }
@@ -719,7 +719,7 @@ public class OpcUaClient {
                   sendRequestAsync(readRequest)
                       .thenApply(ReadResponse.class::cast)
                       .thenApply(response -> Objects.requireNonNull(response.getResults()))
-                      .thenApply(results -> (String[]) results[0].getValue().getValue());
+                      .thenApply(results -> (String[]) results[0].value().value());
 
               return namespaceArray
                   .thenAccept(this::updateNamespaceTable)
@@ -781,7 +781,7 @@ public class OpcUaClient {
                   sendRequestAsync(readRequest)
                       .thenApply(ReadResponse.class::cast)
                       .thenApply(response -> Objects.requireNonNull(response.getResults()))
-                      .thenApply(results -> (String[]) results[0].getValue().getValue());
+                      .thenApply(results -> (String[]) results[0].value().value());
 
               return serverArray
                   .thenAccept(this::updateServerTable)

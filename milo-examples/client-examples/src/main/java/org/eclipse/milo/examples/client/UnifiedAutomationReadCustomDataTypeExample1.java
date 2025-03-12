@@ -126,7 +126,7 @@ public class UnifiedAutomationReadCustomDataTypeExample1 implements ClientExampl
     DataValue dataValue =
         client.readValues(0.0, TimestampsToReturn.Neither, List.of(nodeId)).get(0);
 
-    ExtensionObject xo = (ExtensionObject) dataValue.getValue().getValue();
+    ExtensionObject xo = (ExtensionObject) dataValue.value().value();
     assert xo != null;
 
     return (DynamicType) xo.decode(client.getDynamicEncodingContext());
@@ -136,7 +136,7 @@ public class UnifiedAutomationReadCustomDataTypeExample1 implements ClientExampl
     DataValue dataValue =
         client.readValues(0.0, TimestampsToReturn.Neither, List.of(nodeId)).get(0);
 
-    ExtensionObject[] xos = (ExtensionObject[]) dataValue.getValue().getValue();
+    ExtensionObject[] xos = (ExtensionObject[]) dataValue.value().value();
     assert xos != null;
 
     EncodingContext ctx = client.getDynamicEncodingContext();

@@ -35,7 +35,7 @@ public class DynamicMatrixTestTypeTest extends AbstractClientServerTest {
     DataValue value = testNode.readValue();
     assertNotNull(value);
 
-    ExtensionObject xo = (ExtensionObject) value.getValue().getValue();
+    ExtensionObject xo = (ExtensionObject) value.value().value();
     assert xo != null;
 
     DynamicStructType decoded = (DynamicStructType) xo.decode(client.getDynamicEncodingContext());

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -83,7 +83,7 @@ public class EventSubscriptionExample implements ClientExample {
           logger.info("Event Received from {}", item.getReadValueId().getNodeId());
 
           for (int i = 0; i < vs.length; i++) {
-            logger.info("\tvariant[{}]: {}", i, vs[i].getValue());
+            logger.info("\tvariant[{}]: {}", i, vs[i].value());
           }
 
           if (eventCount.incrementAndGet() == 3) {

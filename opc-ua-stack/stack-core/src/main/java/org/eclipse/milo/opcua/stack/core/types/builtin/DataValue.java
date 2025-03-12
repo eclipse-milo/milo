@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -10,24 +10,21 @@
 
 package org.eclipse.milo.opcua.stack.core.types.builtin;
 
-import com.google.common.base.MoreObjects;
-import com.google.common.base.MoreObjects.ToStringHelper;
-import java.util.Objects;
 import java.util.function.Consumer;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
-import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-public final class DataValue {
-
-  private final Variant value;
-  private final StatusCode status;
-  private final DateTime sourceTime;
-  private final UShort sourcePicoseconds;
-  private final DateTime serverTime;
-  private final UShort serverPicoseconds;
+@NullMarked
+public record DataValue(
+    Variant value,
+    @Nullable StatusCode statusCode,
+    @Nullable DateTime sourceTime,
+    @Nullable UShort sourcePicoseconds,
+    @Nullable DateTime serverTime,
+    @Nullable UShort serverPicoseconds) {
 
   public DataValue(long statusCode) {
     this(new StatusCode(statusCode));
@@ -45,60 +42,40 @@ public final class DataValue {
     this(value, status, DateTime.now());
   }
 
-  public DataValue(Variant value, StatusCode status, @Nullable DateTime time) {
+  public DataValue(Variant value, @Nullable StatusCode status, @Nullable DateTime time) {
     this(value, status, time, time);
   }
 
   public DataValue(
       Variant value,
-      StatusCode status,
-      @Nullable DateTime sourceTime,
-      @Nullable DateTime serverTime) {
-    this(value, status, sourceTime, null, serverTime, null);
-  }
-
-  public DataValue(
-      @NonNull Variant value,
       @Nullable StatusCode status,
       @Nullable DateTime sourceTime,
-      @Nullable UShort sourcePicoseconds,
-      @Nullable DateTime serverTime,
-      @Nullable UShort serverPicoseconds) {
+      @Nullable DateTime serverTime) {
 
-    this.value = value;
-    this.status = status;
-    this.sourceTime = sourceTime;
-    this.sourcePicoseconds = sourcePicoseconds;
-    this.serverTime = serverTime;
-    this.serverPicoseconds = serverPicoseconds;
+    this(value, status, sourceTime, null, serverTime, null);
   }
 
   public Variant getValue() {
     return value;
   }
 
-  @Nullable
-  public StatusCode getStatusCode() {
-    return status;
+  public @Nullable StatusCode getStatusCode() {
+    return statusCode;
   }
 
-  @Nullable
-  public DateTime getSourceTime() {
+  public @Nullable DateTime getSourceTime() {
     return sourceTime;
   }
 
-  @Nullable
-  public UShort getSourcePicoseconds() {
+  public @Nullable UShort getSourcePicoseconds() {
     return sourcePicoseconds;
   }
 
-  @Nullable
-  public DateTime getServerTime() {
+  public @Nullable DateTime getServerTime() {
     return serverTime;
   }
 
-  @Nullable
-  public UShort getServerPicoseconds() {
+  public @Nullable UShort getServerPicoseconds() {
     return serverPicoseconds;
   }
 
@@ -107,53 +84,11 @@ public final class DataValue {
   }
 
   public DataValue withSourceTime(@Nullable DateTime sourceTime) {
-    return new DataValue(value, status, sourceTime, serverTime);
+    return new DataValue(value, statusCode, sourceTime, serverTime);
   }
 
   public DataValue withServerTime(@Nullable DateTime serverTime) {
-    return new DataValue(value, status, sourceTime, serverTime);
-  }
-
-  @Override
-  public String toString() {
-    ToStringHelper helper = MoreObjects.toStringHelper(this);
-
-    helper.add("value", value);
-    helper.add("status", status);
-
-    if (sourceTime != null) {
-      helper.add("sourceTime", sourceTime);
-    }
-    if (sourcePicoseconds != null) {
-      helper.add("sourcePicoseconds", sourcePicoseconds);
-    }
-    if (serverTime != null) {
-      helper.add("serverTime", serverTime);
-    }
-    if (serverPicoseconds != null) {
-      helper.add("serverPicoseconds", serverPicoseconds);
-    }
-
-    return helper.toString();
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    DataValue dataValue = (DataValue) o;
-    return Objects.equals(value, dataValue.value)
-        && Objects.equals(status, dataValue.status)
-        && Objects.equals(sourceTime, dataValue.sourceTime)
-        && Objects.equals(sourcePicoseconds, dataValue.sourcePicoseconds)
-        && Objects.equals(serverTime, dataValue.serverTime)
-        && Objects.equals(serverPicoseconds, dataValue.serverPicoseconds);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        value, status, sourceTime, sourcePicoseconds, serverTime, serverPicoseconds);
+    return new DataValue(value, statusCode, sourceTime, serverTime);
   }
 
   public DataValue.Builder copy() {
@@ -188,9 +123,11 @@ public final class DataValue {
 
     return new DataValue(
         from.value,
-        from.status,
+        from.statusCode,
         includeSource ? from.sourceTime : null,
-        includeServer ? DateTime.now() : null);
+        includeSource ? from.sourcePicoseconds : null,
+        includeServer ? DateTime.now() : null,
+        null);
   }
 
   /**
@@ -208,7 +145,7 @@ public final class DataValue {
     boolean includeServer =
         timestamps == TimestampsToReturn.Server || timestamps == TimestampsToReturn.Both;
 
-    return new DataValue(from.value, from.status, null, includeServer ? DateTime.now() : null);
+    return new DataValue(from.value, from.statusCode, null, includeServer ? DateTime.now() : null);
   }
 
   /**
@@ -218,23 +155,23 @@ public final class DataValue {
    * @return a {@link DataValue} containing only the value.
    */
   public static DataValue valueOnly(Variant v) {
-    return new DataValue(v, null, null, null);
+    return new DataValue(v, null, null, null, null, null);
   }
 
   public static class Builder {
 
     public Variant value = Variant.NULL_VALUE;
-    public StatusCode status;
-    public DateTime sourceTime;
-    public UShort sourcePicoseconds;
-    public DateTime serverTime;
-    public UShort serverPicoseconds;
+    public @Nullable StatusCode status;
+    public @Nullable DateTime sourceTime;
+    public @Nullable UShort sourcePicoseconds;
+    public @Nullable DateTime serverTime;
+    public @Nullable UShort serverPicoseconds;
 
     public Builder() {}
 
     public Builder(DataValue other) {
       this.value = other.value;
-      this.status = other.status;
+      this.status = other.statusCode;
       this.sourceTime = other.sourceTime;
       this.sourcePicoseconds = other.sourcePicoseconds;
       this.serverTime = other.serverTime;
@@ -251,27 +188,27 @@ public final class DataValue {
       return this;
     }
 
-    public Builder setStatus(StatusCode status) {
+    public Builder setStatus(@Nullable StatusCode status) {
       this.status = status;
       return this;
     }
 
-    public Builder setSourceTime(DateTime sourceTime) {
+    public Builder setSourceTime(@Nullable DateTime sourceTime) {
       this.sourceTime = sourceTime;
       return this;
     }
 
-    public Builder setSourcePicoseconds(UShort sourcePicoseconds) {
+    public Builder setSourcePicoseconds(@Nullable UShort sourcePicoseconds) {
       this.sourcePicoseconds = sourcePicoseconds;
       return this;
     }
 
-    public Builder setServerTime(DateTime serverTime) {
+    public Builder setServerTime(@Nullable DateTime serverTime) {
       this.serverTime = serverTime;
       return this;
     }
 
-    public Builder setServerPicoseconds(UShort serverPicoseconds) {
+    public Builder setServerPicoseconds(@Nullable UShort serverPicoseconds) {
       this.serverPicoseconds = serverPicoseconds;
       return this;
     }
@@ -297,6 +234,7 @@ public final class DataValue {
       } else {
         if (serverTime == null) {
           setServerTime(DateTime.now());
+          setServerPicoseconds(null);
         }
       }
 

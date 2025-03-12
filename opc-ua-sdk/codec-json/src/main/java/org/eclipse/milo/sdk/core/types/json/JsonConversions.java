@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -212,30 +212,30 @@ public class JsonConversions {
   public static JsonElement fromDataValue(DataValue value) {
     var jsonObject = new JsonObject();
 
-    if (value.getValue().isNotNull()) {
-      jsonObject.add("Value", fromVariant(value.getValue()));
+    if (value.value().isNotNull()) {
+      jsonObject.add("Value", fromVariant(value.value()));
     }
-    if (value.getStatusCode() != null && value.getStatusCode().getValue() != 0L) {
-      jsonObject.add("StatusCode", fromStatusCode(value.getStatusCode()));
+    if (value.statusCode() != null && value.statusCode().getValue() != 0L) {
+      jsonObject.add("StatusCode", fromStatusCode(value.statusCode()));
     }
-    if (value.getSourceTime() != null) {
-      jsonObject.add("SourceTime", fromDateTime(value.getSourceTime()));
+    if (value.sourceTime() != null) {
+      jsonObject.add("SourceTime", fromDateTime(value.sourceTime()));
     }
-    if (value.getSourcePicoseconds() != null) {
-      jsonObject.addProperty("SourcePicoseconds", value.getSourcePicoseconds().intValue());
+    if (value.sourcePicoseconds() != null) {
+      jsonObject.addProperty("SourcePicoseconds", value.sourcePicoseconds().intValue());
     }
-    if (value.getServerTime() != null) {
-      jsonObject.add("ServerTime", fromDateTime(value.getServerTime()));
+    if (value.serverTime() != null) {
+      jsonObject.add("ServerTime", fromDateTime(value.serverTime()));
     }
-    if (value.getServerPicoseconds() != null) {
-      jsonObject.addProperty("ServerPicoseconds", value.getServerPicoseconds().intValue());
+    if (value.serverPicoseconds() != null) {
+      jsonObject.addProperty("ServerPicoseconds", value.serverPicoseconds().intValue());
     }
 
     return jsonObject;
   }
 
   public static JsonElement fromVariant(Variant value) {
-    Object valueObject = value.getValue();
+    Object valueObject = value.value();
     if (valueObject == null) {
       return JsonNull.INSTANCE;
     }

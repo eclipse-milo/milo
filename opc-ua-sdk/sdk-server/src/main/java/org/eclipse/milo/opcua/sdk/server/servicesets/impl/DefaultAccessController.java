@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -579,11 +579,11 @@ public class DefaultAccessController implements AccessController {
       for (int i = 0; i < readValueIds.size(); i += 5) {
         NodeId nodeId = readValueIds.get(i).getNodeId();
 
-        Object v0 = values.get(i).getValue().getValue();
-        Object v1 = values.get(i + 1).getValue().getValue();
-        Object v2 = values.get(i + 2).getValue().getValue();
-        Object v3 = values.get(i + 3).getValue().getValue();
-        Object v4 = values.get(i + 4).getValue().getValue();
+        Object v0 = values.get(i).value().value();
+        Object v1 = values.get(i + 1).value().value();
+        Object v2 = values.get(i + 2).value().value();
+        Object v3 = values.get(i + 3).value().value();
+        Object v4 = values.get(i + 4).value().value();
 
         NodeClass nodeClass = null;
         AccessRestrictionType accessRestrictions = null;

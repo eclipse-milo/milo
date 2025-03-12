@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -261,12 +261,12 @@ public class UaVariableTypeNode extends UaNode implements VariableTypeNode {
   public NodeId readDataType() throws UaException {
     DataValue value = readAttribute(AttributeId.DataType);
 
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null && statusCode.isBad()) {
       throw new UaException(statusCode, "read DataType failed");
     } else {
-      NodeId dataType = (NodeId) value.getValue().getValue();
+      NodeId dataType = (NodeId) value.value().value();
       setDataType(dataType);
       return dataType;
     }
@@ -282,12 +282,12 @@ public class UaVariableTypeNode extends UaNode implements VariableTypeNode {
   public Integer readValueRank() throws UaException {
     DataValue value = readAttribute(AttributeId.ValueRank);
 
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null && statusCode.isBad()) {
       throw new UaException(statusCode, "read ValueRank failed");
     } else {
-      Integer valueRank = (Integer) value.getValue().getValue();
+      Integer valueRank = (Integer) value.value().value();
       setValueRank(valueRank);
       return valueRank;
     }
@@ -310,7 +310,7 @@ public class UaVariableTypeNode extends UaNode implements VariableTypeNode {
   @Nullable
   public UInteger[] readArrayDimensions() throws UaException {
     DataValue value = readAttribute(AttributeId.ArrayDimensions);
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null
         && statusCode.isBad()
@@ -318,7 +318,7 @@ public class UaVariableTypeNode extends UaNode implements VariableTypeNode {
 
       throw new UaException(statusCode, "read ArrayDimensions failed");
     } else {
-      UInteger[] arrayDimensions = (UInteger[]) value.getValue().getValue();
+      UInteger[] arrayDimensions = (UInteger[]) value.value().value();
       setArrayDimensions(arrayDimensions);
       return arrayDimensions;
     }
@@ -334,12 +334,12 @@ public class UaVariableTypeNode extends UaNode implements VariableTypeNode {
   public Boolean readIsAbstract() throws UaException {
     DataValue value = readAttribute(AttributeId.IsAbstract);
 
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null && statusCode.isBad()) {
       throw new UaException(statusCode, "read IsAbstract failed");
     } else {
-      Boolean isAbstract = (Boolean) value.getValue().getValue();
+      Boolean isAbstract = (Boolean) value.value().value();
       setIsAbstract(isAbstract);
       return isAbstract;
     }
@@ -473,7 +473,7 @@ public class UaVariableTypeNode extends UaNode implements VariableTypeNode {
   protected DataValue getAttributeValue(AttributeId attributeId) {
     switch (attributeId) {
       case Value:
-        return DataValue.valueOnly(new Variant(getValue().getValue().getValue()));
+        return DataValue.valueOnly(new Variant(getValue().value().value()));
       case DataType:
         return DataValue.valueOnly(new Variant(getDataType()));
       case ValueRank:
@@ -497,22 +497,22 @@ public class UaVariableTypeNode extends UaNode implements VariableTypeNode {
         }
       case DataType:
         {
-          setDataType((NodeId) value.getValue().getValue());
+          setDataType((NodeId) value.value().value());
           break;
         }
       case ValueRank:
         {
-          setValueRank((Integer) value.getValue().getValue());
+          setValueRank((Integer) value.value().value());
           break;
         }
       case ArrayDimensions:
         {
-          setArrayDimensions((UInteger[]) value.getValue().getValue());
+          setArrayDimensions((UInteger[]) value.value().value());
           break;
         }
       case IsAbstract:
         {
-          setIsAbstract((Boolean) value.getValue().getValue());
+          setIsAbstract((Boolean) value.value().value());
           break;
         }
       default:

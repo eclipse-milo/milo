@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -175,12 +175,12 @@ public class UaReferenceTypeNode extends UaNode implements ReferenceTypeNode {
   public Boolean readIsAbstract() throws UaException {
     DataValue value = readAttribute(AttributeId.IsAbstract);
 
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null && statusCode.isBad()) {
       throw new UaException(statusCode, "read IsAbstract failed");
     } else {
-      Boolean isAbstract = (Boolean) value.getValue().getValue();
+      Boolean isAbstract = (Boolean) value.value().value();
       setIsAbstract(isAbstract);
       return isAbstract;
     }
@@ -196,12 +196,12 @@ public class UaReferenceTypeNode extends UaNode implements ReferenceTypeNode {
   public Boolean readSymmetric() throws UaException {
     DataValue value = readAttribute(AttributeId.Symmetric);
 
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null && statusCode.isBad()) {
       throw new UaException(statusCode, "read Symmetric failed");
     } else {
-      Boolean symmetric = (Boolean) value.getValue().getValue();
+      Boolean symmetric = (Boolean) value.value().value();
       setSymmetric(symmetric);
       return symmetric;
     }
@@ -217,12 +217,12 @@ public class UaReferenceTypeNode extends UaNode implements ReferenceTypeNode {
   public LocalizedText readInverseName() throws UaException {
     DataValue value = readAttribute(AttributeId.InverseName);
 
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null && statusCode.isBad()) {
       throw new UaException(statusCode, "read InverseName failed");
     } else {
-      LocalizedText inverseName = (LocalizedText) value.getValue().getValue();
+      LocalizedText inverseName = (LocalizedText) value.value().value();
       setInverseName(inverseName);
       return inverseName;
     }
@@ -323,17 +323,17 @@ public class UaReferenceTypeNode extends UaNode implements ReferenceTypeNode {
     switch (attributeId) {
       case IsAbstract:
         {
-          setIsAbstract((Boolean) value.getValue().getValue());
+          setIsAbstract((Boolean) value.value().value());
           break;
         }
       case Symmetric:
         {
-          setSymmetric((Boolean) value.getValue().getValue());
+          setSymmetric((Boolean) value.value().value());
           break;
         }
       case InverseName:
         {
-          setInverseName((LocalizedText) value.getValue().getValue());
+          setInverseName((LocalizedText) value.value().value());
           break;
         }
       default:

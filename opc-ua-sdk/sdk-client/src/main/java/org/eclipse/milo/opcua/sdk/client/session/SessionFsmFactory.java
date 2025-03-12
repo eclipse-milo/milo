@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -707,7 +707,7 @@ public class SessionFsmFactory {
                           DataValue[] results = response.getResults();
 
                           if (results != null && results.length > 0) {
-                            Object value = results[0].getValue().getValue();
+                            Object value = results[0].value().value();
                             if (value instanceof Integer) {
                               ServerState state = ServerState.from((Integer) value);
 

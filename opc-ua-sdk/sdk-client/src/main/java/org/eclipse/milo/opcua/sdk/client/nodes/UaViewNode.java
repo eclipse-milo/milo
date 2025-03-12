@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -146,12 +146,12 @@ public class UaViewNode extends UaNode implements ViewNode {
   public Boolean readContainsNoLoops() throws UaException {
     DataValue value = readAttribute(AttributeId.ContainsNoLoops);
 
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null && statusCode.isBad()) {
       throw new UaException(statusCode, "read ContainsNoLoops failed");
     } else {
-      Boolean containsNoLoops = (Boolean) value.getValue().getValue();
+      Boolean containsNoLoops = (Boolean) value.value().value();
       setContainsNoLoops(containsNoLoops);
       return containsNoLoops;
     }
@@ -167,12 +167,12 @@ public class UaViewNode extends UaNode implements ViewNode {
   public UByte readEventNotifier() throws UaException {
     DataValue value = readAttribute(AttributeId.EventNotifier);
 
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null && statusCode.isBad()) {
       throw new UaException(statusCode, "read EventNotifier failed");
     } else {
-      UByte eventNotifier = (UByte) value.getValue().getValue();
+      UByte eventNotifier = (UByte) value.value().value();
       setEventNotifier(eventNotifier);
       return eventNotifier;
     }
@@ -275,12 +275,12 @@ public class UaViewNode extends UaNode implements ViewNode {
     switch (attributeId) {
       case ContainsNoLoops:
         {
-          setContainsNoLoops((Boolean) value.getValue().getValue());
+          setContainsNoLoops((Boolean) value.value().value());
           break;
         }
       case EventNotifier:
         {
-          setEventNotifier((UByte) value.getValue().getValue());
+          setEventNotifier((UByte) value.value().value());
           break;
         }
       default:

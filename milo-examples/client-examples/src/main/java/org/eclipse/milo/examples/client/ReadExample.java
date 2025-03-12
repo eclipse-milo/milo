@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -43,7 +43,7 @@ public class ReadExample implements ClientExample {
         client.getAddressSpace().getVariableNode(NodeIds.Server_ServerStatus_StartTime);
     DataValue value = node.readValue();
 
-    logger.info("StartTime={}", value.getValue().getValue());
+    logger.info("StartTime={}", value.value().value());
 
     // asynchronous read request
     readServerStateAndTime(client)
@@ -53,8 +53,8 @@ public class ReadExample implements ClientExample {
               DataValue v1 = values.get(1);
 
               logger.info(
-                  "State={}", ServerState.from((Integer) requireNonNull(v0.getValue().getValue())));
-              logger.info("CurrentTime={}", v1.getValue().getValue());
+                  "State={}", ServerState.from((Integer) requireNonNull(v0.value().value())));
+              logger.info("CurrentTime={}", v1.value().value());
 
               future.complete(client);
             });

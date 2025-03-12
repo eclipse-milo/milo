@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -913,12 +913,12 @@ public class AddressSpace {
   private CompletableFuture<? extends UaNode> createNodeFromBaseAttributes(
       NodeId nodeId, DataValue[] baseAttributeValues) {
 
-    StatusCode nodeIdStatusCode = baseAttributeValues[0].getStatusCode();
+    StatusCode nodeIdStatusCode = baseAttributeValues[0].statusCode();
     if (nodeIdStatusCode != null && nodeIdStatusCode.isBad()) {
       return failedUaFuture(nodeIdStatusCode);
     }
 
-    Integer nodeClassValue = (Integer) baseAttributeValues[1].getValue().getValue();
+    Integer nodeClassValue = (Integer) baseAttributeValues[1].value().value();
     if (nodeClassValue == null) {
       return failedUaFuture(StatusCodes.Bad_NodeClassInvalid);
     }
@@ -1172,21 +1172,21 @@ public class AddressSpace {
   private UaDataTypeNode newDataTypeNode(NodeId nodeId, DataValue[] attributeValues)
       throws UaException {
     DataValue nodeIdDataValue = attributeValues[0];
-    StatusCode nodeIdStatusCode = nodeIdDataValue.getStatusCode();
+    StatusCode nodeIdStatusCode = nodeIdDataValue.statusCode();
     if (nodeIdStatusCode != null && nodeIdStatusCode.isBad()) {
       throw new UaException(nodeIdStatusCode);
     }
 
     try {
       NodeClass nodeClass =
-          NodeClass.from((Integer) requireNonNullElse(attributeValues[1].getValue().getValue(), 0));
+          NodeClass.from((Integer) requireNonNullElse(attributeValues[1].value().value(), 0));
 
       Preconditions.checkArgument(
           nodeClass == NodeClass.DataType,
           "expected NodeClass.DataType, got NodeClass." + nodeClass);
 
-      QualifiedName browseName = (QualifiedName) attributeValues[2].getValue().getValue();
-      LocalizedText displayName = (LocalizedText) attributeValues[3].getValue().getValue();
+      QualifiedName browseName = (QualifiedName) attributeValues[2].value().value();
+      LocalizedText displayName = (LocalizedText) attributeValues[3].value().value();
       LocalizedText description = getAttributeOrNull(attributeValues[4], LocalizedText.class);
       UInteger writeMask = getAttributeOrNull(attributeValues[5], UInteger.class);
       UInteger userWriteMask = getAttributeOrNull(attributeValues[6], UInteger.class);
@@ -1200,7 +1200,7 @@ public class AddressSpace {
           getAttributeOrNull(
               client.getStaticEncodingContext(), attributeValues[9], AccessRestrictionType.class);
 
-      Boolean isAbstract = (Boolean) attributeValues[10].getValue().getValue();
+      Boolean isAbstract = (Boolean) attributeValues[10].value().value();
       DataTypeDefinition dataTypeDefinition =
           getAttributeOrNull(
               client.getStaticEncodingContext(), attributeValues[11], DataTypeDefinition.class);
@@ -1227,20 +1227,20 @@ public class AddressSpace {
   private UaMethodNode newMethodNode(NodeId nodeId, DataValue[] attributeValues)
       throws UaException {
     DataValue nodeIdDataValue = attributeValues[0];
-    StatusCode nodeIdStatusCode = nodeIdDataValue.getStatusCode();
+    StatusCode nodeIdStatusCode = nodeIdDataValue.statusCode();
     if (nodeIdStatusCode != null && nodeIdStatusCode.isBad()) {
       throw new UaException(nodeIdStatusCode);
     }
 
     try {
       NodeClass nodeClass =
-          NodeClass.from((Integer) requireNonNullElse(attributeValues[1].getValue().getValue(), 0));
+          NodeClass.from((Integer) requireNonNullElse(attributeValues[1].value().value(), 0));
 
       Preconditions.checkArgument(
           nodeClass == NodeClass.Method, "expected NodeClass.Method, got NodeClass." + nodeClass);
 
-      QualifiedName browseName = (QualifiedName) attributeValues[2].getValue().getValue();
-      LocalizedText displayName = (LocalizedText) attributeValues[3].getValue().getValue();
+      QualifiedName browseName = (QualifiedName) attributeValues[2].value().value();
+      LocalizedText displayName = (LocalizedText) attributeValues[3].value().value();
       LocalizedText description = getAttributeOrNull(attributeValues[4], LocalizedText.class);
       UInteger writeMask = getAttributeOrNull(attributeValues[5], UInteger.class);
       UInteger userWriteMask = getAttributeOrNull(attributeValues[6], UInteger.class);
@@ -1254,8 +1254,8 @@ public class AddressSpace {
           getAttributeOrNull(
               client.getStaticEncodingContext(), attributeValues[9], AccessRestrictionType.class);
 
-      Boolean executable = (Boolean) attributeValues[10].getValue().getValue();
-      Boolean userExecutable = (Boolean) attributeValues[11].getValue().getValue();
+      Boolean executable = (Boolean) attributeValues[10].value().value();
+      Boolean userExecutable = (Boolean) attributeValues[11].value().value();
 
       return new UaMethodNode(
           client,
@@ -1280,20 +1280,20 @@ public class AddressSpace {
       NodeId nodeId, NodeId typeDefinitionId, DataValue[] attributeValues) throws UaException {
 
     DataValue nodeIdDataValue = attributeValues[0];
-    StatusCode nodeIdStatusCode = nodeIdDataValue.getStatusCode();
+    StatusCode nodeIdStatusCode = nodeIdDataValue.statusCode();
     if (nodeIdStatusCode != null && nodeIdStatusCode.isBad()) {
       throw new UaException(nodeIdStatusCode);
     }
 
     try {
       NodeClass nodeClass =
-          NodeClass.from((Integer) requireNonNullElse(attributeValues[1].getValue().getValue(), 0));
+          NodeClass.from((Integer) requireNonNullElse(attributeValues[1].value().value(), 0));
 
       Preconditions.checkArgument(
           nodeClass == NodeClass.Object, "expected NodeClass.Object, got NodeClass." + nodeClass);
 
-      QualifiedName browseName = (QualifiedName) attributeValues[2].getValue().getValue();
-      LocalizedText displayName = (LocalizedText) attributeValues[3].getValue().getValue();
+      QualifiedName browseName = (QualifiedName) attributeValues[2].value().value();
+      LocalizedText displayName = (LocalizedText) attributeValues[3].value().value();
       LocalizedText description = getAttributeOrNull(attributeValues[4], LocalizedText.class);
       UInteger writeMask = getAttributeOrNull(attributeValues[5], UInteger.class);
       UInteger userWriteMask = getAttributeOrNull(attributeValues[6], UInteger.class);
@@ -1307,7 +1307,7 @@ public class AddressSpace {
           getAttributeOrNull(
               client.getStaticEncodingContext(), attributeValues[9], AccessRestrictionType.class);
 
-      UByte eventNotifier = (UByte) attributeValues[10].getValue().getValue();
+      UByte eventNotifier = (UByte) attributeValues[10].value().value();
 
       ObjectNodeConstructor constructor =
           client
@@ -1336,21 +1336,21 @@ public class AddressSpace {
   private UaObjectTypeNode newObjectTypeNode(NodeId nodeId, DataValue[] attributeValues)
       throws UaException {
     DataValue nodeIdDataValue = attributeValues[0];
-    StatusCode nodeIdStatusCode = nodeIdDataValue.getStatusCode();
+    StatusCode nodeIdStatusCode = nodeIdDataValue.statusCode();
     if (nodeIdStatusCode != null && nodeIdStatusCode.isBad()) {
       throw new UaException(nodeIdStatusCode);
     }
 
     try {
       NodeClass nodeClass =
-          NodeClass.from((Integer) requireNonNullElse(attributeValues[1].getValue().getValue(), 0));
+          NodeClass.from((Integer) requireNonNullElse(attributeValues[1].value().value(), 0));
 
       Preconditions.checkArgument(
           nodeClass == NodeClass.ObjectType,
           "expected NodeClass.ObjectType, got NodeClass." + nodeClass);
 
-      QualifiedName browseName = (QualifiedName) attributeValues[2].getValue().getValue();
-      LocalizedText displayName = (LocalizedText) attributeValues[3].getValue().getValue();
+      QualifiedName browseName = (QualifiedName) attributeValues[2].value().value();
+      LocalizedText displayName = (LocalizedText) attributeValues[3].value().value();
       LocalizedText description = getAttributeOrNull(attributeValues[4], LocalizedText.class);
       UInteger writeMask = getAttributeOrNull(attributeValues[5], UInteger.class);
       UInteger userWriteMask = getAttributeOrNull(attributeValues[6], UInteger.class);
@@ -1364,7 +1364,7 @@ public class AddressSpace {
           getAttributeOrNull(
               client.getStaticEncodingContext(), attributeValues[9], AccessRestrictionType.class);
 
-      Boolean isAbstract = (Boolean) attributeValues[10].getValue().getValue();
+      Boolean isAbstract = (Boolean) attributeValues[10].value().value();
 
       return new UaObjectTypeNode(
           client,
@@ -1388,21 +1388,21 @@ public class AddressSpace {
       throws UaException {
 
     DataValue nodeIdDataValue = attributeValues[0];
-    StatusCode nodeIdStatusCode = nodeIdDataValue.getStatusCode();
+    StatusCode nodeIdStatusCode = nodeIdDataValue.statusCode();
     if (nodeIdStatusCode != null && nodeIdStatusCode.isBad()) {
       throw new UaException(nodeIdStatusCode);
     }
 
     try {
       NodeClass nodeClass =
-          NodeClass.from((Integer) requireNonNullElse(attributeValues[1].getValue().getValue(), 0));
+          NodeClass.from((Integer) requireNonNullElse(attributeValues[1].value().value(), 0));
 
       Preconditions.checkArgument(
           nodeClass == NodeClass.ReferenceType,
           "expected NodeClass.ReferenceType, got NodeClass." + nodeClass);
 
-      QualifiedName browseName = (QualifiedName) attributeValues[2].getValue().getValue();
-      LocalizedText displayName = (LocalizedText) attributeValues[3].getValue().getValue();
+      QualifiedName browseName = (QualifiedName) attributeValues[2].value().value();
+      LocalizedText displayName = (LocalizedText) attributeValues[3].value().value();
       LocalizedText description = getAttributeOrNull(attributeValues[4], LocalizedText.class);
       UInteger writeMask = getAttributeOrNull(attributeValues[5], UInteger.class);
       UInteger userWriteMask = getAttributeOrNull(attributeValues[6], UInteger.class);
@@ -1416,8 +1416,8 @@ public class AddressSpace {
           getAttributeOrNull(
               client.getStaticEncodingContext(), attributeValues[9], AccessRestrictionType.class);
 
-      Boolean isAbstract = (Boolean) attributeValues[10].getValue().getValue();
-      Boolean symmetric = (Boolean) attributeValues[11].getValue().getValue();
+      Boolean isAbstract = (Boolean) attributeValues[10].value().value();
+      Boolean symmetric = (Boolean) attributeValues[11].value().value();
       LocalizedText inverseName = getAttributeOrNull(attributeValues[12], LocalizedText.class);
 
       return new UaReferenceTypeNode(
@@ -1444,21 +1444,21 @@ public class AddressSpace {
       NodeId nodeId, NodeId typeDefinitionId, DataValue[] attributeValues) throws UaException {
 
     DataValue nodeIdDataValue = attributeValues[0];
-    StatusCode nodeIdStatusCode = nodeIdDataValue.getStatusCode();
+    StatusCode nodeIdStatusCode = nodeIdDataValue.statusCode();
     if (nodeIdStatusCode != null && nodeIdStatusCode.isBad()) {
       throw new UaException(nodeIdStatusCode);
     }
 
     try {
       NodeClass nodeClass =
-          NodeClass.from((Integer) requireNonNullElse(attributeValues[1].getValue().getValue(), 0));
+          NodeClass.from((Integer) requireNonNullElse(attributeValues[1].value().value(), 0));
 
       Preconditions.checkArgument(
           nodeClass == NodeClass.Variable,
           "expected NodeClass.Variable, got NodeClass." + nodeClass);
 
-      QualifiedName browseName = (QualifiedName) attributeValues[2].getValue().getValue();
-      LocalizedText displayName = (LocalizedText) attributeValues[3].getValue().getValue();
+      QualifiedName browseName = (QualifiedName) attributeValues[2].value().value();
+      LocalizedText displayName = (LocalizedText) attributeValues[3].value().value();
       LocalizedText description = getAttributeOrNull(attributeValues[4], LocalizedText.class);
       UInteger writeMask = getAttributeOrNull(attributeValues[5], UInteger.class);
       UInteger userWriteMask = getAttributeOrNull(attributeValues[6], UInteger.class);
@@ -1473,13 +1473,13 @@ public class AddressSpace {
               client.getStaticEncodingContext(), attributeValues[9], AccessRestrictionType.class);
 
       DataValue value = attributeValues[10];
-      NodeId dataType = (NodeId) attributeValues[11].getValue().getValue();
-      Integer valueRank = (Integer) attributeValues[12].getValue().getValue();
+      NodeId dataType = (NodeId) attributeValues[11].value().value();
+      Integer valueRank = (Integer) attributeValues[12].value().value();
       UInteger[] arrayDimensions = getAttributeOrNull(attributeValues[13], UInteger[].class);
-      UByte accessLevel = (UByte) attributeValues[14].getValue().getValue();
-      UByte userAccessLevel = (UByte) attributeValues[15].getValue().getValue();
+      UByte accessLevel = (UByte) attributeValues[14].value().value();
+      UByte userAccessLevel = (UByte) attributeValues[15].value().value();
       Double minimumSamplingInterval = getAttributeOrNull(attributeValues[16], Double.class);
-      Boolean historizing = (Boolean) attributeValues[17].getValue().getValue();
+      Boolean historizing = (Boolean) attributeValues[17].value().value();
       AccessLevelExType accessLevelEx =
           getAttributeOrNull(attributeValues[18], AccessLevelExType.class);
 
@@ -1518,21 +1518,21 @@ public class AddressSpace {
   private UaVariableTypeNode newVariableTypeNode(NodeId nodeId, DataValue[] attributeValues)
       throws UaException {
     DataValue nodeIdDataValue = attributeValues[0];
-    StatusCode nodeIdStatusCode = nodeIdDataValue.getStatusCode();
+    StatusCode nodeIdStatusCode = nodeIdDataValue.statusCode();
     if (nodeIdStatusCode != null && nodeIdStatusCode.isBad()) {
       throw new UaException(nodeIdStatusCode);
     }
 
     try {
       NodeClass nodeClass =
-          NodeClass.from((Integer) requireNonNullElse(attributeValues[1].getValue().getValue(), 0));
+          NodeClass.from((Integer) requireNonNullElse(attributeValues[1].value().value(), 0));
 
       Preconditions.checkArgument(
           nodeClass == NodeClass.VariableType,
           "expected NodeClass.VariableType, got NodeClass." + nodeClass);
 
-      QualifiedName browseName = (QualifiedName) attributeValues[2].getValue().getValue();
-      LocalizedText displayName = (LocalizedText) attributeValues[3].getValue().getValue();
+      QualifiedName browseName = (QualifiedName) attributeValues[2].value().value();
+      LocalizedText displayName = (LocalizedText) attributeValues[3].value().value();
       LocalizedText description = getAttributeOrNull(attributeValues[4], LocalizedText.class);
       UInteger writeMask = getAttributeOrNull(attributeValues[5], UInteger.class);
       UInteger userWriteMask = getAttributeOrNull(attributeValues[6], UInteger.class);
@@ -1547,10 +1547,10 @@ public class AddressSpace {
               client.getStaticEncodingContext(), attributeValues[9], AccessRestrictionType.class);
 
       DataValue value = attributeValues[10];
-      NodeId dataType = (NodeId) attributeValues[11].getValue().getValue();
-      Integer valueRank = (Integer) attributeValues[12].getValue().getValue();
+      NodeId dataType = (NodeId) attributeValues[11].value().value();
+      Integer valueRank = (Integer) attributeValues[12].value().value();
       UInteger[] arrayDimensions = getAttributeOrNull(attributeValues[13], UInteger[].class);
-      Boolean isAbstract = (Boolean) attributeValues[14].getValue().getValue();
+      Boolean isAbstract = (Boolean) attributeValues[14].value().value();
 
       return new UaVariableTypeNode(
           client,
@@ -1576,20 +1576,20 @@ public class AddressSpace {
 
   private UaViewNode newViewNode(NodeId nodeId, DataValue[] attributeValues) throws UaException {
     DataValue nodeIdDataValue = attributeValues[0];
-    StatusCode nodeIdStatusCode = nodeIdDataValue.getStatusCode();
+    StatusCode nodeIdStatusCode = nodeIdDataValue.statusCode();
     if (nodeIdStatusCode != null && nodeIdStatusCode.isBad()) {
       throw new UaException(nodeIdStatusCode);
     }
 
     try {
       NodeClass nodeClass =
-          NodeClass.from((Integer) requireNonNullElse(attributeValues[1].getValue().getValue(), 0));
+          NodeClass.from((Integer) requireNonNullElse(attributeValues[1].value().value(), 0));
 
       Preconditions.checkArgument(
           nodeClass == NodeClass.View, "expected NodeClass.View, got NodeClass." + nodeClass);
 
-      QualifiedName browseName = (QualifiedName) attributeValues[2].getValue().getValue();
-      LocalizedText displayName = (LocalizedText) attributeValues[3].getValue().getValue();
+      QualifiedName browseName = (QualifiedName) attributeValues[2].value().value();
+      LocalizedText displayName = (LocalizedText) attributeValues[3].value().value();
       LocalizedText description = getAttributeOrNull(attributeValues[4], LocalizedText.class);
       UInteger writeMask = getAttributeOrNull(attributeValues[5], UInteger.class);
       UInteger userWriteMask = getAttributeOrNull(attributeValues[6], UInteger.class);
@@ -1603,8 +1603,8 @@ public class AddressSpace {
           getAttributeOrNull(
               client.getStaticEncodingContext(), attributeValues[9], AccessRestrictionType.class);
 
-      Boolean containsNoLoops = (Boolean) attributeValues[10].getValue().getValue();
-      UByte eventNotifier = (UByte) attributeValues[11].getValue().getValue();
+      Boolean containsNoLoops = (Boolean) attributeValues[10].value().value();
+      UByte eventNotifier = (UByte) attributeValues[11].value().value();
 
       return new UaViewNode(
           client,
@@ -1627,12 +1627,12 @@ public class AddressSpace {
 
   @Nullable
   private static <T> T getAttributeOrNull(DataValue value, Class<T> attributeClazz) {
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null && statusCode.isBad()) {
       return null;
     } else {
-      Object attributeValue = value.getValue().getValue();
+      Object attributeValue = value.value().value();
 
       try {
         return attributeClazz.cast(attributeValue);
@@ -1646,12 +1646,12 @@ public class AddressSpace {
   private static <T> T getAttributeOrNull(
       EncodingContext context, DataValue value, Class<T> attributeClazz) {
 
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null && statusCode.isBad()) {
       return null;
     } else {
-      Object o = value.getValue().getValue();
+      Object o = value.value().value();
 
       try {
         if (o instanceof ExtensionObject) {

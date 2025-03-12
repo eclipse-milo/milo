@@ -71,7 +71,7 @@ public class SubscriptionDiagnosticsVariable extends AbstractLifecycle {
         (node, attributeId, value) -> {
           if (attributeId == AttributeId.Value) {
             DataValue dataValue = (DataValue) value;
-            Object o = dataValue.getValue().getValue();
+            Object o = dataValue.value().value();
             if (o instanceof Boolean) {
               diagnosticsEnabled.set((Boolean) o);
             }

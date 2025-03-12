@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -396,12 +396,12 @@ public class UaVariableNode extends UaNode implements VariableNode {
   public NodeId readDataType() throws UaException {
     DataValue value = readAttribute(AttributeId.DataType);
 
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null && statusCode.isBad()) {
       throw new UaException(statusCode, "read DataType failed");
     } else {
-      NodeId dataType = (NodeId) value.getValue().getValue();
+      NodeId dataType = (NodeId) value.value().value();
       setDataType(dataType);
       return dataType;
     }
@@ -417,12 +417,12 @@ public class UaVariableNode extends UaNode implements VariableNode {
   public Integer readValueRank() throws UaException {
     DataValue value = readAttribute(AttributeId.ValueRank);
 
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null && statusCode.isBad()) {
       throw new UaException(statusCode, "read ValueRank failed");
     } else {
-      Integer valueRank = (Integer) value.getValue().getValue();
+      Integer valueRank = (Integer) value.value().value();
       setValueRank(valueRank);
       return valueRank;
     }
@@ -445,7 +445,7 @@ public class UaVariableNode extends UaNode implements VariableNode {
   @Nullable
   public UInteger[] readArrayDimensions() throws UaException {
     DataValue value = readAttribute(AttributeId.ArrayDimensions);
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null
         && statusCode.isBad()
@@ -453,7 +453,7 @@ public class UaVariableNode extends UaNode implements VariableNode {
 
       throw new UaException(statusCode, "read ArrayDimensions failed");
     } else {
-      UInteger[] arrayDimensions = (UInteger[]) value.getValue().getValue();
+      UInteger[] arrayDimensions = (UInteger[]) value.value().value();
       setArrayDimensions(arrayDimensions);
       return arrayDimensions;
     }
@@ -470,12 +470,12 @@ public class UaVariableNode extends UaNode implements VariableNode {
   public UByte readAccessLevel() throws UaException {
     DataValue value = readAttribute(AttributeId.AccessLevel);
 
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null && statusCode.isBad()) {
       throw new UaException(statusCode, "read AccessLevel failed");
     } else {
-      UByte accessLevel = (UByte) value.getValue().getValue();
+      UByte accessLevel = (UByte) value.value().value();
       setAccessLevel(accessLevel);
       return accessLevel;
     }
@@ -492,12 +492,12 @@ public class UaVariableNode extends UaNode implements VariableNode {
   public UByte readUserAccessLevel() throws UaException {
     DataValue value = readAttribute(AttributeId.UserAccessLevel);
 
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null && statusCode.isBad()) {
       throw new UaException(statusCode, "read UserAccessLevel failed");
     } else {
-      UByte userAccessLevel = (UByte) value.getValue().getValue();
+      UByte userAccessLevel = (UByte) value.value().value();
       setUserAccessLevel(userAccessLevel);
       return userAccessLevel;
     }
@@ -518,7 +518,7 @@ public class UaVariableNode extends UaNode implements VariableNode {
   public Double readMinimumSamplingInterval() throws UaException {
     DataValue value = readAttribute(AttributeId.MinimumSamplingInterval);
 
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null
         && statusCode.isBad()
@@ -526,7 +526,7 @@ public class UaVariableNode extends UaNode implements VariableNode {
 
       throw new UaException(statusCode, "read MinimumSamplingInterval failed");
     } else {
-      Double minimumSamplingInterval = (Double) value.getValue().getValue();
+      Double minimumSamplingInterval = (Double) value.value().value();
       setMinimumSamplingInterval(minimumSamplingInterval);
       return minimumSamplingInterval;
     }
@@ -542,12 +542,12 @@ public class UaVariableNode extends UaNode implements VariableNode {
   public Boolean readHistorizing() throws UaException {
     DataValue value = readAttribute(AttributeId.Historizing);
 
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null && statusCode.isBad()) {
       throw new UaException(statusCode, "read Historizing failed");
     } else {
-      Boolean historizing = (Boolean) value.getValue().getValue();
+      Boolean historizing = (Boolean) value.value().value();
       setHistorizing(historizing);
       return historizing;
     }
@@ -564,13 +564,12 @@ public class UaVariableNode extends UaNode implements VariableNode {
   public AccessLevelExType readAccessLevelEx() throws UaException {
     DataValue value = readAttribute(AttributeId.AccessLevelEx);
 
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null && statusCode.isBad()) {
       throw new UaException(statusCode, "read AccessLevelEx failed");
     } else {
-      AccessLevelExType accessLevelEx =
-          new AccessLevelExType((UInteger) value.getValue().getValue());
+      AccessLevelExType accessLevelEx = new AccessLevelExType((UInteger) value.value().value());
       setAccessLevelEx(accessLevelEx);
       return accessLevelEx;
     }
@@ -1073,7 +1072,7 @@ public class UaVariableNode extends UaNode implements VariableNode {
   protected DataValue getAttributeValue(AttributeId attributeId) {
     switch (attributeId) {
       case Value:
-        return DataValue.valueOnly(new Variant(getValue().getValue().getValue()));
+        return DataValue.valueOnly(new Variant(getValue().value().value()));
       case DataType:
         return DataValue.valueOnly(new Variant(getDataType()));
       case ValueRank:
@@ -1105,42 +1104,42 @@ public class UaVariableNode extends UaNode implements VariableNode {
         }
       case DataType:
         {
-          setDataType((NodeId) value.getValue().getValue());
+          setDataType((NodeId) value.value().value());
           break;
         }
       case ValueRank:
         {
-          setValueRank((Integer) value.getValue().getValue());
+          setValueRank((Integer) value.value().value());
           break;
         }
       case ArrayDimensions:
         {
-          setArrayDimensions((UInteger[]) value.getValue().getValue());
+          setArrayDimensions((UInteger[]) value.value().value());
           break;
         }
       case AccessLevel:
         {
-          setAccessLevel((UByte) value.getValue().getValue());
+          setAccessLevel((UByte) value.value().value());
           break;
         }
       case UserAccessLevel:
         {
-          setUserAccessLevel((UByte) value.getValue().getValue());
+          setUserAccessLevel((UByte) value.value().value());
           break;
         }
       case MinimumSamplingInterval:
         {
-          setMinimumSamplingInterval((Double) value.getValue().getValue());
+          setMinimumSamplingInterval((Double) value.value().value());
           break;
         }
       case Historizing:
         {
-          setHistorizing((Boolean) value.getValue().getValue());
+          setHistorizing((Boolean) value.value().value());
           break;
         }
       case AccessLevelEx:
         {
-          setAccessLevelEx(new AccessLevelExType((UInteger) value.getValue().getValue()));
+          setAccessLevelEx(new AccessLevelExType((UInteger) value.value().value()));
           break;
         }
       default:

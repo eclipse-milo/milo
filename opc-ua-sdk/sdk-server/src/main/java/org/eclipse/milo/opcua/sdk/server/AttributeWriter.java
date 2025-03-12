@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -95,7 +95,7 @@ public class AttributeWriter {
       }
     }
 
-    Variant updateVariant = value.getValue();
+    Variant updateVariant = value.value();
 
     if (indexRange != null && !indexRange.isEmpty()) {
       try {
@@ -103,13 +103,13 @@ public class AttributeWriter {
 
         Object currentValue = node.getAttribute(AccessContext.INTERNAL, attributeId);
         if (currentValue instanceof DataValue dataValue) {
-          currentValue = dataValue.getValue().getValue();
+          currentValue = dataValue.value().value();
         }
         if (currentValue instanceof Matrix matrix) {
           currentValue = matrix.nestedArrayValue();
         }
 
-        Object updateValue = updateVariant.getValue();
+        Object updateValue = updateVariant.value();
         if (updateValue instanceof Matrix matrix) {
           updateValue = matrix.nestedArrayValue();
         }
@@ -126,13 +126,13 @@ public class AttributeWriter {
       }
     }
 
-    DateTime sourceTime = value.getSourceTime();
-    DateTime serverTime = value.getServerTime();
+    DateTime sourceTime = value.sourceTime();
+    DateTime serverTime = value.serverTime();
 
     value =
         new DataValue(
             updateVariant,
-            value.getStatusCode(),
+            value.statusCode(),
             (sourceTime == null || sourceTime.isNull()) ? DateTime.now() : sourceTime,
             (serverTime == null || serverTime.isNull()) ? DateTime.now() : serverTime);
 
@@ -248,10 +248,10 @@ public class AttributeWriter {
   private static DataValue validateDataType(
       OpcUaServer server, NodeId dataType, DataValue value, boolean allowNulls) throws UaException {
 
-    Variant variant = value.getValue();
+    Variant variant = value.value();
     if (variant == null) return value;
 
-    Object o = variant.getValue();
+    Object o = variant.value();
     if (o == null) {
       if (allowNulls) {
         return value;
@@ -282,9 +282,9 @@ public class AttributeWriter {
 
           return new DataValue(
               new Variant(byteString.uBytes()),
-              value.getStatusCode(),
-              value.getSourceTime(),
-              value.getServerTime());
+              value.statusCode(),
+              value.sourceTime(),
+              value.serverTime());
         } else if (expectedClass == Variant.class) {
           // Allow writing anything to a Variant
           return value;
@@ -302,10 +302,10 @@ public class AttributeWriter {
   private static void validateArrayType(
       Integer valueRank, UInteger[] arrayDimensions, DataValue value) throws UaException {
 
-    Variant variant = value.getValue();
+    Variant variant = value.value();
     if (variant == null) return;
 
-    Object o = variant.getValue();
+    Object o = variant.value();
     if (o == null) return;
 
     if (o instanceof Matrix matrix) {

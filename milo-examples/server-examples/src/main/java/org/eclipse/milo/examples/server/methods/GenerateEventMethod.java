@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -59,7 +59,7 @@ public class GenerateEventMethod extends AbstractMethodInvocationHandler {
   @Override
   protected Variant[] invoke(InvocationContext invocationContext, Variant[] inputValues)
       throws UaException {
-    NodeId eventTypeId = (NodeId) inputValues[0].getValue();
+    NodeId eventTypeId = (NodeId) inputValues[0].value();
 
     BaseEventTypeNode eventNode =
         server.getEventFactory().createEvent(new NodeId(1, UUID.randomUUID()), eventTypeId);

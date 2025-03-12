@@ -111,7 +111,7 @@ public final class NumericRange {
   }
 
   public static Object readFromValueAtRange(Variant value, NumericRange range) throws UaException {
-    return readFromValueAtRange(value.getValue(), range);
+    return readFromValueAtRange(value.value(), range);
   }
 
   public static Object readFromValueAtRange(Object array, NumericRange range) throws UaException {
@@ -191,8 +191,8 @@ public final class NumericRange {
   public static Object writeToValueAtRange(
       Variant currentVariant, Variant updateVariant, NumericRange range) throws UaException {
 
-    Object current = currentVariant.getValue();
-    Object update = updateVariant.getValue();
+    Object current = currentVariant.value();
+    Object update = updateVariant.value();
 
     return writeToValueAtRange(current, update, range);
   }

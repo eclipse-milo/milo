@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -382,12 +382,12 @@ public abstract class UaNode implements Node {
   public NodeId readNodeId() throws UaException {
     DataValue value = readAttribute(AttributeId.NodeId);
 
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null && statusCode.isBad()) {
       throw new UaException(statusCode, "read NodeId failed");
     } else {
-      NodeId nodeId = (NodeId) value.getValue().getValue();
+      NodeId nodeId = (NodeId) value.value().value();
       setNodeId(nodeId);
       return nodeId;
     }
@@ -403,12 +403,12 @@ public abstract class UaNode implements Node {
   public NodeClass readNodeClass() throws UaException {
     DataValue value = readAttribute(AttributeId.NodeClass);
 
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null && statusCode.isBad()) {
       throw new UaException(statusCode, "read NodeClass failed");
     } else {
-      Integer i = (Integer) requireNonNullElse(value.getValue().getValue(), 0);
+      Integer i = (Integer) requireNonNullElse(value.value().value(), 0);
       NodeClass nodeClass = NodeClass.from(i);
       setNodeClass(nodeClass);
       return nodeClass;
@@ -425,12 +425,12 @@ public abstract class UaNode implements Node {
   public QualifiedName readBrowseName() throws UaException {
     DataValue value = readAttribute(AttributeId.BrowseName);
 
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null && statusCode.isBad()) {
       throw new UaException(statusCode, "read BrowseName failed");
     } else {
-      QualifiedName browseName = (QualifiedName) value.getValue().getValue();
+      QualifiedName browseName = (QualifiedName) value.value().value();
       setBrowseName(browseName);
       return browseName;
     }
@@ -446,12 +446,12 @@ public abstract class UaNode implements Node {
   public LocalizedText readDisplayName() throws UaException {
     DataValue value = readAttribute(AttributeId.DisplayName);
 
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null && statusCode.isBad()) {
       throw new UaException(statusCode, "read DisplayName failed");
     } else {
-      LocalizedText displayName = (LocalizedText) value.getValue().getValue();
+      LocalizedText displayName = (LocalizedText) value.value().value();
       setDisplayName(displayName);
       return displayName;
     }
@@ -468,12 +468,12 @@ public abstract class UaNode implements Node {
   public LocalizedText readDescription() throws UaException {
     DataValue value = readAttribute(AttributeId.Description);
 
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null && statusCode.isBad()) {
       throw new UaException(statusCode, "read Description failed");
     } else {
-      LocalizedText description = (LocalizedText) value.getValue().getValue();
+      LocalizedText description = (LocalizedText) value.value().value();
       setDescription(description);
       return description;
     }
@@ -490,12 +490,12 @@ public abstract class UaNode implements Node {
   public UInteger readWriteMask() throws UaException {
     DataValue value = readAttribute(AttributeId.UserWriteMask);
 
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null && statusCode.isBad()) {
       throw new UaException(statusCode, "read WriteMask failed");
     } else {
-      UInteger writeMask = (UInteger) value.getValue().getValue();
+      UInteger writeMask = (UInteger) value.value().value();
       setWriteMask(writeMask);
       return writeMask;
     }
@@ -512,12 +512,12 @@ public abstract class UaNode implements Node {
   public UInteger readUserWriteMask() throws UaException {
     DataValue value = readAttribute(AttributeId.UserWriteMask);
 
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null && statusCode.isBad()) {
       throw new UaException(statusCode, "read UserWriteMask failed");
     } else {
-      UInteger userWriteMask = (UInteger) value.getValue().getValue();
+      UInteger userWriteMask = (UInteger) value.value().value();
       setUserWriteMask(userWriteMask);
       return userWriteMask;
     }
@@ -534,13 +534,13 @@ public abstract class UaNode implements Node {
   public RolePermissionType[] readRolePermissions() throws UaException {
     DataValue value = readAttribute(AttributeId.RolePermissions);
 
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null && statusCode.isBad()) {
       throw new UaException(statusCode, "read RolePermissions failed");
     } else {
       RolePermissionType[] rolePermissions =
-          cast(value.getValue().getValue(), RolePermissionType[].class);
+          cast(value.value().value(), RolePermissionType[].class);
       setRolePermissions(rolePermissions);
       return rolePermissions;
     }
@@ -557,13 +557,13 @@ public abstract class UaNode implements Node {
   public RolePermissionType[] readUserRolePermissions() throws UaException {
     DataValue value = readAttribute(AttributeId.UserRolePermissions);
 
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null && statusCode.isBad()) {
       throw new UaException(statusCode, "read UserRolePermissions failed");
     } else {
       RolePermissionType[] userRolePermissions =
-          cast(value.getValue().getValue(), RolePermissionType[].class);
+          cast(value.value().value(), RolePermissionType[].class);
       setUserRolePermissions(userRolePermissions);
       return userRolePermissions;
     }
@@ -580,13 +580,13 @@ public abstract class UaNode implements Node {
   public AccessRestrictionType readAccessRestrictions() throws UaException {
     DataValue value = readAttribute(AttributeId.AccessRestrictions);
 
-    StatusCode statusCode = value.getStatusCode();
+    StatusCode statusCode = value.statusCode();
 
     if (statusCode != null && statusCode.isBad()) {
       throw new UaException(statusCode, "read AccessRestriction failed");
     } else {
       AccessRestrictionType accessRestrictions =
-          new AccessRestrictionType((UShort) value.getValue().getValue());
+          new AccessRestrictionType((UShort) value.value().value());
       setAccessRestrictions(accessRestrictions);
       return accessRestrictions;
     }
@@ -986,7 +986,7 @@ public abstract class UaNode implements Node {
             if (ai.hasNext() && vi.hasNext()) {
               AttributeId attributeId = ai.next();
               DataValue value = vi.next();
-              StatusCode statusCode = value.getStatusCode();
+              StatusCode statusCode = value.statusCode();
 
               if (statusCode == null || statusCode.isGood()) {
                 setAttributeValue(attributeId, value);
@@ -1092,54 +1092,54 @@ public abstract class UaNode implements Node {
     switch (attributeId) {
       case NodeId:
         {
-          setNodeId((NodeId) value.getValue().getValue());
+          setNodeId((NodeId) value.value().value());
           break;
         }
       case NodeClass:
         {
-          Integer i = (Integer) requireNonNullElse(value.getValue().getValue(), 0);
+          Integer i = (Integer) requireNonNullElse(value.value().value(), 0);
           NodeClass nodeClass = NodeClass.from(i);
           setNodeClass(nodeClass);
           break;
         }
       case BrowseName:
         {
-          setBrowseName((QualifiedName) value.getValue().getValue());
+          setBrowseName((QualifiedName) value.value().value());
           break;
         }
       case DisplayName:
         {
-          setDisplayName((LocalizedText) value.getValue().getValue());
+          setDisplayName((LocalizedText) value.value().value());
           break;
         }
       case Description:
         {
-          setDescription((LocalizedText) value.getValue().getValue());
+          setDescription((LocalizedText) value.value().value());
           break;
         }
       case WriteMask:
         {
-          setWriteMask((UInteger) value.getValue().getValue());
+          setWriteMask((UInteger) value.value().value());
           break;
         }
       case UserWriteMask:
         {
-          setUserWriteMask((UInteger) value.getValue().getValue());
+          setUserWriteMask((UInteger) value.value().value());
           break;
         }
       case RolePermissions:
         {
-          setRolePermissions((RolePermissionType[]) value.getValue().getValue());
+          setRolePermissions((RolePermissionType[]) value.value().value());
           break;
         }
       case UserRolePermissions:
         {
-          setUserRolePermissions((RolePermissionType[]) value.getValue().getValue());
+          setUserRolePermissions((RolePermissionType[]) value.value().value());
           break;
         }
       case AccessRestrictions:
         {
-          setAccessRestrictions(new AccessRestrictionType((UShort) value.getValue().getValue()));
+          setAccessRestrictions(new AccessRestrictionType((UShort) value.value().value()));
           break;
         }
       default:
@@ -1317,7 +1317,7 @@ public abstract class UaNode implements Node {
   public <T> CompletableFuture<T> getProperty(QualifiedProperty<T> property) {
     return getPropertyNodeAsync(property)
         .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
-        .thenApply(value -> cast(value.getValue().getValue(), property.getJavaType()));
+        .thenApply(value -> cast(value.value().value(), property.getJavaType()));
   }
 
   protected <T> CompletableFuture<StatusCode> setProperty(QualifiedProperty<T> property, T value) {

@@ -290,7 +290,7 @@ public class TestNamespace extends ManagedNamespaceWithLifecycle {
                           protected void validateInputArgumentValues(Variant[] inputArgumentValues)
                               throws InvalidArgumentException {
 
-                            int i = (int) inputArgumentValues[0].getValue();
+                            int i = (int) inputArgumentValues[0].value();
 
                             if (i < 0) {
                               StatusCode[] inputArgumentResults = {
