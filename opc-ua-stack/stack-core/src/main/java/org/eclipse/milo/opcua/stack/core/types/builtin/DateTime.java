@@ -16,7 +16,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.Objects;
 
-public final class DateTime {
+public record DateTime(long utcTime) {
 
   /** Minimum ISO-8601 formatted string. */
   public static final String MIN_ISO_8601_STRING = "0001-01-01T00:00:00Z";
@@ -49,14 +49,8 @@ public final class DateTime {
    */
   private static final long EPOCH_DELTA = 116444736000000000L;
 
-  private final long utcTime;
-
   public DateTime() {
     this(Instant.now());
-  }
-
-  public DateTime(long utcTime) {
-    this.utcTime = utcTime;
   }
 
   public DateTime(Date date) {
@@ -106,8 +100,7 @@ public final class DateTime {
 
   @Deprecated
   public boolean isNull() {
-    return getUtcTime() == 0;
-    //        return utcTime == 0;
+    return utcTime == 0;
   }
 
   @Deprecated
