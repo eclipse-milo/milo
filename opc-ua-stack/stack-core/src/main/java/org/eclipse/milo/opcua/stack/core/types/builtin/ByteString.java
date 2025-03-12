@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -10,25 +10,17 @@
 
 package org.eclipse.milo.opcua.stack.core.types.builtin;
 
-import com.google.common.base.MoreObjects;
-import java.io.Serializable;
 import java.util.Arrays;
+import java.util.HexFormat;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned;
-import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-public final class ByteString implements Serializable {
-
-  private static final long serialVersionUID = 451472015617419665L;
+@NullMarked
+public record ByteString(byte @Nullable [] bytes) {
 
   public static final ByteString NULL_VALUE = new ByteString(null);
-
-  private final byte[] bytes;
-
-  public ByteString(byte @Nullable [] bytes) {
-    this.bytes = bytes;
-  }
 
   public int length() {
     return bytes != null ? bytes.length : 0;
@@ -46,19 +38,15 @@ public final class ByteString implements Serializable {
     return bytes != null;
   }
 
-  public byte @Nullable [] bytes() {
-    return bytes;
-  }
-
-  public byte @NonNull [] bytesOrElse(byte @NonNull [] other) {
+  public byte[] bytesOrElse(byte[] other) {
     return bytes != null ? bytes : other;
   }
 
-  public byte @NonNull [] bytesOrEmpty() {
+  public byte[] bytesOrEmpty() {
     return bytesOrElse(new byte[0]);
   }
 
-  public @Nullable UByte[] uBytes() {
+  public UByte @Nullable [] uBytes() {
     if (bytes == null) return null;
 
     UByte[] bs = new UByte[bytes.length];
@@ -68,13 +56,13 @@ public final class ByteString implements Serializable {
     return bs;
   }
 
-  public @NonNull UByte[] uBytesOrElse(@NonNull UByte[] other) {
+  public UByte[] uBytesOrElse(UByte[] other) {
     UByte[] ubs = uBytes();
 
     return ubs != null ? ubs : other;
   }
 
-  public @NonNull UByte[] uBytesOrEmpty() {
+  public UByte[] uBytesOrEmpty() {
     return uBytesOrElse(new UByte[0]);
   }
 
@@ -100,15 +88,15 @@ public final class ByteString implements Serializable {
 
   @Override
   public int hashCode() {
-    return bytes != null ? Arrays.hashCode(bytes) : 0;
-  }
-
-  public static ByteString of(byte[] bs) {
-    return new ByteString(bs);
+    return Arrays.hashCode(bytes);
   }
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this).add("bytes", Arrays.toString(bytes)).toString();
+    return "ByteString[bytes=" + (bytes == null ? "null" : HexFormat.of().formatHex(bytes)) + "]";
+  }
+
+  public static ByteString of(byte[] bs) {
+    return new ByteString(bs);
   }
 }
