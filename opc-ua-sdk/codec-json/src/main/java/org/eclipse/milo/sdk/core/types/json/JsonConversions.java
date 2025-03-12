@@ -173,11 +173,11 @@ public class JsonConversions {
   }
 
   public static JsonElement fromQualifiedName(QualifiedName value) {
-    String name = value.getName() == null ? "" : value.getName();
-    int ns = value.getNamespaceIndex().intValue();
+    String name = value.name() == null ? "" : value.name();
+    int ns = value.namespaceIndex().intValue();
 
     if (ns != 0) {
-      return new JsonPrimitive(value.getNamespaceIndex() + ":" + name);
+      return new JsonPrimitive(value.namespaceIndex() + ":" + name);
     } else {
       return new JsonPrimitive(name);
     }

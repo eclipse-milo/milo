@@ -566,8 +566,8 @@ public class OpcUaBinaryEncoder implements UaEncoder {
   public void encodeQualifiedName(QualifiedName value) throws UaSerializationException {
     if (value == null) value = QualifiedName.NULL_VALUE;
 
-    encodeUInt16(value.getNamespaceIndex());
-    encodeString(value.getName());
+    encodeUInt16(value.namespaceIndex());
+    encodeString(value.name());
   }
 
   public void encodeString(String value) throws UaSerializationException {

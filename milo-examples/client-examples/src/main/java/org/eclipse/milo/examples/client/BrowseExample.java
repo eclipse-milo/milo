@@ -64,7 +64,7 @@ public class BrowseExample implements ClientExample {
           requireNonNullElse(browseResult.getReferences(), new ReferenceDescription[0]);
 
       for (ReferenceDescription rd : references) {
-        logger.info("{} Node={}", indent, rd.getBrowseName().getName());
+        logger.info("{} Node={}", indent, rd.getBrowseName().name());
 
         // recursively browse to children
         rd.getNodeId()

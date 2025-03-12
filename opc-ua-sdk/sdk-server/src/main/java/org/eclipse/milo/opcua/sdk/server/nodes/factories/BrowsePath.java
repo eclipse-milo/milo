@@ -50,9 +50,9 @@ public class BrowsePath {
         s += separator;
       }
       if (includeNamespaceIndex) {
-        s += browseName.getNamespaceIndex() + ":";
+        s += browseName.namespaceIndex() + ":";
       }
-      return s + browseName.getName();
+      return s + browseName.name();
     }
   }
 

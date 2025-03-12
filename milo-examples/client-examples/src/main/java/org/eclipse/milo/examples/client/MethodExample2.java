@@ -72,7 +72,7 @@ public class MethodExample2 implements ClientExample {
         NodeId dataTypeId = argument.getDataType();
         DataType dataType = dataTypeTree.getDataType(dataTypeId);
         assert dataType != null;
-        String dataTypeName = dataType.getBrowseName().getName();
+        String dataTypeName = dataType.getBrowseName().name();
 
         logger.info(
             "  {}: {} ({}) \"{}\"",

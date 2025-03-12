@@ -172,15 +172,15 @@ public class DataTypeTreeBuilder {
           // Be lenient and also allow matching on the unqualified browse name.
 
           if (r.getBrowseName().equals(DataTypeEncoding.BINARY_ENCODING_NAME)
-              || Objects.equals(r.getBrowseName().getName(), "Default Binary")) {
+              || Objects.equals(r.getBrowseName().name(), "Default Binary")) {
 
             binaryEncodingId = r.getNodeId().toNodeId(namespaceTable).orElse(null);
           } else if (r.getBrowseName().equals(DataTypeEncoding.XML_ENCODING_NAME)
-              || Objects.equals(r.getBrowseName().getName(), "Default XML")) {
+              || Objects.equals(r.getBrowseName().name(), "Default XML")) {
 
             xmlEncodingId = r.getNodeId().toNodeId(namespaceTable).orElse(null);
           } else if (r.getBrowseName().equals(DataTypeEncoding.JSON_ENCODING_NAME)
-              || Objects.equals(r.getBrowseName().getName(), "Default JSON")) {
+              || Objects.equals(r.getBrowseName().name(), "Default JSON")) {
 
             jsonEncodingId = r.getNodeId().toNodeId(namespaceTable).orElse(null);
           }

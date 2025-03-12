@@ -587,9 +587,9 @@ public abstract class UaNode implements UaServerNode {
         .filter(nodePredicate)
         .filter(
             n -> {
-              String nodeBrowseName = n.getBrowseName().getName();
+              String nodeBrowseName = n.getBrowseName().name();
 
-              UShort index = n.getBrowseName().getNamespaceIndex();
+              UShort index = n.getBrowseName().namespaceIndex();
               String nodeBrowseNameUri = context.getServer().getNamespaceTable().get(index);
 
               return Objects.equals(browseName, nodeBrowseName)

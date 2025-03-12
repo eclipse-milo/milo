@@ -594,7 +594,7 @@ public class TestNamespace extends ManagedNamespaceWithLifecycle {
             getNodeContext(),
             encodingId,
             encodingName,
-            LocalizedText.english(encodingName.getName()),
+            LocalizedText.english(encodingName.name()),
             LocalizedText.NULL_VALUE,
             uint(0),
             uint(0),

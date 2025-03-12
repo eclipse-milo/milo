@@ -46,7 +46,7 @@ public class BrowseAsyncExample implements ClientExample {
     browseRecursive(client, tree).get();
     long endTime = System.nanoTime();
 
-    traverse(tree, 0, (depth, n) -> logger.info(indent(depth) + n.getBrowseName().getName()));
+    traverse(tree, 0, (depth, n) -> logger.info(indent(depth) + n.getBrowseName().name()));
 
     logger.info(
         "Browse took {}ms",

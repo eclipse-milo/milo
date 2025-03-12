@@ -10,31 +10,40 @@
 
 package org.eclipse.milo.opcua.stack.core.types.builtin;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
 
 public class QualifiedNameTest {
 
   @Test
-  public void parseableStringSymmetry() {
+  void parseableStringSymmetry() {
     assertSymmetry("0:foo");
     assertSymmetry("0:foo:bar");
   }
 
   @Test
-  public void isNull() {
+  void isNull() {
     assertTrue(new QualifiedName(0, null).isNull());
     assertTrue(new QualifiedName(0, "").isNull());
   }
 
   @Test
-  public void nullEquality() {
+  void nullEquality() {
     assertEquals(new QualifiedName(0, ""), new QualifiedName(0, ""));
     assertEquals(new QualifiedName(0, null), new QualifiedName(0, null));
     assertEquals(new QualifiedName(0, null), new QualifiedName(0, ""));
     assertEquals(new QualifiedName(0, ""), new QualifiedName(0, null));
+  }
+
+  @Test
+  void testNameSizeLimit() {
+    String name = "a".repeat(512);
+    QualifiedName qn = new QualifiedName(0, name);
+    assertEquals(name, qn.name());
+
+    String longName = "a".repeat(513);
+    assertThrows(IllegalArgumentException.class, () -> new QualifiedName(0, longName));
   }
 
   private void assertSymmetry(String string) {

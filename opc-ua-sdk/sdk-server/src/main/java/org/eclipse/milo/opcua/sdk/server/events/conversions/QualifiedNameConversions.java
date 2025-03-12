@@ -22,12 +22,12 @@ final class QualifiedNameConversions {
 
   @Nullable
   static String qualifiedNameToString(@NonNull QualifiedName name) {
-    return name.getName();
+    return name.name();
   }
 
   @NonNull
   static LocalizedText qualifiedNameToLocalizedText(@NonNull QualifiedName name) {
-    return new LocalizedText("", name.getName());
+    return new LocalizedText("", name.name());
   }
 
   @Nullable

@@ -588,8 +588,8 @@ public class OpcUaJsonEncoder implements UaEncoder {
         }
 
         jsonWriter.beginObject();
-        jsonWriter.name("Name").value(value.getName());
-        int namespaceIndex = value.getNamespaceIndex().intValue();
+        jsonWriter.name("Name").value(value.name());
+        int namespaceIndex = value.namespaceIndex().intValue();
         if (namespaceIndex > 0) {
           if (reversible || namespaceIndex == 1) {
             jsonWriter.name("Uri").value(namespaceIndex);

@@ -59,8 +59,8 @@ public abstract class AbstractDataTypeTreeTest extends AbstractClientServerTest 
               System.out.println(dataType.getBrowseName().toParseableString());
             },
             (o1, o2) -> {
-              String name1 = requireNonNullElse(o1.getValue().getBrowseName().getName(), "");
-              String name2 = requireNonNullElse(o2.getValue().getBrowseName().getName(), "");
+              String name1 = requireNonNullElse(o1.getValue().getBrowseName().name(), "");
+              String name2 = requireNonNullElse(o2.getValue().getBrowseName().name(), "");
               return Comparator.<String>naturalOrder().compare(name1, name2);
             });
   }
@@ -180,7 +180,7 @@ public abstract class AbstractDataTypeTreeTest extends AbstractClientServerTest 
 
     treeNode.traverse(
         dataType -> {
-          String name = dataType.getBrowseName().getName();
+          String name = dataType.getBrowseName().name();
 
           if (!Objects.equals(name, "Structure") && !Objects.equals(name, "MatrixTestType")) {
             assertNotNull(dataType.getBinaryEncodingId());
@@ -200,7 +200,7 @@ public abstract class AbstractDataTypeTreeTest extends AbstractClientServerTest 
 
     treeNode.traverse(
         dataType -> {
-          if (!Objects.equals(dataType.getBrowseName().getName(), "Enumeration")) {
+          if (!Objects.equals(dataType.getBrowseName().name(), "Enumeration")) {
             assertNotNull(dataType.getDataTypeDefinition());
             assertNotNull(dataTypeTree.getDataTypeDefinition(dataType.getNodeId()));
           }
@@ -214,7 +214,7 @@ public abstract class AbstractDataTypeTreeTest extends AbstractClientServerTest 
 
     treeNode.traverse(
         dataType -> {
-          if (!Objects.equals(dataType.getBrowseName().getName(), "Structure")) {
+          if (!Objects.equals(dataType.getBrowseName().name(), "Structure")) {
             assertNotNull(dataType.getDataTypeDefinition());
             assertNotNull(dataTypeTree.getDataTypeDefinition(dataType.getNodeId()));
           }

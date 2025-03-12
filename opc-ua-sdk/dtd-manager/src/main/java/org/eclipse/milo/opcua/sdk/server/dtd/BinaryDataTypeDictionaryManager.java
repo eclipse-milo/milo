@@ -240,9 +240,9 @@ public class BinaryDataTypeDictionaryManager implements Lifecycle {
     DataTypeDescriptionTypeNode descriptionNode =
         new DataTypeDescriptionTypeNode(
             context,
-            newNodeId(String.format("%s.Description", description.getName().getName())),
-            newQualifiedName(description.getName().getName()),
-            LocalizedText.english(description.getName().getName()),
+            newNodeId(String.format("%s.Description", description.getName().name())),
+            newQualifiedName(description.getName().name()),
+            LocalizedText.english(description.getName().name()),
             LocalizedText.NULL_VALUE,
             uint(0),
             uint(0),
@@ -254,7 +254,7 @@ public class BinaryDataTypeDictionaryManager implements Lifecycle {
             ValueRanks.Scalar,
             null);
 
-    descriptionNode.setValue(new DataValue(new Variant(description.getName().getName())));
+    descriptionNode.setValue(new DataValue(new Variant(description.getName().name())));
     descriptionNode.setDataType(NodeIds.String);
 
     descriptionNode.addReference(
@@ -382,7 +382,7 @@ public class BinaryDataTypeDictionaryManager implements Lifecycle {
     EnumDefinition definition = description.getEnumDefinition();
 
     EnumeratedType enumeratedType = new EnumeratedType();
-    enumeratedType.setName(name.getName());
+    enumeratedType.setName(name.name());
     enumeratedType.setLengthInBits(32);
 
     for (EnumField field : requireNonNullElse(definition.getFields(), new EnumField[0])) {
@@ -403,7 +403,7 @@ public class BinaryDataTypeDictionaryManager implements Lifecycle {
     StructureType structureType = definition.getStructureType();
 
     StructuredType structuredType = new StructuredType();
-    structuredType.setName(name.getName());
+    structuredType.setName(name.name());
 
     // Create a combined list of StructuredFields from all parent types
     LinkedList<StructureDefinition> definitions = new LinkedList<>();
@@ -555,7 +555,7 @@ public class BinaryDataTypeDictionaryManager implements Lifecycle {
     if (dataTypeId.getNamespaceIndex().intValue() == 0) {
       long id = ((UInteger) dataTypeId.getIdentifier()).longValue();
       String uri = id <= 15L ? Namespaces.OPC_UA_BSD : Namespaces.OPC_UA;
-      return new QualifiedTypeName(uri, dataTypeNode.getBrowseName().getName());
+      return new QualifiedTypeName(uri, dataTypeNode.getBrowseName().name());
     }
 
     QualifiedName parentTypeName =
@@ -567,7 +567,7 @@ public class BinaryDataTypeDictionaryManager implements Lifecycle {
             .orElse(QualifiedName.NULL_VALUE);
 
     if (parentTypeName.equals(new QualifiedName(0, "Enumeration"))) {
-      return new QualifiedTypeName("", dataTypeNode.getBrowseName().getName());
+      return new QualifiedTypeName("", dataTypeNode.getBrowseName().name());
     }
 
     UaNode dataTypeEncodingNode =
@@ -589,7 +589,7 @@ public class BinaryDataTypeDictionaryManager implements Lifecycle {
 
     checkNotNull(dataTypeDescriptionNode, "dataTypeDescriptionNode for dataTypeId=" + dataTypeId);
 
-    String dataTypeName = dataTypeDescriptionNode.getBrowseName().getName();
+    String dataTypeName = dataTypeDescriptionNode.getBrowseName().name();
 
     UaNode dictionaryNode =
         dataTypeDescriptionNode.getReferences().stream()

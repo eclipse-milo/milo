@@ -150,36 +150,36 @@ public class NodeFactoryTest {
 
                   @Override
                   public void onMethodAdded(@Nullable UaObjectNode parent, UaMethodNode instance) {
-                    String pbn = parent != null ? parent.getBrowseName().getName() : null;
+                    String pbn = parent != null ? parent.getBrowseName().name() : null;
                     System.out.println(
                         "onMethodAdded parent="
                             + pbn
                             + " instance="
-                            + instance.getBrowseName().getName());
+                            + instance.getBrowseName().name());
                     methodAdded.set(true);
                   }
 
                   @Override
                   public void onObjectAdded(
                       @Nullable UaNode parent, UaObjectNode instance, NodeId typeDefinitionId) {
-                    String pbn = parent != null ? parent.getBrowseName().getName() : null;
+                    String pbn = parent != null ? parent.getBrowseName().name() : null;
                     System.out.println(
                         "onObjectAdded parent="
                             + pbn
                             + " instance="
-                            + instance.getBrowseName().getName());
+                            + instance.getBrowseName().name());
                     objectAdded.set(true);
                   }
 
                   @Override
                   public void onVariableAdded(
                       @Nullable UaNode parent, UaVariableNode instance, NodeId typeDefinitionId) {
-                    String pbn = parent != null ? parent.getBrowseName().getName() : null;
+                    String pbn = parent != null ? parent.getBrowseName().name() : null;
                     System.out.println(
                         "onVariableAdded parent="
                             + pbn
                             + " instance="
-                            + instance.getBrowseName().getName());
+                            + instance.getBrowseName().name());
                     variableAdded.set(true);
                   }
                 });
