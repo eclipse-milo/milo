@@ -17,7 +17,9 @@ import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaDefaultBinaryEncod
 import org.eclipse.milo.opcua.stack.core.types.DataTypeEncoding;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public abstract sealed class ExtensionObject2
     permits ExtensionObject2.BinaryExtensionObject,
         ExtensionObject2.JsonExtensionObject,
@@ -25,8 +27,31 @@ public abstract sealed class ExtensionObject2
 
   private final Lazy<Object> decoded = new Lazy<>();
 
+  /**
+   * Get the body of this ExtensionObject.
+   *
+   * <p>The body is the encoded value of the ExtensionObject. The type of the body depends on the
+   * encoding that was used to encode the ExtensionObject. The body is one of:
+   *
+   * <ul>
+   *   <li>{@link ByteString} for Binary encoding
+   *   <li>{@link XmlElement} for XML encoding
+   *   <li>{@link String} for JSON encoding
+   * </ul>
+   *
+   * @return the body of this ExtensionObject.
+   */
   public abstract Object getBody();
 
+  /**
+   * Get the {@link NodeId} of the datatype encoding or datatype of the encoded value contained by
+   * this ExtensionObject.
+   *
+   * <p>The NodeId returned is the encoding id if the encoding is Binary or XML, or the datatype id
+   * if the encoding is JSON.
+   *
+   * @return the {@link NodeId} of the datatype encoding or datatype.
+   */
   public abstract NodeId getEncodingOrTypeId();
 
   /**
@@ -54,6 +79,39 @@ public abstract sealed class ExtensionObject2
       throws UaSerializationException {
 
     return decoded.get(() -> encoding.decode(context, getBody(), getEncodingOrTypeId()));
+  }
+
+  /**
+   * Create a new ExtensionObject2 with the specified ByteString body and encoding id.
+   *
+   * @param body the ByteString body of the ExtensionObject2
+   * @param encodingId the NodeId of the datatype encoding.
+   * @return a new ExtensionObject2 with the specified body and encoding id.
+   */
+  public static ExtensionObject2 of(ByteString body, NodeId encodingId) {
+    return new BinaryExtensionObject(body, encodingId);
+  }
+
+  /**
+   * Create a new ExtensionObject2 with the specified XmlElement body and encoding id.
+   *
+   * @param body the XmlElement body of the ExtensionObject2
+   * @param encodingId the NodeId of the datatype encoding.
+   * @return a new ExtensionObject2 with the specified body and encoding id.
+   */
+  public static ExtensionObject2 of(XmlElement body, NodeId encodingId) {
+    return new XmlExtensionObject(body, encodingId);
+  }
+
+  /**
+   * Create a new ExtensionObject2 with the specified String body and type id.
+   *
+   * @param body the String body of the ExtensionObject2
+   * @param typeId the NodeId of the datatype.
+   * @return a new ExtensionObject2 with the specified body and type id.
+   */
+  public static ExtensionObject2 of(String body, NodeId typeId) {
+    return new JsonExtensionObject(body, typeId);
   }
 
   /**
@@ -165,6 +223,7 @@ public abstract sealed class ExtensionObject2
     }
   }
 
+  /** An ExtensionObject that contains a {@link ByteString} body, used with Binary encoding. */
   public static final class BinaryExtensionObject extends ExtensionObject2 {
 
     private final ByteString body;
@@ -186,6 +245,7 @@ public abstract sealed class ExtensionObject2
     }
   }
 
+  /** An ExtensionObject that contains an {@link XmlElement} body, used with XML encoding. */
   public static final class XmlExtensionObject extends ExtensionObject2 {
 
     private final XmlElement body;
@@ -207,6 +267,7 @@ public abstract sealed class ExtensionObject2
     }
   }
 
+  /** An ExtensionObject that contains a {@link String} body, used with JSON encoding. */
   public static final class JsonExtensionObject extends ExtensionObject2 {
 
     private final String body;
