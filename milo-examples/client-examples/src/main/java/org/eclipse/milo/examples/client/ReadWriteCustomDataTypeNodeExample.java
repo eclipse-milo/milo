@@ -70,9 +70,9 @@ public class ReadWriteCustomDataTypeNodeExample implements ClientExample {
     ExtensionObject modifiedXo =
         ExtensionObject.encode(
             client.getStaticEncodingContext(),
-            OpcUaDefaultBinaryEncoding.getInstance(),
             modified,
-            xo.getEncodingOrTypeId());
+            xo.getEncodingOrTypeId(),
+            OpcUaDefaultBinaryEncoding.getInstance());
 
     node.writeValue(new DataValue(new Variant(modifiedXo)));
 

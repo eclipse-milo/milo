@@ -510,9 +510,9 @@ public class Subscription {
       notificationData.add(
           ExtensionObject.encode(
               encodingContext,
-              OpcUaDefaultBinaryEncoding.getInstance(),
               dataChange,
-              dataChange.getBinaryEncodingId()));
+              dataChange.getBinaryEncodingId(),
+              OpcUaDefaultBinaryEncoding.getInstance()));
 
       subscriptionDiagnostics.getDataChangeNotificationsCount().add(dataNotifications.size());
     }
@@ -524,9 +524,9 @@ public class Subscription {
       notificationData.add(
           ExtensionObject.encode(
               encodingContext,
-              OpcUaDefaultBinaryEncoding.getInstance(),
               eventChange,
-              eventChange.getBinaryEncodingId()));
+              eventChange.getBinaryEncodingId(),
+              OpcUaDefaultBinaryEncoding.getInstance()));
 
       subscriptionDiagnostics.getEventNotificationsCount().add(eventNotifications.size());
     }
