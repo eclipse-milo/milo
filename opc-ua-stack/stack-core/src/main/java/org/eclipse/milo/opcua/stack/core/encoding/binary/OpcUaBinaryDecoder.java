@@ -48,7 +48,6 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
-import org.eclipse.milo.opcua.stack.core.util.TypeUtil;
 import org.jspecify.annotations.Nullable;
 
 public class OpcUaBinaryDecoder implements UaDecoder {
@@ -393,7 +392,7 @@ public class OpcUaBinaryDecoder implements UaDecoder {
         boolean arrayEncoded = (encodingMask & 0x80) == 0x80;
 
         if (arrayEncoded) {
-          Class<?> backingClass = TypeUtil.getBackingClass(typeId);
+          Class<?> backingClass = OpcUaDataType.getBackingClass(typeId);
           int length = decodeInt32();
 
           if (length == -1) {

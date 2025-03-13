@@ -51,7 +51,6 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.IdType;
 import org.eclipse.milo.opcua.stack.core.util.ArrayUtil;
-import org.eclipse.milo.opcua.stack.core.util.TypeUtil;
 import org.jspecify.annotations.NonNull;
 
 public class OpcUaJsonEncoder implements UaEncoder {
@@ -798,9 +797,9 @@ public class OpcUaJsonEncoder implements UaEncoder {
       // OptionSetUI16, etc...
       Object os = Array.get(value, 0);
       Object osv = ((OptionSetUInteger<?>) os).getValue();
-      typeId = TypeUtil.getBuiltinTypeId(osv.getClass());
+      typeId = OpcUaDataType.getBuiltinTypeId(osv.getClass());
     } else {
-      typeId = TypeUtil.getBuiltinTypeId(valueClass);
+      typeId = OpcUaDataType.getBuiltinTypeId(valueClass);
     }
 
     if (value.getClass().isArray()) {

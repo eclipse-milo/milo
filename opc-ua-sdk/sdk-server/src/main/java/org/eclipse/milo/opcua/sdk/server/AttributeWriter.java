@@ -24,15 +24,11 @@ import org.eclipse.milo.opcua.sdk.core.nodes.VariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaServerNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.NodeIds;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
-import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.*;
 import org.eclipse.milo.opcua.stack.core.types.builtin.*;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.util.ArrayUtil;
-import org.eclipse.milo.opcua.stack.core.util.TypeUtil;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -382,8 +378,8 @@ public class AttributeWriter {
   private static Class<?> getExpectedClass(
       OpcUaServer server, NodeId dataTypeId, Class<?> valueClass) throws UaException {
 
-    if (TypeUtil.isBuiltin(dataTypeId)) {
-      return TypeUtil.getBackingClass(dataTypeId);
+    if (OpcUaDataType.isBuiltin(dataTypeId)) {
+      return OpcUaDataType.getBackingClass(dataTypeId);
     } else if (subtypeOf(server, dataTypeId, NodeIds.Structure)) {
       return ExtensionObject.class;
     } else if (subtypeOf(server, dataTypeId, NodeIds.Enumeration)) {
@@ -394,9 +390,9 @@ public class AttributeWriter {
       if (superBuiltInType != null) {
         // One of dataTypeId's supertypes is a concrete built-in
         // type; expect the same Class<?> as that built-in type.
-        return TypeUtil.getBackingClass(superBuiltInType);
+        return OpcUaDataType.getBackingClass(superBuiltInType);
       } else {
-        int valueDataTypeId = TypeUtil.getBuiltinTypeId(valueClass);
+        int valueDataTypeId = OpcUaDataType.getBuiltinTypeId(valueClass);
 
         if (valueDataTypeId > -1) {
           // The value they sent us maps to a built-in type.
@@ -445,7 +441,7 @@ public class AttributeWriter {
    */
   @Nullable
   private static NodeId findConcreteBuiltInSuperTypeId(OpcUaServer server, NodeId dataTypeId) {
-    if (TypeUtil.isBuiltin(dataTypeId) && isConcrete(server, dataTypeId)) {
+    if (OpcUaDataType.isBuiltin(dataTypeId) && isConcrete(server, dataTypeId)) {
       return dataTypeId;
     } else {
       NodeId superTypeId = getSuperTypeId(server, dataTypeId);

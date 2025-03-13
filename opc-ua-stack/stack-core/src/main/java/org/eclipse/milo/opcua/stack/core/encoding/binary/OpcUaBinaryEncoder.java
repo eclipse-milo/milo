@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.DataTypeCodec;
@@ -46,7 +47,6 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.IdType;
 import org.eclipse.milo.opcua.stack.core.util.ArrayUtil;
-import org.eclipse.milo.opcua.stack.core.util.TypeUtil;
 import org.jspecify.annotations.NonNull;
 import org.slf4j.LoggerFactory;
 
@@ -599,7 +599,7 @@ public class OpcUaBinaryEncoder implements UaEncoder {
         optionSet = true;
       }
 
-      int typeId = TypeUtil.getBuiltinTypeId(valueClass);
+      int typeId = OpcUaDataType.getBuiltinTypeId(valueClass);
 
       if (typeId == -1) {
         LoggerFactory.getLogger(getClass())

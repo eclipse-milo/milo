@@ -26,7 +26,6 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.util.ArrayUtil;
-import org.eclipse.milo.opcua.stack.core.util.TypeUtil;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -66,7 +65,7 @@ public record Variant(@Nullable Object value) {
     } else {
       Class<?> clazz = value.getClass().isArray() ? ArrayUtil.getType(value) : value.getClass();
 
-      int typeId = TypeUtil.getBuiltinTypeId(clazz);
+      int typeId = OpcUaDataType.getBuiltinTypeId(clazz);
 
       return typeId == -1 ? Optional.empty() : Optional.of(new NodeId(0, typeId).expanded());
     }

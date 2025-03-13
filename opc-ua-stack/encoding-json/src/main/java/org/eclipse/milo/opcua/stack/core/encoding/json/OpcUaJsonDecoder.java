@@ -55,7 +55,6 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.IdType;
-import org.eclipse.milo.opcua.stack.core.util.TypeUtil;
 
 public class OpcUaJsonDecoder implements UaDecoder {
 
@@ -1044,7 +1043,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
             }
             jsonReader.endArray();
             Object value =
-                Array.newInstance(TypeUtil.getPrimitiveBackingClass(typeId), elements.size());
+                Array.newInstance(OpcUaDataType.getPrimitiveBackingClass(typeId), elements.size());
             for (int i = 0; i < elements.size(); i++) {
               Array.set(value, i, elements.get(i));
             }
@@ -1070,7 +1069,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
           jsonReader.endArray();
 
           Object flatArray =
-              Array.newInstance(TypeUtil.getPrimitiveBackingClass(typeId), elements.size());
+              Array.newInstance(OpcUaDataType.getPrimitiveBackingClass(typeId), elements.size());
           for (int i = 0; i < elements.size(); i++) {
             Array.set(flatArray, i, elements.get(i));
           }
@@ -1103,7 +1102,8 @@ public class OpcUaJsonDecoder implements UaDecoder {
 
     if (dimensionIndex == dimensions.length - 1) {
       value =
-          Array.newInstance(TypeUtil.getPrimitiveBackingClass(typeId), dimensions[dimensionIndex]);
+          Array.newInstance(
+              OpcUaDataType.getPrimitiveBackingClass(typeId), dimensions[dimensionIndex]);
       for (int i = 0; i < dimensions[dimensionIndex]; i++) {
         Object e = readBuiltinTypeValue(null, typeId);
         Array.set(value, i, e);
@@ -1111,7 +1111,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
     } else {
       value =
           Array.newInstance(
-              TypeUtil.getPrimitiveBackingClass(typeId),
+              OpcUaDataType.getPrimitiveBackingClass(typeId),
               Arrays.copyOfRange(dimensions, dimensionIndex, dimensions.length));
       for (int i = 0; i < dimensions[dimensionIndex]; i++) {
         Object e =
