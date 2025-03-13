@@ -243,7 +243,7 @@ public abstract sealed class ExtensionObject
   public static ExtensionObject encode(EncodingContext context, Object value, NodeId encodingId)
       throws UaSerializationException {
 
-    return encode(context, value, encodingId, OpcUaDefaultBinaryEncoding.getInstance());
+    return encodeBinary(context, value, encodingId, OpcUaDefaultBinaryEncoding.getInstance());
   }
 
   /**
