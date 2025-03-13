@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -477,7 +477,7 @@ public class OpcUaXmlDecoder implements UaDecoder {
   public ExtensionObject decodeExtensionObject(String field) throws UaSerializationException {
     NodeId typeId = NodeId.NULL_VALUE;
 
-    ExtensionObject extensionObject = new ExtensionObject(XmlElement.NULL_VALUE, NodeId.NULL_VALUE);
+    ExtensionObject extensionObject = ExtensionObject.of(XmlElement.NULL_VALUE, NodeId.NULL_VALUE);
 
     if (currentNode(field)) {
       Node node = currentNode;
@@ -498,10 +498,10 @@ public class OpcUaXmlDecoder implements UaDecoder {
 
             currentNode = bodyNode;
 
-            extensionObject = new ExtensionObject(decodeByteString("ByteString"), typeId);
+            extensionObject = ExtensionObject.of(decodeByteString("ByteString"), typeId);
           } else {
             extensionObject =
-                new ExtensionObject(nodeToXmlElement(bodyNode.getFirstChild()), typeId);
+                ExtensionObject.of(nodeToXmlElement(bodyNode.getFirstChild()), typeId);
           }
         }
 

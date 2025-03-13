@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -295,15 +295,15 @@ public class OpcUaBinaryDecoder implements UaDecoder {
     int encoding = buffer.readByte();
 
     if (encoding == 0) {
-      return new ExtensionObject(ByteString.NULL_VALUE, encodingTypeId);
+      return ExtensionObject.of(ByteString.NULL_VALUE, encodingTypeId);
     } else if (encoding == 1) {
       ByteString byteString = decodeByteString();
 
-      return new ExtensionObject(byteString, encodingTypeId);
+      return ExtensionObject.of(byteString, encodingTypeId);
     } else if (encoding == 2) {
       XmlElement xmlElement = decodeXmlElement();
 
-      return new ExtensionObject(xmlElement, encodingTypeId);
+      return ExtensionObject.of(xmlElement, encodingTypeId);
     } else {
       throw new UaSerializationException(
           StatusCodes.Bad_DecodingError, "unknown ExtensionObject encoding: " + encoding);

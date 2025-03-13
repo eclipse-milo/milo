@@ -451,42 +451,21 @@ public class OpcUaBinaryEncoder implements UaEncoder {
       encodeNodeId(NodeId.NULL_VALUE);
       buffer.writeByte(0); // No body is encoded
     } else {
-      Object body = value.getBody();
-
-      switch (value.getBodyType()) {
-        case ByteString:
-          {
-            ByteString byteString = (ByteString) body;
-
-            encodeNodeId(value.getEncodingId());
-            buffer.writeByte(1); // Body is binary encoded
-            encodeByteString(byteString);
-
-            break;
-          }
-        case XmlElement:
-          {
-            XmlElement xmlElement = (XmlElement) body;
-
-            encodeNodeId(value.getEncodingId());
-            buffer.writeByte(2);
-            encodeXmlElement(xmlElement);
-
-            break;
-          }
-        case JsonString:
-          {
-            String jsonString = (String) body;
-
-            encodeNodeId(value.getEncodingId());
-            buffer.writeByte(1);
-            encodeByteString(ByteString.of(jsonString.getBytes(StandardCharsets.UTF_8)));
-
-            break;
-          }
-
-        default:
-          throw new IllegalStateException("unknown body type: " + value.getBodyType());
+      if (value instanceof ExtensionObject.BinaryExtensionObject xo) {
+        encodeNodeId(xo.getEncodingOrTypeId());
+        buffer.writeByte(1); // Body is binary encoded
+        encodeByteString(xo.getBody());
+      } else if (value instanceof ExtensionObject.XmlExtensionObject xo) {
+        encodeNodeId(xo.getEncodingOrTypeId());
+        buffer.writeByte(2);
+        encodeXmlElement(xo.getBody());
+      } else if (value instanceof ExtensionObject.JsonExtensionObject xo) {
+        encodeNodeId(xo.getEncodingOrTypeId());
+        buffer.writeByte(1);
+        encodeByteString(ByteString.of(xo.getBody().getBytes(StandardCharsets.UTF_8)));
+      } else {
+        throw new UaSerializationException(
+            StatusCodes.Bad_EncodingError, "unknown ExtensionObject type: " + value.getClass());
       }
     }
   }

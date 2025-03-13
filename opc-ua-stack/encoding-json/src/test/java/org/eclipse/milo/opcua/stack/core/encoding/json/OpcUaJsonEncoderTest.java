@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -768,11 +768,11 @@ class OpcUaJsonEncoderTest {
     var encoder = new OpcUaJsonEncoder(context, writer);
 
     var byteStringXo =
-        new ExtensionObject(ByteString.of(new byte[] {0x00, 0x01, 0x02, 0x03}), new NodeId(2, 42));
+        ExtensionObject.of(ByteString.of(new byte[] {0x00, 0x01, 0x02, 0x03}), new NodeId(2, 42));
 
-    var xmlElementXo = new ExtensionObject(new XmlElement("<foo>bar</foo>"), new NodeId(2, 42));
+    var xmlElementXo = ExtensionObject.of(new XmlElement("<foo>bar</foo>"), new NodeId(2, 42));
 
-    var jsonStringXo = new ExtensionObject("{\"foo\":\"bar\",\"baz\":42}", new NodeId(2, 42));
+    var jsonStringXo = ExtensionObject.of("{\"foo\":\"bar\",\"baz\":42}", new NodeId(2, 42));
 
     encoder.encodeExtensionObject(null, jsonStringXo);
     assertEquals(

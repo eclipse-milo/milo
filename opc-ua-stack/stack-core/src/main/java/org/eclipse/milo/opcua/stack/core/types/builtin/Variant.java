@@ -97,6 +97,8 @@ public record Variant(@Nullable Object value) {
       }
     } else if (Matrix.class.isAssignableFrom(type)) {
       return ((Matrix) value).getDataType();
+    } else if (ExtensionObject.class.isAssignableFrom(type)) {
+      return Optional.of(OpcUaDataType.ExtensionObject);
     } else {
       return Optional.ofNullable(OpcUaDataType.fromBackingClass(type));
     }

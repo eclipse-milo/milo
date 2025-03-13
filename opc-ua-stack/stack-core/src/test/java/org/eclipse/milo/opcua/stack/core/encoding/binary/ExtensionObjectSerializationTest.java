@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -24,8 +24,8 @@ public class ExtensionObjectSerializationTest extends BinarySerializationFixture
 
   public static Object[][] getExtensionObjects() {
     return new Object[][] {
-      {new ExtensionObject(ByteString.of(new byte[] {1, 2, 3, 4}), new NodeId(1, 2))},
-      {new ExtensionObject(XmlElement.of("<a>hello</a>"), new NodeId(1, 2))},
+      {ExtensionObject.of(ByteString.of(new byte[] {1, 2, 3, 4}), new NodeId(1, 2))},
+      {ExtensionObject.of(XmlElement.of("<a>hello</a>"), new NodeId(1, 2))},
     };
   }
 

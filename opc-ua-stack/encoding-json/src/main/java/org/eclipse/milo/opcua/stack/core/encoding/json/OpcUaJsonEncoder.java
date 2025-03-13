@@ -654,37 +654,28 @@ public class OpcUaJsonEncoder implements UaEncoder {
         } else {
           if (reversible) {
             jsonWriter.beginObject();
-            encodeNodeId("TypeId", value.getEncodingId());
-            switch (value.getBodyType()) {
-              case JsonString:
-                // Encoding field omitted for JSON body
-                jsonWriter.name("Body").jsonValue((String) value.getBody());
-                break;
-              case ByteString:
-                jsonWriter.name("Encoding").value(1);
-                encodeByteString("Body", (ByteString) value.getBody());
-                break;
-              case XmlElement:
-                jsonWriter.name("Encoding").value(2);
-                encodeXmlElement("Body", (XmlElement) value.getBody());
-                break;
+            encodeNodeId("TypeId", value.getEncodingOrTypeId());
+            if (value instanceof ExtensionObject.JsonExtensionObject xo) {
+              jsonWriter.name("Body").jsonValue(xo.getBody());
+            } else if (value instanceof ExtensionObject.BinaryExtensionObject xo) {
+              jsonWriter.name("Encoding").value(1);
+              encodeByteString("Body", xo.getBody());
+            } else if (value instanceof ExtensionObject.XmlExtensionObject xo) {
+              jsonWriter.name("Encoding").value(2);
+              encodeXmlElement("Body", xo.getBody());
             }
             jsonWriter.endObject();
           } else {
-            switch (value.getBodyType()) {
-              case JsonString:
-                jsonWriter.jsonValue((String) value.getBody());
-                break;
-              case ByteString:
-                contextPush(EncoderContext.BUILTIN);
-                encodeByteString(null, (ByteString) value.getBody());
-                contextPop();
-                break;
-              case XmlElement:
-                contextPush(EncoderContext.BUILTIN);
-                encodeXmlElement(null, (XmlElement) value.getBody());
-                contextPop();
-                break;
+            if (value instanceof ExtensionObject.JsonExtensionObject xo) {
+              jsonWriter.jsonValue(xo.getBody());
+            } else if (value instanceof ExtensionObject.BinaryExtensionObject xo) {
+              contextPush(EncoderContext.BUILTIN);
+              encodeByteString(null, xo.getBody());
+              contextPop();
+            } else if (value instanceof ExtensionObject.XmlExtensionObject xo) {
+              contextPush(EncoderContext.BUILTIN);
+              encodeXmlElement(null, xo.getBody());
+              contextPop();
             }
           }
         }

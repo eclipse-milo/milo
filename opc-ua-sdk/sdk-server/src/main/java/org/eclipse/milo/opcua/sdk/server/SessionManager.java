@@ -687,7 +687,12 @@ public class SessionManager {
       @Nullable ExtensionObject identityTokenXo, @Nullable UserTokenPolicy[] tokenPolicies) {
 
     if (identityTokenXo != null && !identityTokenXo.isNull()) {
-      Object identityToken = identityTokenXo.decodeOrNull(server.getStaticEncodingContext());
+      Object identityToken;
+      try {
+        identityToken = identityTokenXo.decode(server.getStaticEncodingContext());
+      } catch (Exception ignored) {
+        identityToken = null;
+      }
 
       if (identityToken instanceof UserIdentityToken) {
         return (UserIdentityToken) identityToken;

@@ -193,7 +193,7 @@ public class JsonConversions {
   public static JsonElement fromExtensionObject(ExtensionObject value) {
     var jsonObject = new JsonObject();
 
-    jsonObject.add("TypeId", fromNodeId(value.getEncodingId()));
+    jsonObject.add("TypeId", fromNodeId(value.getEncodingOrTypeId()));
 
     if (value.getBody() instanceof ByteString) {
       jsonObject.addProperty("Encoding", 1);
@@ -449,15 +449,15 @@ public class JsonConversions {
     return switch (encoding) {
       case 0 -> {
         String body = jsonObject.get("Body").toString();
-        yield new ExtensionObject(body, typeId);
+        yield ExtensionObject.of(body, typeId);
       }
       case 1 -> {
         ByteString body = toByteString(jsonObject.get("Body"));
-        yield new ExtensionObject(body, typeId);
+        yield ExtensionObject.of(body, typeId);
       }
       case 2 -> {
         XmlElement body = toXmlElement(jsonObject.get("Body"));
-        yield new ExtensionObject(body, typeId);
+        yield ExtensionObject.of(body, typeId);
       }
       default -> throw new IllegalArgumentException("unknown encoding: " + encoding);
     };

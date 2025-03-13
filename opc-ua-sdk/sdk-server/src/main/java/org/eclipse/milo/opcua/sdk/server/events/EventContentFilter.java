@@ -234,7 +234,12 @@ public class EventContentFilter {
     StatusCode[] operandStatusCodes = new StatusCode[xos.length];
 
     for (int i = 0; i < xos.length; i++) {
-      Object operand = xos[i].decodeOrNull(context.getServer().getStaticEncodingContext());
+      Object operand;
+      try {
+        operand = xos[i].decode(context.getServer().getStaticEncodingContext());
+      } catch (Exception ignored) {
+        operand = null;
+      }
 
       if (operand instanceof FilterOperand) {
         operands[i] = (FilterOperand) operand;

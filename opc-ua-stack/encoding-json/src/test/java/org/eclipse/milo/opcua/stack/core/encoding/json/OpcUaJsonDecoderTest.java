@@ -541,12 +541,12 @@ class OpcUaJsonDecoderTest {
   void readExtensionObject() throws IOException {
     var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
 
-    var jsonStringXo = new ExtensionObject("{\"foo\":\"bar\",\"baz\":42}", new NodeId(2, 42));
+    var jsonStringXo = ExtensionObject.of("{\"foo\":\"bar\",\"baz\":42}", new NodeId(2, 42));
 
     var byteStringXo =
-        new ExtensionObject(ByteString.of(new byte[] {0x00, 0x01, 0x02, 0x03}), new NodeId(2, 42));
+        ExtensionObject.of(ByteString.of(new byte[] {0x00, 0x01, 0x02, 0x03}), new NodeId(2, 42));
 
-    var xmlElementXo = new ExtensionObject(new XmlElement("<foo>bar</foo>"), new NodeId(2, 42));
+    var xmlElementXo = ExtensionObject.of(new XmlElement("<foo>bar</foo>"), new NodeId(2, 42));
 
     decoder.reset(
         new StringReader(

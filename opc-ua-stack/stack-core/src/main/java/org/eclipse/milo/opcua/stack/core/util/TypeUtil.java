@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -92,7 +92,11 @@ public class TypeUtil {
     if (backingType.isPrimitive()) {
       return PRIMITIVE_BUILTIN_TYPES.getOrDefault(backingType, -1);
     } else {
-      return BUILTIN_TYPES_INVERSE.getOrDefault(backingType, -1);
+      if (ExtensionObject.class.isAssignableFrom(backingType)) {
+        return BUILTIN_TYPES_INVERSE.getOrDefault(ExtensionObject.class, -1);
+      } else {
+        return BUILTIN_TYPES_INVERSE.getOrDefault(backingType, -1);
+      }
     }
   }
 
