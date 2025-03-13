@@ -11,6 +11,7 @@
 package org.eclipse.milo.opcua.stack.core.types.builtin;
 
 import java.util.Objects;
+import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
@@ -382,6 +383,14 @@ public abstract sealed class ExtensionObject
     public int hashCode() {
       return Objects.hash(body, encodingId);
     }
+
+    @Override
+    public String toString() {
+      return new StringJoiner(", ", ExtensionObject.class.getSimpleName() + "[", "]")
+          .add("body=" + body)
+          .add("encodingId=" + encodingId)
+          .toString();
+    }
   }
 
   /** An ExtensionObject that contains an {@link XmlElement} body, used with XML encoding. */
@@ -421,6 +430,14 @@ public abstract sealed class ExtensionObject
     public int hashCode() {
       return Objects.hash(body, encodingId);
     }
+
+    @Override
+    public String toString() {
+      return new StringJoiner(", ", ExtensionObject.class.getSimpleName() + "[", "]")
+          .add("body=" + body)
+          .add("encodingId=" + encodingId)
+          .toString();
+    }
   }
 
   /** An ExtensionObject that contains a {@link String} body, used with JSON encoding. */
@@ -459,6 +476,14 @@ public abstract sealed class ExtensionObject
     @Override
     public int hashCode() {
       return Objects.hash(body, typeId);
+    }
+
+    @Override
+    public String toString() {
+      return new StringJoiner(", ", ExtensionObject.class.getSimpleName() + "[", "]")
+          .add("body='" + body + "'")
+          .add("typeId=" + typeId)
+          .toString();
     }
   }
 }
