@@ -451,15 +451,15 @@ public class OpcUaBinaryEncoder implements UaEncoder {
       encodeNodeId(NodeId.NULL_VALUE);
       buffer.writeByte(0); // No body is encoded
     } else {
-      if (value instanceof ExtensionObject.BinaryExtensionObject xo) {
+      if (value instanceof ExtensionObject.Binary xo) {
         encodeNodeId(xo.getEncodingOrTypeId());
         buffer.writeByte(1); // Body is binary encoded
         encodeByteString(xo.getBody());
-      } else if (value instanceof ExtensionObject.XmlExtensionObject xo) {
+      } else if (value instanceof ExtensionObject.Xml xo) {
         encodeNodeId(xo.getEncodingOrTypeId());
         buffer.writeByte(2);
         encodeXmlElement(xo.getBody());
-      } else if (value instanceof ExtensionObject.JsonExtensionObject xo) {
+      } else if (value instanceof ExtensionObject.Json xo) {
         encodeNodeId(xo.getEncodingOrTypeId());
         buffer.writeByte(1);
         encodeByteString(ByteString.of(xo.getBody().getBytes(StandardCharsets.UTF_8)));

@@ -23,9 +23,7 @@ import org.slf4j.LoggerFactory;
 
 @NullMarked
 public abstract sealed class ExtensionObject
-    permits ExtensionObject.BinaryExtensionObject,
-        ExtensionObject.JsonExtensionObject,
-        ExtensionObject.XmlExtensionObject {
+    permits ExtensionObject.Binary, ExtensionObject.Json, ExtensionObject.Xml {
 
   private final Lazy<Object> decoded = new Lazy<>();
 
@@ -72,9 +70,9 @@ public abstract sealed class ExtensionObject
    * @throws UaSerializationException if the decoding fails.
    */
   public final Object decode(EncodingContext context) throws UaSerializationException {
-    if (this instanceof BinaryExtensionObject) {
+    if (this instanceof ExtensionObject.Binary) {
       return decode(context, OpcUaDefaultBinaryEncoding.getInstance());
-    } else if (this instanceof XmlExtensionObject) {
+    } else if (this instanceof ExtensionObject.Xml) {
       DataTypeEncoding encoding =
           context.getEncodingManager().getEncoding(DataTypeEncoding.XML_ENCODING_NAME);
 
@@ -85,7 +83,7 @@ public abstract sealed class ExtensionObject
             StatusCodes.Bad_EncodingError,
             "encoding not registered: " + DataTypeEncoding.XML_ENCODING_NAME);
       }
-    } else if (this instanceof JsonExtensionObject) {
+    } else if (this instanceof ExtensionObject.Json) {
       DataTypeEncoding encoding =
           context.getEncodingManager().getEncoding(DataTypeEncoding.JSON_ENCODING_NAME);
 
@@ -139,11 +137,11 @@ public abstract sealed class ExtensionObject
       Object encoded = newEncoding.encode(context, decoded, newEncodingId);
 
       if (encoded instanceof ByteString bs) {
-        return new BinaryExtensionObject(bs, newEncodingId);
+        return ExtensionObject.of(bs, newEncodingId);
       } else if (encoded instanceof XmlElement xml) {
-        return new XmlExtensionObject(xml, newEncodingId);
+        return ExtensionObject.of(xml, newEncodingId);
       } else if (encoded instanceof String json) {
-        return new JsonExtensionObject(json, newEncodingId);
+        return ExtensionObject.of(json, newEncodingId);
       } else {
         throw new UaSerializationException(
             StatusCodes.Bad_EncodingError, "unexpected body: " + encoded.getClass().getName());
@@ -163,7 +161,7 @@ public abstract sealed class ExtensionObject
    * @return a new ExtensionObject2 with the specified body and encoding id.
    */
   public static ExtensionObject of(ByteString body, NodeId encodingId) {
-    return new BinaryExtensionObject(body, encodingId);
+    return new ExtensionObject.Binary(body, encodingId);
   }
 
   /**
@@ -174,7 +172,7 @@ public abstract sealed class ExtensionObject
    * @return a new ExtensionObject2 with the specified body and encoding id.
    */
   public static ExtensionObject of(XmlElement body, NodeId encodingId) {
-    return new XmlExtensionObject(body, encodingId);
+    return new ExtensionObject.Xml(body, encodingId);
   }
 
   /**
@@ -185,7 +183,7 @@ public abstract sealed class ExtensionObject
    * @return a new ExtensionObject2 with the specified body and type id.
    */
   public static ExtensionObject of(String body, NodeId typeId) {
-    return new JsonExtensionObject(body, typeId);
+    return new ExtensionObject.Json(body, typeId);
   }
 
   /**
@@ -312,7 +310,7 @@ public abstract sealed class ExtensionObject
     Object body = encoding.encode(context, struct, encodingId);
 
     if (body instanceof ByteString bs) {
-      return new BinaryExtensionObject(bs, encodingId);
+      return ExtensionObject.of(bs, encodingId);
     } else {
       throw new UaSerializationException(
           StatusCodes.Bad_EncodingError, "expected ByteString, got " + body.getClass().getName());
@@ -326,7 +324,7 @@ public abstract sealed class ExtensionObject
     Object body = encoding.encode(context, struct, encodingId);
 
     if (body instanceof XmlElement xml) {
-      return new XmlExtensionObject(xml, encodingId);
+      return ExtensionObject.of(xml, encodingId);
     } else {
       throw new UaSerializationException(
           StatusCodes.Bad_EncodingError, "expected XmlElement, got " + body.getClass().getName());
@@ -340,7 +338,7 @@ public abstract sealed class ExtensionObject
     Object body = encoding.encode(context, struct, typeId);
 
     if (body instanceof String json) {
-      return new JsonExtensionObject(json, typeId);
+      return ExtensionObject.of(json, typeId);
     } else {
       throw new UaSerializationException(
           StatusCodes.Bad_EncodingError, "expected String, got " + body.getClass().getName());
@@ -348,12 +346,12 @@ public abstract sealed class ExtensionObject
   }
 
   /** An ExtensionObject that contains a {@link ByteString} body, used with Binary encoding. */
-  public static final class BinaryExtensionObject extends ExtensionObject {
+  public static final class Binary extends ExtensionObject {
 
     private final ByteString body;
     private final NodeId encodingId;
 
-    public BinaryExtensionObject(ByteString body, NodeId encodingId) {
+    private Binary(ByteString body, NodeId encodingId) {
       this.body = body;
       this.encodingId = encodingId;
     }
@@ -376,7 +374,7 @@ public abstract sealed class ExtensionObject
     @Override
     public boolean equals(Object o) {
       if (o == null || getClass() != o.getClass()) return false;
-      BinaryExtensionObject that = (BinaryExtensionObject) o;
+      ExtensionObject.Binary that = (ExtensionObject.Binary) o;
       return Objects.equals(body, that.body) && Objects.equals(encodingId, that.encodingId);
     }
 
@@ -387,12 +385,12 @@ public abstract sealed class ExtensionObject
   }
 
   /** An ExtensionObject that contains an {@link XmlElement} body, used with XML encoding. */
-  public static final class XmlExtensionObject extends ExtensionObject {
+  public static final class Xml extends ExtensionObject {
 
     private final XmlElement body;
     private final NodeId encodingId;
 
-    public XmlExtensionObject(XmlElement body, NodeId encodingId) {
+    private Xml(XmlElement body, NodeId encodingId) {
       this.body = body;
       this.encodingId = encodingId;
     }
@@ -415,7 +413,7 @@ public abstract sealed class ExtensionObject
     @Override
     public boolean equals(Object o) {
       if (o == null || getClass() != o.getClass()) return false;
-      XmlExtensionObject that = (XmlExtensionObject) o;
+      ExtensionObject.Xml that = (ExtensionObject.Xml) o;
       return Objects.equals(body, that.body) && Objects.equals(encodingId, that.encodingId);
     }
 
@@ -426,12 +424,12 @@ public abstract sealed class ExtensionObject
   }
 
   /** An ExtensionObject that contains a {@link String} body, used with JSON encoding. */
-  public static final class JsonExtensionObject extends ExtensionObject {
+  public static final class Json extends ExtensionObject {
 
     private final String body;
     private final NodeId typeId;
 
-    public JsonExtensionObject(String body, NodeId typeId) {
+    private Json(String body, NodeId typeId) {
       this.body = body;
       this.typeId = typeId;
     }
@@ -454,7 +452,7 @@ public abstract sealed class ExtensionObject
     @Override
     public boolean equals(Object o) {
       if (o == null || getClass() != o.getClass()) return false;
-      JsonExtensionObject that = (JsonExtensionObject) o;
+      ExtensionObject.Json that = (ExtensionObject.Json) o;
       return Objects.equals(body, that.body) && Objects.equals(typeId, that.typeId);
     }
 
