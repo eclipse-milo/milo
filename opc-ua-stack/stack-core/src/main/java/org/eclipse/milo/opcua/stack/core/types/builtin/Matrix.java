@@ -138,6 +138,22 @@ public class Matrix {
   }
 
   /**
+   * Get the Java class of the elements of this Matrix.
+   *
+   * <p>Empty only if this Matrix contains a {@code null} value.
+   *
+   * @return the Java class of the elements of this Matrix.
+   */
+  public Optional<Class<?>> getElementType() {
+    if (flatArray == null) {
+      return Optional.empty();
+    } else {
+      Class<?> type = ArrayUtil.getType(flatArray);
+      return Optional.of(type);
+    }
+  }
+
+  /**
    * @return {@code true} if this Matrix contains a null value.
    */
   public boolean isNull() {

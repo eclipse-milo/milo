@@ -98,4 +98,14 @@ class MatrixTest {
         OpcUaDataType.Int32.getNodeId().expanded(), primitiveMatrix2d.getDataTypeId().orElse(null));
     assertEquals(ThreeDVector.TYPE_ID, vectorMatrix2d.getDataTypeId().orElse(null));
   }
+
+  @Test
+  void getElementType() {
+    assertEquals(Integer.class, boxedMatrix2d.getElementType().orElseThrow());
+    assertEquals(int.class, primitiveMatrix2d.getElementType().orElseThrow());
+    assertEquals(ThreeDVector.class, vectorMatrix2d.getElementType().orElseThrow());
+
+    Matrix nullMatrix = Matrix.ofNull();
+    assertTrue(nullMatrix.getElementType().isEmpty());
+  }
 }
