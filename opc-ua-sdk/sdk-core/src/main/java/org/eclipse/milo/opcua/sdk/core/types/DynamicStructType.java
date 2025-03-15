@@ -100,6 +100,16 @@ public final class DynamicStructType extends DynamicType implements UaStructured
     return joiner.toString();
   }
 
+  /**
+   * Returns a pretty-printed string representation of this struct. Nested structures are indented
+   * for better readability.
+   *
+   * @return a pretty-printed string representation of this struct.
+   */
+  public String toStringPretty() {
+    return PrettyToString.toStringPretty(this);
+  }
+
   private static String joinMembers(LinkedHashMap<String, Object> members) {
     return members.entrySet().stream()
         .map(
