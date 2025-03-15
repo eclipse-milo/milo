@@ -18,8 +18,6 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * This example requires <a
@@ -32,8 +30,6 @@ public class IJTReadCustomDataTypeExample implements ClientExample {
 
     new ClientExampleRunner(example, false).run();
   }
-
-  private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Override
   public void run(OpcUaClient client, CompletableFuture<OpcUaClient> future) throws Exception {
