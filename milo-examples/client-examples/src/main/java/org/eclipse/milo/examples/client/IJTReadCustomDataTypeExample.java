@@ -21,6 +21,10 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * This example requires <a
+ * href="https://github.com/umati/UA-for-Industrial-Joining-Technologies">the IJT sample server</a>.
+ */
 public class IJTReadCustomDataTypeExample implements ClientExample {
 
   public static void main(String[] args) throws Exception {
@@ -51,7 +55,7 @@ public class IJTReadCustomDataTypeExample implements ClientExample {
 
   @Override
   public String getEndpointUrl() {
-    return "opc.tcp://10.211.55.3:40451";
+    return "opc.tcp://localhost:40451";
   }
 
   @Override
