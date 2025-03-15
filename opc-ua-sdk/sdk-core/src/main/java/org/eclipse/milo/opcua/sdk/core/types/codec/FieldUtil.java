@@ -90,7 +90,7 @@ class FieldUtil {
         }
       }
     } catch (Exception e) {
-      // This is okay - ExtensionObjects are technically opaque and contain an encoded type we
+      // This is okay - ExtensionObjects can be opaque and contain an encoded type we
       // don't know about for some reason.
       LoggerFactory.getLogger(FieldUtil.class)
           .debug(
