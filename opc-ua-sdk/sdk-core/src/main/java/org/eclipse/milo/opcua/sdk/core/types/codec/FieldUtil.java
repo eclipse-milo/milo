@@ -65,11 +65,31 @@ class FieldUtil {
 
     Object value = _decodeFieldValue(decoder, definition, field, fieldHints);
 
-    try {
-      // When the value of a field is an ExtensionObject, try to eagerly decode it.
+    if (value instanceof Variant v && v.getValue() != null) {
+      value = Variant.of(maybeEagerlyDecodeValue(decoder, field, v.getValue()));
+    } else {
+      value = maybeEagerlyDecodeValue(decoder, field, value);
+    }
 
+    return value;
+  }
+
+  /**
+   * Eagerly decode a value if it is an ExtensionObject, array of ExtensionObject, or Matrix of
+   * ExtensionObject.
+   *
+   * @param decoder the {@link UaDecoder} to use for decoding.
+   * @param field the {@link StructureField} to decode.
+   * @param value the value to decode.
+   * @return the decoded value, or the original value if it cannot be decoded or is not an
+   *     ExtensionObject.
+   */
+  private static Object maybeEagerlyDecodeValue(
+      UaDecoder decoder, StructureField field, Object value) {
+
+    try {
       if (value instanceof ExtensionObject xo) {
-        value = xo.decode(decoder.getEncodingContext());
+        return xo.decode(decoder.getEncodingContext());
       } else if (value instanceof ExtensionObject[] xos) {
         Object decodedArray = null;
         for (int i = 0; i < xos.length; i++) {
@@ -80,13 +100,13 @@ class FieldUtil {
           Array.set(decodedArray, i, decoded);
         }
         if (decodedArray != null) {
-          value = decodedArray;
+          return decodedArray;
         }
       } else if (value instanceof Matrix matrix) {
         Class<?> elementType = matrix.getElementType().orElse(Object.class);
 
         if (elementType == ExtensionObject.class) {
-          value = matrix.transform(o -> ((ExtensionObject) o).decode(decoder.getEncodingContext()));
+          return matrix.transform(o -> ((ExtensionObject) o).decode(decoder.getEncodingContext()));
         }
       }
     } catch (Exception e) {
