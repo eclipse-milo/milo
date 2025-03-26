@@ -12,14 +12,14 @@ package org.eclipse.milo.opcua.stack.core.encoding.binary;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.builtin.*;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelType;
@@ -204,5 +204,71 @@ public class OpcUaBinaryEncoderTest {
         matrix,
         decodedMatrix.transform(
             v -> ((ExtensionObject) v).decode(DefaultEncodingContext.INSTANCE)));
+  }
+
+  @Test
+  void dataValueEncodingMaskValueBit() {
+    DataValue dataValue = new DataValue(Variant.ofBoolean(true), StatusCode.GOOD, null);
+    encoder.encodeDataValue(dataValue);
+
+    // get the EncodingMask byte out of the buffer and ensure only the Value bit is set
+    byte encodingMask = buffer.getByte(buffer.readerIndex());
+    assertEquals(0b00000001, encodingMask);
+
+    // decode the DataValue and ensure we decoded the value as true
+    var decoder = new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE).setBuffer(buffer);
+    DataValue decodedDataValue = decoder.decodeDataValue();
+
+    assertEquals(Variant.ofBoolean(true), decodedDataValue.value());
+  }
+
+  @Test
+  void dataValueEncodingMaskNullValueBit() {
+    DataValue dataValue = new DataValue(Variant.ofNull(), StatusCode.GOOD, null);
+    encoder.encodeDataValue(dataValue);
+
+    // get the EncodingMask byte out of the buffer and ensure no bits are set
+    byte encodingMask = buffer.getByte(buffer.readerIndex());
+    assertEquals(0b00000000, encodingMask);
+
+    // decode the DataValue and ensure we decoded the value as null
+    var decoder = new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE).setBuffer(buffer);
+    DataValue decodedDataValue = decoder.decodeDataValue();
+
+    assertTrue(decodedDataValue.value().isNull());
+  }
+
+  @Test
+  void dataValueEncodingMaskStatusCodeBit() {
+    DataValue dataValue = new DataValue(Variant.ofBoolean(true), StatusCode.GOOD, null);
+    encoder.encodeDataValue(dataValue);
+
+    // get the EncodingMask byte out of the buffer and ensure only the Value bit is set
+    byte encodingMask = buffer.getByte(buffer.readerIndex());
+    assertEquals(0b00000001, encodingMask);
+
+    // decode the DataValue and ensure we decoded the StatusCode as GOOD
+    var decoder = new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE).setBuffer(buffer);
+    DataValue decodedDataValue = decoder.decodeDataValue();
+
+    assertEquals(StatusCode.GOOD, decodedDataValue.statusCode());
+  }
+
+  @Test
+  void dataValueEncodingMaskStatusCodeGoodOverloadBit() {
+    DataValue dataValue =
+        new DataValue(Variant.ofBoolean(true), new StatusCode(StatusCodes.Good_Overload), null);
+    encoder.encodeDataValue(dataValue);
+
+    // get the EncodingMask byte out of the buffer and ensure both the Value and StatusCode bits are
+    // set
+    byte encodingMask = buffer.getByte(buffer.readerIndex());
+    assertEquals(0b00000011, encodingMask);
+
+    // decode the DataValue and ensure we decoded the same StatusCode
+    var decoder = new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE).setBuffer(buffer);
+    DataValue decodedDataValue = decoder.decodeDataValue();
+
+    assertEquals(new StatusCode(StatusCodes.Good_Overload), decodedDataValue.statusCode());
   }
 }

@@ -292,11 +292,11 @@ public class OpcUaBinaryEncoder implements UaEncoder {
     } else {
       int mask = 0x00;
 
-      if (value.value() != null && value.value().isNotNull()) {
+      if (value.value().isNotNull()) {
         mask |= 0x01;
       }
 
-      if (!StatusCode.GOOD.equals(value.statusCode())) {
+      if (value.getStatusCode().getValue() != 0L) {
         mask |= 0x02;
       }
 

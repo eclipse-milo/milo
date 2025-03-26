@@ -890,13 +890,13 @@ class OpcUaJsonEncoderTest {
 
     // omit all fields
     encoder.reset(writer = new StringWriter());
-    encoder.encodeDataValue(null, new DataValue(Variant.NULL_VALUE, null, null));
+    encoder.encodeDataValue(null, new DataValue(Variant.NULL_VALUE, StatusCode.GOOD, null));
     assertEquals("", writer.toString());
 
     // omit all fields while embedded in object
     encoder.reset(writer = new StringWriter());
     encoder.jsonWriter.beginObject();
-    encoder.encodeDataValue("foo", new DataValue(Variant.NULL_VALUE, null, null));
+    encoder.encodeDataValue("foo", new DataValue(Variant.NULL_VALUE, StatusCode.GOOD, null));
     encoder.jsonWriter.endObject();
     assertEquals("{}", writer.toString());
   }

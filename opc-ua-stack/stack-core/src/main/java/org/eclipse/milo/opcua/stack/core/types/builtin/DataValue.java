@@ -20,7 +20,7 @@ import org.jspecify.annotations.Nullable;
 @NullMarked
 public record DataValue(
     Variant value,
-    @Nullable StatusCode statusCode,
+    StatusCode statusCode,
     @Nullable DateTime sourceTime,
     @Nullable UShort sourcePicoseconds,
     @Nullable DateTime serverTime,
@@ -42,13 +42,13 @@ public record DataValue(
     this(value, status, DateTime.now());
   }
 
-  public DataValue(Variant value, @Nullable StatusCode status, @Nullable DateTime time) {
+  public DataValue(Variant value, StatusCode status, @Nullable DateTime time) {
     this(value, status, time, time);
   }
 
   public DataValue(
       Variant value,
-      @Nullable StatusCode status,
+      StatusCode status,
       @Nullable DateTime sourceTime,
       @Nullable DateTime serverTime) {
 
@@ -59,7 +59,7 @@ public record DataValue(
     return value;
   }
 
-  public @Nullable StatusCode getStatusCode() {
+  public StatusCode getStatusCode() {
     return statusCode;
   }
 
@@ -149,19 +149,21 @@ public record DataValue(
   }
 
   /**
-   * Create a {@link DataValue} containing *only* the Variant. All other fields will be null.
+   * Create a {@link DataValue} containing only a value.
+   *
+   * <p>{@link StatusCode#GOOD} is implied, and other fields will be null.
    *
    * @param v the value {@link Variant}.
    * @return a {@link DataValue} containing only the value.
    */
   public static DataValue valueOnly(Variant v) {
-    return new DataValue(v, null, null, null, null, null);
+    return new DataValue(v, StatusCode.GOOD, null, null, null, null);
   }
 
   public static class Builder {
 
     public Variant value = Variant.NULL_VALUE;
-    public @Nullable StatusCode status;
+    public StatusCode status = StatusCode.GOOD;
     public @Nullable DateTime sourceTime;
     public @Nullable UShort sourcePicoseconds;
     public @Nullable DateTime serverTime;
@@ -188,7 +190,7 @@ public record DataValue(
       return this;
     }
 
-    public Builder setStatus(@Nullable StatusCode status) {
+    public Builder setStatus(StatusCode status) {
       this.status = status;
       return this;
     }

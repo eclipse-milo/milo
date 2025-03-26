@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -39,8 +39,8 @@ public class WriteExample implements ClientExample {
     for (int i = 0; i < 10; i++) {
       Variant v = Variant.ofInt32(i);
 
-      // don't write status or timestamps
-      DataValue dv = new DataValue(v, null, null);
+      // don't write timestamps
+      DataValue dv = DataValue.valueOnly(v);
 
       List<StatusCode> statusCodes = client.writeValues(nodeIds, List.of(dv));
 
