@@ -296,7 +296,7 @@ public class OpcUaBinaryEncoder implements UaEncoder {
         mask |= 0x01;
       }
 
-      if (!StatusCode.GOOD.equals(value.statusCode())) {
+      if (value.statusCode() != null && !StatusCode.GOOD.equals(value.statusCode())) {
         mask |= 0x02;
       }
 

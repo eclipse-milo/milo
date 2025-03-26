@@ -17,8 +17,10 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
+import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
@@ -204,5 +206,21 @@ public class OpcUaBinaryEncoderTest {
         matrix,
         decodedMatrix.transform(
             v -> ((ExtensionObject) v).decode(DefaultEncodingContext.INSTANCE)));
+  }
+
+  @Test
+  void encodeDataValueWithNullStatusCode() {
+    DataValue dataValue = new DataValue(Variant.ofBoolean(true), null, null);
+    encoder.encodeDataValue(dataValue);
+
+    // get the EncodingMask byte out of the buffer and ensure only the Value bit is set
+    byte encodingMask = buffer.getByte(buffer.readerIndex());
+    assertEquals(0b00000001, encodingMask);
+
+    // decode the DataValue and ensure we decoded the StatusCode as GOOD
+    var decoder = new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE).setBuffer(buffer);
+    DataValue decodedDataValue = decoder.decodeDataValue();
+
+    assertEquals(StatusCode.GOOD, decodedDataValue.statusCode());
   }
 }
