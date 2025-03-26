@@ -288,7 +288,9 @@ public class OpcUaBinaryStreamEncoder implements UaEncoder {
                 mask |= 0x01;
             }
 
-            if (!StatusCode.GOOD.equals(value.getStatusCode())) {
+            if (value.getStatusCode() != null &&
+                !StatusCode.GOOD.equals(value.getStatusCode())) {
+
                 mask |= 0x02;
             }
 
