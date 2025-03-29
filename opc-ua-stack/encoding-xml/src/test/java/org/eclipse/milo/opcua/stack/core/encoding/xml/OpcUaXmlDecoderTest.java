@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -30,7 +30,7 @@ public class OpcUaXmlDecoderTest {
   @Test
   void readVariantValue() throws Exception {
     String xml =
-        """
+"""
 <ListOfExtensionObject xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd"\
  xmlns:xsd="http://www.w3.org/2001/XMLSchema"\
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><ExtensionObject><TypeId><Identifier>i=297</Identifier>
