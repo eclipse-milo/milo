@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -77,12 +77,10 @@ class MatrixTest {
   @Test
   void matrixToString() {
     assertEquals(
-        "Matrix{dataType=Int32, "
-            + "dataTypeId=ns=0;i=6, dimensions=[2, 2], flatArray=[1, 2, 3, 4]}",
+        "Matrix{dataType=Int32, " + "dataTypeId=i=6, dimensions=[2, 2], flatArray=[1, 2, 3, 4]}",
         primitiveMatrix2d.toString());
     assertEquals(
-        "Matrix{dataType=Int32, "
-            + "dataTypeId=ns=0;i=6, dimensions=[2, 2], flatArray=[1, 2, 3, 4]}",
+        "Matrix{dataType=Int32, " + "dataTypeId=i=6, dimensions=[2, 2], flatArray=[1, 2, 3, 4]}",
         boxedMatrix2d.toString());
   }
 

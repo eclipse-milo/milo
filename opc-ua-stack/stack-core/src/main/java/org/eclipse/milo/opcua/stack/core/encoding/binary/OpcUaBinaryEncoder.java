@@ -10,6 +10,8 @@
 
 package org.eclipse.milo.opcua.stack.core.encoding.binary;
 
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
+
 import io.netty.buffer.ByteBuf;
 import java.lang.reflect.Array;
 import java.nio.charset.Charset;
@@ -32,6 +34,12 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.NamespaceReference;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.NamespaceReference.NamespaceIndex;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.NamespaceReference.NamespaceUri;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.ServerReference;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.ServerReference.ServerIndex;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.ServerReference.ServerUri;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
@@ -379,21 +387,37 @@ public class OpcUaBinaryEncoder implements UaEncoder {
   public void encodeExpandedNodeId(ExpandedNodeId value) throws UaSerializationException {
     if (value == null) value = ExpandedNodeId.NULL_VALUE;
 
-    int flags = 0;
-    String namespaceUri = value.getNamespaceUri();
-    UInteger serverIndex = value.getServerIndex();
-
-    if (namespaceUri != null && namespaceUri.length() > 0) {
-      flags |= 0x80;
+    int namespaceIndex = 0;
+    String namespaceUri = null;
+    NamespaceReference namespace = value.namespace();
+    if (namespace instanceof NamespaceUri uri) {
+      namespaceUri = uri.namespaceUri();
+    } else if (value.namespace() instanceof NamespaceIndex index) {
+      namespaceIndex = index.namespaceIndex().intValue();
     }
 
+    UInteger serverIndex = UInteger.MIN;
+    ServerReference server = value.server();
+    if (server instanceof ServerIndex index) {
+      serverIndex = index.serverIndex();
+    } else if (server instanceof ServerUri uri) {
+      UShort index = context.getServerTable().getIndex(uri.serverUri());
+      if (index != null) {
+        serverIndex = uint(index.intValue());
+      } else {
+        throw new UaSerializationException(
+            StatusCodes.Bad_EncodingError,
+            "server uri not found in server table: " + uri.serverUri());
+      }
+    }
+
+    int flags = 0;
+    if (namespaceUri != null && !namespaceUri.isEmpty()) {
+      flags |= 0x80;
+    }
     if (serverIndex.longValue() > 0) {
       flags |= 0x40;
     }
-
-    UShort index = value.getNamespaceIndex();
-    if (index == null) index = UShort.MIN;
-    int namespaceIndex = index.intValue();
 
     if (value.getType() == IdType.Numeric) {
       UInteger identifier = (UInteger) value.getIdentifier();
@@ -437,7 +461,7 @@ public class OpcUaBinaryEncoder implements UaEncoder {
           StatusCodes.Bad_EncodingError, "invalid identifier: " + value.getIdentifier());
     }
 
-    if (namespaceUri != null && namespaceUri.length() > 0) {
+    if (namespaceUri != null && !namespaceUri.isEmpty()) {
       encodeString(namespaceUri);
     }
 
@@ -915,7 +939,7 @@ public class OpcUaBinaryEncoder implements UaEncoder {
                 () ->
                     new UaSerializationException(
                         StatusCodes.Bad_EncodingError,
-                        "namespace not registered: " + xBinaryEncodingId.getNamespaceUri()));
+                        "namespace not registered: " + xBinaryEncodingId.namespace()));
 
     DataTypeCodec codec = context.getDataTypeManager().getCodec(encodingId);
 

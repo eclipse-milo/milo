@@ -30,6 +30,8 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.NamespaceReference;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.ServerReference;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
@@ -588,14 +590,15 @@ class OpcUaJsonEncoderTest {
     // field
 
     // reversible, namespace URI specified
-    encoder.encodeExpandedNodeId(null, new ExpandedNodeId(ushort(0), Namespaces.OPC_UA, "foo"));
+    encoder.encodeExpandedNodeId(null, ExpandedNodeId.of(Namespaces.OPC_UA, "foo"));
     assertEquals(
         "{\"IdType\":1,\"Id\":\"foo\",\"Namespace\":\"http://opcfoundation.org/UA/\"}",
         writer.toString());
 
     // reversible, remote server index
     encoder.reset(writer = new StringWriter());
-    encoder.encodeExpandedNodeId(null, new ExpandedNodeId(ushort(0), null, "foo", uint(1)));
+    encoder.encodeExpandedNodeId(
+        null, new ExpandedNodeId(ServerReference.of(1), NamespaceReference.of(0), "foo"));
     assertEquals("{\"IdType\":1,\"Id\":\"foo\",\"ServerUri\":1}", writer.toString());
 
     // non-reversible, remote server index
@@ -604,20 +607,22 @@ class OpcUaJsonEncoderTest {
     encoder.encodingContext.getServerTable().add("urn:server:local");
     encoder.encodingContext.getServerTable().add("urn:server:remote");
     encoder.reset(writer = new StringWriter());
-    encoder.encodeExpandedNodeId(null, new ExpandedNodeId(ushort(0), null, "foo", uint(1)));
+    encoder.encodeExpandedNodeId(
+        null, new ExpandedNodeId(ServerReference.of(1), NamespaceReference.of(0), "foo"));
     assertEquals(
         "{\"IdType\":1,\"Id\":\"foo\",\"ServerUri\":\"urn:server:remote\"}", writer.toString());
 
     // non-reversible, remote server index not in table
     encoder.reset(writer = new StringWriter());
-    encoder.encodeExpandedNodeId(null, new ExpandedNodeId(ushort(0), null, "foo", uint(2)));
+    encoder.encodeExpandedNodeId(
+        null, new ExpandedNodeId(ServerReference.of(2), NamespaceReference.of(0), "foo"));
     assertEquals("{\"IdType\":1,\"Id\":\"foo\",\"ServerUri\":2}", writer.toString());
 
     // reversible, field specified
     encoder.reversible = false;
     encoder.reset(writer = new StringWriter());
     encoder.jsonWriter.beginObject();
-    encoder.encodeExpandedNodeId("foo", new ExpandedNodeId(ushort(0), Namespaces.OPC_UA, "foo"));
+    encoder.encodeExpandedNodeId("foo", ExpandedNodeId.of(Namespaces.OPC_UA, "foo"));
     encoder.jsonWriter.endObject();
     assertEquals(
         "{\"foo\":{\"IdType\":1,\"Id\":\"foo\",\"Namespace\":\"http://opcfoundation.org/UA/\"}}",

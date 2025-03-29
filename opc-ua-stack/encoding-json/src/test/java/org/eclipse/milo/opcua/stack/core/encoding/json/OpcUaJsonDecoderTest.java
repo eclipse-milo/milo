@@ -34,6 +34,8 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.NamespaceReference;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.ServerReference;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
@@ -448,14 +450,14 @@ class OpcUaJsonDecoderTest {
     var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
 
     // namespace URI specified
-    var xni = new ExpandedNodeId(ushort(0), "http://opcfoundation.org/UA/", "foo");
+    var xni = ExpandedNodeId.of("http://opcfoundation.org/UA/", "foo");
     decoder.reset(
         new StringReader(
             "{\"IdType\":1,\"Id\":\"foo\",\"Namespace\":\"http://opcfoundation.org/UA/\"}"));
     assertEquals(xni, decoder.decodeExpandedNodeId(null));
 
     // remote server index
-    xni = new ExpandedNodeId(ushort(0), null, "foo", uint(1));
+    xni = new ExpandedNodeId(ServerReference.of(1), NamespaceReference.of(0), "foo");
     decoder.reset(new StringReader("{\"IdType\":1,\"Id\":\"foo\",\"ServerUri\":1}"));
     assertEquals(xni, decoder.decodeExpandedNodeId(null));
 

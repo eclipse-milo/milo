@@ -12,14 +12,13 @@ package org.eclipse.milo.opcua.sdk.server.events.conversions;
 
 import static org.eclipse.milo.opcua.sdk.server.events.conversions.ExpandedNodeIdConversions.expandedNodeIdToNodeId;
 import static org.eclipse.milo.opcua.sdk.server.events.conversions.ExpandedNodeIdConversions.expandedNodeIdToString;
-import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
-import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.NamespaceReference;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.ServerReference;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 import org.junit.jupiter.api.Test;
 
 public class ExpandedNodeIdConversionsTest {
@@ -27,7 +26,8 @@ public class ExpandedNodeIdConversionsTest {
   @Test
   public void testExpandedNodeIdToNodeId() {
     assertNull(
-        expandedNodeIdToNodeId(new ExpandedNodeId(ushort(0), Namespaces.OPC_UA, "foo", uint(2))));
+        expandedNodeIdToNodeId(
+            new ExpandedNodeId(ServerReference.of(2), NamespaceReference.of(0), "foo")));
 
     NodeId nodeId = new NodeId(0, "bar");
 
@@ -36,7 +36,7 @@ public class ExpandedNodeIdConversionsTest {
 
   @Test
   public void testExpandedNodeIdToString() {
-    ExpandedNodeId e1 = new ExpandedNodeId(ushort(0), Namespaces.OPC_UA, "foo", uint(2));
+    ExpandedNodeId e1 = new ExpandedNodeId(ServerReference.of(2), NamespaceReference.of(0), "foo");
     ExpandedNodeId e2 = new NodeId(1, "bar").expanded();
 
     assertEquals(e1.toParseableString(), expandedNodeIdToString(e1));

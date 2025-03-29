@@ -29,7 +29,6 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.IdType;
-import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 import org.jspecify.annotations.Nullable;
 
 public enum OpcUaDataType {
@@ -134,7 +133,7 @@ public enum OpcUaDataType {
   }
 
   public static @Nullable Class<?> getBackingClass(ExpandedNodeId typeId) {
-    if (typeId.getNamespaceIndex().intValue() == 0 && typeId.getType() == IdType.Numeric) {
+    if (typeId.isOpcUaNamespace() && typeId.getType() == IdType.Numeric) {
       Number id = (Number) typeId.getIdentifier();
       return BACKING_CLASSES_BY_ID.get(id.intValue());
     }
@@ -170,11 +169,8 @@ public enum OpcUaDataType {
 
   @Nullable
   public static OpcUaDataType fromNodeId(ExpandedNodeId nodeId) {
-    if (nodeId.getIdentifier() instanceof UInteger
-        && (Namespaces.OPC_UA.equals(nodeId.getNamespaceUri())
-            || nodeId.getNamespaceIndex().intValue() == 0)) {
-
-      return fromNodeId(new NodeId(0, (UInteger) nodeId.getIdentifier()));
+    if (nodeId.isOpcUaNamespace() && nodeId.getIdentifier() instanceof UInteger id) {
+      return fromNodeId(new NodeId(0, id));
     } else {
       return null;
     }

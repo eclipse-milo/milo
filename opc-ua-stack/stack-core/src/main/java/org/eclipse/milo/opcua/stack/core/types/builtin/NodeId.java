@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -15,18 +15,15 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 
 import com.google.common.base.MoreObjects;
-import com.google.common.base.Objects;
 import java.util.Base64;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Function;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.IdType;
-import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
@@ -187,7 +184,17 @@ public final class NodeId {
    * @see ExpandedNodeId#isRelative()
    */
   public ExpandedNodeId expanded() {
-    return new ExpandedNodeId(namespaceIndex, null, identifier, UInteger.MIN);
+    if (identifier instanceof UInteger id) {
+      return ExpandedNodeId.of(namespaceIndex, id);
+    } else if (identifier instanceof String id) {
+      return ExpandedNodeId.of(namespaceIndex, id);
+    } else if (identifier instanceof UUID id) {
+      return ExpandedNodeId.of(namespaceIndex, id);
+    } else if (identifier instanceof ByteString id) {
+      return ExpandedNodeId.of(namespaceIndex, id);
+    } else {
+      throw new IllegalStateException("identifier: " + identifier);
+    }
   }
 
   /**
@@ -200,7 +207,18 @@ public final class NodeId {
    */
   public ExpandedNodeId expanded(NamespaceTable namespaceTable) {
     String namespaceUri = namespaceTable.get(namespaceIndex);
-    return new ExpandedNodeId(namespaceIndex, namespaceUri, identifier, UInteger.MIN);
+
+    if (identifier instanceof UInteger id) {
+      return ExpandedNodeId.of(namespaceUri, id);
+    } else if (identifier instanceof String id) {
+      return ExpandedNodeId.of(namespaceUri, id);
+    } else if (identifier instanceof UUID id) {
+      return ExpandedNodeId.of(namespaceUri, id);
+    } else if (identifier instanceof ByteString id) {
+      return ExpandedNodeId.of(namespaceUri, id);
+    } else {
+      throw new IllegalStateException("identifier: " + identifier);
+    }
   }
 
   public boolean isNull() {
@@ -330,15 +348,7 @@ public final class NodeId {
    * @return {@code true} if this {@link NodeId} is equal to {@code xni}.
    */
   public boolean equalTo(ExpandedNodeId xni) {
-    return equalTo(
-        xni,
-        uri -> {
-          if (Namespaces.OPC_UA.equals(uri)) {
-            return UShort.MIN;
-          } else {
-            return null;
-          }
-        });
+    return xni.equalTo(this);
   }
 
   /**
@@ -353,19 +363,7 @@ public final class NodeId {
    * @return {@code true} if this {@link NodeId} is equal to {@code xni}.
    */
   public boolean equalTo(ExpandedNodeId xni, NamespaceTable namespaceTable) {
-    return equalTo(xni, namespaceTable::getIndex);
-  }
-
-  private boolean equalTo(ExpandedNodeId xni, Function<String, UShort> getIndex) {
-    if (!xni.isLocal()) {
-      return false;
-    }
-
-    UShort otherNamespaceIndex =
-        xni.isAbsolute() ? getIndex.apply(xni.getNamespaceUri()) : xni.getNamespaceIndex();
-
-    return Objects.equal(namespaceIndex, otherNamespaceIndex)
-        && Objects.equal(identifier, xni.getIdentifier());
+    return xni.equalTo(this, namespaceTable);
   }
 
   @Override
@@ -406,7 +404,7 @@ public final class NodeId {
         sb.append("s=").append(identifier);
         break;
       case Guid:
-        sb.append("g=").append(identifier);
+        sb.append("g=").append(identifier.toString().toUpperCase());
         break;
       case Opaque:
         ByteString bs = (ByteString) identifier;

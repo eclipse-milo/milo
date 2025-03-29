@@ -285,8 +285,16 @@ public class OpcUaBinaryDecoder implements UaDecoder {
       serverIndex = decodeUInt32();
     }
 
-    return new ExpandedNodeId(
-        nodeId.getNamespaceIndex(), namespaceUri, nodeId.getIdentifier(), serverIndex);
+    ExpandedNodeId.ServerReference server = ExpandedNodeId.ServerReference.of(serverIndex);
+
+    ExpandedNodeId.NamespaceReference namespace;
+    if (namespaceUri == null) {
+      namespace = ExpandedNodeId.NamespaceReference.of(nodeId.getNamespaceIndex());
+    } else {
+      namespace = ExpandedNodeId.NamespaceReference.of(namespaceUri);
+    }
+
+    return new ExpandedNodeId(server, namespace, nodeId.getIdentifier());
   }
 
   public ExtensionObject decodeExtensionObject() throws UaSerializationException {
@@ -1186,8 +1194,7 @@ public class OpcUaBinaryDecoder implements UaDecoder {
     } else {
       if (dataTypeId.isLocal()) {
         throw new UaSerializationException(
-            StatusCodes.Bad_DecodingError,
-            "namespace not registered: " + dataTypeId.getNamespaceUri());
+            StatusCodes.Bad_DecodingError, "namespace not registered: " + dataTypeId.namespace());
       } else {
         throw new UaSerializationException(
             StatusCodes.Bad_DecodingError, "ExpandedNodeId not local: " + dataTypeId);

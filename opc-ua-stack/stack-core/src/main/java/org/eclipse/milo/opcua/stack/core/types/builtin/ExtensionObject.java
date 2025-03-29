@@ -206,8 +206,7 @@ public abstract sealed class ExtensionObject
                 () ->
                     new UaSerializationException(
                         StatusCodes.Bad_EncodingError,
-                        "namespace not registered: "
-                            + value.getBinaryEncodingId().getNamespaceUri()));
+                        "namespace not registered: " + value.getBinaryEncodingId().namespace()));
 
     return encode(context, value, encodingId, OpcUaDefaultBinaryEncoding.getInstance());
   }
@@ -299,7 +298,7 @@ public abstract sealed class ExtensionObject
                 () ->
                     new UaSerializationException(
                         StatusCodes.Bad_EncodingError,
-                        "namespace not registered: " + encodingOrTypeId.getNamespaceUri()));
+                        "namespace not registered: " + encodingOrTypeId.namespace()));
 
     return encode(context, struct, localEncodingOrTypeId, encoding);
   }

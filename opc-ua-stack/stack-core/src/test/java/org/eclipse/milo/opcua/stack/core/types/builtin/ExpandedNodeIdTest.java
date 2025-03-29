@@ -12,14 +12,12 @@ package org.eclipse.milo.opcua.stack.core.types.builtin;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.UUID;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.NamespaceReference;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.ServerReference;
 import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 import org.junit.jupiter.api.Test;
 
@@ -31,38 +29,44 @@ public class ExpandedNodeIdTest {
   public void testLocal() {
     namespaceTable.add("uri:test");
 
-    ExpandedNodeId xni0 = new ExpandedNodeId(ushort(0), null, "test");
+    ExpandedNodeId xni0 = ExpandedNodeId.of(ushort(0), "test");
     assertTrue(xni0.toNodeId(namespaceTable).isPresent());
 
-    ExpandedNodeId xni1 = new ExpandedNodeId(ushort(1), null, "test");
+    ExpandedNodeId xni1 = ExpandedNodeId.of(ushort(1), "test");
     assertTrue(xni1.toNodeId(namespaceTable).isPresent());
 
-    ExpandedNodeId xni2 = new ExpandedNodeId(ushort(99), namespaceTable.get(0), "test");
+    ExpandedNodeId xni2 = ExpandedNodeId.of(namespaceTable.get(0), "test");
     assertTrue(xni2.toNodeId(namespaceTable).isPresent());
 
-    ExpandedNodeId xni3 = new ExpandedNodeId(ushort(99), namespaceTable.get(1), "test");
+    ExpandedNodeId xni3 = ExpandedNodeId.of(namespaceTable.get(1), "test");
     assertTrue(xni3.toNodeId(namespaceTable).isPresent());
 
-    ExpandedNodeId xni4 = new ExpandedNodeId(ushort(99), "uri:notpresent", "test");
+    ExpandedNodeId xni4 = ExpandedNodeId.of("uri:notpresent", "test");
     assertFalse(xni4.toNodeId(namespaceTable).isPresent());
   }
 
   @Test
   public void testIsNull() {
-    assertTrue(ExpandedNodeId.newBuilder().setIdentifier(uint(0)).build().isNull());
-    assertTrue(ExpandedNodeId.newBuilder().setIdentifier((String) null).build().isNull());
-    assertTrue(ExpandedNodeId.newBuilder().setIdentifier("").build().isNull());
-    assertTrue(ExpandedNodeId.newBuilder().setIdentifier(new UUID(0, 0)).build().isNull());
-    assertTrue(ExpandedNodeId.newBuilder().setIdentifier(ByteString.NULL_VALUE).build().isNull());
-    assertTrue(
-        ExpandedNodeId.newBuilder().setIdentifier(ByteString.of(new byte[0])).build().isNull());
+    assertTrue(ExpandedNodeId.of(ushort(0), uint(0)).isNull());
+    assertTrue(ExpandedNodeId.of(ushort(0), "").isNull());
+    assertTrue(ExpandedNodeId.of(ushort(0), (String) null).isNull());
+    assertTrue(ExpandedNodeId.of(ushort(0), new UUID(0, 0)).isNull());
+    assertTrue(ExpandedNodeId.of(ushort(0), ByteString.NULL_VALUE).isNull());
+    assertTrue(ExpandedNodeId.of(ushort(0), ByteString.of(new byte[0])).isNull());
   }
 
   @Test
   public void testEqualityWithNodeId() {
     {
-      ExpandedNodeId xni =
-          ExpandedNodeId.newBuilder().setNamespaceIndex(0).setIdentifier("foo").build();
+      ExpandedNodeId xni = ExpandedNodeId.of("foo");
+
+      NodeId nodeId = new NodeId(0, "foo");
+
+      assertTrue(xni.equalTo(nodeId));
+    }
+
+    {
+      ExpandedNodeId xni = ExpandedNodeId.of(Namespaces.OPC_UA, "foo");
 
       NodeId nodeId = new NodeId(0, "foo");
 
@@ -71,23 +75,7 @@ public class ExpandedNodeIdTest {
 
     {
       ExpandedNodeId xni =
-          ExpandedNodeId.newBuilder()
-              .setNamespaceUri(Namespaces.OPC_UA)
-              .setIdentifier("foo")
-              .build();
-
-      NodeId nodeId = new NodeId(0, "foo");
-
-      assertTrue(xni.equalTo(nodeId));
-    }
-
-    {
-      ExpandedNodeId xni =
-          ExpandedNodeId.newBuilder()
-              .setNamespaceIndex(0)
-              .setIdentifier("foo")
-              .setServerIndex(1)
-              .build();
+          new ExpandedNodeId(ServerReference.of(1), NamespaceReference.of(0), "foo");
 
       NodeId nodeId = new NodeId(0, "foo");
 
@@ -95,8 +83,7 @@ public class ExpandedNodeIdTest {
     }
 
     {
-      ExpandedNodeId xni =
-          ExpandedNodeId.newBuilder().setNamespaceIndex(1).setIdentifier("foo").build();
+      ExpandedNodeId xni = ExpandedNodeId.of(ushort(1), "foo");
 
       NodeId nodeId = new NodeId(0, "foo");
 
@@ -104,8 +91,7 @@ public class ExpandedNodeIdTest {
     }
 
     {
-      ExpandedNodeId xni =
-          ExpandedNodeId.newBuilder().setNamespaceUri("uri:not:found").setIdentifier("foo").build();
+      ExpandedNodeId xni = ExpandedNodeId.of("uri:not:found", "foo");
 
       NodeId nodeId = new NodeId(0, "foo");
 
@@ -115,31 +101,34 @@ public class ExpandedNodeIdTest {
 
   @Test
   public void testToParseableString() {
-    String withoutNamespaceUri = new ExpandedNodeId(ushort(1), null, uint(0)).toParseableString();
+    String withoutNamespaceUri = ExpandedNodeId.of(ushort(1), uint(0)).toParseableString();
     assertEquals("ns=1;i=0", withoutNamespaceUri);
 
-    String withNamespaceUri =
-        new ExpandedNodeId(ushort(0), "urn:test", uint(0)).toParseableString();
+    String withNamespaceUri = ExpandedNodeId.of("urn:test", uint(0)).toParseableString();
     assertEquals("nsu=urn:test;i=0", withNamespaceUri);
 
     String withServerIndex =
-        new ExpandedNodeId(ushort(0), "urn:test", uint(0), uint(1)).toParseableString();
+        new ExpandedNodeId(ServerReference.of(1), NamespaceReference.of("urn:test"), uint(0))
+            .toParseableString();
     assertEquals("svr=1;nsu=urn:test;i=0", withServerIndex);
   }
 
   @Test
   public void absolute() {
-    ExpandedNodeId xni = new ExpandedNodeId(ushort(0), null, "foo");
+    ExpandedNodeId xni = ExpandedNodeId.of(ushort(0), "foo");
     assertTrue(xni.isRelative());
 
     ExpandedNodeId absolute = xni.absolute(new NamespaceTable()).orElseThrow(RuntimeException::new);
     assertTrue(absolute.isAbsolute());
-    assertEquals(Namespaces.OPC_UA, absolute.getNamespaceUri());
+
+    NamespaceReference namespace = absolute.namespace();
+    assertInstanceOf(NamespaceReference.NamespaceUri.class, namespace);
+    assertEquals(Namespaces.OPC_UA, ((NamespaceReference.NamespaceUri) namespace).namespaceUri());
   }
 
   @Test
   public void relative() {
-    ExpandedNodeId xni = new ExpandedNodeId(ushort(99), Namespaces.OPC_UA, "foo");
+    ExpandedNodeId xni = ExpandedNodeId.of(Namespaces.OPC_UA, "foo");
     assertTrue(xni.isAbsolute());
 
     ExpandedNodeId relative = xni.relative(new NamespaceTable()).orElseThrow(RuntimeException::new);
@@ -158,9 +147,9 @@ public class ExpandedNodeIdTest {
 
   @Test
   public void toParseableExplicitNamespaceZero() {
-    ExpandedNodeId xni = new ExpandedNodeId(ushort(0), null, "test");
+    ExpandedNodeId xni = ExpandedNodeId.of(ushort(0), "test");
 
-    assertEquals("ns=0;s=test", xni.toParseableString());
+    assertEquals("s=test", xni.toParseableString());
   }
 
   @Test
@@ -190,7 +179,7 @@ public class ExpandedNodeIdTest {
     namespaceTable.add("test1");
     namespaceTable.add("test2");
 
-    ExpandedNodeId xni1 = new ExpandedNodeId(ushort(1), null, "test");
+    ExpandedNodeId xni1 = ExpandedNodeId.of(ushort(1), "test");
 
     ExpandedNodeId xni2 = xni1.reindex(namespaceTable, "test2");
 

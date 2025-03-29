@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -22,7 +22,6 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
-import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 
 public class StringConversionsTest extends AbstractConversionTest<String> {
 
@@ -66,7 +65,7 @@ public class StringConversionsTest extends AbstractConversionTest<String> {
 
       case ExpandedNodeId:
         {
-          ExpandedNodeId eni = new ExpandedNodeId(ushort(0), Namespaces.OPC_UA, "foo", uint(0));
+          ExpandedNodeId eni = ExpandedNodeId.of(ushort(0), "foo");
 
           String s = eni.toParseableString();
 

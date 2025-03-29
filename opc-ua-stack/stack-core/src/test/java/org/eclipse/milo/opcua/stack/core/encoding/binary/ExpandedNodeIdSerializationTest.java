@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -17,6 +17,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.UUID;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.NamespaceReference;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.ServerReference;
 import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -26,18 +28,21 @@ public class ExpandedNodeIdSerializationTest extends BinarySerializationFixture 
 
   public static Object[][] getExpandedNodeIds() {
     return new Object[][] {
-      {new ExpandedNodeId(ushort(0), null, uint(0))},
-      {new ExpandedNodeId(ushort(0), null, "hello, world")},
-      {new ExpandedNodeId(ushort(0), null, UUID.randomUUID())},
-      {new ExpandedNodeId(ushort(0), null, ByteString.of(new byte[] {0, 1, 2, 3}))},
-      {new ExpandedNodeId(ushort(1), null, uint(0), uint(1))},
-      {new ExpandedNodeId(ushort(1), null, "hello, world", uint(1))},
-      {new ExpandedNodeId(ushort(1), null, UUID.randomUUID(), uint(1))},
-      {new ExpandedNodeId(ushort(1), null, ByteString.of(new byte[] {0, 1, 2, 3}), uint(1))},
-      {new ExpandedNodeId(ushort(0), Namespaces.OPC_UA, uint(0))},
-      {new ExpandedNodeId(ushort(0), Namespaces.OPC_UA, "hello, world")},
-      {new ExpandedNodeId(ushort(0), Namespaces.OPC_UA, UUID.randomUUID())},
-      {new ExpandedNodeId(ushort(0), Namespaces.OPC_UA, ByteString.of(new byte[] {0, 1, 2, 3}))},
+      {ExpandedNodeId.of(ushort(0), uint(0))},
+      {ExpandedNodeId.of(ushort(0), "hello, world")},
+      {ExpandedNodeId.of(ushort(0), UUID.randomUUID())},
+      {ExpandedNodeId.of(ushort(0), ByteString.of(new byte[] {0, 1, 2, 3}))},
+      {new ExpandedNodeId(ServerReference.of(1), NamespaceReference.of(1), uint(0))},
+      {new ExpandedNodeId(ServerReference.of(1), NamespaceReference.of(1), "hello, world")},
+      {new ExpandedNodeId(ServerReference.of(1), NamespaceReference.of(1), UUID.randomUUID())},
+      {
+        new ExpandedNodeId(
+            ServerReference.of(1), NamespaceReference.of(1), ByteString.of(new byte[] {0, 1, 2, 3}))
+      },
+      {ExpandedNodeId.of(Namespaces.OPC_UA, uint(0))},
+      {ExpandedNodeId.of(Namespaces.OPC_UA, "hello, world")},
+      {ExpandedNodeId.of(Namespaces.OPC_UA, UUID.randomUUID())},
+      {ExpandedNodeId.of(Namespaces.OPC_UA, ByteString.of(new byte[] {0, 1, 2, 3}))},
     };
   }
 

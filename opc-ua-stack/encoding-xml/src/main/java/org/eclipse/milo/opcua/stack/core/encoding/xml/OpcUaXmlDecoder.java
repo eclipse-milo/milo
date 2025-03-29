@@ -1224,8 +1224,7 @@ public class OpcUaXmlDecoder implements UaDecoder {
     } else {
       if (dataTypeId.isLocal()) {
         throw new UaSerializationException(
-            StatusCodes.Bad_DecodingError,
-            "namespace not registered: " + dataTypeId.getNamespaceUri());
+            StatusCodes.Bad_DecodingError, "namespace not registered: " + dataTypeId.namespace());
       } else {
         throw new UaSerializationException(
             StatusCodes.Bad_DecodingError, "ExpandedNodeId not local: " + dataTypeId);

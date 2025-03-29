@@ -42,6 +42,8 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.NamespaceReference;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.ServerReference;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
@@ -690,9 +692,11 @@ public class OpcUaJsonDecoder implements UaDecoder {
               StatusCodes.Bad_DecodingError, "readExpandedNodeId: id == null");
         } else {
           if (namespaceUri == null) {
-            return new ExpandedNodeId(ushort(namespaceIndex), null, id, uint(serverIndex));
+            return new ExpandedNodeId(
+                ServerReference.of(serverIndex), NamespaceReference.of(namespaceIndex), id);
           } else {
-            return new ExpandedNodeId(ushort(namespaceIndex), namespaceUri, id, uint(serverIndex));
+            return new ExpandedNodeId(
+                ServerReference.of(serverIndex), NamespaceReference.of(namespaceUri), id);
           }
         }
       } catch (IOException e) {

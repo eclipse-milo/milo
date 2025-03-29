@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -42,7 +42,7 @@ public interface DataTypeEncoding {
                 () ->
                     new UaSerializationException(
                         StatusCodes.Bad_EncodingError,
-                        "namespace not registered: " + xEncodingId.getNamespaceUri()));
+                        "namespace not registered: " + xEncodingId.namespace()));
 
     return encode(context, decodedBody, encodingId);
   }
@@ -55,7 +55,7 @@ public interface DataTypeEncoding {
                 () ->
                     new UaSerializationException(
                         StatusCodes.Bad_DecodingError,
-                        "namespace not registered: " + xEncodingId.getNamespaceUri()));
+                        "namespace not registered: " + xEncodingId.namespace()));
 
     return decode(context, encodedBody, encodingId);
   }

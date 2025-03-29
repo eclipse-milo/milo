@@ -12,18 +12,15 @@ package org.eclipse.milo.opcua.stack.core.types.builtin;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Base64;
 import java.util.Random;
 import java.util.UUID;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.NamespaceReference;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.ServerReference;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
@@ -136,25 +133,27 @@ public class NodeIdTest {
     }
 
     {
-      ExpandedNodeId xni = new ExpandedNodeId(ushort(0), Namespaces.OPC_UA, "foo");
+      ExpandedNodeId xni = ExpandedNodeId.of("foo");
 
       assertTrue(nodeId.equalTo(xni));
     }
 
     {
-      ExpandedNodeId xni = new ExpandedNodeId(ushort(1), Namespaces.OPC_UA, "foo");
+      ExpandedNodeId xni = ExpandedNodeId.of(Namespaces.OPC_UA, "foo");
 
       assertTrue(nodeId.equalTo(xni));
     }
 
     {
-      ExpandedNodeId xni = new ExpandedNodeId(ushort(0), Namespaces.OPC_UA, "foo", uint(1));
+      ExpandedNodeId xni =
+          new ExpandedNodeId(ServerReference.of(1), NamespaceReference.of(0), "foo");
 
       assertFalse(nodeId.equalTo(xni));
     }
 
     {
-      ExpandedNodeId xni = new ExpandedNodeId(ushort(0), "uri:foo:bar", "foo");
+      ExpandedNodeId xni =
+          new ExpandedNodeId(ServerReference.of(0), NamespaceReference.of("uri:foo:bar"), "foo");
 
       assertFalse(nodeId.equalTo(xni));
     }
@@ -179,7 +178,10 @@ public class NodeIdTest {
     NodeId nodeId = new NodeId(1, "foo");
     ExpandedNodeId xni = nodeId.expanded(namespaceTable);
 
-    assertEquals("urn:test", xni.getNamespaceUri());
+    NamespaceReference namespace = xni.namespace();
+    assertInstanceOf(NamespaceReference.NamespaceUri.class, namespace);
+
+    assertEquals("urn:test", ((NamespaceReference.NamespaceUri) namespace).namespaceUri());
   }
 
   @Test

@@ -110,7 +110,7 @@ public class VariantTest {
         Arguments.of(ByteString.of(new byte[] {1, 2, 3}), OpcUaDataType.ByteString),
         Arguments.of(new XmlElement("<foo/>"), OpcUaDataType.XmlElement),
         Arguments.of(new NodeId(1, 1), OpcUaDataType.NodeId),
-        Arguments.of(new ExpandedNodeId(ushort(1), "foo", "bar"), OpcUaDataType.ExpandedNodeId),
+        Arguments.of(ExpandedNodeId.of("bar"), OpcUaDataType.ExpandedNodeId),
         Arguments.of(new StatusCode(0), OpcUaDataType.StatusCode),
         Arguments.of(new QualifiedName(1, "foo"), OpcUaDataType.QualifiedName),
         Arguments.of(new LocalizedText("foo"), OpcUaDataType.LocalizedText),
