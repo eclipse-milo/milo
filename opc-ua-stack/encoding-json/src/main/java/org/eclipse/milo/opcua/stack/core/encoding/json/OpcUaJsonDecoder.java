@@ -42,8 +42,6 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.NamespaceReference;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.ServerReference;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
@@ -56,7 +54,6 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
-import org.eclipse.milo.opcua.stack.core.types.enumerated.IdType;
 
 public class OpcUaJsonDecoder implements UaDecoder {
 
@@ -553,69 +550,10 @@ public class OpcUaJsonDecoder implements UaDecoder {
         }
       }
 
-      IdType idType = IdType.Numeric;
-      int namespaceIndex = 0;
-      Object id = null;
-
-      try {
-        jsonReader.beginObject();
-
-        while (jsonReader.peek() == JsonToken.NAME) {
-          String propertyName = nextName();
-          if (propertyName == null) continue;
-
-          switch (propertyName) {
-            case "IdType":
-              {
-                int value = jsonReader.nextInt();
-                idType = IdType.from(value);
-                if (idType == null) {
-                  throw new UaSerializationException(
-                      StatusCodes.Bad_DecodingError, "readNodeId: invalid IdType: " + value);
-                }
-                break;
-              }
-            case "Id":
-              {
-                id = readIdObject(jsonReader, idType);
-                break;
-              }
-            case "Namespace":
-              {
-                namespaceIndex = jsonReader.nextInt();
-                break;
-              }
-          }
-        }
-
-        jsonReader.endObject();
-
-        if (id == null) {
-          throw new UaSerializationException(
-              StatusCodes.Bad_DecodingError, "readNodeId: id == null");
-        } else {
-          switch (idType) {
-            case Numeric:
-              assert id instanceof UInteger;
-              return new NodeId(namespaceIndex, (UInteger) id);
-            case String:
-              assert id instanceof String;
-              return new NodeId(namespaceIndex, (String) id);
-            case Guid:
-              assert id instanceof UUID;
-              return new NodeId(namespaceIndex, (UUID) id);
-            case Opaque:
-              assert id instanceof ByteString;
-              return new NodeId(namespaceIndex, (ByteString) id);
-            default:
-              throw new UaSerializationException(
-                  StatusCodes.Bad_DecodingError, "readNodeId: idType: " + idType);
-          }
-        }
-      } catch (IOException e) {
-        throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
-      }
-    } catch (IOException e) {
+      String id = jsonReader.nextString();
+      ExpandedNodeId xni = ExpandedNodeId.parse(id);
+      return xni.toNodeId(getEncodingContext().getNamespaceTable()).orElse(new NodeId(0, id));
+    } catch (Exception e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
   }
@@ -631,107 +569,10 @@ public class OpcUaJsonDecoder implements UaDecoder {
         }
       }
 
-      IdType idType = IdType.Numeric;
-      Object id = null;
-      int namespaceIndex = 0;
-      String namespaceUri = null;
-      int serverIndex = 0;
-
-      try {
-        jsonReader.beginObject();
-
-        while (jsonReader.peek() == JsonToken.NAME) {
-          String propertyName = nextName();
-          if (propertyName == null) continue;
-
-          switch (propertyName) {
-            case "IdType":
-              {
-                int value = jsonReader.nextInt();
-                idType = IdType.from(value);
-                if (idType == null) {
-                  throw new UaSerializationException(
-                      StatusCodes.Bad_DecodingError,
-                      "readExpandedNodeId: invalid IdType: " + value);
-                }
-                break;
-              }
-            case "Id":
-              {
-                id = readIdObject(jsonReader, idType);
-                break;
-              }
-            case "Namespace":
-              {
-                switch (jsonReader.peek()) {
-                  case NUMBER:
-                    namespaceIndex = jsonReader.nextInt();
-                    break;
-                  case STRING:
-                    namespaceUri = jsonReader.nextString();
-                    break;
-                  default:
-                    throw new UaSerializationException(
-                        StatusCodes.Bad_DecodingError,
-                        "readExpandedNodeId: unexpected Namespace token: " + jsonReader.peek());
-                }
-                break;
-              }
-            case "ServerUri":
-              {
-                serverIndex = jsonReader.nextInt();
-                break;
-              }
-          }
-        }
-
-        jsonReader.endObject();
-
-        if (id == null) {
-          throw new UaSerializationException(
-              StatusCodes.Bad_DecodingError, "readExpandedNodeId: id == null");
-        } else {
-          if (namespaceUri == null) {
-            return new ExpandedNodeId(
-                ServerReference.of(serverIndex), NamespaceReference.of(namespaceIndex), id);
-          } else {
-            return new ExpandedNodeId(
-                ServerReference.of(serverIndex), NamespaceReference.of(namespaceUri), id);
-          }
-        }
-      } catch (IOException e) {
-        throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
-      }
+      return ExpandedNodeId.parse(jsonReader.nextString());
     } catch (IOException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
-  }
-
-  /**
-   * Read the {@code id} Object for a {@link NodeId} or {@link ExpandedNodeId}.
-   *
-   * @param jsonReader the {@link JsonReader} to read from.
-   * @param idType the expected {@link IdType}.
-   * @return the {@code id} Object read from {@code jsonReader}.
-   * @throws IOException if {@code jsonReader} throws while reading the next token.
-   */
-  private static Object readIdObject(JsonReader jsonReader, IdType idType) throws IOException {
-    Object id = null;
-    switch (idType) {
-      case Numeric:
-        id = uint(jsonReader.nextInt());
-        break;
-      case String:
-        id = jsonReader.nextString();
-        break;
-      case Guid:
-        id = UUID.fromString(jsonReader.nextString());
-        break;
-      case Opaque:
-        id = ByteString.of(Base64.getDecoder().decode(jsonReader.nextString()));
-        break;
-    }
-    return id;
   }
 
   @Override

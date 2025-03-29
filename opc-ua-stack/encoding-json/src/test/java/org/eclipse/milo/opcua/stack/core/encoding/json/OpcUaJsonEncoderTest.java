@@ -21,6 +21,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.Random;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
@@ -30,8 +31,6 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.NamespaceReference;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.ServerReference;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
@@ -51,8 +50,10 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ReadRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.eclipse.milo.opcua.stack.core.types.structured.RequestHeader;
 import org.eclipse.milo.opcua.stack.core.types.structured.XVType;
-import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class OpcUaJsonEncoderTest {
 
@@ -491,142 +492,213 @@ class OpcUaJsonEncoderTest {
     assertEquals("{\"foo\":\"<foo>bar</foo>\"}", writer.toString());
   }
 
-  @Test
-  public void writeNodeId() throws IOException {
+  @ParameterizedTest(name = "field={0} {1} -> {2}")
+  @MethodSource("encodeNodeIdArguments")
+  void encodeNodeId(String field, NodeId nodeId, String expected) throws IOException {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
-
-    // IdType == UInt32, Namespace = 0, reversible
-    encoder.encodeNodeId(null, new NodeId(0, uint(0)));
-    assertEquals("{\"Id\":0}", writer.toString());
-
-    // IdType == UInt32, Namespace != 0, reversible
-    encoder.reset(writer = new StringWriter());
-    encoder.encodeNodeId(null, new NodeId(1, uint(0)));
-    assertEquals("{\"Id\":0,\"Namespace\":1}", writer.toString());
-
-    // IdType == String, Namespace = 0, reversible
-    encoder.reset(writer = new StringWriter());
-    encoder.encodeNodeId(null, new NodeId(0, "foo"));
-    assertEquals("{\"IdType\":1,\"Id\":\"foo\"}", writer.toString());
-
-    // IdType == String, Namespace != 0, reversible
-    encoder.reset(writer = new StringWriter());
-    encoder.encodeNodeId(null, new NodeId(1, "foo"));
-    assertEquals("{\"IdType\":1,\"Id\":\"foo\",\"Namespace\":1}", writer.toString());
-
-    // IdType == Guid, Namespace = 0, reversible
-    UUID uuid = UUID.randomUUID();
-    encoder.reset(writer = new StringWriter());
-    encoder.encodeNodeId(null, new NodeId(0, uuid));
-    assertEquals(
-        "{\"IdType\":2,\"Id\":\"" + uuid.toString().toUpperCase() + "\"}", writer.toString());
-
-    // IdType == Guid, Namespace != 0, reversible
-    encoder.reset(writer = new StringWriter());
-    encoder.encodeNodeId(null, new NodeId(1, uuid));
-    assertEquals(
-        "{\"IdType\":2,\"Id\":\"" + uuid.toString().toUpperCase() + "\",\"Namespace\":1}",
-        writer.toString());
-
-    // IdType == ByteString, Namespace = 0, reversible
-    ByteString bs = ByteString.of(randomBytes(16));
-    encoder.reset(writer = new StringWriter());
-    encoder.encodeNodeId(null, new NodeId(0, bs));
-    assertEquals(
-        "{\"IdType\":3,\"Id\":\"" + Base64.getEncoder().encodeToString(bs.bytesOrEmpty()) + "\"}",
-        writer.toString());
-
-    // IdType == ByteString, Namespace != 0, reversible
-    encoder.reset(writer = new StringWriter());
-    encoder.encodeNodeId(null, new NodeId(1, bs));
-    assertEquals(
-        "{\"IdType\":3,\"Id\":\""
-            + Base64.getEncoder().encodeToString(bs.bytesOrEmpty())
-            + "\",\"Namespace\":1}",
-        writer.toString());
-
-    encoder.reversible = false;
-    encoder.encodingContext = new DefaultEncodingContext();
     encoder.encodingContext.getNamespaceTable().add("urn:eclipse:milo:test1");
     encoder.encodingContext.getNamespaceTable().add("urn:eclipse:milo:test2");
 
-    // IdType == UInt32, Namespace = 0, non-reversible
-    encoder.reset(writer = new StringWriter());
-    encoder.encodeNodeId(null, new NodeId(0, uint(0)));
-    assertEquals("{\"Id\":0}", writer.toString());
+    if (field != null) {
+      encoder.jsonWriter.beginObject();
+    }
 
-    // IdType == UInt32, Namespace = 1, non-reversible
-    encoder.reset(writer = new StringWriter());
-    encoder.encodeNodeId(null, new NodeId(1, uint(0)));
-    assertEquals("{\"Id\":0,\"Namespace\":1}", writer.toString());
+    encoder.encodeNodeId(field, nodeId);
 
-    // IdType == UInt32, Namespace > 1, non-reversible
-    encoder.reset(writer = new StringWriter());
-    encoder.encodeNodeId(null, new NodeId(2, uint(0)));
-    assertEquals("{\"Id\":0,\"Namespace\":\"urn:eclipse:milo:test2\"}", writer.toString());
+    if (field != null) {
+      encoder.jsonWriter.endObject();
+    }
 
-    // Namespace > 1 but not in table, non-reversible
-    encoder.reset(writer = new StringWriter());
-    encoder.encodeNodeId(null, new NodeId(99, uint(0)));
-    assertEquals("{\"Id\":0,\"Namespace\":99}", writer.toString());
-
-    // key != null
-    encoder.reset(writer = new StringWriter());
-    encoder.jsonWriter.beginObject();
-    encoder.encodeNodeId("foo", new NodeId(1, "foo"));
-    encoder.jsonWriter.endObject();
-    assertEquals("{\"foo\":{\"IdType\":1,\"Id\":\"foo\",\"Namespace\":1}}", writer.toString());
+    assertEquals(expected, writer.toString());
   }
 
-  @Test
-  public void writeExpandedNodeId() throws IOException {
+  static Stream<Arguments> encodeNodeIdArguments() {
+    var uuid = UUID.randomUUID();
+    var bs = ByteString.of(randomBytes(16));
+
+    return Stream.of(
+        // field, nodeId, expected
+        // IdType == UInt32, Namespace = 0
+        Arguments.of(null, new NodeId(0, uint(0)), "\"i=0\""),
+        // IdType == UInt32, Namespace != 0
+        Arguments.of(null, new NodeId(1, uint(0)), "\"nsu=urn:eclipse:milo:test1;i=0\""),
+        // IdType == String, Namespace = 0
+        Arguments.of(null, new NodeId(0, "foo"), "\"s=foo\""),
+        // IdType == String, Namespace != 0
+        Arguments.of(null, new NodeId(1, "foo"), "\"nsu=urn:eclipse:milo:test1;s=foo\""),
+        // IdType == UInt32, Namespace > 1
+        Arguments.of(null, new NodeId(2, uint(0)), "\"nsu=urn:eclipse:milo:test2;i=0\""),
+
+        // IdType == Guid, Namespace = 0
+        Arguments.of(
+            null, new NodeId(0, uuid), "\"g=%s\"".formatted(uuid.toString().toUpperCase())),
+
+        // IdType == Guid, Namespace != 0
+        Arguments.of(
+            null,
+            new NodeId(1, uuid),
+            "\"nsu=urn:eclipse:milo:test1;g=%s\"".formatted(uuid.toString().toUpperCase())),
+
+        // IdType == ByteString, Namespace = 0
+        Arguments.of(
+            null,
+            new NodeId(0, bs),
+            "\"b=%s\"".formatted(Base64.getEncoder().encodeToString(bs.bytesOrEmpty()))),
+
+        // IdType == ByteString, Namespace != 0
+        Arguments.of(
+            null,
+            new NodeId(1, bs),
+            "\"nsu=urn:eclipse:milo:test1;b=%s\""
+                .formatted(Base64.getEncoder().encodeToString(bs.bytesOrEmpty()))),
+
+        // Namespace > 1 but not in table
+        Arguments.of(null, new NodeId(99, uint(0)), "\"s=ns=99;i=0\""),
+        // key != null
+        Arguments.of(
+            "foo", new NodeId(1, "foo"), "{\"foo\":\"nsu=urn:eclipse:milo:test1;s=foo\"}"));
+  }
+
+  @ParameterizedTest(name = "field={0} {1} -> {2}")
+  @MethodSource("encodeExpandedNodeIdArguments")
+  void encodeExpandedNodeId(String field, ExpandedNodeId expandedNodeId, String expected)
+      throws IOException {
+
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
 
-    // Two things differentiate the encoding of ExpandedNodeId from NodeId:
-    // 1. if the namespace URI is specified it is encoded in the "Namespace" field
-    // 2. if the ExpandedNodeId is non-local (server index > 0) it is encoded in the "ServerUri"
-    // field
+    // Set up namespace table
+    encoder
+        .encodingContext
+        .getNamespaceTable()
+        .update(
+            map -> {
+              map.clear();
+              map.put(ushort(0), "http://opcfoundation.org/UA/"); // Index 0
+              map.put(ushort(1), "urn:eclipse:milo:test1"); // Index 1
+              map.put(ushort(2), "urn:eclipse:milo:test2"); // Index 2
+            });
 
-    // reversible, namespace URI specified
-    encoder.encodeExpandedNodeId(null, ExpandedNodeId.of(Namespaces.OPC_UA, "foo"));
-    assertEquals(
-        "{\"IdType\":1,\"Id\":\"foo\",\"Namespace\":\"http://opcfoundation.org/UA/\"}",
-        writer.toString());
+    // Set up server table
+    encoder
+        .encodingContext
+        .getServerTable()
+        .update(
+            map -> {
+              map.clear();
+              map.put(ushort(0), "localhost"); // Index 0
+              map.put(ushort(1), "urn:eclipse:milo:server1"); // Index 1
+              map.put(ushort(2), "urn:eclipse:milo:server2"); // Index 2
+            });
 
-    // reversible, remote server index
-    encoder.reset(writer = new StringWriter());
-    encoder.encodeExpandedNodeId(
-        null, new ExpandedNodeId(ServerReference.of(1), NamespaceReference.of(0), "foo"));
-    assertEquals("{\"IdType\":1,\"Id\":\"foo\",\"ServerUri\":1}", writer.toString());
+    if (field != null) {
+      encoder.jsonWriter.beginObject();
+    }
 
-    // non-reversible, remote server index
-    encoder.reversible = false;
-    encoder.encodingContext = new DefaultEncodingContext();
-    encoder.encodingContext.getServerTable().add("urn:server:local");
-    encoder.encodingContext.getServerTable().add("urn:server:remote");
-    encoder.reset(writer = new StringWriter());
-    encoder.encodeExpandedNodeId(
-        null, new ExpandedNodeId(ServerReference.of(1), NamespaceReference.of(0), "foo"));
-    assertEquals(
-        "{\"IdType\":1,\"Id\":\"foo\",\"ServerUri\":\"urn:server:remote\"}", writer.toString());
+    encoder.encodeExpandedNodeId(field, expandedNodeId);
 
-    // non-reversible, remote server index not in table
-    encoder.reset(writer = new StringWriter());
-    encoder.encodeExpandedNodeId(
-        null, new ExpandedNodeId(ServerReference.of(2), NamespaceReference.of(0), "foo"));
-    assertEquals("{\"IdType\":1,\"Id\":\"foo\",\"ServerUri\":2}", writer.toString());
+    if (field != null) {
+      encoder.jsonWriter.endObject();
+    }
 
-    // reversible, field specified
-    encoder.reversible = false;
-    encoder.reset(writer = new StringWriter());
-    encoder.jsonWriter.beginObject();
-    encoder.encodeExpandedNodeId("foo", ExpandedNodeId.of(Namespaces.OPC_UA, "foo"));
-    encoder.jsonWriter.endObject();
-    assertEquals(
-        "{\"foo\":{\"IdType\":1,\"Id\":\"foo\",\"Namespace\":\"http://opcfoundation.org/UA/\"}}",
-        writer.toString());
+    assertEquals(expected, writer.toString());
+  }
+
+  static Stream<Arguments> encodeExpandedNodeIdArguments() {
+    var uuid = UUID.randomUUID();
+    var bs = ByteString.of(randomBytes(16));
+
+    return Stream.of(
+        // field, expandedNodeId, expected
+        // Local server (serverIndex = 0), namespace = 0, different identifier types
+        Arguments.of(null, ExpandedNodeId.of(uint(0)), "\"i=0\""),
+        Arguments.of(null, ExpandedNodeId.of("foo"), "\"s=foo\""),
+        Arguments.of(
+            null, ExpandedNodeId.of(uuid), "\"g=%s\"".formatted(uuid.toString().toUpperCase())),
+        Arguments.of(
+            null,
+            ExpandedNodeId.of(bs),
+            "\"b=%s\"".formatted(Base64.getEncoder().encodeToString(bs.bytesOrEmpty()))),
+
+        // Local server (serverIndex = 0), namespace != 0, different identifier types
+        Arguments.of(
+            null, ExpandedNodeId.of(ushort(1), uint(0)), "\"nsu=urn:eclipse:milo:test1;i=0\""),
+        Arguments.of(
+            null, ExpandedNodeId.of(ushort(1), "foo"), "\"nsu=urn:eclipse:milo:test1;s=foo\""),
+        Arguments.of(
+            null,
+            ExpandedNodeId.of(ushort(1), uuid),
+            "\"nsu=urn:eclipse:milo:test1;g=%s\"".formatted(uuid.toString().toUpperCase())),
+        Arguments.of(
+            null,
+            ExpandedNodeId.of(ushort(1), bs),
+            "\"nsu=urn:eclipse:milo:test1;b=%s\""
+                .formatted(Base64.getEncoder().encodeToString(bs.bytesOrEmpty()))),
+
+        // Local server (serverIndex = 0), namespace > 1
+        Arguments.of(
+            null, ExpandedNodeId.of(ushort(2), uint(0)), "\"nsu=urn:eclipse:milo:test2;i=0\""),
+
+        // Non-local server (serverIndex != 0), namespace = 0
+        Arguments.of(
+            null,
+            new ExpandedNodeId(
+                ExpandedNodeId.ServerReference.of(uint(1)),
+                ExpandedNodeId.NamespaceReference.of(0),
+                uint(0)),
+            "\"svu=urn:eclipse:milo:server1;i=0\""),
+
+        // Non-local server (serverIndex != 0), namespace != 0
+        Arguments.of(
+            null,
+            new ExpandedNodeId(
+                ExpandedNodeId.ServerReference.of(uint(1)),
+                ExpandedNodeId.NamespaceReference.of(1),
+                uint(0)),
+            "\"svu=urn:eclipse:milo:server1;nsu=urn:eclipse:milo:test1;i=0\""),
+
+        // Server URI, namespace = 0
+        Arguments.of(
+            null,
+            new ExpandedNodeId(
+                ExpandedNodeId.ServerReference.of("urn:eclipse:milo:server1"),
+                ExpandedNodeId.NamespaceReference.of(0),
+                uint(0)),
+            "\"svu=urn:eclipse:milo:server1;i=0\""),
+
+        // Server URI, namespace URI
+        Arguments.of(
+            null,
+            new ExpandedNodeId(
+                ExpandedNodeId.ServerReference.of("urn:eclipse:milo:server1"),
+                ExpandedNodeId.NamespaceReference.of("urn:eclipse:milo:test1"),
+                uint(0)),
+            "\"svu=urn:eclipse:milo:server1;nsu=urn:eclipse:milo:test1;i=0\""),
+
+        // Namespace URI, local server
+        Arguments.of(
+            null,
+            new ExpandedNodeId(
+                ExpandedNodeId.ServerReference.of(uint(0)),
+                ExpandedNodeId.NamespaceReference.of("urn:eclipse:milo:test1"),
+                uint(0)),
+            "\"nsu=urn:eclipse:milo:test1;i=0\""),
+
+        // With field name
+        Arguments.of(
+            "foo",
+            ExpandedNodeId.of(ushort(1), "bar"),
+            "{\"foo\":\"nsu=urn:eclipse:milo:test1;s=bar\"}"),
+
+        // With field name, server URI, namespace URI
+        Arguments.of(
+            "foo",
+            new ExpandedNodeId(
+                ExpandedNodeId.ServerReference.of("urn:eclipse:milo:server1"),
+                ExpandedNodeId.NamespaceReference.of("urn:eclipse:milo:test1"),
+                "bar"),
+            "{\"foo\":\"svu=urn:eclipse:milo:server1;nsu=urn:eclipse:milo:test1;s=bar\"}"));
   }
 
   @Test
@@ -768,7 +840,10 @@ class OpcUaJsonEncoderTest {
   }
 
   @Test
-  public void writeExtensionObject() {
+  void encodeExtensionObject() {
+    context.getNamespaceTable().add("urn:eclipse:milo:test1");
+    context.getNamespaceTable().add("urn:eclipse:milo:test2");
+
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
 
@@ -781,19 +856,19 @@ class OpcUaJsonEncoderTest {
 
     encoder.encodeExtensionObject(null, jsonStringXo);
     assertEquals(
-        "{\"TypeId\":{\"Id\":42,\"Namespace\":2},\"Body\":{\"foo\":\"bar\",\"baz\":42}}",
+        "{\"TypeId\":\"nsu=urn:eclipse:milo:test2;i=42\",\"Body\":{\"foo\":\"bar\",\"baz\":42}}",
         writer.toString());
 
     encoder.reset(writer = new StringWriter());
     encoder.encodeExtensionObject(null, xmlElementXo);
     assertEquals(
-        "{\"TypeId\":{\"Id\":42,\"Namespace\":2},\"Encoding\":2,\"Body\":\"<foo>bar</foo>\"}",
+        "{\"TypeId\":\"nsu=urn:eclipse:milo:test2;i=42\",\"Encoding\":2,\"Body\":\"<foo>bar</foo>\"}",
         writer.toString());
 
     encoder.reset(writer = new StringWriter());
     encoder.encodeExtensionObject(null, byteStringXo);
     assertEquals(
-        "{\"TypeId\":{\"Id\":42,\"Namespace\":2},\"Encoding\":1,\"Body\":\"AAECAw==\"}",
+        "{\"TypeId\":\"nsu=urn:eclipse:milo:test2;i=42\",\"Encoding\":1,\"Body\":\"AAECAw==\"}",
         writer.toString());
 
     encoder.reversible = false;
@@ -1028,7 +1103,7 @@ class OpcUaJsonEncoderTest {
   }
 
   @Test
-  public void writeMessage() {
+  void encodeMessage() {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
 
@@ -1045,7 +1120,7 @@ class OpcUaJsonEncoderTest {
     encoder.reset(writer = new StringWriter());
     encoder.encodeMessage(null, message);
     assertEquals(
-        "{\"TypeId\":{\"Id\":15257},\"Body\":{\"RequestHeader\":{\"Timestamp\":\"1601-01-01T00:00:00Z\",\"AuditEntryId\":\"foo\"},\"TimestampsToReturn\":2,\"NodesToRead\":[{\"NodeId\":{\"Id\":1},\"AttributeId\":13}]}}",
+        "{\"TypeId\":\"i=15257\",\"Body\":{\"RequestHeader\":{\"Timestamp\":\"1601-01-01T00:00:00Z\",\"AuditEntryId\":\"foo\"},\"TimestampsToReturn\":2,\"NodesToRead\":[{\"NodeId\":\"i=1\",\"AttributeId\":13}]}}",
         writer.toString());
   }
 
@@ -1085,7 +1160,7 @@ class OpcUaJsonEncoderTest {
   }
 
   @Test
-  public void writeStruct() {
+  void encodeStruct() {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
 
@@ -1093,7 +1168,7 @@ class OpcUaJsonEncoderTest {
 
     encoder.encodeStruct(null, struct, Argument.TYPE_ID);
     assertEquals(
-        "{\"Name\":\"foo\",\"DataType\":{\"Id\":6},\"ValueRank\":-1,\"Description\":{\"Locale\":\"en\",\"Text\":\"foo"
+        "{\"Name\":\"foo\",\"DataType\":\"i=6\",\"ValueRank\":-1,\"Description\":{\"Locale\":\"en\",\"Text\":\"foo"
             + " desc\"}}",
         writer.toString());
   }

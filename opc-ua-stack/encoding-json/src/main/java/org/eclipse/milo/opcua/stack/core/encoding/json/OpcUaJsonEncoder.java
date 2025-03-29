@@ -36,6 +36,10 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.NamespaceReference.NamespaceIndex;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.NamespaceReference.NamespaceUri;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.ServerReference.ServerIndex;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.ServerReference.ServerUri;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
@@ -51,6 +55,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.IdType;
 import org.eclipse.milo.opcua.stack.core.util.ArrayUtil;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 import org.jspecify.annotations.NonNull;
 
 public class OpcUaJsonEncoder implements UaEncoder {
@@ -431,10 +436,19 @@ public class OpcUaJsonEncoder implements UaEncoder {
         if (field != null) {
           jsonWriter.name(field);
         }
-        jsonWriter.beginObject();
-        writeNodeIdCommonFields(
-            value.getType(), value.getIdentifier(), value.getNamespaceIndex().intValue());
-        jsonWriter.endObject();
+
+        ExpandedNodeId expanded;
+        try {
+          expanded = value.expanded(encodingContext.getNamespaceTable());
+        } catch (IllegalStateException e) {
+          // This is kind of similar to what's required of the decoder when it encounters a
+          // namespace URI it can't map to a namespace index:
+          // "When decoders need to replace a NamespaceUri with a NamespaceIndex and the
+          // NamespaceUri cannot be mapped to a NamespaceIndex, then decoders shall use 0 for the
+          // NamespaceIndex, String for the IdType and the JSON string as the Identifier."
+          expanded = ExpandedNodeId.of(value.toParseableString());
+        }
+        jsonWriter.value(expanded.toParseableString());
       }
     } catch (IOException e) {
       throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
@@ -444,38 +458,77 @@ public class OpcUaJsonEncoder implements UaEncoder {
   @Override
   public void encodeExpandedNodeId(String field, ExpandedNodeId value)
       throws UaSerializationException {
+
     try {
       EncoderContext context = contextPeek();
       if (!reversible
           || context == EncoderContext.BUILTIN
           || (value != null && value.isNotNull())) {
+
         if (field != null) {
           jsonWriter.name(field);
         }
-        jsonWriter.beginObject();
-        if (value.isAbsolute()) {
-          writeNodeIdCommonFields(value.getType(), value.getIdentifier(), 0);
-          jsonWriter.name("Namespace").value(value.getNamespaceUri());
-        } else {
-          writeNodeIdCommonFields(
-              value.getType(), value.getIdentifier(), value.getNamespaceIndex().intValue());
-        }
-        if (!value.isLocal()) {
-          int serverIndex = value.getServerIndex().intValue();
-          if (reversible) {
-            jsonWriter.name("ServerUri").value(serverIndex);
-          } else {
-            String serverUri = encodingContext.getServerTable().get(serverIndex);
-            if (serverUri != null) {
-              jsonWriter.name("ServerUri").value(serverUri);
+
+        var sb = new StringBuilder();
+
+        if (value.server() instanceof ServerIndex index) {
+          if (index.serverIndex().intValue() != 0) {
+            String uri = encodingContext.getServerTable().get(index.serverIndex().intValue());
+            if (uri != null) {
+              sb.append("svu=").append(uri).append(";");
             } else {
-              jsonWriter.name("ServerUri").value(serverIndex);
+              throw new UaSerializationException(
+                  StatusCodes.Bad_EncodingError,
+                  "server index=" + index.serverIndex() + " not found");
             }
           }
+        } else if (value.server() instanceof ServerUri uri) {
+          UShort index = encodingContext.getServerTable().getIndex(uri.serverUri());
+          if (index == null || index.intValue() != 0) {
+            sb.append("svu=").append(uri.serverUri()).append(";");
+          }
         }
-        jsonWriter.endObject();
+
+        if (value.namespace() instanceof NamespaceIndex index) {
+          if (index.namespaceIndex().intValue() != 0) {
+            String uri = encodingContext.getNamespaceTable().get(index.namespaceIndex().intValue());
+            if (uri != null) {
+              sb.append("nsu=").append(uri).append(";");
+            } else {
+              throw new UaSerializationException(
+                  StatusCodes.Bad_EncodingError,
+                  "namespace index=" + index.namespaceIndex() + " not found");
+            }
+          }
+        } else if (value.namespace() instanceof NamespaceUri uri) {
+          if (!uri.namespaceUri().equals(Namespaces.OPC_UA)) {
+            sb.append("nsu=").append(uri.namespaceUri()).append(";");
+          }
+        }
+
+        switch (value.getType()) {
+          case Numeric:
+            sb.append("i=").append(value.identifier());
+            break;
+          case String:
+            sb.append("s=").append(value.identifier());
+            break;
+          case Guid:
+            sb.append("g=").append(value.identifier().toString().toUpperCase());
+            break;
+          case Opaque:
+            ByteString bs = (ByteString) value.identifier();
+            if (bs.isNull()) sb.append("b=");
+            else sb.append("b=").append(Base64.getEncoder().encodeToString(bs.bytes()));
+            break;
+
+          default:
+            throw new IllegalStateException("IdType " + value.getType());
+        }
+
+        jsonWriter.value(sb.toString());
       }
-    } catch (IOException e) {
+    } catch (Exception e) {
       throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
     }
   }

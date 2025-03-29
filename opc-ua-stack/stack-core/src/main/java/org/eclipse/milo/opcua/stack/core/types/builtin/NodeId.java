@@ -208,6 +208,10 @@ public final class NodeId {
   public ExpandedNodeId expanded(NamespaceTable namespaceTable) {
     String namespaceUri = namespaceTable.get(namespaceIndex);
 
+    if (namespaceUri == null) {
+      throw new IllegalStateException("namespace index=" + namespaceIndex + " not found");
+    }
+
     if (identifier instanceof UInteger id) {
       return ExpandedNodeId.of(namespaceUri, id);
     } else if (identifier instanceof String id) {

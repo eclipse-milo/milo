@@ -66,11 +66,31 @@ public record ExpandedNodeId(
     }
   }
 
+  public @Nullable UShort getNamespaceIndex(NamespaceTable namespaceTable) {
+    if (namespace instanceof NamespaceIndex index) {
+      return index.namespaceIndex;
+    } else if (namespace instanceof NamespaceReference.NamespaceUri uri) {
+      return namespaceTable.getIndex(uri.namespaceUri);
+    } else {
+      throw new IllegalStateException("NamespaceReference: " + namespace);
+    }
+  }
+
   public @Nullable String getNamespaceUri() {
     if (namespace instanceof NamespaceReference.NamespaceUri uri) {
       return uri.namespaceUri;
     } else {
       return null;
+    }
+  }
+
+  public @Nullable String getNamespaceUri(NamespaceTable namespaceTable) {
+    if (namespace instanceof NamespaceIndex index) {
+      return namespaceTable.get(index.namespaceIndex);
+    } else if (namespace instanceof NamespaceReference.NamespaceUri uri) {
+      return uri.namespaceUri;
+    } else {
+      throw new IllegalStateException("NamespaceReference: " + namespace);
     }
   }
 
@@ -82,11 +102,32 @@ public record ExpandedNodeId(
     }
   }
 
+  public @Nullable UInteger getServerIndex(ServerTable serverTable) {
+    if (server instanceof ServerIndex index) {
+      return index.serverIndex;
+    } else if (server instanceof ServerReference.ServerUri uri) {
+      UShort index = serverTable.getIndex(uri.serverUri);
+      return index != null ? uint(index.intValue()) : null;
+    } else {
+      throw new IllegalStateException("ServerReference: " + server);
+    }
+  }
+
   public @Nullable String getServerUri() {
     if (server instanceof ServerReference.ServerUri uri) {
       return uri.serverUri;
     } else {
       return null;
+    }
+  }
+
+  public @Nullable String getServerUri(ServerTable serverTable) {
+    if (server instanceof ServerIndex index) {
+      return serverTable.get(index.serverIndex.intValue());
+    } else if (server instanceof ServerReference.ServerUri uri) {
+      return uri.serverUri;
+    } else {
+      throw new IllegalStateException("ServerReference: " + server);
     }
   }
 
@@ -269,6 +310,30 @@ public record ExpandedNodeId(
         return Optional.empty();
       }
     }
+  }
+
+  public Optional<ExpandedNodeId> absolute(ServerTable serverTable, NamespaceTable namespaceTable) {
+    ServerReference absoluteServer = server;
+    if (server instanceof ServerIndex index) {
+      String serverUri = serverTable.get(index.serverIndex.intValue());
+      if (serverUri == null) {
+        return Optional.empty();
+      } else {
+        absoluteServer = ServerReference.of(serverUri);
+      }
+    }
+
+    NamespaceReference absoluteNamespace = namespace;
+    if (namespace instanceof NamespaceIndex index) {
+      String namespaceUri = namespaceTable.get(index.namespaceIndex.intValue());
+      if (namespaceUri == null) {
+        return Optional.empty();
+      } else {
+        absoluteNamespace = NamespaceReference.of(namespaceUri);
+      }
+    }
+
+    return Optional.of(new ExpandedNodeId(absoluteServer, absoluteNamespace, identifier));
   }
 
   /**
