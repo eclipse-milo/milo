@@ -16,10 +16,13 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.UUID;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.ServerTable;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.NamespaceReference;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.ServerReference;
 import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class ExpandedNodeIdTest {
 
@@ -184,5 +187,73 @@ public class ExpandedNodeIdTest {
     ExpandedNodeId xni2 = xni1.reindex(namespaceTable, "test2");
 
     assertEquals(ushort(2), xni2.getNamespaceIndex());
+  }
+
+  @ParameterizedTest
+  @MethodSource("isLocalProvider")
+  public void isLocal(ExpandedNodeId expandedNodeId, boolean expected, String message) {
+    assertEquals(expected, expandedNodeId.isLocal(), message);
+  }
+
+  @ParameterizedTest
+  @MethodSource("isLocalServerTableProvider")
+  public void isLocalServerTable(
+      ExpandedNodeId expandedNodeId, ServerTable serverTable, boolean expected, String message) {
+    assertEquals(expected, expandedNodeId.isLocal(serverTable), message);
+  }
+
+  public static Object[][] isLocalProvider() {
+    return new Object[][] {
+      // Test isLocal() without ServerTable
+      {
+        ExpandedNodeId.of(ushort(0), "test"),
+        true,
+        "ExpandedNodeId with server index 0 should be local"
+      },
+      {
+        new ExpandedNodeId(ServerReference.of(1), NamespaceReference.of(0), "test"),
+        false,
+        "ExpandedNodeId with server index > 0 should not be local"
+      },
+      {
+        new ExpandedNodeId(ServerReference.of("uri:server"), NamespaceReference.of(0), "test"),
+        false,
+        "ExpandedNodeId with server URI should not be local"
+      }
+    };
+  }
+
+  public static Object[][] isLocalServerTableProvider() {
+    var serverTable = new ServerTable();
+    serverTable.add("uri:server1");
+    serverTable.add("uri:server2");
+
+    return new Object[][] {
+      // Test isLocal(ServerTable)
+      {
+        ExpandedNodeId.of(ushort(0), "test"),
+        serverTable,
+        true,
+        "ExpandedNodeId with server index 0 should be local with ServerTable"
+      },
+      {
+        new ExpandedNodeId(ServerReference.of(1), NamespaceReference.of(0), "test"),
+        serverTable,
+        false,
+        "ExpandedNodeId with server index > 0 should not be local with ServerTable"
+      },
+      {
+        new ExpandedNodeId(ServerReference.of("uri:server1"), NamespaceReference.of(0), "test"),
+        serverTable,
+        true,
+        "ExpandedNodeId with server URI at index 0 should be local"
+      },
+      {
+        new ExpandedNodeId(ServerReference.of("uri:server2"), NamespaceReference.of(0), "test"),
+        serverTable,
+        false,
+        "ExpandedNodeId with server URI at index > 0 should not be local"
+      }
+    };
   }
 }
