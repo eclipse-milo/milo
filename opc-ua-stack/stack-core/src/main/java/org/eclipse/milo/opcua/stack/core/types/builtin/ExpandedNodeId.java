@@ -190,6 +190,17 @@ public record ExpandedNodeId(
     return !isNull();
   }
 
+  /**
+   * Convert this {@link ExpandedNodeId} to a {@link NodeId} if it is local.
+   *
+   * <p>If this {@link ExpandedNodeId} is defined in terms of a namespace URI, the namespace table
+   * is used to determine the namespace index. If the URI is not found in the namespace table, an
+   * empty {@link Optional} is returned.
+   *
+   * @param namespaceTable the {@link NamespaceTable} to use.
+   * @return an {@link Optional} containing the {@link NodeId} if this {@link ExpandedNodeId} is
+   *     local and the namespace index can be determined.
+   */
   public Optional<NodeId> toNodeId(NamespaceTable namespaceTable) {
     if (!isLocal()) {
       return Optional.empty();
@@ -209,6 +220,16 @@ public record ExpandedNodeId(
     }
   }
 
+  /**
+   * Like {@link #toNodeId(NamespaceTable)} but throws an exception instead of returning an empty
+   * {@link Optional}.
+   *
+   * @param namespaceTable the {@link NamespaceTable} to use.
+   * @return the {@link NodeId} if this {@link ExpandedNodeId} is local and the namespace index can
+   *     be determined.
+   * @throws Exception if this {@link ExpandedNodeId} is not local or the namespace index cannot be
+   *     determined.
+   */
   public NodeId toNodeIdOrThrow(NamespaceTable namespaceTable) throws Exception {
     if (!isLocal()) {
       throw new Exception("ExpandedNodeId is not local: " + this);
@@ -303,10 +324,31 @@ public record ExpandedNodeId(
     }
   }
 
+  /**
+   * Check if this {@link ExpandedNodeId} is equal to {@code nodeId}.
+   *
+   * <p>To be considered equal this ExpandedNodeId must be in serverIndex == 0, have the same
+   * namespace index as {@code nodeId} or have a namespace URI at the same index in the default
+   * namespace table, and an equal identifier.
+   *
+   * @param nodeId the {@link NodeId} to check equality against.
+   * @return {@code true} if this {@link ExpandedNodeId} is equal to {@code nodeId}.
+   */
   public boolean equalTo(NodeId nodeId) {
     return equalTo(nodeId, new NamespaceTable());
   }
 
+  /**
+   * Check if this {@link ExpandedNodeId} is equal to {@code nodeId}.
+   *
+   * <p>To be considered equal this ExpandedNodeId must be in serverIndex == 0, have the same
+   * namespace index as {@code nodeId} or have a namespace URI at the same index in the default
+   * namespace table, and an equal identifier.
+   *
+   * @param nodeId the {@link NodeId} to check equality against.
+   * @param namespaceTable the {@link NamespaceTable} used to look up the index of a namespace URI.
+   * @return {@code true} if this {@link ExpandedNodeId} is equal to {@code nodeId}.
+   */
   public boolean equalTo(NodeId nodeId, NamespaceTable namespaceTable) {
     if (!isLocal()) {
       return false;
@@ -327,6 +369,11 @@ public record ExpandedNodeId(
     }
   }
 
+  /**
+   * Convert this {@link ExpandedNodeId} to its parseable String representation.
+   *
+   * @return the parseable String representation of this {@link ExpandedNodeId}.
+   */
   public String toParseableString() {
     StringBuilder sb = new StringBuilder();
 
@@ -371,6 +418,13 @@ public record ExpandedNodeId(
     return sb.toString();
   }
 
+  /**
+   * Parse a String representation of an {@link ExpandedNodeId} into an {@link ExpandedNodeId}.
+   *
+   * @param s the String representation of an {@link ExpandedNodeId}.
+   * @return the parsed {@link ExpandedNodeId}.
+   * @throws UaRuntimeException if the String representation is invalid.
+   */
   public static ExpandedNodeId parse(String s) throws UaRuntimeException {
     try {
       ServerReference server = ServerIndex.LOCAL;
@@ -430,71 +484,172 @@ public record ExpandedNodeId(
 
   // region Static Factory Methods
 
+  /**
+   * Creates an ExpandedNodeId in the OPC UA namespace (index 0) with a numeric identifier.
+   *
+   * @param identifier the numeric identifier.
+   * @return an ExpandedNodeId with the given numeric identifier in the OPC UA namespace.
+   */
   public static ExpandedNodeId of(long identifier) {
     return of(uint(identifier));
   }
 
+  /**
+   * Creates an ExpandedNodeId with the specified namespace index and numeric identifier.
+   *
+   * @param namespaceIndex the namespace index.
+   * @param identifier the numeric identifier.
+   * @return an ExpandedNodeId with the given namespace index and numeric identifier.
+   */
   public static ExpandedNodeId of(int namespaceIndex, long identifier) {
     return of(ushort(namespaceIndex), uint(identifier));
   }
 
+  /**
+   * Creates an ExpandedNodeId with the specified namespace URI and numeric identifier.
+   *
+   * @param namespaceUri the namespace URI.
+   * @param identifier the numeric identifier.
+   * @return an ExpandedNodeId with the given namespace URI and numeric identifier.
+   */
   public static ExpandedNodeId of(String namespaceUri, long identifier) {
     return of(namespaceUri, uint(identifier));
   }
 
+  /**
+   * Creates an ExpandedNodeId in the OPC UA namespace (index 0) with a UInteger identifier.
+   *
+   * @param identifier the UInteger identifier.
+   * @return an ExpandedNodeId with the given UInteger identifier in the OPC UA namespace.
+   */
   public static ExpandedNodeId of(UInteger identifier) {
     return new ExpandedNodeId(ServerIndex.LOCAL, NamespaceIndex.OPC_UA, identifier);
   }
 
+  /**
+   * Creates an ExpandedNodeId in the OPC UA namespace (index 0) with a String identifier.
+   *
+   * @param identifier the String identifier.
+   * @return an ExpandedNodeId with the given String identifier in the OPC UA namespace.
+   */
   public static ExpandedNodeId of(String identifier) {
     return new ExpandedNodeId(
         ServerIndex.LOCAL, NamespaceReference.NamespaceUri.OPC_UA, identifier);
   }
 
+  /**
+   * Creates an ExpandedNodeId in the OPC UA namespace (index 0) with a UUID identifier.
+   *
+   * @param identifier the UUID identifier.
+   * @return an ExpandedNodeId with the given UUID identifier in the OPC UA namespace.
+   */
   public static ExpandedNodeId of(UUID identifier) {
     return new ExpandedNodeId(
         ServerIndex.LOCAL, NamespaceReference.NamespaceUri.OPC_UA, identifier);
   }
 
+  /**
+   * Creates an ExpandedNodeId in the OPC UA namespace (index 0) with a ByteString identifier.
+   *
+   * @param identifier the ByteString identifier.
+   * @return an ExpandedNodeId with the given ByteString identifier in the OPC UA namespace.
+   */
   public static ExpandedNodeId of(ByteString identifier) {
     return new ExpandedNodeId(
         ServerIndex.LOCAL, NamespaceReference.NamespaceUri.OPC_UA, identifier);
   }
 
+  /**
+   * Creates an ExpandedNodeId with the specified namespace index and UInteger identifier.
+   *
+   * @param namespaceIndex the namespace index.
+   * @param identifier the UInteger identifier.
+   * @return an ExpandedNodeId with the given namespace index and UInteger identifier.
+   */
   public static ExpandedNodeId of(UShort namespaceIndex, UInteger identifier) {
     return new ExpandedNodeId(ServerIndex.LOCAL, NamespaceReference.of(namespaceIndex), identifier);
   }
 
+  /**
+   * Creates an ExpandedNodeId with the specified namespace index and String identifier.
+   *
+   * @param namespaceIndex the namespace index.
+   * @param identifier the String identifier.
+   * @return an ExpandedNodeId with the given namespace index and String identifier.
+   */
   public static ExpandedNodeId of(UShort namespaceIndex, String identifier) {
     return new ExpandedNodeId(ServerIndex.LOCAL, NamespaceReference.of(namespaceIndex), identifier);
   }
 
+  /**
+   * Creates an ExpandedNodeId with the specified namespace index and UUID identifier.
+   *
+   * @param namespaceIndex the namespace index.
+   * @param identifier the UUID identifier.
+   * @return an ExpandedNodeId with the given namespace index and UUID identifier.
+   */
   public static ExpandedNodeId of(UShort namespaceIndex, UUID identifier) {
     return new ExpandedNodeId(ServerIndex.LOCAL, NamespaceReference.of(namespaceIndex), identifier);
   }
 
+  /**
+   * Creates an ExpandedNodeId with the specified namespace index and ByteString identifier.
+   *
+   * @param namespaceIndex the namespace index.
+   * @param identifier the ByteString identifier.
+   * @return an ExpandedNodeId with the given namespace index and ByteString identifier.
+   */
   public static ExpandedNodeId of(UShort namespaceIndex, ByteString identifier) {
     return new ExpandedNodeId(ServerIndex.LOCAL, NamespaceReference.of(namespaceIndex), identifier);
   }
 
+  /**
+   * Creates an ExpandedNodeId with the specified namespace URI and UInteger identifier.
+   *
+   * @param namespaceUri the namespace URI.
+   * @param identifier the UInteger identifier.
+   * @return an ExpandedNodeId with the given namespace URI and UInteger identifier.
+   */
   public static ExpandedNodeId of(String namespaceUri, UInteger identifier) {
     return new ExpandedNodeId(ServerIndex.LOCAL, NamespaceReference.of(namespaceUri), identifier);
   }
 
+  /**
+   * Creates an ExpandedNodeId with the specified namespace URI and String identifier.
+   *
+   * @param namespaceUri the namespace URI.
+   * @param identifier the String identifier.
+   * @return an ExpandedNodeId with the given namespace URI and String identifier.
+   */
   public static ExpandedNodeId of(String namespaceUri, String identifier) {
     return new ExpandedNodeId(ServerIndex.LOCAL, NamespaceReference.of(namespaceUri), identifier);
   }
 
+  /**
+   * Creates an ExpandedNodeId with the specified namespace URI and UUID identifier.
+   *
+   * @param namespaceUri the namespace URI.
+   * @param identifier the UUID identifier.
+   * @return an ExpandedNodeId with the given namespace URI and UUID identifier.
+   */
   public static ExpandedNodeId of(String namespaceUri, UUID identifier) {
     return new ExpandedNodeId(ServerIndex.LOCAL, NamespaceReference.of(namespaceUri), identifier);
   }
 
+  /**
+   * Creates an ExpandedNodeId with the specified namespace URI and ByteString identifier.
+   *
+   * @param namespaceUri the namespace URI.
+   * @param identifier the ByteString identifier.
+   * @return an ExpandedNodeId with the given namespace URI and ByteString identifier.
+   */
   public static ExpandedNodeId of(String namespaceUri, ByteString identifier) {
     return new ExpandedNodeId(ServerIndex.LOCAL, NamespaceReference.of(namespaceUri), identifier);
   }
 
   // endregion
 
+  /** A reference to a namespace, either by index or URI. */
   public sealed interface NamespaceReference
       permits NamespaceIndex, NamespaceReference.NamespaceUri {
 
@@ -529,6 +684,7 @@ public record ExpandedNodeId(
     }
   }
 
+  /** A reference to a server, either by index or URI. */
   public sealed interface ServerReference permits ServerIndex, ServerReference.ServerUri {
 
     record ServerIndex(UInteger serverIndex) implements ServerReference {
