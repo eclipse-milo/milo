@@ -26,8 +26,10 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.IdType;
 import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+@NullMarked
 public record ExpandedNodeId(
     ServerReference server, NamespaceReference namespace, Object identifier) {
 
@@ -577,8 +579,11 @@ public record ExpandedNodeId(
    * @param identifier the String identifier.
    * @return an ExpandedNodeId with the given namespace index and String identifier.
    */
-  public static ExpandedNodeId of(UShort namespaceIndex, String identifier) {
-    return new ExpandedNodeId(ServerIndex.LOCAL, NamespaceReference.of(namespaceIndex), identifier);
+  public static ExpandedNodeId of(UShort namespaceIndex, @Nullable String identifier) {
+    return new ExpandedNodeId(
+        ServerIndex.LOCAL,
+        NamespaceReference.of(namespaceIndex),
+        identifier != null ? identifier : "");
   }
 
   /**
@@ -621,8 +626,11 @@ public record ExpandedNodeId(
    * @param identifier the String identifier.
    * @return an ExpandedNodeId with the given namespace URI and String identifier.
    */
-  public static ExpandedNodeId of(String namespaceUri, String identifier) {
-    return new ExpandedNodeId(ServerIndex.LOCAL, NamespaceReference.of(namespaceUri), identifier);
+  public static ExpandedNodeId of(String namespaceUri, @Nullable String identifier) {
+    return new ExpandedNodeId(
+        ServerIndex.LOCAL,
+        NamespaceReference.of(namespaceUri),
+        identifier != null ? identifier : "");
   }
 
   /**
