@@ -110,6 +110,22 @@ public class OpcUaJsonEncoder implements UaEncoder {
     jsonWriter.setHtmlSafe(false);
   }
 
+  /**
+   * Set the encoding to use.
+   *
+   * <p>{@link Encoding#COMPACT} is the default, and is used for serialization between OPC UA
+   * applications.
+   *
+   * <p>{@link Encoding#VERBOSE} is used when the consumer of the encoded JSON is something like a
+   * "cloud application", or otherwise not an OPC UA application, and cannot be deserialized by
+   * another OPC UA application's JSON decoder.
+   *
+   * @param encoding the encoding to use.
+   */
+  public void setEncoding(Encoding encoding) {
+    this.encoding = encoding;
+  }
+
   private EncoderContext contextPeek() {
     return contextStack.isEmpty() ? EncoderContext.BUILTIN : contextStack.peek();
   }
@@ -447,6 +463,7 @@ public class OpcUaJsonEncoder implements UaEncoder {
       if (encoding == Encoding.VERBOSE
           || context == EncoderContext.BUILTIN
           || (value != null && value.isNotNull())) {
+
         if (field != null) {
           jsonWriter.name(field);
         }
@@ -706,11 +723,11 @@ public class OpcUaJsonEncoder implements UaEncoder {
       jsonWriter.beginObject();
 
       Variant v = value.value();
-      if (v != null && v.isNotNull()) {
+      if (v.isNotNull()) {
         encodeVariant("Value", v);
       }
       StatusCode s = value.statusCode();
-      if (s != null && s.value() != 0L) {
+      if (s.value() != 0L) {
         encodeStatusCode("Status", s);
       }
       DateTime sourceTime = value.sourceTime();
@@ -741,8 +758,8 @@ public class OpcUaJsonEncoder implements UaEncoder {
    * @return {@code true} if all fields in {@code value} would be omitted from the encoding.
    */
   private static boolean allFieldsAreOmitted(DataValue value) {
-    return (value.value() == null || value.value().isNull())
-        && (value.statusCode() == null || value.statusCode().value() == 0L)
+    return value.value().isNull()
+        && value.statusCode().value() == 0L
         && (value.sourceTime() == null || value.sourceTime().isNull())
         && (value.sourcePicoseconds() == null || value.sourcePicoseconds().intValue() == 0)
         && (value.serverTime() == null || value.serverTime().isNull())

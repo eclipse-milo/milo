@@ -577,9 +577,6 @@ public class OpcUaJsonDecoder implements UaDecoder {
 
   @Override
   public StatusCode decodeStatusCode(String field) throws UaSerializationException {
-    // StatusCode values shall be encoded as a JSON number for the
-    // reversible encoding.
-
     try {
       if (field != null) {
         String nextName = nextName();
