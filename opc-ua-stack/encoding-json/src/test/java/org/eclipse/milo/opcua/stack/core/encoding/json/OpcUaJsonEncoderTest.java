@@ -60,7 +60,7 @@ class OpcUaJsonEncoderTest {
   private final EncodingContext context = DefaultEncodingContext.INSTANCE;
 
   @Test
-  void writeBoolean() throws IOException {
+  void encodeBoolean() throws IOException {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
 
@@ -79,7 +79,7 @@ class OpcUaJsonEncoderTest {
   }
 
   @Test
-  public void writeSByte() throws IOException {
+  void encodeSByte() throws IOException {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
 
@@ -102,7 +102,7 @@ class OpcUaJsonEncoderTest {
   }
 
   @Test
-  public void writeInt16() throws IOException {
+  void encodeInt16() throws IOException {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
 
@@ -125,7 +125,7 @@ class OpcUaJsonEncoderTest {
   }
 
   @Test
-  public void writeInt32() throws IOException {
+  void encodeInt32() throws IOException {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
 
@@ -148,7 +148,7 @@ class OpcUaJsonEncoderTest {
   }
 
   @Test
-  public void writeInt64() throws IOException {
+  void encodeInt64() throws IOException {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
 
@@ -174,7 +174,7 @@ class OpcUaJsonEncoderTest {
   }
 
   @Test
-  public void writeByte() throws IOException {
+  void encodeByte() throws IOException {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
 
@@ -193,7 +193,7 @@ class OpcUaJsonEncoderTest {
   }
 
   @Test
-  public void writeUInt16() throws IOException {
+  void encodeUInt16() throws IOException {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
 
@@ -212,7 +212,7 @@ class OpcUaJsonEncoderTest {
   }
 
   @Test
-  public void writeUInt32() throws IOException {
+  void encodeUInt32() throws IOException {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
 
@@ -231,7 +231,7 @@ class OpcUaJsonEncoderTest {
   }
 
   @Test
-  public void writeUInt64() throws IOException {
+  void encodeUInt64() throws IOException {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
 
@@ -258,7 +258,7 @@ class OpcUaJsonEncoderTest {
   }
 
   @Test
-  public void writeFloat() throws IOException {
+  void encodeFloat() throws IOException {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
 
@@ -304,7 +304,7 @@ class OpcUaJsonEncoderTest {
   }
 
   @Test
-  public void writeDouble() throws IOException {
+  void encodeDouble() throws IOException {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
 
@@ -350,7 +350,7 @@ class OpcUaJsonEncoderTest {
   }
 
   @Test
-  public void writeString() throws IOException {
+  void encodeString() throws IOException {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
 
@@ -377,7 +377,7 @@ class OpcUaJsonEncoderTest {
   }
 
   @Test
-  public void writeDateTime() throws IOException {
+  void encodeDateTime() throws IOException {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
 
@@ -428,7 +428,7 @@ class OpcUaJsonEncoderTest {
   }
 
   @Test
-  public void writeGuid() throws IOException {
+  void encodeGuid() throws IOException {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
 
@@ -448,7 +448,7 @@ class OpcUaJsonEncoderTest {
   }
 
   @Test
-  public void writeByteString() throws IOException {
+  void encodeByteString() throws IOException {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
 
@@ -474,7 +474,7 @@ class OpcUaJsonEncoderTest {
   }
 
   @Test
-  public void writeXmlElement() throws IOException {
+  void encodeXmlElement() throws IOException {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
 
@@ -702,7 +702,7 @@ class OpcUaJsonEncoderTest {
   }
 
   @Test
-  public void writeStatusCode() throws IOException {
+  void encodeStatusCode() throws IOException {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
 
@@ -767,7 +767,7 @@ class OpcUaJsonEncoderTest {
   }
 
   @Test
-  public void writeQualifiedName() throws IOException {
+  void encodeQualifiedName() throws IOException {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
 
@@ -807,7 +807,7 @@ class OpcUaJsonEncoderTest {
   }
 
   @Test
-  public void writeLocalizedText() throws IOException {
+  void encodeLocalizedText() throws IOException {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
 
@@ -890,7 +890,7 @@ class OpcUaJsonEncoderTest {
   }
 
   @Test
-  public void writeDataValue() throws IOException {
+  void encodeDataValue() throws IOException {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
 
@@ -982,7 +982,7 @@ class OpcUaJsonEncoderTest {
   }
 
   @Test
-  public void writeVariant() {
+  void encodeVariant() {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
 
@@ -1073,7 +1073,7 @@ class OpcUaJsonEncoderTest {
   }
 
   @Test
-  public void writeDiagnosticInfo() throws IOException {
+  void encodeDiagnosticInfo() throws IOException {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
 
@@ -1125,7 +1125,7 @@ class OpcUaJsonEncoderTest {
   }
 
   @Test
-  public void writeEnum() throws IOException {
+  void encodeEnum() throws IOException {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
 
@@ -1214,7 +1214,7 @@ class OpcUaJsonEncoderTest {
   }
 
   @Test
-  public void writeBooleanArray() throws IOException {
+  void encodeBooleanArray() throws IOException {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
 
