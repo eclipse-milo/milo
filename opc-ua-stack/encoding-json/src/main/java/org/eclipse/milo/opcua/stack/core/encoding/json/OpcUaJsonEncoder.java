@@ -1415,6 +1415,7 @@ public class OpcUaJsonEncoder implements UaEncoder {
       if (encoding == Encoding.VERBOSE
           || context == EncoderContext.BUILTIN
           || (value != null && value.isNotNull())) {
+
         if (field != null) {
           jsonWriter.name(field);
         }
@@ -1427,12 +1428,30 @@ public class OpcUaJsonEncoder implements UaEncoder {
             throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
           }
         } else {
-          int[] dimensions = value.getDimensions();
           OpcUaDataType dataType = value.getDataType().orElseThrow();
+
+          int[] dimensions = value.getDimensions();
+
+          jsonWriter.beginObject();
           try {
-            encodeFlatArrayAsNested(flatArray, dimensions, dataType, 0);
-          } catch (IOException e) {
-            throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+            // "Array" member
+            jsonWriter.name("Array");
+            jsonWriter.beginArray();
+            for (int i = 0; i < Array.getLength(flatArray); i++) {
+              Object e = Array.get(flatArray, i);
+              encodeBuiltinTypeValue(null, dataType.getTypeId(), e);
+            }
+            jsonWriter.endArray();
+
+            // "Dimensions" member
+            jsonWriter.name("Dimensions");
+            jsonWriter.beginArray();
+            for (int dimension : dimensions) {
+              jsonWriter.value(dimension);
+            }
+            jsonWriter.endArray();
+          } finally {
+            jsonWriter.endObject();
           }
         }
       }

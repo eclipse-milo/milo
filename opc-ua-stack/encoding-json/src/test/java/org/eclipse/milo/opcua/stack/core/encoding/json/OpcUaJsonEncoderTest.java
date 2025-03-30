@@ -1263,23 +1263,24 @@ class OpcUaJsonEncoderTest {
 
     encoder.reset(writer = new StringWriter());
     encoder.encodeMatrix(null, matrix2d);
-    assertEquals("[[0,1],[2,3]]", writer.toString());
+    assertEquals("{\"Array\":[0,1,2,3],\"Dimensions\":[2,2]}", writer.toString());
 
     encoder.reset(writer = new StringWriter());
     encoder.encodeMatrix(null, matrix3d);
-    assertEquals("[[[0,1],[2,3]],[[4,5],[6,7]]]", writer.toString());
+    assertEquals("{\"Array\":[0,1,2,3,4,5,6,7],\"Dimensions\":[2,2,2]}", writer.toString());
 
     encoder.reset(writer = new StringWriter());
     encoder.jsonWriter.beginObject();
     encoder.encodeMatrix("foo", matrix2d);
     encoder.jsonWriter.endObject();
-    assertEquals("{\"foo\":[[0,1],[2,3]]}", writer.toString());
+    assertEquals("{\"foo\":{\"Array\":[0,1,2,3],\"Dimensions\":[2,2]}}", writer.toString());
 
     encoder.reset(writer = new StringWriter());
     encoder.jsonWriter.beginObject();
     encoder.encodeMatrix("foo", matrix3d);
     encoder.jsonWriter.endObject();
-    assertEquals("{\"foo\":[[[0,1],[2,3]],[[4,5],[6,7]]]}", writer.toString());
+    assertEquals(
+        "{\"foo\":{\"Array\":[0,1,2,3,4,5,6,7],\"Dimensions\":[2,2,2]}}", writer.toString());
   }
 
   @Test
