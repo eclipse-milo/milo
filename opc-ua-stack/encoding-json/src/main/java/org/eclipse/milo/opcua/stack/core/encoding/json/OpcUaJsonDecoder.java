@@ -614,38 +614,31 @@ public class OpcUaJsonDecoder implements UaDecoder {
         }
       }
 
-      jsonReader.beginObject();
-
-      String name = null;
-      int namespaceIndex = 0;
-
-      while (jsonReader.peek() == JsonToken.NAME) {
-        String nextName = nextName();
-        if (nextName == null) continue;
-
-        switch (nextName) {
-          case "Name":
-            {
-              if (jsonReader.peek() == JsonToken.NULL) {
-                jsonReader.nextNull();
-              } else {
-                name = jsonReader.nextString();
-              }
-              break;
-            }
-          case "Uri":
-            namespaceIndex = jsonReader.nextInt();
-            break;
-          default:
-            throw new UaSerializationException(
-                StatusCodes.Bad_DecodingError,
-                String.format("readQualifiedName: unexpected field: " + nextName));
-        }
+      if (jsonReader.peek() == JsonToken.NULL) {
+        jsonReader.nextNull();
+        return QualifiedName.NULL_VALUE;
       }
 
-      jsonReader.endObject();
+      String s = jsonReader.nextString();
 
-      return new QualifiedName(namespaceIndex, name);
+      if (s == null || s.isEmpty()) {
+        return QualifiedName.NULL_VALUE;
+      }
+
+      if (s.startsWith("nsu=")) {
+        String uri = s.substring(4, s.indexOf(";"));
+        String name = s.substring(s.indexOf(";") + 1);
+        UShort index = context.getNamespaceTable().getIndex(uri);
+
+        if (index == null) {
+          index = UShort.MIN;
+          name = s;
+        }
+
+        return new QualifiedName(index, name);
+      } else {
+        return new QualifiedName(0, s);
+      }
     } catch (IOException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }

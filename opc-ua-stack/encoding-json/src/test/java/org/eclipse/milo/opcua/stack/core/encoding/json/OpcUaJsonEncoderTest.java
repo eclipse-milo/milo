@@ -58,7 +58,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class OpcUaJsonEncoderTest {
 
-  private final EncodingContext context = DefaultEncodingContext.INSTANCE;
+  private final EncodingContext context = new DefaultEncodingContext();
 
   @Test
   void encodeBoolean() throws IOException {
@@ -766,39 +766,36 @@ class OpcUaJsonEncoderTest {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
 
-    encoder.encodeQualifiedName(null, new QualifiedName(0, "foo"));
-    assertEquals("{\"Name\":\"foo\"}", writer.toString());
+    // Test name in namespace 0
+    encoder.encodeQualifiedName(null, new QualifiedName(0, "TestName"));
+    assertEquals("\"TestName\"", writer.toString());
 
+    // Test name in non-zero namespace
+    context.getNamespaceTable().add("urn:test:namespace");
     encoder.reset(writer = new StringWriter());
-    encoder.encodeQualifiedName(null, new QualifiedName(1, "foo"));
-    assertEquals("{\"Name\":\"foo\",\"Uri\":1}", writer.toString());
+    encoder.encodeQualifiedName(null, new QualifiedName(1, "TestName"));
+    assertEquals("\"nsu=urn:test:namespace;TestName\"", writer.toString());
 
-    encoder.reversible = false;
-    encoder.encodingContext = new DefaultEncodingContext();
-    encoder.encodingContext.getNamespaceTable().add("urn:eclipse:milo:test1");
-    encoder.encodingContext.getNamespaceTable().add("urn:eclipse:milo:test2");
-
-    encoder.reset(writer = new StringWriter());
-    encoder.encodeQualifiedName(null, new QualifiedName(0, "foo"));
-    assertEquals("{\"Name\":\"foo\"}", writer.toString());
-
-    encoder.reset(writer = new StringWriter());
-    encoder.encodeQualifiedName(null, new QualifiedName(1, "foo"));
-    assertEquals("{\"Name\":\"foo\",\"Uri\":1}", writer.toString());
-
-    encoder.reset(writer = new StringWriter());
-    encoder.encodeQualifiedName(null, new QualifiedName(2, "foo"));
-    assertEquals("{\"Name\":\"foo\",\"Uri\":\"urn:eclipse:milo:test2\"}", writer.toString());
-
-    encoder.reset(writer = new StringWriter());
-    encoder.encodeQualifiedName(null, new QualifiedName(99, "foo"));
-    assertEquals("{\"Name\":\"foo\",\"Uri\":99}", writer.toString());
-
+    // Test with field name
     encoder.reset(writer = new StringWriter());
     encoder.jsonWriter.beginObject();
-    encoder.encodeQualifiedName("foo", new QualifiedName(0, "foo"));
+    encoder.encodeQualifiedName("qname", new QualifiedName(0, "TestName"));
     encoder.jsonWriter.endObject();
-    assertEquals("{\"foo\":{\"Name\":\"foo\"}}", writer.toString());
+    assertEquals("{\"qname\":\"TestName\"}", writer.toString());
+
+    // Test with field name and non-zero namespace
+    encoder.reset(writer = new StringWriter());
+    encoder.jsonWriter.beginObject();
+    encoder.encodeQualifiedName("qname", new QualifiedName(1, "TestName"));
+    encoder.jsonWriter.endObject();
+    assertEquals("{\"qname\":\"nsu=urn:test:namespace;TestName\"}", writer.toString());
+
+    // Test null name
+    encoder.reset(writer = new StringWriter());
+    encoder.jsonWriter.beginObject();
+    encoder.encodeQualifiedName("qname", QualifiedName.NULL_VALUE);
+    encoder.jsonWriter.endObject();
+    assertEquals("{\"qname\":null}", writer.toString());
   }
 
   @Test
@@ -961,6 +958,7 @@ class OpcUaJsonEncoderTest {
   void encodeVariant() {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
+    context.getNamespaceTable().add("urn:eclipse:milo:test1");
 
     // region reversible
     encoder.reset(writer = new StringWriter());
@@ -969,7 +967,7 @@ class OpcUaJsonEncoderTest {
 
     encoder.reset(writer = new StringWriter());
     encoder.encodeVariant(null, new Variant(new QualifiedName(1, "foo")));
-    assertEquals("{\"Type\":20,\"Body\":{\"Name\":\"foo\",\"Uri\":1}}", writer.toString());
+    assertEquals("{\"Type\":20,\"Body\":\"nsu=urn:eclipse:milo:test1;foo\"}", writer.toString());
 
     encoder.reset(writer = new StringWriter());
     encoder.encodeVariant(
@@ -991,7 +989,7 @@ class OpcUaJsonEncoderTest {
 
     encoder.reset(writer = new StringWriter());
     encoder.encodeVariant(null, new Variant(new QualifiedName(1, "foo")));
-    assertEquals("{\"Name\":\"foo\",\"Uri\":1}", writer.toString());
+    assertEquals("\"nsu=urn:eclipse:milo:test1;foo\"", writer.toString());
 
     encoder.reset(writer = new StringWriter());
     encoder.encodeVariant(

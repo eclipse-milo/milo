@@ -51,7 +51,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class OpcUaJsonDecoderTest {
 
-  private final EncodingContext context = DefaultEncodingContext.INSTANCE;
+  private final EncodingContext context = new DefaultEncodingContext();
 
   @Test
   void readBoolean() throws IOException {
@@ -598,25 +598,33 @@ class OpcUaJsonDecoderTest {
   }
 
   @Test
-  void readQualifiedName() throws IOException {
+  void decodeQualifiedName() throws IOException {
     var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
 
-    decoder.reset(new StringReader("{}"));
-    assertEquals(new QualifiedName(0, null), decoder.decodeQualifiedName(null));
+    // Test name in namespace 0
+    decoder.reset(new StringReader("\"TestName\""));
+    assertEquals(new QualifiedName(0, "TestName"), decoder.decodeQualifiedName(null));
 
-    decoder.reset(new StringReader("{\"Uri\":1}"));
-    assertEquals(new QualifiedName(1, null), decoder.decodeQualifiedName(null));
+    // Test name in non-zero namespace
+    context.getNamespaceTable().add("urn:test:namespace");
+    decoder.reset(new StringReader("\"nsu=urn:test:namespace;TestName\""));
+    assertEquals(new QualifiedName(1, "TestName"), decoder.decodeQualifiedName(null));
 
-    decoder.reset(new StringReader("{\"Name\":\"foo\"}"));
-    assertEquals(new QualifiedName(0, "foo"), decoder.decodeQualifiedName(null));
-
-    decoder.reset(new StringReader("{\"Name\":\"foo\",\"Uri\":1}"));
-    assertEquals(new QualifiedName(1, "foo"), decoder.decodeQualifiedName(null));
-
-    decoder.reset(new StringReader("{\"foo\":{\"Name\":\"foo\"}}"));
+    // Test with field name
+    decoder.reset(new StringReader("{\"qname\":\"TestName\"}"));
     decoder.jsonReader.beginObject();
-    assertEquals(new QualifiedName(0, "foo"), decoder.decodeQualifiedName("foo"));
+    assertEquals(new QualifiedName(0, "TestName"), decoder.decodeQualifiedName("qname"));
     decoder.jsonReader.endObject();
+
+    // Test with field name and non-zero namespace
+    decoder.reset(new StringReader("{\"qname\":\"nsu=urn:test:namespace;TestName\"}"));
+    decoder.jsonReader.beginObject();
+    assertEquals(new QualifiedName(1, "TestName"), decoder.decodeQualifiedName("qname"));
+    decoder.jsonReader.endObject();
+
+    // Test null name
+    decoder.reset(new StringReader("null"));
+    assertEquals(QualifiedName.NULL_VALUE, decoder.decodeQualifiedName(null));
   }
 
   @Test
@@ -771,11 +779,12 @@ class OpcUaJsonDecoderTest {
   @Test
   void readVariant() throws IOException {
     var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
+    context.getNamespaceTable().add("urn:eclipse:milo:test1");
 
     decoder.reset(new StringReader("{\"Type\":1,\"Body\":true}"));
     assertEquals(new Variant(true), decoder.decodeVariant(null));
 
-    decoder.reset(new StringReader("{\"Type\":20,\"Body\":{\"Name\":\"foo\",\"Uri\":1}}"));
+    decoder.reset(new StringReader("{\"Type\":20,\"Body\":\"nsu=urn:eclipse:milo:test1;foo\"}"));
     assertEquals(new Variant(new QualifiedName(1, "foo")), decoder.decodeVariant(null));
 
     decoder.reset(
@@ -860,7 +869,7 @@ class OpcUaJsonDecoderTest {
 
     decoder.reset(
         new StringReader(
-            "{\"TypeId\":\"i=15257\",\"Body\":{\"RequestHeader\":{\"AuthenticationToken\":\"i=0\",\"Timestamp\":\"1601-01-01T00:00:00Z\",\"RequestHandle\":0,\"ReturnDiagnostics\":0,\"AuditEntryId\":\"foo\",\"TimeoutHint\":0,\"AdditionalHeader\":null},\"MaxAge\":0.0,\"TimestampsToReturn\":2,\"NodesToRead\":[{\"NodeId\":\"i=1\",\"AttributeId\":13,\"IndexRange\":null,\"DataEncoding\":{\"Name\":null}}]}}"));
+            "{\"TypeId\":\"i=15257\",\"Body\":{\"RequestHeader\":{\"AuthenticationToken\":\"i=0\",\"Timestamp\":\"1601-01-01T00:00:00Z\",\"RequestHandle\":0,\"ReturnDiagnostics\":0,\"AuditEntryId\":\"foo\",\"TimeoutHint\":0,\"AdditionalHeader\":null},\"MaxAge\":0.0,\"TimestampsToReturn\":2,\"NodesToRead\":[{\"NodeId\":\"i=1\",\"AttributeId\":13,\"IndexRange\":null,\"DataEncoding\":null}]}}"));
     assertEquals(message, decoder.decodeMessage(null));
   }
 

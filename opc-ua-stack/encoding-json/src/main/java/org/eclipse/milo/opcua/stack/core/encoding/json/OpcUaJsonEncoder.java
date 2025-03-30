@@ -53,7 +53,6 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
-import org.eclipse.milo.opcua.stack.core.types.enumerated.IdType;
 import org.eclipse.milo.opcua.stack.core.util.ArrayUtil;
 import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 import org.jspecify.annotations.NonNull;
@@ -549,47 +548,6 @@ public class OpcUaJsonEncoder implements UaEncoder {
     }
   }
 
-  /** Writes the fields that are common to both NodeId and ExpandedNodeId. */
-  private void writeNodeIdCommonFields(IdType idType, Object identifier, int namespaceIndex)
-      throws IOException {
-    if (idType != IdType.Numeric) {
-      jsonWriter.name("IdType").value(idType.getValue());
-    }
-    jsonWriter.name("Id");
-    switch (idType) {
-      case Numeric:
-        jsonWriter.value((Number) identifier);
-        break;
-      case String:
-        jsonWriter.value((String) identifier);
-        break;
-      case Guid:
-        {
-          UUID uuid = (UUID) identifier;
-          jsonWriter.value(uuid.toString().toUpperCase());
-          break;
-        }
-      case Opaque:
-        {
-          ByteString bs = (ByteString) identifier;
-          jsonWriter.value(Base64.getEncoder().encodeToString(bs.bytesOrEmpty()));
-          break;
-        }
-    }
-    if (namespaceIndex > 0) {
-      if (reversible || namespaceIndex == 1) {
-        jsonWriter.name("Namespace").value(namespaceIndex);
-      } else {
-        String namespaceUri = encodingContext.getNamespaceTable().get(namespaceIndex);
-        if (namespaceUri != null) {
-          jsonWriter.name("Namespace").value(namespaceUri);
-        } else {
-          jsonWriter.name("Namespace").value(namespaceIndex);
-        }
-      }
-    }
-  }
-
   @Override
   public void encodeStatusCode(String field, StatusCode value) throws UaSerializationException {
     // # Compact
@@ -643,31 +601,30 @@ public class OpcUaJsonEncoder implements UaEncoder {
   @Override
   public void encodeQualifiedName(String field, QualifiedName value)
       throws UaSerializationException {
+
     try {
       EncoderContext context = contextPeek();
       if (encoding == Encoding.VERBOSE
           || context == EncoderContext.BUILTIN
           || (value != null && value.isNotNull())) {
+
         if (field != null) {
           jsonWriter.name(field);
         }
 
-        jsonWriter.beginObject();
-        jsonWriter.name("Name").value(value.name());
-        int namespaceIndex = value.namespaceIndex().intValue();
-        if (namespaceIndex > 0) {
-          if (reversible || namespaceIndex == 1) {
-            jsonWriter.name("Uri").value(namespaceIndex);
+        int index = value.namespaceIndex().intValue();
+
+        if (index == 0) {
+          jsonWriter.value(value.name());
+        } else {
+          String namespaceUri = encodingContext.getNamespaceTable().get(index);
+          if (namespaceUri != null) {
+            jsonWriter.value("nsu=%s;%s".formatted(namespaceUri, value.name()));
           } else {
-            String namespaceUri = encodingContext.getNamespaceTable().get(namespaceIndex);
-            if (namespaceUri != null) {
-              jsonWriter.name("Uri").value(namespaceUri);
-            } else {
-              jsonWriter.name("Uri").value(namespaceIndex);
-            }
+            throw new UaSerializationException(
+                StatusCodes.Bad_EncodingError, "namespace index=" + index + " not found");
           }
         }
-        jsonWriter.endObject();
       }
     } catch (IOException e) {
       throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
