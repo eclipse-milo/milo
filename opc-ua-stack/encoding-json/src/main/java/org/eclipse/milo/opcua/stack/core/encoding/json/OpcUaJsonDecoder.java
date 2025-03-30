@@ -1406,9 +1406,71 @@ public class OpcUaJsonDecoder implements UaDecoder {
         }
       }
 
-      Object nestedArray = decodeNestedMultiDimensionalArrayBuiltinValue(dataType.getTypeId());
+      if (jsonReader.peek() == JsonToken.NULL) {
+        jsonReader.nextNull();
+        return Matrix.ofNull();
+      }
 
-      return new Matrix(nestedArray);
+      if (jsonReader.peek() != JsonToken.BEGIN_OBJECT) {
+        throw new UaSerializationException(
+            StatusCodes.Bad_DecodingError,
+            String.format("readMatrix: unexpected token: %s", jsonReader.peek()));
+      }
+
+      jsonReader.beginObject();
+      try {
+        int[] dimensions = null;
+        Object flatArray = null;
+
+        while (jsonReader.peek() == JsonToken.NAME) {
+          String nextName = nextName();
+          if (nextName == null) continue;
+
+          switch (nextName) {
+            case "Array":
+              {
+                var elements = new ArrayList<>();
+                jsonReader.beginArray();
+                while (jsonReader.peek() != JsonToken.END_ARRAY) {
+                  elements.add(readBuiltinTypeValue(null, dataType.getTypeId()));
+                }
+                jsonReader.endArray();
+
+                flatArray =
+                    Array.newInstance(
+                        OpcUaDataType.getPrimitiveBackingClass(dataType.getTypeId()),
+                        elements.size());
+
+                for (int i = 0; i < elements.size(); i++) {
+                  Array.set(flatArray, i, elements.get(i));
+                }
+              }
+              break;
+            case "Dimensions":
+              {
+                var dims = new ArrayList<Integer>();
+                jsonReader.beginArray();
+                while (jsonReader.peek() == JsonToken.NUMBER) {
+                  dims.add(jsonReader.nextInt());
+                }
+                jsonReader.endArray();
+                dimensions = new int[dims.size()];
+                for (int i = 0; i < dims.size(); i++) {
+                  dimensions[i] = dims.get(i);
+                }
+              }
+              break;
+            default:
+              throw new UaSerializationException(
+                  StatusCodes.Bad_DecodingError,
+                  String.format("readLocalizedText: unexpected field: " + nextName));
+          }
+        }
+
+        return new Matrix(flatArray, dimensions, dataType);
+      } finally {
+        jsonReader.endObject();
+      }
     } catch (IOException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }

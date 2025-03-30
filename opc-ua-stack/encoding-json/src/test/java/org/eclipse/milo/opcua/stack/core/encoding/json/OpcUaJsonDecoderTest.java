@@ -910,18 +910,19 @@ class OpcUaJsonDecoderTest {
               new Integer[][] {{4, 5}, {6, 7}}
             });
 
-    decoder.reset(new StringReader("[[0,1],[2,3]]"));
+    decoder.reset(new StringReader("{\"Array\":[0,1,2,3],\"Dimensions\":[2,2]}"));
     assertEquals(matrix2d, decoder.decodeMatrix(null, OpcUaDataType.Int32));
 
-    decoder.reset(new StringReader("[[[0,1],[2,3]],[[4,5],[6,7]]]"));
+    decoder.reset(new StringReader("{\"Array\":[0,1,2,3,4,5,6,7],\"Dimensions\":[2,2,2]}"));
     assertEquals(matrix3d, decoder.decodeMatrix(null, OpcUaDataType.Int32));
 
-    decoder.reset(new StringReader("{\"foo\":[[0,1],[2,3]]}"));
+    decoder.reset(new StringReader("{\"foo\":{\"Array\":[0,1,2,3],\"Dimensions\":[2,2]}}"));
     decoder.jsonReader.beginObject();
     assertEquals(matrix2d, decoder.decodeMatrix("foo", OpcUaDataType.Int32));
     decoder.jsonReader.endObject();
 
-    decoder.reset(new StringReader("{\"foo\":[[[0,1],[2,3]],[[4,5],[6,7]]]}"));
+    decoder.reset(
+        new StringReader("{\"foo\":{\"Array\":[0,1,2,3,4,5,6,7],\"Dimensions\":[2,2,2]}}"));
     decoder.jsonReader.beginObject();
     assertEquals(matrix3d, decoder.decodeMatrix("foo", OpcUaDataType.Int32));
     decoder.jsonReader.endObject();
@@ -931,10 +932,10 @@ class OpcUaJsonDecoderTest {
   void decodeEnumMatrix() throws Exception {
     var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
 
-    decoder.reset(new StringReader("[[0,1],[2,3]]"));
+    decoder.reset(new StringReader("{\"Array\":[0,1,2,3],\"Dimensions\":[2,2]}"));
     assertEquals(Matrix.ofInt32(new Integer[][] {{0, 1}, {2, 3}}), decoder.decodeEnumMatrix(null));
 
-    decoder.reset(new StringReader("{\"foo\":[[0,1],[2,3]]}"));
+    decoder.reset(new StringReader("{\"foo\":{\"Array\":[0,1,2,3],\"Dimensions\":[2,2]}}"));
     decoder.jsonReader.beginObject();
     assertEquals(Matrix.ofInt32(new Integer[][] {{0, 1}, {2, 3}}), decoder.decodeEnumMatrix("foo"));
     decoder.jsonReader.endObject();
