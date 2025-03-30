@@ -65,8 +65,14 @@ public class OpcUaJsonEncoder implements UaEncoder {
     STRUCT
   }
 
+  public enum Encoding {
+    COMPACT,
+    VERBOSE
+  }
+
   private final Stack<EncoderContext> contextStack = new Stack<>();
 
+  Encoding encoding = Encoding.COMPACT;
   boolean reversible = true;
   JsonWriter jsonWriter;
   EncodingContext encodingContext;
@@ -122,7 +128,7 @@ public class OpcUaJsonEncoder implements UaEncoder {
   public void encodeBoolean(String field, Boolean value) throws UaSerializationException {
     try {
       EncoderContext context = contextPeek();
-      if (!reversible || context == EncoderContext.BUILTIN || value) {
+      if (encoding == Encoding.VERBOSE || context == EncoderContext.BUILTIN || value) {
         if (field != null) {
           jsonWriter.name(field);
         }
@@ -137,7 +143,7 @@ public class OpcUaJsonEncoder implements UaEncoder {
   public void encodeSByte(String field, Byte value) throws UaSerializationException {
     try {
       EncoderContext context = contextPeek();
-      if (!reversible || context == EncoderContext.BUILTIN || value != 0) {
+      if (encoding == Encoding.VERBOSE || context == EncoderContext.BUILTIN || value != 0) {
         if (field != null) {
           jsonWriter.name(field);
         }
@@ -152,7 +158,7 @@ public class OpcUaJsonEncoder implements UaEncoder {
   public void encodeInt16(String field, Short value) throws UaSerializationException {
     try {
       EncoderContext context = contextPeek();
-      if (!reversible || context == EncoderContext.BUILTIN || value != 0) {
+      if (encoding == Encoding.VERBOSE || context == EncoderContext.BUILTIN || value != 0) {
         if (field != null) {
           jsonWriter.name(field);
         }
@@ -167,7 +173,7 @@ public class OpcUaJsonEncoder implements UaEncoder {
   public void encodeInt32(String field, Integer value) throws UaSerializationException {
     try {
       EncoderContext context = contextPeek();
-      if (!reversible || context == EncoderContext.BUILTIN || value != 0) {
+      if (encoding == Encoding.VERBOSE || context == EncoderContext.BUILTIN || value != 0) {
         if (field != null) {
           jsonWriter.name(field);
         }
@@ -185,7 +191,7 @@ public class OpcUaJsonEncoder implements UaEncoder {
 
     try {
       EncoderContext context = contextPeek();
-      if (!reversible || context == EncoderContext.BUILTIN || value != 0) {
+      if (encoding == Encoding.VERBOSE || context == EncoderContext.BUILTIN || value != 0) {
         if (field != null) {
           jsonWriter.name(field);
         }
@@ -200,7 +206,9 @@ public class OpcUaJsonEncoder implements UaEncoder {
   public void encodeByte(String field, UByte value) throws UaSerializationException {
     try {
       EncoderContext context = contextPeek();
-      if (!reversible || context == EncoderContext.BUILTIN || value.intValue() != 0) {
+      if (encoding == Encoding.VERBOSE
+          || context == EncoderContext.BUILTIN
+          || value.intValue() != 0) {
         if (field != null) {
           jsonWriter.name(field);
         }
@@ -215,7 +223,9 @@ public class OpcUaJsonEncoder implements UaEncoder {
   public void encodeUInt16(String field, UShort value) throws UaSerializationException {
     try {
       EncoderContext context = contextPeek();
-      if (!reversible || context == EncoderContext.BUILTIN || value.intValue() != 0) {
+      if (encoding == Encoding.VERBOSE
+          || context == EncoderContext.BUILTIN
+          || value.intValue() != 0) {
         if (field != null) {
           jsonWriter.name(field);
         }
@@ -230,7 +240,9 @@ public class OpcUaJsonEncoder implements UaEncoder {
   public void encodeUInt32(String field, UInteger value) throws UaSerializationException {
     try {
       EncoderContext context = contextPeek();
-      if (!reversible || context == EncoderContext.BUILTIN || value.longValue() != 0L) {
+      if (encoding == Encoding.VERBOSE
+          || context == EncoderContext.BUILTIN
+          || value.longValue() != 0L) {
         if (field != null) {
           jsonWriter.name(field);
         }
@@ -249,7 +261,9 @@ public class OpcUaJsonEncoder implements UaEncoder {
 
     try {
       EncoderContext context = contextPeek();
-      if (!reversible || context == EncoderContext.BUILTIN || value.longValue() != 0L) {
+      if (encoding == Encoding.VERBOSE
+          || context == EncoderContext.BUILTIN
+          || value.longValue() != 0L) {
         if (field != null) {
           jsonWriter.name(field);
         }
@@ -270,7 +284,7 @@ public class OpcUaJsonEncoder implements UaEncoder {
 
     try {
       EncoderContext context = contextPeek();
-      if (!reversible || context == EncoderContext.BUILTIN || value != 0.0f) {
+      if (encoding == Encoding.VERBOSE || context == EncoderContext.BUILTIN || value != 0.0f) {
         if (field != null) {
           jsonWriter.name(field);
         }
@@ -299,7 +313,7 @@ public class OpcUaJsonEncoder implements UaEncoder {
 
     try {
       EncoderContext context = contextPeek();
-      if (!reversible || context == EncoderContext.BUILTIN || value != 0.0d) {
+      if (encoding == Encoding.VERBOSE || context == EncoderContext.BUILTIN || value != 0.0d) {
         if (field != null) {
           jsonWriter.name(field);
         }
@@ -326,7 +340,7 @@ public class OpcUaJsonEncoder implements UaEncoder {
 
     try {
       EncoderContext context = contextPeek();
-      if (!reversible || context == EncoderContext.BUILTIN || value != null) {
+      if (encoding == Encoding.VERBOSE || context == EncoderContext.BUILTIN || value != null) {
         if (field != null) {
           jsonWriter.name(field);
         }
@@ -349,7 +363,9 @@ public class OpcUaJsonEncoder implements UaEncoder {
 
     try {
       EncoderContext context = contextPeek();
-      if (!reversible || context == EncoderContext.BUILTIN || (value != null && value.isValid())) {
+      if (encoding == Encoding.VERBOSE
+          || context == EncoderContext.BUILTIN
+          || (value != null && value.isValid())) {
         if (field != null) {
           jsonWriter.name(field);
         }
@@ -371,7 +387,7 @@ public class OpcUaJsonEncoder implements UaEncoder {
   public void encodeGuid(String field, UUID value) throws UaSerializationException {
     try {
       EncoderContext context = contextPeek();
-      if (!reversible
+      if (encoding == Encoding.VERBOSE
           || context == EncoderContext.BUILTIN
           || (value != null
               && value.getLeastSignificantBits() != 0L
@@ -396,7 +412,7 @@ public class OpcUaJsonEncoder implements UaEncoder {
 
     try {
       EncoderContext context = contextPeek();
-      if (!reversible
+      if (encoding == Encoding.VERBOSE
           || context == EncoderContext.BUILTIN
           || (value != null && value.isNotNull())) {
         if (field != null) {
@@ -413,7 +429,7 @@ public class OpcUaJsonEncoder implements UaEncoder {
   public void encodeXmlElement(String field, XmlElement value) throws UaSerializationException {
     try {
       EncoderContext context = contextPeek();
-      if (!reversible
+      if (encoding == Encoding.VERBOSE
           || context == EncoderContext.BUILTIN
           || (value != null && value.isNotNull())) {
         if (field != null) {
@@ -430,7 +446,7 @@ public class OpcUaJsonEncoder implements UaEncoder {
   public void encodeNodeId(String field, NodeId value) throws UaSerializationException {
     try {
       EncoderContext context = contextPeek();
-      if (!reversible
+      if (encoding == Encoding.VERBOSE
           || context == EncoderContext.BUILTIN
           || (value != null && value.isNotNull())) {
         if (field != null) {
@@ -461,7 +477,7 @@ public class OpcUaJsonEncoder implements UaEncoder {
 
     try {
       EncoderContext context = contextPeek();
-      if (!reversible
+      if (encoding == Encoding.VERBOSE
           || context == EncoderContext.BUILTIN
           || (value != null && value.isNotNull())) {
 
@@ -598,7 +614,9 @@ public class OpcUaJsonEncoder implements UaEncoder {
 
     try {
       EncoderContext context = contextPeek();
-      if (!reversible || context == EncoderContext.BUILTIN || (value != null && !value.isGood())) {
+      if (encoding == Encoding.VERBOSE
+          || context == EncoderContext.BUILTIN
+          || (value != null && !value.isGood())) {
         long code = value.value();
 
         if (reversible) {
@@ -632,7 +650,7 @@ public class OpcUaJsonEncoder implements UaEncoder {
       throws UaSerializationException {
     try {
       EncoderContext context = contextPeek();
-      if (!reversible
+      if (encoding == Encoding.VERBOSE
           || context == EncoderContext.BUILTIN
           || (value != null && value.isNotNull())) {
         if (field != null) {
@@ -666,7 +684,7 @@ public class OpcUaJsonEncoder implements UaEncoder {
       throws UaSerializationException {
     try {
       EncoderContext context = contextPeek();
-      if (!reversible
+      if (encoding == Encoding.VERBOSE
           || context == EncoderContext.BUILTIN
           || (value != null && value.isNotNull())) {
         if (field != null) {
@@ -696,7 +714,7 @@ public class OpcUaJsonEncoder implements UaEncoder {
       throws UaSerializationException {
     try {
       EncoderContext context = contextPeek();
-      if (!reversible || context == EncoderContext.BUILTIN || value != null) {
+      if (encoding == Encoding.VERBOSE || context == EncoderContext.BUILTIN || value != null) {
         if (field != null) {
           jsonWriter.name(field);
         }
@@ -1092,7 +1110,7 @@ public class OpcUaJsonEncoder implements UaEncoder {
       throws UaSerializationException {
     try {
       EncoderContext context = contextPeek();
-      if (!reversible || context == EncoderContext.BUILTIN || value != null) {
+      if (encoding == Encoding.VERBOSE || context == EncoderContext.BUILTIN || value != null) {
         if (field != null) {
           jsonWriter.name(field);
         }
@@ -1399,7 +1417,7 @@ public class OpcUaJsonEncoder implements UaEncoder {
   public void encodeMatrix(String field, Matrix value) throws UaSerializationException {
     try {
       EncoderContext context = contextPeek();
-      if (!reversible
+      if (encoding == Encoding.VERBOSE
           || context == EncoderContext.BUILTIN
           || (value != null && value.isNotNull())) {
         if (field != null) {
@@ -1432,7 +1450,7 @@ public class OpcUaJsonEncoder implements UaEncoder {
   public void encodeEnumMatrix(String field, Matrix value) throws UaSerializationException {
     try {
       EncoderContext context = contextPeek();
-      if (!reversible
+      if (encoding == Encoding.VERBOSE
           || context == EncoderContext.BUILTIN
           || (value != null && value.isNotNull())) {
         if (field != null) {
@@ -1466,7 +1484,7 @@ public class OpcUaJsonEncoder implements UaEncoder {
       throws UaSerializationException {
     try {
       EncoderContext context = contextPeek();
-      if (!reversible
+      if (encoding == Encoding.VERBOSE
           || context == EncoderContext.BUILTIN
           || (value != null && value.isNotNull())) {
         if (field != null) {

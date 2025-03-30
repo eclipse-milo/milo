@@ -1173,6 +1173,46 @@ class OpcUaJsonEncoderTest {
         writer.toString());
   }
 
+  @MethodSource("encodeStructCompactArguments")
+  @ParameterizedTest
+  void encodeStructCompact(XVType struct, String expectedJson) {
+    var writer = new StringWriter();
+    var encoder = new OpcUaJsonEncoder(context, writer);
+    encoder.encoding = OpcUaJsonEncoder.Encoding.COMPACT;
+
+    encoder.encodeStruct(null, struct, XVType.TYPE_ID);
+    String encodedJson = writer.toString();
+
+    assertEquals(expectedJson, encodedJson);
+  }
+
+  static Stream<Arguments> encodeStructCompactArguments() {
+    return Stream.of(
+        Arguments.of(new XVType(0.0, 0.0f), "{}"),
+        Arguments.of(new XVType(1.0, 0.0f), "{\"X\":1.0}"),
+        Arguments.of(new XVType(0.0, 1.0f), "{\"Value\":1.0}"));
+  }
+
+  @MethodSource("encodeStructVerboseArguments")
+  @ParameterizedTest
+  void encodeStructVerbose(XVType struct, String expectedJson) {
+    var writer = new StringWriter();
+    var encoder = new OpcUaJsonEncoder(context, writer);
+    encoder.encoding = OpcUaJsonEncoder.Encoding.VERBOSE;
+
+    encoder.encodeStruct(null, struct, XVType.TYPE_ID);
+    String encodedJson = writer.toString();
+
+    assertEquals(expectedJson, encodedJson);
+  }
+
+  static Stream<Arguments> encodeStructVerboseArguments() {
+    return Stream.of(
+        Arguments.of(new XVType(0.0, 0.0f), "{\"X\":0.0,\"Value\":0.0}"),
+        Arguments.of(new XVType(1.0, 0.0f), "{\"X\":1.0,\"Value\":0.0}"),
+        Arguments.of(new XVType(0.0, 1.0f), "{\"X\":0.0,\"Value\":1.0}"));
+  }
+
   @Test
   public void writeBooleanArray() throws IOException {
     var writer = new StringWriter();
