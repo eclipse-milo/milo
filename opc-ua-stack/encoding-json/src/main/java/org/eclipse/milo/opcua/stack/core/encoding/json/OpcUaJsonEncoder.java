@@ -499,7 +499,7 @@ public class OpcUaJsonEncoder implements UaEncoder {
             }
           }
         } else if (value.server() instanceof ServerUri uri) {
-          UShort index = encodingContext.getServerTable().getIndex(uri.serverUri());
+          UInteger index = encodingContext.getServerTable().getIndex(uri.serverUri());
           if (index == null || index.intValue() != 0) {
             sb.append("svu=").append(uri.serverUri()).append(";");
           }

@@ -588,9 +588,9 @@ class OpcUaJsonEncoderTest {
         .update(
             map -> {
               map.clear();
-              map.put(ushort(0), "localhost"); // Index 0
-              map.put(ushort(1), "urn:eclipse:milo:server1"); // Index 1
-              map.put(ushort(2), "urn:eclipse:milo:server2"); // Index 2
+              map.put(uint(0), "localhost"); // Index 0
+              map.put(uint(1), "urn:eclipse:milo:server1"); // Index 1
+              map.put(uint(2), "urn:eclipse:milo:server2"); // Index 2
             });
 
     if (field != null) {
