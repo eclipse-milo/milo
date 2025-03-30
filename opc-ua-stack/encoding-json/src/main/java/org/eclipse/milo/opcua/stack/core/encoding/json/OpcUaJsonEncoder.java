@@ -72,7 +72,6 @@ public class OpcUaJsonEncoder implements UaEncoder {
   private final Stack<EncoderContext> contextStack = new Stack<>();
 
   Encoding encoding = Encoding.COMPACT;
-  boolean reversible = true;
   JsonWriter jsonWriter;
   EncodingContext encodingContext;
 
@@ -777,8 +776,7 @@ public class OpcUaJsonEncoder implements UaEncoder {
 
   private void encodeVariantValue(@NonNull Object value) throws IOException {
     Class<?> valueClass;
-    if (value instanceof Matrix) {
-      Matrix m = (Matrix) value;
+    if (value instanceof Matrix m) {
       if (m.getElements() == null) return;
       valueClass = getClass(m.getElements());
     } else {
@@ -811,13 +809,12 @@ public class OpcUaJsonEncoder implements UaEncoder {
     }
 
     if (value.getClass().isArray()) {
-      if (reversible) {
-        jsonWriter.beginObject();
-        jsonWriter.name("Type").value(typeId);
-        jsonWriter.name("Body");
-      }
+      jsonWriter.beginObject();
 
+      jsonWriter.name("Type").value(typeId);
+      jsonWriter.name("Body");
       int length = Array.getLength(value);
+
       jsonWriter.beginArray();
       for (int i = 0; i < length; i++) {
         Object o = Array.get(value, i);
@@ -826,51 +823,39 @@ public class OpcUaJsonEncoder implements UaEncoder {
       }
       jsonWriter.endArray();
 
-      if (reversible) {
-        jsonWriter.endObject();
-      }
-    } else if (value instanceof Matrix) {
-      if (reversible) {
-        jsonWriter.beginObject();
-        jsonWriter.name("Type").value(typeId);
-        jsonWriter.name("Body");
-      }
+      jsonWriter.endObject();
+    } else if (value instanceof Matrix m) {
+      jsonWriter.beginObject();
 
-      Matrix m = (Matrix) value;
-      if (reversible) {
-        Object flatArray = m.getElements();
-        int length = Array.getLength(flatArray);
-        jsonWriter.beginArray();
-        for (int i = 0; i < length; i++) {
-          Object o = Array.get(flatArray, i);
+      jsonWriter.name("Type").value(typeId);
+      jsonWriter.name("Body");
 
-          encodeVariantBodyValue(o, typeHint, typeId);
-        }
-        jsonWriter.endArray();
+      Object flatArray = m.getElements();
+      int length = Array.getLength(flatArray);
+      jsonWriter.beginArray();
+      for (int i = 0; i < length; i++) {
+        Object o = Array.get(flatArray, i);
 
-        jsonWriter.name("Dimensions");
-        jsonWriter.beginArray();
-        for (int dimension : m.getDimensions()) {
-          jsonWriter.value(dimension);
-        }
-        jsonWriter.endArray();
-        jsonWriter.endObject();
-      } else {
-        Object nestedArray = ArrayUtil.unflatten(m.getElements(), m.getDimensions());
-        writeNestedMultiDimensionalVariantValue(typeId, nestedArray, m.getDimensions(), 0);
+        encodeVariantBodyValue(o, typeHint, typeId);
       }
+      jsonWriter.endArray();
+
+      jsonWriter.name("Dimensions");
+      jsonWriter.beginArray();
+      for (int dimension : m.getDimensions()) {
+        jsonWriter.value(dimension);
+      }
+      jsonWriter.endArray();
+
+      jsonWriter.endObject();
     } else {
-      if (reversible) {
-        jsonWriter.beginObject();
-        jsonWriter.name("Type").value(typeId);
-        jsonWriter.name("Body");
-      }
+      jsonWriter.beginObject();
+      jsonWriter.name("Type").value(typeId);
+      jsonWriter.name("Body");
 
       encodeVariantBodyValue(value, typeHint, typeId);
 
-      if (reversible) {
-        jsonWriter.endObject();
-      }
+      jsonWriter.endObject();
     }
   }
 

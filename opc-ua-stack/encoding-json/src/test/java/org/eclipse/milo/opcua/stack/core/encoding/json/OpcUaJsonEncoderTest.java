@@ -960,7 +960,6 @@ class OpcUaJsonEncoderTest {
     var encoder = new OpcUaJsonEncoder(context, writer);
     context.getNamespaceTable().add("urn:eclipse:milo:test1");
 
-    // region reversible
     encoder.reset(writer = new StringWriter());
     encoder.encodeVariant(null, new Variant(true));
     assertEquals("{\"Type\":1,\"Body\":true}", writer.toString());
@@ -979,23 +978,6 @@ class OpcUaJsonEncoderTest {
     encoder.reset(writer = new StringWriter());
     encoder.encodeVariant(null, new Variant(Matrix.ofInt32(new int[][] {{0, 1}, {2, 3}})));
     assertEquals("{\"Type\":6,\"Body\":[0,1,2,3],\"Dimensions\":[2,2]}", writer.toString());
-    // endregion
-
-    // region non-reversible
-    encoder.reversible = false;
-    encoder.reset(writer = new StringWriter());
-    encoder.encodeVariant(null, new Variant(true));
-    assertEquals("true", writer.toString());
-
-    encoder.reset(writer = new StringWriter());
-    encoder.encodeVariant(null, new Variant(new QualifiedName(1, "foo")));
-    assertEquals("\"nsu=urn:eclipse:milo:test1;foo\"", writer.toString());
-
-    encoder.reset(writer = new StringWriter());
-    encoder.encodeVariant(
-        null, new Variant(new Variant[] {new Variant("foo"), new Variant("bar")}));
-    assertEquals("[\"foo\",\"bar\"]", writer.toString());
-    // endregion
 
     int[] value1d = {0, 1, 2, 3};
     int[][] value2d = {
@@ -1013,8 +995,6 @@ class OpcUaJsonEncoderTest {
       }
     };
 
-    // region Arrays, reversible
-    encoder.reversible = true;
     encoder.reset(writer = new StringWriter());
     encoder.encodeVariant(null, new Variant(value1d));
     assertEquals("{\"Type\":6,\"Body\":[0,1,2,3]}", writer.toString());
@@ -1027,23 +1007,6 @@ class OpcUaJsonEncoderTest {
     encoder.encodeVariant(null, new Variant(Matrix.ofInt32(value3d)));
     assertEquals(
         "{\"Type\":6,\"Body\":[0,1,2,3,4,5,6,7],\"Dimensions\":[2,2,2]}", writer.toString());
-    // endregion
-
-    // region Arrays, non-reversible
-    encoder.reversible = false;
-
-    encoder.reset(writer = new StringWriter());
-    encoder.encodeVariant(null, new Variant(value1d));
-    assertEquals("[0,1,2,3]", writer.toString());
-
-    encoder.reset(writer = new StringWriter());
-    encoder.encodeVariant(null, new Variant(Matrix.ofInt32(value2d)));
-    assertEquals("[[0,2,3],[1,3,4]]", writer.toString());
-
-    encoder.reset(writer = new StringWriter());
-    encoder.encodeVariant(null, new Variant(Matrix.ofInt32(value3d)));
-    assertEquals("[[[0,1],[2,3]],[[4,5],[6,7]]]", writer.toString());
-    // endregion
   }
 
   @Test
