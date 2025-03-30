@@ -316,28 +316,23 @@ public class OpcUaJsonDecoder implements UaDecoder {
         }
       }
 
-      switch (jsonReader.peek()) {
-        case NUMBER:
-          return (float) jsonReader.nextDouble();
-        case STRING:
-          {
-            String s = jsonReader.nextString();
-            switch (s) {
-              case "Infinity":
-                return Float.POSITIVE_INFINITY;
-              case "-Infinity":
-                return Float.NEGATIVE_INFINITY;
-              case "NaN":
-                return Float.NaN;
-              default:
+      return switch (jsonReader.peek()) {
+        case NUMBER -> (float) jsonReader.nextDouble();
+        case STRING -> {
+          String s = jsonReader.nextString();
+          yield switch (s) {
+            case "Infinity" -> Float.POSITIVE_INFINITY;
+            case "-Infinity" -> Float.NEGATIVE_INFINITY;
+            case "NaN" -> Float.NaN;
+            default ->
                 throw new UaSerializationException(
                     StatusCodes.Bad_DecodingError, "readFloat: unexpected string value: " + s);
-            }
-          }
-        default:
-          throw new UaSerializationException(
-              StatusCodes.Bad_DecodingError, "readFloat: unexpected token: " + jsonReader.peek());
-      }
+          };
+        }
+        default ->
+            throw new UaSerializationException(
+                StatusCodes.Bad_DecodingError, "readFloat: unexpected token: " + jsonReader.peek());
+      };
     } catch (IOException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
@@ -360,28 +355,24 @@ public class OpcUaJsonDecoder implements UaDecoder {
         }
       }
 
-      switch (jsonReader.peek()) {
-        case NUMBER:
-          return jsonReader.nextDouble();
-        case STRING:
-          {
-            String s = jsonReader.nextString();
-            switch (s) {
-              case "Infinity":
-                return Double.POSITIVE_INFINITY;
-              case "-Infinity":
-                return Double.NEGATIVE_INFINITY;
-              case "NaN":
-                return Double.NaN;
-              default:
+      return switch (jsonReader.peek()) {
+        case NUMBER -> jsonReader.nextDouble();
+        case STRING -> {
+          String s = jsonReader.nextString();
+          yield switch (s) {
+            case "Infinity" -> Double.POSITIVE_INFINITY;
+            case "-Infinity" -> Double.NEGATIVE_INFINITY;
+            case "NaN" -> Double.NaN;
+            default ->
                 throw new UaSerializationException(
                     StatusCodes.Bad_DecodingError, "readDouble: unexpected string value: " + s);
-            }
-          }
-        default:
-          throw new UaSerializationException(
-              StatusCodes.Bad_DecodingError, "readDouble: unexpected token: " + jsonReader.peek());
-      }
+          };
+        }
+        default ->
+            throw new UaSerializationException(
+                StatusCodes.Bad_DecodingError,
+                "readDouble: unexpected token: " + jsonReader.peek());
+      };
     } catch (IOException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
@@ -959,62 +950,36 @@ public class OpcUaJsonDecoder implements UaDecoder {
   }
 
   private Object readBuiltinTypeValue(String field, int typeId) throws UaSerializationException {
-    switch (typeId) {
-      case 1:
-        return decodeBoolean(field);
-      case 2:
-        return decodeSByte(field);
-      case 3:
-        return decodeByte(field);
-      case 4:
-        return decodeInt16(field);
-      case 5:
-        return decodeUInt16(field);
-      case 6:
-        return decodeInt32(field);
-      case 7:
-        return decodeUInt32(field);
-      case 8:
-        return decodeInt64(field);
-      case 9:
-        return decodeUInt64(field);
-      case 10:
-        return decodeFloat(field);
-      case 11:
-        return decodeDouble(field);
-      case 12:
-        return decodeString(field);
-      case 13:
-        return decodeDateTime(field);
-      case 14:
-        return decodeGuid(field);
-      case 15:
-        return decodeByteString(field);
-      case 16:
-        return decodeXmlElement(field);
-      case 17:
-        return decodeNodeId(field);
-      case 18:
-        return decodeExpandedNodeId(field);
-      case 19:
-        return decodeStatusCode(field);
-      case 20:
-        return decodeQualifiedName(field);
-      case 21:
-        return decodeLocalizedText(field);
-      case 22:
-        return decodeExtensionObject(field);
-      case 23:
-        return decodeDataValue(field);
-      case 24:
-        return decodeVariant(field);
-      case 25:
-        return decodeDiagnosticInfo(field);
-
-      default:
-        throw new UaSerializationException(
-            StatusCodes.Bad_EncodingError, "not a built-in type: " + typeId);
-    }
+    return switch (typeId) {
+      case 1 -> decodeBoolean(field);
+      case 2 -> decodeSByte(field);
+      case 3 -> decodeByte(field);
+      case 4 -> decodeInt16(field);
+      case 5 -> decodeUInt16(field);
+      case 6 -> decodeInt32(field);
+      case 7 -> decodeUInt32(field);
+      case 8 -> decodeInt64(field);
+      case 9 -> decodeUInt64(field);
+      case 10 -> decodeFloat(field);
+      case 11 -> decodeDouble(field);
+      case 12 -> decodeString(field);
+      case 13 -> decodeDateTime(field);
+      case 14 -> decodeGuid(field);
+      case 15 -> decodeByteString(field);
+      case 16 -> decodeXmlElement(field);
+      case 17 -> decodeNodeId(field);
+      case 18 -> decodeExpandedNodeId(field);
+      case 19 -> decodeStatusCode(field);
+      case 20 -> decodeQualifiedName(field);
+      case 21 -> decodeLocalizedText(field);
+      case 22 -> decodeExtensionObject(field);
+      case 23 -> decodeDataValue(field);
+      case 24 -> decodeVariant(field);
+      case 25 -> decodeDiagnosticInfo(field);
+      default ->
+          throw new UaSerializationException(
+              StatusCodes.Bad_EncodingError, "not a built-in type: " + typeId);
+    };
   }
 
   @Override
@@ -1512,25 +1477,6 @@ public class OpcUaJsonDecoder implements UaDecoder {
                         "decodeStructMatrix: namespace not registered: " + dataTypeId));
 
     return decodeStructMatrix(field, localDataTypeId);
-  }
-
-  private Object decodeNestedMultiDimensionalArrayBuiltinValue(int typeId) throws IOException {
-    if (jsonReader.peek() == JsonToken.BEGIN_ARRAY) {
-      jsonReader.beginArray();
-      List<Object> elements = new ArrayList<>();
-      while (jsonReader.peek() != JsonToken.END_ARRAY) {
-        elements.add(decodeNestedMultiDimensionalArrayBuiltinValue(typeId));
-      }
-      jsonReader.endArray();
-
-      Object array = Array.newInstance(elements.get(0).getClass(), elements.size());
-      for (int i = 0; i < elements.size(); i++) {
-        Array.set(array, i, elements.get(i));
-      }
-      return array;
-    } else {
-      return readBuiltinTypeValue(null, typeId);
-    }
   }
 
   private Object decodeNestedMultiDimensionalArrayStructValue(DataTypeCodec codec)
