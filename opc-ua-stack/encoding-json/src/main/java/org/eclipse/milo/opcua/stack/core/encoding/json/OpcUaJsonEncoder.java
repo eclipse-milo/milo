@@ -592,34 +592,29 @@ public class OpcUaJsonEncoder implements UaEncoder {
 
   @Override
   public void encodeStatusCode(String field, StatusCode value) throws UaSerializationException {
-    // StatusCode values shall be encoded as a JSON number for the
-    // reversible encoding.
+    // # Compact
+    // StatusCode values shall be encoded as a JSON number.
     //
-    // For the non-reversible form, StatusCode values shall be encoded as
-    // a JSON object with the fields defined as follows:
-    //
-    // "Code":
+    // # Verbose
+    // StatusCode values shall be encoded as a JSON object with the fields defined as follows:
+    // - "Code"
     // The numeric code encoded as a JSON number.
     // The Code is omitted if the numeric code is 0 (Good).
-    //
-    // "Symbol":
-    // The string literal associated with the numeric code encoded as JSON
-    // string. e.g. 0x80AB0000 has the associated literal
-    // “BadInvalidArgument”.
+    // - "Symbol"
+    // The string literal associated with the numeric code encoded as JSON string. e.g. 0x80AB0000
+    // has the associated literal "BadInvalidArgument".
     // The Symbol is omitted if the numeric code is 0 (Good).
-    //
-    // A StatusCode of Good (0) is treated like a NULL and not encoded. If
-    // it is an element of an JSON array it is encoded as the JSON literal
-    // `null`.
+    // If the string literal is not known to the encoder the field is omitted.
 
     try {
       EncoderContext context = contextPeek();
       if (encoding == Encoding.VERBOSE
           || context == EncoderContext.BUILTIN
           || (value != null && !value.isGood())) {
+
         long code = value.value();
 
-        if (reversible) {
+        if (encoding == Encoding.COMPACT) {
           if (field != null) {
             jsonWriter.name(field);
           }

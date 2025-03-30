@@ -26,6 +26,7 @@ import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
+import org.eclipse.milo.opcua.stack.core.encoding.json.OpcUaJsonEncoder.Encoding;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -702,68 +703,62 @@ class OpcUaJsonEncoderTest {
   }
 
   @Test
-  void encodeStatusCode() throws IOException {
+  void encodeStatusCodeCompact() throws IOException {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
+    encoder.encoding = Encoding.COMPACT;
 
-    // reversible form
-    {
-      encoder.encodeStatusCode(null, StatusCode.GOOD);
-      assertEquals("0", writer.toString());
+    // compact form without field
+    encoder.encodeStatusCode(null, StatusCode.GOOD);
+    assertEquals("0", writer.toString());
 
-      encoder.reset(writer = new StringWriter());
-      encoder.encodeStatusCode(null, new StatusCode(StatusCodes.Uncertain_InitialValue));
-      assertEquals(Long.toString(StatusCodes.Uncertain_InitialValue), writer.toString());
+    encoder.reset(writer = new StringWriter());
+    encoder.encodeStatusCode(null, new StatusCode(StatusCodes.Uncertain_InitialValue));
+    assertEquals(Long.toString(StatusCodes.Uncertain_InitialValue), writer.toString());
 
-      encoder.reset(writer = new StringWriter());
-      encoder.encodeStatusCode(null, new StatusCode(StatusCodes.Bad_UnexpectedError));
-      assertEquals(Long.toString(StatusCodes.Bad_UnexpectedError), writer.toString());
-    }
+    encoder.reset(writer = new StringWriter());
+    encoder.encodeStatusCode(null, new StatusCode(StatusCodes.Bad_UnexpectedError));
+    assertEquals(Long.toString(StatusCodes.Bad_UnexpectedError), writer.toString());
 
-    // non-reversible form
-    {
-      encoder.reversible = false;
-      encoder.reset(writer = new StringWriter());
-      encoder.encodeStatusCode(null, StatusCode.GOOD);
-      assertEquals("", writer.toString());
+    // compact form with field
+    encoder.reset(writer = new StringWriter());
+    encoder.jsonWriter.beginObject();
+    encoder.encodeStatusCode("foo", StatusCode.GOOD);
+    encoder.jsonWriter.endObject();
+    assertEquals("{\"foo\":0}", writer.toString());
+  }
 
-      encoder.reset(writer = new StringWriter());
-      encoder.encodeStatusCode(null, new StatusCode(StatusCodes.Uncertain_InitialValue));
-      assertEquals(
-          "{\"Code\":1083310080,\"Symbol\":\"Uncertain_InitialValue\"}", writer.toString());
+  @Test
+  void encodeStatusCodeVerbose() throws IOException {
+    var writer = new StringWriter();
+    var encoder = new OpcUaJsonEncoder(context, writer);
+    encoder.encoding = Encoding.VERBOSE;
 
-      encoder.reset(writer = new StringWriter());
-      encoder.encodeStatusCode(null, new StatusCode(StatusCodes.Bad_UnexpectedError));
-      assertEquals("{\"Code\":2147549184,\"Symbol\":\"Bad_UnexpectedError\"}", writer.toString());
-    }
+    // verbose form without field
+    encoder.encodeStatusCode(null, StatusCode.GOOD);
+    assertEquals("", writer.toString());
 
-    // reversible form with field
-    {
-      encoder.reversible = true;
-      encoder.reset(writer = new StringWriter());
-      encoder.jsonWriter.beginObject();
-      encoder.encodeStatusCode("foo", StatusCode.GOOD);
-      encoder.jsonWriter.endObject();
-      assertEquals("{\"foo\":0}", writer.toString());
-    }
+    encoder.reset(writer = new StringWriter());
+    encoder.encodeStatusCode(null, new StatusCode(StatusCodes.Uncertain_InitialValue));
+    assertEquals("{\"Code\":1083310080,\"Symbol\":\"Uncertain_InitialValue\"}", writer.toString());
 
-    // non-reversible form with field
-    {
-      encoder.reversible = false;
-      encoder.reset(writer = new StringWriter());
-      encoder.jsonWriter.beginObject();
-      encoder.encodeStatusCode("foo", StatusCode.GOOD);
-      encoder.jsonWriter.endObject();
-      assertEquals("{}", writer.toString()); // key/value omitted because code==0
+    encoder.reset(writer = new StringWriter());
+    encoder.encodeStatusCode(null, new StatusCode(StatusCodes.Bad_UnexpectedError));
+    assertEquals("{\"Code\":2147549184,\"Symbol\":\"Bad_UnexpectedError\"}", writer.toString());
 
-      encoder.reset(writer = new StringWriter());
-      encoder.jsonWriter.beginObject();
-      encoder.encodeStatusCode("foo", new StatusCode(StatusCodes.Uncertain_InitialValue));
-      encoder.jsonWriter.endObject();
-      assertEquals(
-          "{\"foo\":{\"Code\":1083310080,\"Symbol\":\"Uncertain_InitialValue\"}}",
-          writer.toString());
-    }
+    // verbose form with field
+    encoder.reset(writer = new StringWriter());
+    encoder.jsonWriter.beginObject();
+    encoder.encodeStatusCode("foo", StatusCode.GOOD);
+    encoder.jsonWriter.endObject();
+    assertEquals("{}", writer.toString()); // key/value omitted because code==0
+
+    encoder.reset(writer = new StringWriter());
+    encoder.jsonWriter.beginObject();
+    encoder.encodeStatusCode("foo", new StatusCode(StatusCodes.Uncertain_InitialValue));
+    encoder.jsonWriter.endObject();
+    assertEquals(
+        "{\"foo\":{\"Code\":1083310080,\"Symbol\":\"Uncertain_InitialValue\"}}", writer.toString());
   }
 
   @Test
@@ -1178,7 +1173,7 @@ class OpcUaJsonEncoderTest {
   void encodeStructCompact(XVType struct, String expectedJson) {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
-    encoder.encoding = OpcUaJsonEncoder.Encoding.COMPACT;
+    encoder.encoding = Encoding.COMPACT;
 
     encoder.encodeStruct(null, struct, XVType.TYPE_ID);
     String encodedJson = writer.toString();
@@ -1198,7 +1193,7 @@ class OpcUaJsonEncoderTest {
   void encodeStructVerbose(XVType struct, String expectedJson) {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
-    encoder.encoding = OpcUaJsonEncoder.Encoding.VERBOSE;
+    encoder.encoding = Encoding.VERBOSE;
 
     encoder.encodeStruct(null, struct, XVType.TYPE_ID);
     String encodedJson = writer.toString();
