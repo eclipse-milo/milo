@@ -11,10 +11,7 @@
 package org.eclipse.milo.opcua.stack.core.encoding.json;
 
 import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
+import java.io.*;
 import java.lang.reflect.Array;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
@@ -75,13 +72,12 @@ public class OpcUaJsonEncoder implements UaEncoder {
   EncodingContext encodingContext;
 
   public OpcUaJsonEncoder(EncodingContext encodingContext) {
-    this.encodingContext = encodingContext;
+    this(encodingContext, new StringWriter());
   }
 
   public OpcUaJsonEncoder(EncodingContext encodingContext, Writer writer) {
     this.encodingContext = encodingContext;
-
-    reset(writer);
+    this.jsonWriter = new JsonWriter(writer);
   }
 
   @Override
@@ -901,51 +897,6 @@ public class OpcUaJsonEncoder implements UaEncoder {
           encodeBuiltinTypeValue(null, typeId, optionSetValue);
           break;
         }
-    }
-  }
-
-  /** Write a multidimensional value in the reversible (flattened array) format. */
-  private void writeFlattenedMultiDimensionalVariantValue(
-      int typeId, Object value, int[] dimensions, int dimensionIndex) throws IOException {
-
-    if (dimensionIndex == 0) {
-      jsonWriter.beginArray();
-      for (int i = 0; i < dimensions[dimensionIndex]; i++) {
-        Object e = Array.get(value, i);
-        writeFlattenedMultiDimensionalVariantValue(typeId, e, dimensions, dimensionIndex + 1);
-      }
-      jsonWriter.endArray();
-    } else if (dimensionIndex == dimensions.length - 1) {
-      for (int i = 0; i < dimensions[dimensionIndex]; i++) {
-        Object e = Array.get(value, i);
-        encodeBuiltinTypeValue(null, typeId, e);
-      }
-    } else {
-      for (int i = 0; i < dimensions[dimensionIndex]; i++) {
-        Object e = Array.get(value, i);
-        writeFlattenedMultiDimensionalVariantValue(typeId, e, dimensions, dimensionIndex + 1);
-      }
-    }
-  }
-
-  /** Write a multidimensional value in the non-reversible (nested array) format. */
-  private void writeNestedMultiDimensionalVariantValue(
-      int typeId, Object value, int[] dimensions, int dimensionIndex) throws IOException {
-
-    if (dimensionIndex == dimensions.length - 1) {
-      jsonWriter.beginArray();
-      for (int i = 0; i < dimensions[dimensionIndex]; i++) {
-        Object e = Array.get(value, i);
-        encodeBuiltinTypeValue(null, typeId, e);
-      }
-      jsonWriter.endArray();
-    } else {
-      jsonWriter.beginArray();
-      for (int i = 0; i < dimensions[dimensionIndex]; i++) {
-        Object e = Array.get(value, i);
-        writeNestedMultiDimensionalVariantValue(typeId, e, dimensions, dimensionIndex + 1);
-      }
-      jsonWriter.endArray();
     }
   }
 

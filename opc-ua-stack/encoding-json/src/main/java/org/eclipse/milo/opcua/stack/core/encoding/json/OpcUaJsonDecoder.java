@@ -25,9 +25,7 @@ import java.lang.reflect.Array;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Base64;
-import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
@@ -63,7 +61,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
   EncodingContext context;
 
   public OpcUaJsonDecoder(EncodingContext context) {
-    this.context = context;
+    this(context, "");
   }
 
   public OpcUaJsonDecoder(EncodingContext context, String s) {
@@ -72,8 +70,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
 
   public OpcUaJsonDecoder(EncodingContext context, Reader reader) {
     this.context = context;
-
-    reset(reader);
+    this.jsonReader = new JsonReader(reader);
   }
 
   @Override
@@ -912,43 +909,6 @@ public class OpcUaJsonDecoder implements UaDecoder {
     }
   }
 
-  private Object readFlattenedMultiDimensionalVariantValue(int typeId, int[] dimensions)
-      throws IOException {
-    jsonReader.beginArray();
-    try {
-      return readFlattenedMultiDimensionalVariantValue(typeId, dimensions, 0);
-    } finally {
-      jsonReader.endArray();
-    }
-  }
-
-  private Object readFlattenedMultiDimensionalVariantValue(
-      int typeId, int[] dimensions, int dimensionIndex) {
-    Object value;
-
-    if (dimensionIndex == dimensions.length - 1) {
-      value =
-          Array.newInstance(
-              OpcUaDataType.getPrimitiveBackingClass(typeId), dimensions[dimensionIndex]);
-      for (int i = 0; i < dimensions[dimensionIndex]; i++) {
-        Object e = readBuiltinTypeValue(null, typeId);
-        Array.set(value, i, e);
-      }
-    } else {
-      value =
-          Array.newInstance(
-              OpcUaDataType.getPrimitiveBackingClass(typeId),
-              Arrays.copyOfRange(dimensions, dimensionIndex, dimensions.length));
-      for (int i = 0; i < dimensions[dimensionIndex]; i++) {
-        Object e =
-            readFlattenedMultiDimensionalVariantValue(typeId, dimensions, dimensionIndex + 1);
-        Array.set(value, i, e);
-      }
-    }
-
-    return value;
-  }
-
   private Object readBuiltinTypeValue(String field, int typeId) throws UaSerializationException {
     return switch (typeId) {
       case 1 -> decodeBoolean(field);
@@ -1536,26 +1496,6 @@ public class OpcUaJsonDecoder implements UaDecoder {
                         "decodeStructMatrix: namespace not registered: " + dataTypeId));
 
     return decodeStructMatrix(field, localDataTypeId);
-  }
-
-  private Object decodeNestedMultiDimensionalArrayStructValue(DataTypeCodec codec)
-      throws IOException {
-    if (jsonReader.peek() == JsonToken.BEGIN_ARRAY) {
-      jsonReader.beginArray();
-      List<Object> elements = new ArrayList<>();
-      while (jsonReader.peek() != JsonToken.END_ARRAY) {
-        elements.add(decodeNestedMultiDimensionalArrayStructValue(codec));
-      }
-      jsonReader.endArray();
-
-      Object array = Array.newInstance(elements.get(0).getClass(), elements.size());
-      for (int i = 0; i < elements.size(); i++) {
-        Array.set(array, i, elements.get(i));
-      }
-      return array;
-    } else {
-      return decodeStruct(null, codec);
-    }
   }
 
   /**
