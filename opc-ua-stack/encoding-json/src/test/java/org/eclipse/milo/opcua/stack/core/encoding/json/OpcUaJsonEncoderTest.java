@@ -860,19 +860,6 @@ class OpcUaJsonEncoderTest {
         "{\"TypeId\":\"nsu=urn:eclipse:milo:test2;i=42\",\"Encoding\":1,\"Body\":\"AAECAw==\"}",
         writer.toString());
 
-    encoder.reversible = false;
-    encoder.reset(writer = new StringWriter());
-    encoder.encodeExtensionObject(null, jsonStringXo);
-    assertEquals("{\"foo\":\"bar\",\"baz\":42}", writer.toString());
-
-    encoder.reset(writer = new StringWriter());
-    encoder.encodeExtensionObject(null, xmlElementXo);
-    assertEquals("\"<foo>bar</foo>\"", writer.toString());
-
-    encoder.reset(writer = new StringWriter());
-    encoder.encodeExtensionObject(null, byteStringXo);
-    assertEquals("\"AAECAw==\"", writer.toString());
-
     encoder.reset(writer = new StringWriter());
     encoder.encodeExtensionObject(null, null);
     assertEquals("null", writer.toString());
