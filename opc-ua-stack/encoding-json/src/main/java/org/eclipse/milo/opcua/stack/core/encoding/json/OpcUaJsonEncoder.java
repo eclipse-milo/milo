@@ -17,7 +17,6 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.lang.reflect.Array;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.Stack;
 import java.util.UUID;
@@ -1365,6 +1364,7 @@ public class OpcUaJsonEncoder implements UaEncoder {
         }
 
         Object flatArray = value.getElements();
+
         if (flatArray == null) {
           try {
             jsonWriter.nullValue();
@@ -1411,11 +1411,13 @@ public class OpcUaJsonEncoder implements UaEncoder {
       if (encoding == Encoding.VERBOSE
           || context == EncoderContext.BUILTIN
           || (value != null && value.isNotNull())) {
+
         if (field != null) {
           jsonWriter.name(field);
         }
 
         Object flatArray = value.getElements();
+
         if (flatArray == null) {
           try {
             jsonWriter.nullValue();
@@ -1425,10 +1427,26 @@ public class OpcUaJsonEncoder implements UaEncoder {
         } else {
           int[] dimensions = value.getDimensions();
 
+          jsonWriter.beginObject();
           try {
-            encodeFlatEnumArrayAsNested((UaEnumeratedType[]) flatArray, dimensions, 0);
-          } catch (IOException e) {
-            throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+            // "Array" member
+            jsonWriter.name("Array");
+            jsonWriter.beginArray();
+            for (int i = 0; i < Array.getLength(flatArray); i++) {
+              Object e = Array.get(flatArray, i);
+              encodeEnum(null, (UaEnumeratedType) e);
+            }
+            jsonWriter.endArray();
+
+            // "Dimensions" member
+            jsonWriter.name("Dimensions");
+            jsonWriter.beginArray();
+            for (int dimension : dimensions) {
+              jsonWriter.value(dimension);
+            }
+            jsonWriter.endArray();
+          } finally {
+            jsonWriter.endObject();
           }
         }
       }
@@ -1445,11 +1463,13 @@ public class OpcUaJsonEncoder implements UaEncoder {
       if (encoding == Encoding.VERBOSE
           || context == EncoderContext.BUILTIN
           || (value != null && value.isNotNull())) {
+
         if (field != null) {
           jsonWriter.name(field);
         }
 
         Object flatArray = value.getElements();
+
         if (flatArray == null) {
           try {
             jsonWriter.nullValue();
@@ -1459,10 +1479,26 @@ public class OpcUaJsonEncoder implements UaEncoder {
         } else {
           int[] dimensions = value.getDimensions();
 
+          jsonWriter.beginObject();
           try {
-            encodeFlatStructArrayAsNested(flatArray, dataTypeId, dimensions, 0);
-          } catch (IOException e) {
-            throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+            // "Array" member
+            jsonWriter.name("Array");
+            jsonWriter.beginArray();
+            for (int i = 0; i < Array.getLength(flatArray); i++) {
+              Object e = Array.get(flatArray, i);
+              encodeStruct(null, e, dataTypeId);
+            }
+            jsonWriter.endArray();
+
+            // "Dimensions" member
+            jsonWriter.name("Dimensions");
+            jsonWriter.beginArray();
+            for (int dimension : dimensions) {
+              jsonWriter.value(dimension);
+            }
+            jsonWriter.endArray();
+          } finally {
+            jsonWriter.endObject();
           }
         }
       }
@@ -1484,73 +1520,5 @@ public class OpcUaJsonEncoder implements UaEncoder {
                         "encodeStructArray: namespace not registered: " + dataTypeId));
 
     encodeStructMatrix(field, value, localDataTypeId);
-  }
-
-  private void encodeFlatArrayAsNested(
-      Object value, int[] dimensions, OpcUaDataType dataType, int offset) throws IOException {
-
-    if (dimensions.length == 1) {
-      jsonWriter.beginArray();
-      for (int i = 0; i < dimensions[0]; i++) {
-        Object e = Array.get(value, offset + i);
-        encodeBuiltinTypeValue(null, dataType.getTypeId(), e);
-      }
-      jsonWriter.endArray();
-    } else {
-      jsonWriter.beginArray();
-      int[] tail = Arrays.copyOfRange(dimensions, 1, dimensions.length);
-      for (int i = 0; i < dimensions[0]; i++) {
-        encodeFlatArrayAsNested(value, tail, dataType, offset + i * length(tail));
-      }
-      jsonWriter.endArray();
-    }
-  }
-
-  private void encodeFlatEnumArrayAsNested(UaEnumeratedType[] value, int[] dimensions, int offset)
-      throws IOException {
-
-    if (dimensions.length == 1) {
-      jsonWriter.beginArray();
-      for (int i = 0; i < dimensions[0]; i++) {
-        Object e = Array.get(value, offset + i);
-        encodeEnum(null, (UaEnumeratedType) e);
-      }
-      jsonWriter.endArray();
-    } else {
-      jsonWriter.beginArray();
-      int[] tail = Arrays.copyOfRange(dimensions, 1, dimensions.length);
-      for (int i = 0; i < dimensions[0]; i++) {
-        encodeFlatEnumArrayAsNested(value, tail, offset + i * length(tail));
-      }
-      jsonWriter.endArray();
-    }
-  }
-
-  private void encodeFlatStructArrayAsNested(
-      Object value, NodeId dataTypeId, int[] dimensions, int offset) throws IOException {
-
-    if (dimensions.length == 1) {
-      jsonWriter.beginArray();
-      for (int i = 0; i < dimensions[0]; i++) {
-        Object e = Array.get(value, offset + i);
-        encodeStruct(null, e, dataTypeId);
-      }
-      jsonWriter.endArray();
-    } else {
-      jsonWriter.beginArray();
-      int[] tail = Arrays.copyOfRange(dimensions, 1, dimensions.length);
-      for (int i = 0; i < dimensions[0]; i++) {
-        encodeFlatStructArrayAsNested(value, dataTypeId, tail, offset + i * length(tail));
-      }
-      jsonWriter.endArray();
-    }
-  }
-
-  private static int length(int[] tail) {
-    int product = 1;
-    for (int aTail : tail) {
-      product *= aTail;
-    }
-    return product;
   }
 }

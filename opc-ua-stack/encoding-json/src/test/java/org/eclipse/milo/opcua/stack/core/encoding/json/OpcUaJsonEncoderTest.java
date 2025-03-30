@@ -1246,7 +1246,7 @@ class OpcUaJsonEncoderTest {
 
     encoder.reset(writer = new StringWriter());
     encoder.encodeEnumMatrix(null, matrix);
-    assertEquals("[[0,1],[2,3]]", writer.toString());
+    assertEquals("{\"Array\":[0,1,2,3],\"Dimensions\":[2,2]}", writer.toString());
   }
 
   @Test
@@ -1265,7 +1265,7 @@ class OpcUaJsonEncoderTest {
     encoder.reset(writer = new StringWriter());
     encoder.encodeStructMatrix(null, matrix, XVType.TYPE_ID);
     assertEquals(
-        "[[{\"Value\":1.0},{\"X\":2.0,\"Value\":3.0}],[{\"X\":4.0,\"Value\":5.0},{\"X\":6.0,\"Value\":7.0}]]",
+        "{\"Array\":[{\"Value\":1.0},{\"X\":2.0,\"Value\":3.0},{\"X\":4.0,\"Value\":5.0},{\"X\":6.0,\"Value\":7.0}],\"Dimensions\":[2,2]}",
         writer.toString());
   }
 

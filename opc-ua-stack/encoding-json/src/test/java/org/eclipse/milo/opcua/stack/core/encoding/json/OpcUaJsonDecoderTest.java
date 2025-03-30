@@ -964,12 +964,12 @@ class OpcUaJsonDecoderTest {
 
     decoder.reset(
         new StringReader(
-            "[[{\"X\":0.0,\"Value\":1.0},{\"X\":2.0,\"Value\":3.0}],[{\"X\":4.0,\"Value\":5.0},{\"X\":6.0,\"Value\":7.0}]]"));
+            "{\"Array\":[{\"Value\":1.0},{\"X\":2.0,\"Value\":3.0},{\"X\":4.0,\"Value\":5.0},{\"X\":6.0,\"Value\":7.0}],\"Dimensions\":[2,2]}"));
     assertEquals(matrix, decoder.decodeStructMatrix(null, XVType.TYPE_ID));
 
     decoder.reset(
         new StringReader(
-            "{\"foo\":[[{\"X\":0.0,\"Value\":1.0},{\"X\":2.0,\"Value\":3.0}],[{\"X\":4.0,\"Value\":5.0},{\"X\":6.0,\"Value\":7.0}]]}"));
+            "{\"foo\":{\"Array\":[{\"Value\":1.0},{\"X\":2.0,\"Value\":3.0},{\"X\":4.0,\"Value\":5.0},{\"X\":6.0,\"Value\":7.0}],\"Dimensions\":[2,2]}}"));
     decoder.jsonReader.beginObject();
     assertEquals(matrix, decoder.decodeStructMatrix("foo", XVType.TYPE_ID));
     decoder.jsonReader.endObject();
