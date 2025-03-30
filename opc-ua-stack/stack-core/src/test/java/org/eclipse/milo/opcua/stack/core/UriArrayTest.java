@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -20,9 +20,16 @@ import org.junit.jupiter.api.Test;
 
 class UriArrayTest {
 
+  UriArray<UShort> array =
+      new UriArray<UShort>() {
+        @Override
+        protected UShort create(Number index) {
+          return UShort.valueOf(index.intValue());
+        }
+      };
+
   @Test
   void add() {
-    var array = new UriArray() {};
     assertEquals(0, array.add("foo").intValue());
     assertEquals(1, array.add("bar").intValue());
     // duplicate URI not added twice, returns same index as before
@@ -31,7 +38,6 @@ class UriArrayTest {
 
   @Test
   void get() {
-    var array = new UriArray() {};
     array.add("foo");
     assertEquals("foo", array.get(0));
     array.add("bar");
@@ -40,7 +46,6 @@ class UriArrayTest {
 
   @Test
   void getIndex() {
-    var array = new UriArray() {};
     array.add("foo");
     array.add("bar");
 
@@ -55,7 +60,6 @@ class UriArrayTest {
 
   @Test
   void set() {
-    var array = new UriArray() {};
     array.add("foo");
     array.add("bar");
     assertEquals("bar", array.get(1));
@@ -66,7 +70,6 @@ class UriArrayTest {
 
   @Test
   void update() {
-    var array = new UriArray() {};
     array.add("foo");
     array.add("bar");
     assertEquals("bar", array.get(1));
@@ -77,7 +80,6 @@ class UriArrayTest {
 
   @Test
   void toArray() {
-    var array = new UriArray() {};
     array.add("foo");
     array.add("bar");
     array.add("baz");

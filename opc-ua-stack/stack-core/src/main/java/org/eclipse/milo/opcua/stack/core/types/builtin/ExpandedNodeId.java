@@ -121,7 +121,7 @@ public record ExpandedNodeId(
     if (server instanceof ServerIndex index) {
       return index.serverIndex.intValue() == 0;
     } else if (server instanceof ServerReference.ServerUri uri) {
-      UShort index = serverTable.getIndex(uri.serverUri);
+      UInteger index = serverTable.getIndex(uri.serverUri);
       return index != null && index.intValue() == 0;
     } else {
       throw new IllegalStateException("ServerReference: " + server);

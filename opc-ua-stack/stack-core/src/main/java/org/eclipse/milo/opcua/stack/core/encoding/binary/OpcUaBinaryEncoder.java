@@ -10,8 +10,6 @@
 
 package org.eclipse.milo.opcua.stack.core.encoding.binary;
 
-import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
-
 import io.netty.buffer.ByteBuf;
 import java.lang.reflect.Array;
 import java.nio.charset.Charset;
@@ -401,10 +399,8 @@ public class OpcUaBinaryEncoder implements UaEncoder {
     if (server instanceof ServerIndex index) {
       serverIndex = index.serverIndex();
     } else if (server instanceof ServerUri uri) {
-      UShort index = context.getServerTable().getIndex(uri.serverUri());
-      if (index != null) {
-        serverIndex = uint(index.intValue());
-      } else {
+      serverIndex = context.getServerTable().getIndex(uri.serverUri());
+      if (serverIndex == null) {
         throw new UaSerializationException(
             StatusCodes.Bad_EncodingError,
             "server uri not found in server table: " + uri.serverUri());

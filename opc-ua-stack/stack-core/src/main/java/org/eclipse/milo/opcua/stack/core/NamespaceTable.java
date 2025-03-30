@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -10,10 +10,11 @@
 
 package org.eclipse.milo.opcua.stack.core;
 
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 
 /** A {@link UriArray} intended to contain Namespace URI entries. */
-public class NamespaceTable extends UriArray {
+public class NamespaceTable extends UriArray<UShort> {
 
   /** Create a {@link NamespaceTable} seeded with {@link Namespaces#OPC_UA} at index 0. */
   public NamespaceTable() {
@@ -32,5 +33,10 @@ public class NamespaceTable extends UriArray {
     for (String uri : uris) {
       add(uri);
     }
+  }
+
+  @Override
+  protected UShort create(Number index) {
+    return UShort.valueOf(index.intValue());
   }
 }

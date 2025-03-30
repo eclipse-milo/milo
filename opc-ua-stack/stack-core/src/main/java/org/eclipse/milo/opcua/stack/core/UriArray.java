@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -10,20 +10,18 @@
 
 package org.eclipse.milo.opcua.stack.core;
 
-import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
-
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.function.Consumer;
-import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UNumber;
 import org.jspecify.annotations.Nullable;
 
 /** Manages an array of URIs and provides bidirectional access to the URIs their indices. */
-public abstract class UriArray {
+public abstract class UriArray<I extends UNumber> {
 
-  private final BiMap<UShort, String> uriMap = HashBiMap.create();
+  private final BiMap<I, String> uriMap = HashBiMap.create();
 
   /**
    * Add a URI and return the index.
@@ -34,14 +32,14 @@ public abstract class UriArray {
    * @param uri the namespace URI to add.
    * @return the index assigned to the URI.
    */
-  public synchronized UShort add(String uri) {
+  public synchronized I add(String uri) {
     if (uriMap.containsValue(uri)) {
       return uriMap.inverse().get(uri);
     } else {
-      UShort index = ushort(0);
+      I index = create(0);
 
       while (uriMap.containsKey(index)) {
-        index = ushort(index.intValue() + 1);
+        index = create(index.intValue() + 1);
         if (index.intValue() == 65535) {
           throw new UaRuntimeException(StatusCodes.Bad_InternalError, "uri table full");
         }
@@ -58,8 +56,8 @@ public abstract class UriArray {
    * @param index the index of the URI to get.
    * @return the URI at {@code index}, or {@code null} if there isn't one.
    */
-  public synchronized String get(int index) {
-    return get(ushort(index));
+  public synchronized String get(Number index) {
+    return get(create(index));
   }
 
   /**
@@ -68,7 +66,7 @@ public abstract class UriArray {
    * @param index the index of the URI to get.
    * @return the URI at {@code index}, or {@code null} if there isn't one.
    */
-  public synchronized String get(UShort index) {
+  public synchronized String get(I index) {
     return uriMap.get(index);
   }
 
@@ -76,8 +74,7 @@ public abstract class UriArray {
    * @param uri the URI to look up.
    * @return the index of the URI, or {@code null} if it is not present.
    */
-  @Nullable
-  public synchronized UShort getIndex(String uri) {
+  public synchronized @Nullable I getIndex(String uri) {
     return uriMap.inverse().getOrDefault(uri, null);
   }
 
@@ -88,8 +85,8 @@ public abstract class UriArray {
    * @param uri the URI to replace with.
    * @return the previous URI at {@code index}, or {@code null} if there was none.
    */
-  public synchronized String set(int index, String uri) {
-    return uriMap.put(ushort(index), uri);
+  public synchronized String set(Number index, String uri) {
+    return uriMap.put(create(index), uri);
   }
 
   /**
@@ -99,7 +96,7 @@ public abstract class UriArray {
    * @param uri the URI to replace with.
    * @return the previous URI at {@code index}, or {@code null} if there was none.
    */
-  public synchronized String set(UShort index, String uri) {
+  public synchronized String set(I index, String uri) {
     return uriMap.put(index, uri);
   }
 
@@ -108,7 +105,7 @@ public abstract class UriArray {
    *
    * @param uriTableConsumer the underlying {@link BiMap} instance.
    */
-  public synchronized void update(Consumer<BiMap<UShort, String>> uriTableConsumer) {
+  public synchronized void update(Consumer<BiMap<I, String>> uriTableConsumer) {
     uriTableConsumer.accept(uriMap);
   }
 
@@ -121,4 +118,12 @@ public abstract class UriArray {
         .map(Map.Entry::getValue)
         .toArray(String[]::new);
   }
+
+  /**
+   * Create a new index of type {@link I} from {@code index}.
+   *
+   * @param index the index to create.
+   * @return the new index.
+   */
+  protected abstract I create(Number index);
 }
