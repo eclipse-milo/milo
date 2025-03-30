@@ -54,7 +54,7 @@ class OpcUaJsonDecoderTest {
   private final EncodingContext context = new DefaultEncodingContext();
 
   @Test
-  void readBoolean() throws IOException {
+  void decodeBoolean() throws IOException {
     var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
 
     decoder.reset(new StringReader("true"));
@@ -75,7 +75,7 @@ class OpcUaJsonDecoderTest {
   }
 
   @Test
-  void readSByte() throws IOException {
+  void decodeSByte() throws IOException {
     var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
 
     decoder.reset(new StringReader("0"));
@@ -94,7 +94,7 @@ class OpcUaJsonDecoderTest {
   }
 
   @Test
-  void readInt16() throws IOException {
+  void decodeInt16() throws IOException {
     var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
 
     decoder.reset(new StringReader("0"));
@@ -113,7 +113,7 @@ class OpcUaJsonDecoderTest {
   }
 
   @Test
-  void readInt32() throws IOException {
+  void decodeInt32() throws IOException {
     var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
 
     decoder.reset(new StringReader("0"));
@@ -132,7 +132,7 @@ class OpcUaJsonDecoderTest {
   }
 
   @Test
-  void readInt64() throws IOException {
+  void decodeInt64() throws IOException {
     var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
 
     decoder.reset(new StringReader("\"0\""));
@@ -151,7 +151,7 @@ class OpcUaJsonDecoderTest {
   }
 
   @Test
-  void readByte() throws IOException {
+  void decodeByte() throws IOException {
     var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
 
     decoder.reset(new StringReader(String.valueOf(UByte.MIN)));
@@ -167,7 +167,7 @@ class OpcUaJsonDecoderTest {
   }
 
   @Test
-  void readUInt16() throws IOException {
+  void decodeUInt16() throws IOException {
     var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
 
     decoder.reset(new StringReader(String.valueOf(UShort.MIN)));
@@ -183,7 +183,7 @@ class OpcUaJsonDecoderTest {
   }
 
   @Test
-  void readUInt32() throws IOException {
+  void decodeUInt32() throws IOException {
     var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
 
     decoder.reset(new StringReader(String.valueOf(UInteger.MIN)));
@@ -199,7 +199,7 @@ class OpcUaJsonDecoderTest {
   }
 
   @Test
-  void readUInt64() throws IOException {
+  void decodeUInt64() throws IOException {
     var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
 
     decoder.reset(new StringReader(String.format("\"%s\"", ULong.MIN)));
@@ -215,7 +215,7 @@ class OpcUaJsonDecoderTest {
   }
 
   @Test
-  void readFloat() throws IOException {
+  void decodeFloat() throws IOException {
     var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
 
     decoder.reset(new StringReader("0.0"));
@@ -243,7 +243,7 @@ class OpcUaJsonDecoderTest {
   }
 
   @Test
-  void readDouble() throws IOException {
+  void decodeDouble() throws IOException {
     var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
 
     decoder.reset(new StringReader("0.0"));
@@ -271,7 +271,7 @@ class OpcUaJsonDecoderTest {
   }
 
   @Test
-  void readString() throws IOException {
+  void decodeString() throws IOException {
     var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
 
     decoder.reset(new StringReader("\"\""));
@@ -287,7 +287,7 @@ class OpcUaJsonDecoderTest {
   }
 
   @Test
-  void readDateTime() throws IOException {
+  void decodeDateTime() throws IOException {
     var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
 
     decoder.reset(new StringReader(String.format("\"%s\"", DateTime.MIN_ISO_8601_STRING)));
@@ -316,7 +316,7 @@ class OpcUaJsonDecoderTest {
   }
 
   @Test
-  void readGuid() throws IOException {
+  void decodeGuid() throws IOException {
     var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
 
     UUID uuid = UUID.randomUUID();
@@ -334,7 +334,7 @@ class OpcUaJsonDecoderTest {
   }
 
   @Test
-  void readByteString() throws IOException {
+  void decodeByteString() throws IOException {
     var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
 
     byte[] emptyBytes = new byte[0];
@@ -356,7 +356,7 @@ class OpcUaJsonDecoderTest {
   }
 
   @Test
-  void readXmlElement() throws IOException {
+  void decodeXmlElement() throws IOException {
     var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
 
     var emptyElement = new XmlElement("");
@@ -567,7 +567,7 @@ class OpcUaJsonDecoderTest {
   }
 
   @Test
-  void readStatusCode() throws IOException {
+  void decodeStatusCode() throws IOException {
     var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
 
     decoder.reset(new StringReader("0"));
@@ -628,7 +628,7 @@ class OpcUaJsonDecoderTest {
   }
 
   @Test
-  void readLocalizedText() throws IOException {
+  void decodeLocalizedText() throws IOException {
     var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
 
     decoder.reset(new StringReader("{\"Locale\":\"en\",\"Text\":\"foo\"}"));
@@ -687,7 +687,7 @@ class OpcUaJsonDecoderTest {
   }
 
   @Test
-  void readDataValue() throws IOException {
+  void decodeDataValue() throws IOException {
     var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
 
     DateTime now = DateTime.now();
@@ -777,7 +777,7 @@ class OpcUaJsonDecoderTest {
   }
 
   @Test
-  void readVariant() throws IOException {
+  void decodeVariant() throws IOException {
     var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
     context.getNamespaceTable().add("urn:eclipse:milo:test1");
 
@@ -827,7 +827,7 @@ class OpcUaJsonDecoderTest {
   }
 
   @Test
-  void readDiagnosticInfo() throws IOException {
+  void decodeDiagnosticInfo() throws IOException {
     var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
 
     var diagnosticInfo = new DiagnosticInfo(0, 1, 2, 3, "foo", null, null);
@@ -874,7 +874,7 @@ class OpcUaJsonDecoderTest {
   }
 
   @Test
-  void readEnum() throws IOException {
+  void decodeEnum() throws IOException {
     var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
 
     for (ApplicationType applicationType : ApplicationType.values()) {
