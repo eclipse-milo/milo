@@ -821,12 +821,6 @@ class OpcUaJsonEncoderTest {
     encoder.encodeLocalizedText(null, new LocalizedText(null, null));
     assertEquals("{}", writer.toString());
 
-    encoder.reversible = false;
-    encoder.reset(writer = new StringWriter());
-    encoder.encodeLocalizedText(null, LocalizedText.english("foo"));
-    assertEquals("\"foo\"", writer.toString());
-
-    encoder.reversible = true;
     encoder.reset(writer = new StringWriter());
     encoder.jsonWriter.beginObject();
     encoder.encodeLocalizedText("foo", LocalizedText.english("foo"));
@@ -1120,9 +1114,10 @@ class OpcUaJsonEncoderTest {
   }
 
   @Test
-  void encodeEnum() throws IOException {
+  void encodeEnumCompact() throws IOException {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
+    encoder.encoding = Encoding.COMPACT;
 
     for (ApplicationType applicationType : ApplicationType.values()) {
       encoder.reset(writer = new StringWriter());
@@ -1135,8 +1130,13 @@ class OpcUaJsonEncoderTest {
       encoder.jsonWriter.endObject();
       assertEquals(String.format("{\"foo\":%d}", applicationType.getValue()), writer.toString());
     }
+  }
 
-    encoder.reversible = false;
+  @Test
+  void encodeEnumVerbose() throws IOException {
+    var writer = new StringWriter();
+    var encoder = new OpcUaJsonEncoder(context, writer);
+    encoder.encoding = Encoding.VERBOSE;
 
     for (ApplicationType applicationType : ApplicationType.values()) {
       String expected =

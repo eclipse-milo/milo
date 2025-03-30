@@ -677,27 +677,22 @@ public class OpcUaJsonEncoder implements UaEncoder {
   @Override
   public void encodeLocalizedText(String field, LocalizedText value)
       throws UaSerializationException {
+
     try {
       EncoderContext context = contextPeek();
-      if (encoding == Encoding.VERBOSE
-          || context == EncoderContext.BUILTIN
-          || (value != null && value.isNotNull())) {
+      if (context == EncoderContext.BUILTIN || (value != null && value.isNotNull())) {
         if (field != null) {
           jsonWriter.name(field);
         }
 
-        if (reversible) {
-          jsonWriter.beginObject();
-          if (value.locale() != null) {
-            jsonWriter.name("Locale").value(value.locale());
-          }
-          if (value.text() != null) {
-            jsonWriter.name("Text").value(value.text());
-          }
-          jsonWriter.endObject();
-        } else {
-          jsonWriter.value(value.text());
+        jsonWriter.beginObject();
+        if (value.locale() != null) {
+          jsonWriter.name("Locale").value(value.locale());
         }
+        if (value.text() != null) {
+          jsonWriter.name("Text").value(value.text());
+        }
+        jsonWriter.endObject();
       }
     } catch (IOException e) {
       throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
@@ -1163,7 +1158,7 @@ public class OpcUaJsonEncoder implements UaEncoder {
 
   @Override
   public void encodeEnum(String field, UaEnumeratedType value) throws UaSerializationException {
-    if (reversible) {
+    if (encoding == Encoding.COMPACT) {
       encodeInt32(field, value.getValue());
     } else {
       if (value.getName() != null) {
