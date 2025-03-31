@@ -30,6 +30,7 @@ import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
+import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.*;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.NamespaceReference;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.ServerReference;
@@ -39,11 +40,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
-import org.eclipse.milo.opcua.stack.core.types.structured.ReadRequest;
-import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
-import org.eclipse.milo.opcua.stack.core.types.structured.RequestHeader;
-import org.eclipse.milo.opcua.stack.core.types.structured.XVType;
+import org.eclipse.milo.opcua.stack.core.types.structured.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -888,17 +885,27 @@ class OpcUaJsonDecoderTest {
     decoder.jsonReader.endObject();
   }
 
-  @Test
-  void decodeStruct() {
-    var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
+  @MethodSource("decodeStructArguments")
+  @ParameterizedTest
+  void decodeStruct(UaStructuredType struct, String json) {
+    var decoder = new OpcUaJsonDecoder(context, json);
 
-    var struct = new Argument("foo", NodeIds.Int32, -1, null, LocalizedText.english("foo desc"));
+    assertEquals(struct, decoder.decodeStruct(null, struct.getTypeId()));
+  }
 
-    decoder.reset(
-        new StringReader(
+  static Stream<Arguments> decodeStructArguments() {
+    return Stream.of(
+        Arguments.of(new XVType(0.0, 0.0f), "{}"),
+        Arguments.of(new XVType(1.0, 0.0f), "{\"X\":1.0}"),
+        Arguments.of(new XVType(0.0, 1.0f), "{\"Value\":1.0}"),
+        Arguments.of(
+            new Argument("foo", NodeIds.Int32, -1, null, LocalizedText.english("foo desc")),
             "{\"Name\":\"foo\",\"DataType\":\"i=6\",\"ValueRank\":-1,\"Description\":{\"Locale\":\"en\",\"Text\":\"foo"
-                + " desc\"}}"));
-    assertEquals(struct, decoder.decodeStruct(null, Argument.TYPE_ID));
+                + " desc\"}}"),
+        Arguments.of(
+            new EUInformation(
+                null, 0, LocalizedText.NULL_VALUE, LocalizedText.english("description")),
+            "{\"Description\":{\"Locale\":\"en\",\"Text\":\"description\"}}"));
   }
 
   @Test

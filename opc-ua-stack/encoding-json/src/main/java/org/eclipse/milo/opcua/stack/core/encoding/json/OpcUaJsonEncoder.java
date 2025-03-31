@@ -648,9 +648,17 @@ public class OpcUaJsonEncoder implements UaEncoder {
 
     try {
       EncoderContext context = contextPeek();
-      if (context == EncoderContext.BUILTIN || (value != null && value.isNotNull())) {
+      if (encoding == Encoding.VERBOSE
+          || context == EncoderContext.BUILTIN
+          || (value != null && value.isNotNull())) {
+
         if (field != null) {
           jsonWriter.name(field);
+        }
+
+        if (value == null || value.isNull()) {
+          jsonWriter.nullValue();
+          return;
         }
 
         jsonWriter.beginObject();

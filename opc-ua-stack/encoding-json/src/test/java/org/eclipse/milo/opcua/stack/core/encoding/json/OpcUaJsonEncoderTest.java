@@ -27,6 +27,7 @@ import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.json.OpcUaJsonEncoder.Encoding;
+import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -46,11 +47,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
-import org.eclipse.milo.opcua.stack.core.types.structured.ReadRequest;
-import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
-import org.eclipse.milo.opcua.stack.core.types.structured.RequestHeader;
-import org.eclipse.milo.opcua.stack.core.types.structured.XVType;
+import org.eclipse.milo.opcua.stack.core.types.structured.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -1118,12 +1115,12 @@ class OpcUaJsonEncoderTest {
 
   @MethodSource("encodeStructCompactArguments")
   @ParameterizedTest
-  void encodeStructCompact(XVType struct, String expectedJson) {
+  void encodeStructCompact(UaStructuredType struct, String expectedJson) {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
     encoder.encoding = Encoding.COMPACT;
 
-    encoder.encodeStruct(null, struct, XVType.TYPE_ID);
+    encoder.encodeStruct(null, struct, struct.getTypeId());
     String encodedJson = writer.toString();
 
     assertEquals(expectedJson, encodedJson);
@@ -1133,17 +1130,21 @@ class OpcUaJsonEncoderTest {
     return Stream.of(
         Arguments.of(new XVType(0.0, 0.0f), "{}"),
         Arguments.of(new XVType(1.0, 0.0f), "{\"X\":1.0}"),
-        Arguments.of(new XVType(0.0, 1.0f), "{\"Value\":1.0}"));
+        Arguments.of(new XVType(0.0, 1.0f), "{\"Value\":1.0}"),
+        Arguments.of(
+            new EUInformation(
+                null, 0, LocalizedText.NULL_VALUE, LocalizedText.english("description")),
+            "{\"Description\":{\"Locale\":\"en\",\"Text\":\"description\"}}"));
   }
 
   @MethodSource("encodeStructVerboseArguments")
   @ParameterizedTest
-  void encodeStructVerbose(XVType struct, String expectedJson) {
+  void encodeStructVerbose(UaStructuredType struct, String expectedJson) {
     var writer = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, writer);
     encoder.encoding = Encoding.VERBOSE;
 
-    encoder.encodeStruct(null, struct, XVType.TYPE_ID);
+    encoder.encodeStruct(null, struct, struct.getTypeId());
     String encodedJson = writer.toString();
 
     assertEquals(expectedJson, encodedJson);
@@ -1153,7 +1154,11 @@ class OpcUaJsonEncoderTest {
     return Stream.of(
         Arguments.of(new XVType(0.0, 0.0f), "{\"X\":0.0,\"Value\":0.0}"),
         Arguments.of(new XVType(1.0, 0.0f), "{\"X\":1.0,\"Value\":0.0}"),
-        Arguments.of(new XVType(0.0, 1.0f), "{\"X\":0.0,\"Value\":1.0}"));
+        Arguments.of(new XVType(0.0, 1.0f), "{\"X\":0.0,\"Value\":1.0}"),
+        Arguments.of(
+            new EUInformation(
+                null, 0, LocalizedText.NULL_VALUE, LocalizedText.english("description")),
+            "{\"NamespaceUri\":null,\"UnitId\":0,\"DisplayName\":null,\"Description\":{\"Locale\":\"en\",\"Text\":\"description\"}}"));
   }
 
   @Test
