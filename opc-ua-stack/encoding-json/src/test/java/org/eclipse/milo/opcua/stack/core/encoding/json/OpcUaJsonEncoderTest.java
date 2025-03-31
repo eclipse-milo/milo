@@ -813,7 +813,7 @@ class OpcUaJsonEncoderTest {
 
     encoder.reset(writer = new StringWriter());
     encoder.encodeLocalizedText(null, new LocalizedText(null, null));
-    assertEquals("{}", writer.toString());
+    assertEquals("null", writer.toString());
 
     encoder.reset(writer = new StringWriter());
     encoder.jsonWriter.beginObject();
