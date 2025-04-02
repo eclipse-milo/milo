@@ -220,8 +220,22 @@ public class PublishingManager {
     }
 
     NotificationMessage notificationMessage = response.getNotificationMessage();
+
+    boolean isKeepAlive =
+        notificationMessage.getNotificationData() == null
+            || notificationMessage.getNotificationData().length == 0;
+
     long receivedSequenceNumber = notificationMessage.getSequenceNumber().longValue();
     long expectedSequenceNumber = details.lastSequenceNumber + 1;
+
+    logger.debug(
+        "Processing PublishResponse, subscriptionId={}, isKeepAlive={}, "
+            + "lastSequenceNumber={}, receivedSequenceNumber={}, expectedSequenceNumber={}",
+        subscriptionId,
+        isKeepAlive,
+        details.lastSequenceNumber,
+        receivedSequenceNumber,
+        expectedSequenceNumber);
 
     if (receivedSequenceNumber > expectedSequenceNumber) {
       boolean republishSuccess = true;
@@ -258,10 +272,10 @@ public class PublishingManager {
       details.lastSequenceNumber = expectedSequenceNumber;
     }
 
-    if (notificationMessage.getNotificationData() != null
-        && notificationMessage.getNotificationData().length > 0) {
-
-      // Set last sequence number only if this isn't a keep-alive
+    if (receivedSequenceNumber == 1 || !isKeepAlive) {
+      // Set last sequence number only if either:
+      // - this was the first PublishResponse received
+      // - this *is not* a keep-alive PublishResponse
       details.lastSequenceNumber = receivedSequenceNumber;
     }
 
