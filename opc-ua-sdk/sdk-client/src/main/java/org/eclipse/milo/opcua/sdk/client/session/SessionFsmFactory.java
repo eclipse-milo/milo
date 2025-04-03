@@ -967,25 +967,26 @@ public class SessionFsmFactory {
                   .orElse(false);
             });
 
-    // If the failure isn't a UaServiceFaultException, keep trying to reactivate
+    // If reactivating fails due to a ServiceFault, move to CreatingWait
     fb.when(State.Reactivating)
-        .on(isReactivateSessionFailure.and(isReactivateSessionFailureServiceFault.negate()))
-        .transitionTo(State.ReactivatingWait)
-        .executeFirst(
-            ctx -> {
-              Event.ReactivateSessionFailure e = (Event.ReactivateSessionFailure) ctx.event();
-
-              handleFailureToOpenSession(client, ctx, e.failure);
-            });
-
-    // If the failure is any other reason, move to CreatingWait
-    fb.when(State.Reactivating)
-        .on(isReactivateSessionFailure)
+        .on(isReactivateSessionFailureServiceFault)
         .transitionTo(State.CreatingWait)
         .executeFirst(
             ctx -> {
               KEY_WAIT_TIME.remove(ctx);
 
+              Event.ReactivateSessionFailure e = (Event.ReactivateSessionFailure) ctx.event();
+
+              handleFailureToOpenSession(client, ctx, e.failure);
+            });
+
+    // If reactivating fails for any other reason, move back to ReactivatingWait and keep trying to
+    // reactivate
+    fb.when(State.Reactivating)
+        .on(isReactivateSessionFailure)
+        .transitionTo(State.ReactivatingWait)
+        .executeFirst(
+            ctx -> {
               Event.ReactivateSessionFailure e = (Event.ReactivateSessionFailure) ctx.event();
 
               handleFailureToOpenSession(client, ctx, e.failure);
