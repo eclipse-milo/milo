@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -61,6 +61,13 @@ interface Event {
     }
   }
 
+  class ReactivatingWaitExpired implements Event {
+    @Override
+    public String toString() {
+      return getClass().getSimpleName();
+    }
+  }
+
   class CreateSessionSuccess implements Event {
     final CreateSessionResponse response;
 
@@ -104,6 +111,32 @@ interface Event {
     final Throwable failure;
 
     ActivateSessionFailure(Throwable failure) {
+      this.failure = failure;
+    }
+
+    @Override
+    public String toString() {
+      return getClass().getSimpleName();
+    }
+  }
+
+  class ReactivateSessionSuccess implements Event {
+    final OpcUaSession session;
+
+    ReactivateSessionSuccess(OpcUaSession session) {
+      this.session = session;
+    }
+
+    @Override
+    public String toString() {
+      return getClass().getSimpleName();
+    }
+  }
+
+  class ReactivateSessionFailure implements Event {
+    final Throwable failure;
+
+    ReactivateSessionFailure(Throwable failure) {
       this.failure = failure;
     }
 

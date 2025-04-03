@@ -48,17 +48,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
-import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
-import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfig;
-import org.eclipse.milo.opcua.sdk.client.OpcUaSession;
-import org.eclipse.milo.opcua.sdk.client.ServiceFaultListener;
+import org.eclipse.milo.opcua.sdk.client.*;
 import org.eclipse.milo.opcua.sdk.client.identity.SignedIdentityToken;
 import org.eclipse.milo.opcua.sdk.client.session.SessionFsm.SessionFuture;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaSubscription;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.NodeIds;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
-import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.*;
 import org.eclipse.milo.opcua.stack.core.security.SecurityAlgorithm;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
@@ -138,6 +132,8 @@ public class SessionFsmFactory {
     configureInitializingState(fb, client);
     configureActiveState(fb, client);
     configureClosingState(fb, client);
+    configureReactivatingWaitState(fb, client);
+    configureReactivatingState(fb, client);
   }
 
   private static void configureInactiveState(
@@ -536,6 +532,38 @@ public class SessionFsmFactory {
                       });
             });
 
+    fb.onTransitionTo(State.Initializing)
+        .from(State.Reactivating)
+        .via(Event.ReactivateSessionSuccess.class)
+        .execute(
+            ctx -> {
+              Event.ReactivateSessionSuccess event = (Event.ReactivateSessionSuccess) ctx.event();
+
+              OpcUaSession session = event.session;
+
+              initialize(ctx, client, session)
+                  .whenComplete(
+                      (u, ex) -> {
+                        if (u != null) {
+                          try (MDCCloseable ignored =
+                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+
+                            LOGGER.debug("Initialization succeeded: {}", session);
+                          }
+
+                          ctx.fireEvent(new Event.InitializeSuccess(session));
+                        } else {
+                          try (MDCCloseable ignored =
+                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+
+                            LOGGER.warn("Initialization failed: {}", session, ex);
+                          }
+
+                          ctx.fireEvent(new Event.InitializeFailure(ex));
+                        }
+                      });
+            });
+
     /* Internal Transition Actions */
 
     fb.onInternalTransition(State.Initializing)
@@ -562,7 +590,7 @@ public class SessionFsmFactory {
                 e.getClass() == Event.KeepAliveFailure.class
                     || e.getClass() == Event.ServiceFault.class
                     || e.getClass() == Event.ConnectionLost.class)
-        .transitionTo(State.CreatingWait);
+        .transitionTo(State.ReactivatingWait);
 
     /* External Transition Actions */
 
@@ -639,7 +667,7 @@ public class SessionFsmFactory {
         .execute(FsmContext::processShelvedEvents);
 
     fb.onTransitionFrom(State.Active)
-        .to(s -> s == State.Closing || s == State.CreatingWait)
+        .to(s -> s == State.Closing || s == State.ReactivatingWait)
         .viaAny()
         .execute(
             ctx -> {
@@ -850,6 +878,163 @@ public class SessionFsmFactory {
 
     fb.onInternalTransition(State.Closing)
         .via(e -> e.getClass() != Event.CloseSession.class)
+        .execute(ctx -> ctx.shelveEvent(ctx.event()));
+  }
+
+  private static void configureReactivatingWaitState(
+      FsmBuilder<State, Event> fb, OpcUaClient client) {
+
+    fb.when(State.ReactivatingWait)
+        .on(Event.ReactivatingWaitExpired.class)
+        .transitionTo(State.Reactivating);
+
+    fb.when(State.ReactivatingWait).on(Event.CloseSession.class).transitionTo(State.Inactive);
+
+    fb.onTransitionTo(State.ReactivatingWait)
+        .from(s -> s != State.ReactivatingWait)
+        .viaAny()
+        .execute(FsmContext::processShelvedEvents);
+
+    fb.onTransitionTo(State.ReactivatingWait)
+        .from(s -> s != State.ReactivatingWait)
+        .viaAny()
+        .execute(
+            ctx -> {
+              SessionFuture sessionFuture = new SessionFuture();
+              KEY_SESSION_FUTURE.set(ctx, sessionFuture);
+
+              Long waitTime = KEY_WAIT_TIME.get(ctx);
+              if (waitTime == null) {
+                waitTime = 1L;
+              } else {
+                waitTime = Math.min(MAX_WAIT_SECONDS, waitTime << 1);
+              }
+              KEY_WAIT_TIME.set(ctx, waitTime);
+
+              ScheduledFuture<?> waitFuture =
+                  client
+                      .getTransport()
+                      .getConfig()
+                      .getScheduledExecutor()
+                      .schedule(
+                          () -> ctx.fireEvent(new Event.ReactivatingWaitExpired()),
+                          waitTime,
+                          TimeUnit.SECONDS);
+              KEY_WAIT_FUTURE.set(ctx, waitFuture);
+            });
+
+    fb.onTransitionFrom(State.ReactivatingWait)
+        .to(State.Inactive)
+        .via(Event.CloseSession.class)
+        .execute(
+            ctx -> {
+              ScheduledFuture<?> waitFuture = KEY_WAIT_FUTURE.remove(ctx);
+              if (waitFuture != null) {
+                waitFuture.cancel(false);
+              }
+
+              KEY_WAIT_TIME.remove(ctx);
+
+              Event.CloseSession event = (Event.CloseSession) ctx.event();
+
+              client
+                  .getTransport()
+                  .getConfig()
+                  .getExecutor()
+                  .execute(() -> event.future.complete(Unit.VALUE));
+            });
+
+    /* Internal Transition Actions */
+
+    fb.onInternalTransition(State.ReactivatingWait)
+        .via(Event.GetSession.class)
+        .execute(SessionFsmFactory::handleGetSessionEvent);
+
+    fb.onInternalTransition(State.ReactivatingWait)
+        .via(Event.OpenSession.class)
+        .execute(SessionFsmFactory::handleOpenSessionEvent);
+  }
+
+  private static void configureReactivatingState(FsmBuilder<State, Event> fb, OpcUaClient client) {
+    Predicate<Event> isReactivateSessionFailure = e -> e instanceof Event.ReactivateSessionFailure;
+
+    Predicate<Event> isReactivateSessionFailureServiceFault =
+        isReactivateSessionFailure.and(
+            e -> {
+              Event.ReactivateSessionFailure event = (Event.ReactivateSessionFailure) e;
+              return UaException.extract(event.failure)
+                  .map(ex -> ex instanceof UaServiceFaultException)
+                  .orElse(false);
+            });
+
+    // If the failure isn't a UaServiceFaultException, keep trying to reactivate
+    fb.when(State.Reactivating)
+        .on(isReactivateSessionFailure.and(isReactivateSessionFailureServiceFault.negate()))
+        .transitionTo(State.ReactivatingWait)
+        .executeFirst(
+            ctx -> {
+              Event.ReactivateSessionFailure e = (Event.ReactivateSessionFailure) ctx.event();
+
+              handleFailureToOpenSession(client, ctx, e.failure);
+            });
+
+    // If the failure is any other reason, move to CreatingWait
+    fb.when(State.Reactivating)
+        .on(isReactivateSessionFailure)
+        .transitionTo(State.CreatingWait)
+        .executeFirst(
+            ctx -> {
+              KEY_WAIT_TIME.remove(ctx);
+
+              Event.ReactivateSessionFailure e = (Event.ReactivateSessionFailure) ctx.event();
+
+              handleFailureToOpenSession(client, ctx, e.failure);
+            });
+
+    fb.when(State.Reactivating)
+        .on(Event.ReactivateSessionSuccess.class)
+        .transitionTo(State.Initializing);
+
+    fb.onTransitionTo(State.Reactivating)
+        .from(State.ReactivatingWait)
+        .via(Event.ReactivatingWaitExpired.class)
+        .execute(
+            ctx -> {
+              reactivateSession(ctx, client)
+                  .whenComplete(
+                      (session, ex) -> {
+                        if (session != null) {
+                          try (MDCCloseable ignored =
+                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+
+                            LOGGER.debug("Session reactivated: {}", session);
+                          }
+
+                          ctx.fireEvent(new Event.ReactivateSessionSuccess(session));
+                        } else {
+                          try (MDCCloseable ignored =
+                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+
+                            LOGGER.debug("Reactivation failed: {}", ex.getMessage(), ex);
+                          }
+
+                          ctx.fireEvent(new Event.ReactivateSessionFailure(ex));
+                        }
+                      });
+            });
+
+    /* Internal Transition Actions */
+
+    fb.onInternalTransition(State.Reactivating)
+        .via(Event.GetSession.class)
+        .execute(SessionFsmFactory::handleGetSessionEvent);
+
+    fb.onInternalTransition(State.Reactivating)
+        .via(Event.OpenSession.class)
+        .execute(SessionFsmFactory::handleOpenSessionEvent);
+
+    fb.onInternalTransition(State.Reactivating)
+        .via(Event.CloseSession.class)
         .execute(ctx -> ctx.shelveEvent(ctx.event()));
   }
 
@@ -1078,6 +1263,53 @@ public class SessionFsmFactory {
                         csr.getServerSoftwareCertificates());
 
                 session.setServerNonce(asrNonce);
+
+                return completedFuture(session);
+              });
+    } catch (Exception ex) {
+      return failedFuture(ex);
+    }
+  }
+
+  private static CompletableFuture<OpcUaSession> reactivateSession(
+      FsmContext<State, Event> ctx, OpcUaClient client) {
+
+    try {
+      OpcUaSession session = KEY_SESSION.get(ctx);
+      assert session != null;
+
+      EndpointDescription endpoint = client.getConfig().getEndpoint();
+
+      ByteString serverNonce = session.getServerNonce();
+
+      SignedIdentityToken signedIdentityToken =
+          client.getConfig().getIdentityProvider().getIdentityToken(endpoint, serverNonce);
+
+      UserIdentityToken userIdentityToken = signedIdentityToken.getToken();
+      SignatureData userTokenSignature = signedIdentityToken.getSignature();
+
+      var request =
+          new ActivateSessionRequest(
+              client.newRequestHeader(session.getAuthenticationToken()),
+              buildClientSignature(client.getConfig(), serverNonce),
+              new SignedSoftwareCertificate[0],
+              client.getConfig().getSessionLocaleIds(),
+              ExtensionObject.encode(client.getStaticEncodingContext(), userIdentityToken),
+              userTokenSignature);
+
+      try (MDCCloseable ignored =
+          MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+
+        LOGGER.debug("Sending ActivateSessionRequest...");
+      }
+
+      return client
+          .getTransport()
+          .sendRequestMessage(request)
+          .thenApply(ActivateSessionResponse.class::cast)
+          .thenCompose(
+              asr -> {
+                session.setServerNonce(asr.getServerNonce());
 
                 return completedFuture(session);
               });

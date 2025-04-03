@@ -24,6 +24,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.OpcUaSession;
+import org.eclipse.milo.opcua.sdk.client.SessionActivityListener;
+import org.eclipse.milo.opcua.sdk.client.UaSession;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
@@ -62,6 +64,16 @@ public class PublishingManager {
     this.client = client;
 
     processingQueue = new TaskQueue(client.getTransport().getConfig().getExecutor());
+
+    // When a Session gets re-activated after a connection loss we need to make sure PublishRequests
+    // are being sent again.
+    client.addSessionActivityListener(
+        new SessionActivityListener() {
+          @Override
+          public void onSessionActive(UaSession session) {
+            maybeSendPublishRequests();
+          }
+        });
   }
 
   void addSubscription(OpcUaSubscription subscription) {
@@ -166,9 +178,7 @@ public class PublishingManager {
         .sendRequestMessage(request)
         .whenComplete(
             (response, ex) -> {
-              if (response instanceof PublishResponse) {
-                PublishResponse publishResponse = (PublishResponse) response;
-
+              if (response instanceof PublishResponse publishResponse) {
                 logger.debug(
                     "Received PublishResponse, requestHandle={}, sequenceNumber={}",
                     publishResponse.getResponseHeader().getRequestHandle(),
@@ -196,6 +206,7 @@ public class PublishingManager {
                   subscriptionDetails.values().forEach(d -> d.subscription.cancelWatchdogTimer());
                 } else if (code != StatusCodes.Bad_NoSubscription
                     && code != StatusCodes.Bad_TooManyPublishRequests) {
+
                   maybeSendPublishRequests();
                 }
 
