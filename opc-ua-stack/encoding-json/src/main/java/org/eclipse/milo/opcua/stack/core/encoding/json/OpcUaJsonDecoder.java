@@ -1277,8 +1277,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
     return decodeStructArray(field, localDataTypeId);
   }
 
-  @Override
-  public <T> T[] decodeArray(String field, Function<String, T> decoder, Class<T> clazz)
+  private <T> T[] decodeArray(String field, Function<String, T> decoder, Class<T> clazz)
       throws UaSerializationException {
 
     try {

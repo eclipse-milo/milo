@@ -1212,8 +1212,7 @@ public class OpcUaBinaryDecoder implements UaDecoder {
     }
   }
 
-  @Override
-  public <T> T[] decodeArray(String field, Function<String, T> decoder, Class<T> clazz)
+  private <T> T[] decodeArray(String field, Function<String, T> decoder, Class<T> clazz)
       throws UaSerializationException {
 
     int length = decodeInt32();

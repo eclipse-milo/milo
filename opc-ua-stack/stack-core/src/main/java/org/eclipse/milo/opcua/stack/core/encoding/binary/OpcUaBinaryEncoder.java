@@ -1154,8 +1154,7 @@ public class OpcUaBinaryEncoder implements UaEncoder {
     encodeStructArray(field, value, localDataTypeId);
   }
 
-  @Override
-  public <T> void encodeArray(String field, T[] values, BiConsumer<String, T> encoder)
+  private <T> void encodeArray(String field, T[] values, BiConsumer<String, T> encoder)
       throws UaSerializationException {
 
     if (values == null) {

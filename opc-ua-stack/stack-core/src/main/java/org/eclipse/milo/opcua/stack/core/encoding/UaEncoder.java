@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -11,7 +11,6 @@
 package org.eclipse.milo.opcua.stack.core.encoding;
 
 import java.util.UUID;
-import java.util.function.BiConsumer;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
 import org.eclipse.milo.opcua.stack.core.types.UaMessageType;
@@ -160,9 +159,6 @@ public interface UaEncoder {
       throws UaSerializationException;
 
   void encodeStructArray(String field, Object[] value, ExpandedNodeId dataTypeId)
-      throws UaSerializationException;
-
-  <T> void encodeArray(String field, T[] values, BiConsumer<String, T> encoder)
       throws UaSerializationException;
 
   void encodeMatrix(String field, Matrix value) throws UaSerializationException;

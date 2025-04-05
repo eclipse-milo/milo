@@ -14,7 +14,6 @@ import java.io.StringWriter;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.UUID;
-import java.util.function.BiConsumer;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
@@ -319,146 +318,93 @@ public class OpcUaXmlEncoder implements UaEncoder {
   }
 
   @Override
-  public void encodeSByteArray(String field, Byte[] value) throws UaSerializationException {
-    encodeArray(field, value, this::encodeSByte);
-  }
+  public void encodeSByteArray(String field, Byte[] value) throws UaSerializationException {}
 
   @Override
-  public void encodeInt16Array(String field, Short[] value) throws UaSerializationException {
-    encodeArray(field, value, this::encodeInt16);
-  }
+  public void encodeInt16Array(String field, Short[] value) throws UaSerializationException {}
 
   @Override
-  public void encodeInt32Array(String field, Integer[] value) throws UaSerializationException {
-    encodeArray(field, value, this::encodeInt32);
-  }
+  public void encodeInt32Array(String field, Integer[] value) throws UaSerializationException {}
 
   @Override
-  public void encodeInt64Array(String field, Long[] value) throws UaSerializationException {
-    encodeArray(field, value, this::encodeInt64);
-  }
+  public void encodeInt64Array(String field, Long[] value) throws UaSerializationException {}
 
   @Override
-  public void encodeByteArray(String field, UByte[] value) throws UaSerializationException {
-    encodeArray(field, value, this::encodeByte);
-  }
+  public void encodeByteArray(String field, UByte[] value) throws UaSerializationException {}
 
   @Override
-  public void encodeUInt16Array(String field, UShort[] value) throws UaSerializationException {
-    encodeArray(field, value, this::encodeUInt16);
-  }
+  public void encodeUInt16Array(String field, UShort[] value) throws UaSerializationException {}
 
   @Override
-  public void encodeUInt32Array(String field, UInteger[] value) throws UaSerializationException {
-    encodeArray(field, value, this::encodeUInt32);
-  }
+  public void encodeUInt32Array(String field, UInteger[] value) throws UaSerializationException {}
 
   @Override
-  public void encodeUInt64Array(String field, ULong[] value) throws UaSerializationException {
-    encodeArray(field, value, this::encodeUInt64);
-  }
+  public void encodeUInt64Array(String field, ULong[] value) throws UaSerializationException {}
 
   @Override
-  public void encodeFloatArray(String field, Float[] value) throws UaSerializationException {
-    encodeArray(field, value, this::encodeFloat);
-  }
+  public void encodeFloatArray(String field, Float[] value) throws UaSerializationException {}
 
   @Override
-  public void encodeDoubleArray(String field, Double[] value) throws UaSerializationException {
-    encodeArray(field, value, this::encodeDouble);
-  }
+  public void encodeDoubleArray(String field, Double[] value) throws UaSerializationException {}
 
   @Override
-  public void encodeStringArray(String field, String[] value) throws UaSerializationException {
-    encodeArray(field, value, this::encodeString);
-  }
+  public void encodeStringArray(String field, String[] value) throws UaSerializationException {}
 
   @Override
-  public void encodeDateTimeArray(String field, DateTime[] value) throws UaSerializationException {
-    encodeArray(field, value, this::encodeDateTime);
-  }
+  public void encodeDateTimeArray(String field, DateTime[] value) throws UaSerializationException {}
 
   @Override
-  public void encodeGuidArray(String field, UUID[] value) throws UaSerializationException {
-    encodeArray(field, value, this::encodeGuid);
-  }
+  public void encodeGuidArray(String field, UUID[] value) throws UaSerializationException {}
 
   @Override
   public void encodeByteStringArray(String field, ByteString[] value)
-      throws UaSerializationException {
-    encodeArray(field, value, this::encodeByteString);
-  }
+      throws UaSerializationException {}
 
   @Override
   public void encodeXmlElementArray(String field, XmlElement[] value)
-      throws UaSerializationException {
-    encodeArray(field, value, this::encodeXmlElement);
-  }
+      throws UaSerializationException {}
 
   @Override
-  public void encodeNodeIdArray(String field, NodeId[] value) throws UaSerializationException {
-    encodeArray(field, value, this::encodeNodeId);
-  }
+  public void encodeNodeIdArray(String field, NodeId[] value) throws UaSerializationException {}
 
   @Override
   public void encodeExpandedNodeIdArray(String field, ExpandedNodeId[] value)
-      throws UaSerializationException {
-    encodeArray(field, value, this::encodeExpandedNodeId);
-  }
+      throws UaSerializationException {}
 
   @Override
   public void encodeStatusCodeArray(String field, StatusCode[] value)
-      throws UaSerializationException {
-    encodeArray(field, value, this::encodeStatusCode);
-  }
+      throws UaSerializationException {}
 
   @Override
   public void encodeQualifiedNameArray(String field, QualifiedName[] value)
-      throws UaSerializationException {
-    encodeArray(field, value, this::encodeQualifiedName);
-  }
+      throws UaSerializationException {}
 
   @Override
   public void encodeLocalizedTextArray(String field, LocalizedText[] value)
-      throws UaSerializationException {
-    encodeArray(field, value, this::encodeLocalizedText);
-  }
+      throws UaSerializationException {}
 
   @Override
   public void encodeExtensionObjectArray(String field, ExtensionObject[] value)
-      throws UaSerializationException {
-    encodeArray(field, value, this::encodeExtensionObject);
-  }
+      throws UaSerializationException {}
 
   @Override
   public void encodeDataValueArray(String field, DataValue[] value)
-      throws UaSerializationException {
-    encodeArray(field, value, this::encodeDataValue);
-  }
+      throws UaSerializationException {}
 
   @Override
-  public void encodeVariantArray(String field, Variant[] value) throws UaSerializationException {
-    encodeArray(field, value, this::encodeVariant);
-  }
+  public void encodeVariantArray(String field, Variant[] value) throws UaSerializationException {}
 
   @Override
   public void encodeDiagnosticInfoArray(String field, DiagnosticInfo[] value)
-      throws UaSerializationException {
-    encodeArray(field, value, this::encodeDiagnosticInfo);
-  }
+      throws UaSerializationException {}
 
   @Override
   public void encodeEnumArray(String field, UaEnumeratedType[] value)
-      throws UaSerializationException {
-    encodeArray(field, value, this::encodeEnum);
-  }
+      throws UaSerializationException {}
 
   @Override
   public void encodeStructArray(String field, Object[] values, NodeId dataTypeId)
-      throws UaSerializationException {
-
-    encodeArray(field, values, (s, o) -> encodeStruct(s, o, dataTypeId));
-  }
+      throws UaSerializationException {}
 
   @Override
   public void encodeStructArray(String field, Object[] value, ExpandedNodeId dataTypeId)
@@ -473,14 +419,6 @@ public class OpcUaXmlEncoder implements UaEncoder {
                         StatusCodes.Bad_EncodingError, "no codec registered: " + dataTypeId));
 
     encodeStructArray(field, value, localDateTypeId);
-  }
-
-  @Override
-  public <T> void encodeArray(String field, T[] values, BiConsumer<String, T> encoder)
-      throws UaSerializationException {
-
-    // TODO generic encodeArray and decodeArray should be removed from UaEncoder and UaDecoder
-    // interfaces
   }
 
   @Override

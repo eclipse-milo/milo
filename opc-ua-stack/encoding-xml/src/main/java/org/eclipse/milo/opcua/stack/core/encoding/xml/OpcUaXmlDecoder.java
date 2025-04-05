@@ -987,9 +987,8 @@ public class OpcUaXmlDecoder implements UaDecoder {
     }
   }
 
-  @Override
   @SuppressWarnings("unchecked")
-  public <T> T[] decodeArray(String field, Function<String, T> decoder, Class<T> clazz)
+  private <T> T[] decodeArray(String field, Function<String, T> decoder, Class<T> clazz)
       throws UaSerializationException {
 
     if (currentNode(field)) {

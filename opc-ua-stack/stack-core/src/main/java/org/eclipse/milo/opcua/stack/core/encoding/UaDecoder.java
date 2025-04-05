@@ -11,7 +11,6 @@
 package org.eclipse.milo.opcua.stack.core.encoding;
 
 import java.util.UUID;
-import java.util.function.Function;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.types.UaMessageType;
@@ -157,9 +156,6 @@ public interface UaDecoder {
       throws UaSerializationException;
 
   Object @Nullable [] decodeStructArray(String field, ExpandedNodeId dataTypeId)
-      throws UaSerializationException;
-
-  <T> T @Nullable [] decodeArray(String field, Function<String, T> decoder, Class<T> clazz)
       throws UaSerializationException;
 
   Matrix decodeMatrix(String field, OpcUaDataType dataType) throws UaSerializationException;
