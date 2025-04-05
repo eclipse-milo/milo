@@ -10,12 +10,15 @@
 
 package org.eclipse.milo.opcua.stack.core.encoding.xml;
 
-import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.junit.jupiter.api.Assertions.*;
 
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.junit.jupiter.api.Test;
 import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.diff.Diff;
@@ -65,6 +68,63 @@ class OpcUaXmlEncoderTest {
   }
 
   @Test
+  void encodeInt16() {
+    String expected =
+"""
+<Test>32767</Test>
+""";
+
+    var encoder = new OpcUaXmlEncoder(context);
+    encoder.encodeInt16("Test", (short) 32767);
+
+    String actual = encoder.getDocumentXml();
+
+    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+    maybePrintXml(diff, expected, actual);
+
+    assertFalse(diff.hasDifferences(), diff.toString());
+  }
+
+  @Test
+  void encodeInt32() {
+    String expected =
+"""
+<Test>2147483647</Test>
+""";
+
+    var encoder = new OpcUaXmlEncoder(context);
+    encoder.encodeInt32("Test", 2147483647);
+
+    String actual = encoder.getDocumentXml();
+
+    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+    maybePrintXml(diff, expected, actual);
+
+    assertFalse(diff.hasDifferences(), diff.toString());
+  }
+
+  @Test
+  void encodeInt64() {
+    String expected =
+"""
+<Test>9223372036854775807</Test>
+""";
+
+    var encoder = new OpcUaXmlEncoder(context);
+    encoder.encodeInt64("Test", 9223372036854775807L);
+
+    String actual = encoder.getDocumentXml();
+
+    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+    maybePrintXml(diff, expected, actual);
+
+    assertFalse(diff.hasDifferences(), diff.toString());
+  }
+
+  @Test
   void encodeByte() {
     String expected =
 """
@@ -72,7 +132,102 @@ class OpcUaXmlEncoderTest {
 """;
 
     var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeByte("Test", ubyte(255));
+    encoder.encodeByte("Test", UByte.MAX);
+
+    String actual = encoder.getDocumentXml();
+
+    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+    maybePrintXml(diff, expected, actual);
+
+    assertFalse(diff.hasDifferences(), diff.toString());
+  }
+
+  @Test
+  void encodeUInt16() {
+    String expected =
+"""
+<Test>65535</Test>
+""";
+
+    var encoder = new OpcUaXmlEncoder(context);
+    encoder.encodeUInt16("Test", UShort.MAX);
+
+    String actual = encoder.getDocumentXml();
+
+    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+    maybePrintXml(diff, expected, actual);
+
+    assertFalse(diff.hasDifferences(), diff.toString());
+  }
+
+  @Test
+  void encodeUInt32() {
+    String expected =
+"""
+<Test>4294967295</Test>
+""";
+
+    var encoder = new OpcUaXmlEncoder(context);
+    encoder.encodeUInt32("Test", UInteger.MAX);
+
+    String actual = encoder.getDocumentXml();
+
+    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+    maybePrintXml(diff, expected, actual);
+
+    assertFalse(diff.hasDifferences(), diff.toString());
+  }
+
+  @Test
+  void encodeUInt64() {
+    String expected =
+"""
+<Test>18446744073709551615</Test>
+""";
+
+    var encoder = new OpcUaXmlEncoder(context);
+    encoder.encodeUInt64("Test", ULong.MAX);
+
+    String actual = encoder.getDocumentXml();
+
+    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+    maybePrintXml(diff, expected, actual);
+
+    assertFalse(diff.hasDifferences(), diff.toString());
+  }
+
+  @Test
+  void encodeFloat() {
+    String expected =
+"""
+<Test>3.14</Test>
+""";
+
+    var encoder = new OpcUaXmlEncoder(context);
+    encoder.encodeFloat("Test", 3.14f);
+
+    String actual = encoder.getDocumentXml();
+
+    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+    maybePrintXml(diff, expected, actual);
+
+    assertFalse(diff.hasDifferences(), diff.toString());
+  }
+
+  @Test
+  void encodeDouble() {
+    String expected =
+"""
+<Test>3.14159265359</Test>
+""";
+
+    var encoder = new OpcUaXmlEncoder(context);
+    encoder.encodeDouble("Test", 3.14159265359);
 
     String actual = encoder.getDocumentXml();
 

@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.stack.core.encoding.xml;
 
+import jakarta.xml.bind.DatatypeConverter;
 import java.io.StringWriter;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -116,7 +117,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
   public void encodeBoolean(String field, Boolean value) throws UaSerializationException {
     if (beginField(field)) {
       try {
-        xmlStreamWriter.writeCharacters(value.toString());
+        xmlStreamWriter.writeCharacters(DatatypeConverter.printBoolean(value));
       } catch (XMLStreamException e) {
         throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
       } finally {
@@ -129,7 +130,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
   public void encodeSByte(String field, Byte value) throws UaSerializationException {
     if (beginField(field)) {
       try {
-        xmlStreamWriter.writeCharacters(value.toString());
+        xmlStreamWriter.writeCharacters(DatatypeConverter.printByte(value));
       } catch (XMLStreamException e) {
         throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
       } finally {
@@ -139,19 +140,49 @@ public class OpcUaXmlEncoder implements UaEncoder {
   }
 
   @Override
-  public void encodeInt16(String field, Short value) throws UaSerializationException {}
+  public void encodeInt16(String field, Short value) throws UaSerializationException {
+    if (beginField(field)) {
+      try {
+        xmlStreamWriter.writeCharacters(DatatypeConverter.printShort(value));
+      } catch (XMLStreamException e) {
+        throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+      } finally {
+        endField(field);
+      }
+    }
+  }
 
   @Override
-  public void encodeInt32(String field, Integer value) throws UaSerializationException {}
+  public void encodeInt32(String field, Integer value) throws UaSerializationException {
+    if (beginField(field)) {
+      try {
+        xmlStreamWriter.writeCharacters(DatatypeConverter.printInt(value));
+      } catch (XMLStreamException e) {
+        throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+      } finally {
+        endField(field);
+      }
+    }
+  }
 
   @Override
-  public void encodeInt64(String field, Long value) throws UaSerializationException {}
+  public void encodeInt64(String field, Long value) throws UaSerializationException {
+    if (beginField(field)) {
+      try {
+        xmlStreamWriter.writeCharacters(DatatypeConverter.printLong(value));
+      } catch (XMLStreamException e) {
+        throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+      } finally {
+        endField(field);
+      }
+    }
+  }
 
   @Override
   public void encodeByte(String field, UByte value) throws UaSerializationException {
     if (beginField(field)) {
       try {
-        xmlStreamWriter.writeCharacters(value.toString());
+        xmlStreamWriter.writeCharacters(DatatypeConverter.printShort(value.shortValue()));
       } catch (XMLStreamException e) {
         throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
       } finally {
@@ -161,19 +192,69 @@ public class OpcUaXmlEncoder implements UaEncoder {
   }
 
   @Override
-  public void encodeUInt16(String field, UShort value) throws UaSerializationException {}
+  public void encodeUInt16(String field, UShort value) throws UaSerializationException {
+    if (beginField(field)) {
+      try {
+        xmlStreamWriter.writeCharacters(DatatypeConverter.printInt(value.intValue()));
+      } catch (XMLStreamException e) {
+        throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+      } finally {
+        endField(field);
+      }
+    }
+  }
 
   @Override
-  public void encodeUInt32(String field, UInteger value) throws UaSerializationException {}
+  public void encodeUInt32(String field, UInteger value) throws UaSerializationException {
+    if (beginField(field)) {
+      try {
+        xmlStreamWriter.writeCharacters(DatatypeConverter.printLong(value.longValue()));
+      } catch (XMLStreamException e) {
+        throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+      } finally {
+        endField(field);
+      }
+    }
+  }
 
   @Override
-  public void encodeUInt64(String field, ULong value) throws UaSerializationException {}
+  public void encodeUInt64(String field, ULong value) throws UaSerializationException {
+    if (beginField(field)) {
+      try {
+        xmlStreamWriter.writeCharacters(DatatypeConverter.printInteger(value.toBigInteger()));
+      } catch (XMLStreamException e) {
+        throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+      } finally {
+        endField(field);
+      }
+    }
+  }
 
   @Override
-  public void encodeFloat(String field, Float value) throws UaSerializationException {}
+  public void encodeFloat(String field, Float value) throws UaSerializationException {
+    if (beginField(field)) {
+      try {
+        xmlStreamWriter.writeCharacters(DatatypeConverter.printFloat(value));
+      } catch (XMLStreamException e) {
+        throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+      } finally {
+        endField(field);
+      }
+    }
+  }
 
   @Override
-  public void encodeDouble(String field, Double value) throws UaSerializationException {}
+  public void encodeDouble(String field, Double value) throws UaSerializationException {
+    if (beginField(field)) {
+      try {
+        xmlStreamWriter.writeCharacters(DatatypeConverter.printDouble(value));
+      } catch (XMLStreamException e) {
+        throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+      } finally {
+        endField(field);
+      }
+    }
+  }
 
   @Override
   public void encodeString(String field, String value) throws UaSerializationException {}
