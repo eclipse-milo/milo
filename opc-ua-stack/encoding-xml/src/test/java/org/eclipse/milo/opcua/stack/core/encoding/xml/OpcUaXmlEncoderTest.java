@@ -396,76 +396,25 @@ class OpcUaXmlEncoderTest {
     assertFalse(diff.hasDifferences(), diff.toString());
   }
 
-  @Test
-  void encodeString() {
-    String expected =
-"""
-<Test>Hello, World!</Test>
-""";
-
+  @ParameterizedTest(name = "value = {0}")
+  @MethodSource(
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#stringArguments")
+  void encodeString(@Nullable String value, String expected) {
     var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeString("Test", "Hello, World!");
+    encoder.encodeString("Test", value);
 
     String actual = encoder.getDocumentXml();
 
-    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+    if (value == null) {
+      // When encoding a null string the encoder doesn't produce any XML
+      assertTrue(actual.isEmpty());
+    } else {
+      Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
 
-    maybePrintXml(diff, expected, actual);
+      maybePrintXml(diff, expected, actual);
 
-    assertFalse(diff.hasDifferences(), diff.toString());
-  }
-
-  @Test
-  void encodeStringEmpty() {
-    String expected =
-"""
-<Test></Test>
-""";
-
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeString("Test", "");
-
-    String actual = encoder.getDocumentXml();
-
-    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
-
-    maybePrintXml(diff, expected, actual);
-
-    assertFalse(diff.hasDifferences(), diff.toString());
-  }
-
-  @Test
-  void encodeStringNull() {
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeString("Test", null);
-
-    String actual = encoder.getDocumentXml();
-
-    // When encoding a null string the encoder doesn't produce any XML
-    assertTrue(actual.isEmpty());
-  }
-
-  @Test
-  void encodeVariantOfScalar() {
-    String expected =
-        """
-        <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
-          <uax:Value>
-            <uax:Boolean>false</uax:Boolean>
-          </uax:Value>
-        </Test>
-        """;
-
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeVariant("Test", Variant.of(false));
-
-    String actual = encoder.getDocumentXml();
-
-    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
-
-    maybePrintXml(diff, expected, actual);
-
-    assertFalse(diff.hasDifferences(), diff.toString());
+      assertFalse(diff.hasDifferences(), diff.toString());
+    }
   }
 
   @Test
@@ -498,34 +447,6 @@ class OpcUaXmlEncoderTest {
     String actual = encoder.getDocumentXml();
 
     System.out.println(actual);
-
-    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
-
-    maybePrintXml(diff, expected, actual);
-
-    assertFalse(diff.hasDifferences(), diff.toString());
-  }
-
-  @Test
-  void encodeVariantOfArray() {
-    String expected =
-        """
-        <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
-          <uax:Value>
-            <uax:ListOfBoolean>
-              <uax:Boolean>false</uax:Boolean>
-              <uax:Boolean>true</uax:Boolean>
-              <uax:Boolean>false</uax:Boolean>
-              <uax:Boolean>true</uax:Boolean>
-            </uax:ListOfBoolean>
-          </uax:Value>
-        </Test>
-        """;
-
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeVariant("Test", Variant.ofBooleanArray(new Boolean[] {false, true, false, true}));
-
-    String actual = encoder.getDocumentXml();
 
     Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
 
@@ -779,5 +700,56 @@ class OpcUaXmlEncoderTest {
 
       assertFalse(diff.hasDifferences(), diff.toString());
     }
+  }
+
+  @Test
+  void encodeVariantOfScalar() {
+    String expected =
+        """
+        <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+          <uax:Value>
+            <uax:Boolean>false</uax:Boolean>
+          </uax:Value>
+        </Test>
+        """;
+
+    var encoder = new OpcUaXmlEncoder(context);
+    encoder.encodeVariant("Test", Variant.of(false));
+
+    String actual = encoder.getDocumentXml();
+
+    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+    maybePrintXml(diff, expected, actual);
+
+    assertFalse(diff.hasDifferences(), diff.toString());
+  }
+
+  @Test
+  void encodeVariantOfArray() {
+    String expected =
+        """
+        <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+          <uax:Value>
+            <uax:ListOfBoolean>
+              <uax:Boolean>false</uax:Boolean>
+              <uax:Boolean>true</uax:Boolean>
+              <uax:Boolean>false</uax:Boolean>
+              <uax:Boolean>true</uax:Boolean>
+            </uax:ListOfBoolean>
+          </uax:Value>
+        </Test>
+        """;
+
+    var encoder = new OpcUaXmlEncoder(context);
+    encoder.encodeVariant("Test", Variant.ofBooleanArray(new Boolean[] {false, true, false, true}));
+
+    String actual = encoder.getDocumentXml();
+
+    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+    maybePrintXml(diff, expected, actual);
+
+    assertFalse(diff.hasDifferences(), diff.toString());
   }
 }

@@ -673,6 +673,24 @@ public class ScalarArguments {
         Arguments.of(null, ""));
   }
 
+  public static Stream<Arguments> stringArguments() {
+    return Stream.of(
+        // Regular string
+        Arguments.of(
+            "Hello, World!",
+            """
+            <Test>Hello, World!</Test>
+            """),
+        // Empty string
+        Arguments.of(
+            "",
+            """
+            <Test></Test>
+            """),
+        // null string
+        Arguments.of(null, ""));
+  }
+
   public static Stream<Arguments> xmlElementArguments() {
     return Stream.of(
         // Normal XmlElement with a simple XML fragment
