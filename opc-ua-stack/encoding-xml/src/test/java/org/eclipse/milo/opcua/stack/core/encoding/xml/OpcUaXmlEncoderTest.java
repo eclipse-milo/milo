@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
@@ -381,6 +382,27 @@ class OpcUaXmlEncoderTest {
 
     if (nodeId == null) {
       // When encoding a null NodeId the encoder doesn't produce any XML
+      assertTrue(actual.isEmpty());
+    } else {
+      Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+      maybePrintXml(diff, expected, actual);
+
+      assertFalse(diff.hasDifferences(), diff.toString());
+    }
+  }
+
+  @ParameterizedTest(name = "localizedText = {0}")
+  @MethodSource(
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#localizedTextArguments")
+  void encodeLocalizedText(@Nullable LocalizedText localizedText, String expected) {
+    var encoder = new OpcUaXmlEncoder(context);
+    encoder.encodeLocalizedText("Test", localizedText);
+
+    String actual = encoder.getDocumentXml();
+
+    if (localizedText == null) {
+      // When encoding a null LocalizedText the encoder doesn't produce any XML
       assertTrue(actual.isEmpty());
     } else {
       Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();

@@ -337,7 +337,26 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
   @Override
   public void encodeLocalizedText(String field, LocalizedText value)
-      throws UaSerializationException {}
+      throws UaSerializationException {
+
+    if (beginField(field, value == null, true)) {
+      namespaces.push(Namespaces.OPC_UA_XSD);
+      try {
+        if (value != null) {
+          if (value.locale() != null && !value.locale().isBlank()) {
+            encodeString("Locale", value.locale());
+          }
+          if (value.text() != null && !value.text().isBlank()) {
+            encodeString("Text", value.text());
+          }
+        }
+      } finally {
+        namespaces.pop();
+
+        endField(field);
+      }
+    }
+  }
 
   @Override
   public void encodeExtensionObject(String field, ExtensionObject value)

@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.stack.core.encoding.xml.args;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -199,6 +200,44 @@ public class ScalarArguments {
               <uax:Identifier>ns=3;b=AQIDBA==</uax:Identifier>
             </Test>
             """),
+        Arguments.of(null, ""));
+  }
+
+  public static Stream<Arguments> localizedTextArguments() {
+    return Stream.of(
+        // LocalizedText with both locale and text
+        Arguments.of(
+            new LocalizedText("en-US", "Hello, World!"),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Locale>en-US</uax:Locale>
+              <uax:Text>Hello, World!</uax:Text>
+            </Test>
+            """),
+        // LocalizedText with only locale
+        Arguments.of(
+            new LocalizedText("en-US", ""),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Locale>en-US</uax:Locale>
+            </Test>
+            """),
+        // LocalizedText with only text
+        Arguments.of(
+            new LocalizedText("", "Hello, World!"),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Text>Hello, World!</uax:Text>
+            </Test>
+            """),
+        // LocalizedText with null locale and text
+        Arguments.of(
+            LocalizedText.NULL_VALUE,
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+            </Test>
+            """),
+        // null LocalizedText
         Arguments.of(null, ""));
   }
 }
