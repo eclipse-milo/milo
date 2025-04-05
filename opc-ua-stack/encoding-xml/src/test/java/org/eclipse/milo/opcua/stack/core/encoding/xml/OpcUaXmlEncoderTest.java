@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.UUID;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
+import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -745,6 +746,31 @@ class OpcUaXmlEncoderTest {
 
     if (xmlElement == null) {
       // When encoding a null XmlElement the encoder doesn't produce any XML
+      assertTrue(actual.isEmpty());
+    } else {
+      Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+      maybePrintXml(diff, expected, actual);
+
+      assertFalse(diff.hasDifferences(), diff.toString());
+    }
+  }
+
+  @ParameterizedTest(name = "field = {0}, struct = {1}, dataTypeId = {2}")
+  @MethodSource(
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.StructArguments#structArguments")
+  void encodeStruct(String field, @Nullable UaStructuredType value, String expected) {
+    var encoder = new OpcUaXmlEncoder(context);
+    if (value != null) {
+      encoder.encodeStruct(field, value, value.getTypeId());
+    } else {
+      encoder.encodeStruct(field, null, NodeId.NULL_VALUE);
+    }
+
+    String actual = encoder.getDocumentXml();
+
+    if (value == null) {
+      // When encoding a null struct the encoder doesn't produce any XML
       assertTrue(actual.isEmpty());
     } else {
       Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
