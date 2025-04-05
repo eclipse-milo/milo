@@ -14,10 +14,160 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.junit.jupiter.params.provider.Arguments;
 
 @SuppressWarnings("unused")
 public class ScalarArguments {
+
+  public static Stream<Arguments> booleanArguments() {
+    return Stream.of(
+        Arguments.of(
+            false,
+            """
+            <Test>false</Test>
+            """),
+        Arguments.of(
+            true,
+            """
+            <Test>true</Test>
+            """));
+  }
+
+  public static Stream<Arguments> sByteArguments() {
+    return Stream.of(
+        Arguments.of(
+            Byte.MIN_VALUE,
+            """
+            <Test>-128</Test>
+            """),
+        Arguments.of(
+            (byte) 0,
+            """
+            <Test>0</Test>
+            """),
+        Arguments.of(
+            Byte.MAX_VALUE,
+            """
+            <Test>127</Test>
+            """));
+  }
+
+  public static Stream<Arguments> int16Arguments() {
+    return Stream.of(
+        Arguments.of(
+            Short.MIN_VALUE,
+            """
+            <Test>-32768</Test>
+            """),
+        Arguments.of(
+            (short) 0,
+            """
+            <Test>0</Test>
+            """),
+        Arguments.of(
+            Short.MAX_VALUE,
+            """
+            <Test>32767</Test>
+            """));
+  }
+
+  public static Stream<Arguments> int32Arguments() {
+    return Stream.of(
+        Arguments.of(
+            Integer.MIN_VALUE,
+            """
+            <Test>-2147483648</Test>
+            """),
+        Arguments.of(
+            0,
+            """
+            <Test>0</Test>
+            """),
+        Arguments.of(
+            Integer.MAX_VALUE,
+            """
+            <Test>2147483647</Test>
+            """));
+  }
+
+  public static Stream<Arguments> int64Arguments() {
+    return Stream.of(
+        Arguments.of(
+            Long.MIN_VALUE,
+            """
+            <Test>-9223372036854775808</Test>
+            """),
+        Arguments.of(
+            0L,
+            """
+            <Test>0</Test>
+            """),
+        Arguments.of(
+            Long.MAX_VALUE,
+            """
+            <Test>9223372036854775807</Test>
+            """));
+  }
+
+  public static Stream<Arguments> byteArguments() {
+    return Stream.of(
+        Arguments.of(
+            UByte.MIN,
+            """
+            <Test>0</Test>
+            """),
+        Arguments.of(
+            UByte.MAX,
+            """
+            <Test>255</Test>
+            """));
+  }
+
+  public static Stream<Arguments> uInt16Arguments() {
+    return Stream.of(
+        Arguments.of(
+            UShort.MIN,
+            """
+            <Test>0</Test>
+            """),
+        Arguments.of(
+            UShort.MAX,
+            """
+            <Test>65535</Test>
+            """));
+  }
+
+  public static Stream<Arguments> uInt32Arguments() {
+    return Stream.of(
+        Arguments.of(
+            UInteger.MIN,
+            """
+            <Test>0</Test>
+            """),
+        Arguments.of(
+            UInteger.MAX,
+            """
+            <Test>4294967295</Test>
+            """));
+  }
+
+  public static Stream<Arguments> uInt64Arguments() {
+    return Stream.of(
+        Arguments.of(
+            ULong.MIN,
+            """
+            <Test>0</Test>
+            """),
+        Arguments.of(
+            ULong.MAX,
+            """
+            <Test>18446744073709551615</Test>
+            """));
+  }
 
   public static Stream<Arguments> nodeIdArguments() {
     return Stream.of(

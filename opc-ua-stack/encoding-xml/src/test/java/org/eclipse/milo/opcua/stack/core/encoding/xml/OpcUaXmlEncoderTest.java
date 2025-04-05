@@ -35,15 +35,12 @@ class OpcUaXmlEncoderTest {
 
   EncodingContext context = new DefaultEncodingContext();
 
-  @Test
-  void encodeBoolean() {
-    String expected =
-"""
-<Test>false</Test>
-""";
-
+  @ParameterizedTest(name = "value = {0}")
+  @MethodSource(
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#booleanArguments")
+  void encodeBoolean(Boolean value, String expected) {
     var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeBoolean("Test", false);
+    encoder.encodeBoolean("Test", value);
 
     String actual = encoder.getDocumentXml();
 
@@ -70,15 +67,12 @@ class OpcUaXmlEncoderTest {
     assertFalse(diff.hasDifferences(), diff.toString());
   }
 
-  @Test
-  void encodeSByte() {
-    String expected =
-"""
-<Test>-1</Test>
-""";
-
+  @ParameterizedTest(name = "value = {0}")
+  @MethodSource(
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#sByteArguments")
+  void encodeSByte(Byte value, String expected) {
     var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeSByte("Test", (byte) -1);
+    encoder.encodeSByte("Test", value);
 
     String actual = encoder.getDocumentXml();
 
@@ -89,15 +83,12 @@ class OpcUaXmlEncoderTest {
     assertFalse(diff.hasDifferences(), diff.toString());
   }
 
-  @Test
-  void encodeInt16() {
-    String expected =
-"""
-<Test>32767</Test>
-""";
-
+  @ParameterizedTest(name = "value = {0}")
+  @MethodSource(
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#int16Arguments")
+  void encodeInt16(Short value, String expected) {
     var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeInt16("Test", (short) 32767);
+    encoder.encodeInt16("Test", value);
 
     String actual = encoder.getDocumentXml();
 
@@ -108,15 +99,12 @@ class OpcUaXmlEncoderTest {
     assertFalse(diff.hasDifferences(), diff.toString());
   }
 
-  @Test
-  void encodeInt32() {
-    String expected =
-"""
-<Test>2147483647</Test>
-""";
-
+  @ParameterizedTest(name = "value = {0}")
+  @MethodSource(
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#int32Arguments")
+  void encodeInt32(Integer value, String expected) {
     var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeInt32("Test", 2147483647);
+    encoder.encodeInt32("Test", value);
 
     String actual = encoder.getDocumentXml();
 
@@ -127,15 +115,12 @@ class OpcUaXmlEncoderTest {
     assertFalse(diff.hasDifferences(), diff.toString());
   }
 
-  @Test
-  void encodeInt64() {
-    String expected =
-"""
-<Test>9223372036854775807</Test>
-""";
-
+  @ParameterizedTest(name = "value = {0}")
+  @MethodSource(
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#int64Arguments")
+  void encodeInt64(Long value, String expected) {
     var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeInt64("Test", 9223372036854775807L);
+    encoder.encodeInt64("Test", value);
 
     String actual = encoder.getDocumentXml();
 
@@ -146,15 +131,11 @@ class OpcUaXmlEncoderTest {
     assertFalse(diff.hasDifferences(), diff.toString());
   }
 
-  @Test
-  void encodeByte() {
-    String expected =
-"""
-<Test>255</Test>
-""";
-
+  @ParameterizedTest(name = "value = {0}")
+  @MethodSource("org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#byteArguments")
+  void encodeByte(UByte value, String expected) {
     var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeByte("Test", UByte.MAX);
+    encoder.encodeByte("Test", value);
 
     String actual = encoder.getDocumentXml();
 
@@ -165,15 +146,12 @@ class OpcUaXmlEncoderTest {
     assertFalse(diff.hasDifferences(), diff.toString());
   }
 
-  @Test
-  void encodeUInt16() {
-    String expected =
-"""
-<Test>65535</Test>
-""";
-
+  @ParameterizedTest(name = "value = {0}")
+  @MethodSource(
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#uInt16Arguments")
+  void encodeUInt16(UShort value, String expected) {
     var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeUInt16("Test", UShort.MAX);
+    encoder.encodeUInt16("Test", value);
 
     String actual = encoder.getDocumentXml();
 
@@ -184,15 +162,12 @@ class OpcUaXmlEncoderTest {
     assertFalse(diff.hasDifferences(), diff.toString());
   }
 
-  @Test
-  void encodeUInt32() {
-    String expected =
-"""
-<Test>4294967295</Test>
-""";
-
+  @ParameterizedTest(name = "value = {0}")
+  @MethodSource(
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#uInt32Arguments")
+  void encodeUInt32(UInteger value, String expected) {
     var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeUInt32("Test", UInteger.MAX);
+    encoder.encodeUInt32("Test", value);
 
     String actual = encoder.getDocumentXml();
 
@@ -203,15 +178,12 @@ class OpcUaXmlEncoderTest {
     assertFalse(diff.hasDifferences(), diff.toString());
   }
 
-  @Test
-  void encodeUInt64() {
-    String expected =
-"""
-<Test>18446744073709551615</Test>
-""";
-
+  @ParameterizedTest(name = "value = {0}")
+  @MethodSource(
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#uInt64Arguments")
+  void encodeUInt64(ULong value, String expected) {
     var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeUInt64("Test", ULong.MAX);
+    encoder.encodeUInt64("Test", value);
 
     String actual = encoder.getDocumentXml();
 
