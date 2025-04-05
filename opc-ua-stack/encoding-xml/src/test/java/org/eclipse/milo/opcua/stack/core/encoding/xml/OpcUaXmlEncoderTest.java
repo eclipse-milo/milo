@@ -14,11 +14,14 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.types.structured.XVType;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -53,7 +56,7 @@ class OpcUaXmlEncoderTest {
 
   @ParameterizedTest(name = "array = {0}")
   @MethodSource(
-      "org.eclipse.milo.opcua.stack.core.encoding.xml.ArrayArguments#booleanArrayArguments")
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ArrayArguments#booleanArrayArguments")
   void encodeBooleanArray(@Nullable Boolean[] array, String expected) {
     var encoder = new OpcUaXmlEncoder(context);
     encoder.encodeBooleanArray("Test", array);
@@ -330,6 +333,44 @@ class OpcUaXmlEncoderTest {
   }
 
   @Test
+  void encodeExtensionObject() {
+    String expected =
+"""
+<Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+  <uax:TypeId>
+    <uax:Identifier>ns=0;i=12082</uax:Identifier>
+  </uax:TypeId>
+  <uax:Body>
+    <XVType>
+      <X>1.0</X>
+      <Value>2.0</Value>
+    </XVType>
+  </uax:Body>
+</Test>
+""";
+
+    var xo =
+        ExtensionObject.encode(
+            context,
+            new XVType(1.0, 2.0f),
+            XVType.XML_ENCODING_ID,
+            OpcUaDefaultXmlEncoding.getInstance());
+
+    var encoder = new OpcUaXmlEncoder(context);
+    encoder.encodeExtensionObject("Test", xo);
+
+    String actual = encoder.getDocumentXml();
+
+    System.out.println(actual);
+
+    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+    maybePrintXml(diff, expected, actual);
+
+    assertFalse(diff.hasDifferences(), diff.toString());
+  }
+
+  @Test
   void encodeVariantOfArray() {
     String expected =
         """
@@ -355,6 +396,27 @@ class OpcUaXmlEncoderTest {
     maybePrintXml(diff, expected, actual);
 
     assertFalse(diff.hasDifferences(), diff.toString());
+  }
+
+  @ParameterizedTest(name = "nodeId = {0}")
+  @MethodSource(
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#nodeIdArguments")
+  void encodeNodeId(NodeId nodeId, String expected) {
+    var encoder = new OpcUaXmlEncoder(context);
+    encoder.encodeNodeId("Test", nodeId);
+
+    String actual = encoder.getDocumentXml();
+
+    if (nodeId == null) {
+      // When encoding a null NodeId the encoder doesn't produce any XML
+      assertTrue(actual.isEmpty());
+    } else {
+      Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+      maybePrintXml(diff, expected, actual);
+
+      assertFalse(diff.hasDifferences(), diff.toString());
+    }
   }
 
   private static void maybePrintXml(Diff diff, String expected, String actual) {

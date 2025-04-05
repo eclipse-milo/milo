@@ -15,9 +15,7 @@ import java.io.StringWriter;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.UUID;
-import javax.xml.stream.XMLOutputFactory;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamWriter;
+import javax.xml.stream.*;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
@@ -47,7 +45,7 @@ import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 
 public class OpcUaXmlEncoder implements UaEncoder {
 
-  private StringWriter xml;
+  private StringWriter xmlString;
   private XMLStreamWriter xmlStreamWriter;
 
   private final Deque<String> namespaces = new ArrayDeque<>();
@@ -69,7 +67,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
     try {
       XMLOutputFactory factory = XMLOutputFactory.newInstance();
       factory.setProperty(XMLOutputFactory.IS_REPAIRING_NAMESPACES, true);
-      xmlStreamWriter = factory.createXMLStreamWriter(xml = new StringWriter());
+      xmlStreamWriter = factory.createXMLStreamWriter(xmlString = new StringWriter());
       xmlStreamWriter.setPrefix("uax", Namespaces.OPC_UA_XSD);
       xmlStreamWriter.setPrefix("xsi", Namespaces.XML_SCHEMA_INSTANCE);
 
@@ -82,7 +80,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
   public String getDocumentXml() {
     try {
       xmlStreamWriter.flush();
-      return xml.toString();
+      return xmlString.toString();
     } catch (XMLStreamException e) {
       throw new RuntimeException(e);
     }
@@ -311,7 +309,20 @@ public class OpcUaXmlEncoder implements UaEncoder {
   public void encodeXmlElement(String field, XmlElement value) throws UaSerializationException {}
 
   @Override
-  public void encodeNodeId(String field, NodeId value) throws UaSerializationException {}
+  public void encodeNodeId(String field, NodeId value) throws UaSerializationException {
+    if (beginField(field, value == null, true)) {
+      namespaces.push(Namespaces.OPC_UA_XSD);
+      try {
+        if (value != null) {
+          encodeString("Identifier", value.toParseableString());
+        }
+      } finally {
+        namespaces.pop();
+
+        endField(field);
+      }
+    }
+  }
 
   @Override
   public void encodeExpandedNodeId(String field, ExpandedNodeId value)
@@ -330,7 +341,36 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
   @Override
   public void encodeExtensionObject(String field, ExtensionObject value)
-      throws UaSerializationException {}
+      throws UaSerializationException {
+
+    if (beginField(field, value == null, true)) {
+      namespaces.push(Namespaces.OPC_UA_XSD);
+      try {
+        if (value == null || value.isNull()) {
+          return;
+        }
+
+        // TODO this is very incomplete
+
+        if (value instanceof ExtensionObject.Xml xml) {
+          NodeId typeId = xml.getEncodingOrTypeId();
+
+          encodeNodeId("TypeId", typeId);
+
+          xmlStreamWriter.writeStartElement(Namespaces.OPC_UA_XSD, "Body");
+          XmlSerializationUtil.writeXmlFragment(
+              xmlStreamWriter, xml.getBody().getFragmentOrEmpty());
+          xmlStreamWriter.writeEndElement();
+        }
+      } catch (XMLStreamException e) {
+        throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+      } finally {
+        namespaces.pop();
+
+        endField(field);
+      }
+    }
+  }
 
   @Override
   public void encodeDataValue(String field, DataValue value) throws UaSerializationException {}
@@ -399,12 +439,9 @@ public class OpcUaXmlEncoder implements UaEncoder {
   }
 
   @Override
-  public void encodeStruct(String field, Object value, NodeId dataTypeId)
-      throws UaSerializationException {}
-
-  @Override
   public void encodeStruct(String field, Object value, ExpandedNodeId dataTypeId)
       throws UaSerializationException {
+
     NodeId localDateTypeId =
         dataTypeId
             .toNodeId(context.getNamespaceTable())
@@ -417,8 +454,31 @@ public class OpcUaXmlEncoder implements UaEncoder {
   }
 
   @Override
+  public void encodeStruct(String field, Object value, NodeId dataTypeId)
+      throws UaSerializationException {
+
+    DataTypeCodec codec = context.getDataTypeManager().getCodec(dataTypeId);
+
+    if (codec == null) {
+      throw new UaSerializationException(
+          StatusCodes.Bad_EncodingError, "no codec registered: " + dataTypeId);
+    }
+
+    encodeStruct(field, value, codec);
+  }
+
+  @Override
   public void encodeStruct(String field, Object value, DataTypeCodec codec)
-      throws UaSerializationException {}
+      throws UaSerializationException {
+
+    if (beginField(field)) {
+      try {
+        codec.encode(context, this, value);
+      } finally {
+        endField(field);
+      }
+    }
+  }
 
   @Override
   public void encodeBooleanArray(String field, Boolean[] value) throws UaSerializationException {

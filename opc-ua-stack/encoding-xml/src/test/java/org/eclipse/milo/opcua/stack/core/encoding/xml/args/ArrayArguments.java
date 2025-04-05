@@ -8,11 +8,12 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package org.eclipse.milo.opcua.stack.core.encoding.xml;
+package org.eclipse.milo.opcua.stack.core.encoding.xml.args;
 
 import java.util.stream.Stream;
 import org.junit.jupiter.params.provider.Arguments;
 
+@SuppressWarnings("unused")
 public class ArrayArguments {
 
   public static Stream<Arguments> booleanArrayArguments() {
