@@ -13,10 +13,13 @@ package org.eclipse.milo.opcua.stack.core.encoding.xml.args;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.stream.Stream;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
@@ -320,6 +323,94 @@ public class ScalarArguments {
             <Test></Test>
             """),
         // null value
+        Arguments.of(null, ""));
+  }
+
+  public static Stream<Arguments> expandedNodeIdArguments() {
+    return Stream.of(
+        // ExpandedNodeId with numeric identifier
+        Arguments.of(
+            ExpandedNodeId.of(0, 123L),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Identifier>i=123</uax:Identifier>
+            </Test>
+            """),
+        // ExpandedNodeId with string identifier
+        Arguments.of(
+            ExpandedNodeId.of(UShort.valueOf(1), "Hello"),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Identifier>ns=1;s=Hello</uax:Identifier>
+            </Test>
+            """),
+        // ExpandedNodeId with UUID identifier
+        Arguments.of(
+            ExpandedNodeId.of(
+                UShort.valueOf(2), UUID.fromString("12345678-1234-1234-1234-123456789012")),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Identifier>ns=2;g=12345678-1234-1234-1234-123456789012</uax:Identifier>
+            </Test>
+            """),
+        // ExpandedNodeId with ByteString identifier
+        Arguments.of(
+            ExpandedNodeId.of(UShort.valueOf(3), ByteString.of(new byte[] {1, 2, 3, 4})),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Identifier>ns=3;b=AQIDBA==</uax:Identifier>
+            </Test>
+            """),
+        // ExpandedNodeId with namespace URI
+        Arguments.of(
+            ExpandedNodeId.of("http://example.org/UA/", 123L),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Identifier>nsu=http://example.org/UA/;i=123</uax:Identifier>
+            </Test>
+            """),
+        // ExpandedNodeId with server index
+        Arguments.of(
+            new ExpandedNodeId(
+                ExpandedNodeId.ServerReference.of(2),
+                ExpandedNodeId.NamespaceReference.of(1),
+                UInteger.valueOf(123)),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Identifier>svr=2;ns=1;i=123</uax:Identifier>
+            </Test>
+            """),
+        // null ExpandedNodeId
+        Arguments.of(null, ""));
+  }
+
+  public static Stream<Arguments> statusCodeArguments() {
+    return Stream.of(
+        // Good status code
+        Arguments.of(
+            StatusCode.GOOD,
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Code>0</uax:Code>
+            </Test>
+            """),
+        // Bad status code
+        Arguments.of(
+            StatusCode.BAD,
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Code>2147483648</uax:Code>
+            </Test>
+            """),
+        // Specific status code
+        Arguments.of(
+            new StatusCode(StatusCodes.Bad_InternalError),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Code>2147614720</uax:Code>
+            </Test>
+            """),
+        // null StatusCode
         Arguments.of(null, ""));
   }
 }

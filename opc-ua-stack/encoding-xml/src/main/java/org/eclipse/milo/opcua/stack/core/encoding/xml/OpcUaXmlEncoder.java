@@ -363,10 +363,37 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
   @Override
   public void encodeExpandedNodeId(String field, ExpandedNodeId value)
-      throws UaSerializationException {}
+      throws UaSerializationException {
+
+    if (beginField(field, value == null, true)) {
+      namespaces.push(Namespaces.OPC_UA_XSD);
+      try {
+        if (value != null) {
+          encodeString("Identifier", value.toParseableString());
+        }
+      } finally {
+        namespaces.pop();
+
+        endField(field);
+      }
+    }
+  }
 
   @Override
-  public void encodeStatusCode(String field, StatusCode value) throws UaSerializationException {}
+  public void encodeStatusCode(String field, StatusCode value) throws UaSerializationException {
+    if (beginField(field, value == null, true)) {
+      namespaces.push(Namespaces.OPC_UA_XSD);
+      try {
+        if (value != null) {
+          encodeUInt32("Code", UInteger.valueOf(value.getValue()));
+        }
+      } finally {
+        namespaces.pop();
+
+        endField(field);
+      }
+    }
+  }
 
   @Override
   public void encodeQualifiedName(String field, QualifiedName value)
