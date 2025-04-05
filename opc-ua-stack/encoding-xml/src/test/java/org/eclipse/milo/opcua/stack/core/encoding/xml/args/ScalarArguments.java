@@ -19,6 +19,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -411,6 +412,47 @@ public class ScalarArguments {
             </Test>
             """),
         // null StatusCode
+        Arguments.of(null, ""));
+  }
+
+  public static Stream<Arguments> qualifiedNameArguments() {
+    return Stream.of(
+        // Normal QualifiedName with namespace index and name
+        Arguments.of(
+            new QualifiedName(1, "TestName"),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:NamespaceIndex>1</uax:NamespaceIndex>
+              <uax:Name>TestName</uax:Name>
+            </Test>
+            """),
+        // QualifiedName with namespace index 0 (default namespace)
+        Arguments.of(
+            new QualifiedName(0, "DefaultNamespace"),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:NamespaceIndex>0</uax:NamespaceIndex>
+              <uax:Name>DefaultNamespace</uax:Name>
+            </Test>
+            """),
+        // QualifiedName with empty name
+        Arguments.of(
+            new QualifiedName(2, ""),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:NamespaceIndex>2</uax:NamespaceIndex>
+              <uax:Name></uax:Name>
+            </Test>
+            """),
+        // NULL_VALUE QualifiedName
+        Arguments.of(
+            QualifiedName.NULL_VALUE,
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:NamespaceIndex>0</uax:NamespaceIndex>
+            </Test>
+            """),
+        // null QualifiedName
         Arguments.of(null, ""));
   }
 }

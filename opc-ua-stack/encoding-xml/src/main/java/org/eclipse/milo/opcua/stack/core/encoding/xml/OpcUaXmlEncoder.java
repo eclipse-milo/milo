@@ -397,7 +397,22 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
   @Override
   public void encodeQualifiedName(String field, QualifiedName value)
-      throws UaSerializationException {}
+      throws UaSerializationException {
+
+    if (beginField(field, value == null, true)) {
+      namespaces.push(Namespaces.OPC_UA_XSD);
+      try {
+        if (value != null) {
+          encodeUInt16("NamespaceIndex", value.getNamespaceIndex());
+          encodeString("Name", value.getName());
+        }
+      } finally {
+        namespaces.pop();
+
+        endField(field);
+      }
+    }
+  }
 
   @Override
   public void encodeLocalizedText(String field, LocalizedText value)
