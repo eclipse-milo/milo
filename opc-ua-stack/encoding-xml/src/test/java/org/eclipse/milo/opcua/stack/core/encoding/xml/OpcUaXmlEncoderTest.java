@@ -12,8 +12,11 @@ package org.eclipse.milo.opcua.stack.core.encoding.xml;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.UUID;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
@@ -403,6 +406,58 @@ class OpcUaXmlEncoderTest {
 
     if (localizedText == null) {
       // When encoding a null LocalizedText the encoder doesn't produce any XML
+      assertTrue(actual.isEmpty());
+    } else {
+      Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+      maybePrintXml(diff, expected, actual);
+
+      assertFalse(diff.hasDifferences(), diff.toString());
+    }
+  }
+
+  @ParameterizedTest(name = "dateTime = {0}")
+  @MethodSource(
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#dateTimeArguments")
+  void encodeDateTime(@Nullable DateTime dateTime, String expected) {
+    var encoder = new OpcUaXmlEncoder(context);
+    encoder.encodeDateTime("Test", dateTime);
+
+    String actual = encoder.getDocumentXml();
+
+    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+    maybePrintXml(diff, expected, actual);
+
+    assertFalse(diff.hasDifferences(), diff.toString());
+  }
+
+  @ParameterizedTest(name = "guid = {0}")
+  @MethodSource("org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#guidArguments")
+  void encodeGuid(@Nullable UUID guid, String expected) {
+    var encoder = new OpcUaXmlEncoder(context);
+    encoder.encodeGuid("Test", guid);
+
+    String actual = encoder.getDocumentXml();
+
+    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+    maybePrintXml(diff, expected, actual);
+
+    assertFalse(diff.hasDifferences(), diff.toString());
+  }
+
+  @ParameterizedTest(name = "byteString = {0}")
+  @MethodSource(
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#byteStringArguments")
+  void encodeByteString(@Nullable ByteString byteString, String expected) {
+    var encoder = new OpcUaXmlEncoder(context);
+    encoder.encodeByteString("Test", byteString);
+
+    String actual = encoder.getDocumentXml();
+
+    if (byteString == null) {
+      // When encoding a null ByteString the encoder doesn't produce any XML
       assertTrue(actual.isEmpty());
     } else {
       Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();

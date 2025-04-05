@@ -10,9 +10,11 @@
 
 package org.eclipse.milo.opcua.stack.core.encoding.xml.args;
 
+import java.time.Instant;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
@@ -238,6 +240,86 @@ public class ScalarArguments {
             </Test>
             """),
         // null LocalizedText
+        Arguments.of(null, ""));
+  }
+
+  public static Stream<Arguments> dateTimeArguments() {
+    return Stream.of(
+        // Normal DateTime
+        Arguments.of(
+            new DateTime(Instant.parse("2023-01-01T12:34:56Z")),
+            """
+            <Test>2023-01-01T12:34:56Z</Test>
+            """),
+        // MIN_DATE_TIME
+        Arguments.of(
+            DateTime.MIN_DATE_TIME,
+            """
+            <Test>0001-01-01T00:00:00Z</Test>
+            """),
+        // MAX_DATE_TIME
+        Arguments.of(
+            DateTime.MAX_DATE_TIME,
+            """
+            <Test>9999-12-31T23:59:59Z</Test>
+            """),
+        // NULL_VALUE
+        Arguments.of(
+            DateTime.NULL_VALUE,
+            """
+            <Test>1601-01-01T00:00:00Z</Test>
+            """),
+        // null value
+        Arguments.of(
+            null,
+            """
+            <Test></Test>
+            """));
+  }
+
+  public static Stream<Arguments> guidArguments() {
+    return Stream.of(
+        // Normal UUID
+        Arguments.of(
+            UUID.fromString("12345678-1234-1234-1234-123456789012"),
+            """
+            <Test>12345678-1234-1234-1234-123456789012</Test>
+            """),
+        // Zero UUID
+        Arguments.of(
+            new UUID(0L, 0L),
+            """
+            <Test>00000000-0000-0000-0000-000000000000</Test>
+            """),
+        // null value
+        Arguments.of(
+            null,
+            """
+            <Test></Test>
+            """));
+  }
+
+  public static Stream<Arguments> byteStringArguments() {
+    return Stream.of(
+        // Normal ByteString with data
+        Arguments.of(
+            ByteString.of(new byte[] {1, 2, 3, 4}),
+            """
+            <Test>AQIDBA==</Test>
+            """),
+        // Empty ByteString
+        Arguments.of(
+            ByteString.of(new byte[0]),
+            """
+            <Test></Test>
+            """),
+        // Null ByteString
+        Arguments.of(
+            ByteString.NULL_VALUE,
+            """
+            <Test></Test>
+            """),
+        // null value
         Arguments.of(null, ""));
   }
 }

@@ -297,13 +297,50 @@ public class OpcUaXmlEncoder implements UaEncoder {
   }
 
   @Override
-  public void encodeDateTime(String field, DateTime value) throws UaSerializationException {}
+  public void encodeDateTime(String field, DateTime value) throws UaSerializationException {
+    if (beginField(field)) {
+      try {
+        if (value != null) {
+          xmlStreamWriter.writeCharacters(value.toIso8601String());
+        }
+      } catch (XMLStreamException e) {
+        throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+      } finally {
+        endField(field);
+      }
+    }
+  }
 
   @Override
-  public void encodeGuid(String field, UUID value) throws UaSerializationException {}
+  public void encodeGuid(String field, UUID value) throws UaSerializationException {
+    if (beginField(field)) {
+      try {
+        if (value != null) {
+          xmlStreamWriter.writeCharacters(value.toString().toUpperCase());
+        }
+      } catch (XMLStreamException e) {
+        throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+      } finally {
+        endField(field);
+      }
+    }
+  }
 
   @Override
-  public void encodeByteString(String field, ByteString value) throws UaSerializationException {}
+  public void encodeByteString(String field, ByteString value) throws UaSerializationException {
+    if (beginField(field, value == null, true)) {
+      try {
+        if (value != null && value.isNotNull()) {
+          xmlStreamWriter.writeCharacters(
+              DatatypeConverter.printBase64Binary(value.bytesOrEmpty()));
+        }
+      } catch (XMLStreamException e) {
+        throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+      } finally {
+        endField(field);
+      }
+    }
+  }
 
   @Override
   public void encodeXmlElement(String field, XmlElement value) throws UaSerializationException {}
