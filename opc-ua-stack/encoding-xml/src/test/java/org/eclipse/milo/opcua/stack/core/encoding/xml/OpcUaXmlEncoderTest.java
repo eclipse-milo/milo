@@ -16,6 +16,7 @@ import java.util.UUID;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
@@ -693,5 +694,42 @@ class OpcUaXmlEncoderTest {
       System.out.printf("Expected:%n%s%n", expected);
       System.out.printf("Actual:%n%s%n", actual);
     }
+  }
+
+  @ParameterizedTest(name = "dataValue = {0}")
+  @MethodSource(
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#dataValueArguments")
+  void encodeDataValue(@Nullable DataValue dataValue, String expected) {
+    var encoder = new OpcUaXmlEncoder(context);
+    encoder.encodeDataValue("Test", dataValue);
+
+    String actual = encoder.getDocumentXml();
+
+    if (dataValue == null) {
+      // When encoding a null DataValue the encoder doesn't produce any XML
+      assertTrue(actual.isEmpty());
+    } else {
+      Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+      maybePrintXml(diff, expected, actual);
+
+      assertFalse(diff.hasDifferences(), diff.toString());
+    }
+  }
+
+  @ParameterizedTest(name = "array = {0}")
+  @MethodSource(
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ArrayArguments#dataValueArrayArguments")
+  void encodeDataValueArray(@Nullable DataValue[] array, String expected) {
+    var encoder = new OpcUaXmlEncoder(context);
+    encoder.encodeDataValueArray("Test", array);
+
+    String actual = encoder.getDocumentXml();
+
+    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+    maybePrintXml(diff, expected, actual);
+
+    assertFalse(diff.hasDifferences(), diff.toString());
   }
 }

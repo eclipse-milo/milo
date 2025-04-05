@@ -471,7 +471,42 @@ public class OpcUaXmlEncoder implements UaEncoder {
   }
 
   @Override
-  public void encodeDataValue(String field, DataValue value) throws UaSerializationException {}
+  public void encodeDataValue(String field, DataValue value) throws UaSerializationException {
+    if (beginField(field, value == null, true)) {
+      namespaces.push(Namespaces.OPC_UA_XSD);
+      try {
+        if (value != null) {
+          if (!value.getValue().isNull()) {
+            encodeVariant("Value", value.getValue());
+          }
+
+          if (!StatusCode.GOOD.equals(value.getStatusCode())) {
+            encodeStatusCode("StatusCode", value.getStatusCode());
+          }
+
+          if (value.getSourceTime() != null) {
+            encodeDateTime("SourceTimestamp", value.getSourceTime());
+          }
+
+          if (value.getSourcePicoseconds() != null) {
+            encodeUInt16("SourcePicoseconds", value.getSourcePicoseconds());
+          }
+
+          if (value.getServerTime() != null) {
+            encodeDateTime("ServerTimestamp", value.getServerTime());
+          }
+
+          if (value.getServerPicoseconds() != null) {
+            encodeUInt16("ServerPicoseconds", value.getServerPicoseconds());
+          }
+        }
+      } finally {
+        namespaces.pop();
+
+        endField(field);
+      }
+    }
+  }
 
   @Override
   public void encodeVariant(String field, Variant value) throws UaSerializationException {
@@ -509,10 +544,12 @@ public class OpcUaXmlEncoder implements UaEncoder {
         if (isArray) {
           switch (dataType) {
             case Boolean -> encodeBooleanArray("ListOfBoolean", (Boolean[]) value.value());
+            case Int32 -> encodeInt32Array("ListOfInt32", (Integer[]) value.value());
           }
         } else {
           switch (dataType) {
             case Boolean -> encodeBoolean("Boolean", (Boolean) value.value());
+            case Int32 -> encodeInt32("Int32", (Integer) value.value());
           }
         }
       } finally {
@@ -807,7 +844,22 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
   @Override
   public void encodeDataValueArray(String field, DataValue[] value)
-      throws UaSerializationException {}
+      throws UaSerializationException {
+
+    if (beginField(field, value == null, true, true)) {
+      try {
+        namespaces.push(Namespaces.OPC_UA_XSD);
+
+        for (DataValue v : value) {
+          encodeDataValue("DataValue", v);
+        }
+      } finally {
+        namespaces.pop();
+
+        endField(field);
+      }
+    }
+  }
 
   @Override
   public void encodeVariantArray(String field, Variant[] value) throws UaSerializationException {}

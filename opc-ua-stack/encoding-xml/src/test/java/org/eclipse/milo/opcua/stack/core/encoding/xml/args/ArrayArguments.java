@@ -11,6 +11,10 @@
 package org.eclipse.milo.opcua.stack.core.encoding.xml.args;
 
 import java.util.stream.Stream;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
@@ -294,6 +298,81 @@ public class ArrayArguments {
             """),
         Arguments.of(
             new Double[] {},
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+            </Test>
+            """),
+        Arguments.of(
+            null,
+            """
+            <Test xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"></Test>
+            """));
+  }
+
+  public static Stream<Arguments> dataValueArrayArguments() {
+    // Create DataValue instances for testing
+    java.time.Instant sourceTimeInstant = java.time.Instant.parse("2020-01-01T00:00:00Z");
+    java.time.Instant serverTimeInstant = java.time.Instant.parse("2020-01-02T00:00:00Z");
+
+    DateTime sourceTime = new DateTime(sourceTimeInstant);
+    DateTime serverTime = new DateTime(serverTimeInstant);
+    UShort sourcePicoseconds = UShort.valueOf(1000);
+    UShort serverPicoseconds = UShort.valueOf(2000);
+
+    // DataValue with all fields non-null
+    DataValue dataValue1 =
+        new DataValue(
+            Variant.of(true),
+            new StatusCode(0x80000000L),
+            sourceTime,
+            sourcePicoseconds,
+            serverTime,
+            serverPicoseconds);
+
+    // DataValue with good status code (should not appear in XML)
+    DataValue dataValue2 =
+        new DataValue(
+            Variant.of(42),
+            StatusCode.GOOD,
+            sourceTime,
+            sourcePicoseconds,
+            serverTime,
+            serverPicoseconds);
+
+    return Stream.of(
+        Arguments.of(
+            new DataValue[] {dataValue1, dataValue2},
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:DataValue>
+                <uax:Value>
+                  <uax:Value>
+                    <uax:Boolean>true</uax:Boolean>
+                  </uax:Value>
+                </uax:Value>
+                <uax:StatusCode>
+                  <uax:Code>2147483648</uax:Code>
+                </uax:StatusCode>
+                <uax:SourceTimestamp>2020-01-01T00:00:00Z</uax:SourceTimestamp>
+                <uax:SourcePicoseconds>1000</uax:SourcePicoseconds>
+                <uax:ServerTimestamp>2020-01-02T00:00:00Z</uax:ServerTimestamp>
+                <uax:ServerPicoseconds>2000</uax:ServerPicoseconds>
+              </uax:DataValue>
+              <uax:DataValue>
+                <uax:Value>
+                  <uax:Value>
+                    <uax:Int32>42</uax:Int32>
+                  </uax:Value>
+                </uax:Value>
+                <uax:SourceTimestamp>2020-01-01T00:00:00Z</uax:SourceTimestamp>
+                <uax:SourcePicoseconds>1000</uax:SourcePicoseconds>
+                <uax:ServerTimestamp>2020-01-02T00:00:00Z</uax:ServerTimestamp>
+                <uax:ServerPicoseconds>2000</uax:ServerPicoseconds>
+              </uax:DataValue>
+            </Test>
+            """),
+        Arguments.of(
+            new DataValue[] {},
             """
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
             </Test>

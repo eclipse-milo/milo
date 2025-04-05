@@ -15,12 +15,14 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
@@ -534,5 +536,139 @@ public class ScalarArguments {
             """
             <Test>NaN</Test>
             """));
+  }
+
+  public static Stream<Arguments> dataValueArguments() {
+    DateTime sourceTime = new DateTime(Instant.parse("2020-01-01T00:00:00Z"));
+    DateTime serverTime = new DateTime(Instant.parse("2020-01-02T00:00:00Z"));
+    UShort sourcePicoseconds = UShort.valueOf(1000);
+    UShort serverPicoseconds = UShort.valueOf(2000);
+
+    return Stream.of(
+        // All fields non-null
+        Arguments.of(
+            new DataValue(
+                Variant.of(true),
+                new StatusCode(0x80000000L),
+                sourceTime,
+                sourcePicoseconds,
+                serverTime,
+                serverPicoseconds),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Value>
+                <uax:Value>
+                  <uax:Boolean>true</uax:Boolean>
+                </uax:Value>
+              </uax:Value>
+              <uax:StatusCode>
+                <uax:Code>2147483648</uax:Code>
+              </uax:StatusCode>
+              <uax:SourceTimestamp>2020-01-01T00:00:00Z</uax:SourceTimestamp>
+              <uax:SourcePicoseconds>1000</uax:SourcePicoseconds>
+              <uax:ServerTimestamp>2020-01-02T00:00:00Z</uax:ServerTimestamp>
+              <uax:ServerPicoseconds>2000</uax:ServerPicoseconds>
+            </Test>
+            """),
+        // Null source timestamp and picoseconds
+        Arguments.of(
+            new DataValue(
+                Variant.of(true),
+                new StatusCode(0x80000000L),
+                null,
+                null,
+                serverTime,
+                serverPicoseconds),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Value>
+                <uax:Value>
+                  <uax:Boolean>true</uax:Boolean>
+                </uax:Value>
+              </uax:Value>
+              <uax:StatusCode>
+                <uax:Code>2147483648</uax:Code>
+              </uax:StatusCode>
+              <uax:ServerTimestamp>2020-01-02T00:00:00Z</uax:ServerTimestamp>
+              <uax:ServerPicoseconds>2000</uax:ServerPicoseconds>
+            </Test>
+            """),
+        // Null server timestamp and picoseconds
+        Arguments.of(
+            new DataValue(
+                Variant.of(true),
+                new StatusCode(0x80000000L),
+                sourceTime,
+                sourcePicoseconds,
+                null,
+                null),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Value>
+                <uax:Value>
+                  <uax:Boolean>true</uax:Boolean>
+                </uax:Value>
+              </uax:Value>
+              <uax:StatusCode>
+                <uax:Code>2147483648</uax:Code>
+              </uax:StatusCode>
+              <uax:SourceTimestamp>2020-01-01T00:00:00Z</uax:SourceTimestamp>
+              <uax:SourcePicoseconds>1000</uax:SourcePicoseconds>
+            </Test>
+            """),
+        // Null source and server picoseconds
+        Arguments.of(
+            new DataValue(
+                Variant.of(true), new StatusCode(0x80000000L), sourceTime, null, serverTime, null),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Value>
+                <uax:Value>
+                  <uax:Boolean>true</uax:Boolean>
+                </uax:Value>
+              </uax:Value>
+              <uax:StatusCode>
+                <uax:Code>2147483648</uax:Code>
+              </uax:StatusCode>
+              <uax:SourceTimestamp>2020-01-01T00:00:00Z</uax:SourceTimestamp>
+              <uax:ServerTimestamp>2020-01-02T00:00:00Z</uax:ServerTimestamp>
+            </Test>
+            """),
+        // Good status code (should not appear in XML)
+        Arguments.of(
+            new DataValue(
+                Variant.of(true),
+                StatusCode.GOOD,
+                sourceTime,
+                sourcePicoseconds,
+                serverTime,
+                serverPicoseconds),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Value>
+                <uax:Value>
+                  <uax:Boolean>true</uax:Boolean>
+                </uax:Value>
+              </uax:Value>
+              <uax:SourceTimestamp>2020-01-01T00:00:00Z</uax:SourceTimestamp>
+              <uax:SourcePicoseconds>1000</uax:SourcePicoseconds>
+              <uax:ServerTimestamp>2020-01-02T00:00:00Z</uax:ServerTimestamp>
+              <uax:ServerPicoseconds>2000</uax:ServerPicoseconds>
+            </Test>
+            """),
+        // Only value
+        Arguments.of(
+            new DataValue(Variant.of(true), StatusCode.GOOD, null, null, null, null),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Value>
+                <uax:Value>
+                  <uax:Boolean>true</uax:Boolean>
+                </uax:Value>
+              </uax:Value>
+            </Test>
+            """),
+        // Null DataValue
+        Arguments.of(null, ""));
   }
 }
