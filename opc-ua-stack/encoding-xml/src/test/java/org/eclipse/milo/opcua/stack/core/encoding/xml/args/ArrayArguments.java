@@ -21,23 +21,23 @@ public class ArrayArguments {
         Arguments.of(
             new Boolean[] {false, true, false, true},
             """
-              <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
-                <uax:Boolean>false</uax:Boolean>
-                <uax:Boolean>true</uax:Boolean>
-                <uax:Boolean>false</uax:Boolean>
-                <uax:Boolean>true</uax:Boolean>
-              </Test>
-              """),
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Boolean>false</uax:Boolean>
+              <uax:Boolean>true</uax:Boolean>
+              <uax:Boolean>false</uax:Boolean>
+              <uax:Boolean>true</uax:Boolean>
+            </Test>
+            """),
         Arguments.of(
             new Boolean[] {},
             """
-              <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
-              </Test>
-              """),
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+            </Test>
+            """),
         Arguments.of(
             null,
             """
-              <Test xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"></Test>
-              """));
+            <Test xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"></Test>
+            """));
   }
 }
