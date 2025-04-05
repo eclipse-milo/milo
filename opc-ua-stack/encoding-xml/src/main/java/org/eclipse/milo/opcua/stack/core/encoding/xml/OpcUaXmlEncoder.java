@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -10,12 +10,16 @@
 
 package org.eclipse.milo.opcua.stack.core.encoding.xml;
 
+import java.io.StringWriter;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.UUID;
 import java.util.function.BiConsumer;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.stream.XMLOutputFactory;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamWriter;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
-import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.DataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
@@ -40,30 +44,20 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.util.Namespaces;
-import org.eclipse.milo.opcua.stack.core.util.SecureXmlUtil;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
 
 public class OpcUaXmlEncoder implements UaEncoder {
 
-  private final DocumentBuilder builder;
+  private StringWriter xml;
+  private XMLStreamWriter xmlStreamWriter;
 
-  private Document document;
-  private Node currentNode;
+  private final Deque<String> namespaces = new ArrayDeque<>();
 
   private final EncodingContext context;
 
   public OpcUaXmlEncoder(EncodingContext context) {
     this.context = context;
 
-    try {
-      builder = SecureXmlUtil.SHARED_DOCUMENT_BUILDER_FACTORY.newDocumentBuilder();
-
-      document = builder.newDocument();
-      currentNode = document;
-    } catch (ParserConfigurationException e) {
-      throw new UaRuntimeException(StatusCodes.Bad_InternalError, e);
-    }
+    reset();
   }
 
   @Override
@@ -71,25 +65,79 @@ public class OpcUaXmlEncoder implements UaEncoder {
     return context;
   }
 
-  public Document getDocument() {
-    return document;
+  public void reset() {
+    try {
+      XMLOutputFactory factory = XMLOutputFactory.newInstance();
+      factory.setProperty(XMLOutputFactory.IS_REPAIRING_NAMESPACES, true);
+      xmlStreamWriter = factory.createXMLStreamWriter(xml = new StringWriter());
+      xmlStreamWriter.setPrefix("uax", Namespaces.OPC_UA_XSD);
+
+      namespaces.clear();
+    } catch (XMLStreamException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   public String getDocumentXml() {
-    return "";
+    try {
+      xmlStreamWriter.flush();
+      return xml.toString();
+    } catch (XMLStreamException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private boolean beginField(String field) {
+    try {
+      if (field != null && !field.isEmpty()) {
+        if (namespaces.peek() != null) {
+          xmlStreamWriter.writeStartElement(namespaces.peek(), field);
+        } else {
+          xmlStreamWriter.writeStartElement(field);
+        }
+        return true;
+      }
+      return false;
+    } catch (XMLStreamException e) {
+      throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+    }
+  }
+
+  private void endField(String field) {
+    try {
+      if (field != null && !field.isEmpty()) {
+        xmlStreamWriter.writeEndElement();
+      }
+    } catch (XMLStreamException e) {
+      throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+    }
   }
 
   @Override
   public void encodeBoolean(String field, Boolean value) throws UaSerializationException {
-    Node element = document.createElementNS(Namespaces.OPC_UA_XSD, field);
-
-    element.appendChild(document.createTextNode(value.toString()));
-
-    currentNode.appendChild(element);
+    if (beginField(field)) {
+      try {
+        xmlStreamWriter.writeCharacters(value.toString());
+      } catch (XMLStreamException e) {
+        throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+      } finally {
+        endField(field);
+      }
+    }
   }
 
   @Override
-  public void encodeSByte(String field, Byte value) throws UaSerializationException {}
+  public void encodeSByte(String field, Byte value) throws UaSerializationException {
+    if (beginField(field)) {
+      try {
+        xmlStreamWriter.writeCharacters(value.toString());
+      } catch (XMLStreamException e) {
+        throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+      } finally {
+        endField(field);
+      }
+    }
+  }
 
   @Override
   public void encodeInt16(String field, Short value) throws UaSerializationException {}
@@ -101,7 +149,17 @@ public class OpcUaXmlEncoder implements UaEncoder {
   public void encodeInt64(String field, Long value) throws UaSerializationException {}
 
   @Override
-  public void encodeByte(String field, UByte value) throws UaSerializationException {}
+  public void encodeByte(String field, UByte value) throws UaSerializationException {
+    if (beginField(field)) {
+      try {
+        xmlStreamWriter.writeCharacters(value.toString());
+      } catch (XMLStreamException e) {
+        throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+      } finally {
+        endField(field);
+      }
+    }
+  }
 
   @Override
   public void encodeUInt16(String field, UShort value) throws UaSerializationException {}
@@ -159,7 +217,55 @@ public class OpcUaXmlEncoder implements UaEncoder {
   public void encodeDataValue(String field, DataValue value) throws UaSerializationException {}
 
   @Override
-  public void encodeVariant(String field, Variant value) throws UaSerializationException {}
+  public void encodeVariant(String field, Variant value) throws UaSerializationException {
+    if (beginField(field)) {
+      namespaces.push(Namespaces.OPC_UA_XSD);
+      try {
+        xmlStreamWriter.writeStartElement(Namespaces.OPC_UA_XSD, "Value");
+        encodeVariantValue(value);
+        xmlStreamWriter.writeEndElement();
+      } catch (XMLStreamException e) {
+        throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+      } finally {
+        namespaces.pop();
+
+        endField(field);
+      }
+    }
+  }
+
+  private void encodeVariantValue(Variant value) {
+    try {
+      if (value.isNull()) {
+        xmlStreamWriter.writeStartElement(Namespaces.OPC_UA_XSD, "Null");
+        xmlStreamWriter.writeEndElement();
+        return;
+      }
+
+      Object v = value.value();
+      boolean isArray = v != null && v.getClass().isArray();
+
+      OpcUaDataType dataType = value.getDataType().orElseThrow();
+
+      namespaces.push(Namespaces.OPC_UA_XSD);
+      try {
+        if (isArray) {
+          switch (dataType) {
+            case Boolean -> encodeBooleanArray("ListOfBoolean", (Boolean[]) value.value());
+          }
+        } else {
+          switch (dataType) {
+            case Boolean -> encodeBoolean("Boolean", (Boolean) value.value());
+          }
+        }
+      } finally {
+        namespaces.pop();
+      }
+
+    } catch (XMLStreamException e) {
+      throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+    }
+  }
 
   @Override
   public void encodeDiagnosticInfo(String field, DiagnosticInfo value)
@@ -197,7 +303,19 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
   @Override
   public void encodeBooleanArray(String field, Boolean[] value) throws UaSerializationException {
-    encodeArray(field, value, this::encodeBoolean);
+    if (beginField(field)) {
+      try {
+        namespaces.push(Namespaces.OPC_UA_XSD);
+
+        for (Boolean v : value) {
+          encodeBoolean("Boolean", v);
+        }
+      } finally {
+        namespaces.pop();
+
+        endField(field);
+      }
+    }
   }
 
   @Override
@@ -359,7 +477,11 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
   @Override
   public <T> void encodeArray(String field, T[] values, BiConsumer<String, T> encoder)
-      throws UaSerializationException {}
+      throws UaSerializationException {
+
+    // TODO generic encodeArray and decodeArray should be removed from UaEncoder and UaDecoder
+    // interfaces
+  }
 
   @Override
   public void encodeMatrix(String field, Matrix value) throws UaSerializationException {}
