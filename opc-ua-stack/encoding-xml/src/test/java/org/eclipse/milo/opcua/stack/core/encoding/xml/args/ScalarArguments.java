@@ -455,4 +455,84 @@ public class ScalarArguments {
         // null QualifiedName
         Arguments.of(null, ""));
   }
+
+  public static Stream<Arguments> floatArguments() {
+    return Stream.of(
+        // Regular float value
+        Arguments.of(
+            3.14f,
+            """
+            <Test>3.14</Test>
+            """),
+        // Minimum value
+        Arguments.of(
+            Float.MIN_VALUE,
+            """
+            <Test>1.4E-45</Test>
+            """),
+        // Maximum value
+        Arguments.of(
+            Float.MAX_VALUE,
+            """
+            <Test>3.4028235E38</Test>
+            """),
+        // Negative infinity
+        Arguments.of(
+            Float.NEGATIVE_INFINITY,
+            """
+            <Test>-INF</Test>
+            """),
+        // Positive infinity
+        Arguments.of(
+            Float.POSITIVE_INFINITY,
+            """
+            <Test>INF</Test>
+            """),
+        // NaN
+        Arguments.of(
+            Float.NaN,
+            """
+            <Test>NaN</Test>
+            """));
+  }
+
+  public static Stream<Arguments> doubleArguments() {
+    return Stream.of(
+        // Regular double value
+        Arguments.of(
+            3.14159265359,
+            """
+            <Test>3.14159265359</Test>
+            """),
+        // Minimum value
+        Arguments.of(
+            Double.MIN_VALUE,
+            """
+            <Test>4.9E-324</Test>
+            """),
+        // Maximum value
+        Arguments.of(
+            Double.MAX_VALUE,
+            """
+            <Test>1.7976931348623157E308</Test>
+            """),
+        // Negative infinity
+        Arguments.of(
+            Double.NEGATIVE_INFINITY,
+            """
+            <Test>-INF</Test>
+            """),
+        // Positive infinity
+        Arguments.of(
+            Double.POSITIVE_INFINITY,
+            """
+            <Test>INF</Test>
+            """),
+        // NaN
+        Arguments.of(
+            Double.NaN,
+            """
+            <Test>NaN</Test>
+            """));
+  }
 }

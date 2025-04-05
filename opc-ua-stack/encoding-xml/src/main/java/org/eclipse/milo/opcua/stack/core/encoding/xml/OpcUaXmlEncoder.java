@@ -596,34 +596,174 @@ public class OpcUaXmlEncoder implements UaEncoder {
   }
 
   @Override
-  public void encodeSByteArray(String field, Byte[] value) throws UaSerializationException {}
+  public void encodeSByteArray(String field, Byte[] value) throws UaSerializationException {
+    if (beginField(field, value == null, true, true)) {
+      try {
+        namespaces.push(Namespaces.OPC_UA_XSD);
+
+        for (Byte v : value) {
+          encodeSByte("SByte", v);
+        }
+      } finally {
+        namespaces.pop();
+
+        endField(field);
+      }
+    }
+  }
 
   @Override
-  public void encodeInt16Array(String field, Short[] value) throws UaSerializationException {}
+  public void encodeInt16Array(String field, Short[] value) throws UaSerializationException {
+    if (beginField(field, value == null, true, true)) {
+      try {
+        namespaces.push(Namespaces.OPC_UA_XSD);
+
+        for (Short v : value) {
+          encodeInt16("Int16", v);
+        }
+      } finally {
+        namespaces.pop();
+
+        endField(field);
+      }
+    }
+  }
 
   @Override
-  public void encodeInt32Array(String field, Integer[] value) throws UaSerializationException {}
+  public void encodeInt32Array(String field, Integer[] value) throws UaSerializationException {
+    if (beginField(field, value == null, true, true)) {
+      try {
+        namespaces.push(Namespaces.OPC_UA_XSD);
+
+        for (Integer v : value) {
+          encodeInt32("Int32", v);
+        }
+      } finally {
+        namespaces.pop();
+
+        endField(field);
+      }
+    }
+  }
 
   @Override
-  public void encodeInt64Array(String field, Long[] value) throws UaSerializationException {}
+  public void encodeInt64Array(String field, Long[] value) throws UaSerializationException {
+    if (beginField(field, value == null, true, true)) {
+      try {
+        namespaces.push(Namespaces.OPC_UA_XSD);
+
+        for (Long v : value) {
+          encodeInt64("Int64", v);
+        }
+      } finally {
+        namespaces.pop();
+
+        endField(field);
+      }
+    }
+  }
 
   @Override
-  public void encodeByteArray(String field, UByte[] value) throws UaSerializationException {}
+  public void encodeByteArray(String field, UByte[] value) throws UaSerializationException {
+    if (beginField(field, value == null, true, true)) {
+      try {
+        namespaces.push(Namespaces.OPC_UA_XSD);
+
+        for (UByte v : value) {
+          encodeByte("Byte", v);
+        }
+      } finally {
+        namespaces.pop();
+
+        endField(field);
+      }
+    }
+  }
 
   @Override
-  public void encodeUInt16Array(String field, UShort[] value) throws UaSerializationException {}
+  public void encodeUInt16Array(String field, UShort[] value) throws UaSerializationException {
+    if (beginField(field, value == null, true, true)) {
+      try {
+        namespaces.push(Namespaces.OPC_UA_XSD);
+
+        for (UShort v : value) {
+          encodeUInt16("UInt16", v);
+        }
+      } finally {
+        namespaces.pop();
+
+        endField(field);
+      }
+    }
+  }
 
   @Override
-  public void encodeUInt32Array(String field, UInteger[] value) throws UaSerializationException {}
+  public void encodeUInt32Array(String field, UInteger[] value) throws UaSerializationException {
+    if (beginField(field, value == null, true, true)) {
+      try {
+        namespaces.push(Namespaces.OPC_UA_XSD);
+
+        for (UInteger v : value) {
+          encodeUInt32("UInt32", v);
+        }
+      } finally {
+        namespaces.pop();
+
+        endField(field);
+      }
+    }
+  }
 
   @Override
-  public void encodeUInt64Array(String field, ULong[] value) throws UaSerializationException {}
+  public void encodeUInt64Array(String field, ULong[] value) throws UaSerializationException {
+    if (beginField(field, value == null, true, true)) {
+      try {
+        namespaces.push(Namespaces.OPC_UA_XSD);
+
+        for (ULong v : value) {
+          encodeUInt64("UInt64", v);
+        }
+      } finally {
+        namespaces.pop();
+
+        endField(field);
+      }
+    }
+  }
 
   @Override
-  public void encodeFloatArray(String field, Float[] value) throws UaSerializationException {}
+  public void encodeFloatArray(String field, Float[] value) throws UaSerializationException {
+    if (beginField(field, value == null, true, true)) {
+      try {
+        namespaces.push(Namespaces.OPC_UA_XSD);
+
+        for (Float v : value) {
+          encodeFloat("Float", v);
+        }
+      } finally {
+        namespaces.pop();
+
+        endField(field);
+      }
+    }
+  }
 
   @Override
-  public void encodeDoubleArray(String field, Double[] value) throws UaSerializationException {}
+  public void encodeDoubleArray(String field, Double[] value) throws UaSerializationException {
+    if (beginField(field, value == null, true, true)) {
+      try {
+        namespaces.push(Namespaces.OPC_UA_XSD);
+
+        for (Double v : value) {
+          encodeDouble("Double", v);
+        }
+      } finally {
+        namespaces.pop();
+
+        endField(field);
+      }
+    }
+  }
 
   @Override
   public void encodeStringArray(String field, String[] value) throws UaSerializationException {}

@@ -90,12 +90,44 @@ class OpcUaXmlEncoderTest {
     assertFalse(diff.hasDifferences(), diff.toString());
   }
 
+  @ParameterizedTest(name = "array = {0}")
+  @MethodSource(
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ArrayArguments#sByteArrayArguments")
+  void encodeSByteArray(@Nullable Byte[] array, String expected) {
+    var encoder = new OpcUaXmlEncoder(context);
+    encoder.encodeSByteArray("Test", array);
+
+    String actual = encoder.getDocumentXml();
+
+    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+    maybePrintXml(diff, expected, actual);
+
+    assertFalse(diff.hasDifferences(), diff.toString());
+  }
+
   @ParameterizedTest(name = "value = {0}")
   @MethodSource(
       "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#int16Arguments")
   void encodeInt16(Short value, String expected) {
     var encoder = new OpcUaXmlEncoder(context);
     encoder.encodeInt16("Test", value);
+
+    String actual = encoder.getDocumentXml();
+
+    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+    maybePrintXml(diff, expected, actual);
+
+    assertFalse(diff.hasDifferences(), diff.toString());
+  }
+
+  @ParameterizedTest(name = "array = {0}")
+  @MethodSource(
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ArrayArguments#int16ArrayArguments")
+  void encodeInt16Array(@Nullable Short[] array, String expected) {
+    var encoder = new OpcUaXmlEncoder(context);
+    encoder.encodeInt16Array("Test", array);
 
     String actual = encoder.getDocumentXml();
 
@@ -122,12 +154,44 @@ class OpcUaXmlEncoderTest {
     assertFalse(diff.hasDifferences(), diff.toString());
   }
 
+  @ParameterizedTest(name = "array = {0}")
+  @MethodSource(
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ArrayArguments#int32ArrayArguments")
+  void encodeInt32Array(@Nullable Integer[] array, String expected) {
+    var encoder = new OpcUaXmlEncoder(context);
+    encoder.encodeInt32Array("Test", array);
+
+    String actual = encoder.getDocumentXml();
+
+    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+    maybePrintXml(diff, expected, actual);
+
+    assertFalse(diff.hasDifferences(), diff.toString());
+  }
+
   @ParameterizedTest(name = "value = {0}")
   @MethodSource(
       "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#int64Arguments")
   void encodeInt64(Long value, String expected) {
     var encoder = new OpcUaXmlEncoder(context);
     encoder.encodeInt64("Test", value);
+
+    String actual = encoder.getDocumentXml();
+
+    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+    maybePrintXml(diff, expected, actual);
+
+    assertFalse(diff.hasDifferences(), diff.toString());
+  }
+
+  @ParameterizedTest(name = "array = {0}")
+  @MethodSource(
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ArrayArguments#int64ArrayArguments")
+  void encodeInt64Array(@Nullable Long[] array, String expected) {
+    var encoder = new OpcUaXmlEncoder(context);
+    encoder.encodeInt64Array("Test", array);
 
     String actual = encoder.getDocumentXml();
 
@@ -201,15 +265,12 @@ class OpcUaXmlEncoderTest {
     assertFalse(diff.hasDifferences(), diff.toString());
   }
 
-  @Test
-  void encodeFloat() {
-    String expected =
-"""
-<Test>3.14</Test>
-""";
-
+  @ParameterizedTest(name = "array = {0}")
+  @MethodSource(
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ArrayArguments#byteArrayArguments")
+  void encodeByteArray(@Nullable UByte[] array, String expected) {
     var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeFloat("Test", 3.14f);
+    encoder.encodeByteArray("Test", array);
 
     String actual = encoder.getDocumentXml();
 
@@ -220,15 +281,108 @@ class OpcUaXmlEncoderTest {
     assertFalse(diff.hasDifferences(), diff.toString());
   }
 
-  @Test
-  void encodeDouble() {
-    String expected =
-"""
-<Test>3.14159265359</Test>
-""";
-
+  @ParameterizedTest(name = "array = {0}")
+  @MethodSource(
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ArrayArguments#uInt16ArrayArguments")
+  void encodeUInt16Array(@Nullable UShort[] array, String expected) {
     var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeDouble("Test", 3.14159265359);
+    encoder.encodeUInt16Array("Test", array);
+
+    String actual = encoder.getDocumentXml();
+
+    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+    maybePrintXml(diff, expected, actual);
+
+    assertFalse(diff.hasDifferences(), diff.toString());
+  }
+
+  @ParameterizedTest(name = "array = {0}")
+  @MethodSource(
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ArrayArguments#uInt32ArrayArguments")
+  void encodeUInt32Array(@Nullable UInteger[] array, String expected) {
+    var encoder = new OpcUaXmlEncoder(context);
+    encoder.encodeUInt32Array("Test", array);
+
+    String actual = encoder.getDocumentXml();
+
+    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+    maybePrintXml(diff, expected, actual);
+
+    assertFalse(diff.hasDifferences(), diff.toString());
+  }
+
+  @ParameterizedTest(name = "array = {0}")
+  @MethodSource(
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ArrayArguments#uInt64ArrayArguments")
+  void encodeUInt64Array(@Nullable ULong[] array, String expected) {
+    var encoder = new OpcUaXmlEncoder(context);
+    encoder.encodeUInt64Array("Test", array);
+
+    String actual = encoder.getDocumentXml();
+
+    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+    maybePrintXml(diff, expected, actual);
+
+    assertFalse(diff.hasDifferences(), diff.toString());
+  }
+
+  @ParameterizedTest(name = "value = {0}")
+  @MethodSource(
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#floatArguments")
+  void encodeFloat(Float value, String expected) {
+    var encoder = new OpcUaXmlEncoder(context);
+    encoder.encodeFloat("Test", value);
+
+    String actual = encoder.getDocumentXml();
+
+    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+    maybePrintXml(diff, expected, actual);
+
+    assertFalse(diff.hasDifferences(), diff.toString());
+  }
+
+  @ParameterizedTest(name = "array = {0}")
+  @MethodSource(
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ArrayArguments#floatArrayArguments")
+  void encodeFloatArray(@Nullable Float[] array, String expected) {
+    var encoder = new OpcUaXmlEncoder(context);
+    encoder.encodeFloatArray("Test", array);
+
+    String actual = encoder.getDocumentXml();
+
+    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+    maybePrintXml(diff, expected, actual);
+
+    assertFalse(diff.hasDifferences(), diff.toString());
+  }
+
+  @ParameterizedTest(name = "value = {0}")
+  @MethodSource(
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#doubleArguments")
+  void encodeDouble(Double value, String expected) {
+    var encoder = new OpcUaXmlEncoder(context);
+    encoder.encodeDouble("Test", value);
+
+    String actual = encoder.getDocumentXml();
+
+    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+    maybePrintXml(diff, expected, actual);
+
+    assertFalse(diff.hasDifferences(), diff.toString());
+  }
+
+  @ParameterizedTest(name = "array = {0}")
+  @MethodSource(
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ArrayArguments#doubleArrayArguments")
+  void encodeDoubleArray(@Nullable Double[] array, String expected) {
+    var encoder = new OpcUaXmlEncoder(context);
+    encoder.encodeDoubleArray("Test", array);
 
     String actual = encoder.getDocumentXml();
 
