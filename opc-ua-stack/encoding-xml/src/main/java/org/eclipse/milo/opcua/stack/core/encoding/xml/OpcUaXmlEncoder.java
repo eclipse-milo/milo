@@ -343,7 +343,19 @@ public class OpcUaXmlEncoder implements UaEncoder {
   }
 
   @Override
-  public void encodeXmlElement(String field, XmlElement value) throws UaSerializationException {}
+  public void encodeXmlElement(String field, XmlElement value) throws UaSerializationException {
+    if (beginField(field, value == null, true)) {
+      try {
+        if (value != null && value.isNotNull()) {
+          XmlSerializationUtil.writeXmlFragment(xmlStreamWriter, value.getFragmentOrEmpty());
+        }
+      } catch (XMLStreamException e) {
+        throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+      } finally {
+        endField(field);
+      }
+    }
+  }
 
   @Override
   public void encodeNodeId(String field, NodeId value) throws UaSerializationException {

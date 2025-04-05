@@ -23,6 +23,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.builtin.XmlElement;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
@@ -669,6 +670,37 @@ public class ScalarArguments {
             </Test>
             """),
         // Null DataValue
+        Arguments.of(null, ""));
+  }
+
+  public static Stream<Arguments> xmlElementArguments() {
+    return Stream.of(
+        // Normal XmlElement with a simple XML fragment
+        Arguments.of(
+            XmlElement.of("<SimpleElement>Hello, World!</SimpleElement>"),
+            """
+            <Test><SimpleElement>Hello, World!</SimpleElement></Test>
+            """),
+        // XmlElement with a complex XML fragment
+        Arguments.of(
+            XmlElement.of(
+                "<ComplexElement><Child1>Value1</Child1><Child2>Value2</Child2></ComplexElement>"),
+            """
+            <Test><ComplexElement><Child1>Value1</Child1><Child2>Value2</Child2></ComplexElement></Test>
+            """),
+        // XmlElement with an empty element
+        Arguments.of(
+            XmlElement.of("<Empty></Empty>"),
+            """
+            <Test><Empty></Empty></Test>
+            """),
+        // NULL_VALUE XmlElement
+        Arguments.of(
+            XmlElement.NULL_VALUE,
+            """
+            <Test></Test>
+            """),
+        // null XmlElement
         Arguments.of(null, ""));
   }
 }

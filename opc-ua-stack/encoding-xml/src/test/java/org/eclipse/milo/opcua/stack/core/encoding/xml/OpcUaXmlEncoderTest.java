@@ -25,6 +25,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.builtin.XmlElement;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
@@ -731,5 +732,26 @@ class OpcUaXmlEncoderTest {
     maybePrintXml(diff, expected, actual);
 
     assertFalse(diff.hasDifferences(), diff.toString());
+  }
+
+  @ParameterizedTest(name = "xmlElement = {0}")
+  @MethodSource(
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#xmlElementArguments")
+  void encodeXmlElement(@Nullable XmlElement xmlElement, String expected) {
+    var encoder = new OpcUaXmlEncoder(context);
+    encoder.encodeXmlElement("Test", xmlElement);
+
+    String actual = encoder.getDocumentXml();
+
+    if (xmlElement == null) {
+      // When encoding a null XmlElement the encoder doesn't produce any XML
+      assertTrue(actual.isEmpty());
+    } else {
+      Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+      maybePrintXml(diff, expected, actual);
+
+      assertFalse(diff.hasDifferences(), diff.toString());
+    }
   }
 }
