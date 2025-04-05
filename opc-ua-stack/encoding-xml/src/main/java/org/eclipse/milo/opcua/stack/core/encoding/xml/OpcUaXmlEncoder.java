@@ -71,6 +71,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       factory.setProperty(XMLOutputFactory.IS_REPAIRING_NAMESPACES, true);
       xmlStreamWriter = factory.createXMLStreamWriter(xml = new StringWriter());
       xmlStreamWriter.setPrefix("uax", Namespaces.OPC_UA_XSD);
+      xmlStreamWriter.setPrefix("xsi", Namespaces.XML_SCHEMA_INSTANCE);
 
       namespaces.clear();
     } catch (XMLStreamException e) {
@@ -88,16 +89,38 @@ public class OpcUaXmlEncoder implements UaEncoder {
   }
 
   private boolean beginField(String field) {
+    return beginField(field, false, false);
+  }
+
+  private boolean beginField(String field, boolean isDefault, boolean isNillable) {
+    return beginField(field, isDefault, isNillable, false);
+  }
+
+  private boolean beginField(
+      String field, boolean isDefault, boolean isNillable, boolean isArrayElement) {
+
     try {
       if (field != null && !field.isEmpty()) {
+        if (isNillable && isDefault && !isArrayElement) {
+          return false;
+        }
+
         if (namespaces.peek() != null) {
           xmlStreamWriter.writeStartElement(namespaces.peek(), field);
         } else {
           xmlStreamWriter.writeStartElement(field);
         }
-        return true;
+
+        if (isDefault) {
+          if (isNillable) {
+            xmlStreamWriter.writeAttribute("xsi:nil", "true");
+          }
+          xmlStreamWriter.writeEndElement();
+          return false;
+        }
       }
-      return false;
+
+      return !isDefault;
     } catch (XMLStreamException e) {
       throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
     }
@@ -257,7 +280,23 @@ public class OpcUaXmlEncoder implements UaEncoder {
   }
 
   @Override
-  public void encodeString(String field, String value) throws UaSerializationException {}
+  public void encodeString(String field, String value) throws UaSerializationException {
+    encodeStringValue(field, value, false);
+  }
+
+  private void encodeStringValue(String field, String value, boolean isArrayElement) {
+    if (beginField(field, value == null, true, isArrayElement)) {
+      try {
+        if (value != null && !value.isBlank()) {
+          xmlStreamWriter.writeCharacters(value);
+        }
+      } catch (XMLStreamException e) {
+        throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+      } finally {
+        endField(field);
+      }
+    }
+  }
 
   @Override
   public void encodeDateTime(String field, DateTime value) throws UaSerializationException {}
@@ -383,7 +422,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
   @Override
   public void encodeBooleanArray(String field, Boolean[] value) throws UaSerializationException {
-    if (beginField(field)) {
+    if (beginField(field, value == null, true, true)) {
       try {
         namespaces.push(Namespaces.OPC_UA_XSD);
 
