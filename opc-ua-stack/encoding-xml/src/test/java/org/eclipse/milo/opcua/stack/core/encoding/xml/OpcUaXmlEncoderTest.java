@@ -19,7 +19,10 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.diff.Diff;
 
@@ -48,59 +51,12 @@ class OpcUaXmlEncoderTest {
     assertFalse(diff.hasDifferences(), diff.toString());
   }
 
-  @Test
-  void encodeBooleanArray() {
-    String expected =
-"""
-<Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
-  <uax:Boolean>false</uax:Boolean>
-  <uax:Boolean>true</uax:Boolean>
-  <uax:Boolean>false</uax:Boolean>
-  <uax:Boolean>true</uax:Boolean>
-</Test>
-""";
-
+  @ParameterizedTest(name = "array = {0}")
+  @MethodSource(
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.ArrayArguments#booleanArrayArguments")
+  void encodeBooleanArray(@Nullable Boolean[] array, String expected) {
     var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeBooleanArray("Test", new Boolean[] {false, true, false, true});
-
-    String actual = encoder.getDocumentXml();
-
-    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
-
-    maybePrintXml(diff, expected, actual);
-
-    assertFalse(diff.hasDifferences(), diff.toString());
-  }
-
-  @Test
-  void encodeBooleanArrayEmpty() {
-    String expected =
-"""
-<Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
-</Test>
-""";
-
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeBooleanArray("Test", new Boolean[] {});
-
-    String actual = encoder.getDocumentXml();
-
-    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
-
-    maybePrintXml(diff, expected, actual);
-
-    assertFalse(diff.hasDifferences(), diff.toString());
-  }
-
-  @Test
-  void encodeBooleanArrayNull() {
-    String expected =
-"""
-<Test xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"></Test>
-""";
-
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeBooleanArray("Test", null);
+    encoder.encodeBooleanArray("Test", array);
 
     String actual = encoder.getDocumentXml();
 
