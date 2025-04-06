@@ -876,7 +876,43 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
   @Override
   public void encodeMessage(String field, UaMessageType message) throws UaSerializationException {
-    // TODO
+    if (beginField(field)) {
+      try {
+        encodingMessage.set(true);
+
+        if (depth.getAndIncrement() > context.getEncodingLimits().getMaxRecursionDepth()) {
+          throw new UaSerializationException(
+              StatusCodes.Bad_EncodingError,
+              "max recursion depth exceeded: "
+                  + context.getEncodingLimits().getMaxRecursionDepth());
+        }
+
+        if (message != null) {
+          NodeId encodingId =
+              message
+                  .getXmlEncodingId()
+                  .toNodeId(context.getNamespaceTable())
+                  .orElseThrow(
+                      () ->
+                          new UaSerializationException(
+                              StatusCodes.Bad_EncodingError,
+                              "no codec registered: " + message.getXmlEncodingId()));
+
+          DataTypeCodec codec = context.getDataTypeManager().getCodec(encodingId);
+
+          if (codec != null) {
+            codec.encode(context, this, message);
+          } else {
+            throw new UaSerializationException(
+                StatusCodes.Bad_EncodingError, "no codec registered: " + encodingId);
+          }
+        }
+      } finally {
+        depth.decrementAndGet();
+        encodingMessage.set(false);
+        endField(field);
+      }
+    }
   }
 
   @Override
