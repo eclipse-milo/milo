@@ -51,27 +51,6 @@ class OpcUaXmlEncoderTest {
     }
   }
 
-  /**
-   * Creates a nested DiagnosticInfo structure with the specified recursion depth.
-   *
-   * @param depth the recursion depth for nesting DiagnosticInfo objects
-   * @return a DiagnosticInfo object with nested innerDiagnosticInfo up to the specified depth
-   */
-  public static DiagnosticInfo createNestedDiagnosticInfo(int depth) {
-    if (depth <= 0) {
-      return DiagnosticInfo.NULL_VALUE;
-    }
-
-    return new DiagnosticInfo(
-        depth,
-        depth * 10,
-        depth * 100,
-        depth * 1000,
-        "Additional info at depth " + depth,
-        StatusCode.GOOD,
-        createNestedDiagnosticInfo(depth - 1));
-  }
-
   @Nested
   class ScalarTests {
 
@@ -1013,10 +992,38 @@ class OpcUaXmlEncoderTest {
     }
   }
 
+  /**
+   * Prints the expected and actual XML if there are differences or if DEBUG is enabled.
+   *
+   * @param diff the Diff object containing the differences.
+   * @param expected the expected XML string.
+   * @param actual the actual XML string.
+   */
   private static void maybePrintXml(Diff diff, String expected, String actual) {
     if (diff.hasDifferences() || DEBUG) {
       System.out.printf("Expected:%n%s%n", expected);
       System.out.printf("Actual:%n%s%n", actual);
     }
+  }
+
+  /**
+   * Creates a nested DiagnosticInfo structure with the specified recursion depth.
+   *
+   * @param depth the recursion depth for nesting DiagnosticInfo objects.
+   * @return a DiagnosticInfo object with nested innerDiagnosticInfo up to the specified depth.
+   */
+  private static DiagnosticInfo createNestedDiagnosticInfo(int depth) {
+    if (depth <= 0) {
+      return DiagnosticInfo.NULL_VALUE;
+    }
+
+    return new DiagnosticInfo(
+        depth,
+        depth * 10,
+        depth * 100,
+        depth * 1000,
+        "Additional info at depth " + depth,
+        StatusCode.GOOD,
+        createNestedDiagnosticInfo(depth - 1));
   }
 }
