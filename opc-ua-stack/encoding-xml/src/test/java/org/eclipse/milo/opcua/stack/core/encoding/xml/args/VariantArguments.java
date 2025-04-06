@@ -355,7 +355,7 @@ public class VariantArguments {
 
   public static Stream<Arguments> variantOfArrayArguments() {
     return Stream.of(
-        // Boolean array
+        // Boolean array (boxed)
         Arguments.of(
             Variant.ofBooleanArray(new Boolean[] {false, true, false, true}),
             """
@@ -371,9 +371,39 @@ public class VariantArguments {
             </Test>
             """),
 
-        // SByte array
+        // Boolean array (primitive)
+        Arguments.of(
+            Variant.of(new boolean[] {false, true, false, true}),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Value>
+                <uax:ListOfBoolean>
+                  <uax:Boolean>false</uax:Boolean>
+                  <uax:Boolean>true</uax:Boolean>
+                  <uax:Boolean>false</uax:Boolean>
+                  <uax:Boolean>true</uax:Boolean>
+                </uax:ListOfBoolean>
+              </uax:Value>
+            </Test>
+            """),
+
+        // SByte array (boxed)
         Arguments.of(
             Variant.of(new Byte[] {0, 0}),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Value>
+                <uax:ListOfSByte>
+                  <uax:SByte>0</uax:SByte>
+                  <uax:SByte>0</uax:SByte>
+                </uax:ListOfSByte>
+              </uax:Value>
+            </Test>
+            """),
+
+        // SByte array (primitive)
+        Arguments.of(
+            Variant.of(new byte[] {0, 0}),
             """
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
               <uax:Value>
@@ -399,9 +429,23 @@ public class VariantArguments {
             </Test>
             """),
 
-        // Int16 array
+        // Int16 array (boxed)
         Arguments.of(
             Variant.of(new Short[] {0, 0}),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Value>
+                <uax:ListOfInt16>
+                  <uax:Int16>0</uax:Int16>
+                  <uax:Int16>0</uax:Int16>
+                </uax:ListOfInt16>
+              </uax:Value>
+            </Test>
+            """),
+
+        // Int16 array (primitive)
+        Arguments.of(
+            Variant.of(new short[] {0, 0}),
             """
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
               <uax:Value>
@@ -427,9 +471,23 @@ public class VariantArguments {
             </Test>
             """),
 
-        // Int32 array
+        // Int32 array (boxed)
         Arguments.of(
             Variant.of(new Integer[] {0, 0}),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Value>
+                <uax:ListOfInt32>
+                  <uax:Int32>0</uax:Int32>
+                  <uax:Int32>0</uax:Int32>
+                </uax:ListOfInt32>
+              </uax:Value>
+            </Test>
+            """),
+
+        // Int32 array (primitive)
+        Arguments.of(
+            Variant.of(new int[] {0, 0}),
             """
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
               <uax:Value>
@@ -455,9 +513,23 @@ public class VariantArguments {
             </Test>
             """),
 
-        // Int64 array
+        // Int64 array (boxed)
         Arguments.of(
             Variant.of(new Long[] {0L, 0L}),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Value>
+                <uax:ListOfInt64>
+                  <uax:Int64>0</uax:Int64>
+                  <uax:Int64>0</uax:Int64>
+                </uax:ListOfInt64>
+              </uax:Value>
+            </Test>
+            """),
+
+        // Int64 array (primitive)
+        Arguments.of(
+            Variant.of(new long[] {0L, 0L}),
             """
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
               <uax:Value>
@@ -483,7 +555,7 @@ public class VariantArguments {
             </Test>
             """),
 
-        // Float array
+        // Float array (boxed)
         Arguments.of(
             Variant.of(new Float[] {0.0f, 0.0f}),
             """
@@ -497,9 +569,37 @@ public class VariantArguments {
             </Test>
             """),
 
-        // Double array
+        // Float array (primitive)
+        Arguments.of(
+            Variant.of(new float[] {0.0f, 0.0f}),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Value>
+                <uax:ListOfFloat>
+                  <uax:Float>0.0</uax:Float>
+                  <uax:Float>0.0</uax:Float>
+                </uax:ListOfFloat>
+              </uax:Value>
+            </Test>
+            """),
+
+        // Double array (boxed)
         Arguments.of(
             Variant.of(new Double[] {0.0, 0.0}),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Value>
+                <uax:ListOfDouble>
+                  <uax:Double>0.0</uax:Double>
+                  <uax:Double>0.0</uax:Double>
+                </uax:ListOfDouble>
+              </uax:Value>
+            </Test>
+            """),
+
+        // Double array (primitive)
+        Arguments.of(
+            Variant.of(new double[] {0.0, 0.0}),
             """
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
               <uax:Value>

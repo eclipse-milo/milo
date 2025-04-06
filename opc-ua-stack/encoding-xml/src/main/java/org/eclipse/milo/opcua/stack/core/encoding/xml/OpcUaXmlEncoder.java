@@ -697,17 +697,87 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
   private void encodeBuiltinTypeArrayValue(Object value, OpcUaDataType dataType) {
     switch (dataType) {
-      case Boolean -> encodeBooleanArray("ListOfBoolean", (Boolean[]) value);
+      case Boolean -> {
+        if (value instanceof boolean[] primitiveArray) {
+          Boolean[] boxedArray = new Boolean[primitiveArray.length];
+          for (int i = 0; i < primitiveArray.length; i++) {
+            boxedArray[i] = primitiveArray[i];
+          }
+          encodeBooleanArray("ListOfBoolean", boxedArray);
+        } else {
+          encodeBooleanArray("ListOfBoolean", (Boolean[]) value);
+        }
+      }
       case Byte -> encodeByteArray("ListOfByte", (UByte[]) value);
-      case SByte -> encodeSByteArray("ListOfSByte", (Byte[]) value);
-      case Int16 -> encodeInt16Array("ListOfInt16", (Short[]) value);
+      case SByte -> {
+        if (value instanceof byte[] primitiveArray) {
+          Byte[] boxedArray = new Byte[primitiveArray.length];
+          for (int i = 0; i < primitiveArray.length; i++) {
+            boxedArray[i] = primitiveArray[i];
+          }
+          encodeSByteArray("ListOfSByte", boxedArray);
+        } else {
+          encodeSByteArray("ListOfSByte", (Byte[]) value);
+        }
+      }
+      case Int16 -> {
+        if (value instanceof short[] primitiveArray) {
+          Short[] boxedArray = new Short[primitiveArray.length];
+          for (int i = 0; i < primitiveArray.length; i++) {
+            boxedArray[i] = primitiveArray[i];
+          }
+          encodeInt16Array("ListOfInt16", boxedArray);
+        } else {
+          encodeInt16Array("ListOfInt16", (Short[]) value);
+        }
+      }
       case UInt16 -> encodeUInt16Array("ListOfUInt16", (UShort[]) value);
-      case Int32 -> encodeInt32Array("ListOfInt32", (Integer[]) value);
+      case Int32 -> {
+        if (value instanceof int[] primitiveArray) {
+          Integer[] boxedArray = new Integer[primitiveArray.length];
+          for (int i = 0; i < primitiveArray.length; i++) {
+            boxedArray[i] = primitiveArray[i];
+          }
+          encodeInt32Array("ListOfInt32", boxedArray);
+        } else {
+          encodeInt32Array("ListOfInt32", (Integer[]) value);
+        }
+      }
       case UInt32 -> encodeUInt32Array("ListOfUInt32", (UInteger[]) value);
-      case Int64 -> encodeInt64Array("ListOfInt64", (Long[]) value);
+      case Int64 -> {
+        if (value instanceof long[] primitiveArray) {
+          Long[] boxedArray = new Long[primitiveArray.length];
+          for (int i = 0; i < primitiveArray.length; i++) {
+            boxedArray[i] = primitiveArray[i];
+          }
+          encodeInt64Array("ListOfInt64", boxedArray);
+        } else {
+          encodeInt64Array("ListOfInt64", (Long[]) value);
+        }
+      }
       case UInt64 -> encodeUInt64Array("ListOfUInt64", (ULong[]) value);
-      case Float -> encodeFloatArray("ListOfFloat", (Float[]) value);
-      case Double -> encodeDoubleArray("ListOfDouble", (Double[]) value);
+      case Float -> {
+        if (value instanceof float[] primitiveArray) {
+          Float[] boxedArray = new Float[primitiveArray.length];
+          for (int i = 0; i < primitiveArray.length; i++) {
+            boxedArray[i] = primitiveArray[i];
+          }
+          encodeFloatArray("ListOfFloat", boxedArray);
+        } else {
+          encodeFloatArray("ListOfFloat", (Float[]) value);
+        }
+      }
+      case Double -> {
+        if (value instanceof double[] primitiveArray) {
+          Double[] boxedArray = new Double[primitiveArray.length];
+          for (int i = 0; i < primitiveArray.length; i++) {
+            boxedArray[i] = primitiveArray[i];
+          }
+          encodeDoubleArray("ListOfDouble", boxedArray);
+        } else {
+          encodeDoubleArray("ListOfDouble", (Double[]) value);
+        }
+      }
       case String -> encodeStringArray("ListOfString", (String[]) value);
       case DateTime -> encodeDateTimeArray("ListOfDateTime", (DateTime[]) value);
       case Guid -> encodeGuidArray("ListOfGuid", (UUID[]) value);
