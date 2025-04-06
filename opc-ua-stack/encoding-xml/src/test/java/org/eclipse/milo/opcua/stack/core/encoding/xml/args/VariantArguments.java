@@ -31,10 +31,12 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelType;
 import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.AttributeWriteMask;
+import org.eclipse.milo.opcua.stack.core.types.structured.XVType;
 import org.junit.jupiter.params.provider.Arguments;
 
 @SuppressWarnings("unused")
@@ -1691,6 +1693,100 @@ public class VariantArguments {
                       <uax:Locale>-1</uax:Locale>
                       <uax:LocalizedText>-1</uax:LocalizedText>
                     </uax:DiagnosticInfo>
+                  </uax:Elements>
+                </uax:Matrix>
+              </uax:Value>
+            </Test>
+            """),
+
+        // Structure matrix (2D)
+        Arguments.of(
+            Variant.ofMatrix(
+                Matrix.ofStruct(
+                    new XVType[][] {
+                      {new XVType(1.0, 2.0f), new XVType(3.0, 4.0f)},
+                      {new XVType(5.0, 6.0f), new XVType(7.0, 8.0f)}
+                    })),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+              <uax:Value>
+                <uax:Matrix>
+                  <uax:Dimensions>
+                    <uax:Int32>2</uax:Int32>
+                    <uax:Int32>2</uax:Int32>
+                  </uax:Dimensions>
+                  <uax:Elements>
+                    <uax:ExtensionObject>
+                      <uax:TypeId>
+                        <uax:Identifier>i=12080</uax:Identifier>
+                      </uax:TypeId>
+                      <uax:Body>
+                        <XVType>
+                          <X>1.0</X>
+                          <Value>2.0</Value>
+                        </XVType>
+                      </uax:Body>
+                    </uax:ExtensionObject>
+                    <uax:ExtensionObject>
+                      <uax:TypeId>
+                        <uax:Identifier>i=12080</uax:Identifier>
+                      </uax:TypeId>
+                      <uax:Body>
+                        <XVType>
+                          <X>3.0</X>
+                          <Value>4.0</Value>
+                        </XVType>
+                      </uax:Body>
+                    </uax:ExtensionObject>
+                    <uax:ExtensionObject>
+                      <uax:TypeId>
+                        <uax:Identifier>i=12080</uax:Identifier>
+                      </uax:TypeId>
+                      <uax:Body>
+                        <XVType>
+                          <X>5.0</X>
+                          <Value>6.0</Value>
+                        </XVType>
+                      </uax:Body>
+                    </uax:ExtensionObject>
+                    <uax:ExtensionObject>
+                      <uax:TypeId>
+                        <uax:Identifier>i=12080</uax:Identifier>
+                      </uax:TypeId>
+                      <uax:Body>
+                        <XVType>
+                          <X>7.0</X>
+                          <Value>8.0</Value>
+                        </XVType>
+                      </uax:Body>
+                    </uax:ExtensionObject>
+                  </uax:Elements>
+                </uax:Matrix>
+              </uax:Value>
+            </Test>
+            """),
+
+        // Enum matrix (2D)
+        Arguments.of(
+            Variant.ofMatrix(
+                Matrix.ofEnum(
+                    new ApplicationType[][] {
+                      {ApplicationType.Server, ApplicationType.Client},
+                      {ApplicationType.ClientAndServer, ApplicationType.DiscoveryServer}
+                    })),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Value>
+                <uax:Matrix>
+                  <uax:Dimensions>
+                    <uax:Int32>2</uax:Int32>
+                    <uax:Int32>2</uax:Int32>
+                  </uax:Dimensions>
+                  <uax:Elements>
+                    <uax:Int32>0</uax:Int32>
+                    <uax:Int32>1</uax:Int32>
+                    <uax:Int32>2</uax:Int32>
+                    <uax:Int32>3</uax:Int32>
                   </uax:Elements>
                 </uax:Matrix>
               </uax:Value>

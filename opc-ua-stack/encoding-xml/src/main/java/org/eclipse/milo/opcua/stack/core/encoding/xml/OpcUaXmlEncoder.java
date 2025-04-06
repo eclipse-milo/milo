@@ -893,6 +893,8 @@ public class OpcUaXmlEncoder implements UaEncoder {
           }
         } catch (XMLStreamException e) {
           throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+        } finally {
+          endField(field);
         }
       }
     }
@@ -1424,10 +1426,13 @@ public class OpcUaXmlEncoder implements UaEncoder {
         namespaces.push(Namespaces.OPC_UA_XSD);
 
         assert value != null;
+
         for (UaEnumeratedType v : value) {
-          // TODO should push the namespace from the DataTypeCodec
-          // TODO should be the name from the DataTypeCodec
-          encodeEnum(v.getClass().getSimpleName(), v);
+          if (encodingMessage.get()) {
+            encodeEnum("String", v);
+          } else {
+            encodeEnum("Int32", v);
+          }
         }
       } finally {
         namespaces.pop();

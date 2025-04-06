@@ -14,6 +14,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.xml.OpcUaDefaultXmlEncoding;
+import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -30,7 +31,9 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.BrowseDirection;
 import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
+import org.eclipse.milo.opcua.stack.core.types.structured.XVType;
 import org.junit.jupiter.params.provider.Arguments;
 
 @SuppressWarnings("unused")
@@ -899,6 +902,64 @@ public class ArrayArguments {
             """),
         Arguments.of(
             new DiagnosticInfo[] {},
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+            </Test>
+            """),
+        Arguments.of(
+            null,
+            """
+            <Test xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"></Test>
+            """));
+  }
+
+  public static Stream<Arguments> enumArrayArguments() {
+    return Stream.of(
+        Arguments.of(
+            new UaEnumeratedType[] {BrowseDirection.Forward, BrowseDirection.Inverse},
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Int32>0</uax:Int32>
+              <uax:Int32>1</uax:Int32>
+            </Test>
+            """),
+        Arguments.of(
+            new UaEnumeratedType[] {},
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+            </Test>
+            """),
+        Arguments.of(
+            null,
+            """
+            <Test xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"></Test>
+            """));
+  }
+
+  public static Stream<Arguments> structArrayArguments() {
+    return Stream.of(
+        Arguments.of(
+            new XVType[] {
+              new XVType(1.0, 2.0f), new XVType(3.0, 4.0f), new XVType(Double.NaN, Float.NaN)
+            },
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+              <uax:XVType>
+                <uax:X>1.0</uax:X>
+                <uax:Value>2.0</uax:Value>
+              </uax:XVType>
+              <uax:XVType>
+                <uax:X>3.0</uax:X>
+                <uax:Value>4.0</uax:Value>
+              </uax:XVType>
+              <uax:XVType>
+                <uax:X>NaN</uax:X>
+                <uax:Value>NaN</uax:Value>
+              </uax:XVType>
+            </Test>
+            """),
+        Arguments.of(
+            new XVType[] {},
             """
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
             </Test>

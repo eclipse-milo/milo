@@ -16,11 +16,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import java.util.UUID;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
+import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
+import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.*;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.types.structured.XVType;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -421,6 +424,38 @@ public class OpcUaXmlEncoderArrayTest {
   void encodeDiagnosticInfoArray(@Nullable DiagnosticInfo[] array, String expected) {
     var encoder = new OpcUaXmlEncoder(context);
     encoder.encodeDiagnosticInfoArray("Test", array);
+
+    String actual = encoder.getDocumentXml();
+
+    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+    maybePrintXml(diff, expected, actual);
+
+    assertFalse(diff.hasDifferences(), diff.toString());
+  }
+
+  @ParameterizedTest(name = "array = {0}")
+  @MethodSource(
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ArrayArguments#enumArrayArguments")
+  void encodeEnumArray(@Nullable UaEnumeratedType[] array, String expected) {
+    var encoder = new OpcUaXmlEncoder(context);
+    encoder.encodeEnumArray("Test", array);
+
+    String actual = encoder.getDocumentXml();
+
+    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+    maybePrintXml(diff, expected, actual);
+
+    assertFalse(diff.hasDifferences(), diff.toString());
+  }
+
+  @ParameterizedTest(name = "array = {0}")
+  @MethodSource(
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ArrayArguments#structArrayArguments")
+  void encodeStructArray(@Nullable UaStructuredType[] array, String expected) {
+    var encoder = new OpcUaXmlEncoder(context);
+    encoder.encodeStructArray("Test", array, XVType.TYPE_ID);
 
     String actual = encoder.getDocumentXml();
 
