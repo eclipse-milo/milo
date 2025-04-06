@@ -10,15 +10,27 @@
 
 package org.eclipse.milo.opcua.stack.core.encoding.xml.args;
 
+import java.util.UUID;
 import java.util.stream.Stream;
+import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
+import org.eclipse.milo.opcua.stack.core.encoding.xml.OpcUaDefaultXmlEncoding;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.builtin.XmlElement;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.junit.jupiter.params.provider.Arguments;
 
 @SuppressWarnings("unused")
@@ -373,6 +385,486 @@ public class ArrayArguments {
             """),
         Arguments.of(
             new DataValue[] {},
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+            </Test>
+            """),
+        Arguments.of(
+            null,
+            """
+            <Test xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"></Test>
+            """));
+  }
+
+  public static Stream<Arguments> stringArrayArguments() {
+    return Stream.of(
+        Arguments.of(
+            new String[] {"Hello, World!", "", "Test String"},
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:String>Hello, World!</uax:String>
+              <uax:String></uax:String>
+              <uax:String>Test String</uax:String>
+            </Test>
+            """),
+        Arguments.of(
+            new String[] {},
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+            </Test>
+            """),
+        Arguments.of(
+            null,
+            """
+            <Test xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"></Test>
+            """));
+  }
+
+  public static Stream<Arguments> dateTimeArrayArguments() {
+    return Stream.of(
+        Arguments.of(
+            new DateTime[] {
+              new DateTime(java.time.Instant.parse("2023-01-01T12:34:56Z")),
+              DateTime.MIN_DATE_TIME,
+              DateTime.MAX_DATE_TIME
+            },
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:DateTime>2023-01-01T12:34:56Z</uax:DateTime>
+              <uax:DateTime>0001-01-01T00:00:00Z</uax:DateTime>
+              <uax:DateTime>9999-12-31T23:59:59Z</uax:DateTime>
+            </Test>
+            """),
+        Arguments.of(
+            new DateTime[] {},
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+            </Test>
+            """),
+        Arguments.of(
+            null,
+            """
+            <Test xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"></Test>
+            """));
+  }
+
+  public static Stream<Arguments> guidArrayArguments() {
+    return Stream.of(
+        Arguments.of(
+            new UUID[] {UUID.fromString("12345678-1234-1234-1234-123456789012"), new UUID(0L, 0L)},
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Guid>12345678-1234-1234-1234-123456789012</uax:Guid>
+              <uax:Guid>00000000-0000-0000-0000-000000000000</uax:Guid>
+            </Test>
+            """),
+        Arguments.of(
+            new UUID[] {},
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+            </Test>
+            """),
+        Arguments.of(
+            null,
+            """
+            <Test xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"></Test>
+            """));
+  }
+
+  public static Stream<Arguments> byteStringArrayArguments() {
+    return Stream.of(
+        Arguments.of(
+            new ByteString[] {
+              ByteString.of(new byte[] {1, 2, 3, 4}),
+              ByteString.of(new byte[0]),
+              ByteString.NULL_VALUE
+            },
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:ByteString>AQIDBA==</uax:ByteString>
+              <uax:ByteString></uax:ByteString>
+              <uax:ByteString></uax:ByteString>
+            </Test>
+            """),
+        Arguments.of(
+            new ByteString[] {},
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+            </Test>
+            """),
+        Arguments.of(
+            null,
+            """
+            <Test xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"></Test>
+            """));
+  }
+
+  public static Stream<Arguments> xmlElementArrayArguments() {
+    return Stream.of(
+        Arguments.of(
+            new XmlElement[] {
+              XmlElement.of("<SimpleElement>Hello, World!</SimpleElement>"),
+              XmlElement.of("<Empty></Empty>"),
+              XmlElement.NULL_VALUE
+            },
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:XmlElement><SimpleElement>Hello, World!</SimpleElement></uax:XmlElement>
+              <uax:XmlElement><Empty></Empty></uax:XmlElement>
+              <uax:XmlElement></uax:XmlElement>
+            </Test>
+            """),
+        Arguments.of(
+            new XmlElement[] {},
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+            </Test>
+            """),
+        Arguments.of(
+            null,
+            """
+            <Test xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"></Test>
+            """));
+  }
+
+  public static Stream<Arguments> nodeIdArrayArguments() {
+    return Stream.of(
+        Arguments.of(
+            new NodeId[] {
+              new NodeId(0, 123),
+              new NodeId(1, "Hello"),
+              new NodeId(2, UUID.fromString("12345678-1234-1234-1234-123456789012")),
+              new NodeId(3, ByteString.of(new byte[] {1, 2, 3, 4}))
+            },
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:NodeId>
+                <uax:Identifier>i=123</uax:Identifier>
+              </uax:NodeId>
+              <uax:NodeId>
+                <uax:Identifier>ns=1;s=Hello</uax:Identifier>
+              </uax:NodeId>
+              <uax:NodeId>
+                <uax:Identifier>ns=2;g=12345678-1234-1234-1234-123456789012</uax:Identifier>
+              </uax:NodeId>
+              <uax:NodeId>
+                <uax:Identifier>ns=3;b=AQIDBA==</uax:Identifier>
+              </uax:NodeId>
+            </Test>
+            """),
+        Arguments.of(
+            new NodeId[] {},
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+            </Test>
+            """),
+        Arguments.of(
+            null,
+            """
+            <Test xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"></Test>
+            """));
+  }
+
+  public static Stream<Arguments> expandedNodeIdArrayArguments() {
+    return Stream.of(
+        Arguments.of(
+            new ExpandedNodeId[] {
+              ExpandedNodeId.of(0, 123L),
+              ExpandedNodeId.of(UShort.valueOf(1), "Hello"),
+              ExpandedNodeId.of(
+                  UShort.valueOf(2), UUID.fromString("12345678-1234-1234-1234-123456789012")),
+              ExpandedNodeId.of(UShort.valueOf(3), ByteString.of(new byte[] {1, 2, 3, 4})),
+              ExpandedNodeId.of("http://example.org/UA/", 123L)
+            },
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:ExpandedNodeId>
+                <uax:Identifier>i=123</uax:Identifier>
+              </uax:ExpandedNodeId>
+              <uax:ExpandedNodeId>
+                <uax:Identifier>ns=1;s=Hello</uax:Identifier>
+              </uax:ExpandedNodeId>
+              <uax:ExpandedNodeId>
+                <uax:Identifier>ns=2;g=12345678-1234-1234-1234-123456789012</uax:Identifier>
+              </uax:ExpandedNodeId>
+              <uax:ExpandedNodeId>
+                <uax:Identifier>ns=3;b=AQIDBA==</uax:Identifier>
+              </uax:ExpandedNodeId>
+              <uax:ExpandedNodeId>
+                <uax:Identifier>nsu=http://example.org/UA/;i=123</uax:Identifier>
+              </uax:ExpandedNodeId>
+            </Test>
+            """),
+        Arguments.of(
+            new ExpandedNodeId[] {},
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+            </Test>
+            """),
+        Arguments.of(
+            null,
+            """
+            <Test xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"></Test>
+            """));
+  }
+
+  public static Stream<Arguments> statusCodeArrayArguments() {
+    return Stream.of(
+        Arguments.of(
+            new StatusCode[] {
+              StatusCode.GOOD, StatusCode.BAD, new StatusCode(0x80340000L) // Bad_InvalidState
+            },
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:StatusCode>
+                <uax:Code>0</uax:Code>
+              </uax:StatusCode>
+              <uax:StatusCode>
+                <uax:Code>2147483648</uax:Code>
+              </uax:StatusCode>
+              <uax:StatusCode>
+                <uax:Code>2150891520</uax:Code>
+              </uax:StatusCode>
+            </Test>
+            """),
+        Arguments.of(
+            new StatusCode[] {},
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+            </Test>
+            """),
+        Arguments.of(
+            null,
+            """
+            <Test xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"></Test>
+            """));
+  }
+
+  public static Stream<Arguments> qualifiedNameArrayArguments() {
+    return Stream.of(
+        Arguments.of(
+            new QualifiedName[] {
+              new QualifiedName(1, "TestName"),
+              new QualifiedName(0, "DefaultNamespace"),
+              new QualifiedName(2, ""),
+              QualifiedName.NULL_VALUE
+            },
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:QualifiedName>
+                <uax:NamespaceIndex>1</uax:NamespaceIndex>
+                <uax:Name>TestName</uax:Name>
+              </uax:QualifiedName>
+              <uax:QualifiedName>
+                <uax:NamespaceIndex>0</uax:NamespaceIndex>
+                <uax:Name>DefaultNamespace</uax:Name>
+              </uax:QualifiedName>
+              <uax:QualifiedName>
+                <uax:NamespaceIndex>2</uax:NamespaceIndex>
+                <uax:Name></uax:Name>
+              </uax:QualifiedName>
+              <uax:QualifiedName>
+                <uax:NamespaceIndex>0</uax:NamespaceIndex>
+              </uax:QualifiedName>
+            </Test>
+            """),
+        Arguments.of(
+            new QualifiedName[] {},
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+            </Test>
+            """),
+        Arguments.of(
+            null,
+            """
+            <Test xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"></Test>
+            """));
+  }
+
+  public static Stream<Arguments> localizedTextArrayArguments() {
+    return Stream.of(
+        Arguments.of(
+            new LocalizedText[] {
+              new LocalizedText("en-US", "Hello, World!"),
+              new LocalizedText("en-US", ""),
+              new LocalizedText("", "Hello, World!"),
+              LocalizedText.NULL_VALUE
+            },
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:LocalizedText>
+                <uax:Locale>en-US</uax:Locale>
+                <uax:Text>Hello, World!</uax:Text>
+              </uax:LocalizedText>
+              <uax:LocalizedText>
+                <uax:Locale>en-US</uax:Locale>
+              </uax:LocalizedText>
+              <uax:LocalizedText>
+                <uax:Text>Hello, World!</uax:Text>
+              </uax:LocalizedText>
+              <uax:LocalizedText>
+              </uax:LocalizedText>
+            </Test>
+            """),
+        Arguments.of(
+            new LocalizedText[] {},
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+            </Test>
+            """),
+        Arguments.of(
+            null,
+            """
+            <Test xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"></Test>
+            """));
+  }
+
+  public static Stream<Arguments> extensionObjectArrayArguments() {
+    return Stream.of(
+        Arguments.of(
+            new ExtensionObject[] {
+              ExtensionObject.encode(
+                  new DefaultEncodingContext(),
+                  new Argument(
+                      "name", NodeId.parse("i=1"), -1, null, LocalizedText.english("description")),
+                  Argument.XML_ENCODING_ID,
+                  OpcUaDefaultXmlEncoding.getInstance()),
+              ExtensionObject.encode(
+                  new DefaultEncodingContext(),
+                  new Argument(
+                      "name2",
+                      NodeId.parse("i=2"),
+                      1,
+                      new UInteger[] {UInteger.valueOf(1)},
+                      LocalizedText.english("description2")),
+                  Argument.XML_ENCODING_ID,
+                  OpcUaDefaultXmlEncoding.getInstance())
+            },
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+              <uax:ExtensionObject>
+                <uax:TypeId>
+                  <uax:Identifier>i=297</uax:Identifier>
+                </uax:TypeId>
+                <uax:Body>
+                  <Argument>
+                    <Name>name</Name>
+                    <DataType>
+                      <uax:Identifier>i=1</uax:Identifier>
+                    </DataType>
+                    <ValueRank>-1</ValueRank>
+                    <ArrayDimensions xsi:nil="true"></ArrayDimensions>
+                    <Description>
+                      <uax:Locale>en</uax:Locale>
+                      <uax:Text>description</uax:Text>
+                    </Description>
+                  </Argument>
+                </uax:Body>
+              </uax:ExtensionObject>
+              <uax:ExtensionObject>
+                <uax:TypeId>
+                  <uax:Identifier>i=297</uax:Identifier>
+                </uax:TypeId>
+                <uax:Body>
+                  <Argument>
+                    <Name>name2</Name>
+                    <DataType>
+                      <uax:Identifier>i=2</uax:Identifier>
+                    </DataType>
+                    <ValueRank>1</ValueRank>
+                    <ArrayDimensions>
+                      <uax:UInt32>1</uax:UInt32>
+                    </ArrayDimensions>
+                    <Description>
+                      <uax:Locale>en</uax:Locale>
+                      <uax:Text>description2</uax:Text>
+                    </Description>
+                  </Argument>
+                </uax:Body>
+              </uax:ExtensionObject>
+            </Test>
+            """),
+        Arguments.of(
+            new ExtensionObject[] {},
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+            </Test>
+            """),
+        Arguments.of(
+            null,
+            """
+            <Test xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"></Test>
+            """));
+  }
+
+  public static Stream<Arguments> variantArrayArguments() {
+    return Stream.of(
+        Arguments.of(
+            new Variant[] {
+              Variant.of(true),
+              Variant.of(42),
+              Variant.of("Hello, World!"),
+              Variant.of(new Double[] {1.0, 2.0, 3.0})
+            },
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Variant>
+                <uax:Value>
+                  <uax:Boolean>true</uax:Boolean>
+                </uax:Value>
+              </uax:Variant>
+              <uax:Variant>
+                <uax:Value>
+                  <uax:Int32>42</uax:Int32>
+                </uax:Value>
+              </uax:Variant>
+              <uax:Variant>
+                <uax:Value>
+                  <uax:String>Hello, World!</uax:String>
+                </uax:Value>
+              </uax:Variant>
+              <uax:Variant>
+                <uax:Value>
+                  <uax:ListOfDouble>
+                    <uax:Double>1.0</uax:Double>
+                    <uax:Double>2.0</uax:Double>
+                    <uax:Double>3.0</uax:Double>
+                  </uax:ListOfDouble>
+                </uax:Value>
+              </uax:Variant>
+            </Test>
+            """),
+        Arguments.of(
+            new Variant[] {},
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+            </Test>
+            """),
+        Arguments.of(
+            null,
+            """
+            <Test xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"></Test>
+            """));
+  }
+
+  public static Stream<Arguments> diagnosticInfoArrayArguments() {
+    DiagnosticInfo diagnosticInfo1 =
+        new DiagnosticInfo(1, 2, 3, 4, "Additional Info", new StatusCode(5), null);
+
+    DiagnosticInfo diagnosticInfo2 =
+        new DiagnosticInfo(-1, -1, -1, -1, "Only Additional Info", null, null);
+
+    DiagnosticInfo diagnosticInfo3 =
+        new DiagnosticInfo(-1, -1, -1, -1, null, null, diagnosticInfo1);
+
+    return Stream.of(
+        Arguments.of(
+            new DiagnosticInfo[] {diagnosticInfo1, diagnosticInfo2, diagnosticInfo3},
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"></Test>
+            """),
+        Arguments.of(
+            new DiagnosticInfo[] {},
             """
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
             </Test>
