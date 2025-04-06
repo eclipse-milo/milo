@@ -70,12 +70,10 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfBoolean>
-                  <uax:Boolean>true</uax:Boolean>
-                  <uax:Boolean>false</uax:Boolean>
-                  <uax:Boolean>false</uax:Boolean>
-                  <uax:Boolean>true</uax:Boolean>
-                </uax:ListOfBoolean>
+                <uax:Boolean>true</uax:Boolean>
+                <uax:Boolean>false</uax:Boolean>
+                <uax:Boolean>false</uax:Boolean>
+                <uax:Boolean>true</uax:Boolean>
               </uax:Elements>
             </Test>
             """),
@@ -92,16 +90,14 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfBoolean>
-                  <uax:Boolean>true</uax:Boolean>
-                  <uax:Boolean>false</uax:Boolean>
-                  <uax:Boolean>false</uax:Boolean>
-                  <uax:Boolean>true</uax:Boolean>
-                  <uax:Boolean>false</uax:Boolean>
-                  <uax:Boolean>false</uax:Boolean>
-                  <uax:Boolean>true</uax:Boolean>
-                  <uax:Boolean>true</uax:Boolean>
-                </uax:ListOfBoolean>
+                <uax:Boolean>true</uax:Boolean>
+                <uax:Boolean>false</uax:Boolean>
+                <uax:Boolean>false</uax:Boolean>
+                <uax:Boolean>true</uax:Boolean>
+                <uax:Boolean>false</uax:Boolean>
+                <uax:Boolean>false</uax:Boolean>
+                <uax:Boolean>true</uax:Boolean>
+                <uax:Boolean>true</uax:Boolean>
               </uax:Elements>
             </Test>
             """));
@@ -119,12 +115,10 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfSByte>
-                  <uax:SByte>-128</uax:SByte>
-                  <uax:SByte>0</uax:SByte>
-                  <uax:SByte>0</uax:SByte>
-                  <uax:SByte>127</uax:SByte>
-                </uax:ListOfSByte>
+                <uax:SByte>-128</uax:SByte>
+                <uax:SByte>0</uax:SByte>
+                <uax:SByte>0</uax:SByte>
+                <uax:SByte>127</uax:SByte>
               </uax:Elements>
             </Test>
             """),
@@ -140,16 +134,14 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfSByte>
-                  <uax:SByte>-128</uax:SByte>
-                  <uax:SByte>0</uax:SByte>
-                  <uax:SByte>0</uax:SByte>
-                  <uax:SByte>127</uax:SByte>
-                  <uax:SByte>-1</uax:SByte>
-                  <uax:SByte>-2</uax:SByte>
-                  <uax:SByte>1</uax:SByte>
-                  <uax:SByte>2</uax:SByte>
-                </uax:ListOfSByte>
+                <uax:SByte>-128</uax:SByte>
+                <uax:SByte>0</uax:SByte>
+                <uax:SByte>0</uax:SByte>
+                <uax:SByte>127</uax:SByte>
+                <uax:SByte>-1</uax:SByte>
+                <uax:SByte>-2</uax:SByte>
+                <uax:SByte>1</uax:SByte>
+                <uax:SByte>2</uax:SByte>
               </uax:Elements>
             </Test>
             """));
@@ -168,12 +160,10 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfByte>
-                  <uax:Byte>0</uax:Byte>
-                  <uax:Byte>0</uax:Byte>
-                  <uax:Byte>127</uax:Byte>
-                  <uax:Byte>255</uax:Byte>
-                </uax:ListOfByte>
+                <uax:Byte>0</uax:Byte>
+                <uax:Byte>0</uax:Byte>
+                <uax:Byte>127</uax:Byte>
+                <uax:Byte>255</uax:Byte>
               </uax:Elements>
             </Test>
             """),
@@ -193,16 +183,14 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfByte>
-                  <uax:Byte>0</uax:Byte>
-                  <uax:Byte>0</uax:Byte>
-                  <uax:Byte>127</uax:Byte>
-                  <uax:Byte>255</uax:Byte>
-                  <uax:Byte>10</uax:Byte>
-                  <uax:Byte>20</uax:Byte>
-                  <uax:Byte>30</uax:Byte>
-                  <uax:Byte>40</uax:Byte>
-                </uax:ListOfByte>
+                <uax:Byte>0</uax:Byte>
+                <uax:Byte>0</uax:Byte>
+                <uax:Byte>127</uax:Byte>
+                <uax:Byte>255</uax:Byte>
+                <uax:Byte>10</uax:Byte>
+                <uax:Byte>20</uax:Byte>
+                <uax:Byte>30</uax:Byte>
+                <uax:Byte>40</uax:Byte>
               </uax:Elements>
             </Test>
             """));
@@ -220,12 +208,10 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfInt16>
-                  <uax:Int16>-32768</uax:Int16>
-                  <uax:Int16>0</uax:Int16>
-                  <uax:Int16>0</uax:Int16>
-                  <uax:Int16>32767</uax:Int16>
-                </uax:ListOfInt16>
+                <uax:Int16>-32768</uax:Int16>
+                <uax:Int16>0</uax:Int16>
+                <uax:Int16>0</uax:Int16>
+                <uax:Int16>32767</uax:Int16>
               </uax:Elements>
             </Test>
             """),
@@ -245,16 +231,14 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfInt16>
-                  <uax:Int16>-32768</uax:Int16>
-                  <uax:Int16>0</uax:Int16>
-                  <uax:Int16>0</uax:Int16>
-                  <uax:Int16>32767</uax:Int16>
-                  <uax:Int16>-100</uax:Int16>
-                  <uax:Int16>-200</uax:Int16>
-                  <uax:Int16>100</uax:Int16>
-                  <uax:Int16>200</uax:Int16>
-                </uax:ListOfInt16>
+                <uax:Int16>-32768</uax:Int16>
+                <uax:Int16>0</uax:Int16>
+                <uax:Int16>0</uax:Int16>
+                <uax:Int16>32767</uax:Int16>
+                <uax:Int16>-100</uax:Int16>
+                <uax:Int16>-200</uax:Int16>
+                <uax:Int16>100</uax:Int16>
+                <uax:Int16>200</uax:Int16>
               </uax:Elements>
             </Test>
             """));
@@ -275,12 +259,10 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfUInt16>
-                  <uax:UInt16>0</uax:UInt16>
-                  <uax:UInt16>0</uax:UInt16>
-                  <uax:UInt16>1000</uax:UInt16>
-                  <uax:UInt16>65535</uax:UInt16>
-                </uax:ListOfUInt16>
+                <uax:UInt16>0</uax:UInt16>
+                <uax:UInt16>0</uax:UInt16>
+                <uax:UInt16>1000</uax:UInt16>
+                <uax:UInt16>65535</uax:UInt16>
               </uax:Elements>
             </Test>
             """),
@@ -303,16 +285,14 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfUInt16>
-                  <uax:UInt16>0</uax:UInt16>
-                  <uax:UInt16>0</uax:UInt16>
-                  <uax:UInt16>1000</uax:UInt16>
-                  <uax:UInt16>65535</uax:UInt16>
-                  <uax:UInt16>100</uax:UInt16>
-                  <uax:UInt16>200</uax:UInt16>
-                  <uax:UInt16>300</uax:UInt16>
-                  <uax:UInt16>400</uax:UInt16>
-                </uax:ListOfUInt16>
+                <uax:UInt16>0</uax:UInt16>
+                <uax:UInt16>0</uax:UInt16>
+                <uax:UInt16>1000</uax:UInt16>
+                <uax:UInt16>65535</uax:UInt16>
+                <uax:UInt16>100</uax:UInt16>
+                <uax:UInt16>200</uax:UInt16>
+                <uax:UInt16>300</uax:UInt16>
+                <uax:UInt16>400</uax:UInt16>
               </uax:Elements>
             </Test>
             """));
@@ -330,12 +310,10 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfInt32>
-                  <uax:Int32>-2147483648</uax:Int32>
-                  <uax:Int32>0</uax:Int32>
-                  <uax:Int32>0</uax:Int32>
-                  <uax:Int32>2147483647</uax:Int32>
-                </uax:ListOfInt32>
+                <uax:Int32>-2147483648</uax:Int32>
+                <uax:Int32>0</uax:Int32>
+                <uax:Int32>0</uax:Int32>
+                <uax:Int32>2147483647</uax:Int32>
               </uax:Elements>
             </Test>
             """),
@@ -355,16 +333,14 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfInt32>
-                  <uax:Int32>-2147483648</uax:Int32>
-                  <uax:Int32>0</uax:Int32>
-                  <uax:Int32>0</uax:Int32>
-                  <uax:Int32>2147483647</uax:Int32>
-                  <uax:Int32>-1000</uax:Int32>
-                  <uax:Int32>-2000</uax:Int32>
-                  <uax:Int32>1000</uax:Int32>
-                  <uax:Int32>2000</uax:Int32>
-                </uax:ListOfInt32>
+                <uax:Int32>-2147483648</uax:Int32>
+                <uax:Int32>0</uax:Int32>
+                <uax:Int32>0</uax:Int32>
+                <uax:Int32>2147483647</uax:Int32>
+                <uax:Int32>-1000</uax:Int32>
+                <uax:Int32>-2000</uax:Int32>
+                <uax:Int32>1000</uax:Int32>
+                <uax:Int32>2000</uax:Int32>
               </uax:Elements>
             </Test>
             """));
@@ -386,12 +362,10 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfUInt32>
-                  <uax:UInt32>0</uax:UInt32>
-                  <uax:UInt32>0</uax:UInt32>
-                  <uax:UInt32>1000000</uax:UInt32>
-                  <uax:UInt32>4294967295</uax:UInt32>
-                </uax:ListOfUInt32>
+                <uax:UInt32>0</uax:UInt32>
+                <uax:UInt32>0</uax:UInt32>
+                <uax:UInt32>1000000</uax:UInt32>
+                <uax:UInt32>4294967295</uax:UInt32>
               </uax:Elements>
             </Test>
             """),
@@ -414,16 +388,14 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfUInt32>
-                  <uax:UInt32>0</uax:UInt32>
-                  <uax:UInt32>0</uax:UInt32>
-                  <uax:UInt32>1000000</uax:UInt32>
-                  <uax:UInt32>4294967295</uax:UInt32>
-                  <uax:UInt32>1000</uax:UInt32>
-                  <uax:UInt32>2000</uax:UInt32>
-                  <uax:UInt32>3000</uax:UInt32>
-                  <uax:UInt32>4000</uax:UInt32>
-                </uax:ListOfUInt32>
+                <uax:UInt32>0</uax:UInt32>
+                <uax:UInt32>0</uax:UInt32>
+                <uax:UInt32>1000000</uax:UInt32>
+                <uax:UInt32>4294967295</uax:UInt32>
+                <uax:UInt32>1000</uax:UInt32>
+                <uax:UInt32>2000</uax:UInt32>
+                <uax:UInt32>3000</uax:UInt32>
+                <uax:UInt32>4000</uax:UInt32>
               </uax:Elements>
             </Test>
             """));
@@ -441,12 +413,10 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfInt64>
-                  <uax:Int64>-9223372036854775808</uax:Int64>
-                  <uax:Int64>0</uax:Int64>
-                  <uax:Int64>0</uax:Int64>
-                  <uax:Int64>9223372036854775807</uax:Int64>
-                </uax:ListOfInt64>
+                <uax:Int64>-9223372036854775808</uax:Int64>
+                <uax:Int64>0</uax:Int64>
+                <uax:Int64>0</uax:Int64>
+                <uax:Int64>9223372036854775807</uax:Int64>
               </uax:Elements>
             </Test>
             """),
@@ -466,16 +436,14 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfInt64>
-                  <uax:Int64>-9223372036854775808</uax:Int64>
-                  <uax:Int64>0</uax:Int64>
-                  <uax:Int64>0</uax:Int64>
-                  <uax:Int64>9223372036854775807</uax:Int64>
-                  <uax:Int64>-1000000</uax:Int64>
-                  <uax:Int64>-2000000</uax:Int64>
-                  <uax:Int64>1000000</uax:Int64>
-                  <uax:Int64>2000000</uax:Int64>
-                </uax:ListOfInt64>
+                <uax:Int64>-9223372036854775808</uax:Int64>
+                <uax:Int64>0</uax:Int64>
+                <uax:Int64>0</uax:Int64>
+                <uax:Int64>9223372036854775807</uax:Int64>
+                <uax:Int64>-1000000</uax:Int64>
+                <uax:Int64>-2000000</uax:Int64>
+                <uax:Int64>1000000</uax:Int64>
+                <uax:Int64>2000000</uax:Int64>
               </uax:Elements>
             </Test>
             """));
@@ -497,12 +465,10 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfUInt64>
-                  <uax:UInt64>0</uax:UInt64>
-                  <uax:UInt64>0</uax:UInt64>
-                  <uax:UInt64>1000000000</uax:UInt64>
-                  <uax:UInt64>18446744073709551615</uax:UInt64>
-                </uax:ListOfUInt64>
+                <uax:UInt64>0</uax:UInt64>
+                <uax:UInt64>0</uax:UInt64>
+                <uax:UInt64>1000000000</uax:UInt64>
+                <uax:UInt64>18446744073709551615</uax:UInt64>
               </uax:Elements>
             </Test>
             """),
@@ -525,16 +491,14 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfUInt64>
-                  <uax:UInt64>0</uax:UInt64>
-                  <uax:UInt64>0</uax:UInt64>
-                  <uax:UInt64>1000000000</uax:UInt64>
-                  <uax:UInt64>18446744073709551615</uax:UInt64>
-                  <uax:UInt64>1000</uax:UInt64>
-                  <uax:UInt64>2000</uax:UInt64>
-                  <uax:UInt64>3000</uax:UInt64>
-                  <uax:UInt64>4000</uax:UInt64>
-                </uax:ListOfUInt64>
+                <uax:UInt64>0</uax:UInt64>
+                <uax:UInt64>0</uax:UInt64>
+                <uax:UInt64>1000000000</uax:UInt64>
+                <uax:UInt64>18446744073709551615</uax:UInt64>
+                <uax:UInt64>1000</uax:UInt64>
+                <uax:UInt64>2000</uax:UInt64>
+                <uax:UInt64>3000</uax:UInt64>
+                <uax:UInt64>4000</uax:UInt64>
               </uax:Elements>
             </Test>
             """));
@@ -556,12 +520,10 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfFloat>
-                  <uax:Float>1.4E-45</uax:Float>
-                  <uax:Float>0.0</uax:Float>
-                  <uax:Float>3.4028235E38</uax:Float>
-                  <uax:Float>INF</uax:Float>
-                </uax:ListOfFloat>
+                <uax:Float>1.4E-45</uax:Float>
+                <uax:Float>0.0</uax:Float>
+                <uax:Float>3.4028235E38</uax:Float>
+                <uax:Float>INF</uax:Float>
               </uax:Elements>
             </Test>
             """),
@@ -581,16 +543,14 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfFloat>
-                  <uax:Float>1.4E-45</uax:Float>
-                  <uax:Float>0.0</uax:Float>
-                  <uax:Float>3.4028235E38</uax:Float>
-                  <uax:Float>INF</uax:Float>
-                  <uax:Float>NaN</uax:Float>
-                  <uax:Float>-INF</uax:Float>
-                  <uax:Float>1.0</uax:Float>
-                  <uax:Float>2.0</uax:Float>
-                </uax:ListOfFloat>
+                <uax:Float>1.4E-45</uax:Float>
+                <uax:Float>0.0</uax:Float>
+                <uax:Float>3.4028235E38</uax:Float>
+                <uax:Float>INF</uax:Float>
+                <uax:Float>NaN</uax:Float>
+                <uax:Float>-INF</uax:Float>
+                <uax:Float>1.0</uax:Float>
+                <uax:Float>2.0</uax:Float>
               </uax:Elements>
             </Test>
             """));
@@ -612,12 +572,10 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfDouble>
-                  <uax:Double>4.9E-324</uax:Double>
-                  <uax:Double>0.0</uax:Double>
-                  <uax:Double>1.7976931348623157E308</uax:Double>
-                  <uax:Double>INF</uax:Double>
-                </uax:ListOfDouble>
+                <uax:Double>4.9E-324</uax:Double>
+                <uax:Double>0.0</uax:Double>
+                <uax:Double>1.7976931348623157E308</uax:Double>
+                <uax:Double>INF</uax:Double>
               </uax:Elements>
             </Test>
             """),
@@ -637,16 +595,14 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfDouble>
-                  <uax:Double>4.9E-324</uax:Double>
-                  <uax:Double>0.0</uax:Double>
-                  <uax:Double>1.7976931348623157E308</uax:Double>
-                  <uax:Double>INF</uax:Double>
-                  <uax:Double>NaN</uax:Double>
-                  <uax:Double>-INF</uax:Double>
-                  <uax:Double>1.0</uax:Double>
-                  <uax:Double>2.0</uax:Double>
-                </uax:ListOfDouble>
+                <uax:Double>4.9E-324</uax:Double>
+                <uax:Double>0.0</uax:Double>
+                <uax:Double>1.7976931348623157E308</uax:Double>
+                <uax:Double>INF</uax:Double>
+                <uax:Double>NaN</uax:Double>
+                <uax:Double>-INF</uax:Double>
+                <uax:Double>1.0</uax:Double>
+                <uax:Double>2.0</uax:Double>
               </uax:Elements>
             </Test>
             """));
@@ -664,12 +620,10 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfString>
-                  <uax:String>Hello</uax:String>
-                  <uax:String>World</uax:String>
-                  <uax:String>Foo</uax:String>
-                  <uax:String>Bar</uax:String>
-                </uax:ListOfString>
+                <uax:String>Hello</uax:String>
+                <uax:String>World</uax:String>
+                <uax:String>Foo</uax:String>
+                <uax:String>Bar</uax:String>
               </uax:Elements>
             </Test>
             """),
@@ -689,16 +643,14 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfString>
-                  <uax:String>Hello</uax:String>
-                  <uax:String>World</uax:String>
-                  <uax:String>Foo</uax:String>
-                  <uax:String>Bar</uax:String>
-                  <uax:String>Fizz</uax:String>
-                  <uax:String>Buzz</uax:String>
-                  <uax:String>Ping</uax:String>
-                  <uax:String>Pong</uax:String>
-                </uax:ListOfString>
+                <uax:String>Hello</uax:String>
+                <uax:String>World</uax:String>
+                <uax:String>Foo</uax:String>
+                <uax:String>Bar</uax:String>
+                <uax:String>Fizz</uax:String>
+                <uax:String>Buzz</uax:String>
+                <uax:String>Ping</uax:String>
+                <uax:String>Pong</uax:String>
               </uax:Elements>
             </Test>
             """));
@@ -726,12 +678,10 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfDateTime>
-                  <uax:DateTime>2023-01-01T12:34:56Z</uax:DateTime>
-                  <uax:DateTime>0001-01-01T00:00:00Z</uax:DateTime>
-                  <uax:DateTime>9999-12-31T23:59:59Z</uax:DateTime>
-                  <uax:DateTime>2022-02-02T00:00:00Z</uax:DateTime>
-                </uax:ListOfDateTime>
+                <uax:DateTime>2023-01-01T12:34:56Z</uax:DateTime>
+                <uax:DateTime>0001-01-01T00:00:00Z</uax:DateTime>
+                <uax:DateTime>9999-12-31T23:59:59Z</uax:DateTime>
+                <uax:DateTime>2022-02-02T00:00:00Z</uax:DateTime>
               </uax:Elements>
             </Test>
             """),
@@ -769,16 +719,14 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfDateTime>
-                  <uax:DateTime>2023-01-01T12:34:56Z</uax:DateTime>
-                  <uax:DateTime>0001-01-01T00:00:00Z</uax:DateTime>
-                  <uax:DateTime>9999-12-31T23:59:59Z</uax:DateTime>
-                  <uax:DateTime>2022-02-02T00:00:00Z</uax:DateTime>
-                  <uax:DateTime>2020-03-03T03:33:33Z</uax:DateTime>
-                  <uax:DateTime>2021-04-04T04:44:44Z</uax:DateTime>
-                  <uax:DateTime>2019-05-05T05:55:55Z</uax:DateTime>
-                  <uax:DateTime>2018-06-06T06:06:06Z</uax:DateTime>
-                </uax:ListOfDateTime>
+                <uax:DateTime>2023-01-01T12:34:56Z</uax:DateTime>
+                <uax:DateTime>0001-01-01T00:00:00Z</uax:DateTime>
+                <uax:DateTime>9999-12-31T23:59:59Z</uax:DateTime>
+                <uax:DateTime>2022-02-02T00:00:00Z</uax:DateTime>
+                <uax:DateTime>2020-03-03T03:33:33Z</uax:DateTime>
+                <uax:DateTime>2021-04-04T04:44:44Z</uax:DateTime>
+                <uax:DateTime>2019-05-05T05:55:55Z</uax:DateTime>
+                <uax:DateTime>2018-06-06T06:06:06Z</uax:DateTime>
               </uax:Elements>
             </Test>
             """));
@@ -806,12 +754,10 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfGuid>
-                  <uax:Guid>12345678-1234-1234-1234-123456789012</uax:Guid>
-                  <uax:Guid>00000000-0000-0000-0000-000000000000</uax:Guid>
-                  <uax:Guid>AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA</uax:Guid>
-                  <uax:Guid>BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB</uax:Guid>
-                </uax:ListOfGuid>
+                <uax:Guid>12345678-1234-1234-1234-123456789012</uax:Guid>
+                <uax:Guid>00000000-0000-0000-0000-000000000000</uax:Guid>
+                <uax:Guid>AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA</uax:Guid>
+                <uax:Guid>BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB</uax:Guid>
               </uax:Elements>
             </Test>
             """),
@@ -849,16 +795,14 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfGuid>
-                  <uax:Guid>12345678-1234-1234-1234-123456789012</uax:Guid>
-                  <uax:Guid>00000000-0000-0000-0000-000000000000</uax:Guid>
-                  <uax:Guid>AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA</uax:Guid>
-                  <uax:Guid>BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB</uax:Guid>
-                  <uax:Guid>CCCCCCCC-CCCC-CCCC-CCCC-CCCCCCCCCCCC</uax:Guid>
-                  <uax:Guid>DDDDDDDD-DDDD-DDDD-DDDD-DDDDDDDDDDDD</uax:Guid>
-                  <uax:Guid>EEEEEEEE-EEEE-EEEE-EEEE-EEEEEEEEEEEE</uax:Guid>
-                  <uax:Guid>FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF</uax:Guid>
-                </uax:ListOfGuid>
+                <uax:Guid>12345678-1234-1234-1234-123456789012</uax:Guid>
+                <uax:Guid>00000000-0000-0000-0000-000000000000</uax:Guid>
+                <uax:Guid>AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA</uax:Guid>
+                <uax:Guid>BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB</uax:Guid>
+                <uax:Guid>CCCCCCCC-CCCC-CCCC-CCCC-CCCCCCCCCCCC</uax:Guid>
+                <uax:Guid>DDDDDDDD-DDDD-DDDD-DDDD-DDDDDDDDDDDD</uax:Guid>
+                <uax:Guid>EEEEEEEE-EEEE-EEEE-EEEE-EEEEEEEEEEEE</uax:Guid>
+                <uax:Guid>FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF</uax:Guid>
               </uax:Elements>
             </Test>
             """));
@@ -880,12 +824,10 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfByteString>
-                  <uax:ByteString>AQIDBA==</uax:ByteString>
-                  <uax:ByteString></uax:ByteString>
-                  <uax:ByteString></uax:ByteString>
-                  <uax:ByteString>BQYHCA==</uax:ByteString>
-                </uax:ListOfByteString>
+                <uax:ByteString>AQIDBA==</uax:ByteString>
+                <uax:ByteString></uax:ByteString>
+                <uax:ByteString></uax:ByteString>
+                <uax:ByteString>BQYHCA==</uax:ByteString>
               </uax:Elements>
             </Test>
             """),
@@ -917,16 +859,14 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfByteString>
-                  <uax:ByteString>AQIDBA==</uax:ByteString>
-                  <uax:ByteString></uax:ByteString>
-                  <uax:ByteString></uax:ByteString>
-                  <uax:ByteString>BQYHCA==</uax:ByteString>
-                  <uax:ByteString>CQoLDA==</uax:ByteString>
-                  <uax:ByteString>DQ4PEA==</uax:ByteString>
-                  <uax:ByteString>ERITFA==</uax:ByteString>
-                  <uax:ByteString>FRYXGA==</uax:ByteString>
-                </uax:ListOfByteString>
+                <uax:ByteString>AQIDBA==</uax:ByteString>
+                <uax:ByteString></uax:ByteString>
+                <uax:ByteString></uax:ByteString>
+                <uax:ByteString>BQYHCA==</uax:ByteString>
+                <uax:ByteString>CQoLDA==</uax:ByteString>
+                <uax:ByteString>DQ4PEA==</uax:ByteString>
+                <uax:ByteString>ERITFA==</uax:ByteString>
+                <uax:ByteString>FRYXGA==</uax:ByteString>
               </uax:Elements>
             </Test>
             """));
@@ -953,12 +893,10 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfXmlElement>
-                  <uax:XmlElement><SimpleElement>Hello, World!</SimpleElement></uax:XmlElement>
-                  <uax:XmlElement><Empty></Empty></uax:XmlElement>
-                  <uax:XmlElement></uax:XmlElement>
-                  <uax:XmlElement><Complex><Nested>Value</Nested></Complex></uax:XmlElement>
-                </uax:ListOfXmlElement>
+                <uax:XmlElement><SimpleElement>Hello, World!</SimpleElement></uax:XmlElement>
+                <uax:XmlElement><Empty></Empty></uax:XmlElement>
+                <uax:XmlElement></uax:XmlElement>
+                <uax:XmlElement><Complex><Nested>Value</Nested></Complex></uax:XmlElement>
               </uax:Elements>
             </Test>
             """));
@@ -983,8 +921,7 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfNodeId>
-                  <uax:NodeId>
+                <uax:NodeId>
                     <uax:Identifier>i=123</uax:Identifier>
                   </uax:NodeId>
                   <uax:NodeId>
@@ -996,7 +933,6 @@ public class MatrixArguments {
                   <uax:NodeId>
                     <uax:Identifier>ns=3;b=AQIDBA==</uax:Identifier>
                   </uax:NodeId>
-                </uax:ListOfNodeId>
               </uax:Elements>
             </Test>
             """),
@@ -1028,8 +964,7 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfNodeId>
-                  <uax:NodeId>
+                <uax:NodeId>
                     <uax:Identifier>i=123</uax:Identifier>
                   </uax:NodeId>
                   <uax:NodeId>
@@ -1053,7 +988,6 @@ public class MatrixArguments {
                   <uax:NodeId>
                     <uax:Identifier>ns=7;b=BQYHCA==</uax:Identifier>
                   </uax:NodeId>
-                </uax:ListOfNodeId>
               </uax:Elements>
             </Test>
             """));
@@ -1078,8 +1012,7 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfExpandedNodeId>
-                  <uax:ExpandedNodeId>
+                <uax:ExpandedNodeId>
                     <uax:Identifier>i=123</uax:Identifier>
                   </uax:ExpandedNodeId>
                   <uax:ExpandedNodeId>
@@ -1091,7 +1024,6 @@ public class MatrixArguments {
                   <uax:ExpandedNodeId>
                     <uax:Identifier>nsu=http://example.org/UA/;i=123</uax:Identifier>
                   </uax:ExpandedNodeId>
-                </uax:ListOfExpandedNodeId>
               </uax:Elements>
             </Test>
             """));
@@ -1115,8 +1047,7 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfStatusCode>
-                  <uax:StatusCode>
+                <uax:StatusCode>
                     <uax:Code>0</uax:Code>
                   </uax:StatusCode>
                   <uax:StatusCode>
@@ -1128,7 +1059,6 @@ public class MatrixArguments {
                   <uax:StatusCode>
                     <uax:Code>2147614720</uax:Code>
                   </uax:StatusCode>
-                </uax:ListOfStatusCode>
               </uax:Elements>
             </Test>
             """));
@@ -1149,23 +1079,21 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfQualifiedName>
-                  <uax:QualifiedName>
-                    <uax:NamespaceIndex>1</uax:NamespaceIndex>
-                    <uax:Name>TestName</uax:Name>
-                  </uax:QualifiedName>
-                  <uax:QualifiedName>
-                    <uax:NamespaceIndex>0</uax:NamespaceIndex>
-                    <uax:Name>DefaultNamespace</uax:Name>
-                  </uax:QualifiedName>
-                  <uax:QualifiedName>
-                    <uax:NamespaceIndex>2</uax:NamespaceIndex>
-                    <uax:Name></uax:Name>
-                  </uax:QualifiedName>
-                  <uax:QualifiedName>
-                    <uax:NamespaceIndex>0</uax:NamespaceIndex>
-                  </uax:QualifiedName>
-                </uax:ListOfQualifiedName>
+                <uax:QualifiedName>
+                  <uax:NamespaceIndex>1</uax:NamespaceIndex>
+                  <uax:Name>TestName</uax:Name>
+                </uax:QualifiedName>
+                <uax:QualifiedName>
+                  <uax:NamespaceIndex>0</uax:NamespaceIndex>
+                  <uax:Name>DefaultNamespace</uax:Name>
+                </uax:QualifiedName>
+                <uax:QualifiedName>
+                  <uax:NamespaceIndex>2</uax:NamespaceIndex>
+                  <uax:Name></uax:Name>
+                </uax:QualifiedName>
+                <uax:QualifiedName>
+                  <uax:NamespaceIndex>0</uax:NamespaceIndex>
+                </uax:QualifiedName>
               </uax:Elements>
             </Test>
             """));
@@ -1186,20 +1114,18 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfLocalizedText>
-                  <uax:LocalizedText>
-                    <uax:Locale>en-US</uax:Locale>
-                    <uax:Text>Hello, World!</uax:Text>
-                  </uax:LocalizedText>
-                  <uax:LocalizedText>
-                    <uax:Locale>en-US</uax:Locale>
-                  </uax:LocalizedText>
-                  <uax:LocalizedText>
-                    <uax:Text>Text Only</uax:Text>
-                  </uax:LocalizedText>
-                  <uax:LocalizedText>
-                  </uax:LocalizedText>
-                </uax:ListOfLocalizedText>
+                <uax:LocalizedText>
+                  <uax:Locale>en-US</uax:Locale>
+                  <uax:Text>Hello, World!</uax:Text>
+                </uax:LocalizedText>
+                <uax:LocalizedText>
+                  <uax:Locale>en-US</uax:Locale>
+                </uax:LocalizedText>
+                <uax:LocalizedText>
+                  <uax:Text>Text Only</uax:Text>
+                </uax:LocalizedText>
+                <uax:LocalizedText>
+                </uax:LocalizedText>
               </uax:Elements>
             </Test>
             """));
@@ -1242,52 +1168,50 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfExtensionObject>
-                  <uax:ExtensionObject>
-                    <uax:TypeId>
-                      <uax:Identifier>i=12080</uax:Identifier>
-                    </uax:TypeId>
-                    <uax:Body>
-                      <XVType>
-                        <X>1.0</X>
-                        <Value>2.0</Value>
-                      </XVType>
-                    </uax:Body>
-                  </uax:ExtensionObject>
-                  <uax:ExtensionObject>
-                    <uax:TypeId>
-                      <uax:Identifier>i=12080</uax:Identifier>
-                    </uax:TypeId>
-                    <uax:Body>
-                      <XVType>
-                        <X>3.0</X>
-                        <Value>4.0</Value>
-                      </XVType>
-                    </uax:Body>
-                  </uax:ExtensionObject>
-                  <uax:ExtensionObject>
-                    <uax:TypeId>
-                      <uax:Identifier>i=12080</uax:Identifier>
-                    </uax:TypeId>
-                    <uax:Body>
-                      <XVType>
-                        <X>5.0</X>
-                        <Value>6.0</Value>
-                      </XVType>
-                    </uax:Body>
-                  </uax:ExtensionObject>
-                  <uax:ExtensionObject>
-                    <uax:TypeId>
-                      <uax:Identifier>i=12080</uax:Identifier>
-                    </uax:TypeId>
-                    <uax:Body>
-                      <XVType>
-                        <X>7.0</X>
-                        <Value>8.0</Value>
-                      </XVType>
-                    </uax:Body>
-                  </uax:ExtensionObject>
-                </uax:ListOfExtensionObject>
+                <uax:ExtensionObject>
+                  <uax:TypeId>
+                    <uax:Identifier>i=12080</uax:Identifier>
+                  </uax:TypeId>
+                  <uax:Body>
+                    <XVType>
+                      <X>1.0</X>
+                      <Value>2.0</Value>
+                    </XVType>
+                  </uax:Body>
+                </uax:ExtensionObject>
+                <uax:ExtensionObject>
+                  <uax:TypeId>
+                    <uax:Identifier>i=12080</uax:Identifier>
+                  </uax:TypeId>
+                  <uax:Body>
+                    <XVType>
+                      <X>3.0</X>
+                      <Value>4.0</Value>
+                    </XVType>
+                  </uax:Body>
+                </uax:ExtensionObject>
+                <uax:ExtensionObject>
+                  <uax:TypeId>
+                    <uax:Identifier>i=12080</uax:Identifier>
+                  </uax:TypeId>
+                  <uax:Body>
+                    <XVType>
+                      <X>5.0</X>
+                      <Value>6.0</Value>
+                    </XVType>
+                  </uax:Body>
+                </uax:ExtensionObject>
+                <uax:ExtensionObject>
+                  <uax:TypeId>
+                    <uax:Identifier>i=12080</uax:Identifier>
+                  </uax:TypeId>
+                  <uax:Body>
+                    <XVType>
+                      <X>7.0</X>
+                      <Value>8.0</Value>
+                    </XVType>
+                  </uax:Body>
+                </uax:ExtensionObject>
               </uax:Elements>
             </Test>
             """));
@@ -1311,40 +1235,38 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfDataValue>
-                  <uax:DataValue>
+                <uax:DataValue>
+                  <uax:Value>
                     <uax:Value>
-                      <uax:Value>
-                        <uax:Boolean>true</uax:Boolean>
-                      </uax:Value>
+                      <uax:Boolean>true</uax:Boolean>
                     </uax:Value>
-                  </uax:DataValue>
-                  <uax:DataValue>
+                  </uax:Value>
+                </uax:DataValue>
+                <uax:DataValue>
+                  <uax:Value>
                     <uax:Value>
-                      <uax:Value>
-                        <uax:Int32>42</uax:Int32>
-                      </uax:Value>
+                      <uax:Int32>42</uax:Int32>
                     </uax:Value>
-                  </uax:DataValue>
-                  <uax:DataValue>
+                  </uax:Value>
+                </uax:DataValue>
+                <uax:DataValue>
+                  <uax:Value>
                     <uax:Value>
-                      <uax:Value>
-                        <uax:String>Hello, World!</uax:String>
-                      </uax:Value>
+                      <uax:String>Hello, World!</uax:String>
                     </uax:Value>
-                  </uax:DataValue>
-                  <uax:DataValue>
+                  </uax:Value>
+                </uax:DataValue>
+                <uax:DataValue>
+                  <uax:Value>
                     <uax:Value>
-                      <uax:Value>
-                        <uax:ListOfDouble>
-                          <uax:Double>1.0</uax:Double>
-                          <uax:Double>2.0</uax:Double>
-                          <uax:Double>3.0</uax:Double>
-                        </uax:ListOfDouble>
-                      </uax:Value>
+                      <uax:ListOfDouble>
+                        <uax:Double>1.0</uax:Double>
+                        <uax:Double>2.0</uax:Double>
+                        <uax:Double>3.0</uax:Double>
+                      </uax:ListOfDouble>
                     </uax:Value>
-                  </uax:DataValue>
-                </uax:ListOfDataValue>
+                  </uax:Value>
+                </uax:DataValue>
               </uax:Elements>
             </Test>
             """));
@@ -1365,32 +1287,30 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfVariant>
-                  <uax:Variant>
-                    <uax:Value>
-                      <uax:Boolean>true</uax:Boolean>
-                    </uax:Value>
-                  </uax:Variant>
-                  <uax:Variant>
-                    <uax:Value>
-                      <uax:Int32>42</uax:Int32>
-                    </uax:Value>
-                  </uax:Variant>
-                  <uax:Variant>
-                    <uax:Value>
-                      <uax:String>Hello, World!</uax:String>
-                    </uax:Value>
-                  </uax:Variant>
-                  <uax:Variant>
-                    <uax:Value>
-                      <uax:ListOfDouble>
-                        <uax:Double>1.0</uax:Double>
-                        <uax:Double>2.0</uax:Double>
-                        <uax:Double>3.0</uax:Double>
-                      </uax:ListOfDouble>
-                    </uax:Value>
-                  </uax:Variant>
-                </uax:ListOfVariant>
+                <uax:Variant>
+                  <uax:Value>
+                    <uax:Boolean>true</uax:Boolean>
+                  </uax:Value>
+                </uax:Variant>
+                <uax:Variant>
+                  <uax:Value>
+                    <uax:Int32>42</uax:Int32>
+                  </uax:Value>
+                </uax:Variant>
+                <uax:Variant>
+                  <uax:Value>
+                    <uax:String>Hello, World!</uax:String>
+                  </uax:Value>
+                </uax:Variant>
+                <uax:Variant>
+                  <uax:Value>
+                    <uax:ListOfDouble>
+                      <uax:Double>1.0</uax:Double>
+                      <uax:Double>2.0</uax:Double>
+                      <uax:Double>3.0</uax:Double>
+                    </uax:ListOfDouble>
+                  </uax:Value>
+                </uax:Variant>
               </uax:Elements>
             </Test>
             """));
@@ -1424,8 +1344,29 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:ListOfDiagnosticInfo>
-                  <uax:DiagnosticInfo>
+                <uax:DiagnosticInfo>
+                  <uax:SymbolicId>2</uax:SymbolicId>
+                  <uax:NamespaceUri>1</uax:NamespaceUri>
+                  <uax:Locale>3</uax:Locale>
+                  <uax:LocalizedText>4</uax:LocalizedText>
+                  <uax:AdditionalInfo>Additional Info</uax:AdditionalInfo>
+                  <uax:InnerStatusCode>
+                    <uax:Code>5</uax:Code>
+                  </uax:InnerStatusCode>
+                </uax:DiagnosticInfo>
+                <uax:DiagnosticInfo>
+                  <uax:SymbolicId>-1</uax:SymbolicId>
+                  <uax:NamespaceUri>-1</uax:NamespaceUri>
+                  <uax:Locale>-1</uax:Locale>
+                  <uax:LocalizedText>-1</uax:LocalizedText>
+                  <uax:AdditionalInfo>Only Additional Info</uax:AdditionalInfo>
+                </uax:DiagnosticInfo>
+                <uax:DiagnosticInfo>
+                  <uax:SymbolicId>-1</uax:SymbolicId>
+                  <uax:NamespaceUri>-1</uax:NamespaceUri>
+                  <uax:Locale>-1</uax:Locale>
+                  <uax:LocalizedText>-1</uax:LocalizedText>
+                  <uax:InnerDiagnosticInfo>
                     <uax:SymbolicId>2</uax:SymbolicId>
                     <uax:NamespaceUri>1</uax:NamespaceUri>
                     <uax:Locale>3</uax:Locale>
@@ -1434,41 +1375,18 @@ public class MatrixArguments {
                     <uax:InnerStatusCode>
                       <uax:Code>5</uax:Code>
                     </uax:InnerStatusCode>
-                  </uax:DiagnosticInfo>
-                  <uax:DiagnosticInfo>
-                    <uax:SymbolicId>-1</uax:SymbolicId>
-                    <uax:NamespaceUri>-1</uax:NamespaceUri>
-                    <uax:Locale>-1</uax:Locale>
-                    <uax:LocalizedText>-1</uax:LocalizedText>
-                    <uax:AdditionalInfo>Only Additional Info</uax:AdditionalInfo>
-                  </uax:DiagnosticInfo>
-                  <uax:DiagnosticInfo>
-                    <uax:SymbolicId>-1</uax:SymbolicId>
-                    <uax:NamespaceUri>-1</uax:NamespaceUri>
-                    <uax:Locale>-1</uax:Locale>
-                    <uax:LocalizedText>-1</uax:LocalizedText>
-                    <uax:InnerDiagnosticInfo>
-                      <uax:SymbolicId>2</uax:SymbolicId>
-                      <uax:NamespaceUri>1</uax:NamespaceUri>
-                      <uax:Locale>3</uax:Locale>
-                      <uax:LocalizedText>4</uax:LocalizedText>
-                      <uax:AdditionalInfo>Additional Info</uax:AdditionalInfo>
-                      <uax:InnerStatusCode>
-                        <uax:Code>5</uax:Code>
-                      </uax:InnerStatusCode>
-                    </uax:InnerDiagnosticInfo>
-                  </uax:DiagnosticInfo>
-                  <uax:DiagnosticInfo>
-                    <uax:SymbolicId>6</uax:SymbolicId>
-                    <uax:NamespaceUri>5</uax:NamespaceUri>
-                    <uax:Locale>7</uax:Locale>
-                    <uax:LocalizedText>8</uax:LocalizedText>
-                    <uax:AdditionalInfo>More Info</uax:AdditionalInfo>
-                    <uax:InnerStatusCode>
-                      <uax:Code>9</uax:Code>
-                    </uax:InnerStatusCode>
-                  </uax:DiagnosticInfo>
-                </uax:ListOfDiagnosticInfo>
+                  </uax:InnerDiagnosticInfo>
+                </uax:DiagnosticInfo>
+                <uax:DiagnosticInfo>
+                  <uax:SymbolicId>6</uax:SymbolicId>
+                  <uax:NamespaceUri>5</uax:NamespaceUri>
+                  <uax:Locale>7</uax:Locale>
+                  <uax:LocalizedText>8</uax:LocalizedText>
+                  <uax:AdditionalInfo>More Info</uax:AdditionalInfo>
+                  <uax:InnerStatusCode>
+                    <uax:Code>9</uax:Code>
+                  </uax:InnerStatusCode>
+                </uax:DiagnosticInfo>
               </uax:Elements>
             </Test>
             """));

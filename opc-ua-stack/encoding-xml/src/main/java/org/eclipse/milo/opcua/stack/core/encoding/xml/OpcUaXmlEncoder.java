@@ -353,6 +353,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
   @Override
   public void encodeNodeId(String field, NodeId value) throws UaSerializationException {
+    //noinspection DuplicatedCode
     if (beginField(field, value == null, true)) {
       namespaces.push(Namespaces.OPC_UA_XSD);
       try {
@@ -371,6 +372,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
   public void encodeExpandedNodeId(String field, ExpandedNodeId value)
       throws UaSerializationException {
 
+    //noinspection DuplicatedCode
     if (beginField(field, value == null, true)) {
       namespaces.push(Namespaces.OPC_UA_XSD);
       try {
@@ -927,6 +929,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       try {
         namespaces.push(Namespaces.OPC_UA_XSD);
 
+        assert value != null;
         for (Boolean v : value) {
           encodeBoolean("Boolean", v);
         }
@@ -944,6 +947,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       try {
         namespaces.push(Namespaces.OPC_UA_XSD);
 
+        assert value != null;
         for (Byte v : value) {
           encodeSByte("SByte", v);
         }
@@ -961,6 +965,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       try {
         namespaces.push(Namespaces.OPC_UA_XSD);
 
+        assert value != null;
         for (Short v : value) {
           encodeInt16("Int16", v);
         }
@@ -978,6 +983,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       try {
         namespaces.push(Namespaces.OPC_UA_XSD);
 
+        assert value != null;
         for (Integer v : value) {
           encodeInt32("Int32", v);
         }
@@ -995,6 +1001,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       try {
         namespaces.push(Namespaces.OPC_UA_XSD);
 
+        assert value != null;
         for (Long v : value) {
           encodeInt64("Int64", v);
         }
@@ -1012,6 +1019,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       try {
         namespaces.push(Namespaces.OPC_UA_XSD);
 
+        assert value != null;
         for (UByte v : value) {
           encodeByte("Byte", v);
         }
@@ -1029,6 +1037,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       try {
         namespaces.push(Namespaces.OPC_UA_XSD);
 
+        assert value != null;
         for (UShort v : value) {
           encodeUInt16("UInt16", v);
         }
@@ -1046,6 +1055,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       try {
         namespaces.push(Namespaces.OPC_UA_XSD);
 
+        assert value != null;
         for (UInteger v : value) {
           encodeUInt32("UInt32", v);
         }
@@ -1063,6 +1073,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       try {
         namespaces.push(Namespaces.OPC_UA_XSD);
 
+        assert value != null;
         for (ULong v : value) {
           encodeUInt64("UInt64", v);
         }
@@ -1080,6 +1091,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       try {
         namespaces.push(Namespaces.OPC_UA_XSD);
 
+        assert value != null;
         for (Float v : value) {
           encodeFloat("Float", v);
         }
@@ -1097,6 +1109,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       try {
         namespaces.push(Namespaces.OPC_UA_XSD);
 
+        assert value != null;
         for (Double v : value) {
           encodeDouble("Double", v);
         }
@@ -1114,6 +1127,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       try {
         namespaces.push(Namespaces.OPC_UA_XSD);
 
+        assert value != null;
         for (String v : value) {
           encodeStringValue("String", v, true);
         }
@@ -1131,6 +1145,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       try {
         namespaces.push(Namespaces.OPC_UA_XSD);
 
+        assert value != null;
         for (DateTime v : value) {
           encodeDateTime("DateTime", v);
         }
@@ -1148,6 +1163,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       try {
         namespaces.push(Namespaces.OPC_UA_XSD);
 
+        assert value != null;
         for (UUID v : value) {
           encodeGuid("Guid", v);
         }
@@ -1167,6 +1183,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       try {
         namespaces.push(Namespaces.OPC_UA_XSD);
 
+        assert value != null;
         for (ByteString v : value) {
           encodeByteString("ByteString", v);
         }
@@ -1186,6 +1203,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       try {
         namespaces.push(Namespaces.OPC_UA_XSD);
 
+        assert value != null;
         for (XmlElement v : value) {
           encodeXmlElement("XmlElement", v);
         }
@@ -1203,6 +1221,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       try {
         namespaces.push(Namespaces.OPC_UA_XSD);
 
+        assert value != null;
         for (NodeId v : value) {
           encodeNodeId("NodeId", v);
         }
@@ -1222,6 +1241,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       try {
         namespaces.push(Namespaces.OPC_UA_XSD);
 
+        assert value != null;
         for (ExpandedNodeId v : value) {
           encodeExpandedNodeId("ExpandedNodeId", v);
         }
@@ -1241,6 +1261,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       try {
         namespaces.push(Namespaces.OPC_UA_XSD);
 
+        assert value != null;
         for (StatusCode v : value) {
           encodeStatusCode("StatusCode", v);
         }
@@ -1260,6 +1281,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       try {
         namespaces.push(Namespaces.OPC_UA_XSD);
 
+        assert value != null;
         for (QualifiedName v : value) {
           encodeQualifiedName("QualifiedName", v);
         }
@@ -1279,6 +1301,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       try {
         namespaces.push(Namespaces.OPC_UA_XSD);
 
+        assert value != null;
         for (LocalizedText v : value) {
           encodeLocalizedText("LocalizedText", v);
         }
@@ -1298,6 +1321,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       try {
         namespaces.push(Namespaces.OPC_UA_XSD);
 
+        assert value != null;
         for (ExtensionObject v : value) {
           encodeExtensionObject("ExtensionObject", v);
         }
@@ -1317,6 +1341,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       try {
         namespaces.push(Namespaces.OPC_UA_XSD);
 
+        assert value != null;
         for (DataValue v : value) {
           encodeDataValue("DataValue", v);
         }
@@ -1334,6 +1359,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       try {
         namespaces.push(Namespaces.OPC_UA_XSD);
 
+        assert value != null;
         for (Variant v : value) {
           encodeVariant("Variant", v);
         }
@@ -1353,6 +1379,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       try {
         namespaces.push(Namespaces.OPC_UA_XSD);
 
+        assert value != null;
         for (DiagnosticInfo v : value) {
           encodeDiagnosticInfo("DiagnosticInfo", v);
         }
@@ -1372,6 +1399,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       try {
         namespaces.push(Namespaces.OPC_UA_XSD);
 
+        assert value != null;
         for (UaEnumeratedType v : value) {
           // TODO should push the namespace from the DataTypeCodec
           // TODO should be the name from the DataTypeCodec
@@ -1393,6 +1421,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       try {
         namespaces.push(Namespaces.OPC_UA_XSD);
 
+        assert values != null;
         for (Object v : values) {
           // TODO should push the namespace from the DataTypeCodec
           // TODO should be the name from the DataTypeCodec
@@ -1448,105 +1477,208 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
           switch (dataType) {
             case Boolean -> {
-              if (elements instanceof boolean[] primitiveArray) {
-                Boolean[] boxedArray = new Boolean[primitiveArray.length];
-                for (int i = 0; i < primitiveArray.length; i++) {
-                  boxedArray[i] = primitiveArray[i];
+              if (elements instanceof boolean[] array) {
+                for (boolean element : array) {
+                  encodeBoolean("Boolean", element);
                 }
-                encodeBooleanArray("ListOfBoolean", boxedArray);
-              } else {
-                encodeBooleanArray("ListOfBoolean", (Boolean[]) elements);
+              } else if (elements instanceof Boolean[] array) {
+                for (Boolean element : array) {
+                  encodeBoolean("Boolean", element);
+                }
               }
             }
-            case Byte -> encodeByteArray("ListOfByte", (UByte[]) elements);
-            case SByte -> {
-              if (elements instanceof byte[] primitiveArray) {
-                Byte[] boxedArray = new Byte[primitiveArray.length];
-                for (int i = 0; i < primitiveArray.length; i++) {
-                  boxedArray[i] = primitiveArray[i];
+            case Byte -> {
+              if (elements instanceof UByte[] array) {
+                for (UByte element : array) {
+                  encodeByte("Byte", element);
                 }
-                encodeSByteArray("ListOfSByte", boxedArray);
-              } else {
-                encodeSByteArray("ListOfSByte", (Byte[]) elements);
+              }
+            }
+            case SByte -> {
+              if (elements instanceof byte[] array) {
+                for (byte element : array) {
+                  encodeSByte("SByte", element);
+                }
+              } else if (elements instanceof Byte[] array) {
+                for (Byte element : array) {
+                  encodeSByte("SByte", element);
+                }
               }
             }
             case Int16 -> {
-              if (elements instanceof short[] primitiveArray) {
-                Short[] boxedArray = new Short[primitiveArray.length];
-                for (int i = 0; i < primitiveArray.length; i++) {
-                  boxedArray[i] = primitiveArray[i];
+              if (elements instanceof short[] array) {
+                for (short element : array) {
+                  encodeInt16("Int16", element);
                 }
-                encodeInt16Array("ListOfInt16", boxedArray);
-              } else {
-                encodeInt16Array("ListOfInt16", (Short[]) elements);
+              } else if (elements instanceof Short[] array) {
+                for (Short element : array) {
+                  encodeInt16("Int16", element);
+                }
               }
             }
-            case UInt16 -> encodeUInt16Array("ListOfUInt16", (UShort[]) elements);
+            case UInt16 -> {
+              if (elements instanceof UShort[] array) {
+                for (UShort element : array) {
+                  encodeUInt16("UInt16", element);
+                }
+              }
+            }
             case Int32 -> {
-              if (elements instanceof int[] primitiveArray) {
-                Integer[] boxedArray = new Integer[primitiveArray.length];
-                for (int i = 0; i < primitiveArray.length; i++) {
-                  boxedArray[i] = primitiveArray[i];
+              if (elements instanceof int[] array) {
+                for (int element : array) {
+                  encodeInt32("Int32", element);
                 }
-                encodeInt32Array("ListOfInt32", boxedArray);
-              } else {
-                encodeInt32Array("ListOfInt32", (Integer[]) elements);
+              } else if (elements instanceof Integer[] array) {
+                for (Integer element : array) {
+                  encodeInt32("Int32", element);
+                }
               }
             }
-            case UInt32 -> encodeUInt32Array("ListOfUInt32", (UInteger[]) elements);
+            case UInt32 -> {
+              if (elements instanceof UInteger[] array) {
+                for (UInteger element : array) {
+                  encodeUInt32("UInt32", element);
+                }
+              }
+            }
             case Int64 -> {
-              if (elements instanceof long[] primitiveArray) {
-                Long[] boxedArray = new Long[primitiveArray.length];
-                for (int i = 0; i < primitiveArray.length; i++) {
-                  boxedArray[i] = primitiveArray[i];
+              if (elements instanceof long[] array) {
+                for (long element : array) {
+                  encodeInt64("Int64", element);
                 }
-                encodeInt64Array("ListOfInt64", boxedArray);
-              } else {
-                encodeInt64Array("ListOfInt64", (Long[]) elements);
+              } else if (elements instanceof Long[] array) {
+                for (Long element : array) {
+                  encodeInt64("Int64", element);
+                }
               }
             }
-            case UInt64 -> encodeUInt64Array("ListOfUInt64", (ULong[]) elements);
-            case Float -> {
-              if (elements instanceof float[] primitiveArray) {
-                Float[] boxedArray = new Float[primitiveArray.length];
-                for (int i = 0; i < primitiveArray.length; i++) {
-                  boxedArray[i] = primitiveArray[i];
+            case UInt64 -> {
+              if (elements instanceof ULong[] array) {
+                for (ULong element : array) {
+                  encodeUInt64("UInt64", element);
                 }
-                encodeFloatArray("ListOfFloat", boxedArray);
-              } else {
-                encodeFloatArray("ListOfFloat", (Float[]) elements);
+              }
+            }
+            case Float -> {
+              if (elements instanceof float[] array) {
+                for (float element : array) {
+                  encodeFloat("Float", element);
+                }
+              } else if (elements instanceof Float[] array) {
+                for (Float element : array) {
+                  encodeFloat("Float", element);
+                }
               }
             }
             case Double -> {
-              if (elements instanceof double[] primitiveArray) {
-                Double[] boxedArray = new Double[primitiveArray.length];
-                for (int i = 0; i < primitiveArray.length; i++) {
-                  boxedArray[i] = primitiveArray[i];
+              if (elements instanceof double[] array) {
+                for (double element : array) {
+                  encodeDouble("Double", element);
                 }
-                encodeDoubleArray("ListOfDouble", boxedArray);
-              } else {
-                encodeDoubleArray("ListOfDouble", (Double[]) elements);
+              } else if (elements instanceof Double[] array) {
+                for (Double element : array) {
+                  encodeDouble("Double", element);
+                }
               }
             }
-            case String -> encodeStringArray("ListOfString", (String[]) elements);
-            case DateTime -> encodeDateTimeArray("ListOfDateTime", (DateTime[]) elements);
-            case Guid -> encodeGuidArray("ListOfGuid", (UUID[]) elements);
-            case ByteString -> encodeByteStringArray("ListOfByteString", (ByteString[]) elements);
-            case XmlElement -> encodeXmlElementArray("ListOfXmlElement", (XmlElement[]) elements);
-            case NodeId -> encodeNodeIdArray("ListOfNodeId", (NodeId[]) elements);
-            case ExpandedNodeId ->
-                encodeExpandedNodeIdArray("ListOfExpandedNodeId", (ExpandedNodeId[]) elements);
-            case StatusCode -> encodeStatusCodeArray("ListOfStatusCode", (StatusCode[]) elements);
-            case QualifiedName ->
-                encodeQualifiedNameArray("ListOfQualifiedName", (QualifiedName[]) elements);
-            case LocalizedText ->
-                encodeLocalizedTextArray("ListOfLocalizedText", (LocalizedText[]) elements);
-            case ExtensionObject ->
-                encodeExtensionObjectArray("ListOfExtensionObject", (ExtensionObject[]) elements);
-            case DataValue -> encodeDataValueArray("ListOfDataValue", (DataValue[]) elements);
-            case Variant -> encodeVariantArray("ListOfVariant", (Variant[]) elements);
-            case DiagnosticInfo ->
-                encodeDiagnosticInfoArray("ListOfDiagnosticInfo", (DiagnosticInfo[]) elements);
+            case String -> {
+              if (elements instanceof String[] array) {
+                for (String element : array) {
+                  encodeString("String", element);
+                }
+              }
+            }
+            case DateTime -> {
+              if (elements instanceof DateTime[] array) {
+                for (DateTime element : array) {
+                  encodeDateTime("DateTime", element);
+                }
+              }
+            }
+            case Guid -> {
+              if (elements instanceof UUID[] array) {
+                for (UUID element : array) {
+                  encodeGuid("Guid", element);
+                }
+              }
+            }
+            case ByteString -> {
+              if (elements instanceof ByteString[] array) {
+                for (ByteString element : array) {
+                  encodeByteString("ByteString", element);
+                }
+              }
+            }
+            case XmlElement -> {
+              if (elements instanceof XmlElement[] array) {
+                for (XmlElement element : array) {
+                  encodeXmlElement("XmlElement", element);
+                }
+              }
+            }
+            case NodeId -> {
+              if (elements instanceof NodeId[] array) {
+                for (NodeId element : array) {
+                  encodeNodeId("NodeId", element);
+                }
+              }
+            }
+            case ExpandedNodeId -> {
+              if (elements instanceof ExpandedNodeId[] array) {
+                for (ExpandedNodeId element : array) {
+                  encodeExpandedNodeId("ExpandedNodeId", element);
+                }
+              }
+            }
+            case StatusCode -> {
+              if (elements instanceof StatusCode[] array) {
+                for (StatusCode element : array) {
+                  encodeStatusCode("StatusCode", element);
+                }
+              }
+            }
+            case QualifiedName -> {
+              if (elements instanceof QualifiedName[] array) {
+                for (QualifiedName element : array) {
+                  encodeQualifiedName("QualifiedName", element);
+                }
+              }
+            }
+            case LocalizedText -> {
+              if (elements instanceof LocalizedText[] array) {
+                for (LocalizedText element : array) {
+                  encodeLocalizedText("LocalizedText", element);
+                }
+              }
+            }
+            case ExtensionObject -> {
+              if (elements instanceof ExtensionObject[] array) {
+                for (ExtensionObject element : array) {
+                  encodeExtensionObject("ExtensionObject", element);
+                }
+              }
+            }
+            case DataValue -> {
+              if (elements instanceof DataValue[] array) {
+                for (DataValue element : array) {
+                  encodeDataValue("DataValue", element);
+                }
+              }
+            }
+            case Variant -> {
+              if (elements instanceof Variant[] array) {
+                for (Variant element : array) {
+                  encodeVariant("Variant", element);
+                }
+              }
+            }
+            case DiagnosticInfo -> {
+              if (elements instanceof DiagnosticInfo[] array) {
+                for (DiagnosticInfo element : array) {
+                  encodeDiagnosticInfo("DiagnosticInfo", element);
+                }
+              }
+            }
           }
 
           xmlStreamWriter.writeEndElement();
