@@ -15,6 +15,7 @@ import java.io.StringWriter;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.xml.stream.*;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
@@ -40,6 +41,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
   private StringWriter xmlString;
   private XMLStreamWriter xmlStreamWriter;
 
+  private final AtomicBoolean encodingMessage = new AtomicBoolean(false);
   private final AtomicInteger depth = new AtomicInteger(0);
   private final Deque<String> namespaces = new ArrayDeque<>();
 
@@ -665,7 +667,13 @@ public class OpcUaXmlEncoder implements UaEncoder {
         } else if (value instanceof Matrix matrix) {
           switch (typeHint) {
             case BUILTIN -> encodeMatrix("Matrix", matrix);
-              // TODO
+            case ENUM -> encodeEnumMatrix("Matrix", matrix);
+            case STRUCT ->
+                encodeStructMatrix("Matrix", matrix, matrix.getDataTypeId().orElseThrow());
+            case OPTION_SET -> {
+              Matrix transformed = matrix.transform(os -> ((OptionSetUInteger<?>) os).getValue());
+              encodeMatrix("Matrix", transformed);
+            }
           }
         } else {
           switch (typeHint) {
@@ -867,11 +875,27 @@ public class OpcUaXmlEncoder implements UaEncoder {
   }
 
   @Override
-  public void encodeMessage(String field, UaMessageType message) throws UaSerializationException {}
+  public void encodeMessage(String field, UaMessageType message) throws UaSerializationException {
+    // TODO
+  }
 
   @Override
   public void encodeEnum(String field, UaEnumeratedType value) {
-    encodeString(field, String.format("%s_%s", value.getName(), value.getValue()));
+    if (beginField(field, value == null, true)) {
+      if (value != null) {
+        try {
+          if (encodingMessage.get()) {
+            xmlStreamWriter.writeCharacters(
+                DatatypeConverter.printString(
+                    String.format("%s_%s", value.getName(), value.getValue())));
+          } else {
+            xmlStreamWriter.writeCharacters(DatatypeConverter.printInt(value.getValue()));
+          }
+        } catch (XMLStreamException e) {
+          throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+        }
+      }
+    }
   }
 
   @Override
@@ -1694,15 +1718,41 @@ public class OpcUaXmlEncoder implements UaEncoder {
   }
 
   @Override
-  public void encodeEnumMatrix(String field, Matrix value) throws UaSerializationException {}
+  public void encodeEnumMatrix(String field, Matrix value) throws UaSerializationException {
+    Matrix transformed = value.transform(e -> ((UaEnumeratedType) e).getValue());
+
+    encodeMatrix(field, transformed);
+  }
 
   @Override
   public void encodeStructMatrix(String field, Matrix value, NodeId dataTypeId)
-      throws UaSerializationException {}
+      throws UaSerializationException {
+
+    Matrix transformed =
+        value.transform(
+            e -> {
+              UaStructuredType struct = (UaStructuredType) e;
+              return ExtensionObject.encode(
+                  context, struct, dataTypeId, OpcUaDefaultXmlEncoding.getInstance());
+            });
+
+    encodeMatrix(field, transformed);
+  }
 
   @Override
   public void encodeStructMatrix(String field, Matrix value, ExpandedNodeId dataTypeId)
-      throws UaSerializationException {}
+      throws UaSerializationException {
+
+    Matrix transformed =
+        value.transform(
+            e -> {
+              UaStructuredType struct = (UaStructuredType) e;
+              return ExtensionObject.encode(
+                  context, struct, dataTypeId, OpcUaDefaultXmlEncoding.getInstance());
+            });
+
+    encodeMatrix(field, transformed);
+  }
 
   enum TypeHint {
     BUILTIN,

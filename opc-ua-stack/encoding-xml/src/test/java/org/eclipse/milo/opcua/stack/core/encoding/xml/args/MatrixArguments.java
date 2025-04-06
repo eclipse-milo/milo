@@ -20,6 +20,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.BrowseDirection;
 import org.eclipse.milo.opcua.stack.core.types.structured.XVType;
 import org.junit.jupiter.params.provider.Arguments;
 
@@ -56,6 +57,70 @@ public class MatrixArguments {
             diagnosticInfoMatrixArguments());
 
     return ss.flatMap(Function.identity());
+  }
+
+  public static Stream<Arguments> matrixOfStructuredTypeArguments() {
+    return Stream.of(
+        Arguments.of(
+            Matrix.ofStruct(
+                new XVType[][] {
+                  {new XVType(0.0, 1.0f), new XVType(2.0, 3.0f)},
+                  {new XVType(4.0, 5.0f), new XVType(6.0, 7.0f)}
+                }),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+              <uax:Dimensions>
+                <uax:Int32>2</uax:Int32>
+                <uax:Int32>2</uax:Int32>
+              </uax:Dimensions>
+              <uax:Elements>
+                <uax:ExtensionObject>
+                  <uax:TypeId>
+                    <uax:Identifier>i=12080</uax:Identifier>
+                  </uax:TypeId>
+                  <uax:Body>
+                    <XVType>
+                      <X>0.0</X>
+                      <Value>1.0</Value>
+                    </XVType>
+                  </uax:Body>
+                </uax:ExtensionObject>
+                <uax:ExtensionObject>
+                  <uax:TypeId>
+                    <uax:Identifier>i=12080</uax:Identifier>
+                  </uax:TypeId>
+                  <uax:Body>
+                    <XVType>
+                      <X>2.0</X>
+                      <Value>3.0</Value>
+                    </XVType>
+                  </uax:Body>
+                </uax:ExtensionObject>
+                <uax:ExtensionObject>
+                  <uax:TypeId>
+                    <uax:Identifier>i=12080</uax:Identifier>
+                  </uax:TypeId>
+                  <uax:Body>
+                    <XVType>
+                      <X>4.0</X>
+                      <Value>5.0</Value>
+                    </XVType>
+                  </uax:Body>
+                </uax:ExtensionObject>
+                <uax:ExtensionObject>
+                  <uax:TypeId>
+                    <uax:Identifier>i=12080</uax:Identifier>
+                  </uax:TypeId>
+                  <uax:Body>
+                    <XVType>
+                      <X>6.0</X>
+                      <Value>7.0</Value>
+                    </XVType>
+                  </uax:Body>
+                </uax:ExtensionObject>
+              </uax:Elements>
+            </Test>
+            """));
   }
 
   private static Stream<Arguments> booleanMatrixArguments() {
@@ -1387,6 +1452,64 @@ public class MatrixArguments {
                     <uax:Code>9</uax:Code>
                   </uax:InnerStatusCode>
                 </uax:DiagnosticInfo>
+              </uax:Elements>
+            </Test>
+            """));
+  }
+
+  public static Stream<Arguments> matrixOfEnumeratedTypeArguments() {
+    return Stream.of(
+        // BrowseDirection 2D Matrix
+        Arguments.of(
+            Matrix.ofEnum(
+                new BrowseDirection[][] {
+                  {BrowseDirection.Forward, BrowseDirection.Inverse},
+                  {BrowseDirection.Both, BrowseDirection.Invalid}
+                }),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Dimensions>
+                <uax:Int32>2</uax:Int32>
+                <uax:Int32>2</uax:Int32>
+              </uax:Dimensions>
+              <uax:Elements>
+                <uax:Int32>0</uax:Int32>
+                <uax:Int32>1</uax:Int32>
+                <uax:Int32>2</uax:Int32>
+                <uax:Int32>3</uax:Int32>
+              </uax:Elements>
+            </Test>
+            """),
+
+        // BrowseDirection 3D Matrix
+        Arguments.of(
+            Matrix.ofEnum(
+                new BrowseDirection[][][] {
+                  {
+                    {BrowseDirection.Forward, BrowseDirection.Inverse},
+                    {BrowseDirection.Both, BrowseDirection.Invalid}
+                  },
+                  {
+                    {BrowseDirection.Inverse, BrowseDirection.Both},
+                    {BrowseDirection.Forward, BrowseDirection.Invalid}
+                  }
+                }),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Dimensions>
+                <uax:Int32>2</uax:Int32>
+                <uax:Int32>2</uax:Int32>
+                <uax:Int32>2</uax:Int32>
+              </uax:Dimensions>
+              <uax:Elements>
+                <uax:Int32>0</uax:Int32>
+                <uax:Int32>1</uax:Int32>
+                <uax:Int32>2</uax:Int32>
+                <uax:Int32>3</uax:Int32>
+                <uax:Int32>1</uax:Int32>
+                <uax:Int32>2</uax:Int32>
+                <uax:Int32>0</uax:Int32>
+                <uax:Int32>3</uax:Int32>
               </uax:Elements>
             </Test>
             """));

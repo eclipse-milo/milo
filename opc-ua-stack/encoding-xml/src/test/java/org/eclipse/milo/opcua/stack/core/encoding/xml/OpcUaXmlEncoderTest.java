@@ -16,11 +16,8 @@ import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.*;
-import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.diff.Diff;
 
 class OpcUaXmlEncoderTest {
@@ -42,22 +39,6 @@ class OpcUaXmlEncoderTest {
       assertThrows(
           UaSerializationException.class, () -> encoder.encodeDiagnosticInfo("Test", nested));
     }
-  }
-
-  @ParameterizedTest(name = "matrix = {0}")
-  @MethodSource(
-      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.MatrixArguments#matrixOfBuiltinTypeArguments")
-  void encodeMatrixOfBuiltinType(@Nullable Matrix matrix, String expected) {
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeMatrix("Test", matrix);
-
-    String actual = encoder.getDocumentXml();
-
-    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
-
-    maybePrintXml(diff, expected, actual);
-
-    assertFalse(diff.hasDifferences(), diff.toString());
   }
 
   /**

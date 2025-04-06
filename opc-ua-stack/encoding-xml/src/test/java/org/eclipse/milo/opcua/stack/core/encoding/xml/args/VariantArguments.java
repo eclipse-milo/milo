@@ -32,6 +32,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
+import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelType;
 import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.AttributeWriteMask;
 import org.junit.jupiter.params.provider.Arguments;
@@ -1690,6 +1691,39 @@ public class VariantArguments {
                       <uax:Locale>-1</uax:Locale>
                       <uax:LocalizedText>-1</uax:LocalizedText>
                     </uax:DiagnosticInfo>
+                  </uax:Elements>
+                </uax:Matrix>
+              </uax:Value>
+            </Test>
+            """),
+
+        // OptionSetUI8 (AccessLevelType) 2D Matrix
+        Arguments.of(
+            Variant.ofMatrix(
+                Matrix.ofOptionSetUI(
+                    new AccessLevelType[][] {
+                      {
+                        AccessLevelType.of(AccessLevelType.Field.CurrentRead),
+                        AccessLevelType.of(AccessLevelType.Field.CurrentWrite)
+                      },
+                      {
+                        AccessLevelType.of(AccessLevelType.Field.HistoryRead),
+                        AccessLevelType.of(AccessLevelType.Field.HistoryWrite)
+                      }
+                    })),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Value>
+                <uax:Matrix>
+                  <uax:Dimensions>
+                    <uax:Int32>2</uax:Int32>
+                    <uax:Int32>2</uax:Int32>
+                  </uax:Dimensions>
+                  <uax:Elements>
+                    <uax:Byte>1</uax:Byte>
+                    <uax:Byte>2</uax:Byte>
+                    <uax:Byte>4</uax:Byte>
+                    <uax:Byte>8</uax:Byte>
                   </uax:Elements>
                 </uax:Matrix>
               </uax:Value>
