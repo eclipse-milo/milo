@@ -11,6 +11,7 @@
 package org.eclipse.milo.opcua.stack.core.encoding.xml.args;
 
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.xml.OpcUaDefaultXmlEncoding;
@@ -26,6 +27,38 @@ import org.junit.jupiter.params.provider.Arguments;
 public class MatrixArguments {
 
   public static Stream<Arguments> matrixOfBuiltinTypeArguments() {
+    Stream<Stream<Arguments>> ss =
+        Stream.of(
+            booleanMatrixArguments(),
+            sByteMatrixArguments(),
+            byteMatrixArguments(),
+            int16MatrixArguments(),
+            uInt16MatrixArguments(),
+            int32MatrixArguments(),
+            uInt32MatrixArguments(),
+            int64MatrixArguments(),
+            uInt64MatrixArguments(),
+            floatMatrixArguments(),
+            doubleMatrixArguments(),
+            stringMatrixArguments(),
+            dateTimeMatrixArguments(),
+            guidMatrixArguments(),
+            byteStringMatrixArguments(),
+            xmlElementMatrixArguments(),
+            nodeIdMatrixArguments(),
+            expandedNodeIdMatrixArguments(),
+            statusCodeMatrixArguments(),
+            qualifiedNameMatrixArguments(),
+            localizedTextMatrixArguments(),
+            extensionObjectMatrixArguments(),
+            dataValueMatrixArguments(),
+            variantMatrixArguments(),
+            diagnosticInfoMatrixArguments());
+
+    return ss.flatMap(Function.identity());
+  }
+
+  private static Stream<Arguments> booleanMatrixArguments() {
     return Stream.of(
         // Boolean 2D Matrix
         Arguments.of(
@@ -71,8 +104,11 @@ public class MatrixArguments {
                 </uax:ListOfBoolean>
               </uax:Elements>
             </Test>
-            """),
+            """));
+  }
 
+  private static Stream<Arguments> sByteMatrixArguments() {
+    return Stream.of(
         // SByte 2D Matrix
         Arguments.of(
             Matrix.ofSByte(new byte[][] {{-128, 0}, {0, 127}}),
@@ -116,8 +152,11 @@ public class MatrixArguments {
                 </uax:ListOfSByte>
               </uax:Elements>
             </Test>
-            """),
+            """));
+  }
 
+  private static Stream<Arguments> byteMatrixArguments() {
+    return Stream.of(
         // Byte 2D Matrix
         Arguments.of(
             Matrix.ofByte(
@@ -166,8 +205,11 @@ public class MatrixArguments {
                 </uax:ListOfByte>
               </uax:Elements>
             </Test>
-            """),
+            """));
+  }
 
+  private static Stream<Arguments> int16MatrixArguments() {
+    return Stream.of(
         // Int16 2D Matrix
         Arguments.of(
             Matrix.ofInt16(new short[][] {{Short.MIN_VALUE, 0}, {0, Short.MAX_VALUE}}),
@@ -215,8 +257,11 @@ public class MatrixArguments {
                 </uax:ListOfInt16>
               </uax:Elements>
             </Test>
-            """),
+            """));
+  }
 
+  private static Stream<Arguments> uInt16MatrixArguments() {
+    return Stream.of(
         // UInt16 2D Matrix
         Arguments.of(
             Matrix.ofUInt16(
@@ -270,8 +315,11 @@ public class MatrixArguments {
                 </uax:ListOfUInt16>
               </uax:Elements>
             </Test>
-            """),
+            """));
+  }
 
+  private static Stream<Arguments> int32MatrixArguments() {
+    return Stream.of(
         // Int32 2D Matrix
         Arguments.of(
             Matrix.ofInt32(new int[][] {{Integer.MIN_VALUE, 0}, {0, Integer.MAX_VALUE}}),
@@ -319,8 +367,11 @@ public class MatrixArguments {
                 </uax:ListOfInt32>
               </uax:Elements>
             </Test>
-            """),
+            """));
+  }
 
+  private static Stream<Arguments> uInt32MatrixArguments() {
+    return Stream.of(
         // UInt32 2D Matrix
         Arguments.of(
             Matrix.ofUInt32(
@@ -375,8 +426,11 @@ public class MatrixArguments {
                 </uax:ListOfUInt32>
               </uax:Elements>
             </Test>
-            """),
+            """));
+  }
 
+  private static Stream<Arguments> int64MatrixArguments() {
+    return Stream.of(
         // Int64 2D Matrix
         Arguments.of(
             Matrix.ofInt64(new long[][] {{Long.MIN_VALUE, 0}, {0, Long.MAX_VALUE}}),
@@ -424,8 +478,11 @@ public class MatrixArguments {
                 </uax:ListOfInt64>
               </uax:Elements>
             </Test>
-            """),
+            """));
+  }
 
+  private static Stream<Arguments> uInt64MatrixArguments() {
+    return Stream.of(
         // UInt64 2D Matrix
         Arguments.of(
             Matrix.ofUInt64(
@@ -480,11 +537,18 @@ public class MatrixArguments {
                 </uax:ListOfUInt64>
               </uax:Elements>
             </Test>
-            """),
+            """));
+  }
 
+  private static Stream<Arguments> floatMatrixArguments() {
+    return Stream.of(
         // Float 2D Matrix
         Arguments.of(
-            Matrix.ofFloat(new float[][] {{Float.MIN_VALUE, 0.0f}, {1.5f, Float.MAX_VALUE}}),
+            Matrix.ofFloat(
+                new float[][] {
+                  {Float.MIN_VALUE, 0.0f},
+                  {Float.MAX_VALUE, Float.POSITIVE_INFINITY}
+                }),
             """
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
               <uax:Dimensions>
@@ -495,8 +559,8 @@ public class MatrixArguments {
                 <uax:ListOfFloat>
                   <uax:Float>1.4E-45</uax:Float>
                   <uax:Float>0.0</uax:Float>
-                  <uax:Float>1.5</uax:Float>
                   <uax:Float>3.4028235E38</uax:Float>
+                  <uax:Float>INF</uax:Float>
                 </uax:ListOfFloat>
               </uax:Elements>
             </Test>
@@ -506,8 +570,8 @@ public class MatrixArguments {
         Arguments.of(
             Matrix.ofFloat(
                 new float[][][] {
-                  {{Float.MIN_VALUE, 0.0f}, {1.5f, Float.MAX_VALUE}},
-                  {{Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY}, {Float.NaN, -1.5f}}
+                  {{Float.MIN_VALUE, 0.0f}, {Float.MAX_VALUE, Float.POSITIVE_INFINITY}},
+                  {{Float.NaN, Float.NEGATIVE_INFINITY}, {1.0f, 2.0f}}
                 }),
             """
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
@@ -520,20 +584,27 @@ public class MatrixArguments {
                 <uax:ListOfFloat>
                   <uax:Float>1.4E-45</uax:Float>
                   <uax:Float>0.0</uax:Float>
-                  <uax:Float>1.5</uax:Float>
                   <uax:Float>3.4028235E38</uax:Float>
-                  <uax:Float>-INF</uax:Float>
                   <uax:Float>INF</uax:Float>
                   <uax:Float>NaN</uax:Float>
-                  <uax:Float>-1.5</uax:Float>
+                  <uax:Float>-INF</uax:Float>
+                  <uax:Float>1.0</uax:Float>
+                  <uax:Float>2.0</uax:Float>
                 </uax:ListOfFloat>
               </uax:Elements>
             </Test>
-            """),
+            """));
+  }
 
+  private static Stream<Arguments> doubleMatrixArguments() {
+    return Stream.of(
         // Double 2D Matrix
         Arguments.of(
-            Matrix.ofDouble(new double[][] {{Double.MIN_VALUE, 0.0}, {1.5, Double.MAX_VALUE}}),
+            Matrix.ofDouble(
+                new double[][] {
+                  {Double.MIN_VALUE, 0.0},
+                  {Double.MAX_VALUE, Double.POSITIVE_INFINITY}
+                }),
             """
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
               <uax:Dimensions>
@@ -544,8 +615,8 @@ public class MatrixArguments {
                 <uax:ListOfDouble>
                   <uax:Double>4.9E-324</uax:Double>
                   <uax:Double>0.0</uax:Double>
-                  <uax:Double>1.5</uax:Double>
                   <uax:Double>1.7976931348623157E308</uax:Double>
+                  <uax:Double>INF</uax:Double>
                 </uax:ListOfDouble>
               </uax:Elements>
             </Test>
@@ -555,8 +626,8 @@ public class MatrixArguments {
         Arguments.of(
             Matrix.ofDouble(
                 new double[][][] {
-                  {{Double.MIN_VALUE, 0.0}, {1.5, Double.MAX_VALUE}},
-                  {{Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY}, {Double.NaN, -1.5}}
+                  {{Double.MIN_VALUE, 0.0}, {Double.MAX_VALUE, Double.POSITIVE_INFINITY}},
+                  {{Double.NaN, Double.NEGATIVE_INFINITY}, {1.0, 2.0}}
                 }),
             """
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
@@ -569,20 +640,23 @@ public class MatrixArguments {
                 <uax:ListOfDouble>
                   <uax:Double>4.9E-324</uax:Double>
                   <uax:Double>0.0</uax:Double>
-                  <uax:Double>1.5</uax:Double>
                   <uax:Double>1.7976931348623157E308</uax:Double>
-                  <uax:Double>-INF</uax:Double>
                   <uax:Double>INF</uax:Double>
                   <uax:Double>NaN</uax:Double>
-                  <uax:Double>-1.5</uax:Double>
+                  <uax:Double>-INF</uax:Double>
+                  <uax:Double>1.0</uax:Double>
+                  <uax:Double>2.0</uax:Double>
                 </uax:ListOfDouble>
               </uax:Elements>
             </Test>
-            """),
+            """));
+  }
 
+  private static Stream<Arguments> stringMatrixArguments() {
+    return Stream.of(
         // String 2D Matrix
         Arguments.of(
-            Matrix.ofString(new String[][] {{"Hello", "World"}, {"OPC", "UA"}}),
+            Matrix.ofString(new String[][] {{"Hello", "World"}, {"Foo", "Bar"}}),
             """
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
               <uax:Dimensions>
@@ -593,8 +667,8 @@ public class MatrixArguments {
                 <uax:ListOfString>
                   <uax:String>Hello</uax:String>
                   <uax:String>World</uax:String>
-                  <uax:String>OPC</uax:String>
-                  <uax:String>UA</uax:String>
+                  <uax:String>Foo</uax:String>
+                  <uax:String>Bar</uax:String>
                 </uax:ListOfString>
               </uax:Elements>
             </Test>
@@ -604,7 +678,8 @@ public class MatrixArguments {
         Arguments.of(
             Matrix.ofString(
                 new String[][][] {
-                  {{"Hello", "World"}, {"OPC", "UA"}}, {{"Test", "Matrix"}, {"", "Empty"}}
+                  {{"Hello", "World"}, {"Foo", "Bar"}},
+                  {{"Fizz", "Buzz"}, {"Ping", "Pong"}}
                 }),
             """
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
@@ -617,17 +692,20 @@ public class MatrixArguments {
                 <uax:ListOfString>
                   <uax:String>Hello</uax:String>
                   <uax:String>World</uax:String>
-                  <uax:String>OPC</uax:String>
-                  <uax:String>UA</uax:String>
-                  <uax:String>Test</uax:String>
-                  <uax:String>Matrix</uax:String>
-                  <uax:String></uax:String>
-                  <uax:String>Empty</uax:String>
+                  <uax:String>Foo</uax:String>
+                  <uax:String>Bar</uax:String>
+                  <uax:String>Fizz</uax:String>
+                  <uax:String>Buzz</uax:String>
+                  <uax:String>Ping</uax:String>
+                  <uax:String>Pong</uax:String>
                 </uax:ListOfString>
               </uax:Elements>
             </Test>
-            """),
+            """));
+  }
 
+  private static Stream<Arguments> dateTimeMatrixArguments() {
+    return Stream.of(
         // DateTime 2D Matrix
         Arguments.of(
             Matrix.ofDateTime(
@@ -703,8 +781,11 @@ public class MatrixArguments {
                 </uax:ListOfDateTime>
               </uax:Elements>
             </Test>
-            """),
+            """));
+  }
 
+  private static Stream<Arguments> guidMatrixArguments() {
+    return Stream.of(
         // Guid 2D Matrix
         Arguments.of(
             Matrix.ofGuid(
@@ -780,8 +861,11 @@ public class MatrixArguments {
                 </uax:ListOfGuid>
               </uax:Elements>
             </Test>
-            """),
+            """));
+  }
 
+  private static Stream<Arguments> byteStringMatrixArguments() {
+    return Stream.of(
         // ByteString 2D Matrix
         Arguments.of(
             Matrix.ofByteString(
@@ -845,9 +929,11 @@ public class MatrixArguments {
                 </uax:ListOfByteString>
               </uax:Elements>
             </Test>
-            """),
+            """));
+  }
 
-        // XmlElement 2D Matrix
+  private static Stream<Arguments> xmlElementMatrixArguments() {
+    return Stream.of(
         Arguments.of(
             Matrix.ofXmlElement(
                 new XmlElement[][] {
@@ -875,8 +961,11 @@ public class MatrixArguments {
                 </uax:ListOfXmlElement>
               </uax:Elements>
             </Test>
-            """),
+            """));
+  }
 
+  private static Stream<Arguments> nodeIdMatrixArguments() {
+    return Stream.of(
         // NodeId 2D Matrix
         Arguments.of(
             Matrix.ofNodeId(
@@ -967,9 +1056,11 @@ public class MatrixArguments {
                 </uax:ListOfNodeId>
               </uax:Elements>
             </Test>
-            """),
+            """));
+  }
 
-        // ExpandedNodeId 2D Matrix
+  private static Stream<Arguments> expandedNodeIdMatrixArguments() {
+    return Stream.of(
         Arguments.of(
             Matrix.ofExpandedNodeId(
                 new ExpandedNodeId[][] {
@@ -1003,9 +1094,11 @@ public class MatrixArguments {
                 </uax:ListOfExpandedNodeId>
               </uax:Elements>
             </Test>
-            """),
+            """));
+  }
 
-        // StatusCode 2D Matrix
+  private static Stream<Arguments> statusCodeMatrixArguments() {
+    return Stream.of(
         Arguments.of(
             Matrix.ofStatusCode(
                 new StatusCode[][] {
@@ -1038,9 +1131,11 @@ public class MatrixArguments {
                 </uax:ListOfStatusCode>
               </uax:Elements>
             </Test>
-            """),
+            """));
+  }
 
-        // QualifiedName 2D Matrix
+  private static Stream<Arguments> qualifiedNameMatrixArguments() {
+    return Stream.of(
         Arguments.of(
             Matrix.ofQualifiedName(
                 new QualifiedName[][] {
@@ -1073,9 +1168,11 @@ public class MatrixArguments {
                 </uax:ListOfQualifiedName>
               </uax:Elements>
             </Test>
-            """),
+            """));
+  }
 
-        // LocalizedText 2D Matrix
+  private static Stream<Arguments> localizedTextMatrixArguments() {
+    return Stream.of(
         Arguments.of(
             Matrix.ofLocalizedText(
                 new LocalizedText[][] {
@@ -1105,9 +1202,11 @@ public class MatrixArguments {
                 </uax:ListOfLocalizedText>
               </uax:Elements>
             </Test>
-            """),
+            """));
+  }
 
-        // ExtensionObject 2D Matrix
+  private static Stream<Arguments> extensionObjectMatrixArguments() {
+    return Stream.of(
         Arguments.of(
             Matrix.ofExtensionObject(
                 new ExtensionObject[][] {
@@ -1191,9 +1290,11 @@ public class MatrixArguments {
                 </uax:ListOfExtensionObject>
               </uax:Elements>
             </Test>
-            """),
+            """));
+  }
 
-        // DataValue 2D Matrix
+  private static Stream<Arguments> dataValueMatrixArguments() {
+    return Stream.of(
         Arguments.of(
             Matrix.ofDataValue(
                 new DataValue[][] {
@@ -1246,9 +1347,11 @@ public class MatrixArguments {
                 </uax:ListOfDataValue>
               </uax:Elements>
             </Test>
-            """),
+            """));
+  }
 
-        // Variant 2D Matrix
+  private static Stream<Arguments> variantMatrixArguments() {
+    return Stream.of(
         Arguments.of(
             Matrix.ofVariant(
                 new Variant[][] {
@@ -1290,9 +1393,11 @@ public class MatrixArguments {
                 </uax:ListOfVariant>
               </uax:Elements>
             </Test>
-            """),
+            """));
+  }
 
-        // DiagnosticInfo 2D Matrix
+  private static Stream<Arguments> diagnosticInfoMatrixArguments() {
+    return Stream.of(
         Arguments.of(
             Matrix.ofDiagnosticInfo(
                 new DiagnosticInfo[][] {
