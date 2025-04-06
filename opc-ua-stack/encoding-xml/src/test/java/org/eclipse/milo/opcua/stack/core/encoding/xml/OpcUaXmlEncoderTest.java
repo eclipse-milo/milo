@@ -16,18 +16,7 @@ import java.util.UUID;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
-import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
-import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
-import org.eclipse.milo.opcua.stack.core.types.builtin.XmlElement;
+import org.eclipse.milo.opcua.stack.core.types.builtin.*;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
@@ -48,7 +37,7 @@ class OpcUaXmlEncoderTest {
   EncodingContext context = new DefaultEncodingContext();
 
   @Nested
-  class Scalar {
+  class ScalarTests {
 
     @ParameterizedTest(name = "value = {0}")
     @MethodSource(
@@ -582,7 +571,7 @@ class OpcUaXmlEncoderTest {
   }
 
   @Nested
-  class Array {
+  class ArrayTests {
 
     @ParameterizedTest(name = "array = {0}")
     @MethodSource(
@@ -974,6 +963,26 @@ class OpcUaXmlEncoderTest {
     void encodeDiagnosticInfoArray(@Nullable DiagnosticInfo[] array, String expected) {
       var encoder = new OpcUaXmlEncoder(context);
       encoder.encodeDiagnosticInfoArray("Test", array);
+
+      String actual = encoder.getDocumentXml();
+
+      Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+      maybePrintXml(diff, expected, actual);
+
+      assertFalse(diff.hasDifferences(), diff.toString());
+    }
+  }
+
+  @Nested
+  class MatrixTests {
+
+    @ParameterizedTest(name = "matrix = {0}")
+    @MethodSource(
+        "org.eclipse.milo.opcua.stack.core.encoding.xml.args.MatrixArguments#matrixOfBuiltinTypeArguments")
+    void encodeMatrixOfBuiltinType(@Nullable Matrix matrix, String expected) {
+      var encoder = new OpcUaXmlEncoder(context);
+      encoder.encodeMatrix("Test", matrix);
 
       String actual = encoder.getDocumentXml();
 
