@@ -15,6 +15,7 @@ import java.io.StringWriter;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.xml.stream.*;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -39,6 +40,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
   private StringWriter xmlString;
   private XMLStreamWriter xmlStreamWriter;
 
+  private final AtomicInteger depth = new AtomicInteger(0);
   private final Deque<String> namespaces = new ArrayDeque<>();
 
   private final EncodingContext context;
@@ -62,6 +64,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       xmlStreamWriter.setPrefix("uax", Namespaces.OPC_UA_XSD);
       xmlStreamWriter.setPrefix("xsi", Namespaces.XML_SCHEMA_INSTANCE);
 
+      depth.set(0);
       namespaces.clear();
     } catch (XMLStreamException e) {
       throw new RuntimeException(e);
@@ -528,6 +531,13 @@ public class OpcUaXmlEncoder implements UaEncoder {
   public void encodeVariant(String field, Variant value) throws UaSerializationException {
     if (beginField(field)) {
       namespaces.push(Namespaces.OPC_UA_XSD);
+
+      if (depth.getAndIncrement() > context.getEncodingLimits().getMaxRecursionDepth()) {
+        throw new UaSerializationException(
+            StatusCodes.Bad_EncodingError,
+            "max recursion depth exceeded: " + context.getEncodingLimits().getMaxRecursionDepth());
+      }
+
       try {
         xmlStreamWriter.writeStartElement(Namespaces.OPC_UA_XSD, "Value");
         encodeVariantValue(value.value());
@@ -535,8 +545,8 @@ public class OpcUaXmlEncoder implements UaEncoder {
       } catch (XMLStreamException e) {
         throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
       } finally {
+        depth.decrementAndGet();
         namespaces.pop();
-
         endField(field);
       }
     }
@@ -824,6 +834,13 @@ public class OpcUaXmlEncoder implements UaEncoder {
       try {
         namespaces.push(Namespaces.OPC_UA_XSD);
 
+        if (depth.getAndIncrement() > context.getEncodingLimits().getMaxRecursionDepth()) {
+          throw new UaSerializationException(
+              StatusCodes.Bad_EncodingError,
+              "max recursion depth exceeded: "
+                  + context.getEncodingLimits().getMaxRecursionDepth());
+        }
+
         if (value != null) {
           encodeInt32("SymbolicId", value.symbolicId());
           encodeInt32("NamespaceUri", value.namespaceUri());
@@ -840,8 +857,8 @@ public class OpcUaXmlEncoder implements UaEncoder {
           }
         }
       } finally {
+        depth.decrementAndGet();
         namespaces.pop();
-
         endField(field);
       }
     }
@@ -889,9 +906,16 @@ public class OpcUaXmlEncoder implements UaEncoder {
       throws UaSerializationException {
 
     if (beginField(field)) {
+      if (depth.getAndIncrement() > context.getEncodingLimits().getMaxRecursionDepth()) {
+        throw new UaSerializationException(
+            StatusCodes.Bad_EncodingError,
+            "max recursion depth exceeded: " + context.getEncodingLimits().getMaxRecursionDepth());
+      }
+
       try {
         codec.encode(context, this, value);
       } finally {
+        depth.decrementAndGet();
         endField(field);
       }
     }
@@ -1403,6 +1427,13 @@ public class OpcUaXmlEncoder implements UaEncoder {
       try {
         namespaces.push(Namespaces.OPC_UA_XSD);
 
+        if (depth.getAndIncrement() > context.getEncodingLimits().getMaxRecursionDepth()) {
+          throw new UaSerializationException(
+              StatusCodes.Bad_EncodingError,
+              "max recursion depth exceeded: "
+                  + context.getEncodingLimits().getMaxRecursionDepth());
+        }
+
         if (value != null) {
           Integer[] dimensions = new Integer[value.getDimensions().length];
           for (int i = 0; i < dimensions.length; i++) {
@@ -1523,8 +1554,8 @@ public class OpcUaXmlEncoder implements UaEncoder {
       } catch (XMLStreamException e) {
         throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
       } finally {
+        depth.decrementAndGet();
         namespaces.pop();
-
         endField(field);
       }
     }

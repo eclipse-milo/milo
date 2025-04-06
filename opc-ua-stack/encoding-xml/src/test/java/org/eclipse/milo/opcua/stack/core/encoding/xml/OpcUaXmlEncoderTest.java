@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.stack.core.encoding.xml;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.UUID;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
@@ -25,6 +26,7 @@ import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.diff.Diff;
 
@@ -33,6 +35,42 @@ class OpcUaXmlEncoderTest {
   private static final boolean DEBUG = true;
 
   EncodingContext context = new DefaultEncodingContext();
+
+  @ParameterizedTest
+  @ValueSource(ints = {0, 1, 127, 128, 129, 256})
+  void nestedDiagnosticInfo(int depth) {
+    var nested = createNestedDiagnosticInfo(depth);
+
+    var encoder = new OpcUaXmlEncoder(context);
+
+    if (depth <= encoder.getEncodingContext().getEncodingLimits().getMaxRecursionDepth()) {
+      assertDoesNotThrow(() -> encoder.encodeDiagnosticInfo("Test", nested));
+    } else {
+      assertThrows(
+          UaSerializationException.class, () -> encoder.encodeDiagnosticInfo("Test", nested));
+    }
+  }
+
+  /**
+   * Creates a nested DiagnosticInfo structure with the specified recursion depth.
+   *
+   * @param depth the recursion depth for nesting DiagnosticInfo objects
+   * @return a DiagnosticInfo object with nested innerDiagnosticInfo up to the specified depth
+   */
+  public static DiagnosticInfo createNestedDiagnosticInfo(int depth) {
+    if (depth <= 0) {
+      return DiagnosticInfo.NULL_VALUE;
+    }
+
+    return new DiagnosticInfo(
+        depth,
+        depth * 10,
+        depth * 100,
+        depth * 1000,
+        "Additional info at depth " + depth,
+        StatusCode.GOOD,
+        createNestedDiagnosticInfo(depth - 1));
+  }
 
   @Nested
   class ScalarTests {
