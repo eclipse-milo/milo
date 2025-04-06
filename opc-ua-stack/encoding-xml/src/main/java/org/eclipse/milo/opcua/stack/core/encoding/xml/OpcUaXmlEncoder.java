@@ -637,8 +637,11 @@ public class OpcUaXmlEncoder implements UaEncoder {
               }
             }
           }
-        } else if (value instanceof Matrix m) {
-          // TODO
+        } else if (value instanceof Matrix matrix) {
+          switch (typeHint) {
+            case BUILTIN -> encodeMatrix("Matrix", matrix);
+              // TODO
+          }
         } else {
           switch (typeHint) {
             case BUILTIN -> encodeBuiltinTypeValue(value, dataType);
@@ -1355,7 +1358,137 @@ public class OpcUaXmlEncoder implements UaEncoder {
   }
 
   @Override
-  public void encodeMatrix(String field, Matrix value) throws UaSerializationException {}
+  public void encodeMatrix(String field, Matrix value) throws UaSerializationException {
+    if (beginField(field, value == null, true, true)) {
+      try {
+        namespaces.push(Namespaces.OPC_UA_XSD);
+
+        if (value != null) {
+          Integer[] dimensions = new Integer[value.getDimensions().length];
+          for (int i = 0; i < dimensions.length; i++) {
+            dimensions[i] = value.getDimensions()[i];
+          }
+          encodeInt32Array("Dimensions", dimensions);
+
+          xmlStreamWriter.writeStartElement(Namespaces.OPC_UA_XSD, "Elements");
+
+          OpcUaDataType dataType = value.getDataType().orElseThrow();
+          Object elements = value.getElements();
+
+          switch (dataType) {
+            case Boolean -> {
+              if (elements instanceof boolean[] primitiveArray) {
+                Boolean[] boxedArray = new Boolean[primitiveArray.length];
+                for (int i = 0; i < primitiveArray.length; i++) {
+                  boxedArray[i] = primitiveArray[i];
+                }
+                encodeBooleanArray("ListOfBoolean", boxedArray);
+              } else {
+                encodeBooleanArray("ListOfBoolean", (Boolean[]) elements);
+              }
+            }
+            case Byte -> encodeByteArray("ListOfByte", (UByte[]) elements);
+            case SByte -> {
+              if (elements instanceof byte[] primitiveArray) {
+                Byte[] boxedArray = new Byte[primitiveArray.length];
+                for (int i = 0; i < primitiveArray.length; i++) {
+                  boxedArray[i] = primitiveArray[i];
+                }
+                encodeSByteArray("ListOfSByte", boxedArray);
+              } else {
+                encodeSByteArray("ListOfSByte", (Byte[]) elements);
+              }
+            }
+            case Int16 -> {
+              if (elements instanceof short[] primitiveArray) {
+                Short[] boxedArray = new Short[primitiveArray.length];
+                for (int i = 0; i < primitiveArray.length; i++) {
+                  boxedArray[i] = primitiveArray[i];
+                }
+                encodeInt16Array("ListOfInt16", boxedArray);
+              } else {
+                encodeInt16Array("ListOfInt16", (Short[]) elements);
+              }
+            }
+            case UInt16 -> encodeUInt16Array("ListOfUInt16", (UShort[]) elements);
+            case Int32 -> {
+              if (elements instanceof int[] primitiveArray) {
+                Integer[] boxedArray = new Integer[primitiveArray.length];
+                for (int i = 0; i < primitiveArray.length; i++) {
+                  boxedArray[i] = primitiveArray[i];
+                }
+                encodeInt32Array("ListOfInt32", boxedArray);
+              } else {
+                encodeInt32Array("ListOfInt32", (Integer[]) elements);
+              }
+            }
+            case UInt32 -> encodeUInt32Array("ListOfUInt32", (UInteger[]) elements);
+            case Int64 -> {
+              if (elements instanceof long[] primitiveArray) {
+                Long[] boxedArray = new Long[primitiveArray.length];
+                for (int i = 0; i < primitiveArray.length; i++) {
+                  boxedArray[i] = primitiveArray[i];
+                }
+                encodeInt64Array("ListOfInt64", boxedArray);
+              } else {
+                encodeInt64Array("ListOfInt64", (Long[]) elements);
+              }
+            }
+            case UInt64 -> encodeUInt64Array("ListOfUInt64", (ULong[]) elements);
+            case Float -> {
+              if (elements instanceof float[] primitiveArray) {
+                Float[] boxedArray = new Float[primitiveArray.length];
+                for (int i = 0; i < primitiveArray.length; i++) {
+                  boxedArray[i] = primitiveArray[i];
+                }
+                encodeFloatArray("ListOfFloat", boxedArray);
+              } else {
+                encodeFloatArray("ListOfFloat", (Float[]) elements);
+              }
+            }
+            case Double -> {
+              if (elements instanceof double[] primitiveArray) {
+                Double[] boxedArray = new Double[primitiveArray.length];
+                for (int i = 0; i < primitiveArray.length; i++) {
+                  boxedArray[i] = primitiveArray[i];
+                }
+                encodeDoubleArray("ListOfDouble", boxedArray);
+              } else {
+                encodeDoubleArray("ListOfDouble", (Double[]) elements);
+              }
+            }
+            case String -> encodeStringArray("ListOfString", (String[]) elements);
+            case DateTime -> encodeDateTimeArray("ListOfDateTime", (DateTime[]) elements);
+            case Guid -> encodeGuidArray("ListOfGuid", (UUID[]) elements);
+            case ByteString -> encodeByteStringArray("ListOfByteString", (ByteString[]) elements);
+            case XmlElement -> encodeXmlElementArray("ListOfXmlElement", (XmlElement[]) elements);
+            case NodeId -> encodeNodeIdArray("ListOfNodeId", (NodeId[]) elements);
+            case ExpandedNodeId ->
+                encodeExpandedNodeIdArray("ListOfExpandedNodeId", (ExpandedNodeId[]) elements);
+            case StatusCode -> encodeStatusCodeArray("ListOfStatusCode", (StatusCode[]) elements);
+            case QualifiedName ->
+                encodeQualifiedNameArray("ListOfQualifiedName", (QualifiedName[]) elements);
+            case LocalizedText ->
+                encodeLocalizedTextArray("ListOfLocalizedText", (LocalizedText[]) elements);
+            case ExtensionObject ->
+                encodeExtensionObjectArray("ListOfExtensionObject", (ExtensionObject[]) elements);
+            case DataValue -> encodeDataValueArray("ListOfDataValue", (DataValue[]) elements);
+            case Variant -> encodeVariantArray("ListOfVariant", (Variant[]) elements);
+            case DiagnosticInfo ->
+                encodeDiagnosticInfoArray("ListOfDiagnosticInfo", (DiagnosticInfo[]) elements);
+          }
+
+          xmlStreamWriter.writeEndElement();
+        }
+      } catch (XMLStreamException e) {
+        throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+      } finally {
+        namespaces.pop();
+
+        endField(field);
+      }
+    }
+  }
 
   @Override
   public void encodeEnumMatrix(String field, Matrix value) throws UaSerializationException {}

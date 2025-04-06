@@ -942,4 +942,20 @@ class OpcUaXmlEncoderTest {
 
     assertFalse(diff.hasDifferences(), diff.toString());
   }
+
+  @ParameterizedTest(name = "variant = {0}")
+  @MethodSource(
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.VariantArguments#variantOfMatrixArguments")
+  void encodeVariantOfMatrix(Variant variant, String expected) {
+    var encoder = new OpcUaXmlEncoder(context);
+    encoder.encodeVariant("Test", variant);
+
+    String actual = encoder.getDocumentXml();
+
+    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+    maybePrintXml(diff, expected, actual);
+
+    assertFalse(diff.hasDifferences(), diff.toString());
+  }
 }

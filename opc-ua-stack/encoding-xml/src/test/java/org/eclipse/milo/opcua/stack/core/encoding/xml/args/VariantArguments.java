@@ -17,9 +17,11 @@ import org.eclipse.milo.opcua.stack.core.encoding.xml.OpcUaDefaultXmlEncoding;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
@@ -348,6 +350,734 @@ public class VariantArguments {
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
               <uax:Value>
                 <uax:UInt32>64</uax:UInt32>
+              </uax:Value>
+            </Test>
+            """));
+  }
+
+  public static Stream<Arguments> variantOfMatrixArguments() {
+    return Stream.of(
+        // Boolean matrix (2D)
+        Arguments.of(
+            Variant.ofMatrix(Matrix.ofBoolean(new boolean[][] {{false, true}, {true, false}})),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+              <uax:Value>
+                <uax:Matrix>
+                  <uax:Dimensions>
+                    <uax:Int32>2</uax:Int32>
+                    <uax:Int32>2</uax:Int32>
+                  </uax:Dimensions>
+                  <uax:Elements>
+                    <uax:ListOfBoolean>
+                      <uax:Boolean>false</uax:Boolean>
+                      <uax:Boolean>true</uax:Boolean>
+                      <uax:Boolean>true</uax:Boolean>
+                      <uax:Boolean>false</uax:Boolean>
+                    </uax:ListOfBoolean>
+                  </uax:Elements>
+                </uax:Matrix>
+              </uax:Value>
+            </Test>
+            """),
+
+        // SByte matrix (2D)
+        Arguments.of(
+            Variant.ofMatrix(Matrix.ofSByte(new byte[][] {{0, 1}, {2, 3}})),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+              <uax:Value>
+                <uax:Matrix>
+                  <uax:Dimensions>
+                    <uax:Int32>2</uax:Int32>
+                    <uax:Int32>2</uax:Int32>
+                  </uax:Dimensions>
+                  <uax:Elements>
+                    <uax:ListOfSByte>
+                      <uax:SByte>0</uax:SByte>
+                      <uax:SByte>1</uax:SByte>
+                      <uax:SByte>2</uax:SByte>
+                      <uax:SByte>3</uax:SByte>
+                    </uax:ListOfSByte>
+                  </uax:Elements>
+                </uax:Matrix>
+              </uax:Value>
+            </Test>
+            """),
+
+        // Byte matrix (2D)
+        Arguments.of(
+            Variant.ofMatrix(
+                Matrix.ofByte(
+                    new UByte[][] {
+                      {UByte.MIN, UByte.valueOf(1)}, {UByte.valueOf(2), UByte.valueOf(3)}
+                    })),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+              <uax:Value>
+                <uax:Matrix>
+                  <uax:Dimensions>
+                    <uax:Int32>2</uax:Int32>
+                    <uax:Int32>2</uax:Int32>
+                  </uax:Dimensions>
+                  <uax:Elements>
+                    <uax:ListOfByte>
+                      <uax:Byte>0</uax:Byte>
+                      <uax:Byte>1</uax:Byte>
+                      <uax:Byte>2</uax:Byte>
+                      <uax:Byte>3</uax:Byte>
+                    </uax:ListOfByte>
+                  </uax:Elements>
+                </uax:Matrix>
+              </uax:Value>
+            </Test>
+            """),
+
+        // Int16 matrix (2D)
+        Arguments.of(
+            Variant.ofMatrix(Matrix.ofInt16(new short[][] {{0, 1}, {2, 3}})),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+              <uax:Value>
+                <uax:Matrix>
+                  <uax:Dimensions>
+                    <uax:Int32>2</uax:Int32>
+                    <uax:Int32>2</uax:Int32>
+                  </uax:Dimensions>
+                  <uax:Elements>
+                    <uax:ListOfInt16>
+                      <uax:Int16>0</uax:Int16>
+                      <uax:Int16>1</uax:Int16>
+                      <uax:Int16>2</uax:Int16>
+                      <uax:Int16>3</uax:Int16>
+                    </uax:ListOfInt16>
+                  </uax:Elements>
+                </uax:Matrix>
+              </uax:Value>
+            </Test>
+            """),
+
+        // UInt16 matrix (2D)
+        Arguments.of(
+            Variant.ofMatrix(
+                Matrix.ofUInt16(
+                    new UShort[][] {
+                      {UShort.MIN, UShort.valueOf(1)}, {UShort.valueOf(2), UShort.valueOf(3)}
+                    })),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+              <uax:Value>
+                <uax:Matrix>
+                  <uax:Dimensions>
+                    <uax:Int32>2</uax:Int32>
+                    <uax:Int32>2</uax:Int32>
+                  </uax:Dimensions>
+                  <uax:Elements>
+                    <uax:ListOfUInt16>
+                      <uax:UInt16>0</uax:UInt16>
+                      <uax:UInt16>1</uax:UInt16>
+                      <uax:UInt16>2</uax:UInt16>
+                      <uax:UInt16>3</uax:UInt16>
+                    </uax:ListOfUInt16>
+                  </uax:Elements>
+                </uax:Matrix>
+              </uax:Value>
+            </Test>
+            """),
+
+        // Int32 matrix (2D)
+        Arguments.of(
+            Variant.ofMatrix(Matrix.ofInt32(new int[][] {{0, 1}, {2, 3}})),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+              <uax:Value>
+                <uax:Matrix>
+                  <uax:Dimensions>
+                    <uax:Int32>2</uax:Int32>
+                    <uax:Int32>2</uax:Int32>
+                  </uax:Dimensions>
+                  <uax:Elements>
+                    <uax:ListOfInt32>
+                      <uax:Int32>0</uax:Int32>
+                      <uax:Int32>1</uax:Int32>
+                      <uax:Int32>2</uax:Int32>
+                      <uax:Int32>3</uax:Int32>
+                    </uax:ListOfInt32>
+                  </uax:Elements>
+                </uax:Matrix>
+              </uax:Value>
+            </Test>
+            """),
+
+        // UInt32 matrix (2D)
+        Arguments.of(
+            Variant.ofMatrix(
+                Matrix.ofUInt32(
+                    new UInteger[][] {
+                      {UInteger.MIN, UInteger.valueOf(1)},
+                      {UInteger.valueOf(2), UInteger.valueOf(3)}
+                    })),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+              <uax:Value>
+                <uax:Matrix>
+                  <uax:Dimensions>
+                    <uax:Int32>2</uax:Int32>
+                    <uax:Int32>2</uax:Int32>
+                  </uax:Dimensions>
+                  <uax:Elements>
+                    <uax:ListOfUInt32>
+                      <uax:UInt32>0</uax:UInt32>
+                      <uax:UInt32>1</uax:UInt32>
+                      <uax:UInt32>2</uax:UInt32>
+                      <uax:UInt32>3</uax:UInt32>
+                    </uax:ListOfUInt32>
+                  </uax:Elements>
+                </uax:Matrix>
+              </uax:Value>
+            </Test>
+            """),
+
+        // Int64 matrix (2D)
+        Arguments.of(
+            Variant.ofMatrix(Matrix.ofInt64(new long[][] {{0L, 1L}, {2L, 3L}})),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+              <uax:Value>
+                <uax:Matrix>
+                  <uax:Dimensions>
+                    <uax:Int32>2</uax:Int32>
+                    <uax:Int32>2</uax:Int32>
+                  </uax:Dimensions>
+                  <uax:Elements>
+                    <uax:ListOfInt64>
+                      <uax:Int64>0</uax:Int64>
+                      <uax:Int64>1</uax:Int64>
+                      <uax:Int64>2</uax:Int64>
+                      <uax:Int64>3</uax:Int64>
+                    </uax:ListOfInt64>
+                  </uax:Elements>
+                </uax:Matrix>
+              </uax:Value>
+            </Test>
+            """),
+
+        // UInt64 matrix (2D)
+        Arguments.of(
+            Variant.ofMatrix(
+                Matrix.ofUInt64(
+                    new ULong[][] {
+                      {ULong.MIN, ULong.valueOf(1)}, {ULong.valueOf(2), ULong.valueOf(3)}
+                    })),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+              <uax:Value>
+                <uax:Matrix>
+                  <uax:Dimensions>
+                    <uax:Int32>2</uax:Int32>
+                    <uax:Int32>2</uax:Int32>
+                  </uax:Dimensions>
+                  <uax:Elements>
+                    <uax:ListOfUInt64>
+                      <uax:UInt64>0</uax:UInt64>
+                      <uax:UInt64>1</uax:UInt64>
+                      <uax:UInt64>2</uax:UInt64>
+                      <uax:UInt64>3</uax:UInt64>
+                    </uax:ListOfUInt64>
+                  </uax:Elements>
+                </uax:Matrix>
+              </uax:Value>
+            </Test>
+            """),
+
+        // String matrix (2D)
+        Arguments.of(
+            Variant.ofMatrix(Matrix.ofString(new String[][] {{"a", "b"}, {"c", "d"}})),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+              <uax:Value>
+                <uax:Matrix>
+                  <uax:Dimensions>
+                    <uax:Int32>2</uax:Int32>
+                    <uax:Int32>2</uax:Int32>
+                  </uax:Dimensions>
+                  <uax:Elements>
+                    <uax:ListOfString>
+                      <uax:String>a</uax:String>
+                      <uax:String>b</uax:String>
+                      <uax:String>c</uax:String>
+                      <uax:String>d</uax:String>
+                    </uax:ListOfString>
+                  </uax:Elements>
+                </uax:Matrix>
+              </uax:Value>
+            </Test>
+            """),
+
+        // Float matrix (2D)
+        Arguments.of(
+            Variant.ofMatrix(Matrix.ofFloat(new float[][] {{0.0f, 1.0f}, {2.0f, 3.0f}})),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+              <uax:Value>
+                <uax:Matrix>
+                  <uax:Dimensions>
+                    <uax:Int32>2</uax:Int32>
+                    <uax:Int32>2</uax:Int32>
+                  </uax:Dimensions>
+                  <uax:Elements>
+                    <uax:ListOfFloat>
+                      <uax:Float>0.0</uax:Float>
+                      <uax:Float>1.0</uax:Float>
+                      <uax:Float>2.0</uax:Float>
+                      <uax:Float>3.0</uax:Float>
+                    </uax:ListOfFloat>
+                  </uax:Elements>
+                </uax:Matrix>
+              </uax:Value>
+            </Test>
+            """),
+
+        // DateTime matrix (2D)
+        Arguments.of(
+            Variant.ofMatrix(
+                Matrix.ofDateTime(
+                    new DateTime[][] {
+                      {DateTime.NULL_VALUE, DateTime.NULL_VALUE},
+                      {DateTime.NULL_VALUE, DateTime.NULL_VALUE}
+                    })),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+              <uax:Value>
+                <uax:Matrix>
+                  <uax:Dimensions>
+                    <uax:Int32>2</uax:Int32>
+                    <uax:Int32>2</uax:Int32>
+                  </uax:Dimensions>
+                  <uax:Elements>
+                    <uax:ListOfDateTime>
+                      <uax:DateTime>1601-01-01T00:00:00Z</uax:DateTime>
+                      <uax:DateTime>1601-01-01T00:00:00Z</uax:DateTime>
+                      <uax:DateTime>1601-01-01T00:00:00Z</uax:DateTime>
+                      <uax:DateTime>1601-01-01T00:00:00Z</uax:DateTime>
+                    </uax:ListOfDateTime>
+                  </uax:Elements>
+                </uax:Matrix>
+              </uax:Value>
+            </Test>
+            """),
+
+        // Guid matrix (2D)
+        Arguments.of(
+            Variant.ofMatrix(
+                Matrix.ofGuid(
+                    new UUID[][] {
+                      {new UUID(0L, 0L), new UUID(0L, 0L)}, {new UUID(0L, 0L), new UUID(0L, 0L)}
+                    })),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+              <uax:Value>
+                <uax:Matrix>
+                  <uax:Dimensions>
+                    <uax:Int32>2</uax:Int32>
+                    <uax:Int32>2</uax:Int32>
+                  </uax:Dimensions>
+                  <uax:Elements>
+                    <uax:ListOfGuid>
+                      <uax:Guid>00000000-0000-0000-0000-000000000000</uax:Guid>
+                      <uax:Guid>00000000-0000-0000-0000-000000000000</uax:Guid>
+                      <uax:Guid>00000000-0000-0000-0000-000000000000</uax:Guid>
+                      <uax:Guid>00000000-0000-0000-0000-000000000000</uax:Guid>
+                    </uax:ListOfGuid>
+                  </uax:Elements>
+                </uax:Matrix>
+              </uax:Value>
+            </Test>
+            """),
+
+        // Double matrix (2D)
+        Arguments.of(
+            Variant.ofMatrix(Matrix.ofDouble(new double[][] {{0.0, 1.0}, {2.0, 3.0}})),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+              <uax:Value>
+                <uax:Matrix>
+                  <uax:Dimensions>
+                    <uax:Int32>2</uax:Int32>
+                    <uax:Int32>2</uax:Int32>
+                  </uax:Dimensions>
+                  <uax:Elements>
+                    <uax:ListOfDouble>
+                      <uax:Double>0.0</uax:Double>
+                      <uax:Double>1.0</uax:Double>
+                      <uax:Double>2.0</uax:Double>
+                      <uax:Double>3.0</uax:Double>
+                    </uax:ListOfDouble>
+                  </uax:Elements>
+                </uax:Matrix>
+              </uax:Value>
+            </Test>
+            """),
+
+        // ByteString matrix (2D)
+        Arguments.of(
+            Variant.ofMatrix(
+                Matrix.ofByteString(
+                    new ByteString[][] {
+                      {ByteString.NULL_VALUE, ByteString.NULL_VALUE},
+                      {ByteString.NULL_VALUE, ByteString.NULL_VALUE}
+                    })),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+              <uax:Value>
+                <uax:Matrix>
+                  <uax:Dimensions>
+                    <uax:Int32>2</uax:Int32>
+                    <uax:Int32>2</uax:Int32>
+                  </uax:Dimensions>
+                  <uax:Elements>
+                    <uax:ListOfByteString>
+                      <uax:ByteString></uax:ByteString>
+                      <uax:ByteString></uax:ByteString>
+                      <uax:ByteString></uax:ByteString>
+                      <uax:ByteString></uax:ByteString>
+                    </uax:ListOfByteString>
+                  </uax:Elements>
+                </uax:Matrix>
+              </uax:Value>
+            </Test>
+            """),
+
+        // XmlElement matrix (2D)
+        Arguments.of(
+            Variant.ofMatrix(
+                Matrix.ofXmlElement(
+                    new XmlElement[][] {
+                      {XmlElement.NULL_VALUE, XmlElement.NULL_VALUE},
+                      {XmlElement.NULL_VALUE, XmlElement.NULL_VALUE}
+                    })),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+              <uax:Value>
+                <uax:Matrix>
+                  <uax:Dimensions>
+                    <uax:Int32>2</uax:Int32>
+                    <uax:Int32>2</uax:Int32>
+                  </uax:Dimensions>
+                  <uax:Elements>
+                    <uax:ListOfXmlElement>
+                      <uax:XmlElement></uax:XmlElement>
+                      <uax:XmlElement></uax:XmlElement>
+                      <uax:XmlElement></uax:XmlElement>
+                      <uax:XmlElement></uax:XmlElement>
+                    </uax:ListOfXmlElement>
+                  </uax:Elements>
+                </uax:Matrix>
+              </uax:Value>
+            </Test>
+            """),
+
+        // NodeId matrix (2D)
+        Arguments.of(
+            Variant.ofMatrix(
+                Matrix.ofNodeId(
+                    new NodeId[][] {
+                      {NodeId.NULL_VALUE, NodeId.NULL_VALUE}, {NodeId.NULL_VALUE, NodeId.NULL_VALUE}
+                    })),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+              <uax:Value>
+                <uax:Matrix>
+                  <uax:Dimensions>
+                    <uax:Int32>2</uax:Int32>
+                    <uax:Int32>2</uax:Int32>
+                  </uax:Dimensions>
+                  <uax:Elements>
+                    <uax:ListOfNodeId>
+                      <uax:NodeId>
+                        <uax:Identifier>i=0</uax:Identifier>
+                      </uax:NodeId>
+                      <uax:NodeId>
+                        <uax:Identifier>i=0</uax:Identifier>
+                      </uax:NodeId>
+                      <uax:NodeId>
+                        <uax:Identifier>i=0</uax:Identifier>
+                      </uax:NodeId>
+                      <uax:NodeId>
+                        <uax:Identifier>i=0</uax:Identifier>
+                      </uax:NodeId>
+                    </uax:ListOfNodeId>
+                  </uax:Elements>
+                </uax:Matrix>
+              </uax:Value>
+            </Test>
+            """),
+
+        // ExpandedNodeId matrix (2D)
+        Arguments.of(
+            Variant.ofMatrix(
+                Matrix.ofExpandedNodeId(
+                    new ExpandedNodeId[][] {
+                      {ExpandedNodeId.NULL_VALUE, ExpandedNodeId.NULL_VALUE},
+                      {ExpandedNodeId.NULL_VALUE, ExpandedNodeId.NULL_VALUE}
+                    })),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+              <uax:Value>
+                <uax:Matrix>
+                  <uax:Dimensions>
+                    <uax:Int32>2</uax:Int32>
+                    <uax:Int32>2</uax:Int32>
+                  </uax:Dimensions>
+                  <uax:Elements>
+                    <uax:ListOfExpandedNodeId>
+                      <uax:ExpandedNodeId>
+                        <uax:Identifier>i=0</uax:Identifier>
+                      </uax:ExpandedNodeId>
+                      <uax:ExpandedNodeId>
+                        <uax:Identifier>i=0</uax:Identifier>
+                      </uax:ExpandedNodeId>
+                      <uax:ExpandedNodeId>
+                        <uax:Identifier>i=0</uax:Identifier>
+                      </uax:ExpandedNodeId>
+                      <uax:ExpandedNodeId>
+                        <uax:Identifier>i=0</uax:Identifier>
+                      </uax:ExpandedNodeId>
+                    </uax:ListOfExpandedNodeId>
+                  </uax:Elements>
+                </uax:Matrix>
+              </uax:Value>
+            </Test>
+            """),
+
+        // StatusCode matrix (2D)
+        Arguments.of(
+            Variant.ofMatrix(
+                Matrix.ofStatusCode(
+                    new StatusCode[][] {
+                      {StatusCode.GOOD, StatusCode.GOOD}, {StatusCode.GOOD, StatusCode.GOOD}
+                    })),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+              <uax:Value>
+                <uax:Matrix>
+                  <uax:Dimensions>
+                    <uax:Int32>2</uax:Int32>
+                    <uax:Int32>2</uax:Int32>
+                  </uax:Dimensions>
+                  <uax:Elements>
+                    <uax:ListOfStatusCode>
+                      <uax:StatusCode>
+                        <uax:Code>0</uax:Code>
+                      </uax:StatusCode>
+                      <uax:StatusCode>
+                        <uax:Code>0</uax:Code>
+                      </uax:StatusCode>
+                      <uax:StatusCode>
+                        <uax:Code>0</uax:Code>
+                      </uax:StatusCode>
+                      <uax:StatusCode>
+                        <uax:Code>0</uax:Code>
+                      </uax:StatusCode>
+                    </uax:ListOfStatusCode>
+                  </uax:Elements>
+                </uax:Matrix>
+              </uax:Value>
+            </Test>
+            """),
+
+        // QualifiedName matrix (2D)
+        Arguments.of(
+            Variant.ofMatrix(
+                Matrix.ofQualifiedName(
+                    new QualifiedName[][] {
+                      {QualifiedName.NULL_VALUE, QualifiedName.NULL_VALUE},
+                      {QualifiedName.NULL_VALUE, QualifiedName.NULL_VALUE}
+                    })),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+              <uax:Value>
+                <uax:Matrix>
+                  <uax:Dimensions>
+                    <uax:Int32>2</uax:Int32>
+                    <uax:Int32>2</uax:Int32>
+                  </uax:Dimensions>
+                  <uax:Elements>
+                    <uax:ListOfQualifiedName>
+                      <uax:QualifiedName>
+                        <uax:NamespaceIndex>0</uax:NamespaceIndex>
+                      </uax:QualifiedName>
+                      <uax:QualifiedName>
+                        <uax:NamespaceIndex>0</uax:NamespaceIndex>
+                      </uax:QualifiedName>
+                      <uax:QualifiedName>
+                        <uax:NamespaceIndex>0</uax:NamespaceIndex>
+                      </uax:QualifiedName>
+                      <uax:QualifiedName>
+                        <uax:NamespaceIndex>0</uax:NamespaceIndex>
+                      </uax:QualifiedName>
+                    </uax:ListOfQualifiedName>
+                  </uax:Elements>
+                </uax:Matrix>
+              </uax:Value>
+            </Test>
+            """),
+
+        // LocalizedText matrix (2D)
+        Arguments.of(
+            Variant.ofMatrix(
+                Matrix.ofLocalizedText(
+                    new LocalizedText[][] {
+                      {LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE},
+                      {LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE}
+                    })),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+              <uax:Value>
+                <uax:Matrix>
+                  <uax:Dimensions>
+                    <uax:Int32>2</uax:Int32>
+                    <uax:Int32>2</uax:Int32>
+                  </uax:Dimensions>
+                  <uax:Elements>
+                    <uax:ListOfLocalizedText>
+                      <uax:LocalizedText>
+                      </uax:LocalizedText>
+                      <uax:LocalizedText>
+                      </uax:LocalizedText>
+                      <uax:LocalizedText>
+                      </uax:LocalizedText>
+                      <uax:LocalizedText>
+                      </uax:LocalizedText>
+                    </uax:ListOfLocalizedText>
+                  </uax:Elements>
+                </uax:Matrix>
+              </uax:Value>
+            </Test>
+            """),
+
+        // ExtensionObject matrix (2D)
+        Arguments.of(
+            Variant.ofMatrix(
+                Matrix.ofExtensionObject(new ExtensionObject[][] {{null, null}, {null, null}})),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+              <uax:Value>
+                <uax:Matrix>
+                  <uax:Dimensions>
+                    <uax:Int32>2</uax:Int32>
+                    <uax:Int32>2</uax:Int32>
+                  </uax:Dimensions>
+                  <uax:Elements>
+                    <uax:ListOfExtensionObject>
+                    </uax:ListOfExtensionObject>
+                  </uax:Elements>
+                </uax:Matrix>
+              </uax:Value>
+            </Test>
+            """),
+
+        // DataValue matrix (2D)
+        Arguments.of(
+            Variant.ofMatrix(
+                Matrix.ofDataValue(
+                    new DataValue[][] {
+                      {
+                        DataValue.valueOnly(Variant.NULL_VALUE),
+                        DataValue.valueOnly(Variant.NULL_VALUE)
+                      },
+                      {
+                        DataValue.valueOnly(Variant.NULL_VALUE),
+                        DataValue.valueOnly(Variant.NULL_VALUE)
+                      }
+                    })),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+              <uax:Value>
+                <uax:Matrix>
+                  <uax:Dimensions>
+                    <uax:Int32>2</uax:Int32>
+                    <uax:Int32>2</uax:Int32>
+                  </uax:Dimensions>
+                  <uax:Elements>
+                    <uax:ListOfDataValue>
+                      <uax:DataValue>
+                      </uax:DataValue>
+                      <uax:DataValue>
+                      </uax:DataValue>
+                      <uax:DataValue>
+                      </uax:DataValue>
+                      <uax:DataValue>
+                      </uax:DataValue>
+                    </uax:ListOfDataValue>
+                  </uax:Elements>
+                </uax:Matrix>
+              </uax:Value>
+            </Test>
+            """),
+
+        // Variant matrix (2D)
+        Arguments.of(
+            Variant.ofMatrix(
+                Matrix.ofVariant(
+                    new Variant[][] {
+                      {Variant.NULL_VALUE, Variant.NULL_VALUE},
+                      {Variant.NULL_VALUE, Variant.NULL_VALUE}
+                    })),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+              <uax:Value>
+                <uax:Matrix>
+                  <uax:Dimensions>
+                    <uax:Int32>2</uax:Int32>
+                    <uax:Int32>2</uax:Int32>
+                  </uax:Dimensions>
+                  <uax:Elements>
+                    <uax:ListOfVariant>
+                      <uax:Variant>
+                        <uax:Value>
+                          <uax:Null></uax:Null>
+                        </uax:Value>
+                      </uax:Variant>
+                      <uax:Variant>
+                        <uax:Value>
+                          <uax:Null></uax:Null>
+                        </uax:Value>
+                      </uax:Variant>
+                      <uax:Variant>
+                        <uax:Value>
+                          <uax:Null></uax:Null>
+                        </uax:Value>
+                      </uax:Variant>
+                      <uax:Variant>
+                        <uax:Value>
+                          <uax:Null></uax:Null>
+                        </uax:Value>
+                      </uax:Variant>
+                    </uax:ListOfVariant>
+                  </uax:Elements>
+                </uax:Matrix>
+              </uax:Value>
+            </Test>
+            """),
+
+        // DiagnosticInfo matrix (2D)
+        Arguments.of(
+            Variant.ofMatrix(
+                Matrix.ofDiagnosticInfo(new DiagnosticInfo[][] {{null, null}, {null, null}})),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+              <uax:Value>
+                <uax:Matrix>
+                  <uax:Dimensions>
+                    <uax:Int32>2</uax:Int32>
+                    <uax:Int32>2</uax:Int32>
+                  </uax:Dimensions>
+                  <uax:Elements>
+                    <uax:ListOfDiagnosticInfo>
+                    </uax:ListOfDiagnosticInfo>
+                  </uax:Elements>
+                </uax:Matrix>
               </uax:Value>
             </Test>
             """));
