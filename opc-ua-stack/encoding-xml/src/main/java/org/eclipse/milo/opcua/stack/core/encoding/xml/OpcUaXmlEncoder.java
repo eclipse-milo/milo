@@ -805,7 +805,34 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
   @Override
   public void encodeDiagnosticInfo(String field, DiagnosticInfo value)
-      throws UaSerializationException {}
+      throws UaSerializationException {
+
+    if (beginField(field, value == null, true)) {
+      try {
+        namespaces.push(Namespaces.OPC_UA_XSD);
+
+        if (value != null) {
+          encodeInt32("SymbolicId", value.symbolicId());
+          encodeInt32("NamespaceUri", value.namespaceUri());
+          encodeInt32("Locale", value.locale());
+          encodeInt32("LocalizedText", value.localizedText());
+          if (value.additionalInfo() != null && !value.additionalInfo().isEmpty()) {
+            encodeString("AdditionalInfo", value.additionalInfo());
+          }
+          if (value.innerStatusCode() != null) {
+            encodeStatusCode("InnerStatusCode", value.innerStatusCode());
+          }
+          if (value.innerDiagnosticInfo() != null) {
+            encodeDiagnosticInfo("InnerDiagnosticInfo", value.innerDiagnosticInfo());
+          }
+        }
+      } finally {
+        namespaces.pop();
+
+        endField(field);
+      }
+    }
+  }
 
   @Override
   public void encodeMessage(String field, UaMessageType message) throws UaSerializationException {}

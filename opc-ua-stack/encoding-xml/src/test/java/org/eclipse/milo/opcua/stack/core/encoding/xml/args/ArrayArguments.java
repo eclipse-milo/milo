@@ -861,7 +861,41 @@ public class ArrayArguments {
         Arguments.of(
             new DiagnosticInfo[] {diagnosticInfo1, diagnosticInfo2, diagnosticInfo3},
             """
-            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"></Test>
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:DiagnosticInfo>
+                <uax:SymbolicId>2</uax:SymbolicId>
+                <uax:NamespaceUri>1</uax:NamespaceUri>
+                <uax:Locale>3</uax:Locale>
+                <uax:LocalizedText>4</uax:LocalizedText>
+                <uax:AdditionalInfo>Additional Info</uax:AdditionalInfo>
+                <uax:InnerStatusCode>
+                  <uax:Code>5</uax:Code>
+                </uax:InnerStatusCode>
+              </uax:DiagnosticInfo>
+              <uax:DiagnosticInfo>
+                <uax:SymbolicId>-1</uax:SymbolicId>
+                <uax:NamespaceUri>-1</uax:NamespaceUri>
+                <uax:Locale>-1</uax:Locale>
+                <uax:LocalizedText>-1</uax:LocalizedText>
+                <uax:AdditionalInfo>Only Additional Info</uax:AdditionalInfo>
+              </uax:DiagnosticInfo>
+              <uax:DiagnosticInfo>
+                <uax:SymbolicId>-1</uax:SymbolicId>
+                <uax:NamespaceUri>-1</uax:NamespaceUri>
+                <uax:Locale>-1</uax:Locale>
+                <uax:LocalizedText>-1</uax:LocalizedText>
+                <uax:InnerDiagnosticInfo>
+                  <uax:SymbolicId>2</uax:SymbolicId>
+                  <uax:NamespaceUri>1</uax:NamespaceUri>
+                  <uax:Locale>3</uax:Locale>
+                  <uax:LocalizedText>4</uax:LocalizedText>
+                  <uax:AdditionalInfo>Additional Info</uax:AdditionalInfo>
+                  <uax:InnerStatusCode>
+                    <uax:Code>5</uax:Code>
+                  </uax:InnerStatusCode>
+                </uax:InnerDiagnosticInfo>
+              </uax:DiagnosticInfo>
+            </Test>
             """),
         Arguments.of(
             new DiagnosticInfo[] {},

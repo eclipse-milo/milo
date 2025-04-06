@@ -14,16 +14,7 @@ import java.time.Instant;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
-import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
-import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
-import org.eclipse.milo.opcua.stack.core.types.builtin.XmlElement;
+import org.eclipse.milo.opcua.stack.core.types.builtin.*;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
@@ -719,6 +710,80 @@ public class ScalarArguments {
             <Test></Test>
             """),
         // null XmlElement
+        Arguments.of(null, ""));
+  }
+
+  public static Stream<Arguments> diagnosticInfoArguments() {
+    DiagnosticInfo diagnosticInfo1 =
+        new DiagnosticInfo(1, 2, 3, 4, "Additional Info", new StatusCode(5), null);
+
+    DiagnosticInfo diagnosticInfo2 =
+        new DiagnosticInfo(-1, -1, -1, -1, "Only Additional Info", null, null);
+
+    DiagnosticInfo diagnosticInfo3 =
+        new DiagnosticInfo(-1, -1, -1, -1, null, null, diagnosticInfo1);
+
+    return Stream.of(
+        // DiagnosticInfo with all fields
+        Arguments.of(
+            diagnosticInfo1,
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:SymbolicId>2</uax:SymbolicId>
+              <uax:NamespaceUri>1</uax:NamespaceUri>
+              <uax:Locale>3</uax:Locale>
+              <uax:LocalizedText>4</uax:LocalizedText>
+              <uax:AdditionalInfo>Additional Info</uax:AdditionalInfo>
+              <uax:InnerStatusCode>
+                <uax:Code>5</uax:Code>
+              </uax:InnerStatusCode>
+            </Test>
+            """),
+        // DiagnosticInfo with only AdditionalInfo
+        Arguments.of(
+            diagnosticInfo2,
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:SymbolicId>-1</uax:SymbolicId>
+              <uax:NamespaceUri>-1</uax:NamespaceUri>
+              <uax:Locale>-1</uax:Locale>
+              <uax:LocalizedText>-1</uax:LocalizedText>
+              <uax:AdditionalInfo>Only Additional Info</uax:AdditionalInfo>
+            </Test>
+            """),
+        // DiagnosticInfo with nested DiagnosticInfo
+        Arguments.of(
+            diagnosticInfo3,
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:SymbolicId>-1</uax:SymbolicId>
+              <uax:NamespaceUri>-1</uax:NamespaceUri>
+              <uax:Locale>-1</uax:Locale>
+              <uax:LocalizedText>-1</uax:LocalizedText>
+              <uax:InnerDiagnosticInfo>
+                <uax:SymbolicId>2</uax:SymbolicId>
+                <uax:NamespaceUri>1</uax:NamespaceUri>
+                <uax:Locale>3</uax:Locale>
+                <uax:LocalizedText>4</uax:LocalizedText>
+                <uax:AdditionalInfo>Additional Info</uax:AdditionalInfo>
+                <uax:InnerStatusCode>
+                  <uax:Code>5</uax:Code>
+                </uax:InnerStatusCode>
+              </uax:InnerDiagnosticInfo>
+            </Test>
+            """),
+        // NULL_VALUE DiagnosticInfo
+        Arguments.of(
+            DiagnosticInfo.NULL_VALUE,
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:SymbolicId>-1</uax:SymbolicId>
+              <uax:NamespaceUri>-1</uax:NamespaceUri>
+              <uax:Locale>-1</uax:Locale>
+              <uax:LocalizedText>-1</uax:LocalizedText>
+            </Test>
+            """),
+        // null DiagnosticInfo
         Arguments.of(null, ""));
   }
 }
