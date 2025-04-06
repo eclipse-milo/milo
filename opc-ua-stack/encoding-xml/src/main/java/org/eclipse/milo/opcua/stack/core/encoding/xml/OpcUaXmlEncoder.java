@@ -451,8 +451,6 @@ public class OpcUaXmlEncoder implements UaEncoder {
           return;
         }
 
-        // TODO this is very incomplete
-
         if (value instanceof ExtensionObject.Xml xml) {
           NodeId typeId = xml.getEncodingOrTypeId();
 
@@ -462,6 +460,21 @@ public class OpcUaXmlEncoder implements UaEncoder {
           XmlSerializationUtil.writeXmlFragment(
               xmlStreamWriter, xml.getBody().getFragmentOrEmpty());
           xmlStreamWriter.writeEndElement();
+        } else if (value instanceof ExtensionObject.Binary binary) {
+          NodeId typeId = binary.getEncodingOrTypeId();
+
+          encodeNodeId("TypeId", typeId);
+
+          xmlStreamWriter.writeStartElement(Namespaces.OPC_UA_XSD, "Body");
+          xmlStreamWriter.writeStartElement(Namespaces.OPC_UA_XSD, "ByteString");
+          xmlStreamWriter.writeCharacters(
+              DatatypeConverter.printBase64Binary(binary.getBody().bytesOrEmpty()));
+          xmlStreamWriter.writeEndElement();
+          xmlStreamWriter.writeEndElement();
+        } else {
+          throw new UaSerializationException(
+              StatusCodes.Bad_EncodingError,
+              "unsupported ExtensionObject body: " + value.getClass());
         }
       } catch (XMLStreamException e) {
         throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);

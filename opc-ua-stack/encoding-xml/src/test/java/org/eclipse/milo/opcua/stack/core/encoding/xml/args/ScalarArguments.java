@@ -14,11 +14,15 @@ import java.time.Instant;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
+import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaDefaultBinaryEncoding;
+import org.eclipse.milo.opcua.stack.core.encoding.xml.OpcUaDefaultXmlEncoding;
 import org.eclipse.milo.opcua.stack.core.types.builtin.*;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.types.structured.XVType;
 import org.junit.jupiter.params.provider.Arguments;
 
 @SuppressWarnings("unused")
@@ -528,6 +532,49 @@ public class ScalarArguments {
             """
             <Test>NaN</Test>
             """));
+  }
+
+  public static Stream<Arguments> extensionObjectArguments() {
+    return Stream.of(
+        // ExtensionObject containing XML-encoded XVType
+        Arguments.of(
+            ExtensionObject.encode(
+                new DefaultEncodingContext(),
+                new XVType(1.0, 2.0f),
+                XVType.XML_ENCODING_ID,
+                OpcUaDefaultXmlEncoding.getInstance()),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:TypeId>
+                <uax:Identifier>i=12082</uax:Identifier>
+              </uax:TypeId>
+              <uax:Body>
+                <XVType>
+                  <X>1.0</X>
+                  <Value>2.0</Value>
+                </XVType>
+              </uax:Body>
+            </Test>
+            """),
+        // ExtensionObject containing Binary-encoded XVType
+        Arguments.of(
+            ExtensionObject.encode(
+                new DefaultEncodingContext(),
+                new XVType(1.0, 2.0f),
+                XVType.BINARY_ENCODING_ID,
+                OpcUaDefaultBinaryEncoding.getInstance()),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:TypeId>
+                <uax:Identifier>i=12090</uax:Identifier>
+              </uax:TypeId>
+              <uax:Body>
+                <uax:ByteString>AAAAAAAA8D8AAABA</uax:ByteString>
+              </uax:Body>
+            </Test>
+            """),
+        // null ExtensionObject
+        Arguments.of(null, ""));
   }
 
   public static Stream<Arguments> dataValueArguments() {

@@ -21,10 +21,8 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
-import org.eclipse.milo.opcua.stack.core.types.structured.XVType;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.xmlunit.builder.DiffBuilder;
@@ -415,42 +413,25 @@ class OpcUaXmlEncoderTest {
       }
     }
 
-    @Test
-    void encodeExtensionObject() {
-      String expected =
-          """
-          <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
-            <uax:TypeId>
-              <uax:Identifier>i=12082</uax:Identifier>
-            </uax:TypeId>
-            <uax:Body>
-              <XVType>
-                <X>1.0</X>
-                <Value>2.0</Value>
-              </XVType>
-            </uax:Body>
-          </Test>
-          """;
-
-      var xo =
-          ExtensionObject.encode(
-              context,
-              new XVType(1.0, 2.0f),
-              XVType.XML_ENCODING_ID,
-              OpcUaDefaultXmlEncoding.getInstance());
-
+    @ParameterizedTest(name = "extensionObject = {0}")
+    @MethodSource(
+        "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#extensionObjectArguments")
+    void encodeExtensionObject(@Nullable ExtensionObject extensionObject, String expected) {
       var encoder = new OpcUaXmlEncoder(context);
-      encoder.encodeExtensionObject("Test", xo);
+      encoder.encodeExtensionObject("Test", extensionObject);
 
       String actual = encoder.getDocumentXml();
 
-      System.out.println(actual);
+      if (extensionObject == null) {
+        // When encoding a null ExtensionObject the encoder doesn't produce any XML
+        assertTrue(actual.isEmpty());
+      } else {
+        Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
 
-      Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+        maybePrintXml(diff, expected, actual);
 
-      maybePrintXml(diff, expected, actual);
-
-      assertFalse(diff.hasDifferences(), diff.toString());
+        assertFalse(diff.hasDifferences(), diff.toString());
+      }
     }
 
     @ParameterizedTest(name = "dataValue = {0}")
