@@ -284,30 +284,7 @@ public class VariantArguments {
             </Test>
             """),
 
-        // DataValue
-        Arguments.of(
-            Variant.of(DataValue.valueOnly(Variant.NULL_VALUE)),
-            """
-            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
-              <uax:Value>
-                <uax:DataValue>
-                </uax:DataValue>
-              </uax:Value>
-            </Test>
-            """),
-
-        // Enum (NodeClass)
-        Arguments.of(
-            Variant.of(NodeClass.Variable),
-            """
-            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
-              <uax:Value>
-                <uax:Int32>2</uax:Int32>
-              </uax:Value>
-            </Test>
-            """),
-
-        // Struct (Argument)
+        // ExtensionObject (Argument)
         Arguments.of(
             Variant.of(
                 ExtensionObject.encode(
@@ -342,6 +319,60 @@ public class VariantArguments {
                     </Argument>
                   </uax:Body>
                 </uax:ExtensionObject>
+              </uax:Value>
+            </Test>
+            """),
+
+        // DataValue
+        Arguments.of(
+            Variant.of(DataValue.valueOnly(Variant.NULL_VALUE)),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Value>
+                <uax:DataValue>
+                </uax:DataValue>
+              </uax:Value>
+            </Test>
+            """),
+
+        // UaStructuredType (Argument)
+        Arguments.of(
+            Variant.of(
+                new Argument(
+                    "name", NodeId.parse("i=1"), -1, null, LocalizedText.english("description"))),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+              <uax:Value>
+                <uax:ExtensionObject>
+                  <uax:TypeId>
+                    <uax:Identifier>i=297</uax:Identifier>
+                  </uax:TypeId>
+                  <uax:Body>
+                    <Argument>
+                      <Name>name</Name>
+                      <DataType>
+                        <uax:Identifier>i=1</uax:Identifier>
+                      </DataType>
+                      <ValueRank>-1</ValueRank>
+                      <ArrayDimensions xsi:nil="true"></ArrayDimensions>
+                      <Description>
+                        <uax:Locale>en</uax:Locale>
+                        <uax:Text>description</uax:Text>
+                      </Description>
+                    </Argument>
+                  </uax:Body>
+                </uax:ExtensionObject>
+              </uax:Value>
+            </Test>
+            """),
+
+        // Enum (NodeClass)
+        Arguments.of(
+            Variant.of(NodeClass.Variable),
+            """
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+              <uax:Value>
+                <uax:Int32>2</uax:Int32>
               </uax:Value>
             </Test>
             """),
@@ -906,27 +937,19 @@ public class VariantArguments {
         // Struct array (Argument)
         Arguments.of(
             Variant.of(
-                new ExtensionObject[] {
-                  ExtensionObject.encode(
-                      new DefaultEncodingContext(),
-                      new Argument(
-                          "name1",
-                          NodeId.parse("i=1"),
-                          -1,
-                          null,
-                          LocalizedText.english("description1")),
-                      Argument.XML_ENCODING_ID,
-                      OpcUaDefaultXmlEncoding.getInstance()),
-                  ExtensionObject.encode(
-                      new DefaultEncodingContext(),
-                      new Argument(
-                          "name2",
-                          NodeId.parse("i=1"),
-                          -1,
-                          null,
-                          LocalizedText.english("description2")),
-                      Argument.XML_ENCODING_ID,
-                      OpcUaDefaultXmlEncoding.getInstance())
+                new Argument[] {
+                  new Argument(
+                      "name1",
+                      NodeId.parse("i=1"),
+                      -1,
+                      null,
+                      LocalizedText.english("description1")),
+                  new Argument(
+                      "name2",
+                      NodeId.parse("i=1"),
+                      -1,
+                      null,
+                      LocalizedText.english("description2")),
                 }),
             """
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">

@@ -627,7 +627,12 @@ public class OpcUaXmlEncoder implements UaEncoder {
                 ExtensionObject[] xos = new ExtensionObject[array.length];
                 for (int i = 0; i < array.length; i++) {
                   UaStructuredType structValue = array[i];
-                  xos[i] = ExtensionObject.encode(context, structValue);
+                  xos[i] =
+                      ExtensionObject.encode(
+                          context,
+                          structValue,
+                          structValue.getXmlEncodingId(),
+                          OpcUaDefaultXmlEncoding.getInstance());
                 }
                 encodeBuiltinTypeArrayValue(xos, OpcUaDataType.ExtensionObject);
               }
@@ -684,7 +689,12 @@ public class OpcUaXmlEncoder implements UaEncoder {
             }
             case STRUCT -> {
               UaStructuredType structValue = (UaStructuredType) value;
-              var xo = ExtensionObject.encode(context, structValue);
+              var xo =
+                  ExtensionObject.encode(
+                      context,
+                      structValue,
+                      structValue.getXmlEncodingId(),
+                      OpcUaDefaultXmlEncoding.getInstance());
               encodeBuiltinTypeValue(xo, OpcUaDataType.ExtensionObject);
             }
             case OPTION_SET -> {
