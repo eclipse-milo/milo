@@ -588,13 +588,25 @@ public class OpcUaXmlEncoder implements UaEncoder {
             case BUILTIN -> {
               encodeBuiltinTypeArrayValue(value, dataType);
             }
+              // TODO
           }
         } else if (value instanceof Matrix m) {
           // TODO
         } else {
           switch (typeHint) {
-            case BUILTIN -> {
-              encodeBuiltinTypeValue(value, dataType);
+            case BUILTIN -> encodeBuiltinTypeValue(value, dataType);
+            case ENUM -> {
+              UaEnumeratedType enumValue = (UaEnumeratedType) value;
+              encodeBuiltinTypeValue(enumValue.getValue(), OpcUaDataType.Int32);
+            }
+            case STRUCT -> {
+              UaStructuredType structValue = (UaStructuredType) value;
+              var xo = ExtensionObject.encode(context, structValue);
+              encodeBuiltinTypeValue(xo, OpcUaDataType.ExtensionObject);
+            }
+            case OPTION_SET -> {
+              OptionSetUInteger<?> optionSet = (OptionSetUInteger<?>) value;
+              encodeBuiltinTypeValue(optionSet.getValue(), dataType);
             }
           }
         }

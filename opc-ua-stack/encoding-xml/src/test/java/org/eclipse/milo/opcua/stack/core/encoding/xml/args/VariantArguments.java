@@ -12,10 +12,13 @@ package org.eclipse.milo.opcua.stack.core.encoding.xml.args;
 
 import java.util.UUID;
 import java.util.stream.Stream;
+import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
+import org.eclipse.milo.opcua.stack.core.encoding.xml.OpcUaDefaultXmlEncoding;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -26,6 +29,9 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
+import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
+import org.eclipse.milo.opcua.stack.core.types.structured.AttributeWriteMask;
 import org.junit.jupiter.params.provider.Arguments;
 
 @SuppressWarnings("unused")
@@ -281,6 +287,67 @@ public class VariantArguments {
                   <uax:Value>
                     <uax:DataValue>
                     </uax:DataValue>
+                  </uax:Value>
+                </Test>
+                """),
+
+        // Enum (NodeClass)
+        Arguments.of(
+            Variant.of(NodeClass.Variable),
+            """
+                <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+                  <uax:Value>
+                    <uax:Int32>2</uax:Int32>
+                  </uax:Value>
+                </Test>
+                """),
+
+        // Struct (Argument)
+        Arguments.of(
+            Variant.of(
+                ExtensionObject.encode(
+                    new DefaultEncodingContext(),
+                    new Argument(
+                        "name",
+                        NodeId.parse("i=1"),
+                        -1,
+                        null,
+                        LocalizedText.english("description")),
+                    Argument.XML_ENCODING_ID,
+                    OpcUaDefaultXmlEncoding.getInstance())),
+            """
+                <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                  <uax:Value>
+                    <uax:ExtensionObject>
+                      <uax:TypeId>
+                        <uax:Identifier>i=297</uax:Identifier>
+                      </uax:TypeId>
+                      <uax:Body>
+                        <Argument>
+                          <Name>name</Name>
+                          <DataType>
+                            <uax:Identifier>i=1</uax:Identifier>
+                          </DataType>
+                          <ValueRank>-1</ValueRank>
+                          <ArrayDimensions xsi:nil="true"></ArrayDimensions>
+                          <Description>
+                            <uax:Locale>en</uax:Locale>
+                            <uax:Text>description</uax:Text>
+                          </Description>
+                        </Argument>
+                      </uax:Body>
+                    </uax:ExtensionObject>
+                  </uax:Value>
+                </Test>
+                """),
+
+        // OptionSet (AttributeWriteMask)
+        Arguments.of(
+            Variant.of(AttributeWriteMask.of(AttributeWriteMask.Field.DisplayName)),
+            """
+                <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+                  <uax:Value>
+                    <uax:UInt32>64</uax:UInt32>
                   </uax:Value>
                 </Test>
                 """));
