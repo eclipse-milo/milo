@@ -185,7 +185,7 @@ public class ScalarArguments {
             new NodeId(0, 123),
             """
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
-              <uax:Identifier>ns=0;i=123</uax:Identifier>
+              <uax:Identifier>i=123</uax:Identifier>
             </Test>
             """),
         Arguments.of(

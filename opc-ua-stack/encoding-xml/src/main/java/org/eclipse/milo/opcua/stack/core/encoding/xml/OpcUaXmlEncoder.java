@@ -24,24 +24,15 @@ import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.UaEncoder;
 import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
 import org.eclipse.milo.opcua.stack.core.types.UaMessageType;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
-import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
-import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
-import org.eclipse.milo.opcua.stack.core.types.builtin.XmlElement;
+import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
+import org.eclipse.milo.opcua.stack.core.types.builtin.*;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.util.ArrayUtil;
 import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 
 public class OpcUaXmlEncoder implements UaEncoder {
 
@@ -526,7 +517,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       namespaces.push(Namespaces.OPC_UA_XSD);
       try {
         xmlStreamWriter.writeStartElement(Namespaces.OPC_UA_XSD, "Value");
-        encodeVariantValue(value);
+        encodeVariantValue(value.value());
         xmlStreamWriter.writeEndElement();
       } catch (XMLStreamException e) {
         throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
@@ -538,38 +529,145 @@ public class OpcUaXmlEncoder implements UaEncoder {
     }
   }
 
-  private void encodeVariantValue(Variant value) {
+  public void encodeVariantValue(@Nullable Object value) {
     try {
-      if (value.isNull()) {
+      if (value == null) {
         xmlStreamWriter.writeStartElement(Namespaces.OPC_UA_XSD, "Null");
         xmlStreamWriter.writeEndElement();
         return;
       }
 
-      Object v = value.value();
-      boolean isArray = v != null && v.getClass().isArray();
+      Class<?> valueClass;
+      if (value instanceof Matrix m) {
+        if (m.getElements() == null) return;
+        valueClass = ArrayUtil.getType(m.getElements());
+      } else {
+        valueClass = ArrayUtil.getType(value);
+      }
 
-      OpcUaDataType dataType = value.getDataType().orElseThrow();
+      TypeHint typeHint = TypeHint.BUILTIN;
+      if (UaEnumeratedType.class.isAssignableFrom(valueClass)) {
+        typeHint = TypeHint.ENUM;
+      } else if (UaStructuredType.class.isAssignableFrom(valueClass)) {
+        typeHint = TypeHint.STRUCT;
+      } else if (OptionSetUInteger.class.isAssignableFrom(valueClass)) {
+        typeHint = TypeHint.OPTION_SET;
+      }
+
+      int typeId =
+          switch (typeHint) {
+            case ENUM -> OpcUaDataType.Int32.getTypeId();
+            case STRUCT -> OpcUaDataType.ExtensionObject.getTypeId();
+            case OPTION_SET -> {
+              if (value instanceof OptionSetUI8<?>) {
+                yield OpcUaDataType.Byte.getTypeId();
+              } else if (value instanceof OptionSetUI16<?>) {
+                yield OpcUaDataType.UInt16.getTypeId();
+              } else if (value instanceof OptionSetUI32<?>) {
+                yield OpcUaDataType.UInt32.getTypeId();
+              } else if (value instanceof OptionSetUI64<?>) {
+                yield OpcUaDataType.UInt64.getTypeId();
+              } else {
+                throw new UaSerializationException(
+                    StatusCodes.Bad_EncodingError, "unknown OptionSet type: " + valueClass);
+              }
+            }
+            default -> OpcUaDataType.getBuiltinTypeId(valueClass);
+          };
+
+      OpcUaDataType dataType = OpcUaDataType.fromTypeId(typeId);
+      if (dataType == null) {
+        throw new UaSerializationException(
+            StatusCodes.Bad_EncodingError, "unknown typeId: " + typeId);
+      }
 
       namespaces.push(Namespaces.OPC_UA_XSD);
       try {
-        if (isArray) {
-          switch (dataType) {
-            case Boolean -> encodeBooleanArray("ListOfBoolean", (Boolean[]) value.value());
-            case Int32 -> encodeInt32Array("ListOfInt32", (Integer[]) value.value());
+        if (value.getClass().isArray()) {
+          switch (typeHint) {
+            case BUILTIN -> {
+              encodeBuiltinTypeArrayValue(value, dataType);
+            }
           }
+        } else if (value instanceof Matrix m) {
+          // TODO
         } else {
-          switch (dataType) {
-            case Boolean -> encodeBoolean("Boolean", (Boolean) value.value());
-            case Int32 -> encodeInt32("Int32", (Integer) value.value());
+          switch (typeHint) {
+            case BUILTIN -> {
+              encodeBuiltinTypeValue(value, dataType);
+            }
           }
         }
       } finally {
         namespaces.pop();
       }
-
     } catch (XMLStreamException e) {
       throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+    }
+  }
+
+  private void encodeBuiltinTypeValue(Object value, OpcUaDataType dataType) {
+    switch (dataType) {
+      case Boolean -> encodeBoolean("Boolean", (Boolean) value);
+      case Byte -> encodeByte("Byte", (UByte) value);
+      case SByte -> encodeSByte("SByte", (Byte) value);
+      case Int16 -> encodeInt16("Int16", (Short) value);
+      case UInt16 -> encodeUInt16("UInt16", (UShort) value);
+      case Int32 -> encodeInt32("Int32", (Integer) value);
+      case UInt32 -> encodeUInt32("UInt32", (UInteger) value);
+      case Int64 -> encodeInt64("Int64", (Long) value);
+      case UInt64 -> encodeUInt64("UInt64", (ULong) value);
+      case Float -> encodeFloat("Float", (Float) value);
+      case Double -> encodeDouble("Double", (Double) value);
+      case String -> encodeString("String", (String) value);
+      case DateTime -> encodeDateTime("DateTime", (DateTime) value);
+      case Guid -> encodeGuid("Guid", (UUID) value);
+      case ByteString -> encodeByteString("ByteString", (ByteString) value);
+      case XmlElement -> encodeXmlElement("XmlElement", (XmlElement) value);
+      case NodeId -> encodeNodeId("NodeId", (NodeId) value);
+      case ExpandedNodeId -> encodeExpandedNodeId("ExpandedNodeId", (ExpandedNodeId) value);
+      case StatusCode -> encodeStatusCode("StatusCode", (StatusCode) value);
+      case QualifiedName -> encodeQualifiedName("QualifiedName", (QualifiedName) value);
+      case LocalizedText -> encodeLocalizedText("LocalizedText", (LocalizedText) value);
+      case ExtensionObject -> encodeExtensionObject("ExtensionObject", (ExtensionObject) value);
+      case DataValue -> encodeDataValue("DataValue", (DataValue) value);
+      case Variant -> encodeVariant("Variant", (Variant) value);
+      case DiagnosticInfo -> encodeDiagnosticInfo("DiagnosticInfo", (DiagnosticInfo) value);
+    }
+  }
+
+  private void encodeBuiltinTypeArrayValue(Object value, OpcUaDataType dataType) {
+    switch (dataType) {
+      case Boolean -> encodeBooleanArray("ListOfBoolean", (Boolean[]) value);
+      case Byte -> encodeByteArray("ListOfByte", (UByte[]) value);
+      case SByte -> encodeSByteArray("ListOfSByte", (Byte[]) value);
+      case Int16 -> encodeInt16Array("ListOfInt16", (Short[]) value);
+      case UInt16 -> encodeUInt16Array("ListOfUInt16", (UShort[]) value);
+      case Int32 -> encodeInt32Array("ListOfInt32", (Integer[]) value);
+      case UInt32 -> encodeUInt32Array("ListOfUInt32", (UInteger[]) value);
+      case Int64 -> encodeInt64Array("ListOfInt64", (Long[]) value);
+      case UInt64 -> encodeUInt64Array("ListOfUInt64", (ULong[]) value);
+      case Float -> encodeFloatArray("ListOfFloat", (Float[]) value);
+      case Double -> encodeDoubleArray("ListOfDouble", (Double[]) value);
+      case String -> encodeStringArray("ListOfString", (String[]) value);
+      case DateTime -> encodeDateTimeArray("ListOfDateTime", (DateTime[]) value);
+      case Guid -> encodeGuidArray("ListOfGuid", (UUID[]) value);
+      case ByteString -> encodeByteStringArray("ListOfByteString", (ByteString[]) value);
+      case XmlElement -> encodeXmlElementArray("ListOfXmlElement", (XmlElement[]) value);
+      case NodeId -> encodeNodeIdArray("ListOfNodeId", (NodeId[]) value);
+      case ExpandedNodeId ->
+          encodeExpandedNodeIdArray("ListOfExpandedNodeId", (ExpandedNodeId[]) value);
+      case StatusCode -> encodeStatusCodeArray("ListOfStatusCode", (StatusCode[]) value);
+      case QualifiedName ->
+          encodeQualifiedNameArray("ListOfQualifiedName", (QualifiedName[]) value);
+      case LocalizedText ->
+          encodeLocalizedTextArray("ListOfLocalizedText", (LocalizedText[]) value);
+      case ExtensionObject ->
+          encodeExtensionObjectArray("ListOfExtensionObject", (ExtensionObject[]) value);
+      case DataValue -> encodeDataValueArray("ListOfDataValue", (DataValue[]) value);
+      case Variant -> encodeVariantArray("ListOfVariant", (Variant[]) value);
+      case DiagnosticInfo ->
+          encodeDiagnosticInfoArray("ListOfDiagnosticInfo", (DiagnosticInfo[]) value);
     }
   }
 
@@ -916,4 +1014,11 @@ public class OpcUaXmlEncoder implements UaEncoder {
   @Override
   public void encodeStructMatrix(String field, Matrix value, ExpandedNodeId dataTypeId)
       throws UaSerializationException {}
+
+  enum TypeHint {
+    BUILTIN,
+    ENUM,
+    STRUCT,
+    OPTION_SET
+  }
 }

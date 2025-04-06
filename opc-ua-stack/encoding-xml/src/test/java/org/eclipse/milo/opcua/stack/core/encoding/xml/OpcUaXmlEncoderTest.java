@@ -423,7 +423,7 @@ class OpcUaXmlEncoderTest {
 """
 <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
   <uax:TypeId>
-    <uax:Identifier>ns=0;i=12082</uax:Identifier>
+    <uax:Identifier>i=12082</uax:Identifier>
   </uax:TypeId>
   <uax:Body>
     <XVType>
@@ -702,19 +702,12 @@ class OpcUaXmlEncoderTest {
     }
   }
 
-  @Test
-  void encodeVariantOfScalar() {
-    String expected =
-        """
-        <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
-          <uax:Value>
-            <uax:Boolean>false</uax:Boolean>
-          </uax:Value>
-        </Test>
-        """;
-
+  @ParameterizedTest(name = "variant = {0}")
+  @MethodSource(
+      "org.eclipse.milo.opcua.stack.core.encoding.xml.args.VariantArguments#variantOfScalarArguments")
+  void encodeVariantOfScalar(Variant variant, String expected) {
     var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeVariant("Test", Variant.of(false));
+    encoder.encodeVariant("Test", variant);
 
     String actual = encoder.getDocumentXml();
 

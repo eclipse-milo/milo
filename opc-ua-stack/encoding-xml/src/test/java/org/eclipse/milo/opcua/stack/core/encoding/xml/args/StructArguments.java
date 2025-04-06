@@ -49,7 +49,7 @@ public class StructArguments {
                 <Argument xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                   <Name>ArgumentName</Name>
                   <DataType>
-                    <uax:Identifier>ns=0;i=1</uax:Identifier>
+                    <uax:Identifier>i=1</uax:Identifier>
                   </DataType>
                   <ValueRank>-1</ValueRank>
                   <ArrayDimensions xsi:nil="true"></ArrayDimensions>
