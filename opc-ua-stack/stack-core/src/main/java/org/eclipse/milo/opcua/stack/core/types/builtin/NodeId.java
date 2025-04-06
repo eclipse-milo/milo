@@ -398,7 +398,9 @@ public final class NodeId {
   public String toParseableString() {
     StringBuilder sb = new StringBuilder();
 
-    sb.append("ns=").append(namespaceIndex).append(";");
+    if (namespaceIndex.intValue() != 0) {
+      sb.append("ns=").append(namespaceIndex).append(";");
+    }
 
     switch (getType()) {
       case Numeric:
