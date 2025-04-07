@@ -50,6 +50,7 @@ public class OpcUaDefaultXmlEncoding implements DataTypeEncoding {
       OpcUaXmlEncoder encoder = new OpcUaXmlEncoder(context);
 
       // TODO should be codec.getTypeName() once it exists
+      // TODO push/pop the namespace from DataTypeCodec
       encoder.encodeStruct(codec.getType().getSimpleName(), struct, codec);
 
       return new XmlElement(encoder.getDocumentXml());

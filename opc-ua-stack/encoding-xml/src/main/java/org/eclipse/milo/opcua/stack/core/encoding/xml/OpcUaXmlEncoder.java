@@ -41,7 +41,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
   private XMLStreamWriter xmlStreamWriter;
 
   private final AtomicInteger depth = new AtomicInteger(0);
-  private final Deque<String> namespaces = new ArrayDeque<>();
+  private final Deque<String> namespaceStack = new ArrayDeque<>();
 
   private final EncodingContext context;
 
@@ -64,8 +64,17 @@ public class OpcUaXmlEncoder implements UaEncoder {
       xmlStreamWriter.setPrefix("uax", Namespaces.OPC_UA_XSD);
       xmlStreamWriter.setPrefix("xsi", Namespaces.XML_SCHEMA_INSTANCE);
 
+      String[] namespaces = context.getNamespaceTable().toArray();
+      for (int i = 0; i < namespaces.length; i++) {
+        if (i == 0) {
+          xmlStreamWriter.setPrefix("ua", Namespaces.OPC_UA);
+        } else {
+          xmlStreamWriter.setPrefix("ns" + i, namespaces[i]);
+        }
+      }
+
       depth.set(0);
-      namespaces.clear();
+      namespaceStack.clear();
     } catch (XMLStreamException e) {
       throw new RuntimeException(e);
     }
@@ -97,8 +106,8 @@ public class OpcUaXmlEncoder implements UaEncoder {
           return false;
         }
 
-        if (namespaces.peek() != null) {
-          xmlStreamWriter.writeStartElement(namespaces.peek(), field);
+        if (namespaceStack.peek() != null) {
+          xmlStreamWriter.writeStartElement(namespaceStack.peek(), field);
         } else {
           xmlStreamWriter.writeStartElement(field);
         }
@@ -355,13 +364,13 @@ public class OpcUaXmlEncoder implements UaEncoder {
   public void encodeNodeId(String field, NodeId value) throws UaSerializationException {
     //noinspection DuplicatedCode
     if (beginField(field, value == null, true)) {
-      namespaces.push(Namespaces.OPC_UA_XSD);
+      namespaceStack.push(Namespaces.OPC_UA_XSD);
       try {
         if (value != null) {
           encodeString("Identifier", value.toParseableString());
         }
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
 
         endField(field);
       }
@@ -374,13 +383,13 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
     //noinspection DuplicatedCode
     if (beginField(field, value == null, true)) {
-      namespaces.push(Namespaces.OPC_UA_XSD);
+      namespaceStack.push(Namespaces.OPC_UA_XSD);
       try {
         if (value != null) {
           encodeString("Identifier", value.toParseableString());
         }
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
 
         endField(field);
       }
@@ -390,13 +399,13 @@ public class OpcUaXmlEncoder implements UaEncoder {
   @Override
   public void encodeStatusCode(String field, StatusCode value) throws UaSerializationException {
     if (beginField(field, value == null, true)) {
-      namespaces.push(Namespaces.OPC_UA_XSD);
+      namespaceStack.push(Namespaces.OPC_UA_XSD);
       try {
         if (value != null) {
           encodeUInt32("Code", UInteger.valueOf(value.getValue()));
         }
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
 
         endField(field);
       }
@@ -408,14 +417,14 @@ public class OpcUaXmlEncoder implements UaEncoder {
       throws UaSerializationException {
 
     if (beginField(field, value == null, true)) {
-      namespaces.push(Namespaces.OPC_UA_XSD);
+      namespaceStack.push(Namespaces.OPC_UA_XSD);
       try {
         if (value != null) {
           encodeUInt16("NamespaceIndex", value.getNamespaceIndex());
           encodeString("Name", value.getName());
         }
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
 
         endField(field);
       }
@@ -427,7 +436,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       throws UaSerializationException {
 
     if (beginField(field, value == null, true)) {
-      namespaces.push(Namespaces.OPC_UA_XSD);
+      namespaceStack.push(Namespaces.OPC_UA_XSD);
       try {
         if (value != null) {
           if (value.locale() != null && !value.locale().isBlank()) {
@@ -438,7 +447,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
           }
         }
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
 
         endField(field);
       }
@@ -450,7 +459,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       throws UaSerializationException {
 
     if (beginField(field, value == null, true)) {
-      namespaces.push(Namespaces.OPC_UA_XSD);
+      namespaceStack.push(Namespaces.OPC_UA_XSD);
       try {
         if (value == null || value.isNull()) {
           return;
@@ -484,7 +493,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       } catch (XMLStreamException e) {
         throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
 
         endField(field);
       }
@@ -494,7 +503,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
   @Override
   public void encodeDataValue(String field, DataValue value) throws UaSerializationException {
     if (beginField(field, value == null, true)) {
-      namespaces.push(Namespaces.OPC_UA_XSD);
+      namespaceStack.push(Namespaces.OPC_UA_XSD);
       try {
         if (value != null) {
           if (!value.getValue().isNull()) {
@@ -522,7 +531,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
           }
         }
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
 
         endField(field);
       }
@@ -532,7 +541,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
   @Override
   public void encodeVariant(String field, Variant value) throws UaSerializationException {
     if (beginField(field)) {
-      namespaces.push(Namespaces.OPC_UA_XSD);
+      namespaceStack.push(Namespaces.OPC_UA_XSD);
 
       if (depth.getAndIncrement() > context.getEncodingLimits().getMaxRecursionDepth()) {
         throw new UaSerializationException(
@@ -548,7 +557,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
         throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
       } finally {
         depth.decrementAndGet();
-        namespaces.pop();
+        namespaceStack.pop();
         endField(field);
       }
     }
@@ -606,7 +615,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
             StatusCodes.Bad_EncodingError, "unknown typeId: " + typeId);
       }
 
-      namespaces.push(Namespaces.OPC_UA_XSD);
+      namespaceStack.push(Namespaces.OPC_UA_XSD);
       try {
         if (value.getClass().isArray()) {
           switch (typeHint) {
@@ -705,7 +714,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
           }
         }
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
       }
     } catch (XMLStreamException e) {
       throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
@@ -853,7 +862,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
     if (beginField(field, value == null, true)) {
       try {
-        namespaces.push(Namespaces.OPC_UA_XSD);
+        namespaceStack.push(Namespaces.OPC_UA_XSD);
 
         if (depth.getAndIncrement() > context.getEncodingLimits().getMaxRecursionDepth()) {
           throw new UaSerializationException(
@@ -879,7 +888,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
         }
       } finally {
         depth.decrementAndGet();
-        namespaces.pop();
+        namespaceStack.pop();
         endField(field);
       }
     }
@@ -981,6 +990,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       }
 
       try {
+        // TODO push/pop the namespace from DataTypeCodec
         codec.encode(context, this, value);
       } finally {
         depth.decrementAndGet();
@@ -993,14 +1003,14 @@ public class OpcUaXmlEncoder implements UaEncoder {
   public void encodeBooleanArray(String field, Boolean[] value) throws UaSerializationException {
     if (beginField(field, value == null, true, true)) {
       try {
-        namespaces.push(Namespaces.OPC_UA_XSD);
+        namespaceStack.push(Namespaces.OPC_UA_XSD);
 
         assert value != null;
         for (Boolean v : value) {
           encodeBoolean("Boolean", v);
         }
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
 
         endField(field);
       }
@@ -1011,14 +1021,14 @@ public class OpcUaXmlEncoder implements UaEncoder {
   public void encodeSByteArray(String field, Byte[] value) throws UaSerializationException {
     if (beginField(field, value == null, true, true)) {
       try {
-        namespaces.push(Namespaces.OPC_UA_XSD);
+        namespaceStack.push(Namespaces.OPC_UA_XSD);
 
         assert value != null;
         for (Byte v : value) {
           encodeSByte("SByte", v);
         }
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
 
         endField(field);
       }
@@ -1029,14 +1039,14 @@ public class OpcUaXmlEncoder implements UaEncoder {
   public void encodeInt16Array(String field, Short[] value) throws UaSerializationException {
     if (beginField(field, value == null, true, true)) {
       try {
-        namespaces.push(Namespaces.OPC_UA_XSD);
+        namespaceStack.push(Namespaces.OPC_UA_XSD);
 
         assert value != null;
         for (Short v : value) {
           encodeInt16("Int16", v);
         }
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
 
         endField(field);
       }
@@ -1047,14 +1057,14 @@ public class OpcUaXmlEncoder implements UaEncoder {
   public void encodeInt32Array(String field, Integer[] value) throws UaSerializationException {
     if (beginField(field, value == null, true, true)) {
       try {
-        namespaces.push(Namespaces.OPC_UA_XSD);
+        namespaceStack.push(Namespaces.OPC_UA_XSD);
 
         assert value != null;
         for (Integer v : value) {
           encodeInt32("Int32", v);
         }
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
 
         endField(field);
       }
@@ -1065,14 +1075,14 @@ public class OpcUaXmlEncoder implements UaEncoder {
   public void encodeInt64Array(String field, Long[] value) throws UaSerializationException {
     if (beginField(field, value == null, true, true)) {
       try {
-        namespaces.push(Namespaces.OPC_UA_XSD);
+        namespaceStack.push(Namespaces.OPC_UA_XSD);
 
         assert value != null;
         for (Long v : value) {
           encodeInt64("Int64", v);
         }
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
 
         endField(field);
       }
@@ -1083,14 +1093,14 @@ public class OpcUaXmlEncoder implements UaEncoder {
   public void encodeByteArray(String field, UByte[] value) throws UaSerializationException {
     if (beginField(field, value == null, true, true)) {
       try {
-        namespaces.push(Namespaces.OPC_UA_XSD);
+        namespaceStack.push(Namespaces.OPC_UA_XSD);
 
         assert value != null;
         for (UByte v : value) {
           encodeByte("Byte", v);
         }
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
 
         endField(field);
       }
@@ -1101,14 +1111,14 @@ public class OpcUaXmlEncoder implements UaEncoder {
   public void encodeUInt16Array(String field, UShort[] value) throws UaSerializationException {
     if (beginField(field, value == null, true, true)) {
       try {
-        namespaces.push(Namespaces.OPC_UA_XSD);
+        namespaceStack.push(Namespaces.OPC_UA_XSD);
 
         assert value != null;
         for (UShort v : value) {
           encodeUInt16("UInt16", v);
         }
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
 
         endField(field);
       }
@@ -1119,14 +1129,14 @@ public class OpcUaXmlEncoder implements UaEncoder {
   public void encodeUInt32Array(String field, UInteger[] value) throws UaSerializationException {
     if (beginField(field, value == null, true, true)) {
       try {
-        namespaces.push(Namespaces.OPC_UA_XSD);
+        namespaceStack.push(Namespaces.OPC_UA_XSD);
 
         assert value != null;
         for (UInteger v : value) {
           encodeUInt32("UInt32", v);
         }
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
 
         endField(field);
       }
@@ -1137,14 +1147,14 @@ public class OpcUaXmlEncoder implements UaEncoder {
   public void encodeUInt64Array(String field, ULong[] value) throws UaSerializationException {
     if (beginField(field, value == null, true, true)) {
       try {
-        namespaces.push(Namespaces.OPC_UA_XSD);
+        namespaceStack.push(Namespaces.OPC_UA_XSD);
 
         assert value != null;
         for (ULong v : value) {
           encodeUInt64("UInt64", v);
         }
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
 
         endField(field);
       }
@@ -1155,14 +1165,14 @@ public class OpcUaXmlEncoder implements UaEncoder {
   public void encodeFloatArray(String field, Float[] value) throws UaSerializationException {
     if (beginField(field, value == null, true, true)) {
       try {
-        namespaces.push(Namespaces.OPC_UA_XSD);
+        namespaceStack.push(Namespaces.OPC_UA_XSD);
 
         assert value != null;
         for (Float v : value) {
           encodeFloat("Float", v);
         }
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
 
         endField(field);
       }
@@ -1173,14 +1183,14 @@ public class OpcUaXmlEncoder implements UaEncoder {
   public void encodeDoubleArray(String field, Double[] value) throws UaSerializationException {
     if (beginField(field, value == null, true, true)) {
       try {
-        namespaces.push(Namespaces.OPC_UA_XSD);
+        namespaceStack.push(Namespaces.OPC_UA_XSD);
 
         assert value != null;
         for (Double v : value) {
           encodeDouble("Double", v);
         }
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
 
         endField(field);
       }
@@ -1191,14 +1201,14 @@ public class OpcUaXmlEncoder implements UaEncoder {
   public void encodeStringArray(String field, String[] value) throws UaSerializationException {
     if (beginField(field, value == null, true, true)) {
       try {
-        namespaces.push(Namespaces.OPC_UA_XSD);
+        namespaceStack.push(Namespaces.OPC_UA_XSD);
 
         assert value != null;
         for (String v : value) {
           encodeStringValue("String", v, true);
         }
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
 
         endField(field);
       }
@@ -1209,14 +1219,14 @@ public class OpcUaXmlEncoder implements UaEncoder {
   public void encodeDateTimeArray(String field, DateTime[] value) throws UaSerializationException {
     if (beginField(field, value == null, true, true)) {
       try {
-        namespaces.push(Namespaces.OPC_UA_XSD);
+        namespaceStack.push(Namespaces.OPC_UA_XSD);
 
         assert value != null;
         for (DateTime v : value) {
           encodeDateTime("DateTime", v);
         }
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
 
         endField(field);
       }
@@ -1227,14 +1237,14 @@ public class OpcUaXmlEncoder implements UaEncoder {
   public void encodeGuidArray(String field, UUID[] value) throws UaSerializationException {
     if (beginField(field, value == null, true, true)) {
       try {
-        namespaces.push(Namespaces.OPC_UA_XSD);
+        namespaceStack.push(Namespaces.OPC_UA_XSD);
 
         assert value != null;
         for (UUID v : value) {
           encodeGuid("Guid", v);
         }
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
 
         endField(field);
       }
@@ -1247,14 +1257,14 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
     if (beginField(field, value == null, true, true)) {
       try {
-        namespaces.push(Namespaces.OPC_UA_XSD);
+        namespaceStack.push(Namespaces.OPC_UA_XSD);
 
         assert value != null;
         for (ByteString v : value) {
           encodeByteString("ByteString", v);
         }
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
 
         endField(field);
       }
@@ -1267,14 +1277,14 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
     if (beginField(field, value == null, true, true)) {
       try {
-        namespaces.push(Namespaces.OPC_UA_XSD);
+        namespaceStack.push(Namespaces.OPC_UA_XSD);
 
         assert value != null;
         for (XmlElement v : value) {
           encodeXmlElement("XmlElement", v);
         }
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
 
         endField(field);
       }
@@ -1285,14 +1295,14 @@ public class OpcUaXmlEncoder implements UaEncoder {
   public void encodeNodeIdArray(String field, NodeId[] value) throws UaSerializationException {
     if (beginField(field, value == null, true, true)) {
       try {
-        namespaces.push(Namespaces.OPC_UA_XSD);
+        namespaceStack.push(Namespaces.OPC_UA_XSD);
 
         assert value != null;
         for (NodeId v : value) {
           encodeNodeId("NodeId", v);
         }
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
 
         endField(field);
       }
@@ -1305,14 +1315,14 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
     if (beginField(field, value == null, true, true)) {
       try {
-        namespaces.push(Namespaces.OPC_UA_XSD);
+        namespaceStack.push(Namespaces.OPC_UA_XSD);
 
         assert value != null;
         for (ExpandedNodeId v : value) {
           encodeExpandedNodeId("ExpandedNodeId", v);
         }
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
 
         endField(field);
       }
@@ -1325,14 +1335,14 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
     if (beginField(field, value == null, true, true)) {
       try {
-        namespaces.push(Namespaces.OPC_UA_XSD);
+        namespaceStack.push(Namespaces.OPC_UA_XSD);
 
         assert value != null;
         for (StatusCode v : value) {
           encodeStatusCode("StatusCode", v);
         }
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
 
         endField(field);
       }
@@ -1345,14 +1355,14 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
     if (beginField(field, value == null, true, true)) {
       try {
-        namespaces.push(Namespaces.OPC_UA_XSD);
+        namespaceStack.push(Namespaces.OPC_UA_XSD);
 
         assert value != null;
         for (QualifiedName v : value) {
           encodeQualifiedName("QualifiedName", v);
         }
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
 
         endField(field);
       }
@@ -1365,14 +1375,14 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
     if (beginField(field, value == null, true, true)) {
       try {
-        namespaces.push(Namespaces.OPC_UA_XSD);
+        namespaceStack.push(Namespaces.OPC_UA_XSD);
 
         assert value != null;
         for (LocalizedText v : value) {
           encodeLocalizedText("LocalizedText", v);
         }
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
 
         endField(field);
       }
@@ -1385,14 +1395,14 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
     if (beginField(field, value == null, true, true)) {
       try {
-        namespaces.push(Namespaces.OPC_UA_XSD);
+        namespaceStack.push(Namespaces.OPC_UA_XSD);
 
         assert value != null;
         for (ExtensionObject v : value) {
           encodeExtensionObject("ExtensionObject", v);
         }
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
 
         endField(field);
       }
@@ -1405,14 +1415,14 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
     if (beginField(field, value == null, true, true)) {
       try {
-        namespaces.push(Namespaces.OPC_UA_XSD);
+        namespaceStack.push(Namespaces.OPC_UA_XSD);
 
         assert value != null;
         for (DataValue v : value) {
           encodeDataValue("DataValue", v);
         }
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
 
         endField(field);
       }
@@ -1423,14 +1433,14 @@ public class OpcUaXmlEncoder implements UaEncoder {
   public void encodeVariantArray(String field, Variant[] value) throws UaSerializationException {
     if (beginField(field, value == null, true, true)) {
       try {
-        namespaces.push(Namespaces.OPC_UA_XSD);
+        namespaceStack.push(Namespaces.OPC_UA_XSD);
 
         assert value != null;
         for (Variant v : value) {
           encodeVariant("Variant", v);
         }
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
 
         endField(field);
       }
@@ -1443,14 +1453,14 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
     if (beginField(field, value == null, true, true)) {
       try {
-        namespaces.push(Namespaces.OPC_UA_XSD);
+        namespaceStack.push(Namespaces.OPC_UA_XSD);
 
         assert value != null;
         for (DiagnosticInfo v : value) {
           encodeDiagnosticInfo("DiagnosticInfo", v);
         }
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
 
         endField(field);
       }
@@ -1463,15 +1473,17 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
     if (beginField(field, value == null, true, true)) {
       try {
-        namespaces.push(Namespaces.OPC_UA_XSD);
+        namespaceStack.push(Namespaces.OPC_UA_XSD);
 
         assert value != null;
 
-        for (UaEnumeratedType v : value) {
-          encodeEnum(v.getClass().getSimpleName(), v);
+        // TODO push/pop the namespace from the DataTypeCodec
+        for (UaEnumeratedType element : value) {
+          // TODO use the name from the DataTypeCodec
+          encodeEnum(element.getClass().getSimpleName(), element);
         }
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
 
         endField(field);
       }
@@ -1484,16 +1496,18 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
     if (beginField(field, values == null, true, true)) {
       try {
-        namespaces.push(Namespaces.OPC_UA_XSD);
+        namespaceStack.push(Namespaces.OPC_UA_XSD);
 
+        namespaceStack.push(Namespaces.OPC_UA);
         assert values != null;
         for (Object v : values) {
           // TODO should push the namespace from the DataTypeCodec
           // TODO should be the name from the DataTypeCodec
           encodeStruct(v.getClass().getSimpleName(), v, dataTypeId);
         }
+        namespaceStack.pop();
       } finally {
-        namespaces.pop();
+        namespaceStack.pop();
 
         endField(field);
       }
@@ -1519,7 +1533,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
   public void encodeMatrix(String field, Matrix value) throws UaSerializationException {
     if (beginField(field, value == null, true, true)) {
       try {
-        namespaces.push(Namespaces.OPC_UA_XSD);
+        namespaceStack.push(Namespaces.OPC_UA_XSD);
 
         if (depth.getAndIncrement() > context.getEncodingLimits().getMaxRecursionDepth()) {
           throw new UaSerializationException(
@@ -1752,7 +1766,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
         throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
       } finally {
         depth.decrementAndGet();
-        namespaces.pop();
+        namespaceStack.pop();
         endField(field);
       }
     }
@@ -1762,7 +1776,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
   public void encodeEnumMatrix(String field, Matrix value) throws UaSerializationException {
     if (beginField(field, value == null, true, true)) {
       try {
-        namespaces.push(Namespaces.OPC_UA_XSD);
+        namespaceStack.push(Namespaces.OPC_UA_XSD);
 
         if (depth.getAndIncrement() > context.getEncodingLimits().getMaxRecursionDepth()) {
           throw new UaSerializationException(
@@ -1792,7 +1806,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
         throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
       } finally {
         depth.decrementAndGet();
-        namespaces.pop();
+        namespaceStack.pop();
         endField(field);
       }
     }
