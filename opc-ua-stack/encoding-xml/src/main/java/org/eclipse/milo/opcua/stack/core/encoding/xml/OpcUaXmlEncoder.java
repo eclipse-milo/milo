@@ -1498,14 +1498,12 @@ public class OpcUaXmlEncoder implements UaEncoder {
       try {
         namespaceStack.push(Namespaces.OPC_UA_XSD);
 
-        namespaceStack.push(Namespaces.OPC_UA);
         assert values != null;
         for (Object v : values) {
           // TODO should push the namespace from the DataTypeCodec
           // TODO should be the name from the DataTypeCodec
           encodeStruct(v.getClass().getSimpleName(), v, dataTypeId);
         }
-        namespaceStack.pop();
       } finally {
         namespaceStack.pop();
 
