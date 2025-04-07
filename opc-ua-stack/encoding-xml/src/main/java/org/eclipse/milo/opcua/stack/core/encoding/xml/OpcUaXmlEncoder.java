@@ -1483,7 +1483,8 @@ public class OpcUaXmlEncoder implements UaEncoder {
           String namespaceUri = value[0].getTypeId().getNamespaceUri(context.getNamespaceTable());
           if (namespaceUri == null) {
             throw new UaSerializationException(
-                StatusCodes.Bad_EncodingError, "namespace not registered: " + value[0].getTypeId());
+                StatusCodes.Bad_EncodingError,
+                "namespace not registered: " + value[0].getTypeId().toParseableString());
           }
 
           namespaceStack.push(namespaceUri);
@@ -1513,7 +1514,8 @@ public class OpcUaXmlEncoder implements UaEncoder {
         String namespaceUri = context.getNamespaceTable().get(dataTypeId.getNamespaceIndex());
         if (namespaceUri == null) {
           throw new UaSerializationException(
-              StatusCodes.Bad_EncodingError, "namespace not registered: " + dataTypeId);
+              StatusCodes.Bad_EncodingError,
+              "namespace not registered: " + dataTypeId.toParseableString());
         }
 
         namespaceStack.push(namespaceUri);
@@ -1819,7 +1821,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
             if (namespaceUri == null) {
               throw new UaSerializationException(
                   StatusCodes.Bad_EncodingError,
-                  "namespace not registered: " + element.getTypeId());
+                  "namespace not registered: " + element.getTypeId().toParseableString());
             }
 
             namespaceStack.push(namespaceUri);
