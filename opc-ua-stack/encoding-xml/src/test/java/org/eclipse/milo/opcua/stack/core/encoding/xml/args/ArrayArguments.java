@@ -919,8 +919,8 @@ public class ArrayArguments {
             new UaEnumeratedType[] {BrowseDirection.Forward, BrowseDirection.Inverse},
             """
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
-              <uax:Int32>0</uax:Int32>
-              <uax:Int32>1</uax:Int32>
+              <uax:BrowseDirection>Forward_0</uax:BrowseDirection>
+              <uax:BrowseDirection>Inverse_1</uax:BrowseDirection>
             </Test>
             """),
         Arguments.of(

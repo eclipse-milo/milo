@@ -15,7 +15,6 @@ import java.io.StringWriter;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.xml.stream.*;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
@@ -41,7 +40,6 @@ public class OpcUaXmlEncoder implements UaEncoder {
   private StringWriter xmlString;
   private XMLStreamWriter xmlStreamWriter;
 
-  private final AtomicBoolean encodingMessage = new AtomicBoolean(false);
   private final AtomicInteger depth = new AtomicInteger(0);
   private final Deque<String> namespaces = new ArrayDeque<>();
 
@@ -672,7 +670,10 @@ public class OpcUaXmlEncoder implements UaEncoder {
         } else if (value instanceof Matrix matrix) {
           switch (typeHint) {
             case BUILTIN -> encodeMatrix("Matrix", matrix);
-            case ENUM -> encodeEnumMatrix("Matrix", matrix);
+            case ENUM -> {
+              Matrix transformed = matrix.transform(e -> ((UaEnumeratedType) e).getValue());
+              encodeMatrix("Matrix", transformed);
+            }
             case STRUCT ->
                 encodeStructMatrix("Matrix", matrix, matrix.getDataTypeId().orElseThrow());
             case OPTION_SET -> {
@@ -888,8 +889,6 @@ public class OpcUaXmlEncoder implements UaEncoder {
   public void encodeMessage(String field, UaMessageType message) throws UaSerializationException {
     if (beginField(field)) {
       try {
-        encodingMessage.set(true);
-
         if (depth.getAndIncrement() > context.getEncodingLimits().getMaxRecursionDepth()) {
           throw new UaSerializationException(
               StatusCodes.Bad_EncodingError,
@@ -919,7 +918,6 @@ public class OpcUaXmlEncoder implements UaEncoder {
         }
       } finally {
         depth.decrementAndGet();
-        encodingMessage.set(false);
         endField(field);
       }
     }
@@ -930,13 +928,9 @@ public class OpcUaXmlEncoder implements UaEncoder {
     if (beginField(field, value == null, true)) {
       if (value != null) {
         try {
-          if (encodingMessage.get()) {
-            xmlStreamWriter.writeCharacters(
-                DatatypeConverter.printString(
-                    String.format("%s_%s", value.getName(), value.getValue())));
-          } else {
-            xmlStreamWriter.writeCharacters(DatatypeConverter.printInt(value.getValue()));
-          }
+          xmlStreamWriter.writeCharacters(
+              DatatypeConverter.printString(
+                  String.format("%s_%s", value.getName(), value.getValue())));
         } catch (XMLStreamException e) {
           throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
         } finally {
@@ -1474,11 +1468,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
         assert value != null;
 
         for (UaEnumeratedType v : value) {
-          if (encodingMessage.get()) {
-            encodeEnum("String", v);
-          } else {
-            encodeEnum("Int32", v);
-          }
+          encodeEnum(v.getClass().getSimpleName(), v);
         }
       } finally {
         namespaces.pop();
@@ -1770,9 +1760,42 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
   @Override
   public void encodeEnumMatrix(String field, Matrix value) throws UaSerializationException {
-    Matrix transformed = value.transform(e -> ((UaEnumeratedType) e).getValue());
+    if (beginField(field, value == null, true, true)) {
+      try {
+        namespaces.push(Namespaces.OPC_UA_XSD);
 
-    encodeMatrix(field, transformed);
+        if (depth.getAndIncrement() > context.getEncodingLimits().getMaxRecursionDepth()) {
+          throw new UaSerializationException(
+              StatusCodes.Bad_EncodingError,
+              "max recursion depth exceeded: "
+                  + context.getEncodingLimits().getMaxRecursionDepth());
+        }
+
+        if (value != null && value.getElements() instanceof UaEnumeratedType[] elements) {
+          Integer[] dimensions = new Integer[value.getDimensions().length];
+          for (int i = 0; i < dimensions.length; i++) {
+            dimensions[i] = value.getDimensions()[i];
+          }
+          encodeInt32Array("Dimensions", dimensions);
+
+          xmlStreamWriter.writeStartElement(Namespaces.OPC_UA_XSD, "Elements");
+
+          // TODO push/pop the namespace from the DataTypeCodec
+          for (UaEnumeratedType element : elements) {
+            // TODO use the name from the DataTypeCodec
+            encodeEnum(element.getClass().getSimpleName(), element);
+          }
+
+          xmlStreamWriter.writeEndElement();
+        }
+      } catch (XMLStreamException e) {
+        throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+      } finally {
+        depth.decrementAndGet();
+        namespaces.pop();
+        endField(field);
+      }
+    }
   }
 
   @Override

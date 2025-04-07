@@ -1473,10 +1473,10 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:Int32>0</uax:Int32>
-                <uax:Int32>1</uax:Int32>
-                <uax:Int32>2</uax:Int32>
-                <uax:Int32>3</uax:Int32>
+                <uax:BrowseDirection>Forward_0</uax:BrowseDirection>
+                <uax:BrowseDirection>Inverse_1</uax:BrowseDirection>
+                <uax:BrowseDirection>Both_2</uax:BrowseDirection>
+                <uax:BrowseDirection>Invalid_3</uax:BrowseDirection>
               </uax:Elements>
             </Test>
             """),
@@ -1502,14 +1502,14 @@ public class MatrixArguments {
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:Int32>0</uax:Int32>
-                <uax:Int32>1</uax:Int32>
-                <uax:Int32>2</uax:Int32>
-                <uax:Int32>3</uax:Int32>
-                <uax:Int32>1</uax:Int32>
-                <uax:Int32>2</uax:Int32>
-                <uax:Int32>0</uax:Int32>
-                <uax:Int32>3</uax:Int32>
+                <uax:BrowseDirection>Forward_0</uax:BrowseDirection>
+                <uax:BrowseDirection>Inverse_1</uax:BrowseDirection>
+                <uax:BrowseDirection>Both_2</uax:BrowseDirection>
+                <uax:BrowseDirection>Invalid_3</uax:BrowseDirection>
+                <uax:BrowseDirection>Inverse_1</uax:BrowseDirection>
+                <uax:BrowseDirection>Both_2</uax:BrowseDirection>
+                <uax:BrowseDirection>Forward_0</uax:BrowseDirection>
+                <uax:BrowseDirection>Invalid_3</uax:BrowseDirection>
               </uax:Elements>
             </Test>
             """));
