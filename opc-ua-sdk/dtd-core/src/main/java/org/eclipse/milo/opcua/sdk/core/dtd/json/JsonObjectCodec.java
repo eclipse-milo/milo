@@ -56,6 +56,17 @@ public class JsonObjectCodec extends AbstractBsdCodec<JsonObject, JsonElement> {
   }
 
   @Override
+  public String getNamespaceUri() {
+    // TODO
+    return "TODO";
+  }
+
+  @Override
+  public String getEncodingName() {
+    return structuredType.getName();
+  }
+
+  @Override
   protected JsonObject createStructure(String name, LinkedHashMap<String, JsonElement> members) {
     JsonObject object = new JsonObject();
 

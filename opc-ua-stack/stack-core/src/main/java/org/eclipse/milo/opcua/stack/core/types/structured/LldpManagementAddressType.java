@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2025 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -13,6 +23,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ManAddrIfSubtype;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.StructureType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 import org.eclipse.milo.opcua.stack.core.util.codegen.EqualsBuilder;
 import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 import org.jspecify.annotations.Nullable;
@@ -22,13 +33,13 @@ import org.jspecify.annotations.Nullable;
  *     href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.3.2/#5.3.2.3">https://reference.opcfoundation.org/v105/Core/docs/Part22/5.3.2/#5.3.2.3</a>
  */
 public class LldpManagementAddressType extends Structure implements UaStructuredType {
-  public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=18954");
+  public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=18954");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=19080");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=19080");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=19101");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=19101");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=19300");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=19300");
 
   private final UInteger addressSubtype;
 
@@ -166,6 +177,11 @@ public class LldpManagementAddressType extends Structure implements UaStructured
     @Override
     public Class<LldpManagementAddressType> getType() {
       return LldpManagementAddressType.class;
+    }
+
+    @Override
+    public String getNamespaceUri() {
+      return Namespaces.OPC_UA;
     }
 
     @Override

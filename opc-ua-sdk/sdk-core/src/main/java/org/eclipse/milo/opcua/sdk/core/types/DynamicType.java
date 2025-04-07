@@ -23,7 +23,7 @@ public abstract sealed class DynamicType implements UaDataType
     permits DynamicEnumType, DynamicOptionSetType, DynamicStructType, DynamicUnionType {
 
   @Override
-  public String getTypeName() {
+  public String getEncodingName() {
     return Objects.requireNonNull(getDataType().getBrowseName().name());
   }
 

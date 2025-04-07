@@ -29,13 +29,17 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 import org.jspecify.annotations.Nullable;
 
 public class ConcreteTestTypeEx extends ConcreteTestType implements UaStructuredType {
-  public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=1;i=3009");
+  public static final ExpandedNodeId TYPE_ID =
+      ExpandedNodeId.parse("nsu=https://github.com/eclipse/milo/DataTypeTest;i=3009");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=1;i=5004");
+  public static final ExpandedNodeId BINARY_ENCODING_ID =
+      ExpandedNodeId.parse("nsu=https://github.com/eclipse/milo/DataTypeTest;i=5004");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=1;i=5006");
+  public static final ExpandedNodeId XML_ENCODING_ID =
+      ExpandedNodeId.parse("nsu=https://github.com/eclipse/milo/DataTypeTest;i=5005");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=1;i=5005");
+  public static final ExpandedNodeId JSON_ENCODING_ID =
+      ExpandedNodeId.parse("nsu=https://github.com/eclipse/milo/DataTypeTest;i=5006");
 
   private final UInteger uInt32Field;
 
@@ -159,6 +163,11 @@ public class ConcreteTestTypeEx extends ConcreteTestType implements UaStructured
     @Override
     public Class<ConcreteTestTypeEx> getType() {
       return ConcreteTestTypeEx.class;
+    }
+
+    @Override
+    public String getNamespaceUri() {
+      return "https://github.com/eclipse/milo/DataTypeTest";
     }
 
     @Override

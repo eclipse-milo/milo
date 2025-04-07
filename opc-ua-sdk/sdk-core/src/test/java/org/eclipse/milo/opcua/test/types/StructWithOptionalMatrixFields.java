@@ -33,13 +33,17 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 import org.jspecify.annotations.Nullable;
 
 public class StructWithOptionalMatrixFields extends Structure implements UaStructuredType {
-  public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=1;i=3035");
+  public static final ExpandedNodeId TYPE_ID =
+      ExpandedNodeId.parse("nsu=https://github.com/eclipse/milo/DataTypeTest;i=3035");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=1;i=5059");
+  public static final ExpandedNodeId BINARY_ENCODING_ID =
+      ExpandedNodeId.parse("nsu=https://github.com/eclipse/milo/DataTypeTest;i=5059");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=1;i=5061");
+  public static final ExpandedNodeId XML_ENCODING_ID =
+      ExpandedNodeId.parse("nsu=https://github.com/eclipse/milo/DataTypeTest;i=5060");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=1;i=5060");
+  public static final ExpandedNodeId JSON_ENCODING_ID =
+      ExpandedNodeId.parse("nsu=https://github.com/eclipse/milo/DataTypeTest;i=5061");
 
   private final @Nullable Matrix int32;
 
@@ -262,6 +266,11 @@ public class StructWithOptionalMatrixFields extends Structure implements UaStruc
     @Override
     public Class<StructWithOptionalMatrixFields> getType() {
       return StructWithOptionalMatrixFields.class;
+    }
+
+    @Override
+    public String getNamespaceUri() {
+      return "https://github.com/eclipse/milo/DataTypeTest";
     }
 
     @Override

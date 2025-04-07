@@ -36,10 +36,12 @@ public class DynamicStructCodec extends GenericDataTypeCodec<DynamicStructType> 
 
   private final StructureDefinition definition;
 
+  private final String namespaceUri;
   private final DataType dataType;
   private final DataTypeTree dataTypeTree;
 
-  public DynamicStructCodec(DataType dataType, DataTypeTree dataTypeTree) {
+  public DynamicStructCodec(String namespaceUri, DataType dataType, DataTypeTree dataTypeTree) {
+    this.namespaceUri = namespaceUri;
     this.dataType = dataType;
     this.dataTypeTree = dataTypeTree;
 
@@ -49,6 +51,16 @@ public class DynamicStructCodec extends GenericDataTypeCodec<DynamicStructType> 
   @Override
   public Class<DynamicStructType> getType() {
     return DynamicStructType.class;
+  }
+
+  @Override
+  public String getNamespaceUri() {
+    return namespaceUri;
+  }
+
+  @Override
+  public String getEncodingName() {
+    return requireNonNull(dataType.getBrowseName().name());
   }
 
   @Override

@@ -10,6 +10,8 @@
 
 package org.eclipse.milo.opcua.sdk.core.types.codec;
 
+import static java.util.Objects.requireNonNull;
+
 import org.eclipse.milo.opcua.sdk.core.types.DynamicOptionSetType;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
@@ -21,15 +23,27 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 
 class DynamicOptionSetCodec extends GenericDataTypeCodec<DynamicOptionSetType> {
 
+  private final String namespaceUri;
   private final DataType dataType;
 
-  DynamicOptionSetCodec(DataType dataType) {
+  DynamicOptionSetCodec(String namespaceUri, DataType dataType) {
+    this.namespaceUri = namespaceUri;
     this.dataType = dataType;
   }
 
   @Override
   public Class<DynamicOptionSetType> getType() {
     return DynamicOptionSetType.class;
+  }
+
+  @Override
+  public String getNamespaceUri() {
+    return namespaceUri;
+  }
+
+  @Override
+  public String getEncodingName() {
+    return requireNonNull(dataType.getBrowseName().name());
   }
 
   @Override

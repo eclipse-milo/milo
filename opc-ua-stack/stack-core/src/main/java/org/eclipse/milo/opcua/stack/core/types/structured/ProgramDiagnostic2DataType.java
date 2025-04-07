@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2025 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -15,6 +25,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.StructureType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 import org.eclipse.milo.opcua.stack.core.util.codegen.EqualsBuilder;
 import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 import org.jspecify.annotations.Nullable;
@@ -24,13 +35,13 @@ import org.jspecify.annotations.Nullable;
  *     href="https://reference.opcfoundation.org/v105/Core/docs/Part10/5.2.8">https://reference.opcfoundation.org/v105/Core/docs/Part10/5.2.8</a>
  */
 public class ProgramDiagnostic2DataType extends Structure implements UaStructuredType {
-  public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=24033");
+  public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=24033");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=24034");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=24034");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=24038");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=24038");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=24042");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=24042");
 
   private final NodeId createSessionId;
 
@@ -323,6 +334,11 @@ public class ProgramDiagnostic2DataType extends Structure implements UaStructure
     @Override
     public Class<ProgramDiagnostic2DataType> getType() {
       return ProgramDiagnostic2DataType.class;
+    }
+
+    @Override
+    public String getNamespaceUri() {
+      return Namespaces.OPC_UA;
     }
 
     @Override

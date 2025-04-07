@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -116,6 +116,11 @@ public class CustomStructType implements UaStructuredType {
     @Override
     public Class<CustomStructType> getType() {
       return CustomStructType.class;
+    }
+
+    @Override
+    public String getNamespaceUri() {
+      return ExampleNamespace.NAMESPACE_URI;
     }
 
     @Override

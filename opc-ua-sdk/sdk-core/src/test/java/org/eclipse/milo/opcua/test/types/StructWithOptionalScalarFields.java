@@ -31,13 +31,17 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 import org.jspecify.annotations.Nullable;
 
 public class StructWithOptionalScalarFields extends Structure implements UaStructuredType {
-  public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=1;i=3016");
+  public static final ExpandedNodeId TYPE_ID =
+      ExpandedNodeId.parse("nsu=https://github.com/eclipse/milo/DataTypeTest;i=3016");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=1;i=5011");
+  public static final ExpandedNodeId BINARY_ENCODING_ID =
+      ExpandedNodeId.parse("nsu=https://github.com/eclipse/milo/DataTypeTest;i=5011");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=1;i=5013");
+  public static final ExpandedNodeId XML_ENCODING_ID =
+      ExpandedNodeId.parse("nsu=https://github.com/eclipse/milo/DataTypeTest;i=5012");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=1;i=5012");
+  public static final ExpandedNodeId JSON_ENCODING_ID =
+      ExpandedNodeId.parse("nsu=https://github.com/eclipse/milo/DataTypeTest;i=5013");
 
   private final @Nullable String string;
 
@@ -260,6 +264,11 @@ public class StructWithOptionalScalarFields extends Structure implements UaStruc
     @Override
     public Class<StructWithOptionalScalarFields> getType() {
       return StructWithOptionalScalarFields.class;
+    }
+
+    @Override
+    public String getNamespaceUri() {
+      return "https://github.com/eclipse/milo/DataTypeTest";
     }
 
     @Override

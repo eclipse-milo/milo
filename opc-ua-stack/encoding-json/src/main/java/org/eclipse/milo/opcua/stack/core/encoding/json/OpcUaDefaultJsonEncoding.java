@@ -40,9 +40,16 @@ public class OpcUaDefaultJsonEncoding implements DataTypeEncoding {
 
   @Override
   public Object encode(EncodingContext context, Object decodedBody, NodeId encodingId) {
+    DataTypeCodec codec = context.getDataTypeManager().getCodec(encodingId);
+
+    if (codec == null) {
+      throw new UaSerializationException(
+          StatusCodes.Bad_DecodingError, "no codec registered for encodingId=" + encodingId);
+    }
+
     var stringWriter = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, stringWriter);
-    encoder.encodeStruct(null, decodedBody, encodingId);
+    encoder.encodeStruct(null, decodedBody, codec);
 
     return stringWriter.toString();
   }
@@ -51,13 +58,13 @@ public class OpcUaDefaultJsonEncoding implements DataTypeEncoding {
   public Object decode(EncodingContext context, Object encodedBody, NodeId encodingId) {
     DataTypeCodec codec = context.getDataTypeManager().getCodec(encodingId);
 
-    if (codec != null) {
-      var decoder = new OpcUaJsonDecoder(context, (String) encodedBody);
-
-      return decoder.decodeStruct(null, codec);
-    } else {
+    if (codec == null) {
       throw new UaSerializationException(
           StatusCodes.Bad_DecodingError, "no codec registered for encodingId=" + encodingId);
     }
+
+    var decoder = new OpcUaJsonDecoder(context, (String) encodedBody);
+
+    return decoder.decodeStruct(null, codec);
   }
 }

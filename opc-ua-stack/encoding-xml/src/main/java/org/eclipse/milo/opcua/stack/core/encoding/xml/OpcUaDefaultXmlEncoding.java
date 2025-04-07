@@ -42,10 +42,16 @@ public class OpcUaDefaultXmlEncoding implements DataTypeEncoding {
 
   @Override
   public Object encode(EncodingContext context, Object struct, NodeId encodingId) {
+    DataTypeCodec codec = context.getDataTypeManager().getCodec(encodingId);
+
+    if (codec == null) {
+      throw new UaSerializationException(
+          StatusCodes.Bad_DecodingError, "no codec registered for encodingId=" + encodingId);
+    }
+
     OpcUaXmlEncoder encoder = new OpcUaXmlEncoder(context);
 
-    String typeName = struct.getClass().getSimpleName();
-    encoder.encodeStruct(typeName, struct, encodingId);
+    encoder.encodeStruct(codec.getEncodingName(), struct, codec);
 
     return new XmlElement(encoder.getDocumentXml());
   }
@@ -54,23 +60,23 @@ public class OpcUaDefaultXmlEncoding implements DataTypeEncoding {
   public Object decode(EncodingContext context, Object body, NodeId encodingId) {
     DataTypeCodec codec = context.getDataTypeManager().getCodec(encodingId);
 
-    if (codec != null) {
-      XmlElement xmlBody = (XmlElement) body;
-      String xml = xmlBody.getFragmentOrEmpty();
-
-      OpcUaXmlDecoder decoder = new OpcUaXmlDecoder(context);
-      try {
-        decoder.setInput(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
-      } catch (IOException | SAXException e) {
-        throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
-      }
-
-      // We have to use decoder.decodeStruct() instead of codec.decode() because
-      // XML-encoded structs are wrapped in a container element with the struct name.
-      return decoder.decodeStruct(codec.getType().getSimpleName(), codec);
-    } else {
+    if (codec == null) {
       throw new UaSerializationException(
           StatusCodes.Bad_DecodingError, "no codec registered for encodingId=" + encodingId);
     }
+
+    XmlElement xmlBody = (XmlElement) body;
+    String xml = xmlBody.getFragmentOrEmpty();
+
+    OpcUaXmlDecoder decoder = new OpcUaXmlDecoder(context);
+    try {
+      decoder.setInput(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
+    } catch (IOException | SAXException e) {
+      throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
+    }
+
+    // We have to use decoder.decodeStruct() instead of codec.decode() because
+    // XML-encoded structs are wrapped in a container element with the struct name.
+    return decoder.decodeStruct(codec.getEncodingName(), codec);
   }
 }

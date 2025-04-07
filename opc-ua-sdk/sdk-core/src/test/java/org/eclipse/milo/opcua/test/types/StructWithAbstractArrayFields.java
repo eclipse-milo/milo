@@ -32,13 +32,17 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 import org.jspecify.annotations.Nullable;
 
 public class StructWithAbstractArrayFields extends Structure implements UaStructuredType {
-  public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=1;i=3005");
+  public static final ExpandedNodeId TYPE_ID =
+      ExpandedNodeId.parse("nsu=https://github.com/eclipse/milo/DataTypeTest;i=3005");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=1;i=5023");
+  public static final ExpandedNodeId BINARY_ENCODING_ID =
+      ExpandedNodeId.parse("nsu=https://github.com/eclipse/milo/DataTypeTest;i=5023");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=1;i=5025");
+  public static final ExpandedNodeId XML_ENCODING_ID =
+      ExpandedNodeId.parse("nsu=https://github.com/eclipse/milo/DataTypeTest;i=5024");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=1;i=5024");
+  public static final ExpandedNodeId JSON_ENCODING_ID =
+      ExpandedNodeId.parse("nsu=https://github.com/eclipse/milo/DataTypeTest;i=5025");
 
   private final Number @Nullable [] number;
 
@@ -166,6 +170,11 @@ public class StructWithAbstractArrayFields extends Structure implements UaStruct
     @Override
     public Class<StructWithAbstractArrayFields> getType() {
       return StructWithAbstractArrayFields.class;
+    }
+
+    @Override
+    public String getNamespaceUri() {
+      return "https://github.com/eclipse/milo/DataTypeTest";
     }
 
     @Override

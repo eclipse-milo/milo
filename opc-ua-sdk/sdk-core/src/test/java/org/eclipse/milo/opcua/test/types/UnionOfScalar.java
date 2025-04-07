@@ -181,6 +181,11 @@ public class UnionOfScalar extends Union {
     }
 
     @Override
+    public String getNamespaceUri() {
+      return "https://github.com/eclipse/milo/DataTypeTest";
+    }
+
+    @Override
     public UnionOfScalar decodeType(EncodingContext context, UaDecoder decoder) {
       UInteger switchValue = decoder.decodeUInt32("SwitchField");
       switch (switchValue.intValue()) {

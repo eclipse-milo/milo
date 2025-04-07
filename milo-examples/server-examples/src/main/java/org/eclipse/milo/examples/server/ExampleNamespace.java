@@ -1023,7 +1023,11 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
         .getServer()
         .getDynamicDataTypeManager()
         .registerType(
-            dataTypeId, DynamicCodecFactory.create(dataType, dataTypeTree), null, null, null);
+            dataTypeId,
+            DynamicCodecFactory.create(NAMESPACE_URI, dataType, dataTypeTree),
+            null,
+            null,
+            null);
 
     return dataType;
   }
@@ -1131,7 +1135,7 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
     assert dataType != null;
 
     // Register Codecs for each supported encoding with DataTypeManager
-    var codec = new DynamicStructCodec(dataType, dataTypeTree);
+    var codec = new DynamicStructCodec(NAMESPACE_URI, dataType, dataTypeTree);
 
     getNodeContext()
         .getServer()

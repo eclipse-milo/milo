@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -18,6 +18,25 @@ public interface DataTypeCodec {
    * @return the {@link Class} of the DataType this codec encodes.
    */
   Class<?> getType();
+
+  /**
+   * Get the namespace URI of the DataType this codec encodes.
+   *
+   * @return the namespace URI of the DataType this codec encodes.
+   */
+  String getNamespaceUri();
+
+  /**
+   * Get the encoding name of the DataType this codec encodes.
+   *
+   * <p>Defaults to the simple name of the DataType class, implementations should override as
+   * necessary.
+   *
+   * @return the encoding name of the DataType this codec encodes.
+   */
+  default String getEncodingName() {
+    return getType().getSimpleName();
+  }
 
   /**
    * Decode an Object using the provided {@link UaDecoder}.

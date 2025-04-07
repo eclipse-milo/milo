@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2025 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -14,6 +24,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ServerState;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.StructureType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 import org.eclipse.milo.opcua.stack.core.util.codegen.EqualsBuilder;
 import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 
@@ -22,13 +33,13 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
  *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/12.10">https://reference.opcfoundation.org/v105/Core/docs/Part5/12.10</a>
  */
 public class ServerStatusDataType extends Structure implements UaStructuredType {
-  public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=862");
+  public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=862");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=864");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=864");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=863");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=863");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15367");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15367");
 
   private final DateTime startTime;
 
@@ -204,6 +215,11 @@ public class ServerStatusDataType extends Structure implements UaStructuredType 
     @Override
     public Class<ServerStatusDataType> getType() {
       return ServerStatusDataType.class;
+    }
+
+    @Override
+    public String getNamespaceUri() {
+      return Namespaces.OPC_UA;
     }
 
     @Override

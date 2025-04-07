@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2025 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -12,17 +22,18 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.StructureType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 import org.eclipse.milo.opcua.stack.core.util.codegen.EqualsBuilder;
 import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 
 public class ReferenceListEntryDataType extends Structure implements UaStructuredType {
-  public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=32660");
+  public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=32660");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=32662");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=32662");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=32670");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=32670");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=32678");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=32678");
 
   private final NodeId referenceType;
 
@@ -140,6 +151,11 @@ public class ReferenceListEntryDataType extends Structure implements UaStructure
     @Override
     public Class<ReferenceListEntryDataType> getType() {
       return ReferenceListEntryDataType.class;
+    }
+
+    @Override
+    public String getNamespaceUri() {
+      return Namespaces.OPC_UA;
     }
 
     @Override

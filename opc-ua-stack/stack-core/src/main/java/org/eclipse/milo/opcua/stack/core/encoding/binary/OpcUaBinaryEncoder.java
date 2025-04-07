@@ -955,24 +955,6 @@ public class OpcUaBinaryEncoder implements UaEncoder {
   }
 
   @Override
-  public void encodeStruct(String field, Object value, NodeId dataTypeId)
-      throws UaSerializationException {
-
-    try {
-      DataTypeCodec codec = context.getDataTypeManager().getCodec(dataTypeId);
-
-      if (codec != null) {
-        codec.encode(context, this, value);
-      } else {
-        throw new UaSerializationException(
-            StatusCodes.Bad_EncodingError, "no codec registered: " + dataTypeId);
-      }
-    } catch (ClassCastException e) {
-      throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
-    }
-  }
-
-  @Override
   public void encodeStruct(String field, Object value, ExpandedNodeId dataTypeId)
       throws UaSerializationException {
 
@@ -986,6 +968,31 @@ public class OpcUaBinaryEncoder implements UaEncoder {
                         "namespace not not registered: " + dataTypeId));
 
     encodeStruct(field, value, localDataTypeId);
+  }
+
+  @Override
+  public void encodeStruct(String field, Object value, NodeId dataTypeId)
+      throws UaSerializationException {
+
+    try {
+      DataTypeCodec codec = context.getDataTypeManager().getCodec(dataTypeId);
+
+      if (codec == null) {
+        throw new UaSerializationException(
+            StatusCodes.Bad_EncodingError, "no codec registered: " + dataTypeId);
+      }
+
+      codec.encode(context, this, value);
+    } catch (ClassCastException e) {
+      throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+    }
+  }
+
+  @Override
+  public void encodeStruct(String field, Object value, DataTypeCodec codec)
+      throws UaSerializationException {
+
+    codec.encode(context, this, value);
   }
 
   @Override

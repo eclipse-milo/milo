@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2025 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -16,6 +26,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.StructureType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 import org.eclipse.milo.opcua.stack.core.util.codegen.EqualsBuilder;
 import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 import org.jspecify.annotations.Nullable;
@@ -25,13 +36,13 @@ import org.jspecify.annotations.Nullable;
  *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/6.2.9/#6.2.9.13.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/6.2.9/#6.2.9.13.1</a>
  */
 public class DataSetReaderDataType extends Structure implements UaStructuredType {
-  public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=15623");
+  public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=15623");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15703");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=15703");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=16007");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=16007");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=16286");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=16286");
 
   private final @Nullable String name;
 
@@ -417,6 +428,11 @@ public class DataSetReaderDataType extends Structure implements UaStructuredType
     @Override
     public Class<DataSetReaderDataType> getType() {
       return DataSetReaderDataType.class;
+    }
+
+    @Override
+    public String getNamespaceUri() {
+      return Namespaces.OPC_UA;
     }
 
     @Override

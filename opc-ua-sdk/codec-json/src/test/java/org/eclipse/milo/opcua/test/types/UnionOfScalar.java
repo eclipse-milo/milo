@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -10,7 +10,6 @@
 
 package org.eclipse.milo.opcua.test.types;
 
-import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
@@ -30,13 +29,17 @@ import org.eclipse.milo.opcua.stack.core.types.structured.StructureField;
 import org.eclipse.milo.opcua.stack.core.types.structured.Union;
 
 public class UnionOfScalar extends Union {
-  public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=1;i=3020");
+  public static final ExpandedNodeId TYPE_ID =
+      ExpandedNodeId.parse("nsu=https://github.com/eclipse/milo/DataTypeTest;i=3020");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=1;i=5029");
+  public static final ExpandedNodeId BINARY_ENCODING_ID =
+      ExpandedNodeId.parse("nsu=https://github.com/eclipse/milo/DataTypeTest;i=5029");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=1;i=5031");
+  public static final ExpandedNodeId XML_ENCODING_ID =
+      ExpandedNodeId.parse("nsu=https://github.com/eclipse/milo/DataTypeTest;i=5030");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=1;i=5030");
+  public static final ExpandedNodeId JSON_ENCODING_ID =
+      ExpandedNodeId.parse("nsu=https://github.com/eclipse/milo/DataTypeTest;i=5031");
 
   private final Type type;
 
@@ -100,11 +103,12 @@ public class UnionOfScalar extends Union {
 
   @Override
   public String toString() {
-    var joiner = new StringJoiner(", ", UnionOfScalar.class.getSimpleName() + "[", "]");
-    joiner.add("_boolean=" + getBoolean());
-    joiner.add("sByte=" + getSByte());
-    joiner.add("_byte=" + getByte());
-    return joiner.toString();
+    return switch (type) {
+      case NULL -> "UnionOfScalar[null]";
+      case Boolean -> "UnionOfScalar[Boolean=" + value + "]";
+      case SByte -> "UnionOfScalar[SByte=" + value + "]";
+      case Byte -> "UnionOfScalar[Byte=" + value + "]";
+    };
   }
 
   public static UnionOfScalar ofNull() {
@@ -174,6 +178,11 @@ public class UnionOfScalar extends Union {
     @Override
     public Class<UnionOfScalar> getType() {
       return UnionOfScalar.class;
+    }
+
+    @Override
+    public String getNamespaceUri() {
+      return "https://github.com/eclipse/milo/DataTypeTest";
     }
 
     @Override

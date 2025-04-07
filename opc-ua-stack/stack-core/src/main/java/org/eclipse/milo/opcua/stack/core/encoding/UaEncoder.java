@@ -90,9 +90,12 @@ public interface UaEncoder {
 
   void encodeEnum(String field, UaEnumeratedType value) throws UaSerializationException;
 
+  void encodeStruct(String field, Object value, ExpandedNodeId dataTypeId)
+      throws UaSerializationException;
+
   void encodeStruct(String field, Object value, NodeId dataTypeId) throws UaSerializationException;
 
-  void encodeStruct(String field, Object value, ExpandedNodeId dataTypeId)
+  void encodeStruct(String field, Object value, DataTypeCodec codec)
       throws UaSerializationException;
 
   void encodeBooleanArray(String field, Boolean[] value) throws UaSerializationException;

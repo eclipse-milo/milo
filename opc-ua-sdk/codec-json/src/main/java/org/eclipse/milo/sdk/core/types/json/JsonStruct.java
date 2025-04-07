@@ -42,7 +42,7 @@ public class JsonStruct implements UaStructuredType {
   }
 
   @Override
-  public String getTypeName() {
+  public String getEncodingName() {
     return dataType.getBrowseName().name();
   }
 

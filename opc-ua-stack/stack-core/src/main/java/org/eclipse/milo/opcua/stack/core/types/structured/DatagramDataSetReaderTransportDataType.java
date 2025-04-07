@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2025 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -13,6 +23,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.StructureType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 import org.eclipse.milo.opcua.stack.core.util.codegen.EqualsBuilder;
 import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 import org.jspecify.annotations.Nullable;
@@ -23,13 +34,13 @@ import org.jspecify.annotations.Nullable;
  */
 public class DatagramDataSetReaderTransportDataType extends DataSetReaderTransportDataType
     implements UaStructuredType {
-  public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=23614");
+  public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=23614");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=23866");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=23866");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=23934");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=23934");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=24002");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=24002");
 
   private final NetworkAddressDataType address;
 
@@ -170,6 +181,11 @@ public class DatagramDataSetReaderTransportDataType extends DataSetReaderTranspo
     @Override
     public Class<DatagramDataSetReaderTransportDataType> getType() {
       return DatagramDataSetReaderTransportDataType.class;
+    }
+
+    @Override
+    public String getNamespaceUri() {
+      return Namespaces.OPC_UA;
     }
 
     @Override

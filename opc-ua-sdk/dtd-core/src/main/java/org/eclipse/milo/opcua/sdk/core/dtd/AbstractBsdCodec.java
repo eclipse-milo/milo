@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -56,7 +56,7 @@ public abstract class AbstractBsdCodec<StructureT, MemberT> implements BinaryDat
   private final Map<String, FieldType> fields = new HashMap<>();
   private final Map<String, FieldType> lengthFields = new HashMap<>();
 
-  private final StructuredType structuredType;
+  protected final StructuredType structuredType;
 
   protected AbstractBsdCodec(StructuredType structuredType) {
     this.structuredType = structuredType;

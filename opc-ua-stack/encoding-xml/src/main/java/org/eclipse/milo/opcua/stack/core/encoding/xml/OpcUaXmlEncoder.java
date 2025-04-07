@@ -1002,6 +1002,35 @@ public class OpcUaXmlEncoder implements UaEncoder {
   }
 
   @Override
+  public void encodeStruct(String field, Object value, DataTypeCodec codec)
+      throws UaSerializationException {
+
+    if (beginField(field)) {
+      if (depth.getAndIncrement() > context.getEncodingLimits().getMaxRecursionDepth()) {
+        throw new UaSerializationException(
+            StatusCodes.Bad_EncodingError,
+            "max recursion depth exceeded: " + context.getEncodingLimits().getMaxRecursionDepth());
+      }
+
+      try {
+        String namespaceUri = codec.getNamespaceUri();
+        if (namespaceUri == null) {
+          throw new UaSerializationException(
+              StatusCodes.Bad_EncodingError,
+              "no namespace registered for type: " + codec.getEncodingName());
+        }
+
+        namespaceStack.push(namespaceUri);
+        codec.encode(context, this, value);
+        namespaceStack.pop();
+      } finally {
+        depth.decrementAndGet();
+        endField(field);
+      }
+    }
+  }
+
+  @Override
   public void encodeBooleanArray(String field, Boolean[] value) throws UaSerializationException {
     if (beginField(field, value == null, true, true)) {
       try {
@@ -1490,7 +1519,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
           namespaceStack.push(namespaceUri);
 
           for (UaEnumeratedType element : value) {
-            encodeEnum(element.getTypeName(), element);
+            encodeEnum(element.getEncodingName(), element);
           }
 
           namespaceStack.pop();
@@ -1522,7 +1551,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
         assert values != null;
         for (Object v : values) {
-          String typeName = ((UaStructuredType) v).getTypeName();
+          String typeName = ((UaStructuredType) v).getEncodingName();
           encodeStruct(typeName, v, dataTypeId);
         }
 
@@ -1826,7 +1855,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
             namespaceStack.push(namespaceUri);
 
-            encodeEnum(element.getTypeName(), element);
+            encodeEnum(element.getEncodingName(), element);
 
             namespaceStack.pop();
           }

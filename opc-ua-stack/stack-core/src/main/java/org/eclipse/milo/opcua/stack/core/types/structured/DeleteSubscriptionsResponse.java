@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2025 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -14,6 +24,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.StructureType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 import org.eclipse.milo.opcua.stack.core.util.codegen.EqualsBuilder;
 import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 import org.jspecify.annotations.Nullable;
@@ -23,13 +34,13 @@ import org.jspecify.annotations.Nullable;
  *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.14.8/#5.14.8.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.14.8/#5.14.8.2</a>
  */
 public class DeleteSubscriptionsResponse extends Structure implements UaResponseMessageType {
-  public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=848");
+  public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=848");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=850");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=850");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=849");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=849");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15360");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15360");
 
   private final ResponseHeader responseHeader;
 
@@ -149,6 +160,11 @@ public class DeleteSubscriptionsResponse extends Structure implements UaResponse
     @Override
     public Class<DeleteSubscriptionsResponse> getType() {
       return DeleteSubscriptionsResponse.class;
+    }
+
+    @Override
+    public String getNamespaceUri() {
+      return Namespaces.OPC_UA;
     }
 
     @Override

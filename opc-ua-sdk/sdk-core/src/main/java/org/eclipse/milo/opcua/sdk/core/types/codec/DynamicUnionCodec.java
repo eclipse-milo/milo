@@ -35,10 +35,12 @@ public class DynamicUnionCodec extends GenericDataTypeCodec<DynamicUnionType> {
 
   private final StructureDefinition definition;
 
+  private final String namespaceUri;
   private final DataType dataType;
   private final DataTypeTree dataTypeTree;
 
-  public DynamicUnionCodec(DataType dataType, DataTypeTree dataTypeTree) {
+  public DynamicUnionCodec(String namespaceUri, DataType dataType, DataTypeTree dataTypeTree) {
+    this.namespaceUri = namespaceUri;
     this.dataType = dataType;
     this.dataTypeTree = dataTypeTree;
 
@@ -48,6 +50,16 @@ public class DynamicUnionCodec extends GenericDataTypeCodec<DynamicUnionType> {
   @Override
   public Class<DynamicUnionType> getType() {
     return DynamicUnionType.class;
+  }
+
+  @Override
+  public String getNamespaceUri() {
+    return namespaceUri;
+  }
+
+  @Override
+  public String getEncodingName() {
+    return requireNonNull(dataType.getBrowseName().name());
   }
 
   @Override

@@ -10,6 +10,8 @@
 
 package org.eclipse.milo.sdk.core.types.json;
 
+import static java.util.Objects.requireNonNull;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
@@ -22,15 +24,27 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 
 public class JsonOptionSetCodec extends GenericDataTypeCodec<JsonStruct> {
 
+  private final String namespaceUri;
   private final DataType dataType;
 
-  public JsonOptionSetCodec(DataType dataType) {
+  public JsonOptionSetCodec(String namespaceUri, DataType dataType) {
+    this.namespaceUri = namespaceUri;
     this.dataType = dataType;
   }
 
   @Override
   public Class<JsonStruct> getType() {
     return JsonStruct.class;
+  }
+
+  @Override
+  public String getNamespaceUri() {
+    return namespaceUri;
+  }
+
+  @Override
+  public String getEncodingName() {
+    return requireNonNull(dataType.getBrowseName().name());
   }
 
   @Override

@@ -154,7 +154,8 @@ public class BinaryDataTypeDictionaryReader {
           }
           StructuredType structuredType = structuredTypes.get(structEncodingInfo.description);
 
-          BinaryDataTypeCodec codec = codecFactory.createCodec(structuredType);
+          BinaryDataTypeCodec codec =
+              codecFactory.createCodec(info.typeDictionary.getTargetNamespace(), structuredType);
 
           BinaryDataTypeDictionary.BinaryType binaryType =
               new BinaryDataTypeDictionary.BinaryType(

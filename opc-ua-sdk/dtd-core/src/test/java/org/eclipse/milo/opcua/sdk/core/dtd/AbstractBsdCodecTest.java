@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -87,7 +87,7 @@ public abstract class AbstractBsdCodecTest {
               if (typeDescription instanceof StructuredType) {
                 StructuredType structuredType = (StructuredType) typeDescription;
 
-                BinaryDataTypeCodec codec = createCodec(structuredType);
+                BinaryDataTypeCodec codec = createCodec(BSD_CODEC_TEST_NAMESPACE, structuredType);
 
                 binaryDictionary.registerType(
                     new BinaryDataTypeDictionary.BinaryType(
@@ -105,7 +105,8 @@ public abstract class AbstractBsdCodecTest {
                     type.getDataTypeId(), type.getCodec(), type.getEncodingId(), null, null));
   }
 
-  protected abstract BinaryDataTypeCodec createCodec(StructuredType structuredType);
+  protected abstract BinaryDataTypeCodec createCodec(
+      String namespaceUri, StructuredType structuredType);
 
   protected BinaryDataTypeCodec getCodec(String name) {
     DataTypeDictionary dictionary = dataTypeManager.getTypeDictionary(BSD_CODEC_TEST_NAMESPACE);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -19,9 +19,10 @@ public interface CodecFactory {
   /**
    * Create a {@link DataTypeCodec} instance for {@code dataType}.
    *
+   * @param namespaceUri the namespace URI of the {@code dataType}.
    * @param dataType the {@link DataType} to create the codec for.
    * @param dataTypeTree the {@link DataTypeTree}.
    * @return a {@link DataTypeCodec} for {@code dataType}.
    */
-  DataTypeCodec create(DataType dataType, DataTypeTree dataTypeTree);
+  DataTypeCodec create(String namespaceUri, DataType dataType, DataTypeTree dataTypeTree);
 }

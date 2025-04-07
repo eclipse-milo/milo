@@ -1090,23 +1090,42 @@ public class OpcUaJsonEncoder implements UaEncoder {
 
     DataTypeCodec codec = encodingContext.getDataTypeManager().getCodec(dataTypeId);
 
-    if (codec != null) {
-      try {
-        if (field != null) {
-          jsonWriter.name(field);
-        }
-
-        contextPush(EncoderContext.STRUCT);
-        jsonWriter.beginObject();
-        codec.encode(encodingContext, this, value);
-        jsonWriter.endObject();
-        contextPop();
-      } catch (IOException e) {
-        throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
-      }
-    } else {
+    if (codec == null) {
       throw new UaSerializationException(
           StatusCodes.Bad_EncodingError, "no codec registered: " + dataTypeId);
+    }
+
+    try {
+      if (field != null) {
+        jsonWriter.name(field);
+      }
+
+      contextPush(EncoderContext.STRUCT);
+      jsonWriter.beginObject();
+      codec.encode(encodingContext, this, value);
+      jsonWriter.endObject();
+      contextPop();
+    } catch (IOException e) {
+      throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+    }
+  }
+
+  @Override
+  public void encodeStruct(String field, Object value, DataTypeCodec codec)
+      throws UaSerializationException {
+
+    try {
+      if (field != null) {
+        jsonWriter.name(field);
+      }
+
+      contextPush(EncoderContext.STRUCT);
+      jsonWriter.beginObject();
+      codec.encode(encodingContext, this, value);
+      jsonWriter.endObject();
+      contextPop();
+    } catch (IOException e) {
+      throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
     }
   }
 

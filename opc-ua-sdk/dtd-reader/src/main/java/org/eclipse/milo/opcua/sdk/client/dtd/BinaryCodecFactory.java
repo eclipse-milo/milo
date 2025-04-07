@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -15,5 +15,5 @@ import org.opcfoundation.opcua.binaryschema.StructuredType;
 
 public interface BinaryCodecFactory {
 
-  BinaryDataTypeCodec createCodec(StructuredType structuredType);
+  BinaryDataTypeCodec createCodec(String namespaceUri, StructuredType structuredType);
 }

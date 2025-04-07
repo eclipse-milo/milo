@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -21,13 +21,27 @@ import org.opcfoundation.opcua.binaryschema.StructuredType;
 
 public class StructCodec extends AbstractBsdCodec<Struct, Struct.Member> {
 
-  public StructCodec(StructuredType structuredType) {
+  private final String namespaceUri;
+
+  public StructCodec(String namespaceUri, StructuredType structuredType) {
     super(structuredType);
+
+    this.namespaceUri = namespaceUri;
   }
 
   @Override
   public Class<Struct> getType() {
     return Struct.class;
+  }
+
+  @Override
+  public String getNamespaceUri() {
+    return namespaceUri;
+  }
+
+  @Override
+  public String getEncodingName() {
+    return structuredType.getName();
   }
 
   @Override

@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2025 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -12,6 +22,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.StructureType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 import org.eclipse.milo.opcua.stack.core.util.codegen.EqualsBuilder;
 import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 import org.jspecify.annotations.Nullable;
@@ -21,13 +32,13 @@ import org.jspecify.annotations.Nullable;
  *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/6.6.5">https://reference.opcfoundation.org/v105/Core/docs/Part11/6.6.5</a>
  */
 public class HistoryModifiedEvent extends HistoryEvent implements UaStructuredType {
-  public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=32824");
+  public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=32824");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=32825");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=32825");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=32829");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=32829");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=32833");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=32833");
 
   private final ModificationInfo @Nullable [] modificationInfos;
 
@@ -119,6 +130,11 @@ public class HistoryModifiedEvent extends HistoryEvent implements UaStructuredTy
     @Override
     public Class<HistoryModifiedEvent> getType() {
       return HistoryModifiedEvent.class;
+    }
+
+    @Override
+    public String getNamespaceUri() {
+      return Namespaces.OPC_UA;
     }
 
     @Override

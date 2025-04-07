@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -68,10 +68,12 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
 
   private final StructureDefinition definition;
 
+  private final String namespaceUri;
   private final DataType dataType;
   private final DataTypeTree dataTypeTree;
 
-  public JsonStructCodec(DataType dataType, DataTypeTree dataTypeTree) {
+  public JsonStructCodec(String namespaceUri, DataType dataType, DataTypeTree dataTypeTree) {
+    this.namespaceUri = namespaceUri;
     this.dataType = dataType;
     this.dataTypeTree = dataTypeTree;
 
@@ -81,6 +83,16 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
   @Override
   public Class<JsonStruct> getType() {
     return JsonStruct.class;
+  }
+
+  @Override
+  public String getNamespaceUri() {
+    return namespaceUri;
+  }
+
+  @Override
+  public String getEncodingName() {
+    return requireNonNull(dataType.getBrowseName().name());
   }
 
   // region Decoding

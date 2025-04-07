@@ -23,11 +23,13 @@ public interface UaDataType {
   ExpandedNodeId getTypeId();
 
   /**
-   * Get the symbolic name of this {@link UaDataType}.
+   * Get the encoding name of this DataType.
    *
-   * @return the symbolic name of this {@link UaDataType}.
+   * <p>Defaults to the simple name of the class, implementations should override as necessary.
+   *
+   * @return the encoding name of this DataType.
    */
-  default String getTypeName() {
+  default String getEncodingName() {
     return getClass().getSimpleName();
   }
 }

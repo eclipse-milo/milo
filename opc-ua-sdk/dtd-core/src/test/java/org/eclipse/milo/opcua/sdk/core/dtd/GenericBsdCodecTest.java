@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -22,8 +22,8 @@ public class GenericBsdCodecTest extends AbstractBsdCodecTest {
   public GenericBsdCodecTest() throws JAXBException {}
 
   @Override
-  protected BinaryDataTypeCodec createCodec(StructuredType structuredType) {
-    return new StructCodec(structuredType);
+  protected BinaryDataTypeCodec createCodec(String namespaceUri, StructuredType structuredType) {
+    return new StructCodec(namespaceUri, structuredType);
   }
 
   @Test
