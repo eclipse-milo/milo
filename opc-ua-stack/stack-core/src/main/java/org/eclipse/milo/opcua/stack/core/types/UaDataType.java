@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -21,4 +21,13 @@ public interface UaDataType {
    * @return the {@link ExpandedNodeId} identifying this DataType.
    */
   ExpandedNodeId getTypeId();
+
+  /**
+   * Get the symbolic name of this {@link UaDataType}.
+   *
+   * @return the symbolic name of this {@link UaDataType}.
+   */
+  default String getTypeName() {
+    return getClass().getSimpleName();
+  }
 }

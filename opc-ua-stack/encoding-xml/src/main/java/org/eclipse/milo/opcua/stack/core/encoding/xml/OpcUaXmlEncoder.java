@@ -914,7 +914,8 @@ public class OpcUaXmlEncoder implements UaEncoder {
                       () ->
                           new UaSerializationException(
                               StatusCodes.Bad_EncodingError,
-                              "no codec registered: " + message.getXmlEncodingId()));
+                              "namespace not registered: "
+                                  + message.getXmlEncodingId().toParseableString()));
 
           DataTypeCodec codec = context.getDataTypeManager().getCodec(encodingId);
 
@@ -959,27 +960,14 @@ public class OpcUaXmlEncoder implements UaEncoder {
             .orElseThrow(
                 () ->
                     new UaSerializationException(
-                        StatusCodes.Bad_EncodingError, "no codec registered: " + dataTypeId));
+                        StatusCodes.Bad_EncodingError,
+                        "namespace not registered: " + dataTypeId.toParseableString()));
 
     encodeStruct(field, value, localDateTypeId);
   }
 
   @Override
   public void encodeStruct(String field, Object value, NodeId dataTypeId)
-      throws UaSerializationException {
-
-    DataTypeCodec codec = context.getDataTypeManager().getCodec(dataTypeId);
-
-    if (codec == null) {
-      throw new UaSerializationException(
-          StatusCodes.Bad_EncodingError, "no codec registered: " + dataTypeId);
-    }
-
-    encodeStruct(field, value, codec);
-  }
-
-  @Override
-  public void encodeStruct(String field, Object value, DataTypeCodec codec)
       throws UaSerializationException {
 
     if (beginField(field)) {
@@ -990,8 +978,22 @@ public class OpcUaXmlEncoder implements UaEncoder {
       }
 
       try {
-        // TODO push/pop the namespace from DataTypeCodec
+        String namespaceUri = context.getNamespaceTable().get(dataTypeId.getNamespaceIndex());
+        if (namespaceUri == null) {
+          throw new UaSerializationException(
+              StatusCodes.Bad_EncodingError, "no namespace registered: " + dataTypeId);
+        }
+
+        DataTypeCodec codec = context.getDataTypeManager().getCodec(dataTypeId);
+
+        if (codec == null) {
+          throw new UaSerializationException(
+              StatusCodes.Bad_EncodingError, "no codec registered: " + dataTypeId);
+        }
+
+        namespaceStack.push(namespaceUri);
         codec.encode(context, this, value);
+        namespaceStack.pop();
       } finally {
         depth.decrementAndGet();
         endField(field);
@@ -1477,10 +1479,20 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
         assert value != null;
 
-        // TODO push/pop the namespace from the DataTypeCodec
-        for (UaEnumeratedType element : value) {
-          // TODO use the name from the DataTypeCodec
-          encodeEnum(element.getClass().getSimpleName(), element);
+        if (value.length > 0) {
+          String namespaceUri = value[0].getTypeId().getNamespaceUri(context.getNamespaceTable());
+          if (namespaceUri == null) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_EncodingError, "namespace not registered: " + value[0].getTypeId());
+          }
+
+          namespaceStack.push(namespaceUri);
+
+          for (UaEnumeratedType element : value) {
+            encodeEnum(element.getTypeName(), element);
+          }
+
+          namespaceStack.pop();
         }
       } finally {
         namespaceStack.pop();
@@ -1498,12 +1510,21 @@ public class OpcUaXmlEncoder implements UaEncoder {
       try {
         namespaceStack.push(Namespaces.OPC_UA_XSD);
 
+        String namespaceUri = context.getNamespaceTable().get(dataTypeId.getNamespaceIndex());
+        if (namespaceUri == null) {
+          throw new UaSerializationException(
+              StatusCodes.Bad_EncodingError, "namespace not registered: " + dataTypeId);
+        }
+
+        namespaceStack.push(namespaceUri);
+
         assert values != null;
         for (Object v : values) {
-          // TODO should push the namespace from the DataTypeCodec
-          // TODO should be the name from the DataTypeCodec
-          encodeStruct(v.getClass().getSimpleName(), v, dataTypeId);
+          String typeName = ((UaStructuredType) v).getTypeName();
+          encodeStruct(typeName, v, dataTypeId);
         }
+
+        namespaceStack.pop();
       } finally {
         namespaceStack.pop();
 
@@ -1522,7 +1543,8 @@ public class OpcUaXmlEncoder implements UaEncoder {
             .orElseThrow(
                 () ->
                     new UaSerializationException(
-                        StatusCodes.Bad_EncodingError, "no codec registered: " + dataTypeId));
+                        StatusCodes.Bad_EncodingError,
+                        "namespace not registered: " + dataTypeId.toParseableString()));
 
     encodeStructArray(field, value, localDateTypeId);
   }
@@ -1792,10 +1814,19 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
           xmlStreamWriter.writeStartElement(Namespaces.OPC_UA_XSD, "Elements");
 
-          // TODO push/pop the namespace from the DataTypeCodec
           for (UaEnumeratedType element : elements) {
-            // TODO use the name from the DataTypeCodec
-            encodeEnum(element.getClass().getSimpleName(), element);
+            String namespaceUri = element.getTypeId().getNamespaceUri(context.getNamespaceTable());
+            if (namespaceUri == null) {
+              throw new UaSerializationException(
+                  StatusCodes.Bad_EncodingError,
+                  "namespace not registered: " + element.getTypeId());
+            }
+
+            namespaceStack.push(namespaceUri);
+
+            encodeEnum(element.getTypeName(), element);
+
+            namespaceStack.pop();
           }
 
           xmlStreamWriter.writeEndElement();
@@ -1811,22 +1842,23 @@ public class OpcUaXmlEncoder implements UaEncoder {
   }
 
   @Override
-  public void encodeStructMatrix(String field, Matrix value, NodeId dataTypeId)
+  public void encodeStructMatrix(String field, Matrix value, ExpandedNodeId dataTypeId)
       throws UaSerializationException {
 
-    Matrix transformed =
-        value.transform(
-            e -> {
-              UaStructuredType struct = (UaStructuredType) e;
-              return ExtensionObject.encode(
-                  context, struct, dataTypeId, OpcUaDefaultXmlEncoding.getInstance());
-            });
+    NodeId localDateTypeId =
+        dataTypeId
+            .toNodeId(context.getNamespaceTable())
+            .orElseThrow(
+                () ->
+                    new UaSerializationException(
+                        StatusCodes.Bad_EncodingError,
+                        "namespace not registered: " + dataTypeId.toParseableString()));
 
-    encodeMatrix(field, transformed);
+    encodeStructMatrix(field, value, localDateTypeId);
   }
 
   @Override
-  public void encodeStructMatrix(String field, Matrix value, ExpandedNodeId dataTypeId)
+  public void encodeStructMatrix(String field, Matrix value, NodeId dataTypeId)
       throws UaSerializationException {
 
     Matrix transformed =

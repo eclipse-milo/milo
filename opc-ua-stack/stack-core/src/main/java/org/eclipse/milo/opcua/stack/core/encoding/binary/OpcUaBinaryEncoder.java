@@ -957,6 +957,7 @@ public class OpcUaBinaryEncoder implements UaEncoder {
   @Override
   public void encodeStruct(String field, Object value, NodeId dataTypeId)
       throws UaSerializationException {
+
     try {
       DataTypeCodec codec = context.getDataTypeManager().getCodec(dataTypeId);
 
@@ -974,6 +975,7 @@ public class OpcUaBinaryEncoder implements UaEncoder {
   @Override
   public void encodeStruct(String field, Object value, ExpandedNodeId dataTypeId)
       throws UaSerializationException {
+
     NodeId localDataTypeId =
         dataTypeId
             .toNodeId(context.getNamespaceTable())
@@ -984,12 +986,6 @@ public class OpcUaBinaryEncoder implements UaEncoder {
                         "namespace not not registered: " + dataTypeId));
 
     encodeStruct(field, value, localDataTypeId);
-  }
-
-  @Override
-  public void encodeStruct(String field, Object value, DataTypeCodec codec)
-      throws UaSerializationException {
-    codec.encode(context, this, value);
   }
 
   @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -40,18 +40,11 @@ public class OpcUaDefaultJsonEncoding implements DataTypeEncoding {
 
   @Override
   public Object encode(EncodingContext context, Object decodedBody, NodeId encodingId) {
-    DataTypeCodec codec = context.getDataTypeManager().getCodec(encodingId);
+    var stringWriter = new StringWriter();
+    var encoder = new OpcUaJsonEncoder(context, stringWriter);
+    encoder.encodeStruct(null, decodedBody, encodingId);
 
-    if (codec != null) {
-      var stringWriter = new StringWriter();
-      var encoder = new OpcUaJsonEncoder(context, stringWriter);
-      encoder.encodeStruct(null, decodedBody, codec);
-
-      return stringWriter.toString();
-    } else {
-      throw new UaSerializationException(
-          StatusCodes.Bad_EncodingError, "no codec registered for encodingId=" + encodingId);
-    }
+    return stringWriter.toString();
   }
 
   @Override

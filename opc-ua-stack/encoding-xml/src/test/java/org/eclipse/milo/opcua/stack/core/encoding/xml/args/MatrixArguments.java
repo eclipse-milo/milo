@@ -68,7 +68,8 @@ public class MatrixArguments {
                   {new XVType(4.0, 5.0f), new XVType(6.0, 7.0f)}
                 }),
             """
-            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
               <uax:Dimensions>
                 <uax:Int32>2</uax:Int32>
                 <uax:Int32>2</uax:Int32>
@@ -80,8 +81,8 @@ public class MatrixArguments {
                   </uax:TypeId>
                   <uax:Body>
                     <XVType>
-                      <X>0.0</X>
-                      <Value>1.0</Value>
+                      <ua:X>0.0</ua:X>
+                      <ua:Value>1.0</ua:Value>
                     </XVType>
                   </uax:Body>
                 </uax:ExtensionObject>
@@ -91,8 +92,8 @@ public class MatrixArguments {
                   </uax:TypeId>
                   <uax:Body>
                     <XVType>
-                      <X>2.0</X>
-                      <Value>3.0</Value>
+                      <ua:X>2.0</ua:X>
+                      <ua:Value>3.0</ua:Value>
                     </XVType>
                   </uax:Body>
                 </uax:ExtensionObject>
@@ -102,8 +103,8 @@ public class MatrixArguments {
                   </uax:TypeId>
                   <uax:Body>
                     <XVType>
-                      <X>4.0</X>
-                      <Value>5.0</Value>
+                      <ua:X>4.0</ua:X>
+                      <ua:Value>5.0</ua:Value>
                     </XVType>
                   </uax:Body>
                 </uax:ExtensionObject>
@@ -113,8 +114,8 @@ public class MatrixArguments {
                   </uax:TypeId>
                   <uax:Body>
                     <XVType>
-                      <X>6.0</X>
-                      <Value>7.0</Value>
+                      <ua:X>6.0</ua:X>
+                      <ua:Value>7.0</ua:Value>
                     </XVType>
                   </uax:Body>
                 </uax:ExtensionObject>
@@ -1227,7 +1228,8 @@ public class MatrixArguments {
                   }
                 }),
             """
-            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
               <uax:Dimensions>
                 <uax:Int32>2</uax:Int32>
                 <uax:Int32>2</uax:Int32>
@@ -1239,8 +1241,8 @@ public class MatrixArguments {
                   </uax:TypeId>
                   <uax:Body>
                     <XVType>
-                      <X>1.0</X>
-                      <Value>2.0</Value>
+                      <ua:X>1.0</ua:X>
+                      <ua:Value>2.0</ua:Value>
                     </XVType>
                   </uax:Body>
                 </uax:ExtensionObject>
@@ -1250,8 +1252,8 @@ public class MatrixArguments {
                   </uax:TypeId>
                   <uax:Body>
                     <XVType>
-                      <X>3.0</X>
-                      <Value>4.0</Value>
+                      <ua:X>3.0</ua:X>
+                      <ua:Value>4.0</ua:Value>
                     </XVType>
                   </uax:Body>
                 </uax:ExtensionObject>
@@ -1261,8 +1263,8 @@ public class MatrixArguments {
                   </uax:TypeId>
                   <uax:Body>
                     <XVType>
-                      <X>5.0</X>
-                      <Value>6.0</Value>
+                      <ua:X>5.0</ua:X>
+                      <ua:Value>6.0</ua:Value>
                     </XVType>
                   </uax:Body>
                 </uax:ExtensionObject>
@@ -1272,8 +1274,8 @@ public class MatrixArguments {
                   </uax:TypeId>
                   <uax:Body>
                     <XVType>
-                      <X>7.0</X>
-                      <Value>8.0</Value>
+                      <ua:X>7.0</ua:X>
+                      <ua:Value>8.0</ua:Value>
                     </XVType>
                   </uax:Body>
                 </uax:ExtensionObject>
@@ -1467,16 +1469,17 @@ public class MatrixArguments {
                   {BrowseDirection.Both, BrowseDirection.Invalid}
                 }),
             """
-            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
               <uax:Dimensions>
                 <uax:Int32>2</uax:Int32>
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:BrowseDirection>Forward_0</uax:BrowseDirection>
-                <uax:BrowseDirection>Inverse_1</uax:BrowseDirection>
-                <uax:BrowseDirection>Both_2</uax:BrowseDirection>
-                <uax:BrowseDirection>Invalid_3</uax:BrowseDirection>
+                <ua:BrowseDirection>Forward_0</ua:BrowseDirection>
+                <ua:BrowseDirection>Inverse_1</ua:BrowseDirection>
+                <ua:BrowseDirection>Both_2</ua:BrowseDirection>
+                <ua:BrowseDirection>Invalid_3</ua:BrowseDirection>
               </uax:Elements>
             </Test>
             """),
@@ -1495,21 +1498,22 @@ public class MatrixArguments {
                   }
                 }),
             """
-            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
               <uax:Dimensions>
                 <uax:Int32>2</uax:Int32>
                 <uax:Int32>2</uax:Int32>
                 <uax:Int32>2</uax:Int32>
               </uax:Dimensions>
               <uax:Elements>
-                <uax:BrowseDirection>Forward_0</uax:BrowseDirection>
-                <uax:BrowseDirection>Inverse_1</uax:BrowseDirection>
-                <uax:BrowseDirection>Both_2</uax:BrowseDirection>
-                <uax:BrowseDirection>Invalid_3</uax:BrowseDirection>
-                <uax:BrowseDirection>Inverse_1</uax:BrowseDirection>
-                <uax:BrowseDirection>Both_2</uax:BrowseDirection>
-                <uax:BrowseDirection>Forward_0</uax:BrowseDirection>
-                <uax:BrowseDirection>Invalid_3</uax:BrowseDirection>
+                <ua:BrowseDirection>Forward_0</ua:BrowseDirection>
+                <ua:BrowseDirection>Inverse_1</ua:BrowseDirection>
+                <ua:BrowseDirection>Both_2</ua:BrowseDirection>
+                <ua:BrowseDirection>Invalid_3</ua:BrowseDirection>
+                <ua:BrowseDirection>Inverse_1</ua:BrowseDirection>
+                <ua:BrowseDirection>Both_2</ua:BrowseDirection>
+                <ua:BrowseDirection>Forward_0</ua:BrowseDirection>
+                <ua:BrowseDirection>Invalid_3</ua:BrowseDirection>
               </uax:Elements>
             </Test>
             """));

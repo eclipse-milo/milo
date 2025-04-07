@@ -544,14 +544,15 @@ public class ScalarArguments {
                 XVType.XML_ENCODING_ID,
                 OpcUaDefaultXmlEncoding.getInstance()),
             """
-            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
               <uax:TypeId>
                 <uax:Identifier>i=12082</uax:Identifier>
               </uax:TypeId>
               <uax:Body>
                 <XVType>
-                  <X>1.0</X>
-                  <Value>2.0</Value>
+                  <ua:X>1.0</ua:X>
+                  <ua:Value>2.0</ua:Value>
                 </XVType>
               </uax:Body>
             </Test>

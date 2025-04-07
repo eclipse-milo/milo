@@ -95,9 +95,6 @@ public interface UaEncoder {
   void encodeStruct(String field, Object value, ExpandedNodeId dataTypeId)
       throws UaSerializationException;
 
-  void encodeStruct(String field, Object value, DataTypeCodec codec)
-      throws UaSerializationException;
-
   void encodeBooleanArray(String field, Boolean[] value) throws UaSerializationException;
 
   void encodeSByteArray(String field, Byte[] value) throws UaSerializationException;

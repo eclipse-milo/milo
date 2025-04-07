@@ -744,23 +744,24 @@ public class ArrayArguments {
                   OpcUaDefaultXmlEncoding.getInstance())
             },
             """
-            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
               <uax:ExtensionObject>
                 <uax:TypeId>
                   <uax:Identifier>i=297</uax:Identifier>
                 </uax:TypeId>
                 <uax:Body>
                   <Argument>
-                    <Name>name</Name>
-                    <DataType>
+                    <ua:Name>name</ua:Name>
+                    <ua:DataType>
                       <uax:Identifier>i=1</uax:Identifier>
-                    </DataType>
-                    <ValueRank>-1</ValueRank>
-                    <ArrayDimensions xsi:nil="true"></ArrayDimensions>
-                    <Description>
+                    </ua:DataType>
+                    <ua:ValueRank>-1</ua:ValueRank>
+                    <ua:ArrayDimensions xsi:nil="true"></ua:ArrayDimensions>
+                    <ua:Description>
                       <uax:Locale>en</uax:Locale>
                       <uax:Text>description</uax:Text>
-                    </Description>
+                    </ua:Description>
                   </Argument>
                 </uax:Body>
               </uax:ExtensionObject>
@@ -770,18 +771,18 @@ public class ArrayArguments {
                 </uax:TypeId>
                 <uax:Body>
                   <Argument>
-                    <Name>name2</Name>
-                    <DataType>
+                    <ua:Name>name2</ua:Name>
+                    <ua:DataType>
                       <uax:Identifier>i=2</uax:Identifier>
-                    </DataType>
-                    <ValueRank>1</ValueRank>
-                    <ArrayDimensions>
+                    </ua:DataType>
+                    <ua:ValueRank>1</ua:ValueRank>
+                    <ua:ArrayDimensions>
                       <uax:UInt32>1</uax:UInt32>
-                    </ArrayDimensions>
-                    <Description>
+                    </ua:ArrayDimensions>
+                    <ua:Description>
                       <uax:Locale>en</uax:Locale>
                       <uax:Text>description2</uax:Text>
-                    </Description>
+                    </ua:Description>
                   </Argument>
                 </uax:Body>
               </uax:ExtensionObject>
@@ -918,9 +919,10 @@ public class ArrayArguments {
         Arguments.of(
             new UaEnumeratedType[] {BrowseDirection.Forward, BrowseDirection.Inverse},
             """
-            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
-              <uax:BrowseDirection>Forward_0</uax:BrowseDirection>
-              <uax:BrowseDirection>Inverse_1</uax:BrowseDirection>
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
+              <ua:BrowseDirection>Forward_0</ua:BrowseDirection>
+              <ua:BrowseDirection>Inverse_1</ua:BrowseDirection>
             </Test>
             """),
         Arguments.of(
@@ -943,19 +945,20 @@ public class ArrayArguments {
               new XVType(1.0, 2.0f), new XVType(3.0, 4.0f), new XVType(Double.NaN, Float.NaN)
             },
             """
-            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-              <uax:XVType>
-                <uax:X>1.0</uax:X>
-                <uax:Value>2.0</uax:Value>
-              </uax:XVType>
-              <uax:XVType>
-                <uax:X>3.0</uax:X>
-                <uax:Value>4.0</uax:Value>
-              </uax:XVType>
-              <uax:XVType>
-                <uax:X>NaN</uax:X>
-                <uax:Value>NaN</uax:Value>
-              </uax:XVType>
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
+              <ua:XVType>
+                <ua:X>1.0</ua:X>
+                <ua:Value>2.0</ua:Value>
+              </ua:XVType>
+              <ua:XVType>
+                <ua:X>3.0</ua:X>
+                <ua:Value>4.0</ua:Value>
+              </ua:XVType>
+              <ua:XVType>
+                <ua:X>NaN</ua:X>
+                <ua:Value>NaN</ua:Value>
+              </ua:XVType>
             </Test>
             """),
         Arguments.of(

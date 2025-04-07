@@ -30,9 +30,10 @@ public class StructArguments {
             "XVType",
             new XVType(1.0, 2.0f),
             """
-            <XVType xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-              <X>1.0</X>
-              <Value>2.0</Value>
+            <XVType xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
+              <ua:X>1.0</ua:X>
+              <ua:Value>2.0</ua:Value>
             </XVType>
             """),
 
@@ -46,17 +47,18 @@ public class StructArguments {
                 null,
                 LocalizedText.english("Description")),
             """
-            <Argument xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-              <Name>ArgumentName</Name>
-              <DataType>
+            <Argument xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
+              <ua:Name>ArgumentName</ua:Name>
+              <ua:DataType>
                 <uax:Identifier>i=1</uax:Identifier>
-              </DataType>
-              <ValueRank>-1</ValueRank>
-              <ArrayDimensions xsi:nil="true"></ArrayDimensions>
-              <Description>
+              </ua:DataType>
+              <ua:ValueRank>-1</ua:ValueRank>
+              <ua:ArrayDimensions xsi:nil="true"></ua:ArrayDimensions>
+              <ua:Description>
                 <uax:Locale>en</uax:Locale>
                 <uax:Text>Description</uax:Text>
-              </Description>
+              </ua:Description>
             </Argument>
             """),
 
@@ -71,13 +73,14 @@ public class StructArguments {
                 "12345",
                 new DateTime(Instant.parse("2023-01-01T00:00:00Z"))),
             """
-            <BuildInfo xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-              <ProductUri>urn:example:product</ProductUri>
-              <ManufacturerName>Example Manufacturer</ManufacturerName>
-              <ProductName>Example Product</ProductName>
-              <SoftwareVersion>1.0.0</SoftwareVersion>
-              <BuildNumber>12345</BuildNumber>
-              <BuildDate>2023-01-01T00:00:00Z</BuildDate>
+            <BuildInfo xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
+              <ua:ProductUri>urn:example:product</ua:ProductUri>
+              <ua:ManufacturerName>Example Manufacturer</ua:ManufacturerName>
+              <ua:ProductName>Example Product</ua:ProductName>
+              <ua:SoftwareVersion>1.0.0</ua:SoftwareVersion>
+              <ua:BuildNumber>12345</ua:BuildNumber>
+              <ua:BuildDate>2023-01-01T00:00:00Z</ua:BuildDate>
             </BuildInfo>
             """));
   }

@@ -42,22 +42,12 @@ public class OpcUaDefaultXmlEncoding implements DataTypeEncoding {
 
   @Override
   public Object encode(EncodingContext context, Object struct, NodeId encodingId) {
-    DataTypeCodec codec = context.getDataTypeManager().getCodec(encodingId);
+    OpcUaXmlEncoder encoder = new OpcUaXmlEncoder(context);
 
-    if (codec != null) {
-      // We have to use encoder.encodeStruct() instead of codec.encode() because
-      // XML-encoded structs are wrapped in a container element with the struct name.
-      OpcUaXmlEncoder encoder = new OpcUaXmlEncoder(context);
+    String typeName = struct.getClass().getSimpleName();
+    encoder.encodeStruct(typeName, struct, encodingId);
 
-      // TODO should be codec.getTypeName() once it exists
-      // TODO push/pop the namespace from DataTypeCodec
-      encoder.encodeStruct(codec.getType().getSimpleName(), struct, codec);
-
-      return new XmlElement(encoder.getDocumentXml());
-    } else {
-      throw new UaSerializationException(
-          StatusCodes.Bad_EncodingError, "no codec registered for encodingId=" + encodingId);
-    }
+    return new XmlElement(encoder.getDocumentXml());
   }
 
   @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -45,25 +45,17 @@ public class OpcUaDefaultBinaryEncoding implements DataTypeEncoding {
 
   @Override
   public Object encode(EncodingContext context, Object decodedBody, NodeId encodingId) {
+    ByteBuf buffer = buffer();
 
-    DataTypeCodec codec = context.getDataTypeManager().getCodec(encodingId);
+    try {
+      OpcUaBinaryEncoder encoder = new OpcUaBinaryEncoder(context);
+      encoder.setBuffer(buffer);
 
-    if (codec != null) {
-      ByteBuf buffer = buffer();
+      encoder.encodeStruct(null, decodedBody, encodingId);
 
-      try {
-        OpcUaBinaryEncoder encoder = new OpcUaBinaryEncoder(context);
-        encoder.setBuffer(buffer);
-
-        encoder.encodeStruct(null, decodedBody, codec);
-
-        return ByteString.of(ByteBufUtil.getBytes(buffer));
-      } finally {
-        buffer.release();
-      }
-    } else {
-      throw new UaSerializationException(
-          StatusCodes.Bad_EncodingError, "no codec registered for encodingId=" + encodingId);
+      return ByteString.of(ByteBufUtil.getBytes(buffer));
+    } finally {
+      buffer.release();
     }
   }
 

@@ -298,7 +298,8 @@ public class VariantArguments {
                     Argument.XML_ENCODING_ID,
                     OpcUaDefaultXmlEncoding.getInstance())),
             """
-            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
               <uax:Value>
                 <uax:ExtensionObject>
                   <uax:TypeId>
@@ -306,16 +307,16 @@ public class VariantArguments {
                   </uax:TypeId>
                   <uax:Body>
                     <Argument>
-                      <Name>name</Name>
-                      <DataType>
+                      <ua:Name>name</ua:Name>
+                      <ua:DataType>
                         <uax:Identifier>i=1</uax:Identifier>
-                      </DataType>
-                      <ValueRank>-1</ValueRank>
-                      <ArrayDimensions xsi:nil="true"></ArrayDimensions>
-                      <Description>
+                      </ua:DataType>
+                      <ua:ValueRank>-1</ua:ValueRank>
+                      <ua:ArrayDimensions xsi:nil="true"></ua:ArrayDimensions>
+                      <ua:Description>
                         <uax:Locale>en</uax:Locale>
                         <uax:Text>description</uax:Text>
-                      </Description>
+                      </ua:Description>
                     </Argument>
                   </uax:Body>
                 </uax:ExtensionObject>
@@ -341,7 +342,8 @@ public class VariantArguments {
                 new Argument(
                     "name", NodeId.parse("i=1"), -1, null, LocalizedText.english("description"))),
             """
-            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
               <uax:Value>
                 <uax:ExtensionObject>
                   <uax:TypeId>
@@ -349,16 +351,16 @@ public class VariantArguments {
                   </uax:TypeId>
                   <uax:Body>
                     <Argument>
-                      <Name>name</Name>
-                      <DataType>
+                      <ua:Name>name</ua:Name>
+                      <ua:DataType>
                         <uax:Identifier>i=1</uax:Identifier>
-                      </DataType>
-                      <ValueRank>-1</ValueRank>
-                      <ArrayDimensions xsi:nil="true"></ArrayDimensions>
-                      <Description>
+                      </ua:DataType>
+                      <ua:ValueRank>-1</ua:ValueRank>
+                      <ua:ArrayDimensions xsi:nil="true"></ua:ArrayDimensions>
+                      <ua:Description>
                         <uax:Locale>en</uax:Locale>
                         <uax:Text>description</uax:Text>
-                      </Description>
+                      </ua:Description>
                     </Argument>
                   </uax:Body>
                 </uax:ExtensionObject>
@@ -852,7 +854,8 @@ public class VariantArguments {
                       OpcUaDefaultXmlEncoding.getInstance())
                 }),
             """
-            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
               <uax:Value>
                 <uax:ListOfExtensionObject>
                   <uax:ExtensionObject>
@@ -861,16 +864,16 @@ public class VariantArguments {
                     </uax:TypeId>
                     <uax:Body>
                       <Argument>
-                        <Name>name</Name>
-                        <DataType>
+                        <ua:Name>name</ua:Name>
+                        <ua:DataType>
                           <uax:Identifier>i=1</uax:Identifier>
-                        </DataType>
-                        <ValueRank>-1</ValueRank>
-                        <ArrayDimensions xsi:nil="true"></ArrayDimensions>
-                        <Description>
+                        </ua:DataType>
+                        <ua:ValueRank>-1</ua:ValueRank>
+                        <ua:ArrayDimensions xsi:nil="true"></ua:ArrayDimensions>
+                        <ua:Description>
                           <uax:Locale>en</uax:Locale>
                           <uax:Text>description</uax:Text>
-                        </Description>
+                        </ua:Description>
                       </Argument>
                     </uax:Body>
                   </uax:ExtensionObject>
@@ -880,16 +883,16 @@ public class VariantArguments {
                     </uax:TypeId>
                     <uax:Body>
                       <Argument>
-                        <Name>name</Name>
-                        <DataType>
+                        <ua:Name>name</ua:Name>
+                        <ua:DataType>
                           <uax:Identifier>i=1</uax:Identifier>
-                        </DataType>
-                        <ValueRank>-1</ValueRank>
-                        <ArrayDimensions xsi:nil="true"></ArrayDimensions>
-                        <Description>
+                        </ua:DataType>
+                        <ua:ValueRank>-1</ua:ValueRank>
+                        <ua:ArrayDimensions xsi:nil="true"></ua:ArrayDimensions>
+                        <ua:Description>
                           <uax:Locale>en</uax:Locale>
                           <uax:Text>description</uax:Text>
-                        </Description>
+                        </ua:Description>
                       </Argument>
                     </uax:Body>
                   </uax:ExtensionObject>
@@ -952,7 +955,8 @@ public class VariantArguments {
                       LocalizedText.english("description2")),
                 }),
             """
-            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
               <uax:Value>
                 <uax:ListOfExtensionObject>
                   <uax:ExtensionObject>
@@ -961,16 +965,16 @@ public class VariantArguments {
                     </uax:TypeId>
                     <uax:Body>
                       <Argument>
-                        <Name>name1</Name>
-                        <DataType>
+                        <ua:Name>name1</ua:Name>
+                        <ua:DataType>
                           <uax:Identifier>i=1</uax:Identifier>
-                        </DataType>
-                        <ValueRank>-1</ValueRank>
-                        <ArrayDimensions xsi:nil="true"></ArrayDimensions>
-                        <Description>
+                        </ua:DataType>
+                        <ua:ValueRank>-1</ua:ValueRank>
+                        <ua:ArrayDimensions xsi:nil="true"></ua:ArrayDimensions>
+                        <ua:Description>
                           <uax:Locale>en</uax:Locale>
                           <uax:Text>description1</uax:Text>
-                        </Description>
+                        </ua:Description>
                       </Argument>
                     </uax:Body>
                   </uax:ExtensionObject>
@@ -980,16 +984,16 @@ public class VariantArguments {
                     </uax:TypeId>
                     <uax:Body>
                       <Argument>
-                        <Name>name2</Name>
-                        <DataType>
+                        <ua:Name>name2</ua:Name>
+                        <ua:DataType>
                           <uax:Identifier>i=1</uax:Identifier>
-                        </DataType>
-                        <ValueRank>-1</ValueRank>
-                        <ArrayDimensions xsi:nil="true"></ArrayDimensions>
-                        <Description>
+                        </ua:DataType>
+                        <ua:ValueRank>-1</ua:ValueRank>
+                        <ua:ArrayDimensions xsi:nil="true"></ua:ArrayDimensions>
+                        <ua:Description>
                           <uax:Locale>en</uax:Locale>
                           <uax:Text>description2</uax:Text>
-                        </Description>
+                        </ua:Description>
                       </Argument>
                     </uax:Body>
                   </uax:ExtensionObject>
@@ -1731,7 +1735,8 @@ public class VariantArguments {
                       {new XVType(5.0, 6.0f), new XVType(7.0, 8.0f)}
                     })),
             """
-            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
               <uax:Value>
                 <uax:Matrix>
                   <uax:Dimensions>
@@ -1745,8 +1750,8 @@ public class VariantArguments {
                       </uax:TypeId>
                       <uax:Body>
                         <XVType>
-                          <X>1.0</X>
-                          <Value>2.0</Value>
+                          <ua:X>1.0</ua:X>
+                          <ua:Value>2.0</ua:Value>
                         </XVType>
                       </uax:Body>
                     </uax:ExtensionObject>
@@ -1756,8 +1761,8 @@ public class VariantArguments {
                       </uax:TypeId>
                       <uax:Body>
                         <XVType>
-                          <X>3.0</X>
-                          <Value>4.0</Value>
+                          <ua:X>3.0</ua:X>
+                          <ua:Value>4.0</ua:Value>
                         </XVType>
                       </uax:Body>
                     </uax:ExtensionObject>
@@ -1767,8 +1772,8 @@ public class VariantArguments {
                       </uax:TypeId>
                       <uax:Body>
                         <XVType>
-                          <X>5.0</X>
-                          <Value>6.0</Value>
+                          <ua:X>5.0</ua:X>
+                          <ua:Value>6.0</ua:Value>
                         </XVType>
                       </uax:Body>
                     </uax:ExtensionObject>
@@ -1778,8 +1783,8 @@ public class VariantArguments {
                       </uax:TypeId>
                       <uax:Body>
                         <XVType>
-                          <X>7.0</X>
-                          <Value>8.0</Value>
+                          <ua:X>7.0</ua:X>
+                          <ua:Value>8.0</ua:Value>
                         </XVType>
                       </uax:Body>
                     </uax:ExtensionObject>
