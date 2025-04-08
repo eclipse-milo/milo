@@ -108,11 +108,6 @@ public class MatrixTestType implements UaStructuredType {
     }
 
     @Override
-    public String getNamespaceUri() {
-      return "urn:eclipse:milo:test";
-    }
-
-    @Override
     public MatrixTestType decodeType(EncodingContext context, UaDecoder decoder)
         throws UaSerializationException {
       Integer[][] builtinMatrix =

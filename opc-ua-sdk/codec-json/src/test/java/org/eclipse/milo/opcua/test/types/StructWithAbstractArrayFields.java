@@ -173,11 +173,6 @@ public class StructWithAbstractArrayFields extends Structure implements UaStruct
     }
 
     @Override
-    public String getNamespaceUri() {
-      return "https://github.com/eclipse/milo/DataTypeTest";
-    }
-
-    @Override
     public StructWithAbstractArrayFields decodeType(EncodingContext context, UaDecoder decoder) {
       final Number[] number;
       final AbstractTestType[] att1;

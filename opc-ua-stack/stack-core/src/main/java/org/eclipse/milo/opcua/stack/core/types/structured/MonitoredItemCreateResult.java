@@ -24,7 +24,6 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.StructureType;
-import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 import org.eclipse.milo.opcua.stack.core.util.codegen.EqualsBuilder;
 import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 
@@ -196,11 +195,6 @@ public class MonitoredItemCreateResult extends Structure implements UaStructured
     @Override
     public Class<MonitoredItemCreateResult> getType() {
       return MonitoredItemCreateResult.class;
-    }
-
-    @Override
-    public String getNamespaceUri() {
-      return Namespaces.OPC_UA;
     }
 
     @Override

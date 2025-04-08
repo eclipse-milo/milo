@@ -16,6 +16,7 @@ import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.DataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.DataTypeEncoding;
+import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 
@@ -49,7 +50,7 @@ public class OpcUaDefaultJsonEncoding implements DataTypeEncoding {
 
     var stringWriter = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, stringWriter);
-    encoder.encodeStruct(null, decodedBody, codec);
+    encoder.encodeStruct(null, (UaStructuredType) decodedBody, codec);
 
     return stringWriter.toString();
   }

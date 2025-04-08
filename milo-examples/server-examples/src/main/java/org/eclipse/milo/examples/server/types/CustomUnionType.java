@@ -105,11 +105,6 @@ public class CustomUnionType extends Union implements UaStructuredType {
     }
 
     @Override
-    public String getNamespaceUri() {
-      return ExampleNamespace.NAMESPACE_URI;
-    }
-
-    @Override
     public CustomUnionType decodeType(EncodingContext context, UaDecoder decoder) {
       UInteger switchValue = decoder.decodeUInt32("SwitchValue");
       switch (switchValue.intValue()) {

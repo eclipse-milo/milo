@@ -18,6 +18,7 @@ import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.DataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.DataTypeEncoding;
+import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.XmlElement;
@@ -51,7 +52,7 @@ public class OpcUaDefaultXmlEncoding implements DataTypeEncoding {
 
     OpcUaXmlEncoder encoder = new OpcUaXmlEncoder(context);
 
-    encoder.encodeStruct(codec.getEncodingName(), struct, codec);
+    encoder.encodeStruct(codec.getEncodingName(), (UaStructuredType) struct, codec);
 
     return new XmlElement(encoder.getDocumentXml());
   }

@@ -951,7 +951,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
   }
 
   @Override
-  public void encodeStruct(String field, Object value, ExpandedNodeId dataTypeId)
+  public void encodeStruct(String field, UaStructuredType value, ExpandedNodeId dataTypeId)
       throws UaSerializationException {
 
     NodeId localDateTypeId =
@@ -967,7 +967,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
   }
 
   @Override
-  public void encodeStruct(String field, Object value, NodeId dataTypeId)
+  public void encodeStruct(String field, UaStructuredType value, NodeId dataTypeId)
       throws UaSerializationException {
 
     if (beginField(field)) {
@@ -1002,7 +1002,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
   }
 
   @Override
-  public void encodeStruct(String field, Object value, DataTypeCodec codec)
+  public void encodeStruct(String field, UaStructuredType value, DataTypeCodec codec)
       throws UaSerializationException {
 
     if (beginField(field)) {
@@ -1013,11 +1013,11 @@ public class OpcUaXmlEncoder implements UaEncoder {
       }
 
       try {
-        String namespaceUri = codec.getNamespaceUri();
+        String namespaceUri = value.getTypeId().getNamespaceUri(context.getNamespaceTable());
         if (namespaceUri == null) {
           throw new UaSerializationException(
               StatusCodes.Bad_EncodingError,
-              "no namespace registered for type: " + codec.getEncodingName());
+              "no namespace registered: " + value.getTypeId().toParseableString());
         }
 
         namespaceStack.push(namespaceUri);
@@ -1533,7 +1533,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
   }
 
   @Override
-  public void encodeStructArray(String field, Object[] values, NodeId dataTypeId)
+  public void encodeStructArray(String field, UaStructuredType[] values, NodeId dataTypeId)
       throws UaSerializationException {
 
     if (beginField(field, values == null, true, true)) {
@@ -1550,8 +1550,8 @@ public class OpcUaXmlEncoder implements UaEncoder {
         namespaceStack.push(namespaceUri);
 
         assert values != null;
-        for (Object v : values) {
-          String typeName = ((UaStructuredType) v).getEncodingName();
+        for (UaStructuredType v : values) {
+          String typeName = v.getEncodingName();
           encodeStruct(typeName, v, dataTypeId);
         }
 
@@ -1565,7 +1565,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
   }
 
   @Override
-  public void encodeStructArray(String field, Object[] value, ExpandedNodeId dataTypeId)
+  public void encodeStructArray(String field, UaStructuredType[] value, ExpandedNodeId dataTypeId)
       throws UaSerializationException {
 
     NodeId localDateTypeId =

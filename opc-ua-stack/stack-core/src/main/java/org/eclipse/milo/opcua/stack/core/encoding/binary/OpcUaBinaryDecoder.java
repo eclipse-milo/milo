@@ -31,6 +31,7 @@ import org.eclipse.milo.opcua.stack.core.encoding.DataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
 import org.eclipse.milo.opcua.stack.core.types.UaMessageType;
+import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -693,11 +694,13 @@ public class OpcUaBinaryDecoder implements UaDecoder {
   }
 
   @Override
-  public Object decodeStruct(String field, NodeId dataTypeId) throws UaSerializationException {
+  public UaStructuredType decodeStruct(String field, NodeId dataTypeId)
+      throws UaSerializationException {
+
     DataTypeCodec codec = context.getDataTypeManager().getCodec(dataTypeId);
 
     if (codec != null) {
-      return codec.decode(context, this);
+      return (UaStructuredType) codec.decode(context, this);
     } else {
       throw new UaSerializationException(
           StatusCodes.Bad_DecodingError, "no codec registered: " + dataTypeId);
@@ -705,8 +708,9 @@ public class OpcUaBinaryDecoder implements UaDecoder {
   }
 
   @Override
-  public Object decodeStruct(String field, ExpandedNodeId dataTypeId)
+  public UaStructuredType decodeStruct(String field, ExpandedNodeId dataTypeId)
       throws UaSerializationException {
+
     NodeId localDataTypeId =
         dataTypeId
             .toNodeId(context.getNamespaceTable())
@@ -719,8 +723,10 @@ public class OpcUaBinaryDecoder implements UaDecoder {
   }
 
   @Override
-  public Object decodeStruct(String field, DataTypeCodec codec) throws UaSerializationException {
-    return codec.decode(context, this);
+  public UaStructuredType decodeStruct(String field, DataTypeCodec codec)
+      throws UaSerializationException {
+
+    return (UaStructuredType) codec.decode(context, this);
   }
 
   @Override
@@ -1155,8 +1161,9 @@ public class OpcUaBinaryDecoder implements UaDecoder {
   }
 
   @Override
-  public Object[] decodeStructArray(String field, NodeId dataTypeId)
+  public UaStructuredType @Nullable [] decodeStructArray(String field, NodeId dataTypeId)
       throws UaSerializationException {
+
     int length = decodeInt32();
 
     if (length == -1) {
@@ -1180,12 +1187,12 @@ public class OpcUaBinaryDecoder implements UaDecoder {
         Array.set(array, i, value);
       }
 
-      return (Object[]) array;
+      return (UaStructuredType[]) array;
     }
   }
 
   @Override
-  public Object[] decodeStructArray(String field, ExpandedNodeId dataTypeId)
+  public UaStructuredType @Nullable [] decodeStructArray(String field, ExpandedNodeId dataTypeId)
       throws UaSerializationException {
     NodeId dataTypeNodeId = dataTypeId.toNodeId(context.getNamespaceTable()).orElse(null);
 

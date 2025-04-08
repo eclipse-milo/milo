@@ -24,7 +24,6 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ServerState;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.StructureType;
-import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 import org.eclipse.milo.opcua.stack.core.util.codegen.EqualsBuilder;
 import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 import org.jspecify.annotations.Nullable;
@@ -157,11 +156,6 @@ public class RedundantServerDataType extends Structure implements UaStructuredTy
     @Override
     public Class<RedundantServerDataType> getType() {
       return RedundantServerDataType.class;
-    }
-
-    @Override
-    public String getNamespaceUri() {
-      return Namespaces.OPC_UA;
     }
 
     @Override

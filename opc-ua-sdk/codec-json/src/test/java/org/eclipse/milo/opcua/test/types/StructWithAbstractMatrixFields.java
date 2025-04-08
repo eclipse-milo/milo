@@ -173,11 +173,6 @@ public class StructWithAbstractMatrixFields extends Structure implements UaStruc
     }
 
     @Override
-    public String getNamespaceUri() {
-      return "https://github.com/eclipse/milo/DataTypeTest";
-    }
-
-    @Override
     public StructWithAbstractMatrixFields decodeType(EncodingContext context, UaDecoder decoder) {
       final Matrix number;
       final Matrix att1;

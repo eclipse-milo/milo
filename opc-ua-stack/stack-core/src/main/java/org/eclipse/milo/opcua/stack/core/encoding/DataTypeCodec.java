@@ -20,13 +20,6 @@ public interface DataTypeCodec {
   Class<?> getType();
 
   /**
-   * Get the namespace URI of the DataType this codec encodes.
-   *
-   * @return the namespace URI of the DataType this codec encodes.
-   */
-  String getNamespaceUri();
-
-  /**
    * Get the encoding name of the DataType this codec encodes.
    *
    * <p>DataTypes have names that may be used in the JSON and XML encodings. Consequently, there are

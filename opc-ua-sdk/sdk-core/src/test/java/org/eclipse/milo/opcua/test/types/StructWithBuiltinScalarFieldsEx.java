@@ -576,11 +576,6 @@ public class StructWithBuiltinScalarFieldsEx extends StructWithBuiltinScalarFiel
     }
 
     @Override
-    public String getNamespaceUri() {
-      return "https://github.com/eclipse/milo/DataTypeTest";
-    }
-
-    @Override
     public StructWithBuiltinScalarFieldsEx decodeType(EncodingContext context, UaDecoder decoder) {
       final Boolean _boolean;
       final Byte sByte;

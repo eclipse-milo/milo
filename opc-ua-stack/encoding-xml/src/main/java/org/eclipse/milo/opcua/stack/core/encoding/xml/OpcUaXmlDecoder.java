@@ -34,6 +34,7 @@ import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
 import org.eclipse.milo.opcua.stack.core.types.DataTypeDictionary;
 import org.eclipse.milo.opcua.stack.core.types.UaMessageType;
+import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.*;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -41,6 +42,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 import org.eclipse.milo.opcua.stack.core.util.SecureXmlUtil;
+import org.jspecify.annotations.Nullable;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -932,7 +934,9 @@ public class OpcUaXmlDecoder implements UaDecoder {
   }
 
   @Override
-  public Object decodeStruct(String field, NodeId dataTypeId) throws UaSerializationException {
+  public UaStructuredType decodeStruct(String field, NodeId dataTypeId)
+      throws UaSerializationException {
+
     if (currentNode(field)) {
       Node node = currentNode;
 
@@ -941,7 +945,7 @@ public class OpcUaXmlDecoder implements UaDecoder {
       if (codec != null) {
         try {
           currentNode = node.getFirstChild();
-          return codec.decode(context, this);
+          return (UaStructuredType) codec.decode(context, this);
         } finally {
           currentNode = node.getNextSibling();
         }
@@ -956,7 +960,7 @@ public class OpcUaXmlDecoder implements UaDecoder {
   }
 
   @Override
-  public Object decodeStruct(String field, ExpandedNodeId dataTypeId)
+  public UaStructuredType decodeStruct(String field, ExpandedNodeId dataTypeId)
       throws UaSerializationException {
     NodeId localDataTypeId =
         dataTypeId
@@ -970,14 +974,15 @@ public class OpcUaXmlDecoder implements UaDecoder {
   }
 
   @Override
-  public Object decodeStruct(String field, DataTypeCodec codec) throws UaSerializationException {
+  public UaStructuredType decodeStruct(String field, DataTypeCodec codec)
+      throws UaSerializationException {
     if (currentNode(field)) {
       Node node = currentNode;
 
       try {
         currentNode = node.getFirstChild();
 
-        return codec.decode(context, this);
+        return (UaStructuredType) codec.decode(context, this);
       } finally {
         currentNode = node.getNextSibling();
       }
@@ -1183,7 +1188,7 @@ public class OpcUaXmlDecoder implements UaDecoder {
   }
 
   @Override
-  public Object[] decodeStructArray(String field, NodeId dataTypeId)
+  public UaStructuredType @Nullable [] decodeStructArray(String field, NodeId dataTypeId)
       throws UaSerializationException {
     if (currentNode(field)) {
       Node node = currentNode;
@@ -1216,7 +1221,7 @@ public class OpcUaXmlDecoder implements UaDecoder {
           Array.set(array, i, values.get(i));
         }
 
-        return (Object[]) array;
+        return (UaStructuredType[]) array;
       } finally {
         currentNode = node.getNextSibling();
       }
@@ -1226,7 +1231,7 @@ public class OpcUaXmlDecoder implements UaDecoder {
   }
 
   @Override
-  public Object[] decodeStructArray(String field, ExpandedNodeId dataTypeId)
+  public UaStructuredType @Nullable [] decodeStructArray(String field, ExpandedNodeId dataTypeId)
       throws UaSerializationException {
     NodeId dataTypeNodeId = dataTypeId.toNodeId(context.getNamespaceTable()).orElse(null);
 

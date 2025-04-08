@@ -166,11 +166,6 @@ public class ConcreteTestTypeEx extends ConcreteTestType implements UaStructured
     }
 
     @Override
-    public String getNamespaceUri() {
-      return "https://github.com/eclipse/milo/DataTypeTest";
-    }
-
-    @Override
     public ConcreteTestTypeEx decodeType(EncodingContext context, UaDecoder decoder) {
       final Short int16Field;
       final Double doubleField;

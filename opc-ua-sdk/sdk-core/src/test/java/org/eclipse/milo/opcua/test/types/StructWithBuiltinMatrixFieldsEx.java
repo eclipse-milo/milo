@@ -569,11 +569,6 @@ public class StructWithBuiltinMatrixFieldsEx extends StructWithBuiltinMatrixFiel
     }
 
     @Override
-    public String getNamespaceUri() {
-      return "https://github.com/eclipse/milo/DataTypeTest";
-    }
-
-    @Override
     public StructWithBuiltinMatrixFieldsEx decodeType(EncodingContext context, UaDecoder decoder) {
       final Matrix _boolean;
       final Matrix sByte;

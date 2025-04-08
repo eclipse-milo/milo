@@ -558,11 +558,6 @@ public class StructWithBuiltinScalarFields extends Structure implements UaStruct
     }
 
     @Override
-    public String getNamespaceUri() {
-      return "https://github.com/eclipse/milo/DataTypeTest";
-    }
-
-    @Override
     public StructWithBuiltinScalarFields decodeType(EncodingContext context, UaDecoder decoder) {
       final Boolean _boolean;
       final Byte sByte;

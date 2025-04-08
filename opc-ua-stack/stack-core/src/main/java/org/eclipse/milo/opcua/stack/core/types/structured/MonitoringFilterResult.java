@@ -20,7 +20,6 @@ import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.StructureType;
-import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 
 public class MonitoringFilterResult extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=731");
@@ -68,11 +67,6 @@ public class MonitoringFilterResult extends Structure implements UaStructuredTyp
     @Override
     public Class<MonitoringFilterResult> getType() {
       return MonitoringFilterResult.class;
-    }
-
-    @Override
-    public String getNamespaceUri() {
-      return Namespaces.OPC_UA;
     }
 
     @Override

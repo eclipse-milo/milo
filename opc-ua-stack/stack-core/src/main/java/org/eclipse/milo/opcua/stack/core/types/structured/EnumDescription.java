@@ -24,7 +24,6 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.StructureType;
-import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 import org.eclipse.milo.opcua.stack.core.util.codegen.EqualsBuilder;
 import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 
@@ -157,11 +156,6 @@ public class EnumDescription extends DataTypeDescription implements UaStructured
     @Override
     public Class<EnumDescription> getType() {
       return EnumDescription.class;
-    }
-
-    @Override
-    public String getNamespaceUri() {
-      return Namespaces.OPC_UA;
     }
 
     @Override

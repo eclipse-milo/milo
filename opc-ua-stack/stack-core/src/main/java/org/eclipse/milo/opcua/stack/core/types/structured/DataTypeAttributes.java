@@ -22,7 +22,6 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.StructureType;
-import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 import org.eclipse.milo.opcua.stack.core.util.codegen.EqualsBuilder;
 import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 
@@ -166,11 +165,6 @@ public class DataTypeAttributes extends NodeAttributes implements UaStructuredTy
     @Override
     public Class<DataTypeAttributes> getType() {
       return DataTypeAttributes.class;
-    }
-
-    @Override
-    public String getNamespaceUri() {
-      return Namespaces.OPC_UA;
     }
 
     @Override

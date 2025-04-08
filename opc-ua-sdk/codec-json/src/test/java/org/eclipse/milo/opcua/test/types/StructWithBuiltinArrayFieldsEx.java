@@ -576,11 +576,6 @@ public class StructWithBuiltinArrayFieldsEx extends StructWithBuiltinArrayFields
     }
 
     @Override
-    public String getNamespaceUri() {
-      return "https://github.com/eclipse/milo/DataTypeTest";
-    }
-
-    @Override
     public StructWithBuiltinArrayFieldsEx decodeType(EncodingContext context, UaDecoder decoder) {
       final Boolean[] _boolean;
       final Byte[] sByte;

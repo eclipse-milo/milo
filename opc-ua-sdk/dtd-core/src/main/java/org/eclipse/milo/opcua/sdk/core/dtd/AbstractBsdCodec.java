@@ -89,11 +89,6 @@ public abstract class AbstractBsdCodec<StructureT, MemberT> implements BinaryDat
   }
 
   @Override
-  public final String getNamespaceUri() {
-    return namespaceUri;
-  }
-
-  @Override
   public BsdStructWrapper<StructureT> decodeBinary(
       EncodingContext context, OpcUaBinaryDecoder decoder) throws UaSerializationException {
 

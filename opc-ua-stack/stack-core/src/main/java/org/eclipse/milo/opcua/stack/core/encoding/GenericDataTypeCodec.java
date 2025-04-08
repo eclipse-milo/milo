@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -12,9 +12,9 @@ package org.eclipse.milo.opcua.stack.core.encoding;
 
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
-import org.eclipse.milo.opcua.stack.core.types.UaDataType;
+import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 
-public abstract class GenericDataTypeCodec<T extends UaDataType> implements DataTypeCodec {
+public abstract class GenericDataTypeCodec<T extends UaStructuredType> implements DataTypeCodec {
 
   public abstract Class<T> getType();
 

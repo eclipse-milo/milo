@@ -54,11 +54,6 @@ public class DynamicStructCodec extends GenericDataTypeCodec<DynamicStructType> 
   }
 
   @Override
-  public String getNamespaceUri() {
-    return namespaceUri;
-  }
-
-  @Override
   public String getEncodingName() {
     return requireNonNull(dataType.getBrowseName().name());
   }

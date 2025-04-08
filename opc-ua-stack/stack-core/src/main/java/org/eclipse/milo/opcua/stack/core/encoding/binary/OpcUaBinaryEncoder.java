@@ -955,7 +955,7 @@ public class OpcUaBinaryEncoder implements UaEncoder {
   }
 
   @Override
-  public void encodeStruct(String field, Object value, ExpandedNodeId dataTypeId)
+  public void encodeStruct(String field, UaStructuredType value, ExpandedNodeId dataTypeId)
       throws UaSerializationException {
 
     NodeId localDataTypeId =
@@ -971,7 +971,7 @@ public class OpcUaBinaryEncoder implements UaEncoder {
   }
 
   @Override
-  public void encodeStruct(String field, Object value, NodeId dataTypeId)
+  public void encodeStruct(String field, UaStructuredType value, NodeId dataTypeId)
       throws UaSerializationException {
 
     try {
@@ -989,7 +989,7 @@ public class OpcUaBinaryEncoder implements UaEncoder {
   }
 
   @Override
-  public void encodeStruct(String field, Object value, DataTypeCodec codec)
+  public void encodeStruct(String field, UaStructuredType value, DataTypeCodec codec)
       throws UaSerializationException {
 
     codec.encode(context, this, value);
@@ -1136,14 +1136,14 @@ public class OpcUaBinaryEncoder implements UaEncoder {
   }
 
   @Override
-  public void encodeStructArray(String field, Object[] values, NodeId dataTypeId)
+  public void encodeStructArray(String field, UaStructuredType[] values, NodeId dataTypeId)
       throws UaSerializationException {
 
     encodeArray(values, o -> encodeStruct(field, o, dataTypeId));
   }
 
   @Override
-  public void encodeStructArray(String field, Object[] value, ExpandedNodeId dataTypeId)
+  public void encodeStructArray(String field, UaStructuredType[] value, ExpandedNodeId dataTypeId)
       throws UaSerializationException {
 
     NodeId localDataTypeId =
@@ -1249,6 +1249,7 @@ public class OpcUaBinaryEncoder implements UaEncoder {
   @Override
   public void encodeStructMatrix(String field, Matrix value, NodeId dataTypeId)
       throws UaSerializationException {
+
     Object elements = value.getElements();
 
     if (elements == null) {
@@ -1273,7 +1274,7 @@ public class OpcUaBinaryEncoder implements UaEncoder {
       for (int i = 0; i < length; i++) {
         Object o = Array.get(elements, i);
 
-        encodeStruct(null, o, dataTypeId);
+        encodeStruct(null, (UaStructuredType) o, dataTypeId);
       }
     }
   }

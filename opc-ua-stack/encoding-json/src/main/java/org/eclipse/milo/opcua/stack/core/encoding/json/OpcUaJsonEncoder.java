@@ -1070,7 +1070,7 @@ public class OpcUaJsonEncoder implements UaEncoder {
   }
 
   @Override
-  public void encodeStruct(String field, Object value, ExpandedNodeId dataTypeId)
+  public void encodeStruct(String field, UaStructuredType value, ExpandedNodeId dataTypeId)
       throws UaSerializationException {
 
     NodeId localDataTypeId =
@@ -1085,7 +1085,7 @@ public class OpcUaJsonEncoder implements UaEncoder {
   }
 
   @Override
-  public void encodeStruct(String field, Object value, NodeId dataTypeId)
+  public void encodeStruct(String field, UaStructuredType value, NodeId dataTypeId)
       throws UaSerializationException {
 
     DataTypeCodec codec = encodingContext.getDataTypeManager().getCodec(dataTypeId);
@@ -1111,7 +1111,7 @@ public class OpcUaJsonEncoder implements UaEncoder {
   }
 
   @Override
-  public void encodeStruct(String field, Object value, DataTypeCodec codec)
+  public void encodeStruct(String field, UaStructuredType value, DataTypeCodec codec)
       throws UaSerializationException {
 
     try {
@@ -1270,13 +1270,13 @@ public class OpcUaJsonEncoder implements UaEncoder {
   }
 
   @Override
-  public void encodeStructArray(String field, Object[] value, NodeId dataTypeId)
+  public void encodeStructArray(String field, UaStructuredType[] value, NodeId dataTypeId)
       throws UaSerializationException {
     encodeArray(field, value, (f, v) -> encodeStruct(null, v, dataTypeId));
   }
 
   @Override
-  public void encodeStructArray(String field, Object[] value, ExpandedNodeId dataTypeId)
+  public void encodeStructArray(String field, UaStructuredType[] value, ExpandedNodeId dataTypeId)
       throws UaSerializationException {
 
     NodeId localDataTypeId =
@@ -1452,7 +1452,7 @@ public class OpcUaJsonEncoder implements UaEncoder {
             jsonWriter.name("Array");
             jsonWriter.beginArray();
             for (int i = 0; i < Array.getLength(flatArray); i++) {
-              Object e = Array.get(flatArray, i);
+              UaStructuredType e = (UaStructuredType) Array.get(flatArray, i);
               encodeStruct(null, e, dataTypeId);
             }
             jsonWriter.endArray();

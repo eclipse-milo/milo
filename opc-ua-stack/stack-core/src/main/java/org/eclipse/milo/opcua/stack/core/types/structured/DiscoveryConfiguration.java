@@ -20,7 +20,6 @@ import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.StructureType;
-import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 
 /**
  * @see <a
@@ -72,11 +71,6 @@ public class DiscoveryConfiguration extends Structure implements UaStructuredTyp
     @Override
     public Class<DiscoveryConfiguration> getType() {
       return DiscoveryConfiguration.class;
-    }
-
-    @Override
-    public String getNamespaceUri() {
-      return Namespaces.OPC_UA;
     }
 
     @Override

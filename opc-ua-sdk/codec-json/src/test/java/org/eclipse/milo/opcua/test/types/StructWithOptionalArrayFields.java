@@ -268,11 +268,6 @@ public class StructWithOptionalArrayFields extends Structure implements UaStruct
     }
 
     @Override
-    public String getNamespaceUri() {
-      return "https://github.com/eclipse/milo/DataTypeTest";
-    }
-
-    @Override
     public StructWithOptionalArrayFields decodeType(EncodingContext context, UaDecoder decoder) {
       final Integer[] int32;
       final Integer[] optionalInt32;

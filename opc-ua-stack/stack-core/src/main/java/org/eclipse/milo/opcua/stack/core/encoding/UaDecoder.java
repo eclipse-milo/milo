@@ -14,6 +14,7 @@ import java.util.UUID;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.types.UaMessageType;
+import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -91,11 +92,12 @@ public interface UaDecoder {
 
   Integer decodeEnum(String field);
 
-  Object decodeStruct(String field, NodeId dataTypeId) throws UaSerializationException;
+  UaStructuredType decodeStruct(String field, NodeId dataTypeId) throws UaSerializationException;
 
-  Object decodeStruct(String field, ExpandedNodeId dataTypeId) throws UaSerializationException;
+  UaStructuredType decodeStruct(String field, ExpandedNodeId dataTypeId)
+      throws UaSerializationException;
 
-  Object decodeStruct(String field, DataTypeCodec codec) throws UaSerializationException;
+  UaStructuredType decodeStruct(String field, DataTypeCodec codec) throws UaSerializationException;
 
   Boolean @Nullable [] decodeBooleanArray(String field) throws UaSerializationException;
 
@@ -152,10 +154,10 @@ public interface UaDecoder {
 
   Integer @Nullable [] decodeEnumArray(String field) throws UaSerializationException;
 
-  Object @Nullable [] decodeStructArray(String field, NodeId dataTypeId)
+  UaStructuredType @Nullable [] decodeStructArray(String field, NodeId dataTypeId)
       throws UaSerializationException;
 
-  Object @Nullable [] decodeStructArray(String field, ExpandedNodeId dataTypeId)
+  UaStructuredType @Nullable [] decodeStructArray(String field, ExpandedNodeId dataTypeId)
       throws UaSerializationException;
 
   Matrix decodeMatrix(String field, OpcUaDataType dataType) throws UaSerializationException;

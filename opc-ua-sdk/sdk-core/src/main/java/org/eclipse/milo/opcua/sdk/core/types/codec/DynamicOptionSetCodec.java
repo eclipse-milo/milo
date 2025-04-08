@@ -37,11 +37,6 @@ class DynamicOptionSetCodec extends GenericDataTypeCodec<DynamicOptionSetType> {
   }
 
   @Override
-  public String getNamespaceUri() {
-    return namespaceUri;
-  }
-
-  @Override
   public String getEncodingName() {
     return requireNonNull(dataType.getBrowseName().name());
   }

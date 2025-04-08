@@ -53,11 +53,6 @@ public class DynamicUnionCodec extends GenericDataTypeCodec<DynamicUnionType> {
   }
 
   @Override
-  public String getNamespaceUri() {
-    return namespaceUri;
-  }
-
-  @Override
   public String getEncodingName() {
     return requireNonNull(dataType.getBrowseName().name());
   }

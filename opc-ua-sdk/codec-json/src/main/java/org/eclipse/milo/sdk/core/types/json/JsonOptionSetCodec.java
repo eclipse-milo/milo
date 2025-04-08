@@ -38,11 +38,6 @@ public class JsonOptionSetCodec extends GenericDataTypeCodec<JsonStruct> {
   }
 
   @Override
-  public String getNamespaceUri() {
-    return namespaceUri;
-  }
-
-  @Override
   public String getEncodingName() {
     return requireNonNull(dataType.getBrowseName().name());
   }

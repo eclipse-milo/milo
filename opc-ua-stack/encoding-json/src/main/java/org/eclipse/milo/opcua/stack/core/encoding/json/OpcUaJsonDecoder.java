@@ -35,6 +35,7 @@ import org.eclipse.milo.opcua.stack.core.encoding.DataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
 import org.eclipse.milo.opcua.stack.core.types.UaMessageType;
+import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -52,6 +53,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.jspecify.annotations.Nullable;
 
 public class OpcUaJsonDecoder implements UaDecoder {
 
@@ -1024,7 +1026,8 @@ public class OpcUaJsonDecoder implements UaDecoder {
   }
 
   @Override
-  public Object decodeStruct(String field, NodeId dataTypeId) throws UaSerializationException {
+  public UaStructuredType decodeStruct(String field, NodeId dataTypeId)
+      throws UaSerializationException {
     DataTypeCodec codec = context.getDataTypeManager().getCodec(dataTypeId);
 
     if (codec != null) {
@@ -1044,7 +1047,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
         value = codec.decode(context, this);
         jsonReader.endObject();
 
-        return value;
+        return (UaStructuredType) value;
       } catch (IOException e) {
         throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
       }
@@ -1055,7 +1058,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
   }
 
   @Override
-  public Object decodeStruct(String field, ExpandedNodeId dataTypeId)
+  public UaStructuredType decodeStruct(String field, ExpandedNodeId dataTypeId)
       throws UaSerializationException {
     NodeId localDataTypeId =
         dataTypeId
@@ -1070,7 +1073,8 @@ public class OpcUaJsonDecoder implements UaDecoder {
   }
 
   @Override
-  public Object decodeStruct(String field, DataTypeCodec codec) throws UaSerializationException {
+  public UaStructuredType decodeStruct(String field, DataTypeCodec codec)
+      throws UaSerializationException {
     try {
       if (field != null) {
         String nextName = nextName();
@@ -1087,7 +1091,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
       value = codec.decode(context, this);
       jsonReader.endObject();
 
-      return value;
+      return (UaStructuredType) value;
     } catch (IOException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
@@ -1225,7 +1229,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
   }
 
   @Override
-  public Object[] decodeStructArray(String field, NodeId dataTypeId)
+  public UaStructuredType @Nullable [] decodeStructArray(String field, NodeId dataTypeId)
       throws UaSerializationException {
     DataTypeCodec codec = context.getDataTypeManager().getCodec(dataTypeId);
 
@@ -1256,14 +1260,14 @@ public class OpcUaJsonDecoder implements UaDecoder {
         Array.set(array, i, elements.get(i));
       }
 
-      return (Object[]) array;
+      return (UaStructuredType[]) array;
     } catch (IOException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
   }
 
   @Override
-  public Object[] decodeStructArray(String field, ExpandedNodeId dataTypeId)
+  public UaStructuredType @Nullable [] decodeStructArray(String field, ExpandedNodeId dataTypeId)
       throws UaSerializationException {
     NodeId localDataTypeId =
         dataTypeId

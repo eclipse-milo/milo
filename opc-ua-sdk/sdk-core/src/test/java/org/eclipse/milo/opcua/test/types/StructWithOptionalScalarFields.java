@@ -267,11 +267,6 @@ public class StructWithOptionalScalarFields extends Structure implements UaStruc
     }
 
     @Override
-    public String getNamespaceUri() {
-      return "https://github.com/eclipse/milo/DataTypeTest";
-    }
-
-    @Override
     public StructWithOptionalScalarFields decodeType(EncodingContext context, UaDecoder decoder) {
       final String string;
       final String optionalString;

@@ -70,11 +70,6 @@ public interface BinaryDataTypeCodec extends DataTypeCodec {
     }
 
     @Override
-    public String getNamespaceUri() {
-      return codec.getNamespaceUri();
-    }
-
-    @Override
     public String getEncodingName() {
       return codec.getEncodingName();
     }

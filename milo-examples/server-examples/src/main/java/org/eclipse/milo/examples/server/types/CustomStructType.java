@@ -119,11 +119,6 @@ public class CustomStructType implements UaStructuredType {
     }
 
     @Override
-    public String getNamespaceUri() {
-      return ExampleNamespace.NAMESPACE_URI;
-    }
-
-    @Override
     public CustomStructType decodeType(EncodingContext context, UaDecoder decoder)
         throws UaSerializationException {
 

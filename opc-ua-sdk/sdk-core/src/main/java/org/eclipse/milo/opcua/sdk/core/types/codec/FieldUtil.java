@@ -238,7 +238,7 @@ class FieldUtil {
           ExtensionObject xo = ExtensionObject.encode(encoder.getEncodingContext(), structValue);
           encoder.encodeExtensionObject(fieldName, xo);
         } else {
-          encoder.encodeStruct(fieldName, value, dataTypeId);
+          encoder.encodeStruct(fieldName, (UaStructuredType) value, dataTypeId);
         }
       } else {
         throw new IllegalArgumentException("hint: " + fieldHint);
@@ -270,7 +270,7 @@ class FieldUtil {
 
           encoder.encodeExtensionObjectArray(fieldName, xoArray);
         } else {
-          encoder.encodeStructArray(fieldName, (Object[]) value, dataTypeId);
+          encoder.encodeStructArray(fieldName, (UaStructuredType[]) value, dataTypeId);
         }
       } else {
         throw new IllegalArgumentException("hint: " + fieldHint);

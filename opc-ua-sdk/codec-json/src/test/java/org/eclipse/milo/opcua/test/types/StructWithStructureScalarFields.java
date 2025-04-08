@@ -165,11 +165,6 @@ public class StructWithStructureScalarFields extends Structure implements UaStru
     }
 
     @Override
-    public String getNamespaceUri() {
-      return "https://github.com/eclipse/milo/DataTypeTest";
-    }
-
-    @Override
     public StructWithStructureScalarFields decodeType(EncodingContext context, UaDecoder decoder) {
       final ExtensionObject struct1;
       final ExtensionObject struct2;

@@ -11,10 +11,6 @@
 package org.eclipse.milo.examples.server.types;
 
 import org.eclipse.milo.examples.server.ExampleNamespace;
-import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
-import org.eclipse.milo.opcua.stack.core.encoding.GenericDataTypeCodec;
-import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
-import org.eclipse.milo.opcua.stack.core.encoding.UaEncoder;
 import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.jspecify.annotations.Nullable;
@@ -55,28 +51,6 @@ public enum CustomEnumType implements UaEnumeratedType {
         return Field2;
       default:
         return null;
-    }
-  }
-
-  public static class Codec extends GenericDataTypeCodec<CustomEnumType> {
-    @Override
-    public Class<CustomEnumType> getType() {
-      return CustomEnumType.class;
-    }
-
-    @Override
-    public String getNamespaceUri() {
-      return ExampleNamespace.NAMESPACE_URI;
-    }
-
-    @Override
-    public CustomEnumType decodeType(EncodingContext context, UaDecoder decoder) {
-      return CustomEnumType.from(decoder.decodeInt32(null));
-    }
-
-    @Override
-    public void encodeType(EncodingContext context, UaEncoder encoder, CustomEnumType value) {
-      encoder.encodeInt32(null, value.getValue());
     }
   }
 }
