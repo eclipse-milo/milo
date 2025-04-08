@@ -945,7 +945,7 @@ public class OpcUaXmlDecoder implements UaDecoder {
       if (codec != null) {
         try {
           currentNode = node.getFirstChild();
-          return (UaStructuredType) codec.decode(context, this);
+          return codec.decode(context, this);
         } finally {
           currentNode = node.getNextSibling();
         }
@@ -983,7 +983,7 @@ public class OpcUaXmlDecoder implements UaDecoder {
       try {
         currentNode = node.getFirstChild();
 
-        return (UaStructuredType) codec.decode(context, this);
+        return codec.decode(context, this);
       } finally {
         currentNode = node.getNextSibling();
       }

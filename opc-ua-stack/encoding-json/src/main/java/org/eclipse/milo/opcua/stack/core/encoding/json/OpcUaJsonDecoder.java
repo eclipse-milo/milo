@@ -1028,6 +1028,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
   @Override
   public UaStructuredType decodeStruct(String field, NodeId dataTypeId)
       throws UaSerializationException {
+
     DataTypeCodec codec = context.getDataTypeManager().getCodec(dataTypeId);
 
     if (codec != null) {
@@ -1041,13 +1042,13 @@ public class OpcUaJsonDecoder implements UaDecoder {
           }
         }
 
-        Object value;
+        UaStructuredType value;
 
         jsonReader.beginObject();
         value = codec.decode(context, this);
         jsonReader.endObject();
 
-        return (UaStructuredType) value;
+        return value;
       } catch (IOException e) {
         throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
       }
@@ -1085,13 +1086,13 @@ public class OpcUaJsonDecoder implements UaDecoder {
         }
       }
 
-      Object value;
+      UaStructuredType value;
 
       jsonReader.beginObject();
       value = codec.decode(context, this);
       jsonReader.endObject();
 
-      return (UaStructuredType) value;
+      return value;
     } catch (IOException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }

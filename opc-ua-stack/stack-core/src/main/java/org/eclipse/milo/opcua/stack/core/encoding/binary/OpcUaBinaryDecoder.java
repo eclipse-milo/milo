@@ -700,7 +700,7 @@ public class OpcUaBinaryDecoder implements UaDecoder {
     DataTypeCodec codec = context.getDataTypeManager().getCodec(dataTypeId);
 
     if (codec != null) {
-      return (UaStructuredType) codec.decode(context, this);
+      return codec.decode(context, this);
     } else {
       throw new UaSerializationException(
           StatusCodes.Bad_DecodingError, "no codec registered: " + dataTypeId);
@@ -726,7 +726,7 @@ public class OpcUaBinaryDecoder implements UaDecoder {
   public UaStructuredType decodeStruct(String field, DataTypeCodec codec)
       throws UaSerializationException {
 
-    return (UaStructuredType) codec.decode(context, this);
+    return codec.decode(context, this);
   }
 
   @Override

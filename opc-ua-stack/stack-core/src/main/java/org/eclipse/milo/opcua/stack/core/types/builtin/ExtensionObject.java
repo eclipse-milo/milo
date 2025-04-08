@@ -134,7 +134,7 @@ public abstract sealed class ExtensionObject
     }
 
     try {
-      UaStructuredType decoded = (UaStructuredType) decode(context);
+      UaStructuredType decoded = decode(context);
 
       return newEncoding.encode(context, decoded, newEncodingId);
     } catch (UaSerializationException e) {

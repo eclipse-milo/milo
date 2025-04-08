@@ -43,6 +43,7 @@ public class OpcUaDefaultJsonEncoding implements DataTypeEncoding {
   @Override
   public ExtensionObject encode(
       EncodingContext context, UaStructuredType struct, NodeId encodingId) {
+
     DataTypeCodec codec = context.getDataTypeManager().getCodec(encodingId);
 
     if (codec == null) {
@@ -52,7 +53,7 @@ public class OpcUaDefaultJsonEncoding implements DataTypeEncoding {
 
     var stringWriter = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, stringWriter);
-    encoder.encodeStruct(null, (UaStructuredType) struct, codec);
+    encoder.encodeStruct(null, struct, codec);
 
     return ExtensionObject.of(stringWriter.toString(), encodingId);
   }
