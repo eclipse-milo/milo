@@ -63,11 +63,11 @@ public abstract sealed class ExtensionObject
   public abstract boolean isNull();
 
   /**
-   * Decode the value contained in this ExtensionObject using the datatype encoding that matches its
-   * body type.
+   * Decode the {@link UaStructuredType} value contained in this ExtensionObject using the datatype
+   * encoding that matches its body type.
    *
    * @param context an {@link EncodingContext}.
-   * @return the decoded value.
+   * @return the decoded {@link UaStructuredType} value.
    * @throws UaSerializationException if the decoding fails.
    */
   public final UaStructuredType decode(EncodingContext context) throws UaSerializationException {
@@ -102,12 +102,12 @@ public abstract sealed class ExtensionObject
   }
 
   /**
-   * Decode the value contained in this ExtensionObject using the specified encoding, if it hasn't
-   * already been decoded.
+   * Decode the {@link UaStructuredType} value contained in this ExtensionObject using the specified
+   * encoding, if it hasn't already been decoded.
    *
    * @param context an {@link EncodingContext}.
    * @param encoding the {@link DataTypeEncoding} to use.
-   * @return the decoded value.
+   * @return the decoded {@link UaStructuredType} value.
    * @throws UaSerializationException if the decoding fails.
    */
   public final UaStructuredType decode(EncodingContext context, DataTypeEncoding encoding)
@@ -212,10 +212,10 @@ public abstract sealed class ExtensionObject
   }
 
   /**
-   * Encode a value in the specified datatype encoding.
+   * Encode a {@link UaStructuredType} value in the specified datatype encoding.
    *
    * @param context an {@link EncodingContext}.
-   * @param struct the value to encode.
+   * @param struct the {@link UaStructuredType} value to encode.
    * @param encoding the {@link DataTypeEncoding} to use.
    * @return an {@link ExtensionObject} containing the encoded value.
    * @throws UaSerializationException if the encoding fails.
