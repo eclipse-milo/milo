@@ -10,7 +10,6 @@
 
 package org.eclipse.milo.opcua.sdk.core.types.codec;
 
-
 import org.eclipse.milo.opcua.sdk.core.types.DynamicOptionSetType;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;

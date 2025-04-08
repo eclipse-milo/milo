@@ -10,7 +10,6 @@
 
 package org.eclipse.milo.sdk.core.types.json;
 
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
