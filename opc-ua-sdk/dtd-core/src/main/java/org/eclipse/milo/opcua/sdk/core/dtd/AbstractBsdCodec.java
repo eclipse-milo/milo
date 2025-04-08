@@ -27,6 +27,7 @@ import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaBinaryDecoder;
 import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaBinaryEncoder;
 import org.eclipse.milo.opcua.stack.core.types.DataTypeDictionary;
 import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
+import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -179,7 +180,8 @@ public abstract class AbstractBsdCodec<StructureT, MemberT> implements BinaryDat
   }
 
   @Override
-  public void encodeBinary(EncodingContext context, OpcUaBinaryEncoder encoder, Object structure)
+  public void encodeBinary(
+      EncodingContext context, OpcUaBinaryEncoder encoder, UaStructuredType structure)
       throws UaSerializationException {
 
     //noinspection unchecked
@@ -338,7 +340,7 @@ public abstract class AbstractBsdCodec<StructureT, MemberT> implements BinaryDat
         DataTypeCodec codec = dictionary.getCodec(description);
 
         if (codec != null) {
-          codec.encode(context, encoder, value);
+          codec.encode(context, encoder, (UaStructuredType) value);
         } else {
           throw new UaSerializationException(
               StatusCodes.Bad_DecodingError,

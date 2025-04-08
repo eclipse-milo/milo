@@ -29,6 +29,7 @@ import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaBinaryEncoder;
 import org.eclipse.milo.opcua.stack.core.types.DataTypeDictionary;
 import org.eclipse.milo.opcua.stack.core.types.DataTypeManager;
 import org.eclipse.milo.opcua.stack.core.types.OpcUaDataTypeManager;
+import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.opcfoundation.opcua.binaryschema.StructuredType;
 import org.opcfoundation.opcua.binaryschema.TypeDictionary;
@@ -126,7 +127,10 @@ public abstract class AbstractBsdCodecTest {
 
     System.out.println("originalValue:\t" + originalValue);
     ByteBuf buffer = Unpooled.buffer();
-    codec.encodeBinary(context, new OpcUaBinaryEncoder(context).setBuffer(buffer), originalValue);
+    codec.encodeBinary(
+        context,
+        new OpcUaBinaryEncoder(context).setBuffer(buffer),
+        (UaStructuredType) originalValue);
 
     ByteBuf encodedValue = buffer.copy();
     System.out.println("encodedValue:\t" + ByteBufUtil.hexDump(encodedValue));
@@ -152,7 +156,10 @@ public abstract class AbstractBsdCodecTest {
 
     System.out.println("originalValue:\t" + originalValue);
     ByteBuf buffer = Unpooled.buffer();
-    codec.encodeBinary(context, new OpcUaBinaryEncoder(context).setBuffer(buffer), originalValue);
+    codec.encodeBinary(
+        context,
+        new OpcUaBinaryEncoder(context).setBuffer(buffer),
+        (UaStructuredType) originalValue);
 
     ByteBuf encodedValue = buffer.copy();
     System.out.println("encodedValue:\t" + ByteBufUtil.hexDump(encodedValue));

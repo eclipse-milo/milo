@@ -25,7 +25,7 @@ public interface DataTypeCodec {
    *
    * @param context the {@link EncodingContext}.
    * @param decoder the {@link UaDecoder} to decode from.
-   * @return a decoded Object.
+   * @return a decoded {@link UaStructuredType}.
    */
   UaStructuredType decode(EncodingContext context, UaDecoder decoder)
       throws UaSerializationException;
@@ -35,8 +35,8 @@ public interface DataTypeCodec {
    *
    * @param context the {@link EncodingContext}.
    * @param encoder the {@link UaEncoder} to encode to.
-   * @param value the Object to encode.
+   * @param value the {@link UaStructuredType} to encode.
    */
-  void encode(EncodingContext context, UaEncoder encoder, Object value)
+  void encode(EncodingContext context, UaEncoder encoder, UaStructuredType value)
       throws UaSerializationException;
 }

@@ -28,7 +28,7 @@ public interface BinaryDataTypeCodec extends DataTypeCodec {
   }
 
   @Override
-  default void encode(EncodingContext context, UaEncoder encoder, Object value)
+  default void encode(EncodingContext context, UaEncoder encoder, UaStructuredType value)
       throws UaSerializationException {
     encodeBinary(context, (OpcUaBinaryEncoder) encoder, value);
   }
@@ -38,7 +38,7 @@ public interface BinaryDataTypeCodec extends DataTypeCodec {
    *
    * @param context the {@link EncodingContext}.
    * @param decoder the {@link OpcUaBinaryDecoder} to decode from.
-   * @return a decoded Object.
+   * @return a decoded {@link UaStructuredType}.
    */
   UaStructuredType decodeBinary(EncodingContext context, OpcUaBinaryDecoder decoder)
       throws UaSerializationException;
@@ -48,9 +48,9 @@ public interface BinaryDataTypeCodec extends DataTypeCodec {
    *
    * @param context the {@link EncodingContext}.
    * @param encoder the {@link OpcUaBinaryEncoder} to encode to.
-   * @param value the Object to encode.
+   * @param value the {@link UaStructuredType} to encode.
    */
-  void encodeBinary(EncodingContext context, OpcUaBinaryEncoder encoder, Object value)
+  void encodeBinary(EncodingContext context, OpcUaBinaryEncoder encoder, UaStructuredType value)
       throws UaSerializationException;
 
   static BinaryDataTypeCodec from(DataTypeCodec codec) {
@@ -77,7 +77,8 @@ public interface BinaryDataTypeCodec extends DataTypeCodec {
     }
 
     @Override
-    public void encodeBinary(EncodingContext context, OpcUaBinaryEncoder encoder, Object value)
+    public void encodeBinary(
+        EncodingContext context, OpcUaBinaryEncoder encoder, UaStructuredType value)
         throws UaSerializationException {
       codec.encode(context, encoder, value);
     }

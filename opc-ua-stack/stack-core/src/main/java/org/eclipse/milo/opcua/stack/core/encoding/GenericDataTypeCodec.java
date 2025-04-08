@@ -30,7 +30,7 @@ public abstract class GenericDataTypeCodec<T extends UaStructuredType> implement
   }
 
   @Override
-  public void encode(EncodingContext context, UaEncoder encoder, Object value)
+  public void encode(EncodingContext context, UaEncoder encoder, UaStructuredType value)
       throws UaSerializationException {
     T typedValue;
     try {
