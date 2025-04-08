@@ -730,7 +730,6 @@ public class ArrayArguments {
                   new DefaultEncodingContext(),
                   new Argument(
                       "name", NodeId.parse("i=1"), -1, null, LocalizedText.english("description")),
-                  Argument.XML_ENCODING_ID,
                   OpcUaDefaultXmlEncoding.getInstance()),
               ExtensionObject.encode(
                   new DefaultEncodingContext(),
@@ -740,7 +739,6 @@ public class ArrayArguments {
                       1,
                       new UInteger[] {UInteger.valueOf(1)},
                       LocalizedText.english("description2")),
-                  Argument.XML_ENCODING_ID,
                   OpcUaDefaultXmlEncoding.getInstance())
             },
             """

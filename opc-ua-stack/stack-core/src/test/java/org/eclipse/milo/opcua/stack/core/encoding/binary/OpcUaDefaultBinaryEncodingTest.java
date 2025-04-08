@@ -30,9 +30,9 @@ class OpcUaDefaultBinaryEncodingTest {
     var value = new XVType(1.0, 2.0f);
     NodeId encodingId = XVType.XML_ENCODING_ID.toNodeIdOrThrow(context.getNamespaceTable());
 
-    ExtensionObject encoded = encoding.encode(context, value, encodingId);
+    ExtensionObject encoded = encoding.encode(context, value);
 
-    UaStructuredType decoded = encoding.decode(context, encoded, encodingId);
+    UaStructuredType decoded = encoding.decode(context, encoded);
 
     assertEquals(value, decoded);
   }

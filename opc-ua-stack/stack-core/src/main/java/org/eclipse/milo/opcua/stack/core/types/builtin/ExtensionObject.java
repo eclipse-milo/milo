@@ -113,7 +113,7 @@ public abstract sealed class ExtensionObject
   public final UaStructuredType decode(EncodingContext context, DataTypeEncoding encoding)
       throws UaSerializationException {
 
-    return decoded.get(() -> encoding.decode(context, this, getEncodingOrTypeId()));
+    return decoded.get(() -> encoding.decode(context, this));
   }
 
   /**
@@ -136,7 +136,7 @@ public abstract sealed class ExtensionObject
     try {
       UaStructuredType decoded = decode(context);
 
-      return newEncoding.encode(context, decoded, newEncodingId);
+      return newEncoding.encode(context, decoded);
     } catch (UaSerializationException e) {
       LoggerFactory.getLogger(ExtensionObject.class)
           .warn("Transcoding failed: {}", e.getMessage(), e);
@@ -178,30 +178,6 @@ public abstract sealed class ExtensionObject
   }
 
   /**
-   * Encode a {@link UaStructuredType} value in the default binary encoding.
-   *
-   * @param context an {@link EncodingContext}.
-   * @param value the {@link UaStructuredType} value to encode.
-   * @return an {@link ExtensionObject} containing the encoded value.
-   * @throws UaSerializationException if the encoding fails.
-   */
-  public static ExtensionObject encode(EncodingContext context, UaStructuredType value)
-      throws UaSerializationException {
-
-    NodeId encodingId =
-        value
-            .getBinaryEncodingId()
-            .toNodeId(context.getNamespaceTable())
-            .orElseThrow(
-                () ->
-                    new UaSerializationException(
-                        StatusCodes.Bad_EncodingError,
-                        "namespace not registered: " + value.getBinaryEncodingId().namespace()));
-
-    return encode(context, value, encodingId, OpcUaDefaultBinaryEncoding.getInstance());
-  }
-
-  /**
    * Encode an array of {@link UaStructuredType} values in the default binary encoding.
    *
    * @param context an {@link EncodingContext}.
@@ -222,19 +198,17 @@ public abstract sealed class ExtensionObject
   }
 
   /**
-   * Encode a value in the default binary encoding.
+   * Encode a {@link UaStructuredType} value in the default binary encoding.
    *
    * @param context an {@link EncodingContext}.
-   * @param value the value to encode.
-   * @param encodingId the {@link NodeId} of the binary datatype encoding.
+   * @param value the {@link UaStructuredType} value to encode.
    * @return an {@link ExtensionObject} containing the encoded value.
    * @throws UaSerializationException if the encoding fails.
    */
-  public static ExtensionObject encode(
-      EncodingContext context, UaStructuredType value, NodeId encodingId)
+  public static ExtensionObject encode(EncodingContext context, UaStructuredType value)
       throws UaSerializationException {
 
-    return encodeBinary(context, value, encodingId, OpcUaDefaultBinaryEncoding.getInstance());
+    return encodeBinary(context, value, OpcUaDefaultBinaryEncoding.getInstance());
   }
 
   /**
@@ -242,86 +216,45 @@ public abstract sealed class ExtensionObject
    *
    * @param context an {@link EncodingContext}.
    * @param struct the value to encode.
-   * @param encodingOrTypeId the {@link NodeId} the datatype encoding if using Binary or XML
-   *     encoding, or the {@link NodeId} of the datatype if using JSON encoding.
    * @param encoding the {@link DataTypeEncoding} to use.
    * @return an {@link ExtensionObject} containing the encoded value.
    * @throws UaSerializationException if the encoding fails.
    */
   public static ExtensionObject encode(
-      EncodingContext context,
-      UaStructuredType struct,
-      NodeId encodingOrTypeId,
-      DataTypeEncoding encoding)
+      EncodingContext context, UaStructuredType struct, DataTypeEncoding encoding)
       throws UaSerializationException {
 
     if (encoding.getEncodingName().equals(DataTypeEncoding.BINARY_ENCODING_NAME)) {
-      return encodeBinary(context, struct, encodingOrTypeId, encoding);
+      return encodeBinary(context, struct, encoding);
     } else if (encoding.getEncodingName().equals(DataTypeEncoding.XML_ENCODING_NAME)) {
-      return encodeXml(context, struct, encodingOrTypeId, encoding);
+      return encodeXml(context, struct, encoding);
     } else if (encoding.getEncodingName().equals(DataTypeEncoding.JSON_ENCODING_NAME)) {
-      return encodeJson(context, struct, encodingOrTypeId, encoding);
+      return encodeJson(context, struct, encoding);
     } else {
       throw new UaSerializationException(
           StatusCodes.Bad_EncodingError, "unsupported encoding: " + encoding.getEncodingName());
     }
   }
 
-  /**
-   * Encode a value in the specified datatype encoding.
-   *
-   * @param context an {@link EncodingContext}.
-   * @param struct the value to encode.
-   * @param encodingOrTypeId the {@link ExpandedNodeId} the datatype encoding if using Binary or XML
-   *     encoding, or the {@link ExpandedNodeId} of the datatype if using JSON encoding.
-   * @param encoding the {@link DataTypeEncoding} to use.
-   * @return an {@link ExtensionObject} containing the encoded value.
-   * @throws UaSerializationException if the encoding fails.
-   */
-  public static ExtensionObject encode(
-      EncodingContext context,
-      UaStructuredType struct,
-      ExpandedNodeId encodingOrTypeId,
-      DataTypeEncoding encoding)
-      throws UaSerializationException {
-
-    NodeId localEncodingOrTypeId =
-        encodingOrTypeId
-            .toNodeId(context.getNamespaceTable())
-            .orElseThrow(
-                () ->
-                    new UaSerializationException(
-                        StatusCodes.Bad_EncodingError,
-                        "namespace not registered: " + encodingOrTypeId.namespace()));
-
-    return encode(context, struct, localEncodingOrTypeId, encoding);
-  }
-
   private static ExtensionObject encodeBinary(
-      EncodingContext context,
-      UaStructuredType struct,
-      NodeId encodingId,
-      DataTypeEncoding encoding)
+      EncodingContext context, UaStructuredType struct, DataTypeEncoding encoding)
       throws UaSerializationException {
 
-    return encoding.encode(context, struct, encodingId);
+    return encoding.encode(context, struct);
   }
 
   private static ExtensionObject encodeXml(
-      EncodingContext context,
-      UaStructuredType struct,
-      NodeId encodingId,
-      DataTypeEncoding encoding)
+      EncodingContext context, UaStructuredType struct, DataTypeEncoding encoding)
       throws UaSerializationException {
 
-    return encoding.encode(context, struct, encodingId);
+    return encoding.encode(context, struct);
   }
 
   private static ExtensionObject encodeJson(
-      EncodingContext context, UaStructuredType struct, NodeId typeId, DataTypeEncoding encoding)
+      EncodingContext context, UaStructuredType struct, DataTypeEncoding encoding)
       throws UaSerializationException {
 
-    return encoding.encode(context, struct, typeId);
+    return encoding.encode(context, struct);
   }
 
   /** An ExtensionObject that contains a {@link ByteString} body, used with Binary encoding. */

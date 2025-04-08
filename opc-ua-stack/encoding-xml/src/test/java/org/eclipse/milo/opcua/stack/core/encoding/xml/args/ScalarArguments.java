@@ -541,7 +541,6 @@ public class ScalarArguments {
             ExtensionObject.encode(
                 new DefaultEncodingContext(),
                 new XVType(1.0, 2.0f),
-                XVType.XML_ENCODING_ID,
                 OpcUaDefaultXmlEncoding.getInstance()),
             """
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
@@ -562,7 +561,6 @@ public class ScalarArguments {
             ExtensionObject.encode(
                 new DefaultEncodingContext(),
                 new XVType(1.0, 2.0f),
-                XVType.BINARY_ENCODING_ID,
                 OpcUaDefaultBinaryEncoding.getInstance()),
             """
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">

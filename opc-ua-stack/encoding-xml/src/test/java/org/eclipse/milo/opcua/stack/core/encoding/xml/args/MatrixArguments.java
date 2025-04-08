@@ -77,7 +77,7 @@ public class MatrixArguments {
               <uax:Elements>
                 <uax:ExtensionObject>
                   <uax:TypeId>
-                    <uax:Identifier>i=12080</uax:Identifier>
+                    <uax:Identifier>i=12082</uax:Identifier>
                   </uax:TypeId>
                   <uax:Body>
                     <XVType>
@@ -88,7 +88,7 @@ public class MatrixArguments {
                 </uax:ExtensionObject>
                 <uax:ExtensionObject>
                   <uax:TypeId>
-                    <uax:Identifier>i=12080</uax:Identifier>
+                    <uax:Identifier>i=12082</uax:Identifier>
                   </uax:TypeId>
                   <uax:Body>
                     <XVType>
@@ -99,7 +99,7 @@ public class MatrixArguments {
                 </uax:ExtensionObject>
                 <uax:ExtensionObject>
                   <uax:TypeId>
-                    <uax:Identifier>i=12080</uax:Identifier>
+                    <uax:Identifier>i=12082</uax:Identifier>
                   </uax:TypeId>
                   <uax:Body>
                     <XVType>
@@ -110,7 +110,7 @@ public class MatrixArguments {
                 </uax:ExtensionObject>
                 <uax:ExtensionObject>
                   <uax:TypeId>
-                    <uax:Identifier>i=12080</uax:Identifier>
+                    <uax:Identifier>i=12082</uax:Identifier>
                   </uax:TypeId>
                   <uax:Body>
                     <XVType>
@@ -1206,24 +1206,20 @@ public class MatrixArguments {
                     ExtensionObject.encode(
                         DefaultEncodingContext.INSTANCE,
                         new XVType(1.0, 2.0f),
-                        XVType.TYPE_ID,
                         OpcUaDefaultXmlEncoding.getInstance()),
                     ExtensionObject.encode(
                         DefaultEncodingContext.INSTANCE,
                         new XVType(3.0, 4.0f),
-                        XVType.TYPE_ID,
                         OpcUaDefaultXmlEncoding.getInstance())
                   },
                   {
                     ExtensionObject.encode(
                         DefaultEncodingContext.INSTANCE,
                         new XVType(5.0, 6.0f),
-                        XVType.TYPE_ID,
                         OpcUaDefaultXmlEncoding.getInstance()),
                     ExtensionObject.encode(
                         DefaultEncodingContext.INSTANCE,
                         new XVType(7.0, 8.0f),
-                        XVType.TYPE_ID,
                         OpcUaDefaultXmlEncoding.getInstance())
                   }
                 }),
@@ -1237,7 +1233,7 @@ public class MatrixArguments {
               <uax:Elements>
                 <uax:ExtensionObject>
                   <uax:TypeId>
-                    <uax:Identifier>i=12080</uax:Identifier>
+                    <uax:Identifier>i=12082</uax:Identifier>
                   </uax:TypeId>
                   <uax:Body>
                     <XVType>
@@ -1248,7 +1244,7 @@ public class MatrixArguments {
                 </uax:ExtensionObject>
                 <uax:ExtensionObject>
                   <uax:TypeId>
-                    <uax:Identifier>i=12080</uax:Identifier>
+                    <uax:Identifier>i=12082</uax:Identifier>
                   </uax:TypeId>
                   <uax:Body>
                     <XVType>
@@ -1259,7 +1255,7 @@ public class MatrixArguments {
                 </uax:ExtensionObject>
                 <uax:ExtensionObject>
                   <uax:TypeId>
-                    <uax:Identifier>i=12080</uax:Identifier>
+                    <uax:Identifier>i=12082</uax:Identifier>
                   </uax:TypeId>
                   <uax:Body>
                     <XVType>
@@ -1270,7 +1266,7 @@ public class MatrixArguments {
                 </uax:ExtensionObject>
                 <uax:ExtensionObject>
                   <uax:TypeId>
-                    <uax:Identifier>i=12080</uax:Identifier>
+                    <uax:Identifier>i=12082</uax:Identifier>
                   </uax:TypeId>
                   <uax:Body>
                     <XVType>

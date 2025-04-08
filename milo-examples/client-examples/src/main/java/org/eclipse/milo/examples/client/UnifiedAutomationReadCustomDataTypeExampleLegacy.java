@@ -96,8 +96,7 @@ public class UnifiedAutomationReadCustomDataTypeExampleLegacy implements ClientE
     NodeId binaryEncodingId = struct.dataType().getBinaryEncodingId();
     assert binaryEncodingId != null;
 
-    ExtensionObject xo =
-        ExtensionObject.encode(client.getDynamicEncodingContext(), struct, binaryEncodingId);
+    ExtensionObject xo = ExtensionObject.encode(client.getDynamicEncodingContext(), struct);
 
     return client
         .writeValues(List.of(nodeId), List.of(DataValue.valueOnly(new Variant(xo))))

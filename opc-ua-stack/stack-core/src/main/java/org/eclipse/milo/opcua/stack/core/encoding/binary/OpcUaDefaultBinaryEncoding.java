@@ -46,14 +46,24 @@ public class OpcUaDefaultBinaryEncoding implements DataTypeEncoding {
   }
 
   @Override
-  public ExtensionObject encode(
-      EncodingContext context, UaStructuredType struct, NodeId encodingId) {
+  public ExtensionObject encode(EncodingContext context, UaStructuredType struct) {
+    NodeId encodingId =
+        struct
+            .getBinaryEncodingId()
+            .toNodeId(context.getNamespaceTable())
+            .orElseThrow(
+                () ->
+                    new UaSerializationException(
+                        StatusCodes.Bad_EncodingError,
+                        "no namespace registered: "
+                            + struct.getBinaryEncodingId().toParseableString()));
 
     DataTypeCodec codec = context.getDataTypeManager().getCodec(encodingId);
 
     if (codec == null) {
       throw new UaSerializationException(
-          StatusCodes.Bad_DecodingError, "no codec registered for encodingId=" + encodingId);
+          StatusCodes.Bad_EncodingError,
+          "no codec registered for encodingId=" + encodingId.toParseableString());
     }
 
     ByteBuf buffer = buffer();
@@ -71,15 +81,15 @@ public class OpcUaDefaultBinaryEncoding implements DataTypeEncoding {
   }
 
   @Override
-  public UaStructuredType decode(
-      EncodingContext context, ExtensionObject encoded, NodeId encodingId) {
-
+  public UaStructuredType decode(EncodingContext context, ExtensionObject encoded) {
     if (encoded instanceof ExtensionObject.Binary xo) {
-      DataTypeCodec codec = context.getDataTypeManager().getCodec(encodingId);
+      DataTypeCodec codec = context.getDataTypeManager().getCodec(encoded.getEncodingOrTypeId());
 
       if (codec == null) {
         throw new UaSerializationException(
-            StatusCodes.Bad_DecodingError, "no codec registered for encodingId=" + encodingId);
+            StatusCodes.Bad_DecodingError,
+            "no codec registered for encodingId="
+                + encoded.getEncodingOrTypeId().toParseableString());
       }
 
       ByteString binaryBody = xo.getBody();

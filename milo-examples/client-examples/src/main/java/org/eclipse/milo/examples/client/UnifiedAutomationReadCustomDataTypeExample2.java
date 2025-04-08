@@ -157,8 +157,7 @@ public class UnifiedAutomationReadCustomDataTypeExample2 implements ClientExampl
     NodeId binaryEncodingId = value.getDataType().getBinaryEncodingId();
     assert binaryEncodingId != null;
 
-    ExtensionObject xo =
-        ExtensionObject.encode(client.getDynamicEncodingContext(), value, binaryEncodingId);
+    ExtensionObject xo = ExtensionObject.encode(client.getDynamicEncodingContext(), value);
 
     return client
         .writeValues(List.of(nodeId), List.of(DataValue.valueOnly(new Variant(xo))))

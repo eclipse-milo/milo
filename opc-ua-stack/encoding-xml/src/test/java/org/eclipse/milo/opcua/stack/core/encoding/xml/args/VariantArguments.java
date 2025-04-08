@@ -295,7 +295,6 @@ public class VariantArguments {
                         -1,
                         null,
                         LocalizedText.english("description")),
-                    Argument.XML_ENCODING_ID,
                     OpcUaDefaultXmlEncoding.getInstance())),
             """
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
@@ -840,7 +839,6 @@ public class VariantArguments {
                           -1,
                           null,
                           LocalizedText.english("description")),
-                      Argument.XML_ENCODING_ID,
                       OpcUaDefaultXmlEncoding.getInstance()),
                   ExtensionObject.encode(
                       new DefaultEncodingContext(),
@@ -850,7 +848,6 @@ public class VariantArguments {
                           -1,
                           null,
                           LocalizedText.english("description")),
-                      Argument.XML_ENCODING_ID,
                       OpcUaDefaultXmlEncoding.getInstance())
                 }),
             """
@@ -1746,7 +1743,7 @@ public class VariantArguments {
                   <uax:Elements>
                     <uax:ExtensionObject>
                       <uax:TypeId>
-                        <uax:Identifier>i=12080</uax:Identifier>
+                        <uax:Identifier>i=12082</uax:Identifier>
                       </uax:TypeId>
                       <uax:Body>
                         <XVType>
@@ -1757,7 +1754,7 @@ public class VariantArguments {
                     </uax:ExtensionObject>
                     <uax:ExtensionObject>
                       <uax:TypeId>
-                        <uax:Identifier>i=12080</uax:Identifier>
+                        <uax:Identifier>i=12082</uax:Identifier>
                       </uax:TypeId>
                       <uax:Body>
                         <XVType>
@@ -1768,7 +1765,7 @@ public class VariantArguments {
                     </uax:ExtensionObject>
                     <uax:ExtensionObject>
                       <uax:TypeId>
-                        <uax:Identifier>i=12080</uax:Identifier>
+                        <uax:Identifier>i=12082</uax:Identifier>
                       </uax:TypeId>
                       <uax:Body>
                         <XVType>
@@ -1779,7 +1776,7 @@ public class VariantArguments {
                     </uax:ExtensionObject>
                     <uax:ExtensionObject>
                       <uax:TypeId>
-                        <uax:Identifier>i=12080</uax:Identifier>
+                        <uax:Identifier>i=12082</uax:Identifier>
                       </uax:TypeId>
                       <uax:Body>
                         <XVType>

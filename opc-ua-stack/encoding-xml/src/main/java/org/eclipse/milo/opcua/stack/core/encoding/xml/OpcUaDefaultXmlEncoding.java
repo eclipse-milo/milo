@@ -43,14 +43,24 @@ public class OpcUaDefaultXmlEncoding implements DataTypeEncoding {
   }
 
   @Override
-  public ExtensionObject encode(
-      EncodingContext context, UaStructuredType struct, NodeId encodingId) {
+  public ExtensionObject encode(EncodingContext context, UaStructuredType struct) {
+    NodeId encodingId =
+        struct
+            .getXmlEncodingId()
+            .toNodeId(context.getNamespaceTable())
+            .orElseThrow(
+                () ->
+                    new UaSerializationException(
+                        StatusCodes.Bad_EncodingError,
+                        "no namespace registered: "
+                            + struct.getXmlEncodingId().toParseableString()));
 
     DataTypeCodec codec = context.getDataTypeManager().getCodec(encodingId);
 
     if (codec == null) {
       throw new UaSerializationException(
-          StatusCodes.Bad_DecodingError, "no codec registered for encodingId=" + encodingId);
+          StatusCodes.Bad_EncodingError,
+          "no codec registered for encodingId=" + encodingId.toParseableString());
     }
 
     OpcUaXmlEncoder encoder = new OpcUaXmlEncoder(context);
@@ -61,15 +71,15 @@ public class OpcUaDefaultXmlEncoding implements DataTypeEncoding {
   }
 
   @Override
-  public UaStructuredType decode(
-      EncodingContext context, ExtensionObject encoded, NodeId encodingId) {
-
+  public UaStructuredType decode(EncodingContext context, ExtensionObject encoded) {
     if (encoded instanceof ExtensionObject.Xml xo) {
-      DataTypeCodec codec = context.getDataTypeManager().getCodec(encodingId);
+      DataTypeCodec codec = context.getDataTypeManager().getCodec(encoded.getEncodingOrTypeId());
 
       if (codec == null) {
         throw new UaSerializationException(
-            StatusCodes.Bad_DecodingError, "no codec registered for encodingId=" + encodingId);
+            StatusCodes.Bad_DecodingError,
+            "no codec registered for encodingId="
+                + encoded.getEncodingOrTypeId().toParseableString());
       }
 
       XmlElement xmlBody = xo.getBody();

@@ -1190,8 +1190,7 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
 
     CustomStructType value = new CustomStructType("foo", uint(42), true, CustomEnumType.Field0);
 
-    ExtensionObject xo =
-        ExtensionObject.encode(getServer().getStaticEncodingContext(), value, binaryEncodingId);
+    ExtensionObject xo = ExtensionObject.encode(getServer().getStaticEncodingContext(), value);
 
     customStructTypeVariable.setValue(new DataValue(new Variant(xo)));
 
@@ -1226,8 +1225,7 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
 
     CustomUnionType value = CustomUnionType.ofBar("hello");
 
-    ExtensionObject xo =
-        ExtensionObject.encode(getServer().getStaticEncodingContext(), value, binaryEncodingId);
+    ExtensionObject xo = ExtensionObject.encode(getServer().getStaticEncodingContext(), value);
 
     customUnionTypeVariable.setValue(new DataValue(new Variant(xo)));
 
@@ -1287,8 +1285,7 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
     NodeId binaryEncodingId = dataType.getBinaryEncodingId();
     assert binaryEncodingId != null;
 
-    ExtensionObject xo =
-        ExtensionObject.encode(getServer().getDynamicEncodingContext(), value, binaryEncodingId);
+    ExtensionObject xo = ExtensionObject.encode(getServer().getDynamicEncodingContext(), value);
 
     dynamicStructTypeVariable.setValue(new DataValue(Variant.ofExtensionObject(xo)));
 

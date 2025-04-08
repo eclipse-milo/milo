@@ -41,33 +41,43 @@ public class OpcUaDefaultJsonEncoding implements DataTypeEncoding {
   }
 
   @Override
-  public ExtensionObject encode(
-      EncodingContext context, UaStructuredType struct, NodeId encodingId) {
+  public ExtensionObject encode(EncodingContext context, UaStructuredType struct) {
+    // Note: JSON encoding uses the DataType NodeId, not a separate encoding NodeId.
+    NodeId typeId =
+        struct
+            .getTypeId()
+            .toNodeId(context.getNamespaceTable())
+            .orElseThrow(
+                () ->
+                    new UaSerializationException(
+                        StatusCodes.Bad_EncodingError,
+                        "no namespace registered: " + struct.getTypeId().toParseableString()));
 
-    DataTypeCodec codec = context.getDataTypeManager().getCodec(encodingId);
+    DataTypeCodec codec = context.getDataTypeManager().getCodec(typeId);
 
     if (codec == null) {
       throw new UaSerializationException(
-          StatusCodes.Bad_DecodingError, "no codec registered for encodingId=" + encodingId);
+          StatusCodes.Bad_EncodingError,
+          "no codec registered for typeId=" + typeId.toParseableString());
     }
 
     var stringWriter = new StringWriter();
     var encoder = new OpcUaJsonEncoder(context, stringWriter);
     encoder.encodeStruct(null, struct, codec);
 
-    return ExtensionObject.of(stringWriter.toString(), encodingId);
+    return ExtensionObject.of(stringWriter.toString(), typeId);
   }
 
   @Override
-  public UaStructuredType decode(
-      EncodingContext context, ExtensionObject encoded, NodeId encodingId) {
-
+  public UaStructuredType decode(EncodingContext context, ExtensionObject encoded) {
     if (encoded instanceof ExtensionObject.Json xo) {
-      DataTypeCodec codec = context.getDataTypeManager().getCodec(encodingId);
+      DataTypeCodec codec = context.getDataTypeManager().getCodec(encoded.getEncodingOrTypeId());
 
       if (codec == null) {
         throw new UaSerializationException(
-            StatusCodes.Bad_DecodingError, "no codec registered for encodingId=" + encodingId);
+            StatusCodes.Bad_DecodingError,
+            "no codec registered for encodingId="
+                + encoded.getEncodingOrTypeId().toParseableString());
       }
 
       var decoder = new OpcUaJsonDecoder(context, xo.getBody());
