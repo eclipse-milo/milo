@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 public abstract sealed class ExtensionObject
     permits ExtensionObject.Binary, ExtensionObject.Json, ExtensionObject.Xml {
 
-  private final Lazy<Object> decoded = new Lazy<>();
+  private final Lazy<UaStructuredType> decoded = new Lazy<>();
 
   /**
    * Get the body of this ExtensionObject.
@@ -70,7 +70,7 @@ public abstract sealed class ExtensionObject
    * @return the decoded value.
    * @throws UaSerializationException if the decoding fails.
    */
-  public final Object decode(EncodingContext context) throws UaSerializationException {
+  public final UaStructuredType decode(EncodingContext context) throws UaSerializationException {
     if (this instanceof ExtensionObject.Binary) {
       return decode(context, OpcUaDefaultBinaryEncoding.getInstance());
     } else if (this instanceof ExtensionObject.Xml) {
@@ -110,7 +110,7 @@ public abstract sealed class ExtensionObject
    * @return the decoded value.
    * @throws UaSerializationException if the decoding fails.
    */
-  public final Object decode(EncodingContext context, DataTypeEncoding encoding)
+  public final UaStructuredType decode(EncodingContext context, DataTypeEncoding encoding)
       throws UaSerializationException {
 
     return decoded.get(() -> encoding.decode(context, this, getEncodingOrTypeId()));
