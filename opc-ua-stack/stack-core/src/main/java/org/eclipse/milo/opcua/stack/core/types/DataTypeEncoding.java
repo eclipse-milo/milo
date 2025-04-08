@@ -11,6 +11,7 @@
 package org.eclipse.milo.opcua.stack.core.types;
 
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 
@@ -27,7 +28,7 @@ public interface DataTypeEncoding {
 
   QualifiedName getEncodingName();
 
-  Object encode(EncodingContext context, Object decodedBody, NodeId encodingId);
+  ExtensionObject encode(EncodingContext context, UaStructuredType struct, NodeId encodingId);
 
   Object decode(EncodingContext context, Object encodedBody, NodeId encodingId);
 }

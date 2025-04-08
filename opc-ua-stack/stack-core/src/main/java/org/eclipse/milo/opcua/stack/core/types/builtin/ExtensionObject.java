@@ -134,19 +134,9 @@ public abstract sealed class ExtensionObject
     }
 
     try {
-      Object decoded = decode(context);
-      Object encoded = newEncoding.encode(context, decoded, newEncodingId);
+      UaStructuredType decoded = (UaStructuredType) decode(context);
 
-      if (encoded instanceof ByteString bs) {
-        return ExtensionObject.of(bs, newEncodingId);
-      } else if (encoded instanceof XmlElement xml) {
-        return ExtensionObject.of(xml, newEncodingId);
-      } else if (encoded instanceof String json) {
-        return ExtensionObject.of(json, newEncodingId);
-      } else {
-        throw new UaSerializationException(
-            StatusCodes.Bad_EncodingError, "unexpected body: " + encoded.getClass().getName());
-      }
+      return newEncoding.encode(context, decoded, newEncodingId);
     } catch (UaSerializationException e) {
       LoggerFactory.getLogger(ExtensionObject.class)
           .warn("Transcoding failed: {}", e.getMessage(), e);
@@ -240,7 +230,8 @@ public abstract sealed class ExtensionObject
    * @return an {@link ExtensionObject} containing the encoded value.
    * @throws UaSerializationException if the encoding fails.
    */
-  public static ExtensionObject encode(EncodingContext context, Object value, NodeId encodingId)
+  public static ExtensionObject encode(
+      EncodingContext context, UaStructuredType value, NodeId encodingId)
       throws UaSerializationException {
 
     return encodeBinary(context, value, encodingId, OpcUaDefaultBinaryEncoding.getInstance());
@@ -258,7 +249,10 @@ public abstract sealed class ExtensionObject
    * @throws UaSerializationException if the encoding fails.
    */
   public static ExtensionObject encode(
-      EncodingContext context, Object struct, NodeId encodingOrTypeId, DataTypeEncoding encoding)
+      EncodingContext context,
+      UaStructuredType struct,
+      NodeId encodingOrTypeId,
+      DataTypeEncoding encoding)
       throws UaSerializationException {
 
     if (encoding.getEncodingName().equals(DataTypeEncoding.BINARY_ENCODING_NAME)) {
@@ -286,7 +280,7 @@ public abstract sealed class ExtensionObject
    */
   public static ExtensionObject encode(
       EncodingContext context,
-      Object struct,
+      UaStructuredType struct,
       ExpandedNodeId encodingOrTypeId,
       DataTypeEncoding encoding)
       throws UaSerializationException {
@@ -304,45 +298,30 @@ public abstract sealed class ExtensionObject
   }
 
   private static ExtensionObject encodeBinary(
-      EncodingContext context, Object struct, NodeId encodingId, DataTypeEncoding encoding)
+      EncodingContext context,
+      UaStructuredType struct,
+      NodeId encodingId,
+      DataTypeEncoding encoding)
       throws UaSerializationException {
 
-    Object body = encoding.encode(context, struct, encodingId);
-
-    if (body instanceof ByteString bs) {
-      return ExtensionObject.of(bs, encodingId);
-    } else {
-      throw new UaSerializationException(
-          StatusCodes.Bad_EncodingError, "expected ByteString, got " + body.getClass().getName());
-    }
+    return encoding.encode(context, struct, encodingId);
   }
 
   private static ExtensionObject encodeXml(
-      EncodingContext context, Object struct, NodeId encodingId, DataTypeEncoding encoding)
+      EncodingContext context,
+      UaStructuredType struct,
+      NodeId encodingId,
+      DataTypeEncoding encoding)
       throws UaSerializationException {
 
-    Object body = encoding.encode(context, struct, encodingId);
-
-    if (body instanceof XmlElement xml) {
-      return ExtensionObject.of(xml, encodingId);
-    } else {
-      throw new UaSerializationException(
-          StatusCodes.Bad_EncodingError, "expected XmlElement, got " + body.getClass().getName());
-    }
+    return encoding.encode(context, struct, encodingId);
   }
 
   private static ExtensionObject encodeJson(
-      EncodingContext context, Object struct, NodeId typeId, DataTypeEncoding encoding)
+      EncodingContext context, UaStructuredType struct, NodeId typeId, DataTypeEncoding encoding)
       throws UaSerializationException {
 
-    Object body = encoding.encode(context, struct, typeId);
-
-    if (body instanceof String json) {
-      return ExtensionObject.of(json, typeId);
-    } else {
-      throw new UaSerializationException(
-          StatusCodes.Bad_EncodingError, "expected String, got " + body.getClass().getName());
-    }
+    return encoding.encode(context, struct, typeId);
   }
 
   /** An ExtensionObject that contains a {@link ByteString} body, used with Binary encoding. */

@@ -24,6 +24,7 @@ import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.structured.EnumDefinition;
 import org.eclipse.milo.opcua.stack.core.types.structured.EnumField;
 import org.eclipse.milo.opcua.stack.core.util.Lazy;
@@ -47,6 +48,24 @@ public final class DynamicOptionSetType extends DynamicType implements UaStructu
   @Override
   public ExpandedNodeId getTypeId() {
     return dataType.getNodeId().expanded();
+  }
+
+  @Override
+  public ExpandedNodeId getBinaryEncodingId() {
+    NodeId binaryEncodingId = dataType.getBinaryEncodingId();
+    return binaryEncodingId != null ? binaryEncodingId.expanded() : ExpandedNodeId.NULL_VALUE;
+  }
+
+  @Override
+  public ExpandedNodeId getXmlEncodingId() {
+    NodeId xmlEncodingId = dataType.getXmlEncodingId();
+    return xmlEncodingId != null ? xmlEncodingId.expanded() : ExpandedNodeId.NULL_VALUE;
+  }
+
+  @Override
+  public ExpandedNodeId getJsonEncodingId() {
+    NodeId jsonEncodingId = dataType.getJsonEncodingId();
+    return jsonEncodingId != null ? jsonEncodingId.expanded() : ExpandedNodeId.NULL_VALUE;
   }
 
   @Override

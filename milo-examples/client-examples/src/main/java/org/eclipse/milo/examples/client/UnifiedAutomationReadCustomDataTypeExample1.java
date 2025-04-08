@@ -24,12 +24,8 @@ import org.eclipse.milo.opcua.sdk.core.types.DynamicStructType;
 import org.eclipse.milo.opcua.sdk.core.types.DynamicType;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
-import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
+import org.eclipse.milo.opcua.stack.core.types.builtin.*;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -144,11 +140,11 @@ public class UnifiedAutomationReadCustomDataTypeExample1 implements ClientExampl
     return Arrays.stream(xos).map(xo -> (DynamicType) xo.decode(ctx)).toArray(DynamicType[]::new);
   }
 
-  private static StatusCode writeValue(OpcUaClient client, NodeId nodeId, DynamicType value)
+  private static StatusCode writeValue(OpcUaClient client, NodeId nodeId, UaStructuredType value)
       throws Exception {
 
-    NodeId binaryEncodingId = value.getDataType().getBinaryEncodingId();
-    assert binaryEncodingId != null;
+    NodeId binaryEncodingId =
+        value.getBinaryEncodingId().toNodeIdOrThrow(client.getNamespaceTable());
 
     ExtensionObject xo =
         ExtensionObject.encode(client.getDynamicEncodingContext(), value, binaryEncodingId);
@@ -161,7 +157,7 @@ public class UnifiedAutomationReadCustomDataTypeExample1 implements ClientExampl
   @Override
   public String getEndpointUrl() {
     // Change this if UaCPPServer is running somewhere other than localhost.
-    return "opc.tcp://localhost:48010";
+    return "opc.tcp://10.211.55.3:48010";
   }
 
   @Override

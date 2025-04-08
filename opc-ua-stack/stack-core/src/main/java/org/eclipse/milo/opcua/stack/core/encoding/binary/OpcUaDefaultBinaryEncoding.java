@@ -22,6 +22,7 @@ import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.DataTypeEncoding;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 
@@ -45,7 +46,9 @@ public class OpcUaDefaultBinaryEncoding implements DataTypeEncoding {
   }
 
   @Override
-  public Object encode(EncodingContext context, Object decodedBody, NodeId encodingId) {
+  public ExtensionObject encode(
+      EncodingContext context, UaStructuredType struct, NodeId encodingId) {
+
     DataTypeCodec codec = context.getDataTypeManager().getCodec(encodingId);
 
     if (codec == null) {
@@ -59,9 +62,9 @@ public class OpcUaDefaultBinaryEncoding implements DataTypeEncoding {
       OpcUaBinaryEncoder encoder = new OpcUaBinaryEncoder(context);
       encoder.setBuffer(buffer);
 
-      encoder.encodeStruct(null, (UaStructuredType) decodedBody, codec);
+      encoder.encodeStruct(null, struct, codec);
 
-      return ByteString.of(ByteBufUtil.getBytes(buffer));
+      return ExtensionObject.of(ByteString.of(ByteBufUtil.getBytes(buffer)), encodingId);
     } finally {
       buffer.release();
     }
