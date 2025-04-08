@@ -57,14 +57,7 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.BrowseDirection;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrowseResultMask;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
-import org.eclipse.milo.opcua.stack.core.types.structured.BrowseDescription;
-import org.eclipse.milo.opcua.stack.core.types.structured.BrowseNextResponse;
-import org.eclipse.milo.opcua.stack.core.types.structured.BrowseResult;
-import org.eclipse.milo.opcua.stack.core.types.structured.ReadRequest;
-import org.eclipse.milo.opcua.stack.core.types.structured.ReadResponse;
-import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
-import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
-import org.eclipse.milo.opcua.stack.core.types.structured.RequestHeader;
+import org.eclipse.milo.opcua.stack.core.types.structured.*;
 import org.eclipse.milo.opcua.stack.core.util.FutureUtils;
 import org.eclipse.milo.opcua.stack.core.util.Lists;
 import org.eclipse.milo.opcua.stack.core.util.Namespaces;
@@ -152,10 +145,15 @@ public class BinaryDataTypeDictionaryReader {
             System.out.println("sei desc null");
             return;
           }
+
           StructuredType structuredType = structuredTypes.get(structEncodingInfo.description);
 
           BinaryDataTypeCodec codec =
-              codecFactory.createCodec(info.typeDictionary.getTargetNamespace(), structuredType);
+              codecFactory.createCodec(
+                  info.typeDictionary.getTargetNamespace(),
+                  structEncodingInfo.dataTypeId,
+                  structEncodingInfo.encodingId,
+                  structuredType);
 
           BinaryDataTypeDictionary.BinaryType binaryType =
               new BinaryDataTypeDictionary.BinaryType(

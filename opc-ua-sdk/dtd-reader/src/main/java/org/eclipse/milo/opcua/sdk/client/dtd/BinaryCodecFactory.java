@@ -11,9 +11,11 @@
 package org.eclipse.milo.opcua.sdk.client.dtd;
 
 import org.eclipse.milo.opcua.sdk.core.dtd.BinaryDataTypeCodec;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.opcfoundation.opcua.binaryschema.StructuredType;
 
 public interface BinaryCodecFactory {
 
-  BinaryDataTypeCodec createCodec(String namespaceUri, StructuredType structuredType);
+  BinaryDataTypeCodec createCodec(
+      String namespaceUri, NodeId dataTypeId, NodeId encodingId, StructuredType structuredType);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -77,8 +77,8 @@ public class Struct {
   }
 
   public static class Member {
-    private final String name;
-    private final Object value;
+    private String name;
+    private Object value;
 
     public Member(String name, Object value) {
       this.name = name;
@@ -91,6 +91,10 @@ public class Struct {
 
     public Object getValue() {
       return value;
+    }
+
+    public void setValue(Object value) {
+      this.value = value;
     }
 
     @Override

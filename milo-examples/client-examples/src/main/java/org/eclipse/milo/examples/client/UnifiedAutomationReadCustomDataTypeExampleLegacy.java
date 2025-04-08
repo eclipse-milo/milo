@@ -14,11 +14,11 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.dtd.LegacyDataTypeManagerInitializer;
+import org.eclipse.milo.opcua.sdk.core.dtd.BsdStructWrapper;
+import org.eclipse.milo.opcua.sdk.core.dtd.generic.Struct;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
-import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.*;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,24 +49,59 @@ public class UnifiedAutomationReadCustomDataTypeExampleLegacy implements ClientE
     // server then dynamically generate and register codecs for custom structures.
     client.setDataTypeManagerInitializer(new LegacyDataTypeManagerInitializer(client));
 
-    readPerson(client);
+    readWritePerson(client);
     readWorkOrder(client);
 
     future.complete(client);
   }
 
-  private void readPerson(OpcUaClient client) throws UaException {
+  private void readWritePerson(OpcUaClient client) throws UaException {
+    NodeId personNodeId = NodeId.parse("ns=3;s=Person1");
+
+    BsdStructWrapper<?> structWrapper = readValue(client, personNodeId);
+
+    Struct value = (Struct) structWrapper.object();
+
+    logger.info("value: {}", value);
+
+    value.getMember("Name").setValue("Fred");
+
+    StatusCode status =
+        writeValue(client, personNodeId, new BsdStructWrapper<>(structWrapper.dataType(), value));
+
+    logger.info("write status: " + status);
+
+    structWrapper = readValue(client, personNodeId);
+
+    value = (Struct) structWrapper.object();
+
+    logger.info("value': {}", value);
+  }
+
+  private static BsdStructWrapper<?> readValue(OpcUaClient client, NodeId nodeId)
+      throws UaException {
+
     DataValue dataValue =
-        client
-            .readValues(0.0, TimestampsToReturn.Neither, List.of(NodeId.parse("ns=3;s=Person1")))
-            .get(0);
+        client.readValues(0.0, TimestampsToReturn.Neither, List.of(nodeId)).get(0);
 
     ExtensionObject xo = (ExtensionObject) dataValue.value().value();
     assert xo != null;
 
-    Object value = xo.decode(client.getDynamicEncodingContext());
+    return (BsdStructWrapper<?>) xo.decode(client.getDynamicEncodingContext());
+  }
 
-    logger.info("value: {}", value);
+  private static StatusCode writeValue(
+      OpcUaClient client, NodeId nodeId, BsdStructWrapper<?> struct) throws UaException {
+
+    NodeId binaryEncodingId = struct.dataType().getBinaryEncodingId();
+    assert binaryEncodingId != null;
+
+    ExtensionObject xo =
+        ExtensionObject.encode(client.getDynamicEncodingContext(), struct, binaryEncodingId);
+
+    return client
+        .writeValues(List.of(nodeId), List.of(DataValue.valueOnly(new Variant(xo))))
+        .get(0);
   }
 
   private void readWorkOrder(OpcUaClient client) throws UaException {
@@ -81,7 +116,9 @@ public class UnifiedAutomationReadCustomDataTypeExampleLegacy implements ClientE
     ExtensionObject xo = (ExtensionObject) dataValue.value().value();
     assert xo != null;
 
-    Object value = xo.decode(client.getDynamicEncodingContext());
+    BsdStructWrapper<?> wrapper =
+        (BsdStructWrapper<?>) xo.decode(client.getDynamicEncodingContext());
+    Struct value = (Struct) wrapper.object();
 
     logger.info("value: {}", value);
   }
@@ -89,7 +126,7 @@ public class UnifiedAutomationReadCustomDataTypeExampleLegacy implements ClientE
   @Override
   public String getEndpointUrl() {
     // Change this if UaCPPServer is running somewhere other than localhost.
-    return "opc.tcp://localhost:48010";
+    return "opc.tcp://10.211.55.3:48010";
   }
 
   @Override

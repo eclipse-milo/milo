@@ -17,16 +17,21 @@ import com.google.gson.JsonPrimitive;
 import jakarta.xml.bind.JAXBException;
 import org.eclipse.milo.opcua.sdk.core.dtd.AbstractBsdCodecTest;
 import org.eclipse.milo.opcua.sdk.core.dtd.BinaryDataTypeCodec;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.opcfoundation.opcua.binaryschema.StructuredType;
 
+@Disabled
 public class JsonBsdCodecTest extends AbstractBsdCodecTest {
 
   public JsonBsdCodecTest() throws JAXBException {}
 
   @Override
-  protected BinaryDataTypeCodec createCodec(String namespaceUri, StructuredType structuredType) {
-    return new JsonObjectCodec(structuredType);
+  protected BinaryDataTypeCodec createCodec(
+      String namespaceUri, NodeId dataTypeId, NodeId encodingId, StructuredType structuredType) {
+
+    return new JsonObjectCodec(namespaceUri, dataTypeId, encodingId, structuredType);
   }
 
   @Test

@@ -87,7 +87,12 @@ public abstract class AbstractBsdCodecTest {
               if (typeDescription instanceof StructuredType) {
                 StructuredType structuredType = (StructuredType) typeDescription;
 
-                BinaryDataTypeCodec codec = createCodec(BSD_CODEC_TEST_NAMESPACE, structuredType);
+                BinaryDataTypeCodec codec =
+                    createCodec(
+                        BSD_CODEC_TEST_NAMESPACE,
+                        NodeId.NULL_VALUE,
+                        NodeId.NULL_VALUE,
+                        structuredType);
 
                 binaryDictionary.registerType(
                     new BinaryDataTypeDictionary.BinaryType(
@@ -106,7 +111,7 @@ public abstract class AbstractBsdCodecTest {
   }
 
   protected abstract BinaryDataTypeCodec createCodec(
-      String namespaceUri, StructuredType structuredType);
+      String namespaceUri, NodeId dataTypeId, NodeId encodingId, StructuredType structuredType);
 
   protected BinaryDataTypeCodec getCodec(String name) {
     DataTypeDictionary dictionary = dataTypeManager.getTypeDictionary(BSD_CODEC_TEST_NAMESPACE);
@@ -121,12 +126,13 @@ public abstract class AbstractBsdCodecTest {
 
     System.out.println("originalValue:\t" + originalValue);
     ByteBuf buffer = Unpooled.buffer();
-    codec.encode(context, new OpcUaBinaryEncoder(context).setBuffer(buffer), originalValue);
+    codec.encodeBinary(context, new OpcUaBinaryEncoder(context).setBuffer(buffer), originalValue);
 
     ByteBuf encodedValue = buffer.copy();
     System.out.println("encodedValue:\t" + ByteBufUtil.hexDump(encodedValue));
 
-    Object decodedValue = codec.decode(context, new OpcUaBinaryDecoder(context).setBuffer(buffer));
+    Object decodedValue =
+        codec.decodeBinary(context, new OpcUaBinaryDecoder(context).setBuffer(buffer));
     assertEquals(originalValue, decodedValue);
     System.out.println("decodedValue:\t" + decodedValue);
   }
@@ -146,12 +152,13 @@ public abstract class AbstractBsdCodecTest {
 
     System.out.println("originalValue:\t" + originalValue);
     ByteBuf buffer = Unpooled.buffer();
-    codec.encode(context, new OpcUaBinaryEncoder(context).setBuffer(buffer), originalValue);
+    codec.encodeBinary(context, new OpcUaBinaryEncoder(context).setBuffer(buffer), originalValue);
 
     ByteBuf encodedValue = buffer.copy();
     System.out.println("encodedValue:\t" + ByteBufUtil.hexDump(encodedValue));
 
-    Object decodedValue = codec.decode(context, new OpcUaBinaryDecoder(context).setBuffer(buffer));
+    Object decodedValue =
+        codec.decodeBinary(context, new OpcUaBinaryDecoder(context).setBuffer(buffer));
     assertEquals(originalValue.toString(), decodedValue.toString());
     System.out.println("decodedValue:\t" + decodedValue);
   }

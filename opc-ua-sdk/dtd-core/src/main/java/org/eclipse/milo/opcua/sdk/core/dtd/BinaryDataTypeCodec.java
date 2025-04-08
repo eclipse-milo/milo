@@ -23,13 +23,13 @@ public interface BinaryDataTypeCodec extends DataTypeCodec {
   @Override
   default Object decode(EncodingContext context, UaDecoder decoder)
       throws UaSerializationException {
-    return decode(context, (OpcUaBinaryDecoder) decoder);
+    return decodeBinary(context, (OpcUaBinaryDecoder) decoder);
   }
 
   @Override
   default void encode(EncodingContext context, UaEncoder encoder, Object value)
       throws UaSerializationException {
-    encode(context, (OpcUaBinaryEncoder) encoder, value);
+    encodeBinary(context, (OpcUaBinaryEncoder) encoder, value);
   }
 
   /**
@@ -39,7 +39,7 @@ public interface BinaryDataTypeCodec extends DataTypeCodec {
    * @param decoder the {@link OpcUaBinaryDecoder} to decode from.
    * @return a decoded Object.
    */
-  Object decode(EncodingContext context, OpcUaBinaryDecoder decoder)
+  Object decodeBinary(EncodingContext context, OpcUaBinaryDecoder decoder)
       throws UaSerializationException;
 
   /**
@@ -49,7 +49,7 @@ public interface BinaryDataTypeCodec extends DataTypeCodec {
    * @param encoder the {@link OpcUaBinaryEncoder} to encode to.
    * @param value the Object to encode.
    */
-  void encode(EncodingContext context, OpcUaBinaryEncoder encoder, Object value)
+  void encodeBinary(EncodingContext context, OpcUaBinaryEncoder encoder, Object value)
       throws UaSerializationException;
 
   static BinaryDataTypeCodec from(DataTypeCodec codec) {
@@ -80,13 +80,13 @@ public interface BinaryDataTypeCodec extends DataTypeCodec {
     }
 
     @Override
-    public Object decode(EncodingContext context, OpcUaBinaryDecoder decoder)
+    public Object decodeBinary(EncodingContext context, OpcUaBinaryDecoder decoder)
         throws UaSerializationException {
       return codec.decode(context, decoder);
     }
 
     @Override
-    public void encode(EncodingContext context, OpcUaBinaryEncoder encoder, Object value)
+    public void encodeBinary(EncodingContext context, OpcUaBinaryEncoder encoder, Object value)
         throws UaSerializationException {
       codec.encode(context, encoder, value);
     }

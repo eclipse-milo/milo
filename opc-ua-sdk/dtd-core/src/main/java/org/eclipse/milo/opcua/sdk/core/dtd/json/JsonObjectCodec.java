@@ -44,21 +44,12 @@ public class JsonObjectCodec extends AbstractBsdCodec<JsonObject, JsonElement> {
 
   private final Gson gson;
 
-  public JsonObjectCodec(StructuredType structuredType) {
-    super(structuredType);
+  public JsonObjectCodec(
+      String namespaceUri, NodeId dataTypeId, NodeId encodingId, StructuredType structuredType) {
+
+    super(namespaceUri, dataTypeId, encodingId, structuredType);
 
     gson = new GsonBuilder().setPrettyPrinting().create();
-  }
-
-  @Override
-  public Class<JsonObject> getType() {
-    return JsonObject.class;
-  }
-
-  @Override
-  public String getNamespaceUri() {
-    // TODO
-    return "TODO";
   }
 
   @Override

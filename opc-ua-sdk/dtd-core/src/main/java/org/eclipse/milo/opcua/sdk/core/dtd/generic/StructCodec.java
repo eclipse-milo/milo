@@ -16,27 +16,16 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.eclipse.milo.opcua.sdk.core.dtd.AbstractBsdCodec;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.util.ArrayUtil;
 import org.opcfoundation.opcua.binaryschema.StructuredType;
 
 public class StructCodec extends AbstractBsdCodec<Struct, Struct.Member> {
 
-  private final String namespaceUri;
+  public StructCodec(
+      String namespaceUri, NodeId dataTypeId, NodeId encodingId, StructuredType structuredType) {
 
-  public StructCodec(String namespaceUri, StructuredType structuredType) {
-    super(structuredType);
-
-    this.namespaceUri = namespaceUri;
-  }
-
-  @Override
-  public Class<Struct> getType() {
-    return Struct.class;
-  }
-
-  @Override
-  public String getNamespaceUri() {
-    return namespaceUri;
+    super(namespaceUri, dataTypeId, encodingId, structuredType);
   }
 
   @Override
