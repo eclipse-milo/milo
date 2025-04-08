@@ -17,7 +17,6 @@ import org.eclipse.milo.examples.server.types.CustomEnumType;
 import org.eclipse.milo.examples.server.types.CustomStructType;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.nodes.UaVariableNode;
-import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaDefaultBinaryEncoding;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
@@ -68,8 +67,7 @@ public class ReadWriteCustomDataTypeNodeExample implements ClientExample {
             !decoded.isBaz(),
             CustomEnumType.Field1);
     ExtensionObject modifiedXo =
-        ExtensionObject.encode(
-            client.getStaticEncodingContext(), modified, OpcUaDefaultBinaryEncoding.getInstance());
+        ExtensionObject.encode(client.getStaticEncodingContext(), modified);
 
     node.writeValue(new DataValue(new Variant(modifiedXo)));
 

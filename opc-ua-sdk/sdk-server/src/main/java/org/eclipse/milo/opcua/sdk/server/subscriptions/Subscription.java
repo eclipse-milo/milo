@@ -39,7 +39,6 @@ import org.eclipse.milo.opcua.sdk.server.items.BaseMonitoredItem;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.PublishQueue.PendingPublish;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
-import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaDefaultBinaryEncoding;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
@@ -507,9 +506,7 @@ public class Subscription {
           new DataChangeNotification(
               dataNotifications.toArray(new MonitoredItemNotification[0]), new DiagnosticInfo[0]);
 
-      notificationData.add(
-          ExtensionObject.encode(
-              encodingContext, dataChange, OpcUaDefaultBinaryEncoding.getInstance()));
+      notificationData.add(ExtensionObject.encode(encodingContext, dataChange));
 
       subscriptionDiagnostics.getDataChangeNotificationsCount().add(dataNotifications.size());
     }
@@ -518,9 +515,7 @@ public class Subscription {
       EventNotificationList eventChange =
           new EventNotificationList(eventNotifications.toArray(new EventFieldList[0]));
 
-      notificationData.add(
-          ExtensionObject.encode(
-              encodingContext, eventChange, OpcUaDefaultBinaryEncoding.getInstance()));
+      notificationData.add(ExtensionObject.encode(encodingContext, eventChange));
 
       subscriptionDiagnostics.getEventNotificationsCount().add(eventNotifications.size());
     }
