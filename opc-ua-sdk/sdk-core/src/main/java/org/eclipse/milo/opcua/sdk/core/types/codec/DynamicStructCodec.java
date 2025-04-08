@@ -54,11 +54,6 @@ public class DynamicStructCodec extends GenericDataTypeCodec<DynamicStructType> 
   }
 
   @Override
-  public String getEncodingName() {
-    return requireNonNull(dataType.getBrowseName().name());
-  }
-
-  @Override
   public DynamicStructType decodeType(EncodingContext context, UaDecoder decoder)
       throws UaSerializationException {
 

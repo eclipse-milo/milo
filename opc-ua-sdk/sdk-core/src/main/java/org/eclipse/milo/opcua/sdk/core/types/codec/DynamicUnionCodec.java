@@ -53,11 +53,6 @@ public class DynamicUnionCodec extends GenericDataTypeCodec<DynamicUnionType> {
   }
 
   @Override
-  public String getEncodingName() {
-    return requireNonNull(dataType.getBrowseName().name());
-  }
-
-  @Override
   public DynamicUnionType decodeType(EncodingContext context, UaDecoder decoder)
       throws UaSerializationException {
 

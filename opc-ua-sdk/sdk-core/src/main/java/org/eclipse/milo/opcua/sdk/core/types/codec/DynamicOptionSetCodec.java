@@ -10,7 +10,6 @@
 
 package org.eclipse.milo.opcua.sdk.core.types.codec;
 
-import static java.util.Objects.requireNonNull;
 
 import org.eclipse.milo.opcua.sdk.core.types.DynamicOptionSetType;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
@@ -34,11 +33,6 @@ class DynamicOptionSetCodec extends GenericDataTypeCodec<DynamicOptionSetType> {
   @Override
   public Class<DynamicOptionSetType> getType() {
     return DynamicOptionSetType.class;
-  }
-
-  @Override
-  public String getEncodingName() {
-    return requireNonNull(dataType.getBrowseName().name());
   }
 
   @Override

@@ -70,11 +70,6 @@ public interface BinaryDataTypeCodec extends DataTypeCodec {
     }
 
     @Override
-    public String getEncodingName() {
-      return codec.getEncodingName();
-    }
-
-    @Override
     public Object decodeBinary(EncodingContext context, OpcUaBinaryDecoder decoder)
         throws UaSerializationException {
       return codec.decode(context, decoder);

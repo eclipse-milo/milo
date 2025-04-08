@@ -85,11 +85,6 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
     return JsonStruct.class;
   }
 
-  @Override
-  public String getEncodingName() {
-    return requireNonNull(dataType.getBrowseName().name());
-  }
-
   // region Decoding
 
   @Override

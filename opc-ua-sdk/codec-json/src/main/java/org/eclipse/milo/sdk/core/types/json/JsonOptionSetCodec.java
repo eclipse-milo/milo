@@ -10,7 +10,6 @@
 
 package org.eclipse.milo.sdk.core.types.json;
 
-import static java.util.Objects.requireNonNull;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -35,11 +34,6 @@ public class JsonOptionSetCodec extends GenericDataTypeCodec<JsonStruct> {
   @Override
   public Class<JsonStruct> getType() {
     return JsonStruct.class;
-  }
-
-  @Override
-  public String getEncodingName() {
-    return requireNonNull(dataType.getBrowseName().name());
   }
 
   @Override

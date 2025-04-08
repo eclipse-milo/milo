@@ -29,11 +29,6 @@ public class StructCodec extends AbstractBsdCodec<Struct, Struct.Member> {
   }
 
   @Override
-  public String getEncodingName() {
-    return structuredType.getName();
-  }
-
-  @Override
   protected Struct createStructure(String name, LinkedHashMap<String, Struct.Member> members) {
     return new Struct(name, members);
   }

@@ -156,11 +156,6 @@ public class ThreeDCartesianCoordinates extends CartesianCoordinates implements 
     }
 
     @Override
-    public String getEncodingName() {
-      return "ThreeDCartesianCoordinates";
-    }
-
-    @Override
     public ThreeDCartesianCoordinates decodeType(EncodingContext context, UaDecoder decoder) {
       final Double x;
       final Double y;

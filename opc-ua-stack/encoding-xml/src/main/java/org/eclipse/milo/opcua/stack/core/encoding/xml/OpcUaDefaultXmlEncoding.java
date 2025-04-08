@@ -55,7 +55,7 @@ public class OpcUaDefaultXmlEncoding implements DataTypeEncoding {
 
     OpcUaXmlEncoder encoder = new OpcUaXmlEncoder(context);
 
-    encoder.encodeStruct(codec.getEncodingName(), struct, codec);
+    encoder.encodeStruct(struct.getEncodingName(), struct, codec);
 
     return ExtensionObject.of(XmlElement.of(encoder.getDocumentXml()), encodingId);
   }
@@ -84,7 +84,7 @@ public class OpcUaDefaultXmlEncoding implements DataTypeEncoding {
 
       // We have to use decoder.decodeStruct() instead of codec.decode() because
       // XML-encoded structs are wrapped in a container element with the struct name.
-      return decoder.decodeStruct(codec.getEncodingName(), codec);
+      return decoder.decodeStruct(null, codec);
     } else {
       throw new UaSerializationException(
           StatusCodes.Bad_DecodingError, "not XML encoded" + encoded);

@@ -138,11 +138,6 @@ public class ThreeDFrame extends Frame implements UaStructuredType {
     }
 
     @Override
-    public String getEncodingName() {
-      return "ThreeDFrame";
-    }
-
-    @Override
     public ThreeDFrame decodeType(EncodingContext context, UaDecoder decoder) {
       final ThreeDCartesianCoordinates cartesianCoordinates;
       final ThreeDOrientation orientation;

@@ -155,11 +155,6 @@ public class ThreeDOrientation extends Orientation implements UaStructuredType {
     }
 
     @Override
-    public String getEncodingName() {
-      return "ThreeDOrientation";
-    }
-
-    @Override
     public ThreeDOrientation decodeType(EncodingContext context, UaDecoder decoder) {
       final Double a;
       final Double b;

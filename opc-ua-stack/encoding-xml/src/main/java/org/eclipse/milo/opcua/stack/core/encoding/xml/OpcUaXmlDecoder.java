@@ -976,6 +976,7 @@ public class OpcUaXmlDecoder implements UaDecoder {
   @Override
   public UaStructuredType decodeStruct(String field, DataTypeCodec codec)
       throws UaSerializationException {
+
     if (currentNode(field)) {
       Node node = currentNode;
 

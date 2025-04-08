@@ -155,11 +155,6 @@ public class ThreeDVector extends Vector implements UaStructuredType {
     }
 
     @Override
-    public String getEncodingName() {
-      return "ThreeDVector";
-    }
-
-    @Override
     public ThreeDVector decodeType(EncodingContext context, UaDecoder decoder) {
       final Double x;
       final Double y;
