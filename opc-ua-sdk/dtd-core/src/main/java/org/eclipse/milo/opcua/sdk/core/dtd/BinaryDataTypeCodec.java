@@ -17,11 +17,12 @@ import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
 import org.eclipse.milo.opcua.stack.core.encoding.UaEncoder;
 import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaBinaryDecoder;
 import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaBinaryEncoder;
+import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 
 public interface BinaryDataTypeCodec extends DataTypeCodec {
 
   @Override
-  default Object decode(EncodingContext context, UaDecoder decoder)
+  default UaStructuredType decode(EncodingContext context, UaDecoder decoder)
       throws UaSerializationException {
     return decodeBinary(context, (OpcUaBinaryDecoder) decoder);
   }
@@ -39,7 +40,7 @@ public interface BinaryDataTypeCodec extends DataTypeCodec {
    * @param decoder the {@link OpcUaBinaryDecoder} to decode from.
    * @return a decoded Object.
    */
-  Object decodeBinary(EncodingContext context, OpcUaBinaryDecoder decoder)
+  UaStructuredType decodeBinary(EncodingContext context, OpcUaBinaryDecoder decoder)
       throws UaSerializationException;
 
   /**
@@ -70,7 +71,7 @@ public interface BinaryDataTypeCodec extends DataTypeCodec {
     }
 
     @Override
-    public Object decodeBinary(EncodingContext context, OpcUaBinaryDecoder decoder)
+    public UaStructuredType decodeBinary(EncodingContext context, OpcUaBinaryDecoder decoder)
         throws UaSerializationException {
       return codec.decode(context, decoder);
     }

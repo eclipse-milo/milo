@@ -19,7 +19,8 @@ public abstract class GenericDataTypeCodec<T extends UaStructuredType> implement
   public abstract Class<T> getType();
 
   @Override
-  public Object decode(EncodingContext context, UaDecoder decoder) throws UaSerializationException {
+  public UaStructuredType decode(EncodingContext context, UaDecoder decoder)
+      throws UaSerializationException {
     Object untypedValue = decodeType(context, decoder);
     try {
       return getType().cast(untypedValue);

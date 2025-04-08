@@ -11,6 +11,7 @@
 package org.eclipse.milo.opcua.stack.core.encoding;
 
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
+import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 
 public interface DataTypeCodec {
 
@@ -26,7 +27,8 @@ public interface DataTypeCodec {
    * @param decoder the {@link UaDecoder} to decode from.
    * @return a decoded Object.
    */
-  Object decode(EncodingContext context, UaDecoder decoder) throws UaSerializationException;
+  UaStructuredType decode(EncodingContext context, UaDecoder decoder)
+      throws UaSerializationException;
 
   /**
    * Encode an Object using the provided {@link UaEncoder}.
