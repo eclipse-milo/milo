@@ -113,7 +113,7 @@ public abstract sealed class ExtensionObject
   public final Object decode(EncodingContext context, DataTypeEncoding encoding)
       throws UaSerializationException {
 
-    return decoded.get(() -> encoding.decode(context, getBody(), getEncodingOrTypeId()));
+    return decoded.get(() -> encoding.decode(context, this, getEncodingOrTypeId()));
   }
 
   /**

@@ -71,22 +71,29 @@ public class OpcUaDefaultBinaryEncoding implements DataTypeEncoding {
   }
 
   @Override
-  public Object decode(EncodingContext context, Object encodedBody, NodeId encodingId) {
-    DataTypeCodec codec = context.getDataTypeManager().getCodec(encodingId);
+  public UaStructuredType decode(
+      EncodingContext context, ExtensionObject encoded, NodeId encodingId) {
 
-    if (codec == null) {
+    if (encoded instanceof ExtensionObject.Binary xo) {
+      DataTypeCodec codec = context.getDataTypeManager().getCodec(encodingId);
+
+      if (codec == null) {
+        throw new UaSerializationException(
+            StatusCodes.Bad_DecodingError, "no codec registered for encodingId=" + encodingId);
+      }
+
+      ByteString binaryBody = xo.getBody();
+      byte[] bs = binaryBody.bytesOrEmpty();
+
+      ByteBuf buffer = Unpooled.wrappedBuffer(bs);
+
+      OpcUaBinaryDecoder decoder = new OpcUaBinaryDecoder(context);
+      decoder.setBuffer(buffer);
+
+      return decoder.decodeStruct(null, codec);
+    } else {
       throw new UaSerializationException(
-          StatusCodes.Bad_DecodingError, "no codec registered for encodingId=" + encodingId);
+          StatusCodes.Bad_DecodingError, "not binary encoded: " + encoded);
     }
-
-    ByteString binaryBody = (ByteString) encodedBody;
-    byte[] bs = binaryBody.bytesOrEmpty();
-
-    ByteBuf buffer = Unpooled.wrappedBuffer(bs);
-
-    OpcUaBinaryDecoder decoder = new OpcUaBinaryDecoder(context);
-    decoder.setBuffer(buffer);
-
-    return decoder.decodeStruct(null, codec);
   }
 }

@@ -30,5 +30,5 @@ public interface DataTypeEncoding {
 
   ExtensionObject encode(EncodingContext context, UaStructuredType struct, NodeId encodingId);
 
-  Object decode(EncodingContext context, Object encodedBody, NodeId encodingId);
+  UaStructuredType decode(EncodingContext context, ExtensionObject encoded, NodeId encodingId);
 }

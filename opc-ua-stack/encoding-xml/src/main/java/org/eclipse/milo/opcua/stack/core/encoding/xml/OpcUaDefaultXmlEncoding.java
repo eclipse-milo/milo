@@ -61,26 +61,33 @@ public class OpcUaDefaultXmlEncoding implements DataTypeEncoding {
   }
 
   @Override
-  public Object decode(EncodingContext context, Object body, NodeId encodingId) {
-    DataTypeCodec codec = context.getDataTypeManager().getCodec(encodingId);
+  public UaStructuredType decode(
+      EncodingContext context, ExtensionObject encoded, NodeId encodingId) {
 
-    if (codec == null) {
+    if (encoded instanceof ExtensionObject.Xml xo) {
+      DataTypeCodec codec = context.getDataTypeManager().getCodec(encodingId);
+
+      if (codec == null) {
+        throw new UaSerializationException(
+            StatusCodes.Bad_DecodingError, "no codec registered for encodingId=" + encodingId);
+      }
+
+      XmlElement xmlBody = xo.getBody();
+      String xml = xmlBody.getFragmentOrEmpty();
+
+      OpcUaXmlDecoder decoder = new OpcUaXmlDecoder(context);
+      try {
+        decoder.setInput(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
+      } catch (IOException | SAXException e) {
+        throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
+      }
+
+      // We have to use decoder.decodeStruct() instead of codec.decode() because
+      // XML-encoded structs are wrapped in a container element with the struct name.
+      return decoder.decodeStruct(codec.getEncodingName(), codec);
+    } else {
       throw new UaSerializationException(
-          StatusCodes.Bad_DecodingError, "no codec registered for encodingId=" + encodingId);
+          StatusCodes.Bad_DecodingError, "not XML encoded" + encoded);
     }
-
-    XmlElement xmlBody = (XmlElement) body;
-    String xml = xmlBody.getFragmentOrEmpty();
-
-    OpcUaXmlDecoder decoder = new OpcUaXmlDecoder(context);
-    try {
-      decoder.setInput(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
-    } catch (IOException | SAXException e) {
-      throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
-    }
-
-    // We have to use decoder.decodeStruct() instead of codec.decode() because
-    // XML-encoded structs are wrapped in a container element with the struct name.
-    return decoder.decodeStruct(codec.getEncodingName(), codec);
   }
 }

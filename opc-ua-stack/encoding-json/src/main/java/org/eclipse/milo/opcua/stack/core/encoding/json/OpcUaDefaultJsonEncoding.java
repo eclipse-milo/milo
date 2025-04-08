@@ -58,16 +58,23 @@ public class OpcUaDefaultJsonEncoding implements DataTypeEncoding {
   }
 
   @Override
-  public Object decode(EncodingContext context, Object encodedBody, NodeId encodingId) {
-    DataTypeCodec codec = context.getDataTypeManager().getCodec(encodingId);
+  public UaStructuredType decode(
+      EncodingContext context, ExtensionObject encoded, NodeId encodingId) {
 
-    if (codec == null) {
+    if (encoded instanceof ExtensionObject.Json xo) {
+      DataTypeCodec codec = context.getDataTypeManager().getCodec(encodingId);
+
+      if (codec == null) {
+        throw new UaSerializationException(
+            StatusCodes.Bad_DecodingError, "no codec registered for encodingId=" + encodingId);
+      }
+
+      var decoder = new OpcUaJsonDecoder(context, xo.getBody());
+
+      return decoder.decodeStruct(null, codec);
+    } else {
       throw new UaSerializationException(
-          StatusCodes.Bad_DecodingError, "no codec registered for encodingId=" + encodingId);
+          StatusCodes.Bad_DecodingError, "not JSON encoded: " + encoded);
     }
-
-    var decoder = new OpcUaJsonDecoder(context, (String) encodedBody);
-
-    return decoder.decodeStruct(null, codec);
   }
 }
