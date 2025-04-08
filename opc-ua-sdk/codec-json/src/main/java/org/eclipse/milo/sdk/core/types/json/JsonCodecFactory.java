@@ -21,9 +21,7 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public class JsonCodecFactory {
 
-  public static DataTypeCodec create(
-      String namespaceUri, DataType dataType, DataTypeTree dataTypeTree) {
-
+  public static DataTypeCodec create(DataType dataType, DataTypeTree dataTypeTree) {
     DataTypeDefinition definition = dataType.getDataTypeDefinition();
 
     if (definition instanceof EnumDefinition) {
@@ -31,9 +29,9 @@ public class JsonCodecFactory {
        * that means it's an OptionSet subclass. True enumerations are encoded/decoded as
        * integers, so they don't have a corresponding codec.
        */
-      return new JsonOptionSetCodec(namespaceUri, dataType);
+      return new JsonOptionSetCodec(dataType);
     } else if (definition instanceof StructureDefinition) {
-      return new JsonStructCodec(namespaceUri, dataType, dataTypeTree);
+      return new JsonStructCodec(dataType, dataTypeTree);
     } else {
       throw new RuntimeException("unknown DataTypeDefinition: " + definition);
     }

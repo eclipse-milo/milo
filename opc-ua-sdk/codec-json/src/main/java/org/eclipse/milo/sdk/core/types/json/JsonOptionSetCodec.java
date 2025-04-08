@@ -22,11 +22,9 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 
 public class JsonOptionSetCodec extends GenericDataTypeCodec<JsonStruct> {
 
-  private final String namespaceUri;
   private final DataType dataType;
 
-  public JsonOptionSetCodec(String namespaceUri, DataType dataType) {
-    this.namespaceUri = namespaceUri;
+  public JsonOptionSetCodec(DataType dataType) {
     this.dataType = dataType;
   }
 

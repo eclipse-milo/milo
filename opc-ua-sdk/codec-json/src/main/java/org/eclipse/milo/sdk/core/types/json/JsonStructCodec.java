@@ -68,12 +68,10 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
 
   private final StructureDefinition definition;
 
-  private final String namespaceUri;
   private final DataType dataType;
   private final DataTypeTree dataTypeTree;
 
-  public JsonStructCodec(String namespaceUri, DataType dataType, DataTypeTree dataTypeTree) {
-    this.namespaceUri = namespaceUri;
+  public JsonStructCodec(DataType dataType, DataTypeTree dataTypeTree) {
     this.dataType = dataType;
     this.dataTypeTree = dataTypeTree;
 

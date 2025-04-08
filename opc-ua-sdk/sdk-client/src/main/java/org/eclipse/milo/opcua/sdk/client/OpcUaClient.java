@@ -2803,7 +2803,7 @@ public class OpcUaClient {
 
                 dataTypeManager.registerType(
                     dataType.getNodeId(),
-                    codecFactory.create(namespaceUri, dataType, dataTypeTree),
+                    codecFactory.create(dataType, dataTypeTree),
                     dataType.getBinaryEncodingId(),
                     dataType.getXmlEncodingId(),
                     dataType.getJsonEncodingId());

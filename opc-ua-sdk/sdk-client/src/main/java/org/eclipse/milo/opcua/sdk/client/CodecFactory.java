@@ -19,10 +19,9 @@ public interface CodecFactory {
   /**
    * Create a {@link DataTypeCodec} instance for {@code dataType}.
    *
-   * @param namespaceUri the namespace URI of the {@code dataType}.
    * @param dataType the {@link DataType} to create the codec for.
    * @param dataTypeTree the {@link DataTypeTree}.
    * @return a {@link DataTypeCodec} for {@code dataType}.
    */
-  DataTypeCodec create(String namespaceUri, DataType dataType, DataTypeTree dataTypeTree);
+  DataTypeCodec create(DataType dataType, DataTypeTree dataTypeTree);
 }

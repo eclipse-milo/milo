@@ -21,11 +21,9 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 
 class DynamicOptionSetCodec extends GenericDataTypeCodec<DynamicOptionSetType> {
 
-  private final String namespaceUri;
   private final DataType dataType;
 
-  DynamicOptionSetCodec(String namespaceUri, DataType dataType) {
-    this.namespaceUri = namespaceUri;
+  DynamicOptionSetCodec(DataType dataType) {
     this.dataType = dataType;
   }
 

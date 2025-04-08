@@ -35,12 +35,10 @@ public class DynamicUnionCodec extends GenericDataTypeCodec<DynamicUnionType> {
 
   private final StructureDefinition definition;
 
-  private final String namespaceUri;
   private final DataType dataType;
   private final DataTypeTree dataTypeTree;
 
-  public DynamicUnionCodec(String namespaceUri, DataType dataType, DataTypeTree dataTypeTree) {
-    this.namespaceUri = namespaceUri;
+  public DynamicUnionCodec(DataType dataType, DataTypeTree dataTypeTree) {
     this.dataType = dataType;
     this.dataTypeTree = dataTypeTree;
 
