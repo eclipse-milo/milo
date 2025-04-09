@@ -816,7 +816,7 @@ public class SessionFsmFactory {
     /* External Transition Actions */
 
     fb.onTransitionTo(State.Closing)
-        .from(State.Active)
+        .from(s -> s == State.Active || s == State.ReactivatingWait)
         .via(Event.CloseSession.class)
         .execute(
             ctx -> {
@@ -888,7 +888,7 @@ public class SessionFsmFactory {
         .on(Event.ReactivatingWaitExpired.class)
         .transitionTo(State.Reactivating);
 
-    fb.when(State.ReactivatingWait).on(Event.CloseSession.class).transitionTo(State.Inactive);
+    fb.when(State.ReactivatingWait).on(Event.CloseSession.class).transitionTo(State.Closing);
 
     fb.onTransitionTo(State.ReactivatingWait)
         .from(s -> s != State.ReactivatingWait)
@@ -924,7 +924,7 @@ public class SessionFsmFactory {
             });
 
     fb.onTransitionFrom(State.ReactivatingWait)
-        .to(State.Inactive)
+        .to(State.Closing)
         .via(Event.CloseSession.class)
         .execute(
             ctx -> {
@@ -934,14 +934,6 @@ public class SessionFsmFactory {
               }
 
               KEY_WAIT_TIME.remove(ctx);
-
-              Event.CloseSession event = (Event.CloseSession) ctx.event();
-
-              client
-                  .getTransport()
-                  .getConfig()
-                  .getExecutor()
-                  .execute(() -> event.future.complete(Unit.VALUE));
             });
 
     /* Internal Transition Actions */
