@@ -10,7 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.core.types.util;
 
-import org.eclipse.milo.opcua.test.DataTypeInitializer;
+import com.digitalpetri.opcua.test.DataTypeInitializer;
 
 public class StaticEncodingContext extends AbstractEncodingContext {
 

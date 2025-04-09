@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -10,7 +10,7 @@
 
 package org.eclipse.milo.sdk.core.types.json.util;
 
-import org.eclipse.milo.opcua.test.DataTypeInitializer;
+import com.digitalpetri.opcua.test.DataTypeInitializer;
 
 public class StaticEncodingContext extends AbstractEncodingContext {
 

@@ -63,6 +63,12 @@
       <version>${mockito.version}</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>com.digitalpetri.opcua</groupId>
+      <artifactId>data-type-test</artifactId>
+      <version>${data-type-test.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
