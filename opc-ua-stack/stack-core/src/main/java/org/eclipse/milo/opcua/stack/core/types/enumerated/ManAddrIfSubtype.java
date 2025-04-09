@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2025 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
 package org.eclipse.milo.opcua.stack.core.types.enumerated;
 
 import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
@@ -41,18 +51,13 @@ public enum ManAddrIfSubtype implements UaEnumeratedType {
   }
 
   public static @Nullable ManAddrIfSubtype from(int value) {
-    switch (value) {
-      case 0:
-        return None;
-      case 1:
-        return Unknown;
-      case 2:
-        return PortRef;
-      case 3:
-        return SystemPortNumber;
-      default:
-        return null;
-    }
+    return switch (value) {
+      case 0 -> None;
+      case 1 -> Unknown;
+      case 2 -> PortRef;
+      case 3 -> SystemPortNumber;
+      default -> null;
+    };
   }
 
   public static EnumDefinition definition() {
@@ -82,6 +87,6 @@ public enum ManAddrIfSubtype implements UaEnumeratedType {
   }
 
   public static final class TypeInfo {
-    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=18951");
+    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=18951");
   }
 }

@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2025 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
 package org.eclipse.milo.opcua.stack.core.types.enumerated;
 
 import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
@@ -35,16 +45,12 @@ public enum OverrideValueHandling implements UaEnumeratedType {
   }
 
   public static @Nullable OverrideValueHandling from(int value) {
-    switch (value) {
-      case 0:
-        return Disabled;
-      case 1:
-        return LastUsableValue;
-      case 2:
-        return OverrideValue;
-      default:
-        return null;
-    }
+    return switch (value) {
+      case 0 -> Disabled;
+      case 1 -> LastUsableValue;
+      case 2 -> OverrideValue;
+      default -> null;
+    };
   }
 
   public static EnumDefinition definition() {
@@ -57,6 +63,6 @@ public enum OverrideValueHandling implements UaEnumeratedType {
   }
 
   public static final class TypeInfo {
-    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=15874");
+    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=15874");
   }
 }

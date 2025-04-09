@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2025 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
 package org.eclipse.milo.opcua.stack.core.types.enumerated;
 
 import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
@@ -95,80 +105,44 @@ public enum NodeAttributesMask implements UaEnumeratedType {
   }
 
   public static @Nullable NodeAttributesMask from(int value) {
-    switch (value) {
-      case 0:
-        return None;
-      case 1:
-        return AccessLevel;
-      case 2:
-        return ArrayDimensions;
-      case 4:
-        return BrowseName;
-      case 8:
-        return ContainsNoLoops;
-      case 16:
-        return DataType;
-      case 32:
-        return Description;
-      case 64:
-        return DisplayName;
-      case 128:
-        return EventNotifier;
-      case 256:
-        return Executable;
-      case 512:
-        return Historizing;
-      case 1024:
-        return InverseName;
-      case 2048:
-        return IsAbstract;
-      case 4096:
-        return MinimumSamplingInterval;
-      case 8192:
-        return NodeClass;
-      case 16384:
-        return NodeId;
-      case 32768:
-        return Symmetric;
-      case 65536:
-        return UserAccessLevel;
-      case 131072:
-        return UserExecutable;
-      case 262144:
-        return UserWriteMask;
-      case 524288:
-        return ValueRank;
-      case 1048576:
-        return WriteMask;
-      case 2097152:
-        return Value;
-      case 4194304:
-        return DataTypeDefinition;
-      case 8388608:
-        return RolePermissions;
-      case 16777216:
-        return AccessRestrictions;
-      case 33554431:
-        return All;
-      case 26501220:
-        return BaseNode;
-      case 26501348:
-        return Object;
-      case 26503268:
-        return ObjectType;
-      case 26571383:
-        return Variable;
-      case 28600438:
-        return VariableType;
-      case 26632548:
-        return Method;
-      case 26537060:
-        return ReferenceType;
-      case 26501356:
-        return View;
-      default:
-        return null;
-    }
+    return switch (value) {
+      case 0 -> None;
+      case 1 -> AccessLevel;
+      case 2 -> ArrayDimensions;
+      case 4 -> BrowseName;
+      case 8 -> ContainsNoLoops;
+      case 16 -> DataType;
+      case 32 -> Description;
+      case 64 -> DisplayName;
+      case 128 -> EventNotifier;
+      case 256 -> Executable;
+      case 512 -> Historizing;
+      case 1024 -> InverseName;
+      case 2048 -> IsAbstract;
+      case 4096 -> MinimumSamplingInterval;
+      case 8192 -> NodeClass;
+      case 16384 -> NodeId;
+      case 32768 -> Symmetric;
+      case 65536 -> UserAccessLevel;
+      case 131072 -> UserExecutable;
+      case 262144 -> UserWriteMask;
+      case 524288 -> ValueRank;
+      case 1048576 -> WriteMask;
+      case 2097152 -> Value;
+      case 4194304 -> DataTypeDefinition;
+      case 8388608 -> RolePermissions;
+      case 16777216 -> AccessRestrictions;
+      case 33554431 -> All;
+      case 26501220 -> BaseNode;
+      case 26501348 -> Object;
+      case 26503268 -> ObjectType;
+      case 26571383 -> Variable;
+      case 28600438 -> VariableType;
+      case 26632548 -> Method;
+      case 26537060 -> ReferenceType;
+      case 26501356 -> View;
+      default -> null;
+    };
   }
 
   public static EnumDefinition definition() {
@@ -223,6 +197,6 @@ public enum NodeAttributesMask implements UaEnumeratedType {
   }
 
   public static final class TypeInfo {
-    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=348");
+    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=348");
   }
 }

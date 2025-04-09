@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2025 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
 package org.eclipse.milo.opcua.stack.core.types.enumerated;
 
 import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
@@ -64,24 +74,16 @@ public enum PortIdSubtype implements UaEnumeratedType {
   }
 
   public static @Nullable PortIdSubtype from(int value) {
-    switch (value) {
-      case 1:
-        return InterfaceAlias;
-      case 2:
-        return PortComponent;
-      case 3:
-        return MacAddress;
-      case 4:
-        return NetworkAddress;
-      case 5:
-        return InterfaceName;
-      case 6:
-        return AgentCircuitId;
-      case 7:
-        return Local;
-      default:
-        return null;
-    }
+    return switch (value) {
+      case 1 -> InterfaceAlias;
+      case 2 -> PortComponent;
+      case 3 -> MacAddress;
+      case 4 -> NetworkAddress;
+      case 5 -> InterfaceName;
+      case 6 -> AgentCircuitId;
+      case 7 -> Local;
+      default -> null;
+    };
   }
 
   public static EnumDefinition definition() {
@@ -149,6 +151,6 @@ public enum PortIdSubtype implements UaEnumeratedType {
   }
 
   public static final class TypeInfo {
-    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=18949");
+    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=18949");
   }
 }

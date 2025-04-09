@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2025 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
 package org.eclipse.milo.opcua.stack.core.types.enumerated;
 
 import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
@@ -41,18 +51,13 @@ public enum HistoryUpdateType implements UaEnumeratedType {
   }
 
   public static @Nullable HistoryUpdateType from(int value) {
-    switch (value) {
-      case 1:
-        return Insert;
-      case 2:
-        return Replace;
-      case 3:
-        return Update;
-      case 4:
-        return Delete;
-      default:
-        return null;
-    }
+    return switch (value) {
+      case 1 -> Insert;
+      case 2 -> Replace;
+      case 3 -> Update;
+      case 4 -> Delete;
+      default -> null;
+    };
   }
 
   public static EnumDefinition definition() {
@@ -73,6 +78,6 @@ public enum HistoryUpdateType implements UaEnumeratedType {
   }
 
   public static final class TypeInfo {
-    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=11234");
+    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=11234");
   }
 }

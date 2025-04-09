@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2025 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
 package org.eclipse.milo.opcua.stack.core.types.enumerated;
 
 import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
@@ -62,28 +72,18 @@ public enum IdentityCriteriaType implements UaEnumeratedType {
   }
 
   public static @Nullable IdentityCriteriaType from(int value) {
-    switch (value) {
-      case 1:
-        return UserName;
-      case 2:
-        return Thumbprint;
-      case 3:
-        return Role;
-      case 4:
-        return GroupId;
-      case 5:
-        return Anonymous;
-      case 6:
-        return AuthenticatedUser;
-      case 7:
-        return Application;
-      case 8:
-        return X509Subject;
-      case 9:
-        return TrustedApplication;
-      default:
-        return null;
-    }
+    return switch (value) {
+      case 1 -> UserName;
+      case 2 -> Thumbprint;
+      case 3 -> Role;
+      case 4 -> GroupId;
+      case 5 -> Anonymous;
+      case 6 -> AuthenticatedUser;
+      case 7 -> Application;
+      case 8 -> X509Subject;
+      case 9 -> TrustedApplication;
+      default -> null;
+    };
   }
 
   public static EnumDefinition definition() {
@@ -146,6 +146,6 @@ public enum IdentityCriteriaType implements UaEnumeratedType {
   }
 
   public static final class TypeInfo {
-    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=15632");
+    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=15632");
   }
 }

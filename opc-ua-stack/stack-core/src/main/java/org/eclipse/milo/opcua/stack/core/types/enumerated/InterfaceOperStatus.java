@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2025 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
 package org.eclipse.milo.opcua.stack.core.types.enumerated;
 
 import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
@@ -50,24 +60,16 @@ public enum InterfaceOperStatus implements UaEnumeratedType {
   }
 
   public static @Nullable InterfaceOperStatus from(int value) {
-    switch (value) {
-      case 0:
-        return Up;
-      case 1:
-        return Down;
-      case 2:
-        return Testing;
-      case 3:
-        return Unknown;
-      case 4:
-        return Dormant;
-      case 5:
-        return NotPresent;
-      case 6:
-        return LowerLayerDown;
-      default:
-        return null;
-    }
+    return switch (value) {
+      case 0 -> Up;
+      case 1 -> Down;
+      case 2 -> Testing;
+      case 3 -> Unknown;
+      case 4 -> Dormant;
+      case 5 -> NotPresent;
+      case 6 -> LowerLayerDown;
+      default -> null;
+    };
   }
 
   public static EnumDefinition definition() {
@@ -109,6 +111,6 @@ public enum InterfaceOperStatus implements UaEnumeratedType {
   }
 
   public static final class TypeInfo {
-    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=24214");
+    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=24214");
   }
 }

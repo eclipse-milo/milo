@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2025 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
 package org.eclipse.milo.opcua.stack.core.types.enumerated;
 
 import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
@@ -37,18 +47,13 @@ public enum IdType implements UaEnumeratedType {
   }
 
   public static @Nullable IdType from(int value) {
-    switch (value) {
-      case 0:
-        return Numeric;
-      case 1:
-        return String;
-      case 2:
-        return Guid;
-      case 3:
-        return Opaque;
-      default:
-        return null;
-    }
+    return switch (value) {
+      case 0 -> Numeric;
+      case 1 -> String;
+      case 2 -> Guid;
+      case 3 -> Opaque;
+      default -> null;
+    };
   }
 
   public static EnumDefinition definition() {
@@ -62,6 +67,6 @@ public enum IdType implements UaEnumeratedType {
   }
 
   public static final class TypeInfo {
-    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=256");
+    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=256");
   }
 }

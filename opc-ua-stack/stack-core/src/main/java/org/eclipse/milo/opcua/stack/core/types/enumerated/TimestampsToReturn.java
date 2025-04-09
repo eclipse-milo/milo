@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2025 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
 package org.eclipse.milo.opcua.stack.core.types.enumerated;
 
 import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
@@ -39,20 +49,14 @@ public enum TimestampsToReturn implements UaEnumeratedType {
   }
 
   public static @Nullable TimestampsToReturn from(int value) {
-    switch (value) {
-      case 0:
-        return Source;
-      case 1:
-        return Server;
-      case 2:
-        return Both;
-      case 3:
-        return Neither;
-      case 4:
-        return Invalid;
-      default:
-        return null;
-    }
+    return switch (value) {
+      case 0 -> Source;
+      case 1 -> Server;
+      case 2 -> Both;
+      case 3 -> Neither;
+      case 4 -> Invalid;
+      default -> null;
+    };
   }
 
   public static EnumDefinition definition() {
@@ -67,6 +71,6 @@ public enum TimestampsToReturn implements UaEnumeratedType {
   }
 
   public static final class TypeInfo {
-    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=625");
+    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=625");
   }
 }

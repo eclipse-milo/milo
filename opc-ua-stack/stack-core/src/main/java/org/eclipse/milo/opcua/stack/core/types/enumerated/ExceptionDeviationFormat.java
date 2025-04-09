@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2025 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
 package org.eclipse.milo.opcua.stack.core.types.enumerated;
 
 import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
@@ -39,20 +49,14 @@ public enum ExceptionDeviationFormat implements UaEnumeratedType {
   }
 
   public static @Nullable ExceptionDeviationFormat from(int value) {
-    switch (value) {
-      case 0:
-        return AbsoluteValue;
-      case 1:
-        return PercentOfValue;
-      case 2:
-        return PercentOfRange;
-      case 3:
-        return PercentOfEuRange;
-      case 4:
-        return Unknown;
-      default:
-        return null;
-    }
+    return switch (value) {
+      case 0 -> AbsoluteValue;
+      case 1 -> PercentOfValue;
+      case 2 -> PercentOfRange;
+      case 3 -> PercentOfEuRange;
+      case 4 -> Unknown;
+      default -> null;
+    };
   }
 
   public static EnumDefinition definition() {
@@ -67,6 +71,6 @@ public enum ExceptionDeviationFormat implements UaEnumeratedType {
   }
 
   public static final class TypeInfo {
-    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=890");
+    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=890");
   }
 }

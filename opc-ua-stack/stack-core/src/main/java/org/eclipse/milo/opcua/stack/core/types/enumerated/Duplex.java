@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2025 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
 package org.eclipse.milo.opcua.stack.core.types.enumerated;
 
 import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
@@ -38,16 +48,12 @@ public enum Duplex implements UaEnumeratedType {
   }
 
   public static @Nullable Duplex from(int value) {
-    switch (value) {
-      case 0:
-        return Full;
-      case 1:
-        return Half;
-      case 2:
-        return Unknown;
-      default:
-        return null;
-    }
+    return switch (value) {
+      case 0 -> Full;
+      case 1 -> Half;
+      case 2 -> Unknown;
+      default -> null;
+    };
   }
 
   public static EnumDefinition definition() {
@@ -66,6 +72,6 @@ public enum Duplex implements UaEnumeratedType {
   }
 
   public static final class TypeInfo {
-    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=24210");
+    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=24210");
   }
 }

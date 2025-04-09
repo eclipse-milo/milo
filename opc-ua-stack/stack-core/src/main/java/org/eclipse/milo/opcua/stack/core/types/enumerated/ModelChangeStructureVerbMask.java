@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2025 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
 package org.eclipse.milo.opcua.stack.core.types.enumerated;
 
 import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
@@ -35,20 +45,14 @@ public enum ModelChangeStructureVerbMask implements UaEnumeratedType {
   }
 
   public static @Nullable ModelChangeStructureVerbMask from(int value) {
-    switch (value) {
-      case 1:
-        return NodeAdded;
-      case 2:
-        return NodeDeleted;
-      case 4:
-        return ReferenceAdded;
-      case 8:
-        return ReferenceDeleted;
-      case 16:
-        return DataTypeChanged;
-      default:
-        return null;
-    }
+    return switch (value) {
+      case 1 -> NodeAdded;
+      case 2 -> NodeDeleted;
+      case 4 -> ReferenceAdded;
+      case 8 -> ReferenceDeleted;
+      case 16 -> DataTypeChanged;
+      default -> null;
+    };
   }
 
   public static EnumDefinition definition() {
@@ -63,6 +67,6 @@ public enum ModelChangeStructureVerbMask implements UaEnumeratedType {
   }
 
   public static final class TypeInfo {
-    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=11941");
+    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=11941");
   }
 }

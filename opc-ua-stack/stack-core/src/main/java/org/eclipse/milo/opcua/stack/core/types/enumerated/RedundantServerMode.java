@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2025 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
 package org.eclipse.milo.opcua.stack.core.types.enumerated;
 
 import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
@@ -37,18 +47,13 @@ public enum RedundantServerMode implements UaEnumeratedType {
   }
 
   public static @Nullable RedundantServerMode from(int value) {
-    switch (value) {
-      case 0:
-        return PrimaryWithBackup;
-      case 1:
-        return PrimaryOnly;
-      case 2:
-        return BackupReady;
-      case 3:
-        return BackupNotReady;
-      default:
-        return null;
-    }
+    return switch (value) {
+      case 0 -> PrimaryWithBackup;
+      case 1 -> PrimaryOnly;
+      case 2 -> BackupReady;
+      case 3 -> BackupNotReady;
+      default -> null;
+    };
   }
 
   public static EnumDefinition definition() {
@@ -63,6 +68,6 @@ public enum RedundantServerMode implements UaEnumeratedType {
   }
 
   public static final class TypeInfo {
-    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=32417");
+    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=32417");
   }
 }

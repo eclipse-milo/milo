@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2025 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
 package org.eclipse.milo.opcua.stack.core.types.enumerated;
 
 import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
@@ -107,62 +117,35 @@ public enum TsnFailureCode implements UaEnumeratedType {
   }
 
   public static @Nullable TsnFailureCode from(int value) {
-    switch (value) {
-      case 0:
-        return NoFailure;
-      case 1:
-        return InsufficientBandwidth;
-      case 2:
-        return InsufficientResources;
-      case 3:
-        return InsufficientTrafficClassBandwidth;
-      case 4:
-        return StreamIdInUse;
-      case 5:
-        return StreamDestinationAddressInUse;
-      case 6:
-        return StreamPreemptedByHigherRank;
-      case 7:
-        return LatencyHasChanged;
-      case 8:
-        return EgressPortNotAvbCapable;
-      case 9:
-        return UseDifferentDestinationAddress;
-      case 10:
-        return OutOfMsrpResources;
-      case 11:
-        return OutOfMmrpResources;
-      case 12:
-        return CannotStoreDestinationAddress;
-      case 13:
-        return PriorityIsNotAnSrcClass;
-      case 14:
-        return MaxFrameSizeTooLarge;
-      case 15:
-        return MaxFanInPortsLimitReached;
-      case 16:
-        return FirstValueChangedForStreamId;
-      case 17:
-        return VlanBlockedOnEgress;
-      case 18:
-        return VlanTaggingDisabledOnEgress;
-      case 19:
-        return SrClassPriorityMismatch;
-      case 20:
-        return FeatureNotPropagated;
-      case 21:
-        return MaxLatencyExceeded;
-      case 22:
-        return BridgeDoesNotProvideNetworkId;
-      case 23:
-        return StreamTransformNotSupported;
-      case 24:
-        return StreamIdTypeNotSupported;
-      case 25:
-        return FeatureNotSupported;
-      default:
-        return null;
-    }
+    return switch (value) {
+      case 0 -> NoFailure;
+      case 1 -> InsufficientBandwidth;
+      case 2 -> InsufficientResources;
+      case 3 -> InsufficientTrafficClassBandwidth;
+      case 4 -> StreamIdInUse;
+      case 5 -> StreamDestinationAddressInUse;
+      case 6 -> StreamPreemptedByHigherRank;
+      case 7 -> LatencyHasChanged;
+      case 8 -> EgressPortNotAvbCapable;
+      case 9 -> UseDifferentDestinationAddress;
+      case 10 -> OutOfMsrpResources;
+      case 11 -> OutOfMmrpResources;
+      case 12 -> CannotStoreDestinationAddress;
+      case 13 -> PriorityIsNotAnSrcClass;
+      case 14 -> MaxFrameSizeTooLarge;
+      case 15 -> MaxFanInPortsLimitReached;
+      case 16 -> FirstValueChangedForStreamId;
+      case 17 -> VlanBlockedOnEgress;
+      case 18 -> VlanTaggingDisabledOnEgress;
+      case 19 -> SrClassPriorityMismatch;
+      case 20 -> FeatureNotPropagated;
+      case 21 -> MaxLatencyExceeded;
+      case 22 -> BridgeDoesNotProvideNetworkId;
+      case 23 -> StreamTransformNotSupported;
+      case 24 -> StreamIdTypeNotSupported;
+      case 25 -> FeatureNotSupported;
+      default -> null;
+    };
   }
 
   public static EnumDefinition definition() {
@@ -302,6 +285,6 @@ public enum TsnFailureCode implements UaEnumeratedType {
   }
 
   public static final class TypeInfo {
-    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=24218");
+    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=24218");
   }
 }

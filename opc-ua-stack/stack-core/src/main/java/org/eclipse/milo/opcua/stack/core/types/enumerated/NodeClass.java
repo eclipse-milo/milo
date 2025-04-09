@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2025 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
 package org.eclipse.milo.opcua.stack.core.types.enumerated;
 
 import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
@@ -56,28 +66,18 @@ public enum NodeClass implements UaEnumeratedType {
   }
 
   public static @Nullable NodeClass from(int value) {
-    switch (value) {
-      case 0:
-        return Unspecified;
-      case 1:
-        return Object;
-      case 2:
-        return Variable;
-      case 4:
-        return Method;
-      case 8:
-        return ObjectType;
-      case 16:
-        return VariableType;
-      case 32:
-        return ReferenceType;
-      case 64:
-        return DataType;
-      case 128:
-        return View;
-      default:
-        return null;
-    }
+    return switch (value) {
+      case 0 -> Unspecified;
+      case 1 -> Object;
+      case 2 -> Variable;
+      case 4 -> Method;
+      case 8 -> ObjectType;
+      case 16 -> VariableType;
+      case 32 -> ReferenceType;
+      case 64 -> DataType;
+      case 128 -> View;
+      default -> null;
+    };
   }
 
   public static EnumDefinition definition() {
@@ -129,6 +129,6 @@ public enum NodeClass implements UaEnumeratedType {
   }
 
   public static final class TypeInfo {
-    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=257");
+    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=257");
   }
 }

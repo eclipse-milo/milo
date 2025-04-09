@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2025 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
 package org.eclipse.milo.opcua.stack.core.types.enumerated;
 
 import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
@@ -65,46 +75,27 @@ public enum FilterOperator implements UaEnumeratedType {
   }
 
   public static @Nullable FilterOperator from(int value) {
-    switch (value) {
-      case 0:
-        return Equals;
-      case 1:
-        return IsNull;
-      case 2:
-        return GreaterThan;
-      case 3:
-        return LessThan;
-      case 4:
-        return GreaterThanOrEqual;
-      case 5:
-        return LessThanOrEqual;
-      case 6:
-        return Like;
-      case 7:
-        return Not;
-      case 8:
-        return Between;
-      case 9:
-        return InList;
-      case 10:
-        return And;
-      case 11:
-        return Or;
-      case 12:
-        return Cast;
-      case 13:
-        return InView;
-      case 14:
-        return OfType;
-      case 15:
-        return RelatedTo;
-      case 16:
-        return BitwiseAnd;
-      case 17:
-        return BitwiseOr;
-      default:
-        return null;
-    }
+    return switch (value) {
+      case 0 -> Equals;
+      case 1 -> IsNull;
+      case 2 -> GreaterThan;
+      case 3 -> LessThan;
+      case 4 -> GreaterThanOrEqual;
+      case 5 -> LessThanOrEqual;
+      case 6 -> Like;
+      case 7 -> Not;
+      case 8 -> Between;
+      case 9 -> InList;
+      case 10 -> And;
+      case 11 -> Or;
+      case 12 -> Cast;
+      case 13 -> InView;
+      case 14 -> OfType;
+      case 15 -> RelatedTo;
+      case 16 -> BitwiseAnd;
+      case 17 -> BitwiseOr;
+      default -> null;
+    };
   }
 
   public static EnumDefinition definition() {
@@ -133,6 +124,6 @@ public enum FilterOperator implements UaEnumeratedType {
   }
 
   public static final class TypeInfo {
-    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=576");
+    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=576");
   }
 }

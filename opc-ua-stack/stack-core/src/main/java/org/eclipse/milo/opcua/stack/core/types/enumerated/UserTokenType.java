@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2025 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
 package org.eclipse.milo.opcua.stack.core.types.enumerated;
 
 import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
@@ -37,18 +47,13 @@ public enum UserTokenType implements UaEnumeratedType {
   }
 
   public static @Nullable UserTokenType from(int value) {
-    switch (value) {
-      case 0:
-        return Anonymous;
-      case 1:
-        return UserName;
-      case 2:
-        return Certificate;
-      case 3:
-        return IssuedToken;
-      default:
-        return null;
-    }
+    return switch (value) {
+      case 0 -> Anonymous;
+      case 1 -> UserName;
+      case 2 -> Certificate;
+      case 3 -> IssuedToken;
+      default -> null;
+    };
   }
 
   public static EnumDefinition definition() {
@@ -62,6 +67,6 @@ public enum UserTokenType implements UaEnumeratedType {
   }
 
   public static final class TypeInfo {
-    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=303");
+    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=303");
   }
 }

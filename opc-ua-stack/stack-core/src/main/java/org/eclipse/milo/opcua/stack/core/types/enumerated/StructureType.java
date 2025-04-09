@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2025 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
 package org.eclipse.milo.opcua.stack.core.types.enumerated;
 
 import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
@@ -39,20 +49,14 @@ public enum StructureType implements UaEnumeratedType {
   }
 
   public static @Nullable StructureType from(int value) {
-    switch (value) {
-      case 0:
-        return Structure;
-      case 1:
-        return StructureWithOptionalFields;
-      case 2:
-        return Union;
-      case 3:
-        return StructureWithSubtypedValues;
-      case 4:
-        return UnionWithSubtypedValues;
-      default:
-        return null;
-    }
+    return switch (value) {
+      case 0 -> Structure;
+      case 1 -> StructureWithOptionalFields;
+      case 2 -> Union;
+      case 3 -> StructureWithSubtypedValues;
+      case 4 -> UnionWithSubtypedValues;
+      default -> null;
+    };
   }
 
   public static EnumDefinition definition() {
@@ -76,6 +80,6 @@ public enum StructureType implements UaEnumeratedType {
   }
 
   public static final class TypeInfo {
-    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=98");
+    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=98");
   }
 }

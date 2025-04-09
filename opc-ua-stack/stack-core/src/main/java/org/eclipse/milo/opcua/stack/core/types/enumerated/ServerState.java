@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2025 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
 package org.eclipse.milo.opcua.stack.core.types.enumerated;
 
 import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
@@ -45,26 +55,17 @@ public enum ServerState implements UaEnumeratedType {
   }
 
   public static @Nullable ServerState from(int value) {
-    switch (value) {
-      case 0:
-        return Running;
-      case 1:
-        return Failed;
-      case 2:
-        return NoConfiguration;
-      case 3:
-        return Suspended;
-      case 4:
-        return Shutdown;
-      case 5:
-        return Test;
-      case 6:
-        return CommunicationFault;
-      case 7:
-        return Unknown;
-      default:
-        return null;
-    }
+    return switch (value) {
+      case 0 -> Running;
+      case 1 -> Failed;
+      case 2 -> NoConfiguration;
+      case 3 -> Suspended;
+      case 4 -> Shutdown;
+      case 5 -> Test;
+      case 6 -> CommunicationFault;
+      case 7 -> Unknown;
+      default -> null;
+    };
   }
 
   public static EnumDefinition definition() {
@@ -83,6 +84,6 @@ public enum ServerState implements UaEnumeratedType {
   }
 
   public static final class TypeInfo {
-    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=852");
+    public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=852");
   }
 }
