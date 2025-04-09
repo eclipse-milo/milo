@@ -27,6 +27,16 @@ public record BsdStructWrapper<T>(DataType dataType, T object) implements UaStru
   }
 
   @Override
+  public ExpandedNodeId getXmlEncodingId() {
+    return ExpandedNodeId.NULL_VALUE;
+  }
+
+  @Override
+  public ExpandedNodeId getJsonEncodingId() {
+    return ExpandedNodeId.NULL_VALUE;
+  }
+
+  @Override
   public String getEncodingName() {
     return dataType.getBrowseName().getName();
   }

@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2025 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -21,13 +31,13 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
  *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/5.14.2/#5.14.2.2">https://reference.opcfoundation.org/v105/Core/docs/Part4/5.14.2/#5.14.2.2</a>
  */
 public class CreateSubscriptionRequest extends Structure implements UaRequestMessageType {
-  public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=785");
+  public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=785");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=787");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=787");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=786");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=786");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15337");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15337");
 
   private final RequestHeader requestHeader;
 

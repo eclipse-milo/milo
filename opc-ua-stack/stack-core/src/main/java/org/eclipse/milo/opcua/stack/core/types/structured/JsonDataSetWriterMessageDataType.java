@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2025 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -21,13 +31,13 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
  */
 public class JsonDataSetWriterMessageDataType extends DataSetWriterMessageDataType
     implements UaStructuredType {
-  public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=15664");
+  public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=15664");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15724");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=15724");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=16018");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=16018");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=16394");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=16394");
 
   private final JsonDataSetMessageContentMask dataSetMessageContentMask;
 

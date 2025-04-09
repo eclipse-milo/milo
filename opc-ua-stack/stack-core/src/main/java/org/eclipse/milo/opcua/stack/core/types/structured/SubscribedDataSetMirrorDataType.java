@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2025 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -22,13 +32,13 @@ import org.jspecify.annotations.Nullable;
  */
 public class SubscribedDataSetMirrorDataType extends SubscribedDataSetDataType
     implements UaStructuredType {
-  public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=15635");
+  public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=15635");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15713");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=15713");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=16012");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=16012");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=16311");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=16311");
 
   private final @Nullable String parentNodeName;
 

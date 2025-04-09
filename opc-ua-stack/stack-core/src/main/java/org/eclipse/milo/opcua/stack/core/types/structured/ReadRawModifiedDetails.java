@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2025 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -21,13 +31,13 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
  *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/6.5.3/#6.5.3.1">https://reference.opcfoundation.org/v105/Core/docs/Part11/6.5.3/#6.5.3.1</a>
  */
 public class ReadRawModifiedDetails extends HistoryReadDetails implements UaStructuredType {
-  public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=647");
+  public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=647");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=649");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=649");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=648");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=648");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15263");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15263");
 
   private final Boolean isReadModified;
 

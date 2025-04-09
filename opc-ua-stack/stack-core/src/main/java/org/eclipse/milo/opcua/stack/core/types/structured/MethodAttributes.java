@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2025 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
 package org.eclipse.milo.opcua.stack.core.types.structured;
 
 import java.util.StringJoiner;
@@ -20,13 +30,13 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
  *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/7.24.4">https://reference.opcfoundation.org/v105/Core/docs/Part4/7.24.4</a>
  */
 public class MethodAttributes extends NodeAttributes implements UaStructuredType {
-  public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("ns=0;i=358");
+  public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=358");
 
-  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=360");
+  public static final ExpandedNodeId BINARY_ENCODING_ID = ExpandedNodeId.parse("i=360");
 
-  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=359");
+  public static final ExpandedNodeId XML_ENCODING_ID = ExpandedNodeId.parse("i=359");
 
-  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("ns=0;i=15157");
+  public static final ExpandedNodeId JSON_ENCODING_ID = ExpandedNodeId.parse("i=15157");
 
   private final Boolean executable;
 
