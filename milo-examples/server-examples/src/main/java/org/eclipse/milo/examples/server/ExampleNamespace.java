@@ -28,7 +28,6 @@ import org.eclipse.milo.opcua.sdk.core.AccessLevel;
 import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.ValueRank;
 import org.eclipse.milo.opcua.sdk.core.ValueRanks;
-import org.eclipse.milo.opcua.sdk.core.dtd.BinaryDataTypeCodec;
 import org.eclipse.milo.opcua.sdk.core.types.DynamicEnumType;
 import org.eclipse.milo.opcua.sdk.core.types.DynamicStructType;
 import org.eclipse.milo.opcua.sdk.core.types.codec.DynamicCodecFactory;
@@ -38,7 +37,6 @@ import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
 import org.eclipse.milo.opcua.sdk.server.Lifecycle;
 import org.eclipse.milo.opcua.sdk.server.ManagedNamespaceWithLifecycle;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
-import org.eclipse.milo.opcua.sdk.server.dtd.BinaryDataTypeDictionaryManager;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity;
 import org.eclipse.milo.opcua.sdk.server.items.DataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
@@ -58,17 +56,14 @@ import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilters;
 import org.eclipse.milo.opcua.sdk.server.util.SubscriptionModel;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
-import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.*;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.StructureType;
 import org.eclipse.milo.opcua.stack.core.types.structured.EnumDefinition;
-import org.eclipse.milo.opcua.stack.core.types.structured.EnumDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.EnumField;
 import org.eclipse.milo.opcua.stack.core.types.structured.Range;
 import org.eclipse.milo.opcua.stack.core.types.structured.StructureDefinition;
-import org.eclipse.milo.opcua.stack.core.types.structured.StructureDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.StructureField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,17 +79,13 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
 
   private final Random random = new Random();
 
-  private final BinaryDataTypeDictionaryManager dictionaryManager;
-
   private final SubscriptionModel subscriptionModel;
 
   ExampleNamespace(OpcUaServer server) {
     super(server, NAMESPACE_URI);
 
     subscriptionModel = new SubscriptionModel(server, this);
-    dictionaryManager = new BinaryDataTypeDictionaryManager(getNodeContext(), NAMESPACE_URI);
 
-    getLifecycleManager().addLifecycle(dictionaryManager);
     getLifecycleManager().addLifecycle(subscriptionModel);
 
     getLifecycleManager().addStartupTask(this::createAndAddNodes);
@@ -785,21 +776,6 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
 
     // Populate the OPC UA 1.04+ DataTypeDefinition attribute
     dataTypeNode.setDataTypeDefinition(definition);
-
-    // Prior to OPC UA 1.04, clients that needed to interpret custom types read the
-    // DataTypeDictionary from the server. We describe the type using StructureDefinition
-    // or EnumDefinition and register it with the dictionary manager.
-    // The dictionary manager will add all the necessary nodes to the AddressSpace and
-    // generate the required dictionary bsd.xml file.
-
-    EnumDescription description =
-        new EnumDescription(
-            dataTypeId,
-            new QualifiedName(getNamespaceIndex(), "CustomEnumType"),
-            definition,
-            ubyte(OpcUaDataType.Int32.getTypeId()));
-
-    dictionaryManager.registerEnum(description);
   }
 
   private void registerCustomStructType() throws Exception {
@@ -878,22 +854,6 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
         .getServer()
         .getStaticDataTypeManager()
         .registerType(dataTypeId, new CustomStructType.Codec(), binaryEncodingId, null, null);
-
-    // Prior to OPC UA 1.04, clients that needed to interpret custom types read the
-    // DataTypeDictionary from the server. We describe the type using StructureDefinition
-    // or EnumDefinition and register it with the dictionary manager.
-    // The dictionary manager will add all the necessary nodes to the AddressSpace and
-    // generate the required dictionary bsd.xml file.
-    StructureDescription description =
-        new StructureDescription(
-            dataTypeId, new QualifiedName(getNamespaceIndex(), "CustomStructType"), definition);
-
-    dictionaryManager.registerStructure(
-        "CustomStructType",
-        dataTypeId,
-        binaryEncodingId,
-        BinaryDataTypeCodec.from(new CustomStructType.Codec()),
-        description);
   }
 
   private void registerCustomUnionType() throws Exception {
@@ -950,17 +910,6 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
         .getServer()
         .getStaticDataTypeManager()
         .registerType(dataTypeId, new CustomUnionType.Codec(), binaryEncodingId, null, null);
-
-    StructureDescription description =
-        new StructureDescription(
-            dataTypeId, new QualifiedName(getNamespaceIndex(), "CustomUnionType"), definition);
-
-    dictionaryManager.registerStructure(
-        "CustomUnionType",
-        dataTypeId,
-        binaryEncodingId,
-        BinaryDataTypeCodec.from(new CustomUnionType.Codec()),
-        description);
   }
 
   private DataType registerDynamicEnumType() throws Exception {
@@ -1172,9 +1121,6 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
   private void addCustomStructTypeVariable(UaFolderNode rootFolder) throws Exception {
     NodeId dataTypeId = CustomStructType.TYPE_ID.toNodeIdOrThrow(getServer().getNamespaceTable());
 
-    NodeId binaryEncodingId =
-        CustomStructType.BINARY_ENCODING_ID.toNodeIdOrThrow(getServer().getNamespaceTable());
-
     UaVariableNode customStructTypeVariable =
         UaVariableNode.build(
             getNodeContext(),
@@ -1206,9 +1152,6 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
 
   private void addCustomUnionTypeVariable(UaFolderNode rootFolder) throws Exception {
     NodeId dataTypeId = CustomUnionType.TYPE_ID.toNodeIdOrThrow(getServer().getNamespaceTable());
-
-    NodeId binaryEncodingId =
-        CustomUnionType.BINARY_ENCODING_ID.toNodeIdOrThrow(getServer().getNamespaceTable());
 
     UaVariableNode customUnionTypeVariable =
         UaVariableNode.build(
