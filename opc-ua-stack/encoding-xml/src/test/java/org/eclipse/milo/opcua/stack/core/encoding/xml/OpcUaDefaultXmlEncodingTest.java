@@ -16,7 +16,6 @@ import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
-import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.structured.XVType;
 import org.junit.jupiter.api.Test;
 
@@ -28,7 +27,6 @@ class OpcUaDefaultXmlEncodingTest {
     OpcUaDefaultXmlEncoding encoding = OpcUaDefaultXmlEncoding.getInstance();
 
     var value = new XVType(1.0, 2.0f);
-    NodeId encodingId = XVType.XML_ENCODING_ID.toNodeIdOrThrow(context.getNamespaceTable());
 
     ExtensionObject encoded = encoding.encode(context, value);
 

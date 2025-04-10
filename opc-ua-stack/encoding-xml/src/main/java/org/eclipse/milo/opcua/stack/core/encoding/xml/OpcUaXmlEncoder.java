@@ -10,8 +10,6 @@
 
 package org.eclipse.milo.opcua.stack.core.encoding.xml;
 
-import static org.eclipse.milo.opcua.stack.core.encoding.xml.XmlSerializationUtil.encodeXmlName;
-
 import jakarta.xml.bind.DatatypeConverter;
 import java.io.StringWriter;
 import java.util.ArrayDeque;
@@ -25,6 +23,7 @@ import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.DataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.UaEncoder;
+import org.eclipse.milo.opcua.stack.core.types.UaDataType;
 import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
 import org.eclipse.milo.opcua.stack.core.types.UaMessageType;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
@@ -136,6 +135,38 @@ public class OpcUaXmlEncoder implements UaEncoder {
       }
     } catch (XMLStreamException e) {
       throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+    }
+  }
+
+  static String getNamespaceUri(EncodingContext context, ExpandedNodeId typeId) {
+    UShort namespaceIndex = typeId.getNamespaceIndex(context.getNamespaceTable());
+    if (namespaceIndex == null) {
+      throw new UaSerializationException(
+          StatusCodes.Bad_EncodingError, "no namespace registered: " + typeId.toParseableString());
+    }
+
+    if (namespaceIndex.intValue() == 0) {
+      // HA! Use the special OPC UA XML XSD namespace instead.
+      return Namespaces.OPC_UA_XSD;
+    }
+
+    String namespaceUri = typeId.getNamespaceUri(context.getNamespaceTable());
+    if (namespaceUri == null) {
+      throw new UaSerializationException(
+          StatusCodes.Bad_EncodingError, "no namespace registered: " + typeId.toParseableString());
+    }
+
+    return namespaceUri;
+  }
+
+  static String getXmlName(String namespaceUri, UaDataType dataType) {
+    if (Namespaces.OPC_UA_XSD.equals(namespaceUri)) {
+      // Only use `UaDataType::getTypeName` and apply the XML name encoding rules to types
+      // from namespaces. Types defined by OPC UA have their SymbolicName hardcoded in the
+      // XML schema file, and the SymbolicName was used to generate the Class name.
+      return dataType.getClass().getSimpleName();
+    } else {
+      return XmlSerializationUtil.encodeXmlName(dataType.getTypeName());
     }
   }
 
@@ -974,11 +1005,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
       }
 
       try {
-        String namespaceUri = context.getNamespaceTable().get(dataTypeId.getNamespaceIndex());
-        if (namespaceUri == null) {
-          throw new UaSerializationException(
-              StatusCodes.Bad_EncodingError, "no namespace registered: " + dataTypeId);
-        }
+        String namespaceUri = getNamespaceUri(context, dataTypeId.expanded());
 
         DataTypeCodec codec = context.getDataTypeManager().getCodec(dataTypeId);
 
@@ -1001,12 +1028,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
   public void encodeStruct(String field, UaStructuredType value, DataTypeCodec codec)
       throws UaSerializationException {
 
-    String namespaceUri = value.getTypeId().getNamespaceUri(context.getNamespaceTable());
-    if (namespaceUri == null) {
-      throw new UaSerializationException(
-          StatusCodes.Bad_EncodingError,
-          "no namespace registered: " + value.getTypeId().toParseableString());
-    }
+    String namespaceUri = getNamespaceUri(context, value.getTypeId());
 
     namespaceStack.push(namespaceUri);
 
@@ -1505,17 +1527,12 @@ public class OpcUaXmlEncoder implements UaEncoder {
         assert value != null;
 
         if (value.length > 0) {
-          String namespaceUri = value[0].getTypeId().getNamespaceUri(context.getNamespaceTable());
-          if (namespaceUri == null) {
-            throw new UaSerializationException(
-                StatusCodes.Bad_EncodingError,
-                "namespace not registered: " + value[0].getTypeId().toParseableString());
-          }
+          String namespaceUri = getNamespaceUri(context, value[0].getTypeId());
 
           namespaceStack.push(namespaceUri);
 
           for (UaEnumeratedType element : value) {
-            encodeEnum(encodeXmlName(element.getTypeName()), element);
+            encodeEnum(getXmlName(namespaceUri, element), element);
           }
 
           namespaceStack.pop();
@@ -1534,18 +1551,13 @@ public class OpcUaXmlEncoder implements UaEncoder {
       try {
         namespaceStack.push(Namespaces.OPC_UA_XSD);
 
-        String namespaceUri = context.getNamespaceTable().get(dataTypeId.getNamespaceIndex());
-        if (namespaceUri == null) {
-          throw new UaSerializationException(
-              StatusCodes.Bad_EncodingError,
-              "namespace not registered: " + dataTypeId.toParseableString());
-        }
+        String namespaceUri = getNamespaceUri(context, dataTypeId.expanded());
 
         namespaceStack.push(namespaceUri);
 
         assert values != null;
         for (UaStructuredType v : values) {
-          encodeStruct(encodeXmlName(v.getTypeName()), v, dataTypeId);
+          encodeStruct(getXmlName(namespaceUri, v), v, dataTypeId);
         }
 
         namespaceStack.pop();
@@ -1839,16 +1851,11 @@ public class OpcUaXmlEncoder implements UaEncoder {
           xmlStreamWriter.writeStartElement(Namespaces.OPC_UA_XSD, "Elements");
 
           for (UaEnumeratedType element : elements) {
-            String namespaceUri = element.getTypeId().getNamespaceUri(context.getNamespaceTable());
-            if (namespaceUri == null) {
-              throw new UaSerializationException(
-                  StatusCodes.Bad_EncodingError,
-                  "namespace not registered: " + element.getTypeId().toParseableString());
-            }
+            String namespaceUri = getNamespaceUri(context, element.getTypeId());
 
             namespaceStack.push(namespaceUri);
 
-            encodeEnum(encodeXmlName(element.getTypeName()), element);
+            encodeEnum(getXmlName(namespaceUri, element), element);
 
             namespaceStack.pop();
           }

@@ -10,8 +10,6 @@
 
 package org.eclipse.milo.opcua.stack.core.encoding.xml;
 
-import static org.eclipse.milo.opcua.stack.core.encoding.xml.XmlSerializationUtil.encodeXmlName;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -64,7 +62,11 @@ public class OpcUaDefaultXmlEncoding implements DataTypeEncoding {
 
     OpcUaXmlEncoder encoder = new OpcUaXmlEncoder(context);
 
-    encoder.encodeStruct(encodeXmlName(struct.getTypeName()), struct, codec);
+    String xmlName =
+        OpcUaXmlEncoder.getXmlName(
+            OpcUaXmlEncoder.getNamespaceUri(context, struct.getTypeId()), struct);
+
+    encoder.encodeStruct(xmlName, struct, codec);
 
     return ExtensionObject.of(XmlElement.of(encoder.getDocumentXml()), encodingId);
   }

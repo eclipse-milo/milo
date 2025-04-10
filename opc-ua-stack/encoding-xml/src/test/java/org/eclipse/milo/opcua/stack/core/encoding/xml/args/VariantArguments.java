@@ -305,18 +305,18 @@ public class VariantArguments {
                     <uax:Identifier>i=297</uax:Identifier>
                   </uax:TypeId>
                   <uax:Body>
-                    <ua:Argument>
-                      <ua:Name>name</ua:Name>
-                      <ua:DataType>
+                    <uax:Argument>
+                      <uax:Name>name</uax:Name>
+                      <uax:DataType>
                         <uax:Identifier>i=1</uax:Identifier>
-                      </ua:DataType>
-                      <ua:ValueRank>-1</ua:ValueRank>
-                      <ua:ArrayDimensions xsi:nil="true"></ua:ArrayDimensions>
-                      <ua:Description>
+                      </uax:DataType>
+                      <uax:ValueRank>-1</uax:ValueRank>
+                      <uax:ArrayDimensions xsi:nil="true"></uax:ArrayDimensions>
+                      <uax:Description>
                         <uax:Locale>en</uax:Locale>
                         <uax:Text>description</uax:Text>
-                      </ua:Description>
-                    </ua:Argument>
+                      </uax:Description>
+                    </uax:Argument>
                   </uax:Body>
                 </uax:ExtensionObject>
               </uax:Value>
@@ -349,18 +349,18 @@ public class VariantArguments {
                     <uax:Identifier>i=297</uax:Identifier>
                   </uax:TypeId>
                   <uax:Body>
-                    <ua:Argument>
-                      <ua:Name>name</ua:Name>
-                      <ua:DataType>
+                    <uax:Argument>
+                      <uax:Name>name</uax:Name>
+                      <uax:DataType>
                         <uax:Identifier>i=1</uax:Identifier>
-                      </ua:DataType>
-                      <ua:ValueRank>-1</ua:ValueRank>
-                      <ua:ArrayDimensions xsi:nil="true"></ua:ArrayDimensions>
-                      <ua:Description>
+                      </uax:DataType>
+                      <uax:ValueRank>-1</uax:ValueRank>
+                      <uax:ArrayDimensions xsi:nil="true"></uax:ArrayDimensions>
+                      <uax:Description>
                         <uax:Locale>en</uax:Locale>
                         <uax:Text>description</uax:Text>
-                      </ua:Description>
-                    </ua:Argument>
+                      </uax:Description>
+                    </uax:Argument>
                   </uax:Body>
                 </uax:ExtensionObject>
               </uax:Value>
@@ -860,18 +860,18 @@ public class VariantArguments {
                       <uax:Identifier>i=297</uax:Identifier>
                     </uax:TypeId>
                     <uax:Body>
-                      <ua:Argument>
-                        <ua:Name>name</ua:Name>
-                        <ua:DataType>
+                      <uax:Argument>
+                        <uax:Name>name</uax:Name>
+                        <uax:DataType>
                           <uax:Identifier>i=1</uax:Identifier>
-                        </ua:DataType>
-                        <ua:ValueRank>-1</ua:ValueRank>
-                        <ua:ArrayDimensions xsi:nil="true"></ua:ArrayDimensions>
-                        <ua:Description>
+                        </uax:DataType>
+                        <uax:ValueRank>-1</uax:ValueRank>
+                        <uax:ArrayDimensions xsi:nil="true"></uax:ArrayDimensions>
+                        <uax:Description>
                           <uax:Locale>en</uax:Locale>
                           <uax:Text>description</uax:Text>
-                        </ua:Description>
-                      </ua:Argument>
+                        </uax:Description>
+                      </uax:Argument>
                     </uax:Body>
                   </uax:ExtensionObject>
                   <uax:ExtensionObject>
@@ -879,18 +879,18 @@ public class VariantArguments {
                       <uax:Identifier>i=297</uax:Identifier>
                     </uax:TypeId>
                     <uax:Body>
-                      <ua:Argument>
-                        <ua:Name>name</ua:Name>
-                        <ua:DataType>
+                      <uax:Argument>
+                        <uax:Name>name</uax:Name>
+                        <uax:DataType>
                           <uax:Identifier>i=1</uax:Identifier>
-                        </ua:DataType>
-                        <ua:ValueRank>-1</ua:ValueRank>
-                        <ua:ArrayDimensions xsi:nil="true"></ua:ArrayDimensions>
-                        <ua:Description>
+                        </uax:DataType>
+                        <uax:ValueRank>-1</uax:ValueRank>
+                        <uax:ArrayDimensions xsi:nil="true"></uax:ArrayDimensions>
+                        <uax:Description>
                           <uax:Locale>en</uax:Locale>
                           <uax:Text>description</uax:Text>
-                        </ua:Description>
-                      </ua:Argument>
+                        </uax:Description>
+                      </uax:Argument>
                     </uax:Body>
                   </uax:ExtensionObject>
                 </uax:ListOfExtensionObject>
@@ -961,18 +961,18 @@ public class VariantArguments {
                       <uax:Identifier>i=297</uax:Identifier>
                     </uax:TypeId>
                     <uax:Body>
-                      <ua:Argument>
-                        <ua:Name>name1</ua:Name>
-                        <ua:DataType>
+                      <uax:Argument>
+                        <uax:Name>name1</uax:Name>
+                        <uax:DataType>
                           <uax:Identifier>i=1</uax:Identifier>
-                        </ua:DataType>
-                        <ua:ValueRank>-1</ua:ValueRank>
-                        <ua:ArrayDimensions xsi:nil="true"></ua:ArrayDimensions>
-                        <ua:Description>
+                        </uax:DataType>
+                        <uax:ValueRank>-1</uax:ValueRank>
+                        <uax:ArrayDimensions xsi:nil="true"></uax:ArrayDimensions>
+                        <uax:Description>
                           <uax:Locale>en</uax:Locale>
                           <uax:Text>description1</uax:Text>
-                        </ua:Description>
-                      </ua:Argument>
+                        </uax:Description>
+                      </uax:Argument>
                     </uax:Body>
                   </uax:ExtensionObject>
                   <uax:ExtensionObject>
@@ -980,18 +980,18 @@ public class VariantArguments {
                       <uax:Identifier>i=297</uax:Identifier>
                     </uax:TypeId>
                     <uax:Body>
-                      <ua:Argument>
-                        <ua:Name>name2</ua:Name>
-                        <ua:DataType>
+                      <uax:Argument>
+                        <uax:Name>name2</uax:Name>
+                        <uax:DataType>
                           <uax:Identifier>i=1</uax:Identifier>
-                        </ua:DataType>
-                        <ua:ValueRank>-1</ua:ValueRank>
-                        <ua:ArrayDimensions xsi:nil="true"></ua:ArrayDimensions>
-                        <ua:Description>
+                        </uax:DataType>
+                        <uax:ValueRank>-1</uax:ValueRank>
+                        <uax:ArrayDimensions xsi:nil="true"></uax:ArrayDimensions>
+                        <uax:Description>
                           <uax:Locale>en</uax:Locale>
                           <uax:Text>description2</uax:Text>
-                        </ua:Description>
-                      </ua:Argument>
+                        </uax:Description>
+                      </uax:Argument>
                     </uax:Body>
                   </uax:ExtensionObject>
                 </uax:ListOfExtensionObject>
@@ -1746,10 +1746,10 @@ public class VariantArguments {
                         <uax:Identifier>i=12082</uax:Identifier>
                       </uax:TypeId>
                       <uax:Body>
-                        <ua:XVType>
-                          <ua:X>1.0</ua:X>
-                          <ua:Value>2.0</ua:Value>
-                        </ua:XVType>
+                        <uax:XVType>
+                          <uax:X>1.0</uax:X>
+                          <uax:Value>2.0</uax:Value>
+                        </uax:XVType>
                       </uax:Body>
                     </uax:ExtensionObject>
                     <uax:ExtensionObject>
@@ -1757,10 +1757,10 @@ public class VariantArguments {
                         <uax:Identifier>i=12082</uax:Identifier>
                       </uax:TypeId>
                       <uax:Body>
-                        <ua:XVType>
-                          <ua:X>3.0</ua:X>
-                          <ua:Value>4.0</ua:Value>
-                        </ua:XVType>
+                        <uax:XVType>
+                          <uax:X>3.0</uax:X>
+                          <uax:Value>4.0</uax:Value>
+                        </uax:XVType>
                       </uax:Body>
                     </uax:ExtensionObject>
                     <uax:ExtensionObject>
@@ -1768,10 +1768,10 @@ public class VariantArguments {
                         <uax:Identifier>i=12082</uax:Identifier>
                       </uax:TypeId>
                       <uax:Body>
-                        <ua:XVType>
-                          <ua:X>5.0</ua:X>
-                          <ua:Value>6.0</ua:Value>
-                        </ua:XVType>
+                        <uax:XVType>
+                          <uax:X>5.0</uax:X>
+                          <uax:Value>6.0</uax:Value>
+                        </uax:XVType>
                       </uax:Body>
                     </uax:ExtensionObject>
                     <uax:ExtensionObject>
@@ -1779,10 +1779,10 @@ public class VariantArguments {
                         <uax:Identifier>i=12082</uax:Identifier>
                       </uax:TypeId>
                       <uax:Body>
-                        <ua:XVType>
-                          <ua:X>7.0</ua:X>
-                          <ua:Value>8.0</ua:Value>
-                        </ua:XVType>
+                        <uax:XVType>
+                          <uax:X>7.0</uax:X>
+                          <uax:Value>8.0</uax:Value>
+                        </uax:XVType>
                       </uax:Body>
                     </uax:ExtensionObject>
                   </uax:Elements>

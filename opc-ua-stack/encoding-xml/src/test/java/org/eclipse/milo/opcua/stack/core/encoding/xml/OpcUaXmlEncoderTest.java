@@ -65,11 +65,11 @@ class OpcUaXmlEncoderTest {
         <uax:Identifier>i=18853</uax:Identifier>
       </uax:TypeId>
       <uax:Body>
-        <ua:_3DVector>
-          <ua:X>1.0</ua:X>
-          <ua:Y>2.0</ua:Y>
-          <ua:Z>3.0</ua:Z>
-        </ua:_3DVector>
+        <uax:ThreeDVector>
+          <uax:X>1.0</uax:X>
+          <uax:Y>2.0</uax:Y>
+          <uax:Z>3.0</uax:Z>
+        </uax:ThreeDVector>
       </uax:Body>
     </uax:ExtensionObject>
   </uax:Value>

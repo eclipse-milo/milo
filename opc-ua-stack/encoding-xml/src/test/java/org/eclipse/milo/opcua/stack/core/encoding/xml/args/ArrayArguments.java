@@ -749,18 +749,18 @@ public class ArrayArguments {
                   <uax:Identifier>i=297</uax:Identifier>
                 </uax:TypeId>
                 <uax:Body>
-                  <ua:Argument>
-                    <ua:Name>name</ua:Name>
-                    <ua:DataType>
+                  <uax:Argument>
+                    <uax:Name>name</uax:Name>
+                    <uax:DataType>
                       <uax:Identifier>i=1</uax:Identifier>
-                    </ua:DataType>
-                    <ua:ValueRank>-1</ua:ValueRank>
-                    <ua:ArrayDimensions xsi:nil="true"></ua:ArrayDimensions>
-                    <ua:Description>
+                    </uax:DataType>
+                    <uax:ValueRank>-1</uax:ValueRank>
+                    <uax:ArrayDimensions xsi:nil="true"></uax:ArrayDimensions>
+                    <uax:Description>
                       <uax:Locale>en</uax:Locale>
                       <uax:Text>description</uax:Text>
-                    </ua:Description>
-                  </ua:Argument>
+                    </uax:Description>
+                  </uax:Argument>
                 </uax:Body>
               </uax:ExtensionObject>
               <uax:ExtensionObject>
@@ -768,20 +768,20 @@ public class ArrayArguments {
                   <uax:Identifier>i=297</uax:Identifier>
                 </uax:TypeId>
                 <uax:Body>
-                  <ua:Argument>
-                    <ua:Name>name2</ua:Name>
-                    <ua:DataType>
+                  <uax:Argument>
+                    <uax:Name>name2</uax:Name>
+                    <uax:DataType>
                       <uax:Identifier>i=2</uax:Identifier>
-                    </ua:DataType>
-                    <ua:ValueRank>1</ua:ValueRank>
-                    <ua:ArrayDimensions>
+                    </uax:DataType>
+                    <uax:ValueRank>1</uax:ValueRank>
+                    <uax:ArrayDimensions>
                       <uax:UInt32>1</uax:UInt32>
-                    </ua:ArrayDimensions>
-                    <ua:Description>
+                    </uax:ArrayDimensions>
+                    <uax:Description>
                       <uax:Locale>en</uax:Locale>
                       <uax:Text>description2</uax:Text>
-                    </ua:Description>
-                  </ua:Argument>
+                    </uax:Description>
+                  </uax:Argument>
                 </uax:Body>
               </uax:ExtensionObject>
             </Test>
@@ -919,8 +919,8 @@ public class ArrayArguments {
             """
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
-              <ua:BrowseDirection>Forward_0</ua:BrowseDirection>
-              <ua:BrowseDirection>Inverse_1</ua:BrowseDirection>
+              <uax:BrowseDirection>Forward_0</uax:BrowseDirection>
+              <uax:BrowseDirection>Inverse_1</uax:BrowseDirection>
             </Test>
             """),
         Arguments.of(
@@ -945,18 +945,18 @@ public class ArrayArguments {
             """
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
-              <ua:XVType>
-                <ua:X>1.0</ua:X>
-                <ua:Value>2.0</ua:Value>
-              </ua:XVType>
-              <ua:XVType>
-                <ua:X>3.0</ua:X>
-                <ua:Value>4.0</ua:Value>
-              </ua:XVType>
-              <ua:XVType>
-                <ua:X>NaN</ua:X>
-                <ua:Value>NaN</ua:Value>
-              </ua:XVType>
+              <uax:XVType>
+                <uax:X>1.0</uax:X>
+                <uax:Value>2.0</uax:Value>
+              </uax:XVType>
+              <uax:XVType>
+                <uax:X>3.0</uax:X>
+                <uax:Value>4.0</uax:Value>
+              </uax:XVType>
+              <uax:XVType>
+                <uax:X>NaN</uax:X>
+                <uax:Value>NaN</uax:Value>
+              </uax:XVType>
             </Test>
             """),
         Arguments.of(

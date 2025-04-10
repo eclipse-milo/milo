@@ -32,8 +32,8 @@ public class StructArguments {
             """
             <XVType xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
-              <ua:X>1.0</ua:X>
-              <ua:Value>2.0</ua:Value>
+              <uax:X>1.0</uax:X>
+              <uax:Value>2.0</uax:Value>
             </XVType>
             """),
 
@@ -49,16 +49,16 @@ public class StructArguments {
             """
             <Argument xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
-              <ua:Name>ArgumentName</ua:Name>
-              <ua:DataType>
+              <uax:Name>ArgumentName</uax:Name>
+              <uax:DataType>
                 <uax:Identifier>i=1</uax:Identifier>
-              </ua:DataType>
-              <ua:ValueRank>-1</ua:ValueRank>
-              <ua:ArrayDimensions xsi:nil="true"></ua:ArrayDimensions>
-              <ua:Description>
+              </uax:DataType>
+              <uax:ValueRank>-1</uax:ValueRank>
+              <uax:ArrayDimensions xsi:nil="true"></uax:ArrayDimensions>
+              <uax:Description>
                 <uax:Locale>en</uax:Locale>
                 <uax:Text>Description</uax:Text>
-              </ua:Description>
+              </uax:Description>
             </Argument>
             """),
 
@@ -75,12 +75,12 @@ public class StructArguments {
             """
             <BuildInfo xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
-              <ua:ProductUri>urn:example:product</ua:ProductUri>
-              <ua:ManufacturerName>Example Manufacturer</ua:ManufacturerName>
-              <ua:ProductName>Example Product</ua:ProductName>
-              <ua:SoftwareVersion>1.0.0</ua:SoftwareVersion>
-              <ua:BuildNumber>12345</ua:BuildNumber>
-              <ua:BuildDate>2023-01-01T00:00:00Z</ua:BuildDate>
+              <uax:ProductUri>urn:example:product</uax:ProductUri>
+              <uax:ManufacturerName>Example Manufacturer</uax:ManufacturerName>
+              <uax:ProductName>Example Product</uax:ProductName>
+              <uax:SoftwareVersion>1.0.0</uax:SoftwareVersion>
+              <uax:BuildNumber>12345</uax:BuildNumber>
+              <uax:BuildDate>2023-01-01T00:00:00Z</uax:BuildDate>
             </BuildInfo>
             """));
   }
