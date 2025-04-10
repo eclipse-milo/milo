@@ -31,7 +31,7 @@ public class StructArguments {
             new XVType(1.0, 2.0f),
             """
             <XVType xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
-              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
               <uax:X>1.0</uax:X>
               <uax:Value>2.0</uax:Value>
             </XVType>
@@ -48,7 +48,7 @@ public class StructArguments {
                 LocalizedText.english("Description")),
             """
             <Argument xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
-              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
               <uax:Name>ArgumentName</uax:Name>
               <uax:DataType>
                 <uax:Identifier>i=1</uax:Identifier>
@@ -74,7 +74,7 @@ public class StructArguments {
                 new DateTime(Instant.parse("2023-01-01T00:00:00Z"))),
             """
             <BuildInfo xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
-              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
               <uax:ProductUri>urn:example:product</uax:ProductUri>
               <uax:ManufacturerName>Example Manufacturer</uax:ManufacturerName>
               <uax:ProductName>Example Product</uax:ProductName>

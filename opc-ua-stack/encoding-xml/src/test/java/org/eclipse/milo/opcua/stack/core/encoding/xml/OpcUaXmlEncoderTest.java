@@ -58,7 +58,7 @@ class OpcUaXmlEncoderTest {
     var expected =
 """
 <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <uax:Value>
     <uax:ExtensionObject>
       <uax:TypeId>

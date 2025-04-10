@@ -67,9 +67,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
       String[] namespaces = context.getNamespaceTable().toArray();
       for (int i = 0; i < namespaces.length; i++) {
-        if (i == 0) {
-          xmlStreamWriter.setPrefix("ua", Namespaces.OPC_UA);
-        } else {
+        if (i > 0) {
           xmlStreamWriter.setPrefix("ns" + i, namespaces[i]);
         }
       }

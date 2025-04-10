@@ -298,7 +298,7 @@ public class VariantArguments {
                     OpcUaDefaultXmlEncoding.getInstance())),
             """
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
-              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
               <uax:Value>
                 <uax:ExtensionObject>
                   <uax:TypeId>
@@ -342,7 +342,7 @@ public class VariantArguments {
                     "name", NodeId.parse("i=1"), -1, null, LocalizedText.english("description"))),
             """
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
-              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
               <uax:Value>
                 <uax:ExtensionObject>
                   <uax:TypeId>
@@ -852,7 +852,7 @@ public class VariantArguments {
                 }),
             """
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
-              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
               <uax:Value>
                 <uax:ListOfExtensionObject>
                   <uax:ExtensionObject>
@@ -953,7 +953,7 @@ public class VariantArguments {
                 }),
             """
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
-              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
               <uax:Value>
                 <uax:ListOfExtensionObject>
                   <uax:ExtensionObject>
@@ -1733,7 +1733,7 @@ public class VariantArguments {
                     })),
             """
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
-              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
               <uax:Value>
                 <uax:Matrix>
                   <uax:Dimensions>

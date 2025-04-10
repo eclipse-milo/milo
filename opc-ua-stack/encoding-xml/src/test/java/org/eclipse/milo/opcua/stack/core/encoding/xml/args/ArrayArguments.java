@@ -743,7 +743,7 @@ public class ArrayArguments {
             },
             """
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
-              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
               <uax:ExtensionObject>
                 <uax:TypeId>
                   <uax:Identifier>i=297</uax:Identifier>
@@ -918,7 +918,7 @@ public class ArrayArguments {
             new UaEnumeratedType[] {BrowseDirection.Forward, BrowseDirection.Inverse},
             """
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
-              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
               <uax:BrowseDirection>Forward_0</uax:BrowseDirection>
               <uax:BrowseDirection>Inverse_1</uax:BrowseDirection>
             </Test>
@@ -944,7 +944,7 @@ public class ArrayArguments {
             },
             """
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
-              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
               <uax:XVType>
                 <uax:X>1.0</uax:X>
                 <uax:Value>2.0</uax:Value>
