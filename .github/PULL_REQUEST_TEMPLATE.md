@@ -4,4 +4,4 @@ Before you submit a pull request please acknowledge the following:
 - [ ] All new and existing tests passed
 - [ ] Code follows the style guidelines and Checkstyle passes
 
-See [CONTRIBUTING](https://github.com/eclipse/milo/blob/master/CONTRIBUTING.md) for more information.
+See [CONTRIBUTING](https://github.com/eclipse-milo/milo/blob/master/CONTRIBUTING.md) for more information.

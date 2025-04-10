@@ -36,7 +36,7 @@ public class OpcUaClientConfigBuilder {
   private LocalizedText applicationName =
       LocalizedText.english("Eclipse Milo application name not configured");
   private String applicationUri = "urn:eclipse:milo:client:applicationUriNotConfigured";
-  private String productUri = "https://github.com/eclipse/milo";
+  private String productUri = "https://github.com/eclipse-milo/milo";
 
   private Supplier<String> sessionName;
   private String[] sessionLocaleIds = new String[0];

@@ -36,7 +36,7 @@ import org.opcfoundation.opcua.binaryschema.TypeDictionary;
 
 public abstract class AbstractBsdCodecTest {
 
-  private static final String BSD_CODEC_TEST_NAMESPACE = "https://github.com/eclipse/milo";
+  private static final String BSD_CODEC_TEST_NAMESPACE = "https://github.com/eclipse-milo/milo";
 
   private final DataTypeManager dataTypeManager = OpcUaDataTypeManager.getInstance();
   private final EncodingManager encodingManager = OpcUaEncodingManager.getInstance();

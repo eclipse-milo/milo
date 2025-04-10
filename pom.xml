@@ -21,12 +21,12 @@
 
   <name>Eclipse Milo - OPC UA (IEC 62541)</name>
   <description>An open source implementation of OPC UA (IEC 62541).</description>
-  <url>https://github.com/eclipse/milo</url>
+  <url>https://github.com/eclipse-milo/milo</url>
 
   <scm>
-    <url>https://github.com/eclipse/milo</url>
-    <connection>scm:git:git://github.com/eclipse/milo.git</connection>
-    <developerConnection>scm:git:git@github.com:eclipse/milo.git</developerConnection>
+    <url>https://github.com/eclipse-milo/milo</url>
+    <connection>scm:git:git://github.com/eclipse-milo/milo.git</connection>
+    <developerConnection>scm:git:git@github.com:eclipse-milo/milo.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
 
