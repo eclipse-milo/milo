@@ -58,21 +58,21 @@ class OpcUaXmlEncoderTest {
     var expected =
 """
 <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
-    <uax:Value>
-        <uax:ExtensionObject>
-            <uax:TypeId>
-                <uax:Identifier>i=18853</uax:Identifier>
-            </uax:TypeId>
-            <uax:Body>
-                <_3DVector>
-                    <ua:X>1.0</ua:X>
-                    <ua:Y>2.0</ua:Y>
-                    <ua:Z>3.0</ua:Z>
-                </_3DVector>
-            </uax:Body>
-        </uax:ExtensionObject>
-    </uax:Value>
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
+  <uax:Value>
+    <uax:ExtensionObject>
+      <uax:TypeId>
+        <uax:Identifier>i=18853</uax:Identifier>
+      </uax:TypeId>
+      <uax:Body>
+        <ua:_3DVector>
+          <ua:X>1.0</ua:X>
+          <ua:Y>2.0</ua:Y>
+          <ua:Z>3.0</ua:Z>
+        </ua:_3DVector>
+      </uax:Body>
+    </uax:ExtensionObject>
+  </uax:Value>
 </Test>
 """;
 

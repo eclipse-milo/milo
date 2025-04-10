@@ -1001,6 +1001,15 @@ public class OpcUaXmlEncoder implements UaEncoder {
   public void encodeStruct(String field, UaStructuredType value, DataTypeCodec codec)
       throws UaSerializationException {
 
+    String namespaceUri = value.getTypeId().getNamespaceUri(context.getNamespaceTable());
+    if (namespaceUri == null) {
+      throw new UaSerializationException(
+          StatusCodes.Bad_EncodingError,
+          "no namespace registered: " + value.getTypeId().toParseableString());
+    }
+
+    namespaceStack.push(namespaceUri);
+
     if (beginField(field)) {
       if (depth.getAndIncrement() > context.getEncodingLimits().getMaxRecursionDepth()) {
         throw new UaSerializationException(
@@ -1009,21 +1018,14 @@ public class OpcUaXmlEncoder implements UaEncoder {
       }
 
       try {
-        String namespaceUri = value.getTypeId().getNamespaceUri(context.getNamespaceTable());
-        if (namespaceUri == null) {
-          throw new UaSerializationException(
-              StatusCodes.Bad_EncodingError,
-              "no namespace registered: " + value.getTypeId().toParseableString());
-        }
-
-        namespaceStack.push(namespaceUri);
         codec.encode(context, this, value);
-        namespaceStack.pop();
       } finally {
         depth.decrementAndGet();
         endField(field);
       }
     }
+
+    namespaceStack.pop();
   }
 
   @Override
@@ -1500,8 +1502,6 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
     if (beginField(field, value == null, true, true)) {
       try {
-        namespaceStack.push(Namespaces.OPC_UA_XSD);
-
         assert value != null;
 
         if (value.length > 0) {
@@ -1521,8 +1521,6 @@ public class OpcUaXmlEncoder implements UaEncoder {
           namespaceStack.pop();
         }
       } finally {
-        namespaceStack.pop();
-
         endField(field);
       }
     }

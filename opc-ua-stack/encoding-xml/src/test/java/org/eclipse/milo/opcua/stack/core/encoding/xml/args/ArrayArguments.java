@@ -749,7 +749,7 @@ public class ArrayArguments {
                   <uax:Identifier>i=297</uax:Identifier>
                 </uax:TypeId>
                 <uax:Body>
-                  <Argument>
+                  <ua:Argument>
                     <ua:Name>name</ua:Name>
                     <ua:DataType>
                       <uax:Identifier>i=1</uax:Identifier>
@@ -760,7 +760,7 @@ public class ArrayArguments {
                       <uax:Locale>en</uax:Locale>
                       <uax:Text>description</uax:Text>
                     </ua:Description>
-                  </Argument>
+                  </ua:Argument>
                 </uax:Body>
               </uax:ExtensionObject>
               <uax:ExtensionObject>
@@ -768,7 +768,7 @@ public class ArrayArguments {
                   <uax:Identifier>i=297</uax:Identifier>
                 </uax:TypeId>
                 <uax:Body>
-                  <Argument>
+                  <ua:Argument>
                     <ua:Name>name2</ua:Name>
                     <ua:DataType>
                       <uax:Identifier>i=2</uax:Identifier>
@@ -781,7 +781,7 @@ public class ArrayArguments {
                       <uax:Locale>en</uax:Locale>
                       <uax:Text>description2</uax:Text>
                     </ua:Description>
-                  </Argument>
+                  </ua:Argument>
                 </uax:Body>
               </uax:ExtensionObject>
             </Test>

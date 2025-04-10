@@ -305,7 +305,7 @@ public class VariantArguments {
                     <uax:Identifier>i=297</uax:Identifier>
                   </uax:TypeId>
                   <uax:Body>
-                    <Argument>
+                    <ua:Argument>
                       <ua:Name>name</ua:Name>
                       <ua:DataType>
                         <uax:Identifier>i=1</uax:Identifier>
@@ -316,7 +316,7 @@ public class VariantArguments {
                         <uax:Locale>en</uax:Locale>
                         <uax:Text>description</uax:Text>
                       </ua:Description>
-                    </Argument>
+                    </ua:Argument>
                   </uax:Body>
                 </uax:ExtensionObject>
               </uax:Value>
@@ -349,7 +349,7 @@ public class VariantArguments {
                     <uax:Identifier>i=297</uax:Identifier>
                   </uax:TypeId>
                   <uax:Body>
-                    <Argument>
+                    <ua:Argument>
                       <ua:Name>name</ua:Name>
                       <ua:DataType>
                         <uax:Identifier>i=1</uax:Identifier>
@@ -360,7 +360,7 @@ public class VariantArguments {
                         <uax:Locale>en</uax:Locale>
                         <uax:Text>description</uax:Text>
                       </ua:Description>
-                    </Argument>
+                    </ua:Argument>
                   </uax:Body>
                 </uax:ExtensionObject>
               </uax:Value>
@@ -860,7 +860,7 @@ public class VariantArguments {
                       <uax:Identifier>i=297</uax:Identifier>
                     </uax:TypeId>
                     <uax:Body>
-                      <Argument>
+                      <ua:Argument>
                         <ua:Name>name</ua:Name>
                         <ua:DataType>
                           <uax:Identifier>i=1</uax:Identifier>
@@ -871,7 +871,7 @@ public class VariantArguments {
                           <uax:Locale>en</uax:Locale>
                           <uax:Text>description</uax:Text>
                         </ua:Description>
-                      </Argument>
+                      </ua:Argument>
                     </uax:Body>
                   </uax:ExtensionObject>
                   <uax:ExtensionObject>
@@ -879,7 +879,7 @@ public class VariantArguments {
                       <uax:Identifier>i=297</uax:Identifier>
                     </uax:TypeId>
                     <uax:Body>
-                      <Argument>
+                      <ua:Argument>
                         <ua:Name>name</ua:Name>
                         <ua:DataType>
                           <uax:Identifier>i=1</uax:Identifier>
@@ -890,7 +890,7 @@ public class VariantArguments {
                           <uax:Locale>en</uax:Locale>
                           <uax:Text>description</uax:Text>
                         </ua:Description>
-                      </Argument>
+                      </ua:Argument>
                     </uax:Body>
                   </uax:ExtensionObject>
                 </uax:ListOfExtensionObject>
@@ -961,7 +961,7 @@ public class VariantArguments {
                       <uax:Identifier>i=297</uax:Identifier>
                     </uax:TypeId>
                     <uax:Body>
-                      <Argument>
+                      <ua:Argument>
                         <ua:Name>name1</ua:Name>
                         <ua:DataType>
                           <uax:Identifier>i=1</uax:Identifier>
@@ -972,7 +972,7 @@ public class VariantArguments {
                           <uax:Locale>en</uax:Locale>
                           <uax:Text>description1</uax:Text>
                         </ua:Description>
-                      </Argument>
+                      </ua:Argument>
                     </uax:Body>
                   </uax:ExtensionObject>
                   <uax:ExtensionObject>
@@ -980,7 +980,7 @@ public class VariantArguments {
                       <uax:Identifier>i=297</uax:Identifier>
                     </uax:TypeId>
                     <uax:Body>
-                      <Argument>
+                      <ua:Argument>
                         <ua:Name>name2</ua:Name>
                         <ua:DataType>
                           <uax:Identifier>i=1</uax:Identifier>
@@ -991,7 +991,7 @@ public class VariantArguments {
                           <uax:Locale>en</uax:Locale>
                           <uax:Text>description2</uax:Text>
                         </ua:Description>
-                      </Argument>
+                      </ua:Argument>
                     </uax:Body>
                   </uax:ExtensionObject>
                 </uax:ListOfExtensionObject>
@@ -1746,10 +1746,10 @@ public class VariantArguments {
                         <uax:Identifier>i=12082</uax:Identifier>
                       </uax:TypeId>
                       <uax:Body>
-                        <XVType>
+                        <ua:XVType>
                           <ua:X>1.0</ua:X>
                           <ua:Value>2.0</ua:Value>
-                        </XVType>
+                        </ua:XVType>
                       </uax:Body>
                     </uax:ExtensionObject>
                     <uax:ExtensionObject>
@@ -1757,10 +1757,10 @@ public class VariantArguments {
                         <uax:Identifier>i=12082</uax:Identifier>
                       </uax:TypeId>
                       <uax:Body>
-                        <XVType>
+                        <ua:XVType>
                           <ua:X>3.0</ua:X>
                           <ua:Value>4.0</ua:Value>
-                        </XVType>
+                        </ua:XVType>
                       </uax:Body>
                     </uax:ExtensionObject>
                     <uax:ExtensionObject>
@@ -1768,10 +1768,10 @@ public class VariantArguments {
                         <uax:Identifier>i=12082</uax:Identifier>
                       </uax:TypeId>
                       <uax:Body>
-                        <XVType>
+                        <ua:XVType>
                           <ua:X>5.0</ua:X>
                           <ua:Value>6.0</ua:Value>
-                        </XVType>
+                        </ua:XVType>
                       </uax:Body>
                     </uax:ExtensionObject>
                     <uax:ExtensionObject>
@@ -1779,10 +1779,10 @@ public class VariantArguments {
                         <uax:Identifier>i=12082</uax:Identifier>
                       </uax:TypeId>
                       <uax:Body>
-                        <XVType>
+                        <ua:XVType>
                           <ua:X>7.0</ua:X>
                           <ua:Value>8.0</ua:Value>
-                        </XVType>
+                        </ua:XVType>
                       </uax:Body>
                     </uax:ExtensionObject>
                   </uax:Elements>

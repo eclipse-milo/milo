@@ -80,10 +80,10 @@ public class MatrixArguments {
                     <uax:Identifier>i=12082</uax:Identifier>
                   </uax:TypeId>
                   <uax:Body>
-                    <XVType>
+                    <ua:XVType>
                       <ua:X>0.0</ua:X>
                       <ua:Value>1.0</ua:Value>
-                    </XVType>
+                    </ua:XVType>
                   </uax:Body>
                 </uax:ExtensionObject>
                 <uax:ExtensionObject>
@@ -91,10 +91,10 @@ public class MatrixArguments {
                     <uax:Identifier>i=12082</uax:Identifier>
                   </uax:TypeId>
                   <uax:Body>
-                    <XVType>
+                    <ua:XVType>
                       <ua:X>2.0</ua:X>
                       <ua:Value>3.0</ua:Value>
-                    </XVType>
+                    </ua:XVType>
                   </uax:Body>
                 </uax:ExtensionObject>
                 <uax:ExtensionObject>
@@ -102,10 +102,10 @@ public class MatrixArguments {
                     <uax:Identifier>i=12082</uax:Identifier>
                   </uax:TypeId>
                   <uax:Body>
-                    <XVType>
+                    <ua:XVType>
                       <ua:X>4.0</ua:X>
                       <ua:Value>5.0</ua:Value>
-                    </XVType>
+                    </ua:XVType>
                   </uax:Body>
                 </uax:ExtensionObject>
                 <uax:ExtensionObject>
@@ -113,10 +113,10 @@ public class MatrixArguments {
                     <uax:Identifier>i=12082</uax:Identifier>
                   </uax:TypeId>
                   <uax:Body>
-                    <XVType>
+                    <ua:XVType>
                       <ua:X>6.0</ua:X>
                       <ua:Value>7.0</ua:Value>
-                    </XVType>
+                    </ua:XVType>
                   </uax:Body>
                 </uax:ExtensionObject>
               </uax:Elements>
@@ -1236,10 +1236,10 @@ public class MatrixArguments {
                     <uax:Identifier>i=12082</uax:Identifier>
                   </uax:TypeId>
                   <uax:Body>
-                    <XVType>
+                    <ua:XVType>
                       <ua:X>1.0</ua:X>
                       <ua:Value>2.0</ua:Value>
-                    </XVType>
+                    </ua:XVType>
                   </uax:Body>
                 </uax:ExtensionObject>
                 <uax:ExtensionObject>
@@ -1247,10 +1247,10 @@ public class MatrixArguments {
                     <uax:Identifier>i=12082</uax:Identifier>
                   </uax:TypeId>
                   <uax:Body>
-                    <XVType>
+                    <ua:XVType>
                       <ua:X>3.0</ua:X>
                       <ua:Value>4.0</ua:Value>
-                    </XVType>
+                    </ua:XVType>
                   </uax:Body>
                 </uax:ExtensionObject>
                 <uax:ExtensionObject>
@@ -1258,10 +1258,10 @@ public class MatrixArguments {
                     <uax:Identifier>i=12082</uax:Identifier>
                   </uax:TypeId>
                   <uax:Body>
-                    <XVType>
+                    <ua:XVType>
                       <ua:X>5.0</ua:X>
                       <ua:Value>6.0</ua:Value>
-                    </XVType>
+                    </ua:XVType>
                   </uax:Body>
                 </uax:ExtensionObject>
                 <uax:ExtensionObject>
@@ -1269,10 +1269,10 @@ public class MatrixArguments {
                     <uax:Identifier>i=12082</uax:Identifier>
                   </uax:TypeId>
                   <uax:Body>
-                    <XVType>
+                    <ua:XVType>
                       <ua:X>7.0</ua:X>
                       <ua:Value>8.0</ua:Value>
-                    </XVType>
+                    </ua:XVType>
                   </uax:Body>
                 </uax:ExtensionObject>
               </uax:Elements>

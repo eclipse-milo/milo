@@ -549,10 +549,10 @@ public class ScalarArguments {
                 <uax:Identifier>i=12082</uax:Identifier>
               </uax:TypeId>
               <uax:Body>
-                <XVType>
+                <ua:XVType>
                   <ua:X>1.0</ua:X>
                   <ua:Value>2.0</ua:Value>
-                </XVType>
+                </ua:XVType>
               </uax:Body>
             </Test>
             """),
