@@ -49,6 +49,11 @@ public class ThreeDFrame extends Frame implements UaStructuredType {
   }
 
   @Override
+  public String getTypeName() {
+    return "3DFrame";
+  }
+
+  @Override
   public ExpandedNodeId getTypeId() {
     return TYPE_ID;
   }

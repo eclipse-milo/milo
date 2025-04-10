@@ -51,6 +51,11 @@ public class ThreeDCartesianCoordinates extends CartesianCoordinates implements 
   }
 
   @Override
+  public String getTypeName() {
+    return "3DCartesianCoordinates";
+  }
+
+  @Override
   public ExpandedNodeId getTypeId() {
     return TYPE_ID;
   }

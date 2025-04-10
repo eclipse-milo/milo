@@ -51,6 +51,11 @@ public class ThreeDOrientation extends Orientation implements UaStructuredType {
   }
 
   @Override
+  public String getTypeName() {
+    return "3DOrientation";
+  }
+
+  @Override
   public ExpandedNodeId getTypeId() {
     return TYPE_ID;
   }

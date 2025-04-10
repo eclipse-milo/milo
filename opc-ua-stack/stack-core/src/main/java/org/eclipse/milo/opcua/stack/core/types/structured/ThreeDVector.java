@@ -51,6 +51,11 @@ public class ThreeDVector extends Vector implements UaStructuredType {
   }
 
   @Override
+  public String getTypeName() {
+    return "3DVector";
+  }
+
+  @Override
   public ExpandedNodeId getTypeId() {
     return TYPE_ID;
   }
