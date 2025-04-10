@@ -37,7 +37,7 @@ public record BsdStructWrapper<T>(DataType dataType, T object) implements UaStru
   }
 
   @Override
-  public String getEncodingName() {
+  public String getTypeName() {
     return dataType.getBrowseName().getName();
   }
 }

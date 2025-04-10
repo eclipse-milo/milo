@@ -62,7 +62,7 @@ public class OpcUaDefaultXmlEncoding implements DataTypeEncoding {
 
     OpcUaXmlEncoder encoder = new OpcUaXmlEncoder(context);
 
-    encoder.encodeStruct(struct.getEncodingName(), struct, codec);
+    encoder.encodeStruct(struct.getTypeName(), struct, codec);
 
     return ExtensionObject.of(XmlElement.of(encoder.getDocumentXml()), encodingId);
   }

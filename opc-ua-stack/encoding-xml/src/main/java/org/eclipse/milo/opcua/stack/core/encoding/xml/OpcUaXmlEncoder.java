@@ -1513,7 +1513,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
           namespaceStack.push(namespaceUri);
 
           for (UaEnumeratedType element : value) {
-            encodeEnum(element.getEncodingName(), element);
+            encodeEnum(element.getTypeName(), element);
           }
 
           namespaceStack.pop();
@@ -1545,7 +1545,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
         assert values != null;
         for (UaStructuredType v : values) {
-          String typeName = v.getEncodingName();
+          String typeName = v.getTypeName();
           encodeStruct(typeName, v, dataTypeId);
         }
 
@@ -1849,7 +1849,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
             namespaceStack.push(namespaceUri);
 
-            encodeEnum(element.getEncodingName(), element);
+            encodeEnum(element.getTypeName(), element);
 
             namespaceStack.pop();
           }

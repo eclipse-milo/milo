@@ -23,20 +23,21 @@ public interface UaDataType {
   ExpandedNodeId getTypeId();
 
   /**
-   * Get the encoding name of this DataType.
+   * Get the name of this DataType.
    *
-   * <p>DataTypes have names that may be used in the JSON and XML encodings. Consequently, there are
-   * some restrictions on the characters that can be used in the name.
+   * <p>For most types this will be the simple name of the class, but there are exceptions:
    *
-   * <p>When a DataType is defined in a UANodeSet it provides a browse name and, optionally, an
-   * alternative symbolic name. When the browse name uses characters that cannot be encoded the
-   * symbolic name is used as an alternative in the encoding.
+   * <ul>
+   *   <li>types defined dynamically at runtime
+   *   <li>code generated types that had a SymbolicName defined in the NodeSet, usually because the
+   *       BrowseName is not suitable as an identifier
+   * </ul>
    *
-   * <p>Defaults to the simple name of the class, implementations should override as necessary.
+   * In these cases name of the DataType Class will differ from the actual name of the type.
    *
-   * @return the encoding name of this DataType.
+   * @return the name of this DataType.
    */
-  default String getEncodingName() {
+  default String getTypeName() {
     return getClass().getSimpleName();
   }
 }
