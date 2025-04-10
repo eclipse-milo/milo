@@ -1282,7 +1282,7 @@ class DataTypeNodeLoader {
         new UaDataTypeNode(
             this.context,
             new NodeId(0, 18808),
-            new QualifiedName(0, "ThreeDVector"),
+            new QualifiedName(0, "3DVector"),
             new LocalizedText("", "3DVector"),
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
@@ -1324,7 +1324,7 @@ class DataTypeNodeLoader {
         new UaDataTypeNode(
             this.context,
             new NodeId(0, 18810),
-            new QualifiedName(0, "ThreeDCartesianCoordinates"),
+            new QualifiedName(0, "3DCartesianCoordinates"),
             new LocalizedText("", "3DCartesianCoordinates"),
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
@@ -1366,7 +1366,7 @@ class DataTypeNodeLoader {
         new UaDataTypeNode(
             this.context,
             new NodeId(0, 18812),
-            new QualifiedName(0, "ThreeDOrientation"),
+            new QualifiedName(0, "3DOrientation"),
             new LocalizedText("", "3DOrientation"),
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
@@ -1408,7 +1408,7 @@ class DataTypeNodeLoader {
         new UaDataTypeNode(
             this.context,
             new NodeId(0, 18814),
-            new QualifiedName(0, "ThreeDFrame"),
+            new QualifiedName(0, "3DFrame"),
             new LocalizedText("", "3DFrame"),
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
