@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -43,6 +43,7 @@ public class OpcTcpServerTransport implements OpcServerTransport {
   @Override
   public synchronized void bind(
       ServerApplicationContext applicationContext, InetSocketAddress bindAddress) throws Exception {
+
     ServerBootstrap bootstrap =
         serverBootstrap.get(
             () ->
@@ -65,6 +66,8 @@ public class OpcTcpServerTransport implements OpcServerTransport {
                                         applicationContext,
                                         TransportProfile.TCP_UASC_UABINARY));
 
+                            config.getChannelPipelineCustomizer().accept(channel.pipeline());
+
                             childChannelReferences.add(channel);
                             channel
                                 .closeFuture()
@@ -73,6 +76,8 @@ public class OpcTcpServerTransport implements OpcServerTransport {
                         }));
 
     assert bootstrap != null;
+
+    config.getBootstrapCustomizer().accept(bootstrap);
 
     if (!boundAddresses.contains(bindAddress)) {
       ChannelFuture bindFuture = bootstrap.bind(bindAddress).sync();

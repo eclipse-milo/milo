@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -12,8 +12,12 @@ package org.eclipse.milo.opcua.stack.transport.server.tcp;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
+import io.netty.bootstrap.Bootstrap;
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Consumer;
 import org.eclipse.milo.opcua.stack.core.Stack;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 
@@ -24,6 +28,8 @@ public class OpcTcpServerTransportConfigBuilder {
   private UInteger helloDeadline = uint(10_000);
   private UInteger minimumSecureChannelLifetime = uint(60_000);
   private UInteger maximumSecureChannelLifetime = uint(60_000 * 60 * 24);
+  private Consumer<ServerBootstrap> bootstrapCustomizer = b -> {};
+  private Consumer<ChannelPipeline> channelPipelineCustomizer = p -> {};
 
   public OpcTcpServerTransportConfigBuilder setExecutor(ExecutorService executor) {
     this.executor = executor;
@@ -32,6 +38,36 @@ public class OpcTcpServerTransportConfigBuilder {
 
   public OpcTcpServerTransportConfigBuilder setEventLoop(EventLoopGroup eventLoop) {
     this.eventLoop = eventLoop;
+    return this;
+  }
+
+  /**
+   * Set a {@link Consumer} that will be given a chance to customize the {@link Bootstrap} used by
+   * this transport.
+   *
+   * @param bootstrapCustomizer a {@link Consumer} that will be given a chance to customize the
+   *     {@link ServerBootstrap} used by this transport.
+   * @return this {@link OpcTcpServerTransportConfigBuilder}.
+   */
+  public OpcTcpServerTransportConfigBuilder setBootstrapCustomizer(
+      Consumer<ServerBootstrap> bootstrapCustomizer) {
+
+    this.bootstrapCustomizer = bootstrapCustomizer;
+    return this;
+  }
+
+  /**
+   * Set a {@link Consumer} that will be given a chance to customize the {@link ChannelPipeline}
+   * used by this transport.
+   *
+   * @param channelPipelineCustomizer a {@link Consumer} that will be given a chance to customize
+   *     the {@link ChannelPipeline} used by this transport.
+   * @return this {@link OpcTcpServerTransportConfigBuilder}.
+   */
+  public OpcTcpServerTransportConfigBuilder setChannelPipelineCustomizer(
+      Consumer<ChannelPipeline> channelPipelineCustomizer) {
+
+    this.channelPipelineCustomizer = channelPipelineCustomizer;
     return this;
   }
 
@@ -63,6 +99,8 @@ public class OpcTcpServerTransportConfigBuilder {
     return new OpcTcpServerTransportConfigImpl(
         executor,
         eventLoop,
+        bootstrapCustomizer,
+        channelPipelineCustomizer,
         helloDeadline,
         minimumSecureChannelLifetime,
         maximumSecureChannelLifetime);
@@ -75,16 +113,22 @@ public class OpcTcpServerTransportConfigBuilder {
     private final UInteger helloDeadline;
     private final UInteger minimumSecureChannelLifetime;
     private final UInteger maximumSecureChannelLifetime;
+    private final Consumer<ServerBootstrap> bootstrapCustomizer;
+    private final Consumer<ChannelPipeline> channelPipelineCustomizer;
 
     public OpcTcpServerTransportConfigImpl(
         ExecutorService executor,
         EventLoopGroup eventLoop,
+        Consumer<ServerBootstrap> bootstrapCustomizer,
+        Consumer<ChannelPipeline> channelPipelineCustomizer,
         UInteger helloDeadline,
         UInteger minimumSecureChannelLifetime,
         UInteger maximumSecureChannelLifetime) {
 
       this.executor = executor;
       this.eventLoop = eventLoop;
+      this.bootstrapCustomizer = bootstrapCustomizer;
+      this.channelPipelineCustomizer = channelPipelineCustomizer;
       this.helloDeadline = helloDeadline;
       this.minimumSecureChannelLifetime = minimumSecureChannelLifetime;
       this.maximumSecureChannelLifetime = maximumSecureChannelLifetime;
@@ -98,6 +142,16 @@ public class OpcTcpServerTransportConfigBuilder {
     @Override
     public EventLoopGroup getEventLoop() {
       return eventLoop;
+    }
+
+    @Override
+    public Consumer<ServerBootstrap> getBootstrapCustomizer() {
+      return bootstrapCustomizer;
+    }
+
+    @Override
+    public Consumer<ChannelPipeline> getChannelPipelineCustomizer() {
+      return channelPipelineCustomizer;
     }
 
     @Override
