@@ -22,6 +22,55 @@ class XmlSerializationUtil {
 
   private XmlSerializationUtil() {}
 
+  /**
+   * Encodes a DataType Name or Structure Field Name for use in XML DataEncoding.
+   *
+   * <p>The rules applied are:
+   *
+   * <ol>
+   *   <li>Any character that is not a Unicode Letter, Digit, '_', '-', or '.' is replaced by '_'.
+   *   <li>If the resulting name starts with a character that is not a Unicode Letter, or if it
+   *       starts with "xml" (case-insensitive), an underscore '_' is prepended.
+   * </ol>
+   *
+   * @param name the original name string.
+   * @return the encoded name string, modified according to the rules if necessary.
+   */
+  static String encodeXmlName(String name) {
+    if (name == null || name.isEmpty()) {
+      return name;
+    }
+
+    var sb = new StringBuilder(name.length());
+
+    // Rule 1: Replace characters not permitted by the XML DataEncoding
+
+    for (int i = 0; i < name.length(); i++) {
+      char c = name.charAt(i);
+
+      // Allowed characters are: Unicode Letters, Digits, '_', '-', '.'
+      if (Character.isLetter(c) || Character.isDigit(c) || c == '_' || c == '-' || c == '.') {
+        sb.append(c);
+      } else {
+        // Replace non-permitted characters with an underscore
+        sb.append('_');
+      }
+    }
+
+    // Rule 2: Add prefix if the first character is not valid or if it starts with "xml"
+    // (case-insensitive)
+
+    String encoded = sb.toString();
+
+    if (!encoded.isEmpty() && !Character.isLetter(encoded.charAt(0))) {
+      return "_" + encoded;
+    } else if (encoded.length() >= 3 && encoded.substring(0, 3).equalsIgnoreCase("xml")) {
+      return "_" + encoded;
+    } else {
+      return encoded;
+    }
+  }
+
   static void writeXmlFragment(XMLStreamWriter writer, String xmlFragment)
       throws XMLStreamException {
 

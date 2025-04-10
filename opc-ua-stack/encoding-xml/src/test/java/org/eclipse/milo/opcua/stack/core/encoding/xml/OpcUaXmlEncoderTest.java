@@ -16,8 +16,11 @@ import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.*;
+import org.eclipse.milo.opcua.stack.core.types.structured.ThreeDVector;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.diff.Diff;
 
 class OpcUaXmlEncoderTest {
@@ -39,6 +42,47 @@ class OpcUaXmlEncoderTest {
       assertThrows(
           UaSerializationException.class, () -> encoder.encodeDiagnosticInfo("Test", nested));
     }
+  }
+
+  /**
+   * This tests the name encoding rules defined in <a
+   * href="https://reference.opcfoundation.org/Core/Part6/v105/docs/5.1.13">https://reference.opcfoundation.org/Core/Part6/v105/docs/5.1.13</a>.
+   */
+  @Test
+  void threeDVector() {
+    var encoder = new OpcUaXmlEncoder(context);
+
+    var threeDVector = new ThreeDVector(1.0, 2.0, 3.0);
+    encoder.encodeVariant("Test", Variant.ofStruct(threeDVector));
+
+    var expected =
+"""
+<Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ua="http://opcfoundation.org/UA/">
+    <uax:Value>
+        <uax:ExtensionObject>
+            <uax:TypeId>
+                <uax:Identifier>i=18853</uax:Identifier>
+            </uax:TypeId>
+            <uax:Body>
+                <_3DVector>
+                    <ua:X>1.0</ua:X>
+                    <ua:Y>2.0</ua:Y>
+                    <ua:Z>3.0</ua:Z>
+                </_3DVector>
+            </uax:Body>
+        </uax:ExtensionObject>
+    </uax:Value>
+</Test>
+""";
+
+    String actual = encoder.getDocumentXml();
+
+    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+    maybePrintXml(diff, expected, actual);
+
+    assertFalse(diff.hasDifferences(), diff.toString());
   }
 
   /**

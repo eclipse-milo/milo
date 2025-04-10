@@ -10,6 +10,8 @@
 
 package org.eclipse.milo.opcua.stack.core.encoding.xml;
 
+import static org.eclipse.milo.opcua.stack.core.encoding.xml.XmlSerializationUtil.encodeXmlName;
+
 import jakarta.xml.bind.DatatypeConverter;
 import java.io.StringWriter;
 import java.util.ArrayDeque;
@@ -1513,7 +1515,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
           namespaceStack.push(namespaceUri);
 
           for (UaEnumeratedType element : value) {
-            encodeEnum(element.getTypeName(), element);
+            encodeEnum(encodeXmlName(element.getTypeName()), element);
           }
 
           namespaceStack.pop();
@@ -1545,8 +1547,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
         assert values != null;
         for (UaStructuredType v : values) {
-          String typeName = v.getTypeName();
-          encodeStruct(typeName, v, dataTypeId);
+          encodeStruct(encodeXmlName(v.getTypeName()), v, dataTypeId);
         }
 
         namespaceStack.pop();
@@ -1849,7 +1850,7 @@ public class OpcUaXmlEncoder implements UaEncoder {
 
             namespaceStack.push(namespaceUri);
 
-            encodeEnum(element.getTypeName(), element);
+            encodeEnum(encodeXmlName(element.getTypeName()), element);
 
             namespaceStack.pop();
           }
