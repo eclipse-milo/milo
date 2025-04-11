@@ -31,16 +31,16 @@ class OpcUaXmlEncoderTest {
 
   @ParameterizedTest
   @ValueSource(ints = {0, 1, 127, 128, 129, 256})
-  void nestedDiagnosticInfo(int depth) {
+  void nestedDiagnosticInfo(int depth) throws Exception {
     var nested = createNestedDiagnosticInfo(depth);
 
-    var encoder = new OpcUaXmlEncoder(context);
-
-    if (depth <= encoder.getEncodingContext().getEncodingLimits().getMaxRecursionDepth()) {
-      assertDoesNotThrow(() -> encoder.encodeDiagnosticInfo("Test", nested));
-    } else {
-      assertThrows(
-          UaSerializationException.class, () -> encoder.encodeDiagnosticInfo("Test", nested));
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      if (depth <= encoder.getEncodingContext().getEncodingLimits().getMaxRecursionDepth()) {
+        assertDoesNotThrow(() -> encoder.encodeDiagnosticInfo("Test", nested));
+      } else {
+        assertThrows(
+            UaSerializationException.class, () -> encoder.encodeDiagnosticInfo("Test", nested));
+      }
     }
   }
 
@@ -49,11 +49,16 @@ class OpcUaXmlEncoderTest {
    * href="https://reference.opcfoundation.org/Core/Part6/v105/docs/5.1.13">https://reference.opcfoundation.org/Core/Part6/v105/docs/5.1.13</a>.
    */
   @Test
-  void threeDVector() {
-    var encoder = new OpcUaXmlEncoder(context);
+  void threeDVector() throws Exception {
+    String actual;
 
-    var threeDVector = new ThreeDVector(1.0, 2.0, 3.0);
-    encoder.encodeVariant("Test", Variant.ofStruct(threeDVector));
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      var threeDVector = new ThreeDVector(1.0, 2.0, 3.0);
+
+      encoder.encodeVariant("Test", Variant.ofStruct(threeDVector));
+
+      actual = encoder.getOutputString();
+    }
 
     var expected =
 """
@@ -75,8 +80,6 @@ class OpcUaXmlEncoderTest {
   </uax:Value>
 </Test>
 """;
-
-    String actual = encoder.getDocumentXml();
 
     Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
 

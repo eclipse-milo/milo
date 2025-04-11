@@ -60,15 +60,17 @@ public class OpcUaDefaultXmlEncoding implements DataTypeEncoding {
           "no codec registered for encodingId=" + encodingId.toParseableString());
     }
 
-    OpcUaXmlEncoder encoder = new OpcUaXmlEncoder(context);
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      String xmlName =
+          OpcUaXmlEncoder.getXmlName(
+              OpcUaXmlEncoder.getNamespaceUri(context, struct.getTypeId()), struct);
 
-    String xmlName =
-        OpcUaXmlEncoder.getXmlName(
-            OpcUaXmlEncoder.getNamespaceUri(context, struct.getTypeId()), struct);
+      encoder.encodeStruct(xmlName, struct, codec);
 
-    encoder.encodeStruct(xmlName, struct, codec);
-
-    return ExtensionObject.of(XmlElement.of(encoder.getDocumentXml()), encodingId);
+      return ExtensionObject.of(XmlElement.of(encoder.getOutputString()), encodingId);
+    } catch (Exception e) {
+      throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+    }
   }
 
   @Override

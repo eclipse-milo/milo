@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.stack.core.encoding.xml;
 
 import jakarta.xml.bind.DatatypeConverter;
 import java.io.StringWriter;
+import java.io.Writer;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.UUID;
@@ -36,9 +37,9 @@ import org.eclipse.milo.opcua.stack.core.util.ArrayUtil;
 import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 import org.jspecify.annotations.Nullable;
 
-public class OpcUaXmlEncoder implements UaEncoder {
+public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
 
-  private StringWriter xmlString;
+  private Writer output;
   private XMLStreamWriter xmlStreamWriter;
 
   private final AtomicInteger depth = new AtomicInteger(0);
@@ -47,9 +48,13 @@ public class OpcUaXmlEncoder implements UaEncoder {
   private final EncodingContext context;
 
   public OpcUaXmlEncoder(EncodingContext context) {
+    this(context, new StringWriter());
+  }
+
+  public OpcUaXmlEncoder(EncodingContext context, Writer output) {
     this.context = context;
 
-    reset();
+    reset(output);
   }
 
   @Override
@@ -57,11 +62,29 @@ public class OpcUaXmlEncoder implements UaEncoder {
     return context;
   }
 
+  @Override
+  public void close() throws Exception {
+    if (xmlStreamWriter != null) {
+      xmlStreamWriter.close();
+    }
+  }
+
+  /** Reset this encoder and configure a new {@link StringWriter} output. */
   public void reset() {
+    reset(new StringWriter());
+  }
+
+  /**
+   * Reset this encoder and configure a new {@link Writer} output.
+   *
+   * @param output the {@link Writer} to write to.
+   */
+  public void reset(Writer output) {
     try {
       XMLOutputFactory factory = XMLOutputFactory.newInstance();
       factory.setProperty(XMLOutputFactory.IS_REPAIRING_NAMESPACES, true);
-      xmlStreamWriter = factory.createXMLStreamWriter(xmlString = new StringWriter());
+
+      xmlStreamWriter = factory.createXMLStreamWriter(output);
       xmlStreamWriter.setPrefix("uax", Namespaces.OPC_UA_XSD);
       xmlStreamWriter.setPrefix("xsi", Namespaces.XML_SCHEMA_INSTANCE);
 
@@ -72,6 +95,8 @@ public class OpcUaXmlEncoder implements UaEncoder {
         }
       }
 
+      this.output = output;
+
       depth.set(0);
       namespaceStack.clear();
     } catch (XMLStreamException e) {
@@ -79,12 +104,29 @@ public class OpcUaXmlEncoder implements UaEncoder {
     }
   }
 
-  public String getDocumentXml() {
+  /**
+   * Get the {@link Writer} output is being written to.
+   *
+   * @return the {@link Writer} output is being written to.
+   */
+  public Writer getOutput() {
+    return output;
+  }
+
+  /**
+   * Get the value of {@link #toString()} called on the current {@link Writer}.
+   *
+   * <p>If not set explicitly to something else, this will be a {@link StringWriter}, and the value
+   * will be a String containing XML.
+   *
+   * @return the value of {@link #toString()} called on the current {@link Writer}.
+   */
+  public String getOutputString() {
     try {
       xmlStreamWriter.flush();
-      return xmlString.toString();
+      return output.toString();
     } catch (XMLStreamException e) {
-      throw new RuntimeException(e);
+      throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
     }
   }
 

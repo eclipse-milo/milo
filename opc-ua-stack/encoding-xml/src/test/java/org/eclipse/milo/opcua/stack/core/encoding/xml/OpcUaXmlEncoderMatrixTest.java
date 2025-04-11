@@ -29,11 +29,13 @@ public class OpcUaXmlEncoderMatrixTest {
   @ParameterizedTest(name = "matrix = {0}")
   @MethodSource(
       "org.eclipse.milo.opcua.stack.core.encoding.xml.args.MatrixArguments#matrixOfBuiltinTypeArguments")
-  void encodeMatrixOfBuiltinType(@Nullable Matrix matrix, String expected) {
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeMatrix("Test", matrix);
+  void encodeMatrixOfBuiltinType(@Nullable Matrix matrix, String expected) throws Exception {
+    String actual;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeMatrix("Test", matrix);
 
-    String actual = encoder.getDocumentXml();
+      actual = encoder.getOutputString();
+    }
 
     Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
 
@@ -45,11 +47,13 @@ public class OpcUaXmlEncoderMatrixTest {
   @ParameterizedTest(name = "matrix = {0}")
   @MethodSource(
       "org.eclipse.milo.opcua.stack.core.encoding.xml.args.MatrixArguments#matrixOfStructuredTypeArguments")
-  void encodeMatrixOfStructuredType(Matrix matrix, String expected) {
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeStructMatrix("Test", matrix, matrix.getDataTypeId().orElseThrow());
+  void encodeMatrixOfStructuredType(Matrix matrix, String expected) throws Exception {
+    String actual;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeStructMatrix("Test", matrix, matrix.getDataTypeId().orElseThrow());
 
-    String actual = encoder.getDocumentXml();
+      actual = encoder.getOutputString();
+    }
 
     Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
 
@@ -61,11 +65,13 @@ public class OpcUaXmlEncoderMatrixTest {
   @ParameterizedTest(name = "matrix = {0}")
   @MethodSource(
       "org.eclipse.milo.opcua.stack.core.encoding.xml.args.MatrixArguments#matrixOfEnumeratedTypeArguments")
-  void encodeMatrixOfEnumeratedType(Matrix matrix, String expected) {
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeEnumMatrix("Test", matrix);
+  void encodeMatrixOfEnumeratedType(Matrix matrix, String expected) throws Exception {
+    String actual;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeEnumMatrix("Test", matrix);
 
-    String actual = encoder.getDocumentXml();
+      actual = encoder.getOutputString();
+    }
 
     Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
 

@@ -36,11 +36,13 @@ public class OpcUaXmlEncoderScalarTest {
   @ParameterizedTest(name = "value = {0}")
   @MethodSource(
       "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#booleanArguments")
-  void encodeBoolean(Boolean value, String expected) {
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeBoolean("Test", value);
+  void encodeBoolean(Boolean value, String expected) throws Exception {
+    String actual;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeBoolean("Test", value);
 
-    String actual = encoder.getDocumentXml();
+      actual = encoder.getOutputString();
+    }
 
     Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
 
@@ -52,11 +54,13 @@ public class OpcUaXmlEncoderScalarTest {
   @ParameterizedTest(name = "value = {0}")
   @MethodSource(
       "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#sByteArguments")
-  void encodeSByte(Byte value, String expected) {
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeSByte("Test", value);
+  void encodeSByte(Byte value, String expected) throws Exception {
+    String actual;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeSByte("Test", value);
 
-    String actual = encoder.getDocumentXml();
+      actual = encoder.getOutputString();
+    }
 
     Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
 
@@ -67,11 +71,13 @@ public class OpcUaXmlEncoderScalarTest {
 
   @ParameterizedTest(name = "value = {0}")
   @MethodSource("org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#byteArguments")
-  void encodeByte(UByte value, String expected) {
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeByte("Test", value);
+  void encodeByte(UByte value, String expected) throws Exception {
+    String actual;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeByte("Test", value);
 
-    String actual = encoder.getDocumentXml();
+      actual = encoder.getOutputString();
+    }
 
     Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
 
@@ -83,11 +89,13 @@ public class OpcUaXmlEncoderScalarTest {
   @ParameterizedTest(name = "value = {0}")
   @MethodSource(
       "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#int16Arguments")
-  void encodeInt16(Short value, String expected) {
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeInt16("Test", value);
+  void encodeInt16(Short value, String expected) throws Exception {
+    String actual;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeInt16("Test", value);
 
-    String actual = encoder.getDocumentXml();
+      actual = encoder.getOutputString();
+    }
 
     Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
 
@@ -99,11 +107,13 @@ public class OpcUaXmlEncoderScalarTest {
   @ParameterizedTest(name = "value = {0}")
   @MethodSource(
       "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#uInt16Arguments")
-  void encodeUInt16(UShort value, String expected) {
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeUInt16("Test", value);
+  void encodeUInt16(UShort value, String expected) throws Exception {
+    String actual;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeUInt16("Test", value);
 
-    String actual = encoder.getDocumentXml();
+      actual = encoder.getOutputString();
+    }
 
     Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
 
@@ -115,11 +125,13 @@ public class OpcUaXmlEncoderScalarTest {
   @ParameterizedTest(name = "value = {0}")
   @MethodSource(
       "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#int32Arguments")
-  void encodeInt32(Integer value, String expected) {
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeInt32("Test", value);
+  void encodeInt32(Integer value, String expected) throws Exception {
+    String actual;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeInt32("Test", value);
 
-    String actual = encoder.getDocumentXml();
+      actual = encoder.getOutputString();
+    }
 
     Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
 
@@ -131,11 +143,13 @@ public class OpcUaXmlEncoderScalarTest {
   @ParameterizedTest(name = "value = {0}")
   @MethodSource(
       "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#uInt32Arguments")
-  void encodeUInt32(UInteger value, String expected) {
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeUInt32("Test", value);
+  void encodeUInt32(UInteger value, String expected) throws Exception {
+    String actual;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeUInt32("Test", value);
 
-    String actual = encoder.getDocumentXml();
+      actual = encoder.getOutputString();
+    }
 
     Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
 
@@ -147,11 +161,13 @@ public class OpcUaXmlEncoderScalarTest {
   @ParameterizedTest(name = "value = {0}")
   @MethodSource(
       "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#int64Arguments")
-  void encodeInt64(Long value, String expected) {
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeInt64("Test", value);
+  void encodeInt64(Long value, String expected) throws Exception {
+    String actual;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeInt64("Test", value);
 
-    String actual = encoder.getDocumentXml();
+      actual = encoder.getOutputString();
+    }
 
     Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
 
@@ -163,11 +179,13 @@ public class OpcUaXmlEncoderScalarTest {
   @ParameterizedTest(name = "value = {0}")
   @MethodSource(
       "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#uInt64Arguments")
-  void encodeUInt64(ULong value, String expected) {
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeUInt64("Test", value);
+  void encodeUInt64(ULong value, String expected) throws Exception {
+    String actual;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeUInt64("Test", value);
 
-    String actual = encoder.getDocumentXml();
+      actual = encoder.getOutputString();
+    }
 
     Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
 
@@ -179,11 +197,13 @@ public class OpcUaXmlEncoderScalarTest {
   @ParameterizedTest(name = "value = {0}")
   @MethodSource(
       "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#floatArguments")
-  void encodeFloat(Float value, String expected) {
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeFloat("Test", value);
+  void encodeFloat(Float value, String expected) throws Exception {
+    String actual;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeFloat("Test", value);
 
-    String actual = encoder.getDocumentXml();
+      actual = encoder.getOutputString();
+    }
 
     Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
 
@@ -195,11 +215,13 @@ public class OpcUaXmlEncoderScalarTest {
   @ParameterizedTest(name = "value = {0}")
   @MethodSource(
       "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#doubleArguments")
-  void encodeDouble(Double value, String expected) {
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeDouble("Test", value);
+  void encodeDouble(Double value, String expected) throws Exception {
+    String actual;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeDouble("Test", value);
 
-    String actual = encoder.getDocumentXml();
+      actual = encoder.getOutputString();
+    }
 
     Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
 
@@ -211,11 +233,13 @@ public class OpcUaXmlEncoderScalarTest {
   @ParameterizedTest(name = "value = {0}")
   @MethodSource(
       "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#stringArguments")
-  void encodeString(@Nullable String value, String expected) {
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeString("Test", value);
+  void encodeString(@Nullable String value, String expected) throws Exception {
+    String actual;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeString("Test", value);
 
-    String actual = encoder.getDocumentXml();
+      actual = encoder.getOutputString();
+    }
 
     if (value == null) {
       // When encoding a null string the encoder doesn't produce any XML
@@ -232,11 +256,13 @@ public class OpcUaXmlEncoderScalarTest {
   @ParameterizedTest(name = "dateTime = {0}")
   @MethodSource(
       "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#dateTimeArguments")
-  void encodeDateTime(@Nullable DateTime dateTime, String expected) {
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeDateTime("Test", dateTime);
+  void encodeDateTime(@Nullable DateTime dateTime, String expected) throws Exception {
+    String actual;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeDateTime("Test", dateTime);
 
-    String actual = encoder.getDocumentXml();
+      actual = encoder.getOutputString();
+    }
 
     Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
 
@@ -247,11 +273,13 @@ public class OpcUaXmlEncoderScalarTest {
 
   @ParameterizedTest(name = "guid = {0}")
   @MethodSource("org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#guidArguments")
-  void encodeGuid(@Nullable UUID guid, String expected) {
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeGuid("Test", guid);
+  void encodeGuid(@Nullable UUID guid, String expected) throws Exception {
+    String actual;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeGuid("Test", guid);
 
-    String actual = encoder.getDocumentXml();
+      actual = encoder.getOutputString();
+    }
 
     Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
 
@@ -263,11 +291,13 @@ public class OpcUaXmlEncoderScalarTest {
   @ParameterizedTest(name = "byteString = {0}")
   @MethodSource(
       "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#byteStringArguments")
-  void encodeByteString(@Nullable ByteString byteString, String expected) {
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeByteString("Test", byteString);
+  void encodeByteString(@Nullable ByteString byteString, String expected) throws Exception {
+    String actual;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeByteString("Test", byteString);
 
-    String actual = encoder.getDocumentXml();
+      actual = encoder.getOutputString();
+    }
 
     if (byteString == null) {
       // When encoding a null ByteString the encoder doesn't produce any XML
@@ -284,11 +314,13 @@ public class OpcUaXmlEncoderScalarTest {
   @ParameterizedTest(name = "xmlElement = {0}")
   @MethodSource(
       "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#xmlElementArguments")
-  void encodeXmlElement(@Nullable XmlElement xmlElement, String expected) {
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeXmlElement("Test", xmlElement);
+  void encodeXmlElement(@Nullable XmlElement xmlElement, String expected) throws Exception {
+    String actual;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeXmlElement("Test", xmlElement);
 
-    String actual = encoder.getDocumentXml();
+      actual = encoder.getOutputString();
+    }
 
     if (xmlElement == null) {
       // When encoding a null XmlElement the encoder doesn't produce any XML
@@ -305,11 +337,13 @@ public class OpcUaXmlEncoderScalarTest {
   @ParameterizedTest(name = "nodeId = {0}")
   @MethodSource(
       "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#nodeIdArguments")
-  void encodeNodeId(NodeId nodeId, String expected) {
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeNodeId("Test", nodeId);
+  void encodeNodeId(NodeId nodeId, String expected) throws Exception {
+    String actual;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeNodeId("Test", nodeId);
 
-    String actual = encoder.getDocumentXml();
+      actual = encoder.getOutputString();
+    }
 
     if (nodeId == null) {
       // When encoding a null NodeId the encoder doesn't produce any XML
@@ -326,11 +360,14 @@ public class OpcUaXmlEncoderScalarTest {
   @ParameterizedTest(name = "expandedNodeId = {0}")
   @MethodSource(
       "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#expandedNodeIdArguments")
-  void encodeExpandedNodeId(@Nullable ExpandedNodeId expandedNodeId, String expected) {
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeExpandedNodeId("Test", expandedNodeId);
+  void encodeExpandedNodeId(@Nullable ExpandedNodeId expandedNodeId, String expected)
+      throws Exception {
+    String actual;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeExpandedNodeId("Test", expandedNodeId);
 
-    String actual = encoder.getDocumentXml();
+      actual = encoder.getOutputString();
+    }
 
     if (expandedNodeId == null) {
       // When encoding a null ExpandedNodeId the encoder doesn't produce any XML
@@ -347,11 +384,13 @@ public class OpcUaXmlEncoderScalarTest {
   @ParameterizedTest(name = "statusCode = {0}")
   @MethodSource(
       "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#statusCodeArguments")
-  void encodeStatusCode(@Nullable StatusCode statusCode, String expected) {
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeStatusCode("Test", statusCode);
+  void encodeStatusCode(@Nullable StatusCode statusCode, String expected) throws Exception {
+    String actual;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeStatusCode("Test", statusCode);
 
-    String actual = encoder.getDocumentXml();
+      actual = encoder.getOutputString();
+    }
 
     if (statusCode == null) {
       // When encoding a null StatusCode the encoder doesn't produce any XML
@@ -368,11 +407,14 @@ public class OpcUaXmlEncoderScalarTest {
   @ParameterizedTest(name = "qualifiedName = {0}")
   @MethodSource(
       "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#qualifiedNameArguments")
-  void encodeQualifiedName(@Nullable QualifiedName qualifiedName, String expected) {
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeQualifiedName("Test", qualifiedName);
+  void encodeQualifiedName(@Nullable QualifiedName qualifiedName, String expected)
+      throws Exception {
+    String actual;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeQualifiedName("Test", qualifiedName);
 
-    String actual = encoder.getDocumentXml();
+      actual = encoder.getOutputString();
+    }
 
     if (qualifiedName == null) {
       // When encoding a null QualifiedName the encoder doesn't produce any XML
@@ -389,11 +431,14 @@ public class OpcUaXmlEncoderScalarTest {
   @ParameterizedTest(name = "localizedText = {0}")
   @MethodSource(
       "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#localizedTextArguments")
-  void encodeLocalizedText(@Nullable LocalizedText localizedText, String expected) {
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeLocalizedText("Test", localizedText);
+  void encodeLocalizedText(@Nullable LocalizedText localizedText, String expected)
+      throws Exception {
+    String actual;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeLocalizedText("Test", localizedText);
 
-    String actual = encoder.getDocumentXml();
+      actual = encoder.getOutputString();
+    }
 
     if (localizedText == null) {
       // When encoding a null LocalizedText the encoder doesn't produce any XML
@@ -410,11 +455,14 @@ public class OpcUaXmlEncoderScalarTest {
   @ParameterizedTest(name = "extensionObject = {0}")
   @MethodSource(
       "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#extensionObjectArguments")
-  void encodeExtensionObject(@Nullable ExtensionObject extensionObject, String expected) {
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeExtensionObject("Test", extensionObject);
+  void encodeExtensionObject(@Nullable ExtensionObject extensionObject, String expected)
+      throws Exception {
+    String actual;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeExtensionObject("Test", extensionObject);
 
-    String actual = encoder.getDocumentXml();
+      actual = encoder.getOutputString();
+    }
 
     if (extensionObject == null) {
       // When encoding a null ExtensionObject the encoder doesn't produce any XML
@@ -431,11 +479,13 @@ public class OpcUaXmlEncoderScalarTest {
   @ParameterizedTest(name = "dataValue = {0}")
   @MethodSource(
       "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#dataValueArguments")
-  void encodeDataValue(@Nullable DataValue dataValue, String expected) {
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeDataValue("Test", dataValue);
+  void encodeDataValue(@Nullable DataValue dataValue, String expected) throws Exception {
+    String actual;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeDataValue("Test", dataValue);
 
-    String actual = encoder.getDocumentXml();
+      actual = encoder.getOutputString();
+    }
 
     if (dataValue == null) {
       // When encoding a null DataValue the encoder doesn't produce any XML
@@ -452,11 +502,13 @@ public class OpcUaXmlEncoderScalarTest {
   @ParameterizedTest(name = "variant = {0}")
   @MethodSource(
       "org.eclipse.milo.opcua.stack.core.encoding.xml.args.VariantArguments#variantOfScalarArguments")
-  void encodeVariantOfScalar(Variant variant, String expected) {
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeVariant("Test", variant);
+  void encodeVariantOfScalar(Variant variant, String expected) throws Exception {
+    String actual;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeVariant("Test", variant);
 
-    String actual = encoder.getDocumentXml();
+      actual = encoder.getOutputString();
+    }
 
     Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
 
@@ -468,11 +520,13 @@ public class OpcUaXmlEncoderScalarTest {
   @ParameterizedTest(name = "variant = {0}")
   @MethodSource(
       "org.eclipse.milo.opcua.stack.core.encoding.xml.args.VariantArguments#variantOfArrayArguments")
-  void encodeVariantOfArray(Variant variant, String expected) {
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeVariant("Test", variant);
+  void encodeVariantOfArray(Variant variant, String expected) throws Exception {
+    String actual;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeVariant("Test", variant);
 
-    String actual = encoder.getDocumentXml();
+      actual = encoder.getOutputString();
+    }
 
     Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
 
@@ -484,11 +538,13 @@ public class OpcUaXmlEncoderScalarTest {
   @ParameterizedTest(name = "variant = {0}")
   @MethodSource(
       "org.eclipse.milo.opcua.stack.core.encoding.xml.args.VariantArguments#variantOfMatrixArguments")
-  void encodeVariantOfMatrix(Variant variant, String expected) {
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeVariant("Test", variant);
+  void encodeVariantOfMatrix(Variant variant, String expected) throws Exception {
+    String actual;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeVariant("Test", variant);
 
-    String actual = encoder.getDocumentXml();
+      actual = encoder.getOutputString();
+    }
 
     Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
 
@@ -500,12 +556,14 @@ public class OpcUaXmlEncoderScalarTest {
   @ParameterizedTest(name = "diagnosticInfo = {0}")
   @MethodSource(
       "org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments#diagnosticInfoArguments")
-  void encodeDiagnosticInfo(@Nullable DiagnosticInfo diagnosticInfo, String expected) {
+  void encodeDiagnosticInfo(@Nullable DiagnosticInfo diagnosticInfo, String expected)
+      throws Exception {
+    String actual;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeDiagnosticInfo("Test", diagnosticInfo);
 
-    var encoder = new OpcUaXmlEncoder(context);
-    encoder.encodeDiagnosticInfo("Test", diagnosticInfo);
-
-    String actual = encoder.getDocumentXml();
+      actual = encoder.getOutputString();
+    }
 
     if (diagnosticInfo == null) {
       // When encoding a null DiagnosticInfo the encoder doesn't produce any XML
@@ -522,15 +580,18 @@ public class OpcUaXmlEncoderScalarTest {
   @ParameterizedTest(name = "field = {0}, struct = {1}, dataTypeId = {2}")
   @MethodSource(
       "org.eclipse.milo.opcua.stack.core.encoding.xml.args.StructArguments#structArguments")
-  void encodeStruct(String field, @Nullable UaStructuredType value, String expected) {
-    var encoder = new OpcUaXmlEncoder(context);
-    if (value != null) {
-      encoder.encodeStruct(field, value, value.getTypeId());
-    } else {
-      encoder.encodeStruct(field, null, NodeId.NULL_VALUE);
-    }
+  void encodeStruct(String field, @Nullable UaStructuredType value, String expected)
+      throws Exception {
+    String actual;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      if (value != null) {
+        encoder.encodeStruct(field, value, value.getTypeId());
+      } else {
+        encoder.encodeStruct(field, null, NodeId.NULL_VALUE);
+      }
 
-    String actual = encoder.getDocumentXml();
+      actual = encoder.getOutputString();
+    }
 
     if (value == null) {
       // When encoding a null struct the encoder doesn't produce any XML
