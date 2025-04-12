@@ -10,7 +10,6 @@
 
 package org.eclipse.milo.opcua.stack.core.encoding.json;
 
-import java.io.StringWriter;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
@@ -59,11 +58,13 @@ public class OpcUaDefaultJsonEncoding implements DataTypeEncoding {
           "no codec registered for typeId=" + typeId.toParseableString());
     }
 
-    var stringWriter = new StringWriter();
-    var encoder = new OpcUaJsonEncoder(context, stringWriter);
-    encoder.encodeStruct(null, struct, codec);
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      encoder.encodeStruct(null, struct, codec);
 
-    return ExtensionObject.of(stringWriter.toString(), typeId);
+      return ExtensionObject.of(encoder.getOutputString(), typeId);
+    } catch (Exception e) {
+      throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+    }
   }
 
   @Override

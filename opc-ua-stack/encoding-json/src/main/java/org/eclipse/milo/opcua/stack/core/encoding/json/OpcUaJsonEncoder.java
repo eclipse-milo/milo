@@ -53,7 +53,7 @@ import org.eclipse.milo.opcua.stack.core.util.ArrayUtil;
 import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 import org.jspecify.annotations.NonNull;
 
-public class OpcUaJsonEncoder implements UaEncoder {
+public class OpcUaJsonEncoder implements UaEncoder, AutoCloseable {
 
   enum EncoderContext {
     BUILTIN,
@@ -68,6 +68,8 @@ public class OpcUaJsonEncoder implements UaEncoder {
   private final Stack<EncoderContext> contextStack = new Stack<>();
 
   Encoding encoding = Encoding.COMPACT;
+
+  Writer output;
   JsonWriter jsonWriter;
   EncodingContext encodingContext;
 
@@ -75,9 +77,10 @@ public class OpcUaJsonEncoder implements UaEncoder {
     this(encodingContext, new StringWriter());
   }
 
-  public OpcUaJsonEncoder(EncodingContext encodingContext, Writer writer) {
+  public OpcUaJsonEncoder(EncodingContext encodingContext, Writer output) {
     this.encodingContext = encodingContext;
-    this.jsonWriter = new JsonWriter(writer);
+
+    reset(output);
   }
 
   @Override
@@ -85,24 +88,54 @@ public class OpcUaJsonEncoder implements UaEncoder {
     return encodingContext;
   }
 
+  @Override
+  public void close() throws Exception {
+    if (jsonWriter != null) {
+      jsonWriter.close();
+    }
+  }
+
+  /** Reset this encoder and configure a new {@link StringWriter} output. */
+  public void reset() {
+    reset(new StringWriter());
+  }
+
   /**
-   * Reset this encoder with a new {@link Writer} to write to.
+   * Reset this encoder and configure a new {@link Writer} output.
    *
-   * @param writer the new {@link Writer} to write to.
+   * @param output the new {@link Writer} to write to.
    */
-  public void reset(Writer writer) {
-    jsonWriter = new JsonWriter(writer);
+  public void reset(Writer output) {
+    this.output = output;
+
+    jsonWriter = new JsonWriter(output);
     jsonWriter.setHtmlSafe(false);
   }
 
   /**
-   * Reset this encoder with a new {@link OutputStream} to write to.
+   * Get the {@link Writer} output is being written to.
    *
-   * @param outputStream the new {@link OutputStream} to write to.
+   * @return the {@link Writer} output is being written to.
    */
-  public void reset(OutputStream outputStream) {
-    jsonWriter = new JsonWriter(new OutputStreamWriter(outputStream));
-    jsonWriter.setHtmlSafe(false);
+  public Writer getOutput() {
+    return output;
+  }
+
+  /**
+   * Get the value of {@link #toString()} called on the current {@link Writer}.
+   *
+   * <p>If not set explicitly to something else, this will be a {@link StringWriter}, and the value
+   * will be a String containing JSON.
+   *
+   * @return the value of {@link #toString()} called on the current {@link Writer}.
+   */
+  public String getOutputString() {
+    try {
+      jsonWriter.flush();
+      return output.toString();
+    } catch (IOException e) {
+      throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+    }
   }
 
   /**
@@ -129,8 +162,8 @@ public class OpcUaJsonEncoder implements UaEncoder {
     contextStack.push(context);
   }
 
-  private EncoderContext contextPop() {
-    return contextStack.pop();
+  private void contextPop() {
+    contextStack.pop();
   }
 
   @Override
