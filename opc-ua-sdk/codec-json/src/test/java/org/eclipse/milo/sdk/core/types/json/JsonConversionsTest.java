@@ -157,7 +157,7 @@ class JsonConversionsTest {
     assertEquals(new JsonPrimitive(input), jsonValue);
 
     float opcValue = JsonConversions.toFloat(jsonValue);
-    assertEquals((float) input, opcValue);
+    assertEquals(input, opcValue);
   }
 
   @ParameterizedTest

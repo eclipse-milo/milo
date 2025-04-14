@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -52,7 +52,6 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 import org.eclipse.milo.opcua.stack.core.Stack;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -115,11 +114,7 @@ public class OpcWebSocketClientTransport extends AbstractUascClientTransport {
 
   @Override
   public CompletableFuture<Unit> connect(ClientApplicationContext applicationContext) {
-    channelFsm
-        .getFsm()
-        .withContext(
-            (Consumer<FsmContext<State, Event>>)
-                ctx -> ctx.set(KEY_CLIENT_APPLICATION, applicationContext));
+    channelFsm.getFsm().withContext(ctx -> ctx.set(KEY_CLIENT_APPLICATION, applicationContext));
 
     return channelFsm.connect().thenApply(c -> Unit.VALUE);
   }

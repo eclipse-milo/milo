@@ -711,7 +711,7 @@ class DynamicTypeSerializationTest {
   @MethodSource("unionOfScalarProvider")
   void unionOfScalar(UnionOfScalar union) {
     var encoded1 = ExtensionObject.encode(staticEncodingContext, union);
-    UaStructuredType decoded = (UaStructuredType) encoded1.decode(dynamicEncodingContext);
+    UaStructuredType decoded = encoded1.decode(dynamicEncodingContext);
     var encoded2 = ExtensionObject.encode(dynamicEncodingContext, decoded);
 
     assertEquals(encoded1, encoded2);
@@ -721,7 +721,7 @@ class DynamicTypeSerializationTest {
   @MethodSource("unionOfArrayProvider")
   void unionOfArray(UnionOfArray union) {
     var encoded1 = ExtensionObject.encode(staticEncodingContext, union);
-    UaStructuredType decoded = (UaStructuredType) encoded1.decode(dynamicEncodingContext);
+    UaStructuredType decoded = encoded1.decode(dynamicEncodingContext);
     var encoded2 = ExtensionObject.encode(dynamicEncodingContext, decoded);
 
     assertEquals(encoded1, encoded2);
@@ -731,7 +731,7 @@ class DynamicTypeSerializationTest {
   @MethodSource("unionOfMatrixProvider")
   void unionOfMatrix(UnionOfMatrix union) {
     var encoded1 = ExtensionObject.encode(staticEncodingContext, union);
-    UaStructuredType decoded = (UaStructuredType) encoded1.decode(dynamicEncodingContext);
+    UaStructuredType decoded = encoded1.decode(dynamicEncodingContext);
     var encoded2 = ExtensionObject.encode(dynamicEncodingContext, decoded);
 
     assertEquals(encoded1, encoded2);
