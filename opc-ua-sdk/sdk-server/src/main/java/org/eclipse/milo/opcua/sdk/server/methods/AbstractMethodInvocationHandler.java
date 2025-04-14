@@ -91,28 +91,23 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
 
             if (dataTypeTree.isStructType(argDataTypeId)) {
               ExtensionObject xo = (ExtensionObject) value;
-              Object decoded =
+              UaStructuredType decoded =
                   xo.decode(node.getNodeContext().getServer().getStaticEncodingContext());
 
-              if (decoded instanceof UaStructuredType structuredType) {
-                valueDataTypeId =
-                    structuredType
-                        .getTypeId()
-                        .toNodeId(node.getNodeContext().getNamespaceTable())
-                        .orElse(NodeId.NULL_VALUE);
+              valueDataTypeId =
+                  decoded
+                      .getTypeId()
+                      .toNodeId(node.getNodeContext().getNamespaceTable())
+                      .orElse(NodeId.NULL_VALUE);
 
-                DataType argType = dataTypeTree.getType(argDataTypeId);
-                boolean isAbstract = argType != null && argType.isAbstract();
+              DataType argType = dataTypeTree.getType(argDataTypeId);
+              boolean isAbstract = argType != null && argType.isAbstract();
 
-                if (isAbstract) {
-                  dataTypeMatch = dataTypeTree.isSubtypeOf(valueDataTypeId, argDataTypeId);
-                } else {
-                  dataTypeMatch = Objects.equals(valueDataTypeId, argDataTypeId);
-                }
+              if (isAbstract) {
+                dataTypeMatch = dataTypeTree.isSubtypeOf(valueDataTypeId, argDataTypeId);
               } else {
-                dataTypeMatch = false;
+                dataTypeMatch = Objects.equals(valueDataTypeId, argDataTypeId);
               }
-
             } else {
               dataTypeMatch = dataTypeTree.isAssignable(argDataTypeId, value.getClass());
             }

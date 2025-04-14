@@ -317,11 +317,11 @@ public class DataTypeTreeBuilder {
       Boolean isAbstract = false;
       DataTypeDefinition definition = null;
 
-      if (isAbstractValue.statusCode() != null && isAbstractValue.statusCode().isGood()) {
+      if (isAbstractValue.statusCode().isGood()) {
         isAbstract = (Boolean) isAbstractValue.value().value();
       }
 
-      if (definitionValue.statusCode() != null && definitionValue.statusCode().isGood()) {
+      if (definitionValue.statusCode().isGood()) {
         Object o = definitionValue.value().value();
         if (o instanceof ExtensionObject xo) {
           try {
@@ -365,16 +365,14 @@ public class DataTypeTreeBuilder {
                 NodeIds.OperationLimitsType_MaxNodesPerRead));
 
     DataValue maxNodesPerBrowse = dataValues.get(0);
-    if (maxNodesPerBrowse.statusCode() != null
-        && maxNodesPerBrowse.statusCode().isGood()
+    if (maxNodesPerBrowse.statusCode().isGood()
         && maxNodesPerBrowse.value().value() instanceof UInteger) {
 
       operationLimits[0] = (UInteger) maxNodesPerBrowse.value().value();
     }
 
     DataValue maxNodesPerRead = dataValues.get(1);
-    if (maxNodesPerRead.statusCode() != null
-        && maxNodesPerRead.statusCode().isGood()
+    if (maxNodesPerRead.statusCode().isGood()
         && dataValues.get(1).value().value() instanceof UInteger) {
 
       operationLimits[1] = (UInteger) maxNodesPerRead.value().value();

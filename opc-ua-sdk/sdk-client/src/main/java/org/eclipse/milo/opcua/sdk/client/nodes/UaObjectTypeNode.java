@@ -120,7 +120,7 @@ public class UaObjectTypeNode extends UaNode implements ObjectTypeNode {
 
     StatusCode statusCode = value.statusCode();
 
-    if (statusCode != null && statusCode.isBad()) {
+    if (statusCode.isBad()) {
       throw new UaException(statusCode, "read IsAbstract failed");
     } else {
       Boolean isAbstract = (Boolean) value.value().value();

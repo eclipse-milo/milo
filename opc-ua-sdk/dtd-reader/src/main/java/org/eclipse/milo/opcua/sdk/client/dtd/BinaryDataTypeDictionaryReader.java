@@ -248,7 +248,7 @@ public class BinaryDataTypeDictionaryReader {
         value -> {
           StatusCode statusCode = value.statusCode();
 
-          if (statusCode == null || statusCode.isGood()) {
+          if (statusCode.isGood()) {
             ByteString fragmentBytes = (ByteString) value.value().value();
 
             if (fragmentBytes != null) {

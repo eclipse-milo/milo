@@ -398,7 +398,7 @@ public class UaVariableNode extends UaNode implements VariableNode {
 
     StatusCode statusCode = value.statusCode();
 
-    if (statusCode != null && statusCode.isBad()) {
+    if (statusCode.isBad()) {
       throw new UaException(statusCode, "read DataType failed");
     } else {
       NodeId dataType = (NodeId) value.value().value();
@@ -419,7 +419,7 @@ public class UaVariableNode extends UaNode implements VariableNode {
 
     StatusCode statusCode = value.statusCode();
 
-    if (statusCode != null && statusCode.isBad()) {
+    if (statusCode.isBad()) {
       throw new UaException(statusCode, "read ValueRank failed");
     } else {
       Integer valueRank = (Integer) value.value().value();
@@ -447,9 +447,7 @@ public class UaVariableNode extends UaNode implements VariableNode {
     DataValue value = readAttribute(AttributeId.ArrayDimensions);
     StatusCode statusCode = value.statusCode();
 
-    if (statusCode != null
-        && statusCode.isBad()
-        && statusCode.value() != StatusCodes.Bad_AttributeIdInvalid) {
+    if (statusCode.isBad() && statusCode.value() != StatusCodes.Bad_AttributeIdInvalid) {
 
       throw new UaException(statusCode, "read ArrayDimensions failed");
     } else {
@@ -472,7 +470,7 @@ public class UaVariableNode extends UaNode implements VariableNode {
 
     StatusCode statusCode = value.statusCode();
 
-    if (statusCode != null && statusCode.isBad()) {
+    if (statusCode.isBad()) {
       throw new UaException(statusCode, "read AccessLevel failed");
     } else {
       UByte accessLevel = (UByte) value.value().value();
@@ -494,7 +492,7 @@ public class UaVariableNode extends UaNode implements VariableNode {
 
     StatusCode statusCode = value.statusCode();
 
-    if (statusCode != null && statusCode.isBad()) {
+    if (statusCode.isBad()) {
       throw new UaException(statusCode, "read UserAccessLevel failed");
     } else {
       UByte userAccessLevel = (UByte) value.value().value();
@@ -520,9 +518,7 @@ public class UaVariableNode extends UaNode implements VariableNode {
 
     StatusCode statusCode = value.statusCode();
 
-    if (statusCode != null
-        && statusCode.isBad()
-        && statusCode.value() != StatusCodes.Bad_AttributeIdInvalid) {
+    if (statusCode.isBad() && statusCode.value() != StatusCodes.Bad_AttributeIdInvalid) {
 
       throw new UaException(statusCode, "read MinimumSamplingInterval failed");
     } else {
@@ -544,7 +540,7 @@ public class UaVariableNode extends UaNode implements VariableNode {
 
     StatusCode statusCode = value.statusCode();
 
-    if (statusCode != null && statusCode.isBad()) {
+    if (statusCode.isBad()) {
       throw new UaException(statusCode, "read Historizing failed");
     } else {
       Boolean historizing = (Boolean) value.value().value();
@@ -566,7 +562,7 @@ public class UaVariableNode extends UaNode implements VariableNode {
 
     StatusCode statusCode = value.statusCode();
 
-    if (statusCode != null && statusCode.isBad()) {
+    if (statusCode.isBad()) {
       throw new UaException(statusCode, "read AccessLevelEx failed");
     } else {
       AccessLevelExType accessLevelEx = new AccessLevelExType((UInteger) value.value().value());

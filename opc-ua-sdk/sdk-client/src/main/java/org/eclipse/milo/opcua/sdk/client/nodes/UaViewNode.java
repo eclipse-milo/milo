@@ -148,7 +148,7 @@ public class UaViewNode extends UaNode implements ViewNode {
 
     StatusCode statusCode = value.statusCode();
 
-    if (statusCode != null && statusCode.isBad()) {
+    if (statusCode.isBad()) {
       throw new UaException(statusCode, "read ContainsNoLoops failed");
     } else {
       Boolean containsNoLoops = (Boolean) value.value().value();
@@ -169,7 +169,7 @@ public class UaViewNode extends UaNode implements ViewNode {
 
     StatusCode statusCode = value.statusCode();
 
-    if (statusCode != null && statusCode.isBad()) {
+    if (statusCode.isBad()) {
       throw new UaException(statusCode, "read EventNotifier failed");
     } else {
       UByte eventNotifier = (UByte) value.value().value();

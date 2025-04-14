@@ -914,7 +914,7 @@ public class AddressSpace {
       NodeId nodeId, DataValue[] baseAttributeValues) {
 
     StatusCode nodeIdStatusCode = baseAttributeValues[0].statusCode();
-    if (nodeIdStatusCode != null && nodeIdStatusCode.isBad()) {
+    if (nodeIdStatusCode.isBad()) {
       return failedUaFuture(nodeIdStatusCode);
     }
 
@@ -1173,7 +1173,7 @@ public class AddressSpace {
       throws UaException {
     DataValue nodeIdDataValue = attributeValues[0];
     StatusCode nodeIdStatusCode = nodeIdDataValue.statusCode();
-    if (nodeIdStatusCode != null && nodeIdStatusCode.isBad()) {
+    if (nodeIdStatusCode.isBad()) {
       throw new UaException(nodeIdStatusCode);
     }
 
@@ -1228,7 +1228,7 @@ public class AddressSpace {
       throws UaException {
     DataValue nodeIdDataValue = attributeValues[0];
     StatusCode nodeIdStatusCode = nodeIdDataValue.statusCode();
-    if (nodeIdStatusCode != null && nodeIdStatusCode.isBad()) {
+    if (nodeIdStatusCode.isBad()) {
       throw new UaException(nodeIdStatusCode);
     }
 
@@ -1281,7 +1281,7 @@ public class AddressSpace {
 
     DataValue nodeIdDataValue = attributeValues[0];
     StatusCode nodeIdStatusCode = nodeIdDataValue.statusCode();
-    if (nodeIdStatusCode != null && nodeIdStatusCode.isBad()) {
+    if (nodeIdStatusCode.isBad()) {
       throw new UaException(nodeIdStatusCode);
     }
 
@@ -1337,7 +1337,7 @@ public class AddressSpace {
       throws UaException {
     DataValue nodeIdDataValue = attributeValues[0];
     StatusCode nodeIdStatusCode = nodeIdDataValue.statusCode();
-    if (nodeIdStatusCode != null && nodeIdStatusCode.isBad()) {
+    if (nodeIdStatusCode.isBad()) {
       throw new UaException(nodeIdStatusCode);
     }
 
@@ -1389,7 +1389,7 @@ public class AddressSpace {
 
     DataValue nodeIdDataValue = attributeValues[0];
     StatusCode nodeIdStatusCode = nodeIdDataValue.statusCode();
-    if (nodeIdStatusCode != null && nodeIdStatusCode.isBad()) {
+    if (nodeIdStatusCode.isBad()) {
       throw new UaException(nodeIdStatusCode);
     }
 
@@ -1445,7 +1445,7 @@ public class AddressSpace {
 
     DataValue nodeIdDataValue = attributeValues[0];
     StatusCode nodeIdStatusCode = nodeIdDataValue.statusCode();
-    if (nodeIdStatusCode != null && nodeIdStatusCode.isBad()) {
+    if (nodeIdStatusCode.isBad()) {
       throw new UaException(nodeIdStatusCode);
     }
 
@@ -1519,7 +1519,7 @@ public class AddressSpace {
       throws UaException {
     DataValue nodeIdDataValue = attributeValues[0];
     StatusCode nodeIdStatusCode = nodeIdDataValue.statusCode();
-    if (nodeIdStatusCode != null && nodeIdStatusCode.isBad()) {
+    if (nodeIdStatusCode.isBad()) {
       throw new UaException(nodeIdStatusCode);
     }
 
@@ -1577,7 +1577,7 @@ public class AddressSpace {
   private UaViewNode newViewNode(NodeId nodeId, DataValue[] attributeValues) throws UaException {
     DataValue nodeIdDataValue = attributeValues[0];
     StatusCode nodeIdStatusCode = nodeIdDataValue.statusCode();
-    if (nodeIdStatusCode != null && nodeIdStatusCode.isBad()) {
+    if (nodeIdStatusCode.isBad()) {
       throw new UaException(nodeIdStatusCode);
     }
 
@@ -1629,7 +1629,7 @@ public class AddressSpace {
   private static <T> T getAttributeOrNull(DataValue value, Class<T> attributeClazz) {
     StatusCode statusCode = value.statusCode();
 
-    if (statusCode != null && statusCode.isBad()) {
+    if (statusCode.isBad()) {
       return null;
     } else {
       Object attributeValue = value.value().value();
@@ -1648,7 +1648,7 @@ public class AddressSpace {
 
     StatusCode statusCode = value.statusCode();
 
-    if (statusCode != null && statusCode.isBad()) {
+    if (statusCode.isBad()) {
       return null;
     } else {
       Object o = value.value().value();

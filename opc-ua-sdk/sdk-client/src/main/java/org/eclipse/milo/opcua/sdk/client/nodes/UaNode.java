@@ -384,7 +384,7 @@ public abstract class UaNode implements Node {
 
     StatusCode statusCode = value.statusCode();
 
-    if (statusCode != null && statusCode.isBad()) {
+    if (statusCode.isBad()) {
       throw new UaException(statusCode, "read NodeId failed");
     } else {
       NodeId nodeId = (NodeId) value.value().value();
@@ -405,7 +405,7 @@ public abstract class UaNode implements Node {
 
     StatusCode statusCode = value.statusCode();
 
-    if (statusCode != null && statusCode.isBad()) {
+    if (statusCode.isBad()) {
       throw new UaException(statusCode, "read NodeClass failed");
     } else {
       Integer i = (Integer) requireNonNullElse(value.value().value(), 0);
@@ -427,7 +427,7 @@ public abstract class UaNode implements Node {
 
     StatusCode statusCode = value.statusCode();
 
-    if (statusCode != null && statusCode.isBad()) {
+    if (statusCode.isBad()) {
       throw new UaException(statusCode, "read BrowseName failed");
     } else {
       QualifiedName browseName = (QualifiedName) value.value().value();
@@ -448,7 +448,7 @@ public abstract class UaNode implements Node {
 
     StatusCode statusCode = value.statusCode();
 
-    if (statusCode != null && statusCode.isBad()) {
+    if (statusCode.isBad()) {
       throw new UaException(statusCode, "read DisplayName failed");
     } else {
       LocalizedText displayName = (LocalizedText) value.value().value();
@@ -470,7 +470,7 @@ public abstract class UaNode implements Node {
 
     StatusCode statusCode = value.statusCode();
 
-    if (statusCode != null && statusCode.isBad()) {
+    if (statusCode.isBad()) {
       throw new UaException(statusCode, "read Description failed");
     } else {
       LocalizedText description = (LocalizedText) value.value().value();
@@ -492,7 +492,7 @@ public abstract class UaNode implements Node {
 
     StatusCode statusCode = value.statusCode();
 
-    if (statusCode != null && statusCode.isBad()) {
+    if (statusCode.isBad()) {
       throw new UaException(statusCode, "read WriteMask failed");
     } else {
       UInteger writeMask = (UInteger) value.value().value();
@@ -514,7 +514,7 @@ public abstract class UaNode implements Node {
 
     StatusCode statusCode = value.statusCode();
 
-    if (statusCode != null && statusCode.isBad()) {
+    if (statusCode.isBad()) {
       throw new UaException(statusCode, "read UserWriteMask failed");
     } else {
       UInteger userWriteMask = (UInteger) value.value().value();
@@ -536,7 +536,7 @@ public abstract class UaNode implements Node {
 
     StatusCode statusCode = value.statusCode();
 
-    if (statusCode != null && statusCode.isBad()) {
+    if (statusCode.isBad()) {
       throw new UaException(statusCode, "read RolePermissions failed");
     } else {
       RolePermissionType[] rolePermissions =
@@ -559,7 +559,7 @@ public abstract class UaNode implements Node {
 
     StatusCode statusCode = value.statusCode();
 
-    if (statusCode != null && statusCode.isBad()) {
+    if (statusCode.isBad()) {
       throw new UaException(statusCode, "read UserRolePermissions failed");
     } else {
       RolePermissionType[] userRolePermissions =
@@ -582,7 +582,7 @@ public abstract class UaNode implements Node {
 
     StatusCode statusCode = value.statusCode();
 
-    if (statusCode != null && statusCode.isBad()) {
+    if (statusCode.isBad()) {
       throw new UaException(statusCode, "read AccessRestriction failed");
     } else {
       AccessRestrictionType accessRestrictions =
@@ -988,7 +988,7 @@ public abstract class UaNode implements Node {
               DataValue value = vi.next();
               StatusCode statusCode = value.statusCode();
 
-              if (statusCode == null || statusCode.isGood()) {
+              if (statusCode.isGood()) {
                 setAttributeValue(attributeId, value);
               }
             }

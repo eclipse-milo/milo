@@ -894,7 +894,7 @@ public class SubscriptionManager {
       NodeId nodeId = readValueIds.get(i).getNodeId();
 
       DataValue dv0 = values.get(i);
-      if (dv0.statusCode() != null && dv0.statusCode().isBad()) {
+      if (dv0.statusCode().isBad()) {
         attributesMap.put(nodeId, new NegativeResponse(dv0.statusCode()));
       } else {
         Object v0 = dv0.value().value();

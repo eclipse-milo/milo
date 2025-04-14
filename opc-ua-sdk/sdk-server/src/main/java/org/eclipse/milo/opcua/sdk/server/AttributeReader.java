@@ -103,7 +103,7 @@ public class AttributeReader {
                   ExtensionObject.class);
 
           dvb.setValue(new Variant(newValue));
-        } else if (valueClazz == ExtensionObject.class) {
+        } else if (ExtensionObject.class.isAssignableFrom(valueClazz)) {
           ExtensionObject xo = (ExtensionObject) valueObject;
 
           Object newValue = transcode(node, xo, encodingName);

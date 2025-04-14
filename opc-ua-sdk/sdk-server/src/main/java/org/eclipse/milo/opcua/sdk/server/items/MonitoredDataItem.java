@@ -95,9 +95,7 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
 
       if (getQueueSize() > 1) {
         /* Set overflow if queueSize > 1... */
-        if (statusCode != null) {
-          value = value.withStatus(statusCode.withOverflow());
-        }
+        value = value.withStatus(statusCode.withOverflow());
 
         Subscription subscription =
             session.getSubscriptionManager().getSubscription(subscriptionId);
@@ -105,7 +103,7 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
         if (subscription != null) {
           subscription.getSubscriptionDiagnostics().getMonitoringQueueOverflowCount().increment();
         }
-      } else if (statusCode != null && statusCode.isOverflowSet()) {
+      } else if (statusCode.isOverflowSet()) {
         /* But make sure it's clear otherwise. */
         value = value.withStatus(statusCode.withoutOverflow());
       }

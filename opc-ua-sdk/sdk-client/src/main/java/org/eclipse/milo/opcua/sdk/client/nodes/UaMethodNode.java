@@ -149,7 +149,7 @@ public class UaMethodNode extends UaNode implements MethodNode {
 
     StatusCode statusCode = value.statusCode();
 
-    if (statusCode != null && statusCode.isBad()) {
+    if (statusCode.isBad()) {
       throw new UaException(statusCode, "read Executable failed");
     } else {
       Boolean executable = (Boolean) value.value().value();
@@ -170,7 +170,7 @@ public class UaMethodNode extends UaNode implements MethodNode {
 
     StatusCode statusCode = value.statusCode();
 
-    if (statusCode != null && statusCode.isBad()) {
+    if (statusCode.isBad()) {
       throw new UaException(statusCode, "read UserExecutable failed");
     } else {
       Boolean userExecutable = (Boolean) value.value().value();

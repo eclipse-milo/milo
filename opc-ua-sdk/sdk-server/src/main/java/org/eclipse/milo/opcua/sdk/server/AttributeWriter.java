@@ -245,7 +245,6 @@ public class AttributeWriter {
       OpcUaServer server, NodeId dataType, DataValue value, boolean allowNulls) throws UaException {
 
     Variant variant = value.value();
-    if (variant == null) return value;
 
     Object o = variant.value();
     if (o == null) {
@@ -299,7 +298,6 @@ public class AttributeWriter {
       Integer valueRank, UInteger[] arrayDimensions, DataValue value) throws UaException {
 
     Variant variant = value.value();
-    if (variant == null) return;
 
     Object o = variant.value();
     if (o == null) return;

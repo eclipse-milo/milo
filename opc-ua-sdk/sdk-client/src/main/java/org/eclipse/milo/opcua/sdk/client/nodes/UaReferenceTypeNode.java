@@ -177,7 +177,7 @@ public class UaReferenceTypeNode extends UaNode implements ReferenceTypeNode {
 
     StatusCode statusCode = value.statusCode();
 
-    if (statusCode != null && statusCode.isBad()) {
+    if (statusCode.isBad()) {
       throw new UaException(statusCode, "read IsAbstract failed");
     } else {
       Boolean isAbstract = (Boolean) value.value().value();
@@ -198,7 +198,7 @@ public class UaReferenceTypeNode extends UaNode implements ReferenceTypeNode {
 
     StatusCode statusCode = value.statusCode();
 
-    if (statusCode != null && statusCode.isBad()) {
+    if (statusCode.isBad()) {
       throw new UaException(statusCode, "read Symmetric failed");
     } else {
       Boolean symmetric = (Boolean) value.value().value();
@@ -219,7 +219,7 @@ public class UaReferenceTypeNode extends UaNode implements ReferenceTypeNode {
 
     StatusCode statusCode = value.statusCode();
 
-    if (statusCode != null && statusCode.isBad()) {
+    if (statusCode.isBad()) {
       throw new UaException(statusCode, "read InverseName failed");
     } else {
       LocalizedText inverseName = (LocalizedText) value.value().value();

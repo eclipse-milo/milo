@@ -153,7 +153,7 @@ public class UaDataTypeNode extends UaNode implements DataTypeNode {
 
     StatusCode statusCode = value.statusCode();
 
-    if (statusCode != null && statusCode.isBad()) {
+    if (statusCode.isBad()) {
       throw new UaException(statusCode, "read IsAbstract failed");
     } else {
       Boolean isAbstract = (Boolean) value.value().value();
@@ -175,7 +175,7 @@ public class UaDataTypeNode extends UaNode implements DataTypeNode {
 
     StatusCode statusCode = value.statusCode();
 
-    if (statusCode != null && statusCode.isBad()) {
+    if (statusCode.isBad()) {
       throw new UaException(statusCode, "read DataTypeDefinition failed");
     } else {
       ExtensionObject xo = (ExtensionObject) value.value().value();

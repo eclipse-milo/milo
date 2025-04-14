@@ -263,7 +263,7 @@ public class UaVariableTypeNode extends UaNode implements VariableTypeNode {
 
     StatusCode statusCode = value.statusCode();
 
-    if (statusCode != null && statusCode.isBad()) {
+    if (statusCode.isBad()) {
       throw new UaException(statusCode, "read DataType failed");
     } else {
       NodeId dataType = (NodeId) value.value().value();
@@ -284,7 +284,7 @@ public class UaVariableTypeNode extends UaNode implements VariableTypeNode {
 
     StatusCode statusCode = value.statusCode();
 
-    if (statusCode != null && statusCode.isBad()) {
+    if (statusCode.isBad()) {
       throw new UaException(statusCode, "read ValueRank failed");
     } else {
       Integer valueRank = (Integer) value.value().value();
@@ -312,9 +312,7 @@ public class UaVariableTypeNode extends UaNode implements VariableTypeNode {
     DataValue value = readAttribute(AttributeId.ArrayDimensions);
     StatusCode statusCode = value.statusCode();
 
-    if (statusCode != null
-        && statusCode.isBad()
-        && statusCode.value() != StatusCodes.Bad_AttributeIdInvalid) {
+    if (statusCode.isBad() && statusCode.value() != StatusCodes.Bad_AttributeIdInvalid) {
 
       throw new UaException(statusCode, "read ArrayDimensions failed");
     } else {
@@ -336,7 +334,7 @@ public class UaVariableTypeNode extends UaNode implements VariableTypeNode {
 
     StatusCode statusCode = value.statusCode();
 
-    if (statusCode != null && statusCode.isBad()) {
+    if (statusCode.isBad()) {
       throw new UaException(statusCode, "read IsAbstract failed");
     } else {
       Boolean isAbstract = (Boolean) value.value().value();

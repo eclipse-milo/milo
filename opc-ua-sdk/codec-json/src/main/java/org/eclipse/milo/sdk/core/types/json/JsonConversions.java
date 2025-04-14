@@ -215,7 +215,7 @@ public class JsonConversions {
     if (value.value().isNotNull()) {
       jsonObject.add("Value", fromVariant(value.value()));
     }
-    if (value.statusCode() != null && value.statusCode().value() != 0L) {
+    if (value.statusCode().value() != 0L) {
       jsonObject.add("StatusCode", fromStatusCode(value.statusCode()));
     }
     if (value.sourceTime() != null) {
