@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -107,24 +107,21 @@ public class CustomUnionType extends Union implements UaStructuredType {
     @Override
     public CustomUnionType decodeType(EncodingContext context, UaDecoder decoder) {
       UInteger switchValue = decoder.decodeUInt32("SwitchValue");
-      switch (switchValue.intValue()) {
-        case 0:
-          return CustomUnionType.ofNull();
-        case 1:
-          {
-            UInteger foo = decoder.decodeUInt32("foo");
-            return CustomUnionType.ofFoo(foo);
-          }
-        case 2:
-          {
-            String bar = decoder.decodeString("bar");
-            return CustomUnionType.ofBar(bar);
-          }
-        default:
-          throw new UaSerializationException(
-              StatusCodes.Bad_DecodingError,
-              "unknown field in Union CustomUnionType: " + switchValue);
-      }
+      return switch (switchValue.intValue()) {
+        case 0 -> CustomUnionType.ofNull();
+        case 1 -> {
+          UInteger foo = decoder.decodeUInt32("foo");
+          yield CustomUnionType.ofFoo(foo);
+        }
+        case 2 -> {
+          String bar = decoder.decodeString("bar");
+          yield CustomUnionType.ofBar(bar);
+        }
+        default ->
+            throw new UaSerializationException(
+                StatusCodes.Bad_DecodingError,
+                "unknown field in Union CustomUnionType: " + switchValue);
+      };
     }
 
     @Override

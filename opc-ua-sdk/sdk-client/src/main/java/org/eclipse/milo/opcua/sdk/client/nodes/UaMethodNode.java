@@ -304,14 +304,11 @@ public class UaMethodNode extends UaNode implements MethodNode {
 
   @Override
   protected DataValue getAttributeValue(AttributeId attributeId) {
-    switch (attributeId) {
-      case Executable:
-        return DataValue.valueOnly(new Variant(isExecutable()));
-      case UserExecutable:
-        return DataValue.valueOnly(new Variant(isUserExecutable()));
-      default:
-        return super.getAttributeValue(attributeId);
-    }
+    return switch (attributeId) {
+      case Executable -> DataValue.valueOnly(new Variant(isExecutable()));
+      case UserExecutable -> DataValue.valueOnly(new Variant(isUserExecutable()));
+      default -> super.getAttributeValue(attributeId);
+    };
   }
 
   @Override

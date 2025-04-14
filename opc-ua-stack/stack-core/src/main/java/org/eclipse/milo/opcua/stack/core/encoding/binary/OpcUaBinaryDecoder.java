@@ -492,61 +492,36 @@ public class OpcUaBinaryDecoder implements UaDecoder {
   }
 
   private Object decodeBuiltinType(int typeId) throws UaSerializationException {
-    switch (typeId) {
-      case 1:
-        return decodeBoolean();
-      case 2:
-        return decodeSByte();
-      case 3:
-        return decodeByte();
-      case 4:
-        return decodeInt16();
-      case 5:
-        return decodeUInt16();
-      case 6:
-        return decodeInt32();
-      case 7:
-        return decodeUInt32();
-      case 8:
-        return decodeInt64();
-      case 9:
-        return decodeUInt64();
-      case 10:
-        return decodeFloat();
-      case 11:
-        return decodeDouble();
-      case 12:
-        return decodeString();
-      case 13:
-        return decodeDateTime();
-      case 14:
-        return decodeGuid();
-      case 15:
-        return decodeByteString();
-      case 16:
-        return decodeXmlElement();
-      case 17:
-        return decodeNodeId();
-      case 18:
-        return decodeExpandedNodeId();
-      case 19:
-        return decodeStatusCode();
-      case 20:
-        return decodeQualifiedName();
-      case 21:
-        return decodeLocalizedText();
-      case 22:
-        return decodeExtensionObject();
-      case 23:
-        return decodeDataValue();
-      case 24:
-        return decodeVariant();
-      case 25:
-        return decodeDiagnosticInfo();
-      default:
-        throw new UaSerializationException(
-            StatusCodes.Bad_DecodingError, "unknown builtin type: " + typeId);
-    }
+    return switch (typeId) {
+      case 1 -> decodeBoolean();
+      case 2 -> decodeSByte();
+      case 3 -> decodeByte();
+      case 4 -> decodeInt16();
+      case 5 -> decodeUInt16();
+      case 6 -> decodeInt32();
+      case 7 -> decodeUInt32();
+      case 8 -> decodeInt64();
+      case 9 -> decodeUInt64();
+      case 10 -> decodeFloat();
+      case 11 -> decodeDouble();
+      case 12 -> decodeString();
+      case 13 -> decodeDateTime();
+      case 14 -> decodeGuid();
+      case 15 -> decodeByteString();
+      case 16 -> decodeXmlElement();
+      case 17 -> decodeNodeId();
+      case 18 -> decodeExpandedNodeId();
+      case 19 -> decodeStatusCode();
+      case 20 -> decodeQualifiedName();
+      case 21 -> decodeLocalizedText();
+      case 22 -> decodeExtensionObject();
+      case 23 -> decodeDataValue();
+      case 24 -> decodeVariant();
+      case 25 -> decodeDiagnosticInfo();
+      default ->
+          throw new UaSerializationException(
+              StatusCodes.Bad_DecodingError, "unknown builtin type: " + typeId);
+    };
   }
 
   @Override

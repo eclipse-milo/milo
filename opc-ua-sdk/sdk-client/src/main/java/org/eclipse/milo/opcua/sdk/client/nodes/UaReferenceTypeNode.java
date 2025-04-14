@@ -306,16 +306,12 @@ public class UaReferenceTypeNode extends UaNode implements ReferenceTypeNode {
 
   @Override
   protected DataValue getAttributeValue(AttributeId attributeId) {
-    switch (attributeId) {
-      case IsAbstract:
-        return DataValue.valueOnly(new Variant(getIsAbstract()));
-      case Symmetric:
-        return DataValue.valueOnly(new Variant(getSymmetric()));
-      case InverseName:
-        return DataValue.valueOnly(new Variant(getInverseName()));
-      default:
-        return super.getAttributeValue(attributeId);
-    }
+    return switch (attributeId) {
+      case IsAbstract -> DataValue.valueOnly(new Variant(getIsAbstract()));
+      case Symmetric -> DataValue.valueOnly(new Variant(getSymmetric()));
+      case InverseName -> DataValue.valueOnly(new Variant(getInverseName()));
+      default -> super.getAttributeValue(attributeId);
+    };
   }
 
   @Override

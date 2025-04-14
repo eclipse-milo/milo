@@ -355,51 +355,29 @@ public class EventContentFilter {
 
   @NonNull
   private static Operator<?> getOperator(@NonNull FilterOperator filterOperator) {
-    // @formatter:off
-    switch (filterOperator) {
+    return switch (filterOperator) {
       // Basic FilterOperators
-      case Equals:
-        return Operators.EQUALS;
-      case IsNull:
-        return Operators.IS_NULL;
-      case GreaterThan:
-        return Operators.GREATER_THAN;
-      case LessThan:
-        return Operators.LESS_THAN;
-      case GreaterThanOrEqual:
-        return Operators.GREATER_THAN_OR_EQUAL;
-      case LessThanOrEqual:
-        return Operators.LESS_THAN_OR_EQUAL;
-      case Like:
-        return Operators.UNSUPPORTED;
-      case Not:
-        return Operators.NOT;
-      case Between:
-        return Operators.UNSUPPORTED;
-      case InList:
-        return Operators.UNSUPPORTED;
-      case And:
-        return Operators.UNSUPPORTED;
-      case Or:
-        return Operators.UNSUPPORTED;
-      case Cast:
-        return Operators.CAST;
-      case BitwiseAnd:
-        return Operators.UNSUPPORTED;
-      case BitwiseOr:
-        return Operators.UNSUPPORTED;
+      case Equals -> Operators.EQUALS;
+      case IsNull -> Operators.IS_NULL;
+      case GreaterThan -> Operators.GREATER_THAN;
+      case LessThan -> Operators.LESS_THAN;
+      case GreaterThanOrEqual -> Operators.GREATER_THAN_OR_EQUAL;
+      case LessThanOrEqual -> Operators.LESS_THAN_OR_EQUAL;
+      case Like -> Operators.UNSUPPORTED;
+      case Not -> Operators.NOT;
+      case Between -> Operators.UNSUPPORTED;
+      case InList -> Operators.UNSUPPORTED;
+      case And -> Operators.UNSUPPORTED;
+      case Or -> Operators.UNSUPPORTED;
+      case Cast -> Operators.CAST;
+      case BitwiseAnd -> Operators.UNSUPPORTED;
+      case BitwiseOr -> Operators.UNSUPPORTED;
 
       // Complex FilterOperators
-      case InView:
-        return Operators.UNSUPPORTED;
-      case OfType:
-        return Operators.OF_TYPE;
-      case RelatedTo:
-        return Operators.UNSUPPORTED;
-      default:
-        return Operators.UNSUPPORTED;
-    }
-    // @formatter:on
+      case InView -> Operators.UNSUPPORTED;
+      case OfType -> Operators.OF_TYPE;
+      case RelatedTo -> Operators.UNSUPPORTED;
+    };
   }
 
   @SuppressWarnings("unused")

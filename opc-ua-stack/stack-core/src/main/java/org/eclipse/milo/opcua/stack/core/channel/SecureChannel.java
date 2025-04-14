@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -183,13 +183,10 @@ public interface SecureChannel {
     if (isSymmetricEncryptionEnabled()) {
       SecurityAlgorithm algorithm = getSecurityPolicy().getSymmetricEncryptionAlgorithm();
 
-      switch (algorithm) {
-        case Aes128:
-        case Aes256:
-          return 16;
-        default:
-          return 1;
-      }
+      return switch (algorithm) {
+        case Aes128, Aes256 -> 16;
+        default -> 1;
+      };
     } else {
       return 1;
     }
@@ -198,47 +195,30 @@ public interface SecureChannel {
   default int getSymmetricSignatureSize() {
     SecurityAlgorithm algorithm = getSecurityPolicy().getSymmetricSignatureAlgorithm();
 
-    switch (algorithm) {
-      case HmacSha1:
-        return 20;
-      case HmacSha256:
-        return 32;
-      default:
-        return 0;
-    }
+    return switch (algorithm) {
+      case HmacSha1 -> 20;
+      case HmacSha256 -> 32;
+      default -> 0;
+    };
   }
 
   default int getSymmetricSignatureKeySize() {
-    switch (getSecurityPolicy()) {
-      case None:
-        return 0;
-      case Basic128Rsa15:
-        return 16;
-      case Basic256:
-        return 24;
-      case Basic256Sha256:
-      case Aes128_Sha256_RsaOaep:
-      case Aes256_Sha256_RsaPss:
-        return 32;
-      default:
-        return 0;
-    }
+    return switch (getSecurityPolicy()) {
+      case None -> 0;
+      case Basic128Rsa15 -> 16;
+      case Basic256 -> 24;
+      case Basic256Sha256, Aes128_Sha256_RsaOaep, Aes256_Sha256_RsaPss -> 32;
+      default -> 0;
+    };
   }
 
   default int getSymmetricEncryptionKeySize() {
-    switch (getSecurityPolicy()) {
-      case None:
-        return 0;
-      case Basic128Rsa15:
-      case Aes128_Sha256_RsaOaep:
-        return 16;
-      case Basic256:
-      case Basic256Sha256:
-      case Aes256_Sha256_RsaPss:
-        return 32;
-      default:
-        return 0;
-    }
+    return switch (getSecurityPolicy()) {
+      case None -> 0;
+      case Basic128Rsa15, Aes128_Sha256_RsaOaep -> 16;
+      case Basic256, Basic256Sha256, Aes256_Sha256_RsaPss -> 32;
+      default -> 0;
+    };
   }
 
   default boolean isSymmetricSigningEnabled() {
@@ -263,39 +243,27 @@ public interface SecureChannel {
   }
 
   static int getAsymmetricSignatureSize(Certificate certificate, SecurityAlgorithm algorithm) {
-    switch (algorithm) {
-      case RsaSha1:
-      case RsaSha256:
-      case RsaSha256Pss:
-        return (getAsymmetricKeyLength(certificate) + 7) / 8;
-      default:
-        return 0;
-    }
+    return switch (algorithm) {
+      case RsaSha1, RsaSha256, RsaSha256Pss -> (getAsymmetricKeyLength(certificate) + 7) / 8;
+      default -> 0;
+    };
   }
 
   static int getAsymmetricCipherTextBlockSize(
       Certificate certificate, SecurityAlgorithm algorithm) {
-    switch (algorithm) {
-      case Rsa15:
-      case RsaOaepSha1:
-      case RsaOaepSha256:
-        return (getAsymmetricKeyLength(certificate) + 7) / 8;
-      default:
-        return 1;
-    }
+    return switch (algorithm) {
+      case Rsa15, RsaOaepSha1, RsaOaepSha256 -> (getAsymmetricKeyLength(certificate) + 7) / 8;
+      default -> 1;
+    };
   }
 
   static int getAsymmetricPlainTextBlockSize(
       X509Certificate certificate, SecurityAlgorithm algorithm) {
-    switch (algorithm) {
-      case Rsa15:
-        return (getAsymmetricKeyLength(certificate) + 7) / 8 - 11;
-      case RsaOaepSha1:
-        return (getAsymmetricKeyLength(certificate) + 7) / 8 - 42;
-      case RsaOaepSha256:
-        return (getAsymmetricKeyLength(certificate) + 7) / 8 - 66;
-      default:
-        return 1;
-    }
+    return switch (algorithm) {
+      case Rsa15 -> (getAsymmetricKeyLength(certificate) + 7) / 8 - 11;
+      case RsaOaepSha1 -> (getAsymmetricKeyLength(certificate) + 7) / 8 - 42;
+      case RsaOaepSha256 -> (getAsymmetricKeyLength(certificate) + 7) / 8 - 66;
+      default -> 1;
+    };
   }
 }

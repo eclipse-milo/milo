@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -154,25 +154,14 @@ public class UaVariableTypeNode extends UaNode implements VariableTypeNode {
 
   @Override
   public synchronized Object getAttribute(AttributeId attributeId) {
-    switch (attributeId) {
-      case Value:
-        return value;
-
-      case DataType:
-        return dataType;
-
-      case ValueRank:
-        return valueRank;
-
-      case ArrayDimensions:
-        return arrayDimensions;
-
-      case IsAbstract:
-        return isAbstract;
-
-      default:
-        return super.getAttribute(attributeId);
-    }
+    return switch (attributeId) {
+      case Value -> value;
+      case DataType -> dataType;
+      case ValueRank -> valueRank;
+      case ArrayDimensions -> arrayDimensions;
+      case IsAbstract -> isAbstract;
+      default -> super.getAttribute(attributeId);
+    };
   }
 
   @Override

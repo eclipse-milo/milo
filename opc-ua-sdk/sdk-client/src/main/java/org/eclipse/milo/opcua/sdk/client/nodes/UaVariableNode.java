@@ -1066,28 +1066,19 @@ public class UaVariableNode extends UaNode implements VariableNode {
 
   @Override
   protected DataValue getAttributeValue(AttributeId attributeId) {
-    switch (attributeId) {
-      case Value:
-        return DataValue.valueOnly(new Variant(getValue().value().value()));
-      case DataType:
-        return DataValue.valueOnly(new Variant(getDataType()));
-      case ValueRank:
-        return DataValue.valueOnly(new Variant(getValueRank()));
-      case ArrayDimensions:
-        return DataValue.valueOnly(new Variant(getArrayDimensions()));
-      case AccessLevel:
-        return DataValue.valueOnly(new Variant(getAccessLevel()));
-      case UserAccessLevel:
-        return DataValue.valueOnly(new Variant(getUserAccessLevel()));
-      case MinimumSamplingInterval:
-        return DataValue.valueOnly(new Variant(getMinimumSamplingInterval()));
-      case Historizing:
-        return DataValue.valueOnly(new Variant(getHistorizing()));
-      case AccessLevelEx:
-        return DataValue.valueOnly(new Variant(getAccessLevelEx().getValue()));
-      default:
-        return super.getAttributeValue(attributeId);
-    }
+    return switch (attributeId) {
+      case Value -> DataValue.valueOnly(new Variant(getValue().value().value()));
+      case DataType -> DataValue.valueOnly(new Variant(getDataType()));
+      case ValueRank -> DataValue.valueOnly(new Variant(getValueRank()));
+      case ArrayDimensions -> DataValue.valueOnly(new Variant(getArrayDimensions()));
+      case AccessLevel -> DataValue.valueOnly(new Variant(getAccessLevel()));
+      case UserAccessLevel -> DataValue.valueOnly(new Variant(getUserAccessLevel()));
+      case MinimumSamplingInterval ->
+          DataValue.valueOnly(new Variant(getMinimumSamplingInterval()));
+      case Historizing -> DataValue.valueOnly(new Variant(getHistorizing()));
+      case AccessLevelEx -> DataValue.valueOnly(new Variant(getAccessLevelEx().getValue()));
+      default -> super.getAttributeValue(attributeId);
+    };
   }
 
   @Override

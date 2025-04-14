@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -189,27 +189,16 @@ public enum AttributeId {
   public static Set<AttributeId> getAttributes(
       org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass nodeClass) {
 
-    // @formatter:off
-    switch (nodeClass) {
-      case Object:
-        return OBJECT_ATTRIBUTES;
-      case Variable:
-        return VARIABLE_ATTRIBUTES;
-      case Method:
-        return METHOD_ATTRIBUTES;
-      case ObjectType:
-        return OBJECT_TYPE_ATTRIBUTES;
-      case VariableType:
-        return VARIABLE_TYPE_ATTRIBUTES;
-      case ReferenceType:
-        return REFERENCE_TYPE_ATTRIBUTES;
-      case DataType:
-        return DATA_TYPE_ATTRIBUTES;
-      case View:
-        return VIEW_ATTRIBUTES;
-      default:
-        return Set.of();
-    }
-    // @formatter:on
+    return switch (nodeClass) {
+      case Object -> OBJECT_ATTRIBUTES;
+      case Variable -> VARIABLE_ATTRIBUTES;
+      case Method -> METHOD_ATTRIBUTES;
+      case ObjectType -> OBJECT_TYPE_ATTRIBUTES;
+      case VariableType -> VARIABLE_TYPE_ATTRIBUTES;
+      case ReferenceType -> REFERENCE_TYPE_ATTRIBUTES;
+      case DataType -> DATA_TYPE_ATTRIBUTES;
+      case View -> VIEW_ATTRIBUTES;
+      default -> Set.of();
+    };
   }
 }

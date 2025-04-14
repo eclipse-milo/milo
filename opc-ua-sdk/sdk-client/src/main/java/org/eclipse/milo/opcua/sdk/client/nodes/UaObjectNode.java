@@ -617,12 +617,10 @@ public class UaObjectNode extends UaNode implements ObjectNode {
 
   @Override
   protected DataValue getAttributeValue(AttributeId attributeId) {
-    switch (attributeId) {
-      case EventNotifier:
-        return DataValue.valueOnly(new Variant(getEventNotifier()));
-      default:
-        return super.getAttributeValue(attributeId);
-    }
+    return switch (attributeId) {
+      case EventNotifier -> DataValue.valueOnly(new Variant(getEventNotifier()));
+      default -> super.getAttributeValue(attributeId);
+    };
   }
 
   @Override

@@ -193,12 +193,10 @@ public class UaObjectTypeNode extends UaNode implements ObjectTypeNode {
 
   @Override
   protected DataValue getAttributeValue(AttributeId attributeId) {
-    switch (attributeId) {
-      case IsAbstract:
-        return DataValue.valueOnly(new Variant(getIsAbstract()));
-      default:
-        return super.getAttributeValue(attributeId);
-    }
+    return switch (attributeId) {
+      case IsAbstract -> DataValue.valueOnly(new Variant(getIsAbstract()));
+      default -> super.getAttributeValue(attributeId);
+    };
   }
 
   @Override

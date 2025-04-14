@@ -166,80 +166,45 @@ public class JsonObjectCodec extends AbstractBsdCodec<JsonObject, JsonElement> {
     } else if (member.isJsonObject()) {
       JsonObject jsonObject = member.getAsJsonObject();
 
-      switch (typeName) {
-        case "QualifiedName":
-          {
-            return new QualifiedName(
+      return switch (typeName) {
+        case "QualifiedName" ->
+            new QualifiedName(
                 jsonObject.get("namespaceIndex").getAsInt(), jsonObject.get("name").getAsString());
-          }
-        case "LocalizedText":
-          {
-            return new LocalizedText(
+        case "LocalizedText" ->
+            new LocalizedText(
                 jsonObject.get("locale").getAsString(), jsonObject.get("text").getAsString());
-          }
-
-        default:
-          return jsonObject;
-      }
+        default -> jsonObject;
+      };
     } else if (member.isJsonPrimitive()) {
       JsonPrimitive primitive = member.getAsJsonPrimitive();
 
       if (primitive.isBoolean()) {
         return primitive.getAsBoolean();
       } else if (primitive.isString()) {
-        switch (typeName) {
-          case "Guid":
-            return UUID.fromString(primitive.getAsString());
-
-          case "NodeId":
-            return NodeId.parseSafe(primitive.getAsString()).orElse(NodeId.NULL_VALUE);
-
-          case "ExpandedNodeId":
-            return ExpandedNodeId.parse(primitive.getAsString());
-
-          case "XmlElement":
-            return new XmlElement(primitive.getAsString());
-
-          default:
-            return primitive.getAsString();
-        }
+        return switch (typeName) {
+          case "Guid" -> UUID.fromString(primitive.getAsString());
+          case "NodeId" -> NodeId.parseSafe(primitive.getAsString()).orElse(NodeId.NULL_VALUE);
+          case "ExpandedNodeId" -> ExpandedNodeId.parse(primitive.getAsString());
+          case "XmlElement" -> new XmlElement(primitive.getAsString());
+          default -> primitive.getAsString();
+        };
       } else if (primitive.isNumber()) {
-        switch (typeName) {
-          case "Bit":
-            return primitive.getAsInt();
-
-          case "SByte":
-            return primitive.getAsByte();
-          case "Int16":
-            return primitive.getAsShort();
-          case "Int32":
-            return primitive.getAsInt();
-          case "Int64":
-            return primitive.getAsLong();
-
-          case "Byte":
-            return ubyte(primitive.getAsShort());
-          case "UInt16":
-            return ushort(primitive.getAsInt());
-          case "UInt32":
-            return uint(primitive.getAsLong());
-          case "UInt64":
-            return ulong(primitive.getAsBigInteger());
-
-          case "Float":
-            return primitive.getAsFloat();
-          case "Double":
-            return primitive.getAsDouble();
-
-          case "DateTime":
-            return new DateTime(primitive.getAsLong());
-
-          case "StatusCode":
-            return new StatusCode(primitive.getAsLong());
-
-          default:
-            return primitive.getAsNumber();
-        }
+        return switch (typeName) {
+          case "Bit" -> primitive.getAsInt();
+          case "SByte" -> primitive.getAsByte();
+          case "Int16" -> primitive.getAsShort();
+          case "Int32" -> primitive.getAsInt();
+          case "Int64" -> primitive.getAsLong();
+          case "Byte" -> ubyte(primitive.getAsShort());
+          case "UInt16" -> ushort(primitive.getAsInt());
+          case "UInt32" -> uint(primitive.getAsLong());
+          case "UInt64" -> ulong(primitive.getAsBigInteger());
+          case "Float" -> primitive.getAsFloat();
+          case "Double" -> primitive.getAsDouble();
+          case "DateTime" -> new DateTime(primitive.getAsLong());
+          case "StatusCode" -> new StatusCode(primitive.getAsLong());
+          default -> primitive.getAsNumber();
+        };
       }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -72,99 +72,50 @@ public enum Service {
     }
     int id = ((UInteger) identifier).intValue();
 
-    switch (id) {
-      // @formatter:off
-      case 420:
-        return DISCOVERY_FIND_SERVERS;
-      case 12190:
-        return DISCOVERY_FIND_SERVERS_ON_NETWORK;
-      case 426:
-        return DISCOVERY_GET_ENDPOINTS;
-      case 435:
-        return DISCOVERY_REGISTER_SERVER;
-      case 12193:
-        return DISCOVERY_REGISTER_SERVER_2;
-
-      case 444:
-        return SECURE_CHANNEL_OPEN_SECURE_CHANNEL;
-      case 450:
-        return SECURE_CHANNEL_CLOSE_SECURE_CHANNEL;
-
-      case 459:
-        return SESSION_CREATE_SESSION;
-      case 465:
-        return SESSION_ACTIVATE_SESSION;
-      case 471:
-        return SESSION_CLOSE_SESSION;
-      case 477:
-        return SESSION_CANCEL;
-
-      case 486:
-        return NODE_MANAGEMENT_ADD_NODES;
-      case 492:
-        return NODE_MANAGEMENT_ADD_REFERENCES;
-      case 498:
-        return NODE_MANAGEMENT_DELETE_NODES;
-      case 504:
-        return NODE_MANAGEMENT_DELETE_REFERENCES;
-
-      case 525:
-        return VIEW_BROWSE;
-      case 531:
-        return VIEW_BROWSE_NEXT;
-      case 552:
-        return VIEW_TRANSLATE_BROWSE_PATHS;
-      case 558:
-        return VIEW_REGISTER_NODES;
-      case 564:
-        return VIEW_UNREGISTER_NODES;
-
-      case 613:
-        return QUERY_QUERY_FIRST;
-      case 619:
-        return QUERY_QUERY_NEXT;
-
-      case 629:
-        return ATTRIBUTE_READ;
-      case 662:
-        return ATTRIBUTE_HISTORY_READ;
-      case 671:
-        return ATTRIBUTE_WRITE;
-      case 698:
-        return ATTRIBUTE_HISTORY_UPDATE;
-
-      case 710:
-        return METHOD_CALL;
-
-      case 749:
-        return MONITORED_ITEM_CREATE_MONITORED_ITEMS;
-      case 761:
-        return MONITORED_ITEM_MODIFY_MONITORED_ITEMS;
-      case 767:
-        return MONITORED_ITEM_SET_MONITORING_MODE;
-      case 773:
-        return MONITORED_ITEM_SET_TRIGGERING;
-      case 779:
-        return MONITORED_ITEM_DELETE_MONITORED_ITEMS;
-
-      case 785:
-        return SUBSCRIPTION_CREATE_SUBSCRIPTION;
-      case 791:
-        return SUBSCRIPTION_MODIFY_SUBSCRIPTION;
-      case 797:
-        return SUBSCRIPTION_SET_PUBLISHING_MODE;
-      case 824:
-        return SUBSCRIPTION_PUBLISH;
-      case 830:
-        return SUBSCRIPTION_REPUBLISH;
-      case 839:
-        return SUBSCRIPTION_TRANSFER_SUBSCRIPTIONS;
-      case 845:
-        return SUBSCRIPTION_DELETE_SUBSCRIPTIONS;
-      // @formatter:on
-      default:
+    return switch (id) {
+      case 420 -> DISCOVERY_FIND_SERVERS;
+      case 12190 -> DISCOVERY_FIND_SERVERS_ON_NETWORK;
+      case 426 -> DISCOVERY_GET_ENDPOINTS;
+      case 435 -> DISCOVERY_REGISTER_SERVER;
+      case 12193 -> DISCOVERY_REGISTER_SERVER_2;
+      case 444 -> SECURE_CHANNEL_OPEN_SECURE_CHANNEL;
+      case 450 -> SECURE_CHANNEL_CLOSE_SECURE_CHANNEL;
+      case 459 -> SESSION_CREATE_SESSION;
+      case 465 -> SESSION_ACTIVATE_SESSION;
+      case 471 -> SESSION_CLOSE_SESSION;
+      case 477 -> SESSION_CANCEL;
+      case 486 -> NODE_MANAGEMENT_ADD_NODES;
+      case 492 -> NODE_MANAGEMENT_ADD_REFERENCES;
+      case 498 -> NODE_MANAGEMENT_DELETE_NODES;
+      case 504 -> NODE_MANAGEMENT_DELETE_REFERENCES;
+      case 525 -> VIEW_BROWSE;
+      case 531 -> VIEW_BROWSE_NEXT;
+      case 552 -> VIEW_TRANSLATE_BROWSE_PATHS;
+      case 558 -> VIEW_REGISTER_NODES;
+      case 564 -> VIEW_UNREGISTER_NODES;
+      case 613 -> QUERY_QUERY_FIRST;
+      case 619 -> QUERY_QUERY_NEXT;
+      case 629 -> ATTRIBUTE_READ;
+      case 662 -> ATTRIBUTE_HISTORY_READ;
+      case 671 -> ATTRIBUTE_WRITE;
+      case 698 -> ATTRIBUTE_HISTORY_UPDATE;
+      case 710 -> METHOD_CALL;
+      case 749 -> MONITORED_ITEM_CREATE_MONITORED_ITEMS;
+      case 761 -> MONITORED_ITEM_MODIFY_MONITORED_ITEMS;
+      case 767 -> MONITORED_ITEM_SET_MONITORING_MODE;
+      case 773 -> MONITORED_ITEM_SET_TRIGGERING;
+      case 779 -> MONITORED_ITEM_DELETE_MONITORED_ITEMS;
+      case 785 -> SUBSCRIPTION_CREATE_SUBSCRIPTION;
+      case 791 -> SUBSCRIPTION_MODIFY_SUBSCRIPTION;
+      case 797 -> SUBSCRIPTION_SET_PUBLISHING_MODE;
+      case 824 -> SUBSCRIPTION_PUBLISH;
+      case 830 -> SUBSCRIPTION_REPUBLISH;
+      case 839 -> SUBSCRIPTION_TRANSFER_SUBSCRIPTIONS;
+      case 845 -> SUBSCRIPTION_DELETE_SUBSCRIPTIONS;
+      default -> {
         LoggerFactory.getLogger(Service.class).warn("Unknown service id: " + id);
-        return null;
-    }
+        yield null;
+      }
+    };
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -314,42 +314,24 @@ public class UaVariableNode extends UaNode implements VariableNode {
 
   @Override
   public synchronized Object getAttribute(AttributeId attributeId) {
-    switch (attributeId) {
-      case Value:
-        // The value is being directly from the field/memory.
-        // We "know the value to be accurate" at this point, so apply
-        // a new timestamp to the value.
-        // This ensures that when static values are read they have a
-        // current value for serverTimestamp.
-        return value.copy(b -> b.setServerTime(DateTime.now()));
-
-      case DataType:
-        return dataType;
-
-      case ValueRank:
-        return valueRank;
-
-      case ArrayDimensions:
-        return arrayDimensions;
-
-      case AccessLevel:
-        return accessLevel;
-
-      case UserAccessLevel:
-        return userAccessLevel;
-
-      case MinimumSamplingInterval:
-        return minimumSamplingInterval;
-
-      case Historizing:
-        return historizing;
-
-      case AccessLevelEx:
-        return accessLevelEx;
-
-      default:
-        return super.getAttribute(attributeId);
-    }
+    return switch (attributeId) {
+      case Value ->
+          // The value is being directly from the field/memory.
+          // We "know the value to be accurate" at this point, so apply
+          // a new timestamp to the value.
+          // This ensures that when static values are read they have a
+          // current value for serverTimestamp.
+          value.copy(b -> b.setServerTime(DateTime.now()));
+      case DataType -> dataType;
+      case ValueRank -> valueRank;
+      case ArrayDimensions -> arrayDimensions;
+      case AccessLevel -> accessLevel;
+      case UserAccessLevel -> userAccessLevel;
+      case MinimumSamplingInterval -> minimumSamplingInterval;
+      case Historizing -> historizing;
+      case AccessLevelEx -> accessLevelEx;
+      default -> super.getAttribute(attributeId);
+    };
   }
 
   @Override

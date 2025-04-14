@@ -183,62 +183,35 @@ public class AttributeWriter {
   }
 
   private static WriteMask writeMaskForAttribute(AttributeId attributeId) {
-    switch (attributeId) {
-      case AccessLevel:
-        return WriteMask.AccessLevel;
-      case ArrayDimensions:
-        return WriteMask.ArrayDimensions;
-      case BrowseName:
-        return WriteMask.BrowseName;
-      case ContainsNoLoops:
-        return WriteMask.ContainsNoLoops;
-      case DataType:
-        return WriteMask.DataType;
-      case Description:
-        return WriteMask.Description;
-      case DisplayName:
-        return WriteMask.DisplayName;
-      case EventNotifier:
-        return WriteMask.EventNotifier;
-      case Executable:
-        return WriteMask.Executable;
-      case Historizing:
-        return WriteMask.Historizing;
-      case InverseName:
-        return WriteMask.InverseName;
-      case IsAbstract:
-        return WriteMask.IsAbstract;
-      case MinimumSamplingInterval:
-        return WriteMask.MinimumSamplingInterval;
-      case NodeClass:
-        return WriteMask.NodeClass;
-      case NodeId:
-        return WriteMask.NodeId;
-      case Symmetric:
-        return WriteMask.Symmetric;
-      case UserAccessLevel:
-        return WriteMask.UserAccessLevel;
-      case UserExecutable:
-        return WriteMask.UserExecutable;
-      case UserWriteMask:
-        return WriteMask.UserWriteMask;
-      case Value:
-        return WriteMask.ValueForVariableType;
-      case ValueRank:
-        return WriteMask.ValueRank;
-      case WriteMask:
-        return WriteMask.WriteMask;
-      case RolePermissions:
-        return WriteMask.RolePermissions;
-      case AccessRestrictions:
-        return WriteMask.AccessRestrictions;
-      case AccessLevelEx:
-        return WriteMask.AccessLevelEx;
-      case DataTypeDefinition:
-        return WriteMask.DataTypeDefinition;
-      default:
-        throw new IllegalArgumentException("unknown AttributeId: " + attributeId);
-    }
+    return switch (attributeId) {
+      case AccessLevel -> WriteMask.AccessLevel;
+      case ArrayDimensions -> WriteMask.ArrayDimensions;
+      case BrowseName -> WriteMask.BrowseName;
+      case ContainsNoLoops -> WriteMask.ContainsNoLoops;
+      case DataType -> WriteMask.DataType;
+      case Description -> WriteMask.Description;
+      case DisplayName -> WriteMask.DisplayName;
+      case EventNotifier -> WriteMask.EventNotifier;
+      case Executable -> WriteMask.Executable;
+      case Historizing -> WriteMask.Historizing;
+      case InverseName -> WriteMask.InverseName;
+      case IsAbstract -> WriteMask.IsAbstract;
+      case MinimumSamplingInterval -> WriteMask.MinimumSamplingInterval;
+      case NodeClass -> WriteMask.NodeClass;
+      case NodeId -> WriteMask.NodeId;
+      case Symmetric -> WriteMask.Symmetric;
+      case UserAccessLevel -> WriteMask.UserAccessLevel;
+      case UserExecutable -> WriteMask.UserExecutable;
+      case UserWriteMask -> WriteMask.UserWriteMask;
+      case Value -> WriteMask.ValueForVariableType;
+      case ValueRank -> WriteMask.ValueRank;
+      case WriteMask -> WriteMask.WriteMask;
+      case RolePermissions -> WriteMask.RolePermissions;
+      case AccessRestrictions -> WriteMask.AccessRestrictions;
+      case AccessLevelEx -> WriteMask.AccessLevelEx;
+      case DataTypeDefinition -> WriteMask.DataTypeDefinition;
+      default -> throw new IllegalArgumentException("unknown AttributeId: " + attributeId);
+    };
   }
 
   private static DataValue validateDataType(

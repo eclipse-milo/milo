@@ -180,18 +180,11 @@ public class NonceUtil {
    * @return the minimum nonce length for use with {@code securityPolicy}.
    */
   private static int getNonceLength(SecurityPolicy securityPolicy) {
-    switch (securityPolicy) {
-      case Basic128Rsa15:
-        return 16;
-      case Basic256:
-      case Basic256Sha256:
-      case Aes128_Sha256_RsaOaep:
-      case Aes256_Sha256_RsaPss:
-        return 32;
-      case None:
-      default:
-        return 0;
-    }
+    return switch (securityPolicy) {
+      case Basic128Rsa15 -> 16;
+      case Basic256, Basic256Sha256, Aes128_Sha256_RsaOaep, Aes256_Sha256_RsaPss -> 32;
+      default -> 0;
+    };
   }
 
   /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -108,16 +108,11 @@ public class UaViewNode extends UaNode implements ViewNode {
 
   @Override
   public synchronized Object getAttribute(AttributeId attributeId) {
-    switch (attributeId) {
-      case ContainsNoLoops:
-        return containsNoLoops;
-
-      case EventNotifier:
-        return eventNotifier;
-
-      default:
-        return super.getAttribute(attributeId);
-    }
+    return switch (attributeId) {
+      case ContainsNoLoops -> containsNoLoops;
+      case EventNotifier -> eventNotifier;
+      default -> super.getAttribute(attributeId);
+    };
   }
 
   @Override

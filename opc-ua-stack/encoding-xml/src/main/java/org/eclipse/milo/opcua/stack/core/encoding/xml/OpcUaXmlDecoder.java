@@ -685,119 +685,69 @@ public class OpcUaXmlDecoder implements UaDecoder {
   }
 
   private Object readBuiltinType(String field, String type) {
-    switch (type) {
-      case "Boolean":
-        return decodeBoolean(field);
-      case "SByte":
-        return decodeSByte(field);
-      case "Int16":
-        return decodeInt16(field);
-      case "Int32":
-        return decodeInt32(field);
-      case "Int64":
-        return decodeInt64(field);
-      case "Byte":
-        return decodeByte(field);
-      case "UInt16":
-        return decodeUInt16(field);
-      case "UInt32":
-        return decodeUInt32(field);
-      case "UInt64":
-        return decodeUInt64(field);
-      case "Float":
-        return decodeFloat(field);
-      case "Double":
-        return decodeDouble(field);
-      case "String":
-        return decodeString(field);
-      case "DateTime":
-        return decodeDateTime(field);
-      case "Guid":
-        return decodeGuid(field);
-      case "ByteString":
-        return decodeByteString(field);
-      case "XmlElement":
-        return decodeXmlElement(field);
-      case "NodeId":
-        return decodeNodeId(field);
-      case "ExpandedNodeId":
-        return decodeExpandedNodeId(field);
-      case "StatusCode":
-        return decodeStatusCode(field);
-      case "QualifiedName":
-        return decodeQualifiedName(field);
-      case "LocalizedText":
-        return decodeLocalizedText(field);
-      case "ExtensionObject":
-        return decodeExtensionObject(field);
-      case "DataValue":
-        return decodeDataValue(field);
-      case "Variant":
-        return decodeVariant(field);
-      case "DiagnosticInfo":
-        return decodeDiagnosticInfo(field);
-      default:
-        throw new UaSerializationException(
-            StatusCodes.Bad_DecodingError, "not builtin type: " + type);
-    }
+    return switch (type) {
+      case "Boolean" -> decodeBoolean(field);
+      case "SByte" -> decodeSByte(field);
+      case "Int16" -> decodeInt16(field);
+      case "Int32" -> decodeInt32(field);
+      case "Int64" -> decodeInt64(field);
+      case "Byte" -> decodeByte(field);
+      case "UInt16" -> decodeUInt16(field);
+      case "UInt32" -> decodeUInt32(field);
+      case "UInt64" -> decodeUInt64(field);
+      case "Float" -> decodeFloat(field);
+      case "Double" -> decodeDouble(field);
+      case "String" -> decodeString(field);
+      case "DateTime" -> decodeDateTime(field);
+      case "Guid" -> decodeGuid(field);
+      case "ByteString" -> decodeByteString(field);
+      case "XmlElement" -> decodeXmlElement(field);
+      case "NodeId" -> decodeNodeId(field);
+      case "ExpandedNodeId" -> decodeExpandedNodeId(field);
+      case "StatusCode" -> decodeStatusCode(field);
+      case "QualifiedName" -> decodeQualifiedName(field);
+      case "LocalizedText" -> decodeLocalizedText(field);
+      case "ExtensionObject" -> decodeExtensionObject(field);
+      case "DataValue" -> decodeDataValue(field);
+      case "Variant" -> decodeVariant(field);
+      case "DiagnosticInfo" -> decodeDiagnosticInfo(field);
+      default ->
+          throw new UaSerializationException(
+              StatusCodes.Bad_DecodingError, "not builtin type: " + type);
+    };
   }
 
   private static Class<?> builtinTypeClass(String type) {
-    switch (type) {
-      case "Boolean":
-        return Boolean.class;
-      case "SByte":
-        return Byte.class;
-      case "Int16":
-        return Short.class;
-      case "Int32":
-        return Integer.class;
-      case "Int64":
-        return Long.class;
-      case "Byte":
-        return UByte.class;
-      case "UInt16":
-        return UShort.class;
-      case "UInt32":
-        return UInteger.class;
-      case "UInt64":
-        return ULong.class;
-      case "Float":
-        return Float.class;
-      case "Double":
-        return Double.class;
-      case "String":
-        return String.class;
-      case "DateTime":
-        return DateTime.class;
-      case "Guid":
-        return UUID.class;
-      case "ByteString":
-        return ByteString.class;
-      case "XmlElement":
-        return XmlElement.class;
-      case "NodeId":
-        return NodeId.class;
-      case "ExpandedNodeId":
-        return ExpandedNodeId.class;
-      case "StatusCode":
-        return StatusCode.class;
-      case "QualifiedName":
-        return QualifiedName.class;
-      case "LocalizedText":
-        return LocalizedText.class;
-      case "ExtensionObject":
-        return ExtensionObject.class;
-      case "DataValue":
-        return DataValue.class;
-      case "Variant":
-        return Variant.class;
-      case "DiagnosticInfo":
-        return DiagnosticInfo.class;
-      default:
-        throw new UaSerializationException(
-            StatusCodes.Bad_DecodingError, "not builtin type: " + type);
-    }
+    return switch (type) {
+      case "Boolean" -> Boolean.class;
+      case "SByte" -> Byte.class;
+      case "Int16" -> Short.class;
+      case "Int32" -> Integer.class;
+      case "Int64" -> Long.class;
+      case "Byte" -> UByte.class;
+      case "UInt16" -> UShort.class;
+      case "UInt32" -> UInteger.class;
+      case "UInt64" -> ULong.class;
+      case "Float" -> Float.class;
+      case "Double" -> Double.class;
+      case "String" -> String.class;
+      case "DateTime" -> DateTime.class;
+      case "Guid" -> UUID.class;
+      case "ByteString" -> ByteString.class;
+      case "XmlElement" -> XmlElement.class;
+      case "NodeId" -> NodeId.class;
+      case "ExpandedNodeId" -> ExpandedNodeId.class;
+      case "StatusCode" -> StatusCode.class;
+      case "QualifiedName" -> QualifiedName.class;
+      case "LocalizedText" -> LocalizedText.class;
+      case "ExtensionObject" -> ExtensionObject.class;
+      case "DataValue" -> DataValue.class;
+      case "Variant" -> Variant.class;
+      case "DiagnosticInfo" -> DiagnosticInfo.class;
+      default ->
+          throw new UaSerializationException(
+              StatusCodes.Bad_DecodingError, "not builtin type: " + type);
+    };
   }
 
   @Override

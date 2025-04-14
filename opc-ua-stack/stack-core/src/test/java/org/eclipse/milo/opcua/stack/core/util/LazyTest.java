@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -104,13 +104,10 @@ public class LazyTest {
 
           @Override
           public Object get() {
-            switch (count.incrementAndGet()) {
-              case 1:
-                return instance1;
-              case 2:
-              default:
-                return instance2;
-            }
+            return switch (count.incrementAndGet()) {
+              case 1 -> instance1;
+              default -> instance2;
+            };
           }
         };
 

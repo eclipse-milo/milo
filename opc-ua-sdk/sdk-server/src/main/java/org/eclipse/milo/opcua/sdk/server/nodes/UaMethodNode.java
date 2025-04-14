@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -130,16 +130,11 @@ public class UaMethodNode extends UaNode implements MethodNode {
 
   @Override
   public synchronized Object getAttribute(AttributeId attributeId) {
-    switch (attributeId) {
-      case Executable:
-        return executable;
-
-      case UserExecutable:
-        return userExecutable;
-
-      default:
-        return super.getAttribute(attributeId);
-    }
+    return switch (attributeId) {
+      case Executable -> executable;
+      case UserExecutable -> userExecutable;
+      default -> super.getAttribute(attributeId);
+    };
   }
 
   @Override

@@ -1062,30 +1062,20 @@ public abstract class UaNode implements Node {
   }
 
   protected DataValue getAttributeValue(AttributeId attributeId) {
-    switch (attributeId) {
-      case NodeId:
-        return DataValue.valueOnly(new Variant(getNodeId()));
-      case NodeClass:
-        return DataValue.valueOnly(new Variant(getNodeClass().getValue()));
-      case BrowseName:
-        return DataValue.valueOnly(new Variant(getBrowseName()));
-      case DisplayName:
-        return DataValue.valueOnly(new Variant(getDisplayName()));
-      case Description:
-        return DataValue.valueOnly(new Variant(getDescription()));
-      case WriteMask:
-        return DataValue.valueOnly(new Variant(getWriteMask()));
-      case UserWriteMask:
-        return DataValue.valueOnly(new Variant(getUserWriteMask()));
-      case RolePermissions:
-        return DataValue.valueOnly(new Variant(getRolePermissions()));
-      case UserRolePermissions:
-        return DataValue.valueOnly(new Variant(getUserRolePermissions()));
-      case AccessRestrictions:
-        return DataValue.valueOnly(new Variant(getAccessRestrictions().getValue()));
-      default:
-        throw new IllegalArgumentException("attributeId: " + attributeId);
-    }
+    return switch (attributeId) {
+      case NodeId -> DataValue.valueOnly(new Variant(getNodeId()));
+      case NodeClass -> DataValue.valueOnly(new Variant(getNodeClass().getValue()));
+      case BrowseName -> DataValue.valueOnly(new Variant(getBrowseName()));
+      case DisplayName -> DataValue.valueOnly(new Variant(getDisplayName()));
+      case Description -> DataValue.valueOnly(new Variant(getDescription()));
+      case WriteMask -> DataValue.valueOnly(new Variant(getWriteMask()));
+      case UserWriteMask -> DataValue.valueOnly(new Variant(getUserWriteMask()));
+      case RolePermissions -> DataValue.valueOnly(new Variant(getRolePermissions()));
+      case UserRolePermissions -> DataValue.valueOnly(new Variant(getUserRolePermissions()));
+      case AccessRestrictions ->
+          DataValue.valueOnly(new Variant(getAccessRestrictions().getValue()));
+      default -> throw new IllegalArgumentException("attributeId: " + attributeId);
+    };
   }
 
   protected void setAttributeValue(AttributeId attributeId, DataValue value) {

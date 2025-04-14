@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -120,19 +120,12 @@ public class UaReferenceTypeNode extends UaNode implements ReferenceTypeNode {
 
   @Override
   public synchronized Object getAttribute(AttributeId attributeId) {
-    switch (attributeId) {
-      case IsAbstract:
-        return isAbstract;
-
-      case Symmetric:
-        return symmetric;
-
-      case InverseName:
-        return inverseName;
-
-      default:
-        return super.getAttribute(attributeId);
-    }
+    return switch (attributeId) {
+      case IsAbstract -> isAbstract;
+      case Symmetric -> symmetric;
+      case InverseName -> inverseName;
+      default -> super.getAttribute(attributeId);
+    };
   }
 
   @Override

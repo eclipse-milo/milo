@@ -225,41 +225,21 @@ public abstract class UaNode implements UaServerNode {
    * @return the value for {@code attributeId}.
    */
   public synchronized Object getAttribute(AttributeId attributeId) {
-    switch (attributeId) {
-      case NodeId:
-        return nodeId;
-
-      case NodeClass:
-        return nodeClass;
-
-      case BrowseName:
-        return browseName;
-
-      case DisplayName:
-        return displayName;
-
-      case Description:
-        return description;
-
-      case WriteMask:
-        return writeMask;
-
-      case UserWriteMask:
-        return userWriteMask;
-
-      case RolePermissions:
-        return rolePermissions;
-
-      case UserRolePermissions:
-        return userRolePermissions;
-
-      case AccessRestrictions:
-        return accessRestrictions;
-
-      default:
-        throw new UaRuntimeException(
-            StatusCodes.Bad_AttributeIdInvalid, "AttributeId: " + attributeId);
-    }
+    return switch (attributeId) {
+      case NodeId -> nodeId;
+      case NodeClass -> nodeClass;
+      case BrowseName -> browseName;
+      case DisplayName -> displayName;
+      case Description -> description;
+      case WriteMask -> writeMask;
+      case UserWriteMask -> userWriteMask;
+      case RolePermissions -> rolePermissions;
+      case UserRolePermissions -> userRolePermissions;
+      case AccessRestrictions -> accessRestrictions;
+      default ->
+          throw new UaRuntimeException(
+              StatusCodes.Bad_AttributeIdInvalid, "AttributeId: " + attributeId);
+    };
   }
 
   /**
