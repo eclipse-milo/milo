@@ -151,14 +151,15 @@ public class JsonBsdCodecTest extends AbstractBsdCodecTest {
   @Test
   public void testScanSettingsJson() {
     String json =
-        "{\n"
-            + "    \"LocationTypeSpecified\": 1,\n"
-            + "    \"Reserved1\": 0,\n"
-            + "    \"Duration\": 0.0,\n"
-            + "    \"Cycles\": 0,\n"
-            + "    \"DataAvailable\": false,\n"
-            + "    \"LocationType\": 0\n"
-            + "}";
+        """
+            {
+                "LocationTypeSpecified": 1,
+                "Reserved1": 0,
+                "Duration": 0.0,
+                "Cycles": 0,
+                "DataAvailable": false,
+                "LocationType": 0
+            }""";
 
     JsonObject scanSettings = JsonParser.parseString(json).getAsJsonObject();
 
