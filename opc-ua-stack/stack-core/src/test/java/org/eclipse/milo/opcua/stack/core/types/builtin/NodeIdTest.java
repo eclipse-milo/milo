@@ -88,12 +88,12 @@ public class NodeIdTest {
     for (int i = 0; i < 100; i++) {
       UUID uuid = UUID.randomUUID();
       {
-        NodeId nodeId = NodeId.parseOrNull("g=" + uuid.toString());
+        NodeId nodeId = NodeId.parseOrNull("g=" + uuid);
         assertNotNull(nodeId);
         assertEquals(uuid, nodeId.getIdentifier());
       }
       {
-        NodeId nodeId = NodeId.parseOrNull("ns=0;g=" + uuid.toString());
+        NodeId nodeId = NodeId.parseOrNull("ns=0;g=" + uuid);
         assertNotNull(nodeId);
         assertEquals(uuid, nodeId.getIdentifier());
       }
