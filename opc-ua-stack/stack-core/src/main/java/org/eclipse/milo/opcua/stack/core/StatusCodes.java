@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -46,7 +46,7 @@ public class StatusCodes extends StatusCodes0 {
    * @return a String[] where String[0] contains the name and String[1] contains the description.
    */
   public static Optional<String[]> lookup(long code) {
-    String[] desc = DESCRIPTIONS.get(code & 0xFFFF0000);
+    String[] desc = DESCRIPTIONS.get(code & 0xFFFF0000L);
 
     return Optional.ofNullable(desc);
   }
