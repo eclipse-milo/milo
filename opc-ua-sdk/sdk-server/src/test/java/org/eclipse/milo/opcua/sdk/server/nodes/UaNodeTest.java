@@ -126,8 +126,8 @@ public class UaNodeTest {
             Reference.Direction.INVERSE));
 
     assertTrue(nodeManager.containsNode(nodeId));
-    assertTrue(nodeManager.getReferences(nodeId).size() > 0);
-    assertTrue(nodeManager.getReferences(NodeIds.ObjectNode).size() > 0);
+    assertTrue(!nodeManager.getReferences(nodeId).isEmpty());
+    assertTrue(!nodeManager.getReferences(NodeIds.ObjectNode).isEmpty());
 
     objectNode.delete();
 
@@ -174,7 +174,7 @@ public class UaNodeTest {
                 });
 
     assertTrue(nodeManager.containsNode(nodeId));
-    assertTrue(nodeManager.getReferences(nodeId).size() > 0);
+    assertTrue(!nodeManager.getReferences(nodeId).isEmpty());
 
     analogItem.delete();
 

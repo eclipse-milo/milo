@@ -501,7 +501,7 @@ public class Subscription {
 
     var notificationData = new ArrayList<ExtensionObject>();
 
-    if (dataNotifications.size() > 0) {
+    if (!dataNotifications.isEmpty()) {
       DataChangeNotification dataChange =
           new DataChangeNotification(
               dataNotifications.toArray(new MonitoredItemNotification[0]), new DiagnosticInfo[0]);
@@ -511,7 +511,7 @@ public class Subscription {
       subscriptionDiagnostics.getDataChangeNotificationsCount().add(dataNotifications.size());
     }
 
-    if (eventNotifications.size() > 0) {
+    if (!eventNotifications.isEmpty()) {
       EventNotificationList eventChange =
           new EventNotificationList(eventNotifications.toArray(new EventFieldList[0]));
 
