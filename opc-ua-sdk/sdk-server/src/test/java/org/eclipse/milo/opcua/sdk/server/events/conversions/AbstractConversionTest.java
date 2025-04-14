@@ -41,7 +41,7 @@ abstract class AbstractConversionTest<S> {
           fail("expected conversions for " + targetType);
         }
 
-        System.out.println(String.format("%s -> %s [%s]", sourceType, targetType, conversionType));
+        System.out.printf("%s -> %s [%s]%n", sourceType, targetType, conversionType);
 
         for (Conversion conversion : conversions) {
           assertEquals(conversion.targetType, targetType);
@@ -52,8 +52,7 @@ abstract class AbstractConversionTest<S> {
           Object convertedValue =
               convert(fromValue, targetType, conversionType == ConversionType.IMPLICIT);
 
-          System.out.println(
-              String.format("\tfromValue=%s targetValue=%s", fromValue, targetValue));
+          System.out.printf("\tfromValue=%s targetValue=%s%n", fromValue, targetValue);
 
           assertEquals(targetValue, convertedValue);
         }
@@ -100,10 +99,9 @@ abstract class AbstractConversionTest<S> {
 
           Object convertedValue = convert(fromValue, targetType, false);
 
-          System.out.println(
-              String.format(
-                  "[%s] fromValue=%s targetType=%s targetValue=%s",
-                  conversionType, fromValue, targetType, conversion.targetValue));
+          System.out.printf(
+              "[%s] fromValue=%s targetType=%s targetValue=%s%n",
+              conversionType, fromValue, targetType, conversion.targetValue);
 
           assertEquals(conversion.targetValue, convertedValue);
         }

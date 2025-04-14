@@ -40,12 +40,11 @@ public class AddressSpaceTest extends AbstractClientServerTest {
 
     nodes.forEach(
         n -> {
-          System.out.println(
-              String.format(
-                  "%s (%s) [%s]",
-                  n.getBrowseName().toParseableString(),
-                  n.getNodeId().toParseableString(),
-                  n.getNodeClass()));
+          System.out.printf(
+              "%s (%s) [%s]%n",
+              n.getBrowseName().toParseableString(),
+              n.getNodeId().toParseableString(),
+              n.getNodeClass());
 
           if (n instanceof UaVariableNode) {
             System.out.println("└─ value = " + ((UaVariableNode) n).getValue().value());
