@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -112,11 +112,11 @@ public class HelloMessage {
 
   @Override
   public int hashCode() {
-    int result = (int) (protocolVersion ^ (protocolVersion >>> 32));
-    result = 31 * result + (int) (receiveBufferSize ^ (receiveBufferSize >>> 32));
-    result = 31 * result + (int) (sendBufferSize ^ (sendBufferSize >>> 32));
-    result = 31 * result + (int) (maxMessageSize ^ (maxMessageSize >>> 32));
-    result = 31 * result + (int) (maxChunkCount ^ (maxChunkCount >>> 32));
+    int result = Long.hashCode(protocolVersion);
+    result = 31 * result + Long.hashCode(receiveBufferSize);
+    result = 31 * result + Long.hashCode(sendBufferSize);
+    result = 31 * result + Long.hashCode(maxMessageSize);
+    result = 31 * result + Long.hashCode(maxChunkCount);
     result = 31 * result + endpointUrl.hashCode();
     return result;
   }

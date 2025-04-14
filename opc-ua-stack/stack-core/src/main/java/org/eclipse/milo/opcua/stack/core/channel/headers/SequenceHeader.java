@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -60,8 +60,8 @@ public class SequenceHeader {
 
   @Override
   public int hashCode() {
-    int result = (int) (sequenceNumber ^ (sequenceNumber >>> 32));
-    result = 31 * result + (int) (requestId ^ (requestId >>> 32));
+    int result = Long.hashCode(sequenceNumber);
+    result = 31 * result + Long.hashCode(requestId);
     return result;
   }
 
