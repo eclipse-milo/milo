@@ -12,7 +12,6 @@ package org.eclipse.milo.opcua.sdk.server.typetree;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.nodes.ReferenceTypeNode;
 import org.eclipse.milo.opcua.sdk.core.typetree.ReferenceType;
@@ -56,7 +55,7 @@ public class ReferenceTypeTreeBuilder {
         references.stream()
             .flatMap(
                 r -> server.getAddressSpaceManager().getManagedNode(r.getTargetNodeId()).stream())
-            .collect(Collectors.toList());
+            .toList();
 
     childNodes.forEach(
         node -> {

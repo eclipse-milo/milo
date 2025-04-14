@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -11,7 +11,6 @@
 package org.eclipse.milo.opcua.sdk.server.typetree;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
@@ -62,7 +61,7 @@ public class DataTypeTreeBuilder {
         references.stream()
             .flatMap(
                 r -> server.getAddressSpaceManager().getManagedNode(r.getTargetNodeId()).stream())
-            .collect(Collectors.toList());
+            .toList();
 
     for (UaNode childNode : childNodes) {
       UaDataTypeNode dataTypeNode = (UaDataTypeNode) childNode;

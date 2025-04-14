@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -16,7 +16,6 @@ import static org.eclipse.milo.opcua.sdk.server.servicesets.AbstractServiceSet.c
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import org.eclipse.milo.opcua.sdk.server.EndpointConfig;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.servicesets.DiscoveryServiceSet;
@@ -67,7 +66,7 @@ public class DefaultDiscoveryServiceSet implements DiscoveryServiceSet {
                 })
             .filter(ed -> filterProfileUris(ed, profileUris))
             .distinct()
-            .collect(Collectors.toList());
+            .toList();
 
     ApplicationDescription filteredApplicationDescription =
         getFilteredApplicationDescription(request.getEndpointUrl());
@@ -78,7 +77,7 @@ public class DefaultDiscoveryServiceSet implements DiscoveryServiceSet {
             .map(
                 endpoint -> replaceApplicationDescription(endpoint, filteredApplicationDescription))
             .distinct()
-            .collect(toList());
+            .toList();
 
     return new GetEndpointsResponse(
         createResponseHeader(request),
@@ -99,9 +98,7 @@ public class DefaultDiscoveryServiceSet implements DiscoveryServiceSet {
         List.of(getFilteredApplicationDescription(request.getEndpointUrl()));
 
     applicationDescriptions =
-        applicationDescriptions.stream()
-            .filter(ad -> filterServerUris(ad, serverUris))
-            .collect(toList());
+        applicationDescriptions.stream().filter(ad -> filterServerUris(ad, serverUris)).toList();
 
     return new FindServersResponse(
         createResponseHeader(request),
@@ -172,7 +169,7 @@ public class DefaultDiscoveryServiceSet implements DiscoveryServiceSet {
           server.getConfig().getEndpoints().stream()
               .map(EndpointConfig::getEndpointUrl)
               .distinct()
-              .collect(toList());
+              .toList();
     }
 
     List<String> matchingDiscoveryUrls =

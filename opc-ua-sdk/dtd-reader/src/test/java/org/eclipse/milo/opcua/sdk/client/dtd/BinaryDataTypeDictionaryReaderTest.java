@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfig;
 import org.eclipse.milo.opcua.sdk.client.OpcUaSession;
@@ -106,8 +105,7 @@ class BinaryDataTypeDictionaryReaderTest {
               ReadRequest readRequest = invocationOnMock.getArgument(0);
 
               List<ReadValueId> readValueIds =
-                  Arrays.stream(Objects.requireNonNull(readRequest.getNodesToRead()))
-                      .collect(Collectors.toList());
+                  Arrays.stream(Objects.requireNonNull(readRequest.getNodesToRead())).toList();
 
               ReadValueId readValueId = readValueIds.get(0);
 
