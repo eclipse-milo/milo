@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 class UriArrayTest {
 
   UriArray<UShort> array =
-      new UriArray<UShort>() {
+      new UriArray<>() {
         @Override
         protected UShort create(Number index) {
           return UShort.valueOf(index.intValue());
