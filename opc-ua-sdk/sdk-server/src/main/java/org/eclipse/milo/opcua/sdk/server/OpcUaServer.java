@@ -98,7 +98,7 @@ public class OpcUaServer extends AbstractServiceHandler {
 
   static {
     Logger logger = LoggerFactory.getLogger(OpcUaServer.class);
-    logger.info("Java version: " + System.getProperty("java.version"));
+    logger.info("Java version: {}", System.getProperty("java.version"));
     logger.info("Eclipse Milo OPC UA Stack version: {}", Stack.VERSION);
     logger.info("Eclipse Milo OPC UA Server SDK version: {}", SDK_VERSION);
   }

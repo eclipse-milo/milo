@@ -113,7 +113,7 @@ public enum Service {
       case 839 -> SUBSCRIPTION_TRANSFER_SUBSCRIPTIONS;
       case 845 -> SUBSCRIPTION_DELETE_SUBSCRIPTIONS;
       default -> {
-        LoggerFactory.getLogger(Service.class).warn("Unknown service id: " + id);
+        LoggerFactory.getLogger(Service.class).warn("Unknown service id: {}", id);
         yield null;
       }
     };

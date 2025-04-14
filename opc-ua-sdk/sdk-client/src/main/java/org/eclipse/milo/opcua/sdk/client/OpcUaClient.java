@@ -169,7 +169,7 @@ public class OpcUaClient {
 
   static {
     Logger logger = LoggerFactory.getLogger(OpcUaClient.class);
-    logger.info("Java version: " + System.getProperty("java.version"));
+    logger.info("Java version: {}", System.getProperty("java.version"));
     logger.info("Eclipse Milo OPC UA Stack version: {}", Stack.VERSION);
     logger.info("Eclipse Milo OPC UA Client SDK version: {}", SDK_VERSION);
   }
@@ -784,8 +784,7 @@ public class OpcUaClient {
 
   private void updateNamespaceTable(String[] namespaceArray) {
     if (namespaceArray.length > UShort.MAX_VALUE) {
-      logger.warn(
-          "NamespaceTable returned by " + "server contains " + namespaceArray.length + " entries");
+      logger.warn("NamespaceTable returned by server contains {} entries", namespaceArray.length);
     }
 
     NamespaceTable namespaceTable = getNamespaceTable();
@@ -803,8 +802,7 @@ public class OpcUaClient {
 
   private void updateServerTable(String[] serverArray) {
     if (serverArray.length > UShort.MAX_VALUE) {
-      logger.warn(
-          "ServerTable returned by " + "server contains " + serverArray.length + " entries");
+      logger.warn("ServerTable returned by server contains {} entries", serverArray.length);
     }
 
     ServerTable serverTable = getServerTable();

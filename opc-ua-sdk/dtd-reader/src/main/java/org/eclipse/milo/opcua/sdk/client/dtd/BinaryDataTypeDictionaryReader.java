@@ -345,7 +345,7 @@ public class BinaryDataTypeDictionaryReader {
                         description, dataTypeInfo.dataTypeId, dataTypeInfo.encodingId);
                   } else {
                     // expected for some types
-                    logger.debug("no builtin DataTypeInfo found: " + description);
+                    logger.debug("no builtin DataTypeInfo found: {}", description);
                     return null;
                   }
                 })

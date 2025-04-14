@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -53,7 +53,7 @@ public class OpcClientWebSocketBinaryFrameCodec
   @Override
   public void userEventTriggered(ChannelHandlerContext ctx, Object event) throws Exception {
     if (event instanceof ClientHandshakeStateEvent) {
-      logger.debug("WebSocket handshake event: " + event);
+      logger.debug("WebSocket handshake event: {}", event);
 
       if (event == ClientHandshakeStateEvent.HANDSHAKE_COMPLETE) {
         var acknowledgeHandler =
@@ -76,7 +76,7 @@ public class OpcClientWebSocketBinaryFrameCodec
     } else if (msg instanceof TextWebSocketFrame) {
       TextWebSocketFrame textFrame = (TextWebSocketFrame) msg;
 
-      logger.error("Received WebSocket frame:\n" + textFrame.text());
+      logger.error("Received WebSocket frame:\n{}", textFrame.text());
       ctx.close();
     }
   }

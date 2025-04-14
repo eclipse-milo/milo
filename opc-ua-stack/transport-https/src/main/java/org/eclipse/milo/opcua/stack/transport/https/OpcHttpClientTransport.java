@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -157,17 +157,17 @@ public class OpcHttpClientTransport implements OpcClientTransport {
             channel.pipeline().addLast(new HttpObjectAggregator(maxMessageSize));
             channel.pipeline().addLast(new OpcClientHttpCodec(config, application));
 
-            LOGGER.debug("channelCreated(): " + channel);
+            LOGGER.debug("channelCreated(): {}", channel);
           }
 
           @Override
           public void channelAcquired(Channel channel) {
-            LOGGER.debug("channelAcquired(): " + channel);
+            LOGGER.debug("channelAcquired(): {}", channel);
           }
 
           @Override
           public void channelReleased(Channel channel) {
-            LOGGER.debug("channelReleased(): " + channel);
+            LOGGER.debug("channelReleased(): {}", channel);
           }
         });
   }

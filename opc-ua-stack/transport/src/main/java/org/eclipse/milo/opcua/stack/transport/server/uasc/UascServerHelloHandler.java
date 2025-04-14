@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -76,7 +76,7 @@ public class UascServerHelloHandler extends ByteToMessageDecoder implements Head
   public void channelActive(ChannelHandlerContext ctx) throws Exception {
     int helloDeadlineMs = config.getHelloDeadline().intValue();
 
-    logger.debug("Scheduling Hello deadline for +" + helloDeadlineMs + "ms");
+    logger.debug("Scheduling Hello deadline for +{}ms", helloDeadlineMs);
 
     ctx.executor()
         .schedule(
@@ -85,11 +85,9 @@ public class UascServerHelloHandler extends ByteToMessageDecoder implements Head
                 long cumulativeDeadlinesMissed = CUMULATIVE_DEADLINES_MISSED.incrementAndGet();
 
                 logger.debug(
-                    "No Hello received after "
-                        + helloDeadlineMs
-                        + "ms; closing channel. "
-                        + "cumulativeDeadlinesMissed="
-                        + cumulativeDeadlinesMissed);
+                    "No Hello received after {}ms; closing channel. cumulativeDeadlinesMissed={}",
+                    helloDeadlineMs,
+                    cumulativeDeadlinesMissed);
 
                 ctx.close();
               }

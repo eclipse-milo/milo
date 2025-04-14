@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -67,7 +67,7 @@ public class OpcClientHttpCodec extends MessageToMessageCodec<HttpResponse, UaRe
       ChannelHandlerContext ctx, UaRequestMessageType requestMessage, List<Object> out)
       throws Exception {
 
-    logger.debug("encoding: " + requestMessage);
+    logger.debug("encoding: {}", requestMessage);
 
     ByteBuf content = Unpooled.buffer();
 
@@ -113,7 +113,7 @@ public class OpcClientHttpCodec extends MessageToMessageCodec<HttpResponse, UaRe
   protected void decode(ChannelHandlerContext ctx, HttpResponse httpResponse, List<Object> out)
       throws Exception {
 
-    logger.trace("channelRead0: " + httpResponse);
+    logger.trace("channelRead0: {}", httpResponse);
 
     if (httpResponse instanceof FullHttpResponse) {
       String contentType = httpResponse.headers().get(HttpHeaderNames.CONTENT_TYPE);

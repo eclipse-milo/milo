@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -46,7 +46,7 @@ public class BrowseAsyncExample implements ClientExample {
     browseRecursive(client, tree).get();
     long endTime = System.nanoTime();
 
-    traverse(tree, 0, (depth, n) -> logger.info(indent(depth) + n.getBrowseName().name()));
+    traverse(tree, 0, (depth, n) -> logger.info("{}{}", indent(depth), n.getBrowseName().name()));
 
     logger.info(
         "Browse took {}ms",

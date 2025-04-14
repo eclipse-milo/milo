@@ -48,8 +48,8 @@ public class MethodExample2 implements ClientExample {
     Variant[] inputs = {Variant.ofDouble(16.0)};
     Variant[] outputs = sqrtMethod.call(inputs);
 
-    logger.info("Input values: " + Arrays.toString(inputs));
-    logger.info("Output values: " + Arrays.toString(outputs));
+    logger.info("Input values: {}", Arrays.toString(inputs));
+    logger.info("Output values: {}", Arrays.toString(outputs));
 
     future.complete(client);
   }

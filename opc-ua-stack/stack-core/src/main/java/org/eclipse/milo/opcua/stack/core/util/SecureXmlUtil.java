@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -57,7 +57,7 @@ public class SecureXmlUtil {
       SHARED_DOCUMENT_BUILDER_FACTORY.setFeature(feature, value);
     } catch (Exception e) {
       LoggerFactory.getLogger(SecureXmlUtil.class)
-          .warn("Error configuring feature: " + feature + "=" + value, e);
+          .warn("Error configuring feature: {}={}", feature, value, e);
     }
   }
 
@@ -66,7 +66,7 @@ public class SecureXmlUtil {
       SHARED_TRANSFORMER_FACTORY.setAttribute(attribute, value);
     } catch (Exception e) {
       LoggerFactory.getLogger(SecureXmlUtil.class)
-          .warn("Error configuring attribute: " + attribute + "=" + value, e);
+          .warn("Error configuring attribute: {}={}", attribute, value, e);
     }
   }
 }
