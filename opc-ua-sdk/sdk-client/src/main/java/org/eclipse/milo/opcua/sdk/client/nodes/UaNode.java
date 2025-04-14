@@ -1355,9 +1355,9 @@ public abstract class UaNode implements Node {
    * @return the object after casting, or null if {@code o} is null.
    */
   protected <T> T cast(Object o, Class<T> clazz) {
-    if (UaEnumeratedType.class.isAssignableFrom(clazz) && o instanceof Integer) {
+    if (UaEnumeratedType.class.isAssignableFrom(clazz) && o instanceof Integer i) {
       try {
-        Object enumeration = clazz.getMethod("from", new Class[] {Integer.class}).invoke(null, o);
+        Object enumeration = clazz.getMethod("from", new Class[] {Integer.class}).invoke(null, i);
 
         return clazz.cast(enumeration);
       } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
