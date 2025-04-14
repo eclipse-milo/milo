@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -76,7 +76,7 @@ public enum AccessLevel {
    * @return a value for the AccessLevel or UserAccessLevel attribute.
    */
   public static UByte toValue(AccessLevel... levels) {
-    short result = 0;
+    int result = 0;
     for (AccessLevel level : levels) result |= level.value;
     return ubyte(result);
   }
