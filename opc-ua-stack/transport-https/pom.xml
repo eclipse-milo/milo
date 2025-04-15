@@ -21,6 +21,7 @@
   </parent>
 
   <artifactId>milo-transport-https</artifactId>
+  <version>0.1-SNAPSHOT</version>
 
   <properties>
     <javaModuleName>org.eclipse.milo.opcua.stack.transport.https</javaModuleName>
@@ -30,12 +31,12 @@
     <dependency>
       <groupId>org.eclipse.milo</groupId>
       <artifactId>milo-stack-core</artifactId>
-      <version>${project.version}</version>
+      <version>${parent.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.milo</groupId>
       <artifactId>milo-transport</artifactId>
-      <version>${project.version}</version>
+      <version>${parent.version}</version>
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>

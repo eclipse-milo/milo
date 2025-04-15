@@ -21,6 +21,7 @@
   </parent>
 
   <artifactId>milo-codec-json</artifactId>
+  <version>0.1-SNAPSHOT</version>
 
   <properties>
     <javaModuleName>org.eclipse.milo.opcua.sdk.codec.json</javaModuleName>
@@ -48,12 +49,12 @@
     <dependency>
       <groupId>org.eclipse.milo</groupId>
       <artifactId>milo-sdk-core</artifactId>
-      <version>${project.version}</version>
+      <version>${parent.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.milo</groupId>
       <artifactId>milo-encoding-json</artifactId>
-      <version>${project.version}</version>
+      <version>${parent.version}</version>
     </dependency>
 
     <dependency>
