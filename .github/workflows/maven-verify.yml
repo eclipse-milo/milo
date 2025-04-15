@@ -2,7 +2,7 @@ name: Run `mvn verify` on JDK 17
 
 on:
   pull_request:
-    branches: [ "dev/1.0" ]
+    branches: [ "1.0" ]
 
 jobs:
   build:
