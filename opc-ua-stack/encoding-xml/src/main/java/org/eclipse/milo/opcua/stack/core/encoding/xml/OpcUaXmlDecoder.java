@@ -48,7 +48,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-public class OpcUaXmlDecoder implements UaDecoder {
+public class OpcUaXmlDecoder implements UaDecoder, AutoCloseable {
 
   private final DocumentBuilder builder;
 
@@ -82,6 +82,11 @@ public class OpcUaXmlDecoder implements UaDecoder {
   @Override
   public EncodingContext getEncodingContext() {
     return context;
+  }
+
+  @Override
+  public void close() {
+    // noop
   }
 
   public OpcUaXmlDecoder setInput(Document document) {
@@ -603,9 +608,13 @@ public class OpcUaXmlDecoder implements UaDecoder {
 
       try {
         currentNode = node.getFirstChild().getFirstChild();
-        Object value = decodeVariantValue();
 
-        return new Variant(value);
+        if (currentNode == null) {
+          return Variant.NULL_VALUE;
+        } else {
+          Object value = decodeVariantValue();
+          return new Variant(value);
+        }
       } catch (Throwable t) {
         throw new UaSerializationException(StatusCodes.Bad_DecodingError, t);
       } finally {

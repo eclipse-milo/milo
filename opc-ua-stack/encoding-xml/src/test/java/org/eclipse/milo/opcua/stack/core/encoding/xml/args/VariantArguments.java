@@ -1651,24 +1651,16 @@ public class VariantArguments {
                   </uax:Dimensions>
                   <uax:Elements>
                     <uax:Variant>
-                      <uax:Value>
-                        <uax:Null></uax:Null>
-                      </uax:Value>
+                      <uax:Value xsi:nil="true"/>
                     </uax:Variant>
                     <uax:Variant>
-                      <uax:Value>
-                        <uax:Null></uax:Null>
-                      </uax:Value>
+                      <uax:Value xsi:nil="true"/>
                     </uax:Variant>
                     <uax:Variant>
-                      <uax:Value>
-                        <uax:Null></uax:Null>
-                      </uax:Value>
+                      <uax:Value xsi:nil="true"/>
                     </uax:Variant>
                     <uax:Variant>
-                      <uax:Value>
-                        <uax:Null></uax:Null>
-                      </uax:Value>
+                      <uax:Value xsi:nil="true"/>
                     </uax:Variant>
                   </uax:Elements>
                 </uax:Matrix>

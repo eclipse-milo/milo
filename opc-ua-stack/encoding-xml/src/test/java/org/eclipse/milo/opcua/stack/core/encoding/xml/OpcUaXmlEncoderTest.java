@@ -88,6 +88,31 @@ class OpcUaXmlEncoderTest {
     assertFalse(diff.hasDifferences(), diff.toString());
   }
 
+  @Test
+  void nullVariant() throws Exception {
+    String actual;
+
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeVariant("Test", Variant.NULL_VALUE);
+
+      actual = encoder.getOutputString();
+    }
+
+    var expected =
+"""
+<Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <uax:Value xsi:nil="true" />
+</Test>
+""";
+
+    Diff diff = DiffBuilder.compare(expected).withTest(actual).ignoreWhitespace().build();
+
+    maybePrintXml(diff, expected, actual);
+
+    assertFalse(diff.hasDifferences(), diff.toString());
+  }
+
   /**
    * Prints the expected and actual XML if there are differences or if DEBUG is enabled.
    *

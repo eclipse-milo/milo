@@ -623,9 +623,14 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
       }
 
       try {
-        xmlStreamWriter.writeStartElement(Namespaces.OPC_UA_XSD, "Value");
-        encodeVariantValue(value.value());
-        xmlStreamWriter.writeEndElement();
+        if (value.isNull()) {
+          xmlStreamWriter.writeEmptyElement(Namespaces.OPC_UA_XSD, "Value");
+          xmlStreamWriter.writeAttribute("xsi:nil", "true");
+        } else {
+          xmlStreamWriter.writeStartElement(Namespaces.OPC_UA_XSD, "Value");
+          encodeVariantValue(value.value());
+          xmlStreamWriter.writeEndElement();
+        }
       } catch (XMLStreamException e) {
         throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
       } finally {
@@ -637,154 +642,145 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
   }
 
   public void encodeVariantValue(@Nullable Object value) {
+    if (value == null) {
+      return;
+    }
+
+    Class<?> valueClass;
+    if (value instanceof Matrix m) {
+      if (m.getElements() == null) return;
+      valueClass = ArrayUtil.getType(m.getElements());
+    } else {
+      valueClass = ArrayUtil.getType(value);
+    }
+
+    TypeHint typeHint = TypeHint.BUILTIN;
+    if (UaEnumeratedType.class.isAssignableFrom(valueClass)) {
+      typeHint = TypeHint.ENUM;
+    } else if (UaStructuredType.class.isAssignableFrom(valueClass)) {
+      typeHint = TypeHint.STRUCT;
+    } else if (OptionSetUInteger.class.isAssignableFrom(valueClass)) {
+      typeHint = TypeHint.OPTION_SET;
+    }
+
+    int typeId =
+        switch (typeHint) {
+          case ENUM -> OpcUaDataType.Int32.getTypeId();
+          case STRUCT -> OpcUaDataType.ExtensionObject.getTypeId();
+          case OPTION_SET -> {
+            if (OptionSetUI8.class.isAssignableFrom(valueClass)) {
+              yield OpcUaDataType.Byte.getTypeId();
+            } else if (OptionSetUI16.class.isAssignableFrom(valueClass)) {
+              yield OpcUaDataType.UInt16.getTypeId();
+            } else if (OptionSetUI32.class.isAssignableFrom(valueClass)) {
+              yield OpcUaDataType.UInt32.getTypeId();
+            } else if (OptionSetUI64.class.isAssignableFrom(valueClass)) {
+              yield OpcUaDataType.UInt64.getTypeId();
+            } else {
+              throw new UaSerializationException(
+                  StatusCodes.Bad_EncodingError, "unknown OptionSet type: " + valueClass);
+            }
+          }
+          default -> OpcUaDataType.getBuiltinTypeId(valueClass);
+        };
+
+    OpcUaDataType dataType = OpcUaDataType.fromTypeId(typeId);
+    if (dataType == null) {
+      throw new UaSerializationException(
+          StatusCodes.Bad_EncodingError, "unknown typeId: " + typeId);
+    }
+
+    namespaceStack.push(Namespaces.OPC_UA_XSD);
     try {
-      if (value == null) {
-        xmlStreamWriter.writeStartElement(Namespaces.OPC_UA_XSD, "Null");
-        xmlStreamWriter.writeEndElement();
-        return;
-      }
-
-      Class<?> valueClass;
-      if (value instanceof Matrix m) {
-        if (m.getElements() == null) return;
-        valueClass = ArrayUtil.getType(m.getElements());
-      } else {
-        valueClass = ArrayUtil.getType(value);
-      }
-
-      TypeHint typeHint = TypeHint.BUILTIN;
-      if (UaEnumeratedType.class.isAssignableFrom(valueClass)) {
-        typeHint = TypeHint.ENUM;
-      } else if (UaStructuredType.class.isAssignableFrom(valueClass)) {
-        typeHint = TypeHint.STRUCT;
-      } else if (OptionSetUInteger.class.isAssignableFrom(valueClass)) {
-        typeHint = TypeHint.OPTION_SET;
-      }
-
-      int typeId =
-          switch (typeHint) {
-            case ENUM -> OpcUaDataType.Int32.getTypeId();
-            case STRUCT -> OpcUaDataType.ExtensionObject.getTypeId();
-            case OPTION_SET -> {
-              if (OptionSetUI8.class.isAssignableFrom(valueClass)) {
-                yield OpcUaDataType.Byte.getTypeId();
-              } else if (OptionSetUI16.class.isAssignableFrom(valueClass)) {
-                yield OpcUaDataType.UInt16.getTypeId();
-              } else if (OptionSetUI32.class.isAssignableFrom(valueClass)) {
-                yield OpcUaDataType.UInt32.getTypeId();
-              } else if (OptionSetUI64.class.isAssignableFrom(valueClass)) {
-                yield OpcUaDataType.UInt64.getTypeId();
-              } else {
-                throw new UaSerializationException(
-                    StatusCodes.Bad_EncodingError, "unknown OptionSet type: " + valueClass);
+      if (value.getClass().isArray()) {
+        switch (typeHint) {
+          case BUILTIN -> encodeBuiltinTypeArrayValue(value, dataType);
+          case ENUM -> {
+            if (value instanceof UaEnumeratedType[] array) {
+              Integer[] values = new Integer[array.length];
+              for (int i = 0; i < array.length; i++) {
+                values[i] = array[i].getValue();
               }
-            }
-            default -> OpcUaDataType.getBuiltinTypeId(valueClass);
-          };
-
-      OpcUaDataType dataType = OpcUaDataType.fromTypeId(typeId);
-      if (dataType == null) {
-        throw new UaSerializationException(
-            StatusCodes.Bad_EncodingError, "unknown typeId: " + typeId);
-      }
-
-      namespaceStack.push(Namespaces.OPC_UA_XSD);
-      try {
-        if (value.getClass().isArray()) {
-          switch (typeHint) {
-            case BUILTIN -> encodeBuiltinTypeArrayValue(value, dataType);
-            case ENUM -> {
-              if (value instanceof UaEnumeratedType[] array) {
-                Integer[] values = new Integer[array.length];
-                for (int i = 0; i < array.length; i++) {
-                  values[i] = array[i].getValue();
-                }
-                encodeBuiltinTypeArrayValue(values, OpcUaDataType.Int32);
-              }
-            }
-            case STRUCT -> {
-              if (value instanceof UaStructuredType[] array) {
-                ExtensionObject[] xos = new ExtensionObject[array.length];
-                for (int i = 0; i < array.length; i++) {
-                  UaStructuredType structValue = array[i];
-                  xos[i] =
-                      ExtensionObject.encode(
-                          context, structValue, OpcUaDefaultXmlEncoding.getInstance());
-                }
-                encodeBuiltinTypeArrayValue(xos, OpcUaDataType.ExtensionObject);
-              }
-            }
-            case OPTION_SET -> {
-              if (value instanceof OptionSetUI8<?>[] array) {
-                UByte[] values = new UByte[array.length];
-                for (int i = 0; i < array.length; i++) {
-                  values[i] = array[i].getValue();
-                }
-                encodeBuiltinTypeArrayValue(values, OpcUaDataType.Byte);
-              } else if (value instanceof OptionSetUI16<?>[] array) {
-                UShort[] values = new UShort[array.length];
-                for (int i = 0; i < array.length; i++) {
-                  values[i] = array[i].getValue();
-                }
-                encodeBuiltinTypeArrayValue(values, OpcUaDataType.UInt16);
-              } else if (value instanceof OptionSetUI32<?>[] array) {
-                UInteger[] values = new UInteger[array.length];
-                for (int i = 0; i < array.length; i++) {
-                  values[i] = array[i].getValue();
-                }
-                encodeBuiltinTypeArrayValue(values, OpcUaDataType.UInt32);
-              } else if (value instanceof OptionSetUI64<?>[] array) {
-                ULong[] values = new ULong[array.length];
-                for (int i = 0; i < array.length; i++) {
-                  values[i] = array[i].getValue();
-                }
-                encodeBuiltinTypeArrayValue(values, OpcUaDataType.UInt64);
-              } else {
-                throw new UaSerializationException(
-                    StatusCodes.Bad_EncodingError,
-                    "unknown OptionSet type: " + valueClass.getName());
-              }
+              encodeBuiltinTypeArrayValue(values, OpcUaDataType.Int32);
             }
           }
-        } else if (value instanceof Matrix matrix) {
-          switch (typeHint) {
-            case BUILTIN -> encodeMatrix("Matrix", matrix);
-            case ENUM -> {
-              Matrix transformed = matrix.transform(e -> ((UaEnumeratedType) e).getValue());
-              encodeMatrix("Matrix", transformed);
-            }
-            case STRUCT ->
-                encodeStructMatrix("Matrix", matrix, matrix.getDataTypeId().orElseThrow());
-            case OPTION_SET -> {
-              Matrix transformed = matrix.transform(os -> ((OptionSetUInteger<?>) os).getValue());
-              encodeMatrix("Matrix", transformed);
+          case STRUCT -> {
+            if (value instanceof UaStructuredType[] array) {
+              ExtensionObject[] xos = new ExtensionObject[array.length];
+              for (int i = 0; i < array.length; i++) {
+                UaStructuredType structValue = array[i];
+                xos[i] =
+                    ExtensionObject.encode(
+                        context, structValue, OpcUaDefaultXmlEncoding.getInstance());
+              }
+              encodeBuiltinTypeArrayValue(xos, OpcUaDataType.ExtensionObject);
             }
           }
-        } else {
-          switch (typeHint) {
-            case BUILTIN -> encodeBuiltinTypeValue(value, dataType);
-            case ENUM -> {
-              UaEnumeratedType enumValue = (UaEnumeratedType) value;
-              encodeBuiltinTypeValue(enumValue.getValue(), OpcUaDataType.Int32);
-            }
-            case STRUCT -> {
-              UaStructuredType structValue = (UaStructuredType) value;
-              var xo =
-                  ExtensionObject.encode(
-                      context, structValue, OpcUaDefaultXmlEncoding.getInstance());
-              encodeBuiltinTypeValue(xo, OpcUaDataType.ExtensionObject);
-            }
-            case OPTION_SET -> {
-              OptionSetUInteger<?> optionSet = (OptionSetUInteger<?>) value;
-              encodeBuiltinTypeValue(optionSet.getValue(), dataType);
+          case OPTION_SET -> {
+            if (value instanceof OptionSetUI8<?>[] array) {
+              UByte[] values = new UByte[array.length];
+              for (int i = 0; i < array.length; i++) {
+                values[i] = array[i].getValue();
+              }
+              encodeBuiltinTypeArrayValue(values, OpcUaDataType.Byte);
+            } else if (value instanceof OptionSetUI16<?>[] array) {
+              UShort[] values = new UShort[array.length];
+              for (int i = 0; i < array.length; i++) {
+                values[i] = array[i].getValue();
+              }
+              encodeBuiltinTypeArrayValue(values, OpcUaDataType.UInt16);
+            } else if (value instanceof OptionSetUI32<?>[] array) {
+              UInteger[] values = new UInteger[array.length];
+              for (int i = 0; i < array.length; i++) {
+                values[i] = array[i].getValue();
+              }
+              encodeBuiltinTypeArrayValue(values, OpcUaDataType.UInt32);
+            } else if (value instanceof OptionSetUI64<?>[] array) {
+              ULong[] values = new ULong[array.length];
+              for (int i = 0; i < array.length; i++) {
+                values[i] = array[i].getValue();
+              }
+              encodeBuiltinTypeArrayValue(values, OpcUaDataType.UInt64);
+            } else {
+              throw new UaSerializationException(
+                  StatusCodes.Bad_EncodingError, "unknown OptionSet type: " + valueClass.getName());
             }
           }
         }
-      } finally {
-        namespaceStack.pop();
+      } else if (value instanceof Matrix matrix) {
+        switch (typeHint) {
+          case BUILTIN -> encodeMatrix("Matrix", matrix);
+          case ENUM -> {
+            Matrix transformed = matrix.transform(e -> ((UaEnumeratedType) e).getValue());
+            encodeMatrix("Matrix", transformed);
+          }
+          case STRUCT -> encodeStructMatrix("Matrix", matrix, matrix.getDataTypeId().orElseThrow());
+          case OPTION_SET -> {
+            Matrix transformed = matrix.transform(os -> ((OptionSetUInteger<?>) os).getValue());
+            encodeMatrix("Matrix", transformed);
+          }
+        }
+      } else {
+        switch (typeHint) {
+          case BUILTIN -> encodeBuiltinTypeValue(value, dataType);
+          case ENUM -> {
+            UaEnumeratedType enumValue = (UaEnumeratedType) value;
+            encodeBuiltinTypeValue(enumValue.getValue(), OpcUaDataType.Int32);
+          }
+          case STRUCT -> {
+            UaStructuredType structValue = (UaStructuredType) value;
+            var xo =
+                ExtensionObject.encode(context, structValue, OpcUaDefaultXmlEncoding.getInstance());
+            encodeBuiltinTypeValue(xo, OpcUaDataType.ExtensionObject);
+          }
+          case OPTION_SET -> {
+            OptionSetUInteger<?> optionSet = (OptionSetUInteger<?>) value;
+            encodeBuiltinTypeValue(optionSet.getValue(), dataType);
+          }
+        }
       }
-    } catch (XMLStreamException e) {
-      throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+    } finally {
+      namespaceStack.pop();
     }
   }
 
