@@ -701,8 +701,10 @@ public class ArrayArguments {
               </uax:LocalizedText>
               <uax:LocalizedText>
                 <uax:Locale>en-US</uax:Locale>
+                <uax:Text></uax:Text>
               </uax:LocalizedText>
               <uax:LocalizedText>
+                <uax:Locale></uax:Locale>
                 <uax:Text>Hello, World!</uax:Text>
               </uax:LocalizedText>
               <uax:LocalizedText>

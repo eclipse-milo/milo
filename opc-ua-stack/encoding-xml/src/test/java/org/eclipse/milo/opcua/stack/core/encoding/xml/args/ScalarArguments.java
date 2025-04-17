@@ -224,6 +224,7 @@ public class ScalarArguments {
             """
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
               <uax:Locale>en-US</uax:Locale>
+              <uax:Text></uax:Text>
             </Test>
             """),
         // LocalizedText with only text
@@ -231,6 +232,7 @@ public class ScalarArguments {
             new LocalizedText("", "Hello, World!"),
             """
             <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+            <uax:Locale></uax:Locale>
               <uax:Text>Hello, World!</uax:Text>
             </Test>
             """),

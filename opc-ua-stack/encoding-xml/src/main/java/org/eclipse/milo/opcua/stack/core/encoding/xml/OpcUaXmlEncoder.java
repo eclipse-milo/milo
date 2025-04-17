@@ -512,10 +512,10 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
       namespaceStack.push(Namespaces.OPC_UA_XSD);
       try {
         if (value != null) {
-          if (value.locale() != null && !value.locale().isBlank()) {
+          if (value.locale() != null) {
             encodeString("Locale", value.locale());
           }
-          if (value.text() != null && !value.text().isBlank()) {
+          if (value.text() != null) {
             encodeString("Text", value.text());
           }
         }

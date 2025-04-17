@@ -10,13 +10,12 @@
 
 package org.eclipse.milo.opcua.stack.core.encoding.xml;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.StringReader;
 import java.util.UUID;
 import java.util.stream.Stream;
+import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
@@ -38,6 +37,8 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.xmlunit.builder.DiffBuilder;
+import org.xmlunit.diff.Diff;
 
 public class OpcUaXmlSerializationTest {
 
@@ -289,11 +290,6 @@ public class OpcUaXmlSerializationTest {
   @MethodSource("floatArguments")
   @ParameterizedTest
   void floatSerialization(float value) throws Exception {
-    // Skip test for infinity values as they're not properly handled in XML encoding
-    if (Float.isInfinite(value)) {
-      return;
-    }
-
     String encoded;
     try (var encoder = new OpcUaXmlEncoder(new DefaultEncodingContext())) {
       encoder.encodeFloat("Test", value);
@@ -310,11 +306,7 @@ public class OpcUaXmlSerializationTest {
       decoded = decoder.decodeFloat("Test");
     }
 
-    if (Float.isNaN(value)) {
-      assertTrue(Float.isNaN(decoded));
-    } else {
-      assertEquals(value, decoded, 0.0f);
-    }
+    assertEquals(value, decoded, 0.0f);
   }
 
   private static Stream<Arguments> floatArguments() {
@@ -330,11 +322,6 @@ public class OpcUaXmlSerializationTest {
   @MethodSource("doubleArguments")
   @ParameterizedTest
   void doubleSerialization(double value) throws Exception {
-    // Skip test for infinity values as they're not properly handled in XML encoding
-    if (Double.isInfinite(value)) {
-      return;
-    }
-
     String encoded;
     try (var encoder = new OpcUaXmlEncoder(new DefaultEncodingContext())) {
       encoder.encodeDouble("Test", value);
@@ -351,11 +338,7 @@ public class OpcUaXmlSerializationTest {
       decoded = decoder.decodeDouble("Test");
     }
 
-    if (Double.isNaN(value)) {
-      assertTrue(Double.isNaN(decoded));
-    } else {
-      assertEquals(value, decoded, 0.0);
-    }
+    assertEquals(value, decoded, 0.0);
   }
 
   private static Stream<Arguments> doubleArguments() {
@@ -371,10 +354,7 @@ public class OpcUaXmlSerializationTest {
   @MethodSource("stringArguments")
   @ParameterizedTest
   void stringSerialization(String value) throws Exception {
-    // Skip test for null value as it's not properly handled in XML encoding
-    if (value == null) {
-      return;
-    }
+    if (value == null) return;
 
     String encoded;
     try (var encoder = new OpcUaXmlEncoder(new DefaultEncodingContext())) {
@@ -520,9 +500,13 @@ public class OpcUaXmlSerializationTest {
       decoded = decoder.decodeXmlElement("Test");
     }
 
-    // XML elements are not preserved exactly during encoding/decoding
-    // Just verify that we got a non-null XmlElement back
-    assertNotNull(decoded);
+    Diff diff =
+        DiffBuilder.compare(value.getFragmentOrEmpty())
+            .withTest(decoded.getFragmentOrEmpty())
+            .ignoreWhitespace()
+            .build();
+
+    assertFalse(diff.hasDifferences(), diff.toString());
   }
 
   private static Stream<Arguments> xmlElementArguments() {
@@ -583,9 +567,9 @@ public class OpcUaXmlSerializationTest {
       decoded = decoder.decodeExpandedNodeId("Test");
     }
 
-    // Only compare the identifier, not the namespace URI or server index
-    // because they may not be preserved during encoding/decoding
-    assertEquals(value.getIdentifier(), decoded.getIdentifier());
+    assertEquals(
+        value.absolute(new NamespaceTable()).orElseThrow(),
+        decoded.absolute(new NamespaceTable()).orElseThrow());
   }
 
   private static Stream<Arguments> expandedNodeIdArguments() {
@@ -673,33 +657,7 @@ public class OpcUaXmlSerializationTest {
       decoded = decoder.decodeLocalizedText("Test");
     }
 
-    // Compare the text and locale with special handling for null/empty values
-    // because empty text/locale may be decoded as null
-    String expectedText = value.getText();
-    String actualText = decoded.getText();
-
-    if (expectedText == null || expectedText.isEmpty()) {
-      // If expected text is null or empty, actual text can be null or empty
-      assertTrue(
-          actualText == null || actualText.isEmpty(),
-          "Expected text to be null or empty, but was: " + actualText);
-    } else {
-      assertEquals(expectedText, actualText);
-    }
-
-    // If the original locale is null, the decoded locale should also be null
-    // If the original locale is empty, the decoded locale may be null or empty
-    String expectedLocale = value.getLocale();
-    String actualLocale = decoded.getLocale();
-
-    if (expectedLocale == null || expectedLocale.isEmpty()) {
-      // If expected locale is null or empty, actual locale can be null or empty
-      assertTrue(
-          actualLocale == null || actualLocale.isEmpty(),
-          "Expected locale to be null or empty, but was: " + actualLocale);
-    } else {
-      assertEquals(expectedLocale, actualLocale);
-    }
+    assertEquals(value, decoded);
   }
 
   private static Stream<Arguments> localizedTextArguments() {
@@ -730,9 +688,7 @@ public class OpcUaXmlSerializationTest {
       decoded = decoder.decodeExtensionObject("Test");
     }
 
-    // For XML encoding, we only compare the encodingId, not the body
-    // because ByteString bodies are converted to XmlElement bodies
-    assertEquals(value.getEncodingOrTypeId(), decoded.getEncodingOrTypeId());
+    assertEquals(value, decoded);
   }
 
   private static Stream<Arguments> extensionObjectArguments() {
