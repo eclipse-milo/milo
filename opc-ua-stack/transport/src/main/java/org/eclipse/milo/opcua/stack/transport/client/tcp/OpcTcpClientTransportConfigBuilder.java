@@ -14,7 +14,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.EventLoopGroup;
 import io.netty.util.HashedWheelTimer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -30,7 +30,7 @@ public class OpcTcpClientTransportConfigBuilder {
 
   private ExecutorService executor;
   private ScheduledExecutorService scheduledExecutor;
-  private NioEventLoopGroup eventLoop;
+  private EventLoopGroup eventLoop;
   private HashedWheelTimer wheelTimer;
   private Consumer<Bootstrap> bootstrapCustomizer = b -> {};
   private Consumer<ChannelPipeline> channelPipelineCustomizer = p -> {};
@@ -61,7 +61,7 @@ public class OpcTcpClientTransportConfigBuilder {
     return this;
   }
 
-  public OpcTcpClientTransportConfigBuilder setEventLoop(NioEventLoopGroup eventLoop) {
+  public OpcTcpClientTransportConfigBuilder setEventLoop(EventLoopGroup eventLoop) {
     this.eventLoop = eventLoop;
     return this;
   }
@@ -134,7 +134,7 @@ public class OpcTcpClientTransportConfigBuilder {
     private final UInteger channelLifetime;
     private final ExecutorService executor;
     private final ScheduledExecutorService scheduledExecutor;
-    private final NioEventLoopGroup eventLoop;
+    private final EventLoopGroup eventLoop;
     private final HashedWheelTimer wheelTimer;
     private final Consumer<Bootstrap> bootstrapCustomizer;
     private final Consumer<ChannelPipeline> channelPipelineCustomizer;
@@ -145,7 +145,7 @@ public class OpcTcpClientTransportConfigBuilder {
         UInteger channelLifetime,
         ExecutorService executor,
         ScheduledExecutorService scheduledExecutor,
-        NioEventLoopGroup eventLoop,
+        EventLoopGroup eventLoop,
         HashedWheelTimer wheelTimer,
         Consumer<Bootstrap> bootstrapCustomizer,
         Consumer<ChannelPipeline> channelPipelineCustomizer) {
@@ -187,7 +187,7 @@ public class OpcTcpClientTransportConfigBuilder {
     }
 
     @Override
-    public NioEventLoopGroup getEventLoop() {
+    public EventLoopGroup getEventLoop() {
       return eventLoop;
     }
 

@@ -10,7 +10,9 @@
 
 package org.eclipse.milo.opcua.stack.core;
 
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.MultiThreadIoEventLoopGroup;
+import io.netty.channel.nio.NioIoHandler;
 import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timeout;
 import java.util.concurrent.ExecutorService;
@@ -55,15 +57,15 @@ public final class Stack {
   public static final int DEFAULT_HTTP_PORT = 8080;
   public static final int DEFAULT_HTTPS_PORT = 8443;
 
-  private static NioEventLoopGroup EVENT_LOOP;
+  private static EventLoopGroup EVENT_LOOP;
   private static ExecutorService EXECUTOR_SERVICE;
   private static ScheduledExecutorService SCHEDULED_EXECUTOR_SERVICE;
   private static HashedWheelTimer WHEEL_TIMER;
 
   /**
-   * @return a shared {@link NioEventLoopGroup}.
+   * @return a shared {@link EventLoopGroup}.
    */
-  public static synchronized NioEventLoopGroup sharedEventLoop() {
+  public static synchronized EventLoopGroup sharedEventLoop() {
     if (EVENT_LOOP == null) {
       ThreadFactory threadFactory =
           new ThreadFactory() {
@@ -78,7 +80,7 @@ public final class Stack {
             }
           };
 
-      EVENT_LOOP = new NioEventLoopGroup(0, threadFactory);
+      EVENT_LOOP = new MultiThreadIoEventLoopGroup(0, threadFactory, NioIoHandler.newFactory());
     }
 
     return EVENT_LOOP;
@@ -197,16 +199,16 @@ public final class Stack {
   }
 
   /**
-   * Release shared resources, waiting at most 5 seconds for the {@link NioEventLoopGroup} to
-   * shutdown gracefully.
+   * Release shared resources, waiting at most 5 seconds for the {@link EventLoopGroup} to shut down
+   * gracefully.
    */
   public static synchronized void releaseSharedResources() {
     releaseSharedResources(5, TimeUnit.SECONDS);
   }
 
   /**
-   * Release shared resources, waiting at most the specified timeout for the {@link
-   * NioEventLoopGroup} to shutdown gracefully.
+   * Release shared resources, waiting at most the specified timeout for the {@link EventLoopGroup}
+   * to shut down gracefully.
    *
    * @param timeout the duration of the timeout.
    * @param unit the unit of the timeout duration.
