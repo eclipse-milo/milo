@@ -57,9 +57,6 @@ public class ServerNamespace extends AddressSpaceComposite implements Lifecycle,
 
     DiagnosticsFragment diagnosticsFragment = new DiagnosticsFragment(server);
     lifecycleManager.addLifecycle(diagnosticsFragment);
-
-    VendorServerInfoFragment vendorServerInfoFragment = new VendorServerInfoFragment(server);
-    lifecycleManager.addLifecycle(vendorServerInfoFragment);
   }
 
   @Override
@@ -113,49 +110,6 @@ public class ServerNamespace extends AddressSpaceComposite implements Lifecycle,
 
       getLifecycleManager().addLifecycle(subscriptionModel);
       getLifecycleManager().addLifecycle(serverDiagnosticsObject);
-    }
-
-    @Override
-    public AddressSpaceFilter getFilter() {
-      return filter;
-    }
-
-    @Override
-    public void onDataItemsCreated(List<DataItem> dataItems) {
-      subscriptionModel.onDataItemsCreated(dataItems);
-    }
-
-    @Override
-    public void onDataItemsModified(List<DataItem> dataItems) {
-      subscriptionModel.onDataItemsModified(dataItems);
-    }
-
-    @Override
-    public void onDataItemsDeleted(List<DataItem> dataItems) {
-      subscriptionModel.onDataItemsDeleted(dataItems);
-    }
-
-    @Override
-    public void onMonitoringModeChanged(List<MonitoredItem> monitoredItems) {
-      subscriptionModel.onMonitoringModeChanged(monitoredItems);
-    }
-  }
-
-  private class VendorServerInfoFragment extends ManagedAddressSpaceFragmentWithLifecycle {
-
-    private final AddressSpaceFilter filter =
-        SimpleAddressSpaceFilter.create(getNodeManager()::containsNode);
-
-    private final SubscriptionModel subscriptionModel;
-
-    public VendorServerInfoFragment(OpcUaServer server) {
-      super(server, ServerNamespace.this);
-
-      subscriptionModel = new SubscriptionModel(server, this);
-
-      getLifecycleManager().addLifecycle(subscriptionModel);
-
-      getLifecycleManager().addStartupTask(() -> VendorServerInfoNodes.add(getNodeContext()));
     }
 
     @Override
