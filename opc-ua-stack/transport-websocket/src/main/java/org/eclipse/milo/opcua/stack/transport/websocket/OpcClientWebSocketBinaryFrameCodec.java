@@ -73,9 +73,7 @@ public class OpcClientWebSocketBinaryFrameCodec
   protected void decode(ChannelHandlerContext ctx, WebSocketFrame msg, List<Object> out) {
     if (msg instanceof BinaryWebSocketFrame) {
       out.add(msg.content().retain());
-    } else if (msg instanceof TextWebSocketFrame) {
-      TextWebSocketFrame textFrame = (TextWebSocketFrame) msg;
-
+    } else if (msg instanceof TextWebSocketFrame textFrame) {
       logger.error("Received WebSocket frame:\n{}", textFrame.text());
       ctx.close();
     }

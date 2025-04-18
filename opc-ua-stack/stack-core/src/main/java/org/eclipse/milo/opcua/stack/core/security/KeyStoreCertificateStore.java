@@ -176,8 +176,7 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
             keyStore.getEntry(
                 alias, new KeyStore.PasswordProtection(settings.getAliasPassword.apply(alias)));
 
-        if (entry instanceof KeyStore.PrivateKeyEntry) {
-          KeyStore.PrivateKeyEntry privateKeyEntry = (KeyStore.PrivateKeyEntry) entry;
+        if (entry instanceof KeyStore.PrivateKeyEntry privateKeyEntry) {
           keyStore.deleteEntry(alias);
           entries.remove(alias);
 
@@ -277,9 +276,8 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
 
               private void processWatchEvent(WatchEvent<?> event) {
                 if (event.kind() == StandardWatchEventKinds.ENTRY_MODIFY
-                    && event.context() instanceof Path) {
+                    && event.context() instanceof Path p) {
 
-                  Path p = (Path) event.context();
                   if (p.toAbsolutePath().equals(keyStoreFile.toPath().toAbsolutePath())) {
                     try {
                       keyStoreLock.lock();

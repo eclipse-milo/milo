@@ -32,9 +32,7 @@ final class QualifiedNameConversions {
 
   @Nullable
   static Object convert(@NonNull Object o, OpcUaDataType targetType, boolean implicit) {
-    if (o instanceof QualifiedName) {
-      QualifiedName name = (QualifiedName) o;
-
+    if (o instanceof QualifiedName name) {
       return implicit ? implicitConversion(name, targetType) : explicitConversion(name, targetType);
     } else {
       return null;

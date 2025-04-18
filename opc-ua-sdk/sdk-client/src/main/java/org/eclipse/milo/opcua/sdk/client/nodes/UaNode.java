@@ -1353,12 +1353,11 @@ public abstract class UaNode implements Node {
       } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
         return null;
       }
-    } else if (o instanceof ExtensionObject) {
-      ExtensionObject xo = (ExtensionObject) o;
+    } else if (o instanceof ExtensionObject xo) {
       Object decoded = xo.decode(client.getStaticEncodingContext());
+
       return clazz.cast(decoded);
-    } else if (o instanceof ExtensionObject[]) {
-      ExtensionObject[] xos = (ExtensionObject[]) o;
+    } else if (o instanceof ExtensionObject[] xos) {
       Class<?> componentType = clazz.getComponentType();
 
       Object array = Array.newInstance(componentType, xos.length);

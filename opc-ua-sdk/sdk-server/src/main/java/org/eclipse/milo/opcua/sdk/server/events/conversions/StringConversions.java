@@ -197,9 +197,7 @@ final class StringConversions {
 
   @Nullable
   static Object convert(@NonNull Object o, OpcUaDataType targetType, boolean implicit) {
-    if (o instanceof String) {
-      String s = (String) o;
-
+    if (o instanceof String s) {
       return implicit ? implicitConversion(s, targetType) : explicitConversion(s, targetType);
     } else {
       return null;

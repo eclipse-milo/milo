@@ -248,8 +248,7 @@ public final class NumericRange {
         }
 
         return copy;
-      } else if (current instanceof String) {
-        String cs = (String) current;
+      } else if (current instanceof String cs) {
         String us = (String) update;
         int length = cs.length();
         StringBuilder copy = new StringBuilder();
@@ -267,8 +266,7 @@ public final class NumericRange {
         }
 
         return copy.toString();
-      } else if (current instanceof ByteString) {
-        ByteString bs = (ByteString) current;
+      } else if (current instanceof ByteString bs) {
         ByteString us = (ByteString) update;
         int length = bs.length();
         byte[] copy = new byte[length];

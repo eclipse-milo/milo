@@ -733,8 +733,7 @@ public class SessionManager {
    * @throws UaException if the token object is invalid or no matching policy is found.
    */
   private UserTokenPolicy validatePolicyId(Session session, Object tokenObject) throws UaException {
-    if (tokenObject instanceof UserIdentityToken) {
-      UserIdentityToken token = (UserIdentityToken) tokenObject;
+    if (tokenObject instanceof UserIdentityToken token) {
       String policyId = token.getPolicyId();
 
       UserTokenPolicy[] userIdentityTokens =

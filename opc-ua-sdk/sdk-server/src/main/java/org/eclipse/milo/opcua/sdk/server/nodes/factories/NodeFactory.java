@@ -174,9 +174,7 @@ public class NodeFactory {
         // Non-root Nodes are all instance declarations
         NodeId instanceNodeId = instanceNodeId(rootNodeId, browsePath);
 
-        if (node instanceof UaMethodNode) {
-          UaMethodNode declaration = (UaMethodNode) node;
-
+        if (node instanceof UaMethodNode declaration) {
           UaMethodNode instance =
               new UaMethodNode(
                   context,
@@ -190,9 +188,7 @@ public class NodeFactory {
                   declaration.isUserExecutable());
 
           nodes.put(browsePath, instance);
-        } else if (node instanceof UaObjectNode) {
-          UaObjectNode declaration = (UaObjectNode) node;
-
+        } else if (node instanceof UaObjectNode declaration) {
           ExpandedNodeId instanceTypeDefinitionId = getTypeDefinition(referenceTable, browsePath);
 
           UaNode typeDefinitionNode =
@@ -222,9 +218,7 @@ public class NodeFactory {
                 StatusCodes.Bad_InternalError,
                 "expected type definition for " + instanceTypeDefinitionId);
           }
-        } else if (node instanceof UaVariableNode) {
-          UaVariableNode declaration = (UaVariableNode) node;
-
+        } else if (node instanceof UaVariableNode declaration) {
           ExpandedNodeId instanceTypeDefinitionId = getTypeDefinition(referenceTable, browsePath);
 
           UaNode typeDefinitionNode =
@@ -310,17 +304,13 @@ public class NodeFactory {
       Tree<UaNode> nodeTree, InstantiationCallback instantiationCallback) {
     nodeTree.traverseWithParent(
         (node, parentNode) -> {
-          if (parentNode instanceof UaObjectNode && node instanceof UaMethodNode) {
-            UaMethodNode methodNode = (UaMethodNode) node;
-
+          if (parentNode instanceof UaObjectNode && node instanceof UaMethodNode methodNode) {
             instantiationCallback.onMethodAdded((UaObjectNode) parentNode, methodNode);
-          } else if (node instanceof UaObjectNode) {
-            UaObjectNode objectNode = (UaObjectNode) node;
+          } else if (node instanceof UaObjectNode objectNode) {
             ObjectTypeNode objectTypeNode = objectNode.getTypeDefinitionNode();
 
             instantiationCallback.onObjectAdded(parentNode, objectNode, objectTypeNode.getNodeId());
-          } else if (node instanceof UaVariableNode) {
-            UaVariableNode variableNode = (UaVariableNode) node;
+          } else if (node instanceof UaVariableNode variableNode) {
             VariableTypeNode variableTypeNode = variableNode.getTypeDefinitionNode();
 
             instantiationCallback.onVariableAdded(

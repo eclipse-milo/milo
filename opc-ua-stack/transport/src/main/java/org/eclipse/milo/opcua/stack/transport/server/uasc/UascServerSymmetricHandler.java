@@ -100,9 +100,8 @@ public class UascServerSymmetricHandler extends ByteToMessageCodec<UascServiceRe
 
   @Override
   public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-    if (evt instanceof ErrorMessage) {
+    if (evt instanceof ErrorMessage errorMessage) {
       // ErrorMessage triggered by ServerApplication
-      ErrorMessage errorMessage = (ErrorMessage) evt;
       ByteBuf messageBuffer = TcpMessageEncoder.encode(errorMessage);
 
       ctx.writeAndFlush(messageBuffer).addListener(future -> ctx.close());

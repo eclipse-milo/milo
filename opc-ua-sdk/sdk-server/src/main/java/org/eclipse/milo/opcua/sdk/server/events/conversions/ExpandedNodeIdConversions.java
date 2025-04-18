@@ -34,9 +34,7 @@ final class ExpandedNodeIdConversions {
 
   @Nullable
   static Object convert(@NonNull Object o, OpcUaDataType targetType, boolean implicit) {
-    if (o instanceof ExpandedNodeId) {
-      ExpandedNodeId eni = (ExpandedNodeId) o;
-
+    if (o instanceof ExpandedNodeId eni) {
       return implicit ? implicitConversion(eni, targetType) : explicitConversion(eni, targetType);
     } else {
       return null;

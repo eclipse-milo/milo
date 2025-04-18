@@ -104,9 +104,7 @@ final class Int16Conversions {
 
   @Nullable
   static Object convert(@Nullable Object o, OpcUaDataType targetType, boolean implicit) {
-    if (o instanceof Short) {
-      Short s = (Short) o;
-
+    if (o instanceof Short s) {
       return implicit ? implicitConversion(s, targetType) : explicitConversion(s, targetType);
     } else {
       return null;

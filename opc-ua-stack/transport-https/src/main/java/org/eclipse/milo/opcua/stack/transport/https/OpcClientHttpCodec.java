@@ -115,10 +115,9 @@ public class OpcClientHttpCodec extends MessageToMessageCodec<HttpResponse, UaRe
 
     logger.trace("channelRead0: {}", httpResponse);
 
-    if (httpResponse instanceof FullHttpResponse) {
+    if (httpResponse instanceof FullHttpResponse fullHttpResponse) {
       String contentType = httpResponse.headers().get(HttpHeaderNames.CONTENT_TYPE);
 
-      FullHttpResponse fullHttpResponse = (FullHttpResponse) httpResponse;
       ByteBuf content = fullHttpResponse.content();
 
       UaResponseMessageType responseMessage;

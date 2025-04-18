@@ -1654,13 +1654,13 @@ public class AddressSpace {
       Object o = value.value().value();
 
       try {
-        if (o instanceof ExtensionObject) {
-          ExtensionObject xo = (ExtensionObject) o;
+        if (o instanceof ExtensionObject xo) {
           Object decoded = xo.decode(context);
+
           return attributeClazz.cast(decoded);
-        } else if (o instanceof ExtensionObject[]) {
-          ExtensionObject[] xos = (ExtensionObject[]) o;
+        } else if (o instanceof ExtensionObject[] xos) {
           Class<?> componentType = attributeClazz.getComponentType();
+
           Object array = Array.newInstance(componentType, xos.length);
 
           for (int i = 0; i < xos.length; i++) {

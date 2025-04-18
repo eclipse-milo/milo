@@ -245,9 +245,7 @@ public class AttributeWriter {
 
       if (!expectedClass.isAssignableFrom(valueClass)) {
         // Writing a ByteString to a UByte[] is explicitly allowed by the spec.
-        if (o instanceof ByteString && expectedClass == UByte.class) {
-          ByteString byteString = (ByteString) o;
-
+        if (o instanceof ByteString byteString && expectedClass == UByte.class) {
           return new DataValue(
               new Variant(byteString.uBytes()),
               value.statusCode(),

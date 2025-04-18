@@ -49,9 +49,7 @@ public class Cast implements Operator<Object> {
 
     Object dataTypeIdObject = context.resolve(op1, eventNode);
 
-    if (dataTypeIdObject instanceof NodeId) {
-      NodeId dataTypeId = (NodeId) dataTypeIdObject;
-
+    if (dataTypeIdObject instanceof NodeId dataTypeId) {
       OpcUaDataType dataType = OpcUaDataType.fromNodeId(dataTypeId);
 
       if (dataType != null) {
@@ -59,9 +57,7 @@ public class Cast implements Operator<Object> {
       } else {
         return null;
       }
-    } else if (dataTypeIdObject instanceof ExpandedNodeId) {
-      ExpandedNodeId dataTypeId = (ExpandedNodeId) dataTypeIdObject;
-
+    } else if (dataTypeIdObject instanceof ExpandedNodeId dataTypeId) {
       OpcUaDataType dataType = OpcUaDataType.fromNodeId(dataTypeId);
 
       if (dataType != null) {

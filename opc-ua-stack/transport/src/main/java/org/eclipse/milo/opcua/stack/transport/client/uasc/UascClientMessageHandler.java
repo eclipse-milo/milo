@@ -310,9 +310,7 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
         binaryDecoder.setBuffer(messageBuffer);
         UaMessageType message = binaryDecoder.decodeMessage(null);
 
-        if (message instanceof ServiceFault) {
-          ServiceFault serviceFault = (ServiceFault) message;
-
+        if (message instanceof ServiceFault serviceFault) {
           UascResponse response =
               UascResponse.failure(
                   decodedMessage.getRequestId(), new UaServiceFaultException(serviceFault));

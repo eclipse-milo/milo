@@ -34,9 +34,7 @@ public class DefaultIssuedIdentity extends AbstractIdentity implements Identity.
 
   @Override
   public boolean equalTo(Identity identity) {
-    if (identity instanceof Identity.IssuedIdentity) {
-      Identity.IssuedIdentity other = (Identity.IssuedIdentity) identity;
-
+    if (identity instanceof IssuedIdentity other) {
       return Objects.equals(getTokenData(), other.getTokenData());
     }
 

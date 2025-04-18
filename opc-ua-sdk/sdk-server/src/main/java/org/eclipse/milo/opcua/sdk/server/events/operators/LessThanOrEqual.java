@@ -28,10 +28,7 @@ public class LessThanOrEqual extends ImplicitConversionBinaryOperator<Boolean> {
       @Nullable Object operand0,
       @Nullable Object operand1) {
 
-    if (operand0 instanceof Number && operand1 instanceof Number) {
-      Number n0 = (Number) operand0;
-      Number n1 = (Number) operand1;
-
+    if (operand0 instanceof Number n0 && operand1 instanceof Number n1) {
       switch (dataType) {
         case SByte:
         case Int16:

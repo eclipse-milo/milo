@@ -120,9 +120,7 @@ final class FloatConversions {
 
   @Nullable
   static Object convert(@Nullable Object o, OpcUaDataType targetType, boolean implicit) {
-    if (o instanceof Float) {
-      Float f = (Float) o;
-
+    if (o instanceof Float f) {
       return implicit ? implicitConversion(f, targetType) : explicitConversion(f, targetType);
     } else {
       return null;

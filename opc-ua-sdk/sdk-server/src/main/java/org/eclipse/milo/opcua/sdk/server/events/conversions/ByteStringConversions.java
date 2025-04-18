@@ -41,9 +41,7 @@ final class ByteStringConversions {
 
   @Nullable
   static Object convert(@NonNull Object o, OpcUaDataType targetType, boolean implicit) {
-    if (o instanceof ByteString) {
-      ByteString bs = (ByteString) o;
-
+    if (o instanceof ByteString bs) {
       return implicit ? implicitConversion(bs, targetType) : explicitConversion(bs, targetType);
     } else {
       return null;

@@ -43,9 +43,7 @@ final class DateTimeConversions {
 
   @Nullable
   static Object convert(@NonNull Object o, OpcUaDataType targetType, boolean implicit) {
-    if (o instanceof DateTime) {
-      DateTime d = (DateTime) o;
-
+    if (o instanceof DateTime d) {
       return implicit ? implicitConversion(d, targetType) : explicitConversion(d, targetType);
     } else {
       return null;

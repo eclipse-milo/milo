@@ -93,8 +93,7 @@ public class JsonObjectCodec extends AbstractBsdCodec<JsonObject, JsonElement> {
       return gson.toJsonTree(value);
     } else if (value instanceof QualifiedName) {
       return gson.toJsonTree(value);
-    } else if (value instanceof ByteString) {
-      ByteString byteString = (ByteString) value;
+    } else if (value instanceof ByteString byteString) {
       byte[] bs = byteString.bytesOrEmpty();
       JsonArray array = new JsonArray();
       for (Byte b : bs) {
@@ -125,15 +124,12 @@ public class JsonObjectCodec extends AbstractBsdCodec<JsonObject, JsonElement> {
     } else {
       JsonArray array = new JsonArray();
 
-      if (values instanceof Object[]) {
-        Object[] objects = (Object[]) values;
-
+      if (values instanceof Object[] objects) {
         for (Object value : objects) {
           array.add(opcUaToMemberTypeScalar(name, value, typeName));
         }
-      } else if (values instanceof Number) {
+      } else if (values instanceof Number number) {
         // This is a bit array...
-        Number number = (Number) values;
         return new JsonPrimitive(number);
       }
 

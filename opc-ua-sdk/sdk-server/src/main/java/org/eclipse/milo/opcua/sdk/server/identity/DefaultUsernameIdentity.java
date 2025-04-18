@@ -33,9 +33,7 @@ public class DefaultUsernameIdentity extends AbstractIdentity implements Identit
 
   @Override
   public boolean equalTo(Identity identity) {
-    if (identity instanceof Identity.UsernameIdentity) {
-      Identity.UsernameIdentity other = (Identity.UsernameIdentity) identity;
-
+    if (identity instanceof UsernameIdentity other) {
       return Objects.equals(getUsername(), other.getUsername());
     }
 

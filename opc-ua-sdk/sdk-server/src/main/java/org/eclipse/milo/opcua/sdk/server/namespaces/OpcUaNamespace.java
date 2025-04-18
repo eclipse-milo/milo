@@ -281,9 +281,7 @@ public class OpcUaNamespace extends ManagedNamespaceWithLifecycle {
   private void configureGetMonitoredItems() {
     UaNode node = getNodeManager().get(NodeIds.Server_GetMonitoredItems);
 
-    if (node instanceof UaMethodNode) {
-      UaMethodNode methodNode = (UaMethodNode) node;
-
+    if (node instanceof UaMethodNode methodNode) {
       configureMethodNode(methodNode, GetMonitoredItemsMethodImpl::new);
     } else {
       logger.warn("GetMonitoredItems UaMethodNode not found.");
@@ -293,9 +291,7 @@ public class OpcUaNamespace extends ManagedNamespaceWithLifecycle {
   private void configureResendData() {
     UaNode node = getNodeManager().get(NodeIds.Server_ResendData);
 
-    if (node instanceof UaMethodNode) {
-      UaMethodNode resendDataNode = (UaMethodNode) node;
-
+    if (node instanceof UaMethodNode resendDataNode) {
       configureMethodNode(resendDataNode, ResendDataMethodImpl::new);
     } else {
       logger.warn("ResendData UaMethodNode not found.");
@@ -305,9 +301,7 @@ public class OpcUaNamespace extends ManagedNamespaceWithLifecycle {
   private void configureConditionRefresh() {
     UaNode node = getNodeManager().get(NodeIds.ConditionType_ConditionRefresh);
 
-    if (node instanceof UaMethodNode) {
-      UaMethodNode conditionRefreshNode = (UaMethodNode) node;
-
+    if (node instanceof UaMethodNode conditionRefreshNode) {
       configureMethodNode(conditionRefreshNode, ConditionRefreshMethodImpl::new);
     } else {
       logger.warn("ConditionRefresh UaMethodNode not found.");

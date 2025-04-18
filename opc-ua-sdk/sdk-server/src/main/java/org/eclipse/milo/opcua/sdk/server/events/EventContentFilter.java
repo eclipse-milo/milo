@@ -522,13 +522,9 @@ public class EventContentFilter {
         ContentFilterElement element = elements[index.intValue()];
 
         return evaluate(this, eventNode, element);
-      } else if (operand instanceof AttributeOperand) {
-        AttributeOperand ao = (AttributeOperand) operand;
-
+      } else if (operand instanceof AttributeOperand ao) {
         return getAttribute(filterContext, ao, eventNode);
-      } else if (operand instanceof SimpleAttributeOperand) {
-        SimpleAttributeOperand sao = (SimpleAttributeOperand) operand;
-
+      } else if (operand instanceof SimpleAttributeOperand sao) {
         return getSimpleAttribute(filterContext, sao, eventNode);
       } else {
         throw new UaException(StatusCodes.Bad_FilterOperandInvalid);

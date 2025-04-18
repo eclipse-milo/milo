@@ -85,9 +85,7 @@ public abstract class AbstractBsdCodecTest {
         .getOpaqueTypeOrEnumeratedTypeOrStructuredType()
         .forEach(
             typeDescription -> {
-              if (typeDescription instanceof StructuredType) {
-                StructuredType structuredType = (StructuredType) typeDescription;
-
+              if (typeDescription instanceof StructuredType structuredType) {
                 BinaryDataTypeCodec codec =
                     createCodec(
                         BSD_CODEC_TEST_NAMESPACE,

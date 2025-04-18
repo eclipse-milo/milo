@@ -290,8 +290,7 @@ public abstract class AbstractBsdCodec<StructureT, MemberT> implements BinaryDat
 
     DataTypeDictionary dictionary = context.getDataTypeManager().getTypeDictionary(namespaceUri);
 
-    if (dictionary instanceof BinaryDataTypeDictionary) {
-      BinaryDataTypeDictionary binaryDictionary = (BinaryDataTypeDictionary) dictionary;
+    if (dictionary instanceof BinaryDataTypeDictionary binaryDictionary) {
       TypeDescription typeDescription = binaryDictionary.getTypeDescription(description);
 
       if (typeDescription instanceof StructuredType) {
@@ -332,8 +331,7 @@ public abstract class AbstractBsdCodec<StructureT, MemberT> implements BinaryDat
 
     DataTypeDictionary dictionary = context.getDataTypeManager().getTypeDictionary(namespaceUri);
 
-    if (dictionary instanceof BinaryDataTypeDictionary) {
-      BinaryDataTypeDictionary binaryDictionary = (BinaryDataTypeDictionary) dictionary;
+    if (dictionary instanceof BinaryDataTypeDictionary binaryDictionary) {
       TypeDescription typeDescription = binaryDictionary.getTypeDescription(description);
 
       if (typeDescription instanceof StructuredType) {

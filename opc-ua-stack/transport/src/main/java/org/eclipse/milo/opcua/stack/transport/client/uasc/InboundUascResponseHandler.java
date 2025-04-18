@@ -50,13 +50,11 @@ public abstract class InboundUascResponseHandler extends SimpleChannelInboundHan
 
   @Override
   public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-    if (evt instanceof UascResponse) {
-      UascResponse response = (UascResponse) evt;
+    if (evt instanceof UascResponse response) {
       assert response.isFailure();
 
       handleSendFailure(response.getRequestId(), response.getException());
-    } else if (evt instanceof ErrorMessage) {
-      ErrorMessage errorMessage = (ErrorMessage) evt;
+    } else if (evt instanceof ErrorMessage errorMessage) {
       StatusCode statusCode = errorMessage.getError();
 
       handleChannelError(new UaException(statusCode, errorMessage.getReason()));

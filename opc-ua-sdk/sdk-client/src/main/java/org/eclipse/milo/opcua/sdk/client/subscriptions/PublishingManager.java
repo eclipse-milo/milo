@@ -343,9 +343,7 @@ public class PublishingManager {
           if (events != null && events.length > 0) {
             details.subscription.notifyEventsReceived(events);
           }
-        } else if (notification instanceof StatusChangeNotification) {
-          StatusChangeNotification scn = (StatusChangeNotification) notification;
-
+        } else if (notification instanceof StatusChangeNotification scn) {
           StatusCode status = scn.getStatus();
 
           if (status.value() == StatusCodes.Bad_Timeout) {

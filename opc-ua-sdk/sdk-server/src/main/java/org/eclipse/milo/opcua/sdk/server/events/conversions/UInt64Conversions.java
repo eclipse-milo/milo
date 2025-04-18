@@ -145,9 +145,7 @@ final class UInt64Conversions {
 
   @Nullable
   static Object convert(@Nullable Object o, OpcUaDataType targetType, boolean implicit) {
-    if (o instanceof ULong) {
-      ULong ul = (ULong) o;
-
+    if (o instanceof ULong ul) {
       return implicit ? implicitConversion(ul, targetType) : explicitConversion(ul, targetType);
     } else {
       return null;
