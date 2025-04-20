@@ -112,6 +112,14 @@
                   <shadedPattern>org.eclipse.milo.shaded.com.google.common</shadedPattern>
                 </relocation>
               </relocations>
+              <filters>
+                <filter>
+                  <artifact>org.eclipse.milo:milo-guava-dependencies</artifact>
+                  <excludes>
+                    <exclude>META-INF/MANIFEST.MF</exclude>
+                  </excludes>
+                </filter>
+              </filters>
             </configuration>
           </execution>
         </executions>
