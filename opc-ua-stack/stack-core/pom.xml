@@ -15,7 +15,7 @@
     <parent>
         <groupId>org.eclipse.milo</groupId>
         <artifactId>opc-ua-stack</artifactId>
-        <version>0.6.16</version>
+        <version>0.6.17-SNAPSHOT</version>
     </parent>
 
     <artifactId>stack-core</artifactId>

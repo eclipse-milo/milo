@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.eclipse.milo</groupId>
         <artifactId>opc-ua-stack</artifactId>
-        <version>0.6.16</version>
+        <version>0.6.17-SNAPSHOT</version>
     </parent>
 
     <artifactId>bsd-generator</artifactId>
@@ -18,7 +18,7 @@
         <dependency>
             <groupId>org.eclipse.milo</groupId>
             <artifactId>bsd-core</artifactId>
-            <version>0.6.16</version>
+            <version>0.6.17-SNAPSHOT</version>
         </dependency>
     </dependencies>
 
