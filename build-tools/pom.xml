@@ -4,7 +4,7 @@
 
     <groupId>org.eclipse.milo</groupId>
     <artifactId>build-tools</artifactId>
-    <version>0.6.16-SNAPSHOT</version>
+    <version>0.6.16</version>
 
     <name>Eclipse Milo Build Tools</name>
     <description>Build tools for the Eclipse Milo project.</description>
@@ -14,7 +14,7 @@
         <url>https://github.com/eclipse/milo</url>
         <connection>scm:git:git://github.com/eclipse/milo.git</connection>
         <developerConnection>scm:git:git@github.com:eclipse/milo.git</developerConnection>
-        <tag>HEAD</tag>
+        <tag>v0.6.16</tag>
     </scm>
 
     <developers>

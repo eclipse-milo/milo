@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.eclipse.milo</groupId>
         <artifactId>opc-ua-sdk</artifactId>
-        <version>0.6.16-SNAPSHOT</version>
+        <version>0.6.16</version>
     </parent>
 
     <artifactId>dictionary-manager</artifactId>

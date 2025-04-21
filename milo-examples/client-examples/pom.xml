@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.eclipse.milo</groupId>
         <artifactId>milo-examples</artifactId>
-        <version>0.6.16-SNAPSHOT</version>
+        <version>0.6.16</version>
     </parent>
 
     <artifactId>client-examples</artifactId>
@@ -18,17 +18,17 @@
         <dependency>
             <groupId>org.eclipse.milo</groupId>
             <artifactId>sdk-client</artifactId>
-            <version>0.6.16-SNAPSHOT</version>
+            <version>0.6.16</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.milo</groupId>
             <artifactId>dictionary-reader</artifactId>
-            <version>0.6.16-SNAPSHOT</version>
+            <version>0.6.16</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.milo</groupId>
             <artifactId>server-examples</artifactId>
-            <version>0.6.16-SNAPSHOT</version>
+            <version>0.6.16</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
