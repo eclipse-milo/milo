@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -11,8 +11,7 @@
 package org.eclipse.milo.opcua.stack.core;
 
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.MultiThreadIoEventLoopGroup;
-import io.netty.channel.nio.NioIoHandler;
+import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timeout;
 import java.util.concurrent.ExecutorService;
@@ -80,7 +79,7 @@ public final class Stack {
             }
           };
 
-      EVENT_LOOP = new MultiThreadIoEventLoopGroup(0, threadFactory, NioIoHandler.newFactory());
+      EVENT_LOOP = new NioEventLoopGroup(0, threadFactory);
     }
 
     return EVENT_LOOP;
