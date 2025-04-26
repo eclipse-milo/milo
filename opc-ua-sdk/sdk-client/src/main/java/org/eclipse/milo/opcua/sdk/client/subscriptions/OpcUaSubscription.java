@@ -457,6 +457,19 @@ public class OpcUaSubscription {
     var serviceOperationsResults =
         new ArrayList<MonitoredItemServiceOperationResult>(itemsToCreate.size());
 
+    ServerState serverState = this.serverState;
+    if (serverState == null) {
+      logger.debug("Bad_InvalidState: subscription not created yet");
+
+      for (OpcUaMonitoredItem item : itemsToCreate) {
+        serviceOperationsResults.add(
+            new MonitoredItemServiceOperationResult(
+                item, new StatusCode(StatusCodes.Bad_InvalidState), null));
+      }
+
+      return serviceOperationsResults;
+    }
+
     UInteger partitionSize = getMonitoredItemPartitionSize();
 
     List<List<OpcUaMonitoredItem>> partitions =
@@ -466,7 +479,7 @@ public class OpcUaSubscription {
       try {
         logger.debug(
             "id={}, createMonitoredItems partition.size(): {}",
-            serverState.subscriptionId,
+            serverState.getSubscriptionId(),
             partition.size());
 
         CreateMonitoredItemsResponse response =
