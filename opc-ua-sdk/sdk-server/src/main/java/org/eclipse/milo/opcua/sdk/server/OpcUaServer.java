@@ -313,13 +313,6 @@ public class OpcUaServer extends AbstractServiceHandler {
   }
 
   public CompletableFuture<OpcUaServer> shutdown() {
-    serverNamespace.shutdown();
-    opcUaNamespace.shutdown();
-
-    eventFactory.shutdown();
-
-    subscriptions.values().forEach(Subscription::deleteSubscription);
-
     transports
         .values()
         .forEach(
@@ -331,6 +324,13 @@ public class OpcUaServer extends AbstractServiceHandler {
               }
             });
     transports.clear();
+
+    serverNamespace.shutdown();
+    opcUaNamespace.shutdown();
+
+    eventFactory.shutdown();
+
+    subscriptions.values().forEach(Subscription::deleteSubscription);
 
     return CompletableFuture.completedFuture(this);
   }
