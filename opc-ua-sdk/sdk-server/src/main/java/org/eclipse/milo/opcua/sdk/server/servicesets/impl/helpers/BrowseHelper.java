@@ -30,10 +30,7 @@ import org.eclipse.milo.opcua.sdk.server.ContinuationPoint;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.AccessResult;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.NodeIds;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
-import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.*;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
@@ -229,7 +226,11 @@ public class BrowseHelper {
         if (filterNodeClass(browseDescription, attributes.nodeClass())) {
           ReferenceDescription referenceDescription =
               createReferenceDescription(
-                  browseDescription, reference, attributes, typeDefinitionId);
+                  browseDescription,
+                  reference,
+                  attributes,
+                  typeDefinitionId,
+                  server.getNamespaceTable());
 
           referenceDescriptions.add(referenceDescription);
         }
@@ -245,7 +246,8 @@ public class BrowseHelper {
       BrowseDescription browseDescription,
       Reference reference,
       BrowseAttributes browseAttributes,
-      ExpandedNodeId typeDefinitionId) {
+      ExpandedNodeId typeDefinitionId,
+      NamespaceTable namespaceTable) {
 
     EnumSet<BrowseResultMask> masks =
         browseResultMasks(browseDescription.getResultMask().longValue());
@@ -257,10 +259,26 @@ public class BrowseHelper {
 
     boolean forward = masks.contains(BrowseResultMask.IsForward) && reference.isForward();
 
+    ExpandedNodeId targetNodeId = reference.getTargetNodeId();
+
+    // From https://reference.opcfoundation.org/Core/Part4/v105/docs/7.30:
+    // If the server index indicates that the TargetNode is a remote Node, then the nodeId shall
+    // contain the absolute namespace URI. If the TargetNode is a local Node, the nodeId shall
+    // contain the namespace index.
+    if (targetNodeId.isLocal()) {
+      if (targetNodeId.isAbsolute()) {
+        targetNodeId = targetNodeId.relative(namespaceTable).orElseThrow();
+      }
+    } else {
+      if (targetNodeId.isRelative()) {
+        targetNodeId = targetNodeId.absolute(namespaceTable).orElseThrow();
+      }
+    }
+
     return new ReferenceDescription(
         referenceTypeId,
         forward,
-        reference.getTargetNodeId(),
+        targetNodeId,
         masks.contains(BrowseResultMask.BrowseName)
             ? browseAttributes.browseName()
             : QualifiedName.NULL_VALUE,
