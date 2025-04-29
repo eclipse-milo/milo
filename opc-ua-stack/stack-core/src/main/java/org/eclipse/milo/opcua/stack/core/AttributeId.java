@@ -12,8 +12,10 @@ package org.eclipse.milo.opcua.stack.core;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -47,6 +49,8 @@ public enum AttributeId {
   AccessRestrictions(26),
   AccessLevelEx(27);
 
+  private static final List<AttributeId> ALL;
+  
   public static final Set<AttributeId> BASE_ATTRIBUTES;
 
   public static final Set<AttributeId> DATA_TYPE_ATTRIBUTES;
@@ -66,6 +70,8 @@ public enum AttributeId {
   public static final Set<AttributeId> VIEW_ATTRIBUTES;
 
   static {
+    ALL = Arrays.asList(AttributeId.values());
+    
     var baseAttributes = new LinkedHashSet<AttributeId>();
     baseAttributes.add(NodeId);
     baseAttributes.add(NodeClass);
@@ -148,8 +154,9 @@ public enum AttributeId {
   }
 
   public static Optional<AttributeId> from(int attributeId) {
-    if (attributeId > 0 && attributeId <= values().length) {
-      return Optional.of(values()[attributeId - 1]);
+
+    if (attributeId > 0 && attributeId <= ALL.size()) {
+      return Optional.of(ALL.get(attributeId - 1));
     } else {
       return Optional.empty();
     }

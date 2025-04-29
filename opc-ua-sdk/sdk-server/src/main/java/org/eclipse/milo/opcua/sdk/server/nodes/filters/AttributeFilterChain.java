@@ -69,6 +69,9 @@ public class AttributeFilterChain {
    * @return the value for the attribute identified by {@code attributeId} from {@code node}.
    */
   public Object getAttribute(@Nullable Session session, UaNode node, AttributeId attributeId) {
+    if (filters.isEmpty()) {
+      return node.getAttribute(attributeId);
+    }
     Iterator<AttributeFilter> filterIterator = filters.iterator();
 
     AttributeFilter filter =
@@ -96,6 +99,9 @@ public class AttributeFilterChain {
    */
   public Object readAttribute(@Nullable Session session, UaNode node, AttributeId attributeId)
       throws UaException {
+    if (filters.isEmpty()) {
+      return node.getAttribute(attributeId);
+    }
     Iterator<AttributeFilter> filterIterator = filters.iterator();
 
     AttributeFilter filter =
@@ -133,6 +139,10 @@ public class AttributeFilterChain {
    */
   public void setAttribute(
       @Nullable Session session, UaNode node, AttributeId attributeId, Object value) {
+    if (filters.isEmpty()) {
+      node.setAttribute(attributeId, value);
+      return;
+    }
     Iterator<AttributeFilter> filterIterator = filters.iterator();
 
     AttributeFilter filter =
@@ -155,7 +165,10 @@ public class AttributeFilterChain {
   public void writeAttribute(
       @Nullable Session session, UaNode node, AttributeId attributeId, Object value)
       throws UaException {
-
+    if (filters.isEmpty()) {
+      node.setAttribute(attributeId, value);
+      return;
+    }
     Iterator<AttributeFilter> filterIterator = filters.iterator();
 
     AttributeFilter filter =
