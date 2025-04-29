@@ -15,7 +15,6 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.UUID;
-import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.NamespaceReference;
@@ -54,12 +53,6 @@ public class ExpandedNodeIdSerializationTest extends BinarySerializationFixture 
     writer.encodeExpandedNodeId(nodeId);
     ExpandedNodeId decoded = reader.decodeExpandedNodeId();
 
-    NamespaceTable namespaceTable = writer.getEncodingContext().getNamespaceTable();
-
-    assertEquals(nodeId.getIdentifier(), decoded.getIdentifier());
-    assertEquals(nodeId.getServerIndex(), decoded.getServerIndex());
-    assertEquals(nodeId.getNamespaceUri(namespaceTable), decoded.getNamespaceUri(namespaceTable));
-    assertEquals(
-        nodeId.getNamespaceIndex(namespaceTable), decoded.getNamespaceIndex(namespaceTable));
+    assertEquals(nodeId, decoded);
   }
 }

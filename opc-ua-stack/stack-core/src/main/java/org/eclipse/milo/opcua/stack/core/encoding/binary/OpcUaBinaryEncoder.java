@@ -390,17 +390,6 @@ public class OpcUaBinaryEncoder implements UaEncoder {
     NamespaceReference namespace = value.namespace();
     if (namespace instanceof NamespaceUri uri) {
       namespaceUri = uri.namespaceUri();
-
-      // If we know the namespace index, use that for the encoding.
-      // It's more compact than encoding a namespace URI.
-      // It's also a workaround for bugs observed in the CTT and UaExpert, where the Client ignores
-      // the explicitly specified namespace URI in the ExpandedNodeId and just uses the namespace
-      // index, which is always 0 when the URI is encoded.
-      UShort index = context.getNamespaceTable().getIndex(namespaceUri);
-      if (index != null) {
-        namespaceIndex = index.intValue();
-        namespaceUri = null;
-      }
     } else if (value.namespace() instanceof NamespaceIndex index) {
       namespaceIndex = index.namespaceIndex().intValue();
     }
