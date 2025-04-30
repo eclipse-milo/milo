@@ -50,7 +50,7 @@ public enum AttributeId {
   AccessLevelEx(27);
 
   private static final List<AttributeId> ALL;
-  
+
   public static final Set<AttributeId> BASE_ATTRIBUTES;
 
   public static final Set<AttributeId> DATA_TYPE_ATTRIBUTES;
@@ -71,7 +71,7 @@ public enum AttributeId {
 
   static {
     ALL = Arrays.asList(AttributeId.values());
-    
+
     var baseAttributes = new LinkedHashSet<AttributeId>();
     baseAttributes.add(NodeId);
     baseAttributes.add(NodeClass);
