@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -10,11 +10,9 @@
 
 package org.eclipse.milo.opcua.sdk.server.nodes.filters;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
+import static java.util.Objects.requireNonNull;
+
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
@@ -24,7 +22,7 @@ import org.jspecify.annotations.Nullable;
 
 public class AttributeFilterChain {
 
-  private final ConcurrentLinkedDeque<AttributeFilter> filters = new ConcurrentLinkedDeque<>();
+  private volatile @Nullable ConcurrentLinkedDeque<AttributeFilter> filterDeque = null;
 
   /** Create an empty {@link AttributeFilterChain}. */
   public AttributeFilterChain() {}
@@ -35,7 +33,8 @@ public class AttributeFilterChain {
    * @param filter the filter to add.
    */
   public AttributeFilterChain(AttributeFilter filter) {
-    filters.add(filter);
+    filterDeque = new ConcurrentLinkedDeque<>();
+    requireNonNull(filterDeque).add(filter);
   }
 
   /**
@@ -44,7 +43,8 @@ public class AttributeFilterChain {
    * @param filters the filters to add.
    */
   public AttributeFilterChain(List<AttributeFilter> filters) {
-    this.filters.addAll(filters);
+    filterDeque = new ConcurrentLinkedDeque<>();
+    requireNonNull(filterDeque).addAll(filters);
   }
 
   /**
@@ -69,9 +69,12 @@ public class AttributeFilterChain {
    * @return the value for the attribute identified by {@code attributeId} from {@code node}.
    */
   public Object getAttribute(@Nullable Session session, UaNode node, AttributeId attributeId) {
-    if (filters.isEmpty()) {
+    Deque<AttributeFilter> filters = filterDeque;
+
+    if (filters == null || filters.isEmpty()) {
       return node.getAttribute(attributeId);
     }
+
     Iterator<AttributeFilter> filterIterator = filters.iterator();
 
     AttributeFilter filter =
@@ -99,9 +102,13 @@ public class AttributeFilterChain {
    */
   public Object readAttribute(@Nullable Session session, UaNode node, AttributeId attributeId)
       throws UaException {
-    if (filters.isEmpty()) {
+
+    Deque<AttributeFilter> filters = filterDeque;
+
+    if (filters == null || filters.isEmpty()) {
       return node.getAttribute(attributeId);
     }
+
     Iterator<AttributeFilter> filterIterator = filters.iterator();
 
     AttributeFilter filter =
@@ -139,10 +146,14 @@ public class AttributeFilterChain {
    */
   public void setAttribute(
       @Nullable Session session, UaNode node, AttributeId attributeId, Object value) {
-    if (filters.isEmpty()) {
+
+    Deque<AttributeFilter> filters = filterDeque;
+
+    if (filters == null || filters.isEmpty()) {
       node.setAttribute(attributeId, value);
       return;
     }
+
     Iterator<AttributeFilter> filterIterator = filters.iterator();
 
     AttributeFilter filter =
@@ -165,10 +176,14 @@ public class AttributeFilterChain {
   public void writeAttribute(
       @Nullable Session session, UaNode node, AttributeId attributeId, Object value)
       throws UaException {
-    if (filters.isEmpty()) {
+
+    Deque<AttributeFilter> filters = filterDeque;
+
+    if (filters == null || filters.isEmpty()) {
       node.setAttribute(attributeId, value);
       return;
     }
+
     Iterator<AttributeFilter> filterIterator = filters.iterator();
 
     AttributeFilter filter =
@@ -185,8 +200,11 @@ public class AttributeFilterChain {
    * @param attributeFilter the {@link AttributeFilter} to add.
    * @return this {@link AttributeFilterChain}.
    */
-  public AttributeFilterChain addFirst(AttributeFilter attributeFilter) {
-    filters.addFirst(attributeFilter);
+  public synchronized AttributeFilterChain addFirst(AttributeFilter attributeFilter) {
+    if (filterDeque == null) {
+      filterDeque = new ConcurrentLinkedDeque<>();
+    }
+    requireNonNull(filterDeque).addFirst(attributeFilter);
 
     return this;
   }
@@ -197,7 +215,7 @@ public class AttributeFilterChain {
    * @param attributeFilters the {@link AttributeFilter}s to add.
    * @return this {@link AttributeFilterChain}.
    */
-  public AttributeFilterChain addFirst(AttributeFilter... attributeFilters) {
+  public synchronized AttributeFilterChain addFirst(AttributeFilter... attributeFilters) {
     Arrays.stream(attributeFilters).forEach(this::addFirst);
 
     return this;
@@ -209,7 +227,7 @@ public class AttributeFilterChain {
    * @param attributeFilters the {@link AttributeFilter}s to add.
    * @return this {@link AttributeFilterChain}.
    */
-  public AttributeFilterChain addFirst(Collection<AttributeFilter> attributeFilters) {
+  public synchronized AttributeFilterChain addFirst(Collection<AttributeFilter> attributeFilters) {
     attributeFilters.forEach(this::addFirst);
 
     return this;
@@ -221,8 +239,11 @@ public class AttributeFilterChain {
    * @param attributeFilter the {@link AttributeFilter} to add.
    * @return this {@link AttributeFilterChain}.
    */
-  public AttributeFilterChain addLast(AttributeFilter attributeFilter) {
-    filters.addLast(attributeFilter);
+  public synchronized AttributeFilterChain addLast(AttributeFilter attributeFilter) {
+    if (filterDeque == null) {
+      filterDeque = new ConcurrentLinkedDeque<>();
+    }
+    requireNonNull(filterDeque).addLast(attributeFilter);
 
     return this;
   }
@@ -233,7 +254,7 @@ public class AttributeFilterChain {
    * @param attributeFilters the {@link AttributeFilter}s to add.
    * @return this {@link AttributeFilterChain}.
    */
-  public AttributeFilterChain addLast(AttributeFilter... attributeFilters) {
+  public synchronized AttributeFilterChain addLast(AttributeFilter... attributeFilters) {
     Arrays.stream(attributeFilters).forEach(this::addLast);
 
     return this;
@@ -245,7 +266,7 @@ public class AttributeFilterChain {
    * @param attributeFilters the {@link AttributeFilter}s to add.
    * @return this {@link AttributeFilterChain}.
    */
-  public AttributeFilterChain addLast(Collection<AttributeFilter> attributeFilters) {
+  public synchronized AttributeFilterChain addLast(Collection<AttributeFilter> attributeFilters) {
     attributeFilters.forEach(this::addLast);
 
     return this;
@@ -256,7 +277,12 @@ public class AttributeFilterChain {
    *
    * @return a List containing all the {@link AttributeFilter}s belonging to this chain.
    */
-  public List<AttributeFilter> getFilters() {
-    return new ArrayList<>(filters);
+  public synchronized List<AttributeFilter> getFilters() {
+    Deque<AttributeFilter> filters = this.filterDeque;
+    if (filters == null) {
+      return Collections.emptyList();
+    } else {
+      return new ArrayList<>(filters);
+    }
   }
 }
