@@ -59,18 +59,18 @@
     <!-- Dependency Versions -->
     <bouncycastle.version>1.80</bouncycastle.version>
     <data-type-test.version>0.2</data-type-test.version>
-    <gson.version>2.12.1</gson.version>
-    <guava.version>33.4.6-jre</guava.version>
+    <gson.version>2.13.1</gson.version>
+    <guava.version>33.4.8-jre</guava.version>
     <jakarta-activation.version>2.0.1</jakarta-activation.version>
     <jakarta-xml-bind-api.version>4.0.2</jakarta-xml-bind-api.version>
     <jaxb.version>4.0.5</jaxb.version>
-    <netty.version>4.1.119.Final</netty.version>
+    <netty.version>4.1.121.Final</netty.version>
     <netty-channel-fsm.version>1.0.1</netty-channel-fsm.version>
     <slf4j.version>2.0.17</slf4j.version>
     <jspecify.version>1.0.0</jspecify.version>
 
     <!-- Plugin Dependency Versions -->
-    <checkstyle.version>10.21.4</checkstyle.version>
+    <checkstyle.version>10.23.1</checkstyle.version>
     <jaxb2-maven-plugin.version>3.2.0</jaxb2-maven-plugin.version>
     <maven-bundle-plugin.version>6.0.0</maven-bundle-plugin.version>
     <maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
@@ -90,8 +90,8 @@
     <versions-maven-plugin.version>2.18.0</versions-maven-plugin.version>
 
     <!-- Test Dependency Versions -->
-    <junit.version>5.12.1</junit.version>
-    <mockito.version>5.16.1</mockito.version>
+    <junit.version>5.12.2</junit.version>
+    <mockito.version>5.17.0</mockito.version>
   </properties>
 
   <profiles>
