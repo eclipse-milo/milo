@@ -11,6 +11,8 @@
 package org.eclipse.milo.opcua.stack.core.encoding;
 
 import java.util.UUID;
+
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
 import org.eclipse.milo.opcua.stack.core.types.UaMessageType;
@@ -172,4 +174,8 @@ public interface UaEncoder {
 
   void encodeStructMatrix(String field, Matrix value, ExpandedNodeId dataTypeId)
       throws UaSerializationException;
+
+  void encodeBuiltinType(String field, Object value, OpcUaDataType dataType);
+
+  void encodeBuiltinTypeArray(String field, Object value, OpcUaDataType dataType);
 }

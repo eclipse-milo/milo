@@ -671,101 +671,165 @@ public class OpcUaBinaryEncoder implements UaEncoder {
 
   private void encodeValue(
       Object value, int typeId, boolean structure, boolean enumeration, boolean optionSet) {
+    OpcUaDataType dataType = OpcUaDataType.fromTypeId(typeId);
+    if (dataType == null) {
+      throw new UaSerializationException(
+              StatusCodes.Bad_EncodingError, "unknown typeId: " + typeId);
+    }
     if (structure) {
       UaStructuredType struct = (UaStructuredType) value;
 
       ExtensionObject extensionObject = ExtensionObject.encode(context, struct);
 
-      encodeBuiltinType(typeId, extensionObject);
+      encodeBuiltinType(extensionObject, dataType);
     } else if (enumeration) {
-      encodeBuiltinType(typeId, ((UaEnumeratedType) value).getValue());
+      encodeBuiltinType(((UaEnumeratedType) value).getValue(), dataType);
     } else if (optionSet) {
-      encodeBuiltinType(typeId, ((OptionSetUInteger<?>) value).getValue());
+      encodeBuiltinType(((OptionSetUInteger<?>) value).getValue(), dataType);
     } else {
-      encodeBuiltinType(typeId, value);
+      encodeBuiltinType(value, dataType);
     }
   }
 
-  private void encodeBuiltinType(int typeId, Object value) throws UaSerializationException {
-    switch (typeId) {
-      case 1:
-        encodeBoolean(null, (Boolean) value);
-        break;
-      case 2:
-        encodeSByte((Byte) value);
-        break;
-      case 3:
-        encodeByte((UByte) value);
-        break;
-      case 4:
-        encodeInt16((Short) value);
-        break;
-      case 5:
-        encodeUInt16((UShort) value);
-        break;
-      case 6:
-        encodeInt32((Integer) value);
-        break;
-      case 7:
-        encodeUInt32((UInteger) value);
-        break;
-      case 8:
-        encodeInt64((Long) value);
-        break;
-      case 9:
-        encodeUInt64((ULong) value);
-        break;
-      case 10:
-        encodeFloat((Float) value);
-        break;
-      case 11:
-        encodeDouble((Double) value);
-        break;
-      case 12:
-        encodeString((String) value);
-        break;
-      case 13:
-        encodeDateTime((DateTime) value);
-        break;
-      case 14:
-        encodeGuid((UUID) value);
-        break;
-      case 15:
-        encodeByteString((ByteString) value);
-        break;
-      case 16:
-        encodeXmlElement((XmlElement) value);
-        break;
-      case 17:
-        encodeNodeId((NodeId) value);
-        break;
-      case 18:
-        encodeExpandedNodeId((ExpandedNodeId) value);
-        break;
-      case 19:
-        encodeStatusCode((StatusCode) value);
-        break;
-      case 20:
-        encodeQualifiedName((QualifiedName) value);
-        break;
-      case 21:
-        encodeLocalizedText((LocalizedText) value);
-        break;
-      case 22:
-        encodeExtensionObject((ExtensionObject) value);
-        break;
-      case 23:
-        encodeDataValue((DataValue) value);
-        break;
-      case 24:
-        encodeVariant((Variant) value);
-        break;
-      case 25:
-        encodeDiagnosticInfo((DiagnosticInfo) value);
-        break;
-      default:
-        throw new UaSerializationException(
-            StatusCodes.Bad_EncodingError, "unknown builtin type: " + typeId);
+  @Override
+  public void encodeBuiltinType(String field, Object value, OpcUaDataType dataType) {
+    encodeBuiltinType(value, dataType);
+  }
+
+  private void encodeBuiltinType(Object value, OpcUaDataType dataType) throws UaSerializationException {
+      switch (dataType) {
+          case Boolean -> encodeBoolean((Boolean) value);
+          case SByte -> encodeSByte((Byte) value);
+          case Byte -> encodeByte((UByte) value);
+          case Int16 -> encodeInt16((Short) value);
+          case UInt16 -> encodeUInt16((UShort) value);
+          case Int32 -> encodeInt32((Integer) value);
+          case UInt32 -> encodeUInt32((UInteger) value);
+          case Int64 -> encodeInt64((Long) value);
+          case UInt64 -> encodeUInt64((ULong) value);
+          case Float -> encodeFloat((Float) value);
+          case Double -> encodeDouble((Double) value);
+          case String -> encodeString((String) value);
+          case DateTime -> encodeDateTime((DateTime) value);
+          case Guid -> encodeGuid((UUID) value);
+          case ByteString -> encodeByteString((ByteString) value);
+          case XmlElement -> encodeXmlElement((XmlElement) value);
+          case NodeId -> encodeNodeId((NodeId) value);
+          case ExpandedNodeId -> encodeExpandedNodeId((ExpandedNodeId) value);
+          case StatusCode -> encodeStatusCode((StatusCode) value);
+          case QualifiedName -> encodeQualifiedName((QualifiedName) value);
+          case LocalizedText -> encodeLocalizedText((LocalizedText) value);
+          case ExtensionObject -> encodeExtensionObject((ExtensionObject) value);
+          case DataValue -> encodeDataValue((DataValue) value);
+          case Variant -> encodeVariant((Variant) value);
+          case DiagnosticInfo -> encodeDiagnosticInfo((DiagnosticInfo) value);
+          default -> throw new UaSerializationException(
+                  StatusCodes.Bad_EncodingError, "unknown builtin type: " + dataType);
+      }
+  }
+
+  @Override
+  public void encodeBuiltinTypeArray(String field, Object value, OpcUaDataType dataType) {
+    encodeBuiltinTypeArray(value, dataType);
+  }
+
+  private void encodeBuiltinTypeArray(Object value, OpcUaDataType dataType) {
+    switch (dataType) {
+      case Boolean -> {
+        if (value instanceof boolean[] primitiveArray) {
+          Boolean[] boxedArray = new Boolean[primitiveArray.length];
+          for (int i = 0; i < primitiveArray.length; i++) {
+            boxedArray[i] = primitiveArray[i];
+          }
+          encodeBooleanArray(null, boxedArray);
+        } else {
+          encodeBooleanArray(null, (Boolean[]) value);
+        }
+      }
+      case Byte -> encodeByteArray(null, (UByte[]) value);
+      case SByte -> {
+        if (value instanceof byte[] primitiveArray) {
+          Byte[] boxedArray = new Byte[primitiveArray.length];
+          for (int i = 0; i < primitiveArray.length; i++) {
+            boxedArray[i] = primitiveArray[i];
+          }
+          encodeSByteArray(null, boxedArray);
+        } else {
+          encodeSByteArray(null, (Byte[]) value);
+        }
+      }
+      case Int16 -> {
+        if (value instanceof short[] primitiveArray) {
+          Short[] boxedArray = new Short[primitiveArray.length];
+          for (int i = 0; i < primitiveArray.length; i++) {
+            boxedArray[i] = primitiveArray[i];
+          }
+          encodeInt16Array(null, boxedArray);
+        } else {
+          encodeInt16Array(null, (Short[]) value);
+        }
+      }
+      case UInt16 -> encodeUInt16Array(null, (UShort[]) value);
+      case Int32 -> {
+        if (value instanceof int[] primitiveArray) {
+          Integer[] boxedArray = new Integer[primitiveArray.length];
+          for (int i = 0; i < primitiveArray.length; i++) {
+            boxedArray[i] = primitiveArray[i];
+          }
+          encodeInt32Array(null, boxedArray);
+        } else {
+          encodeInt32Array(null, (Integer[]) value);
+        }
+      }
+      case UInt32 -> encodeUInt32Array(null, (UInteger[]) value);
+      case Int64 -> {
+        if (value instanceof long[] primitiveArray) {
+          Long[] boxedArray = new Long[primitiveArray.length];
+          for (int i = 0; i < primitiveArray.length; i++) {
+            boxedArray[i] = primitiveArray[i];
+          }
+          encodeInt64Array(null, boxedArray);
+        } else {
+          encodeInt64Array(null, (Long[]) value);
+        }
+      }
+      case UInt64 -> encodeUInt64Array(null, (ULong[]) value);
+      case Float -> {
+        if (value instanceof float[] primitiveArray) {
+          Float[] boxedArray = new Float[primitiveArray.length];
+          for (int i = 0; i < primitiveArray.length; i++) {
+            boxedArray[i] = primitiveArray[i];
+          }
+          encodeFloatArray(null, boxedArray);
+        } else {
+          encodeFloatArray(null, (Float[]) value);
+        }
+      }
+      case Double -> {
+        if (value instanceof double[] primitiveArray) {
+          Double[] boxedArray = new Double[primitiveArray.length];
+          for (int i = 0; i < primitiveArray.length; i++) {
+            boxedArray[i] = primitiveArray[i];
+          }
+          encodeDoubleArray(null, boxedArray);
+        } else {
+          encodeDoubleArray(null, (Double[]) value);
+        }
+      }
+      case String -> encodeStringArray(null, (String[]) value);
+      case DateTime -> encodeDateTimeArray(null, (DateTime[]) value);
+      case Guid -> encodeGuidArray(null, (UUID[]) value);
+      case ByteString -> encodeByteStringArray(null, (ByteString[]) value);
+      case XmlElement -> encodeXmlElementArray(null, (XmlElement[]) value);
+      case NodeId -> encodeNodeIdArray(null, (NodeId[]) value);
+      case ExpandedNodeId -> encodeExpandedNodeIdArray(null, (ExpandedNodeId[]) value);
+      case StatusCode -> encodeStatusCodeArray(null, (StatusCode[]) value);
+      case QualifiedName -> encodeQualifiedNameArray(null, (QualifiedName[]) value);
+      case LocalizedText -> encodeLocalizedTextArray(null, (LocalizedText[]) value);
+      case ExtensionObject -> encodeExtensionObjectArray(null, (ExtensionObject[]) value);
+      case DataValue -> encodeDataValueArray(null, (DataValue[]) value);
+      case Variant -> encodeVariantArray(null, (Variant[]) value);
+      case DiagnosticInfo -> encodeDiagnosticInfoArray(null, (DiagnosticInfo[]) value);
     }
   }
 
