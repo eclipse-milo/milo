@@ -784,11 +784,16 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
     }
   }
 
+  @Override
+  public void encodeBuiltinType(String field, Object value, OpcUaDataType dataType) {
+    encodeBuiltinTypeValue(value, dataType);
+  }
+
   private void encodeBuiltinTypeValue(Object value, OpcUaDataType dataType) {
     switch (dataType) {
       case Boolean -> encodeBoolean("Boolean", (Boolean) value);
-      case Byte -> encodeByte("Byte", (UByte) value);
       case SByte -> encodeSByte("SByte", (Byte) value);
+      case Byte -> encodeByte("Byte", (UByte) value);
       case Int16 -> encodeInt16("Int16", (Short) value);
       case UInt16 -> encodeUInt16("UInt16", (UShort) value);
       case Int32 -> encodeInt32("Int32", (Integer) value);
@@ -812,6 +817,11 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
       case Variant -> encodeVariant("Variant", (Variant) value);
       case DiagnosticInfo -> encodeDiagnosticInfo("DiagnosticInfo", (DiagnosticInfo) value);
     }
+  }
+
+  @Override
+  public void encodeBuiltinTypeArray(String field, Object value, OpcUaDataType dataType) {
+    encodeBuiltinTypeArrayValue(value, dataType);
   }
 
   private void encodeBuiltinTypeArrayValue(Object value, OpcUaDataType dataType) {
