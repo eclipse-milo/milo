@@ -125,7 +125,13 @@ public class BrowsePathsHelper {
     } else if (elements.size() == 1) {
       List<ExpandedNodeId> targets = target(nodeId, elements.get(0));
 
-      return targets.stream().map(n -> new BrowsePathTarget(n, UInteger.MAX)).collect(toList());
+      return targets.stream()
+          .map(
+              n -> {
+                n = BrowseUtil.normalize(n, server.getNamespaceTable());
+                return new BrowsePathTarget(n, UInteger.MAX);
+              })
+          .collect(toList());
     } else {
       RelativePathElement e = elements.get(0);
 
@@ -144,6 +150,7 @@ public class BrowsePathsHelper {
       } else {
         UInteger remaining = nextElements.isEmpty() ? UInteger.MAX : uint(nextElements.size());
 
+        nextXni = BrowseUtil.normalize(nextXni, server.getNamespaceTable());
         return List.of(new BrowsePathTarget(nextXni, remaining));
       }
     }

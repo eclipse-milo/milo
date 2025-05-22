@@ -260,20 +260,7 @@ public class BrowseHelper {
     boolean forward = masks.contains(BrowseResultMask.IsForward) && reference.isForward();
 
     ExpandedNodeId targetNodeId = reference.getTargetNodeId();
-
-    // From https://reference.opcfoundation.org/Core/Part4/v105/docs/7.30:
-    // If the server index indicates that the TargetNode is a remote Node, then the nodeId shall
-    // contain the absolute namespace URI. If the TargetNode is a local Node, the nodeId shall
-    // contain the namespace index.
-    if (targetNodeId.isLocal()) {
-      if (targetNodeId.isAbsolute()) {
-        targetNodeId = targetNodeId.relative(namespaceTable).orElseThrow();
-      }
-    } else {
-      if (targetNodeId.isRelative()) {
-        targetNodeId = targetNodeId.absolute(namespaceTable).orElseThrow();
-      }
-    }
+    targetNodeId = BrowseUtil.normalize(targetNodeId, namespaceTable);
 
     return new ReferenceDescription(
         referenceTypeId,
@@ -369,7 +356,8 @@ public class BrowseHelper {
     var typeDefinitions = new ArrayList<ExpandedNodeId>();
 
     for (int i = 0; i < nodeIds.size(); i++) {
-      NodeId nodeId = nodeIds.get(i).toNodeId(server.getNamespaceTable()).orElse(NodeId.NULL_VALUE);
+      NamespaceTable namespaceTable = server.getNamespaceTable();
+      NodeId nodeId = nodeIds.get(i).toNodeId(namespaceTable).orElse(NodeId.NULL_VALUE);
 
       BrowseAttributes attributes = browseAttributes.get(i);
       NodeClass nodeClass = attributes.nodeClass;
@@ -380,7 +368,10 @@ public class BrowseHelper {
         switch (attributes.nodeClass) {
           case Object, Variable -> {
             try {
-              typeDefinitions.add(browseTypeDefinition(server, nodeId));
+              ExpandedNodeId typeDefinitionId = browseTypeDefinition(server, nodeId);
+              typeDefinitionId = BrowseUtil.normalize(typeDefinitionId, namespaceTable);
+
+              typeDefinitions.add(typeDefinitionId);
             } catch (UaException e) {
               LoggerFactory.getLogger(BrowseHelper.class)
                   .error("Error browsing TypeDefinition for nodeId={}", nodeId, e);
