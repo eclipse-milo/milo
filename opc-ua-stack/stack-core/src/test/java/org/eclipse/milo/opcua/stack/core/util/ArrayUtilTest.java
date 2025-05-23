@@ -95,6 +95,27 @@ public class ArrayUtilTest {
     assertEquals(type, ArrayUtil.getType(array));
   }
 
+  public static Object[][] getBoxedTypedArrays() {
+    return new Object[][] {
+      {new byte[1], Byte.class},
+      {new short[1], Short.class},
+      {new int[1], Integer.class},
+      {new long[1], Long.class},
+      {new float[1], Float.class},
+      {new double[1], Double.class},
+      {new char[1], Character.class},
+      {new boolean[1], Boolean.class},
+      {new Integer[1], Integer.class},
+      {new String[1], String.class},
+    };
+  }
+
+  @ParameterizedTest
+  @MethodSource("getBoxedTypedArrays")
+  public void testGetBoxedType(Object array, Class<?> type) throws Exception {
+    assertEquals(type, ArrayUtil.getBoxedType(array));
+  }
+
   @Test
   void getValueRank() {
     assertEquals(-1, ArrayUtil.getValueRank(0));

@@ -221,30 +221,27 @@ public final class NumericRange {
 
     if (dimension == dimensionCount) {
       if (current.getClass().isArray()) {
-        Class<?> currentType = ArrayUtil.getType(current);
-        Class<?> updateType = ArrayUtil.getType(update);
-
-        if (currentType != updateType) {
+        if (ArrayUtil.getBoxedType(current) != ArrayUtil.getBoxedType(update)) {
           throw new UaException(
               StatusCodes.Bad_TypeMismatch,
               String.format("currentType=%s, updateType=%s", current, update));
         }
 
         int length = Array.getLength(current);
-        Object copy = Array.newInstance(currentType, length);
+        Object copy = Array.newInstance(ArrayUtil.getType(current), length);
 
         if (low >= length || high >= length) {
           throw new UaException(StatusCodes.Bad_IndexRangeNoData);
         }
 
         for (int i = 0; i < length; i++) {
+          Object element;
           if (i < low || i > high) {
-            Object element = Array.get(current, i);
-            Array.set(copy, i, element);
+            element = Array.get(current, i);
           } else {
-            Object element = Array.get(update, i - low);
-            Array.set(copy, i, element);
+            element = Array.get(update, i - low);
           }
+          Array.set(copy, i, element);
         }
 
         return copy;

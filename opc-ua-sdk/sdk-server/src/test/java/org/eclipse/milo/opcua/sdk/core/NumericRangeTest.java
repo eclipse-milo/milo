@@ -233,6 +233,28 @@ public class NumericRangeTest {
     assertEquals(new ByteString(new byte[] {0, 2, 4, 3}), updated);
   }
 
+  @Test
+  void writePrimitiveUpdateToBoxedCurrent() throws UaException {
+    Variant current = new Variant(new Integer[] {0, 1, 2, 3});
+    Variant update = new Variant(new int[] {2, 4});
+    NumericRange range = NumericRange.parse("1:2");
+
+    Object updated = NumericRange.writeToValueAtRange(current, update, range);
+    assertInstanceOf(Integer[].class, updated);
+    assertArrayEquals(new Integer[] {0, 2, 4, 3}, (Integer[]) updated);
+  }
+
+  @Test
+  void writeBoxedUpdateToPrimitiveCurrent() throws UaException {
+    Variant current = new Variant(new int[] {0, 1, 2, 3});
+    Variant update = new Variant(new Integer[] {2, 4});
+    NumericRange range = NumericRange.parse("1:2");
+
+    Object updated = NumericRange.writeToValueAtRange(current, update, range);
+    assertInstanceOf(int[].class, updated);
+    assertArrayEquals(new int[] {0, 2, 4, 3}, (int[]) updated);
+  }
+
   private static Object[][] getInvalidRanges() {
     return new Object[][] {
       {"0:0"}, {"1:1"}, {"-4:0"}, {"0:-4"}, {"3:1"}, {"abc,def"}, {"1:2,3:1"},
