@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -124,12 +124,39 @@ public class ArrayUtil {
     return rank == 0 ? -1 : rank;
   }
 
+  /**
+   * Get the base component type for the provided array.
+   *
+   * @param array the array whose base component type is to be determined.
+   * @return the {@code Class} object representing the base component type of the array.
+   */
   public static Class<?> getType(Object array) {
     Class<?> type = array.getClass();
 
     while (type.isArray()) {
       type = type.getComponentType();
     }
+
+    return type;
+  }
+
+  /**
+   * Get the (boxed) base component type for the provided array.
+   *
+   * @param array the array whose (boxed) base component type is to be determined.
+   * @return the {@code Class} object representing the (boxed) base component type of the array.
+   */
+  public static Class<?> getBoxedType(Object array) {
+    Class<?> type = getType(array);
+
+    if (type == byte.class) return Byte.class;
+    if (type == short.class) return Short.class;
+    if (type == int.class) return Integer.class;
+    if (type == long.class) return Long.class;
+    if (type == float.class) return Float.class;
+    if (type == double.class) return Double.class;
+    if (type == char.class) return Character.class;
+    if (type == boolean.class) return Boolean.class;
 
     return type;
   }
