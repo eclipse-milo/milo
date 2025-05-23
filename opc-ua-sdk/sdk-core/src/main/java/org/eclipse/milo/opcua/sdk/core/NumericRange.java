@@ -224,7 +224,9 @@ public final class NumericRange {
         if (ArrayUtil.getBoxedType(current) != ArrayUtil.getBoxedType(update)) {
           throw new UaException(
               StatusCodes.Bad_TypeMismatch,
-              String.format("currentType=%s, updateType=%s", current, update));
+              String.format(
+                  "current=%s, update=%s",
+                  ArrayUtil.getBoxedType(current), ArrayUtil.getBoxedType(update)));
         }
 
         int length = Array.getLength(current);
