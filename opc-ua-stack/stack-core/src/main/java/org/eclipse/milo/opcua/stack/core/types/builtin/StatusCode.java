@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.StringJoiner;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.jspecify.annotations.NonNull;
 
 public record StatusCode(long value) {
 
@@ -161,11 +162,13 @@ public record StatusCode(long value) {
   }
 
   @Override
-  public String toString() {
-    return new StringJoiner(", ", StatusCode.class.getSimpleName() + "[", "]")
-        .add("value=0x%08X".formatted(value))
-        .add("quality=" + quality(this))
-        .toString();
+  public @NonNull String toString() {
+    var joiner = new StringJoiner(", ", StatusCode.class.getSimpleName() + "[", "]");
+
+    StatusCodes.lookup(value).ifPresent(nameAndDesc -> joiner.add("name=" + nameAndDesc[0]));
+    joiner.add("value=0x%08X".formatted(value)).add("quality=" + quality(this));
+
+    return joiner.toString();
   }
 
   /**

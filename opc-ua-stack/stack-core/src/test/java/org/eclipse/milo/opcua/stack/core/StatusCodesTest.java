@@ -83,6 +83,13 @@ class StatusCodesTest {
 
   @Test
   void toStringValue() {
-    assertEquals("StatusCode[value=0x00000000, quality=good]", StatusCode.GOOD.toString());
+    assertEquals(
+        "StatusCode[name=Good, value=0x00000000, quality=good]", StatusCode.GOOD.toString());
+    assertEquals(
+        "StatusCode[name=Uncertain_InitialValue, value=0x40920000, quality=uncertain]",
+        new StatusCode(StatusCodes.Uncertain_InitialValue).toString());
+    assertEquals(
+        "StatusCode[name=Bad_InternalError, value=0x80020000, quality=bad]",
+        new StatusCode(StatusCodes.Bad_InternalError).toString());
   }
 }
