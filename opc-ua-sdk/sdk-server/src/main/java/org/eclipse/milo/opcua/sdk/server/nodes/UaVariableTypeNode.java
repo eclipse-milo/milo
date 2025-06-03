@@ -10,10 +10,21 @@
 
 package org.eclipse.milo.opcua.sdk.server.nodes;
 
+import com.google.common.base.Preconditions;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableNodeProperties;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableTypeNode;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableTypeNodeProperties;
+import org.eclipse.milo.opcua.sdk.server.NodeManager;
+import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilter;
+import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilterChain;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
@@ -216,5 +227,300 @@ public class UaVariableTypeNode extends UaNode implements VariableTypeNode {
    */
   public void setNodeVersion(String nodeVersion) {
     setProperty(VariableTypeNodeProperties.NodeVersion, nodeVersion);
+  }
+
+  /**
+   * @return a new {@link UaVariableTypeNodeBuilder}.
+   */
+  public static UaVariableTypeNodeBuilder builder(UaNodeContext context) {
+    return new UaVariableTypeNodeBuilder(context);
+  }
+
+  /**
+   * Build a {@link UaVariableTypeNode} using the {@link UaVariableTypeNodeBuilder} supplied to the
+   * {@code build} function.
+   *
+   * @param context the {@link UaNodeContext} to use.
+   * @param build a function that accepts a {@link UaVariableTypeNodeBuilder} and uses it to build
+   *     and return a {@link UaVariableTypeNode}.
+   * @return a {@link UaVariableTypeNode} built using the supplied {@link
+   *     UaVariableTypeNodeBuilder}.
+   */
+  public static UaVariableTypeNode build(
+      UaNodeContext context, Function<UaVariableTypeNodeBuilder, UaVariableTypeNode> build) {
+
+    UaVariableTypeNodeBuilder builder = new UaVariableTypeNodeBuilder(context);
+
+    return build.apply(builder);
+  }
+
+  public static class UaVariableTypeNodeBuilder implements Supplier<UaVariableTypeNode> {
+
+    private final List<AttributeFilter> attributeFilters = new ArrayList<>();
+
+    private final List<Reference> references = new ArrayList<>();
+
+    private NodeId nodeId;
+    private QualifiedName browseName;
+    private LocalizedText displayName;
+    private LocalizedText description = LocalizedText.NULL_VALUE;
+    private UInteger writeMask = UInteger.MIN;
+    private UInteger userWriteMask = UInteger.MIN;
+    private RolePermissionType[] rolePermissions;
+    private RolePermissionType[] userRolePermissions;
+    private AccessRestrictionType accessRestrictions;
+
+    private DataValue value;
+    private NodeId dataType;
+    private Integer valueRank;
+    private UInteger[] arrayDimensions;
+    private Boolean isAbstract;
+
+    private final UaNodeContext context;
+
+    public UaVariableTypeNodeBuilder(UaNodeContext context) {
+      this.context = context;
+    }
+
+    /**
+     * @see #build()
+     */
+    @Override
+    public UaVariableTypeNode get() {
+      return build();
+    }
+
+    /**
+     * Build and return the {@link UaVariableTypeNode}.
+     *
+     * <p>The following fields are required: NodeId, BrowseName, DisplayName.
+     *
+     * @return a {@link UaVariableTypeNode} built from the configuration of this builder.
+     */
+    public UaVariableTypeNode build() {
+      Preconditions.checkNotNull(nodeId, "NodeId cannot be null");
+      Preconditions.checkNotNull(browseName, "BrowseName cannot be null");
+      Preconditions.checkNotNull(displayName, "DisplayName cannot be null");
+
+      long hasTypeDefinitionCount =
+          references.stream()
+              .filter(r -> NodeIds.HasTypeDefinition.equals(r.getReferenceTypeId()))
+              .count();
+
+      if (hasTypeDefinitionCount == 0) {
+        setTypeDefinition(NodeIds.BaseVariableType);
+      } else {
+        Preconditions.checkState(
+            hasTypeDefinitionCount == 1,
+            "VariableType Node must have exactly one HasTypeDefinition reference.");
+      }
+
+      UaVariableTypeNode node =
+          new UaVariableTypeNode(
+              context,
+              nodeId,
+              browseName,
+              displayName,
+              description,
+              writeMask,
+              userWriteMask,
+              rolePermissions,
+              userRolePermissions,
+              accessRestrictions,
+              value,
+              dataType,
+              valueRank,
+              arrayDimensions,
+              isAbstract);
+
+      references.forEach(node::addReference);
+
+      node.getFilterChain().addLast(attributeFilters);
+
+      return node;
+    }
+
+    /**
+     * Build the {@link UaVariableTypeNode} using the configured values and add it to the {@link
+     * NodeManager} from the {@link UaNodeContext}.
+     *
+     * @return a {@link UaVariableTypeNode} built from the configured values.
+     * @see #build()
+     */
+    public UaVariableTypeNode buildAndAdd() {
+      UaVariableTypeNode node = build();
+      context.getNodeManager().addNode(node);
+      return node;
+    }
+
+    public UaVariableTypeNodeBuilder setNodeId(NodeId nodeId) {
+      this.nodeId = nodeId;
+      return this;
+    }
+
+    public UaVariableTypeNodeBuilder setBrowseName(QualifiedName browseName) {
+      this.browseName = browseName;
+      return this;
+    }
+
+    public UaVariableTypeNodeBuilder setDisplayName(LocalizedText displayName) {
+      this.displayName = displayName;
+      return this;
+    }
+
+    public UaVariableTypeNodeBuilder setDescription(LocalizedText description) {
+      this.description = description;
+      return this;
+    }
+
+    public UaVariableTypeNodeBuilder setWriteMask(UInteger writeMask) {
+      this.writeMask = writeMask;
+      return this;
+    }
+
+    public UaVariableTypeNodeBuilder setUserWriteMask(UInteger userWriteMask) {
+      this.userWriteMask = userWriteMask;
+      return this;
+    }
+
+    public UaVariableTypeNodeBuilder setRolePermissions(RolePermissionType[] rolePermissions) {
+      this.rolePermissions = rolePermissions;
+      return this;
+    }
+
+    public UaVariableTypeNodeBuilder setUserRolePermissions(
+        RolePermissionType[] userRolePermissions) {
+      this.userRolePermissions = userRolePermissions;
+      return this;
+    }
+
+    public UaVariableTypeNodeBuilder setAccessRestrictions(
+        AccessRestrictionType accessRestrictions) {
+      this.accessRestrictions = accessRestrictions;
+      return this;
+    }
+
+    public UaVariableTypeNodeBuilder setValue(DataValue value) {
+      this.value = value;
+      return this;
+    }
+
+    public UaVariableTypeNodeBuilder setDataType(NodeId dataType) {
+      this.dataType = dataType;
+      return this;
+    }
+
+    public UaVariableTypeNodeBuilder setValueRank(Integer valueRank) {
+      this.valueRank = valueRank;
+      return this;
+    }
+
+    public UaVariableTypeNodeBuilder setArrayDimensions(UInteger[] arrayDimensions) {
+      this.arrayDimensions = arrayDimensions;
+      return this;
+    }
+
+    public UaVariableTypeNodeBuilder setIsAbstract(Boolean isAbstract) {
+      this.isAbstract = isAbstract;
+      return this;
+    }
+
+    public NodeId getNodeId() {
+      return nodeId;
+    }
+
+    public QualifiedName getBrowseName() {
+      return browseName;
+    }
+
+    public LocalizedText getDisplayName() {
+      return displayName;
+    }
+
+    public LocalizedText getDescription() {
+      return description;
+    }
+
+    public UInteger getWriteMask() {
+      return writeMask;
+    }
+
+    public UInteger getUserWriteMask() {
+      return userWriteMask;
+    }
+
+    public RolePermissionType[] getRolePermissions() {
+      return rolePermissions;
+    }
+
+    public RolePermissionType[] getUserRolePermissions() {
+      return userRolePermissions;
+    }
+
+    public AccessRestrictionType getAccessRestrictions() {
+      return accessRestrictions;
+    }
+
+    public DataValue getValue() {
+      return value;
+    }
+
+    public NodeId getDataType() {
+      return dataType;
+    }
+
+    public Integer getValueRank() {
+      return valueRank;
+    }
+
+    public UInteger[] getArrayDimensions() {
+      return arrayDimensions;
+    }
+
+    public Boolean getIsAbstract() {
+      return isAbstract;
+    }
+
+    /**
+     * Add an {@link AttributeFilter} that will be added to the node's {@link AttributeFilterChain}
+     * when it's built.
+     *
+     * <p>The order filters are added in this builder are maintained.
+     *
+     * @param attributeFilter the {@link AttributeFilter} to add.
+     * @return this {@link UaVariableTypeNodeBuilder}.
+     */
+    public UaVariableTypeNodeBuilder addAttributeFilter(AttributeFilter attributeFilter) {
+      attributeFilters.add(attributeFilter);
+      return this;
+    }
+
+    /**
+     * Add a {@link Reference} to the node when it's built.
+     *
+     * @param reference the {@link Reference} to add.
+     * @return this {@link UaVariableTypeNodeBuilder}.
+     */
+    public UaVariableTypeNodeBuilder addReference(Reference reference) {
+      references.add(reference);
+      return this;
+    }
+
+    /**
+     * Convenience method for adding the required HasTypeDefinition reference.
+     *
+     * <p>{@link #setNodeId(NodeId)} must have already been called before invoking this method.
+     *
+     * @param typeDefinition The {@link NodeId} of the TypeDefinition.
+     * @return this {@link UaVariableTypeNodeBuilder}.
+     */
+    public UaVariableTypeNodeBuilder setTypeDefinition(NodeId typeDefinition) {
+      Objects.requireNonNull(nodeId, "NodeId cannot be null");
+
+      references.add(
+          new Reference(nodeId, NodeIds.HasTypeDefinition, typeDefinition.expanded(), true));
+
+      return this;
+    }
   }
 }
