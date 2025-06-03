@@ -517,6 +517,9 @@ public class UaVariableTypeNode extends UaNode implements VariableTypeNode {
     public UaVariableTypeNodeBuilder setTypeDefinition(NodeId typeDefinition) {
       Objects.requireNonNull(nodeId, "NodeId cannot be null");
 
+      // Remove any existing HasTypeDefinition references; only one is allowed.
+      references.removeIf(ref -> ref.getReferenceTypeId().equals(NodeIds.HasTypeDefinition));
+
       references.add(
           new Reference(nodeId, NodeIds.HasTypeDefinition, typeDefinition.expanded(), true));
 
