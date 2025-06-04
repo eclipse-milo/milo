@@ -13,10 +13,10 @@ package org.eclipse.milo.opcua.sdk.server.nodes;
 import com.google.common.base.Preconditions;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.eclipse.milo.opcua.sdk.core.Reference;
+import org.eclipse.milo.opcua.sdk.core.ValueRanks;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableNodeProperties;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableTypeNode;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableTypeNodeProperties;
@@ -25,10 +25,7 @@ import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilter;
 import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilterChain;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
-import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
+import org.eclipse.milo.opcua.stack.core.types.builtin.*;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
@@ -270,11 +267,11 @@ public class UaVariableTypeNode extends UaNode implements VariableTypeNode {
     private RolePermissionType[] userRolePermissions;
     private AccessRestrictionType accessRestrictions;
 
-    private DataValue value;
-    private NodeId dataType;
-    private Integer valueRank;
-    private UInteger[] arrayDimensions;
-    private Boolean isAbstract;
+    private DataValue value = new DataValue(Variant.NULL_VALUE);
+    private NodeId dataType = NodeIds.BaseDataType;
+    private Integer valueRank = ValueRanks.Scalar;
+    private UInteger[] arrayDimensions = null;
+    private Boolean isAbstract = false;
 
     private final UaNodeContext context;
 
@@ -301,19 +298,6 @@ public class UaVariableTypeNode extends UaNode implements VariableTypeNode {
       Preconditions.checkNotNull(nodeId, "NodeId cannot be null");
       Preconditions.checkNotNull(browseName, "BrowseName cannot be null");
       Preconditions.checkNotNull(displayName, "DisplayName cannot be null");
-
-      long hasTypeDefinitionCount =
-          references.stream()
-              .filter(r -> NodeIds.HasTypeDefinition.equals(r.getReferenceTypeId()))
-              .count();
-
-      if (hasTypeDefinitionCount == 0) {
-        setTypeDefinition(NodeIds.BaseVariableType);
-      } else {
-        Preconditions.checkState(
-            hasTypeDefinitionCount == 1,
-            "VariableType Node must have exactly one HasTypeDefinition reference.");
-      }
 
       UaVariableTypeNode node =
           new UaVariableTypeNode(
@@ -503,26 +487,6 @@ public class UaVariableTypeNode extends UaNode implements VariableTypeNode {
      */
     public UaVariableTypeNodeBuilder addReference(Reference reference) {
       references.add(reference);
-      return this;
-    }
-
-    /**
-     * Convenience method for adding the required HasTypeDefinition reference.
-     *
-     * <p>{@link #setNodeId(NodeId)} must have already been called before invoking this method.
-     *
-     * @param typeDefinition The {@link NodeId} of the TypeDefinition.
-     * @return this {@link UaVariableTypeNodeBuilder}.
-     */
-    public UaVariableTypeNodeBuilder setTypeDefinition(NodeId typeDefinition) {
-      Objects.requireNonNull(nodeId, "NodeId cannot be null");
-
-      // Remove any existing HasTypeDefinition references; only one is allowed.
-      references.removeIf(ref -> ref.getReferenceTypeId().equals(NodeIds.HasTypeDefinition));
-
-      references.add(
-          new Reference(nodeId, NodeIds.HasTypeDefinition, typeDefinition.expanded(), true));
-
       return this;
     }
   }
