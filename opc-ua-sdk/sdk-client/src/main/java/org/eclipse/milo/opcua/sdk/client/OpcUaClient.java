@@ -178,14 +178,35 @@ public class OpcUaClient {
    * Create an {@link OpcUaClient} configured with {@code config}.
    *
    * @param config the {@link OpcUaClientConfig}.
-   * @return an {@link OpcUaClient} configured with {@code config}.
-   * @throws UaException if the client could not be created (e.g. transport/encoding not supported).
+   * @return a new {@link OpcUaClient} configured with {@code config}.
+   * @throws UaException if the client could not be created.
    */
   public static OpcUaClient create(OpcUaClientConfig config) throws UaException {
     OpcTcpClientTransportConfig transportConfig = OpcTcpClientTransportConfig.newBuilder().build();
     var transport = new OpcTcpClientTransport(transportConfig);
 
     return new OpcUaClient(config, transport);
+  }
+
+  /**
+   * Create an {@link OpcUaClient} configured with {@code config}.
+   *
+   * @param config the {@link OpcUaClientConfig}.
+   * @param configureTransport a Consumer that receives an {@link
+   *     OpcTcpClientTransportConfigBuilder} that can be used to configure the transport.
+   * @return a new {@link OpcUaClient} configured with {@code config}.
+   * @throws UaException if the client could not be created.
+   */
+  public static OpcUaClient create(
+      OpcUaClientConfig config, Consumer<OpcTcpClientTransportConfigBuilder> configureTransport)
+      throws UaException {
+
+    var transportConfigBuilder = OpcTcpClientTransportConfig.newBuilder();
+    configureTransport.accept(transportConfigBuilder);
+
+    OpcTcpClientTransportConfig transportConfig = transportConfigBuilder.build();
+
+    return new OpcUaClient(config, new OpcTcpClientTransport(transportConfig));
   }
 
   /**
