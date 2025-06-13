@@ -135,6 +135,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.SetPublishingModeReque
 import org.eclipse.milo.opcua.stack.core.types.structured.SetPublishingModeResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.SetTriggeringRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.SetTriggeringResponse;
+import org.eclipse.milo.opcua.stack.core.types.structured.StructureDefinition;
 import org.eclipse.milo.opcua.stack.core.types.structured.SubscriptionAcknowledgement;
 import org.eclipse.milo.opcua.stack.core.types.structured.TransferSubscriptionsRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.TransferSubscriptionsResponse;
@@ -2820,10 +2821,24 @@ public class OpcUaClient {
                           + dataType.getNodeId().toParseableString());
                 }
 
+                NodeId binaryEncodingId = dataType.getBinaryEncodingId();
+
+                if (binaryEncodingId == null
+                    && dataType.getDataTypeDefinition() instanceof StructureDefinition definition) {
+
+                  // Hail mary work around for non-compliant Servers that don't have encoding nodes
+                  // in their address space. The DefaultEncodingId in a StructureDefinition shall
+                  // always be the Default Binary encoding, so let's see if the Server at least set
+                  // this correctly.
+                  // See https://reference.opcfoundation.org/Core/Part3/v105/docs/8.48
+
+                  binaryEncodingId = definition.getDefaultEncodingId();
+                }
+
                 dataTypeManager.registerType(
                     dataType.getNodeId(),
                     codecFactory.create(dataType, dataTypeTree),
-                    dataType.getBinaryEncodingId(),
+                    binaryEncodingId,
                     dataType.getXmlEncodingId(),
                     dataType.getJsonEncodingId());
               }
