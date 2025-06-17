@@ -18,8 +18,10 @@
   <parent>
     <groupId>org.eclipse.milo</groupId>
     <artifactId>milo-opc-ua-stack</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.2-SNAPSHOT</version>
   </parent>
+
+  <name>Milo :: Guava Dependencies</name>
 
   <artifactId>milo-guava-dependencies</artifactId>
 

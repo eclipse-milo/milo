@@ -14,10 +14,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
+  <name>Milo :: Transport</name>
+
   <parent>
     <groupId>org.eclipse.milo</groupId>
     <artifactId>milo-opc-ua-stack</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.2-SNAPSHOT</version>
   </parent>
 
   <artifactId>milo-transport</artifactId>
@@ -70,8 +72,8 @@
         <artifactId>maven-shade-plugin</artifactId>
       </plugin>
       <plugin>
-        <groupId>org.sonatype.plugins</groupId>
-        <artifactId>nexus-staging-maven-plugin</artifactId>
+        <groupId>org.sonatype.central</groupId>
+        <artifactId>central-publishing-maven-plugin</artifactId>
       </plugin>
     </plugins>
   </build>

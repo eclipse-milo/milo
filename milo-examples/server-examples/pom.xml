@@ -17,8 +17,10 @@
   <parent>
     <groupId>org.eclipse.milo</groupId>
     <artifactId>milo-examples</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.2-SNAPSHOT</version>
   </parent>
+
+  <name>Milo :: Server Examples</name>
 
   <artifactId>milo-server-examples</artifactId>
 

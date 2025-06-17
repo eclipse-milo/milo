@@ -17,8 +17,10 @@
   <parent>
     <groupId>org.eclipse.milo</groupId>
     <artifactId>milo-opc-ua-stack</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.2-SNAPSHOT</version>
   </parent>
+
+  <name>Milo :: Stack Core</name>
 
   <artifactId>milo-stack-core</artifactId>
 
@@ -127,8 +129,8 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>org.sonatype.plugins</groupId>
-        <artifactId>nexus-staging-maven-plugin</artifactId>
+        <groupId>org.sonatype.central</groupId>
+        <artifactId>central-publishing-maven-plugin</artifactId>
       </plugin>
     </plugins>
   </build>
