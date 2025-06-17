@@ -21,6 +21,8 @@
     <version>1.0.1-SNAPSHOT</version>
   </parent>
 
+  <name>Milo :: Guava Dependencies</name>
+
   <artifactId>milo-guava-dependencies</artifactId>
 
   <properties>

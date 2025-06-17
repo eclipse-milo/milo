@@ -20,6 +20,8 @@
     <version>1.0.1-SNAPSHOT</version>
   </parent>
 
+  <name>Milo :: DTD Manager</name>
+
   <artifactId>milo-dtd-manager</artifactId>
 
   <properties>
@@ -46,8 +48,8 @@
         <artifactId>maven-shade-plugin</artifactId>
       </plugin>
       <plugin>
-        <groupId>org.sonatype.plugins</groupId>
-        <artifactId>nexus-staging-maven-plugin</artifactId>
+        <groupId>org.sonatype.central</groupId>
+        <artifactId>central-publishing-maven-plugin</artifactId>
       </plugin>
     </plugins>
   </build>

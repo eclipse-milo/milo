@@ -20,6 +20,8 @@
     <version>1.0.1-SNAPSHOT</version>
   </parent>
 
+  <name>Milo :: Integration Tests</name>
+
   <artifactId>milo-integration-tests</artifactId>
 
   <properties>

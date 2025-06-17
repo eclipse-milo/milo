@@ -20,6 +20,8 @@
     <version>1.0.1-SNAPSHOT</version>
   </parent>
 
+  <name>Milo :: Server Examples</name>
+
   <artifactId>milo-server-examples</artifactId>
 
   <properties>

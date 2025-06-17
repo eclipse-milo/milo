@@ -20,6 +20,8 @@
     <version>1.0.1-SNAPSHOT</version>
   </parent>
 
+  <name>Milo :: Codec JSON</name>
+
   <artifactId>milo-codec-json</artifactId>
   <version>0.1-SNAPSHOT</version>
 

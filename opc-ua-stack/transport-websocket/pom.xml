@@ -20,6 +20,8 @@
     <version>1.0.1-SNAPSHOT</version>
   </parent>
 
+  <name>Milo :: Transport Websocket</name>
+
   <artifactId>milo-transport-websocket</artifactId>
   <version>0.1-SNAPSHOT</version>
 

@@ -20,6 +20,8 @@
     <version>1.0.1-SNAPSHOT</version>
   </parent>
 
+  <name>Milo :: Transport HTTPS</name>
+
   <artifactId>milo-transport-https</artifactId>
   <version>0.1-SNAPSHOT</version>
 

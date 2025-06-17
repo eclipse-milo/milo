@@ -20,6 +20,8 @@
     <version>1.0.1-SNAPSHOT</version>
   </parent>
 
+  <name>Milo :: Examples</name>
+
   <artifactId>milo-examples</artifactId>
   <packaging>pom</packaging>
 

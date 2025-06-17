@@ -20,6 +20,8 @@
     <version>1.0.1-SNAPSHOT</version>
   </parent>
 
+  <name>Milo :: Stack Tests</name>
+
   <artifactId>milo-stack-tests</artifactId>
 
   <properties>

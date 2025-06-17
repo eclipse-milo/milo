@@ -20,6 +20,8 @@
     <version>1.0.1-SNAPSHOT</version>
   </parent>
 
+  <name>Milo :: Client Examples</name>
+
   <artifactId>milo-client-examples</artifactId>
 
   <properties>
