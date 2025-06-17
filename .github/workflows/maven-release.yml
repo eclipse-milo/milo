@@ -27,6 +27,6 @@ jobs:
       - name: Publish package
         run: mvn -B clean deploy -P release
         env:
-          MAVEN_USERNAME: ${{ secrets.ORG_OSSRH_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.ORG_OSSRH_PASSWORD }}
+          MAVEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.ORG_GPG_PASSPHRASE }}
