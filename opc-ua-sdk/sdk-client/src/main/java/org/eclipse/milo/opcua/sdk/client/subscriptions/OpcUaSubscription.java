@@ -17,17 +17,8 @@ import static org.eclipse.milo.opcua.stack.core.util.FutureUtils.supplyAsyncComp
 
 import com.google.common.primitives.Ints;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.StringJoiner;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -44,18 +35,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MonitoringMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
-import org.eclipse.milo.opcua.stack.core.types.structured.CreateMonitoredItemsResponse;
-import org.eclipse.milo.opcua.stack.core.types.structured.CreateSubscriptionResponse;
-import org.eclipse.milo.opcua.stack.core.types.structured.DeleteMonitoredItemsResponse;
-import org.eclipse.milo.opcua.stack.core.types.structured.DeleteSubscriptionsResponse;
-import org.eclipse.milo.opcua.stack.core.types.structured.EventFieldList;
-import org.eclipse.milo.opcua.stack.core.types.structured.ModifyMonitoredItemsResponse;
-import org.eclipse.milo.opcua.stack.core.types.structured.ModifySubscriptionResponse;
-import org.eclipse.milo.opcua.stack.core.types.structured.MonitoredItemCreateResult;
-import org.eclipse.milo.opcua.stack.core.types.structured.MonitoredItemModifyResult;
-import org.eclipse.milo.opcua.stack.core.types.structured.MonitoredItemNotification;
-import org.eclipse.milo.opcua.stack.core.types.structured.SetMonitoringModeResponse;
-import org.eclipse.milo.opcua.stack.core.types.structured.SetPublishingModeResponse;
+import org.eclipse.milo.opcua.stack.core.types.structured.*;
 import org.eclipse.milo.opcua.stack.core.util.Lazy;
 import org.eclipse.milo.opcua.stack.core.util.Lists;
 import org.eclipse.milo.opcua.stack.core.util.TaskQueue;
@@ -75,7 +55,7 @@ public class OpcUaSubscription {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private volatile SyncState syncState = SyncState.INITIAL;
-  private volatile ServerState serverState;
+  private volatile @Nullable ServerState serverState;
   private volatile Modifications modifications;
 
   private volatile WatchdogTimer watchdogTimer;
@@ -212,6 +192,11 @@ public class OpcUaSubscription {
     if (syncState == SyncState.INITIAL) {
       throw new UaException(StatusCodes.Bad_InvalidState);
     } else if (syncState == SyncState.UNSYNCHRONIZED) {
+      ServerState serverState = this.serverState;
+      if (serverState == null) {
+        throw new UaException(StatusCodes.Bad_InvalidState);
+      }
+
       Modifications diff = modifications;
       modifications = null;
 
@@ -228,7 +213,7 @@ public class OpcUaSubscription {
 
       resetWatchdogTimer();
 
-      serverState =
+      this.serverState =
           new ServerState(
               serverState.getSubscriptionId(),
               response.getRevisedPublishingInterval(),
@@ -270,6 +255,11 @@ public class OpcUaSubscription {
    */
   public void delete() throws UaException {
     if (syncState != SyncState.INITIAL) {
+      ServerState serverState = this.serverState;
+      if (serverState == null) {
+        throw new UaException(StatusCodes.Bad_InvalidState);
+      }
+
       DeleteSubscriptionsResponse response =
           client.deleteSubscriptions(List.of(serverState.getSubscriptionId()));
 
@@ -533,8 +523,20 @@ public class OpcUaSubscription {
 
   private List<MonitoredItemServiceOperationResult> modifyMonitoredItems(
       List<OpcUaMonitoredItem> itemsToModify) {
+
     var serviceOperationsResults =
         new ArrayList<MonitoredItemServiceOperationResult>(itemsToModify.size());
+
+    ServerState serverState = this.serverState;
+    if (serverState == null) {
+      for (OpcUaMonitoredItem item : itemsToModify) {
+        serviceOperationsResults.add(
+            new MonitoredItemServiceOperationResult(
+                item, new StatusCode(StatusCodes.Bad_InvalidState), null));
+      }
+
+      return serviceOperationsResults;
+    }
 
     UInteger partitionSize = getMonitoredItemPartitionSize();
 
@@ -601,8 +603,20 @@ public class OpcUaSubscription {
 
   private List<MonitoredItemServiceOperationResult> deleteMonitoredItems(
       List<OpcUaMonitoredItem> itemsToDelete) {
+
     var serviceOperationsResults =
         new ArrayList<MonitoredItemServiceOperationResult>(itemsToDelete.size());
+
+    ServerState serverState = this.serverState;
+    if (serverState == null) {
+      for (OpcUaMonitoredItem item : itemsToDelete) {
+        serviceOperationsResults.add(
+            new MonitoredItemServiceOperationResult(
+                item, new StatusCode(StatusCodes.Bad_InvalidState), null));
+      }
+
+      return serviceOperationsResults;
+    }
 
     UInteger partitionSize = getMonitoredItemPartitionSize();
 
@@ -697,6 +711,16 @@ public class OpcUaSubscription {
     var serviceOperationResults =
         new ArrayList<MonitoredItemServiceOperationResult>(monitoredItems.size());
 
+    ServerState serverState = this.serverState;
+    if (serverState == null) {
+      for (OpcUaMonitoredItem item : monitoredItems) {
+        serviceOperationResults.add(
+            new MonitoredItemServiceOperationResult(
+                item, new StatusCode(StatusCodes.Bad_InvalidState), null));
+      }
+      return serviceOperationResults;
+    }
+
     UInteger partitionSize = getMonitoredItemPartitionSize();
 
     List<List<OpcUaMonitoredItem>> partitions =
@@ -758,13 +782,18 @@ public class OpcUaSubscription {
     if (syncState == SyncState.INITIAL) {
       throw new UaException(StatusCodes.Bad_InvalidState);
     } else {
+      ServerState serverState = this.serverState;
+      if (serverState == null) {
+        throw new UaException(StatusCodes.Bad_InvalidState);
+      }
+
       SetPublishingModeResponse response =
           client.setPublishingMode(enabled, List.of(serverState.getSubscriptionId()));
 
       StatusCode result = requireNonNull(response.getResults())[0];
 
       if (result.isGood()) {
-        serverState =
+        this.serverState =
             new ServerState(
                 serverState.getSubscriptionId(),
                 serverState.getPublishingInterval(),
@@ -1228,7 +1257,9 @@ public class OpcUaSubscription {
       client.removeSessionActivityListener(watchdog);
       watchdog.cancel();
       this.watchdogTimer = null;
-      logger.debug("id={}, watchdog timer cancelled", serverState.subscriptionId);
+      logger.debug(
+          "id={}, watchdog timer cancelled",
+          getServerState().map(ServerState::getSubscriptionId).orElse(null));
     }
   }
 
@@ -1236,7 +1267,9 @@ public class OpcUaSubscription {
     WatchdogTimer watchdog = this.watchdogTimer;
     if (watchdog != null) {
       watchdog.reset();
-      logger.trace("id={}, watchdog timer reset", serverState.subscriptionId);
+      logger.trace(
+          "id={}, watchdog timer reset",
+          getServerState().map(ServerState::getSubscriptionId).orElse(null));
     }
   }
 
@@ -1282,7 +1315,7 @@ public class OpcUaSubscription {
         // This can happen if an item is deleted while a notification is in-flight.
         logger.debug(
             "id={}, received data for unknown ClientHandle: {}",
-            serverState.subscriptionId,
+            getServerState().map(ServerState::getSubscriptionId).orElse(null),
             clientHandle);
       }
     }
@@ -1313,7 +1346,7 @@ public class OpcUaSubscription {
         // This can happen if an item is deleted while a notification is in-flight.
         logger.debug(
             "id={}, received event for unknown ClientHandle: {}",
-            serverState.subscriptionId,
+            getServerState().map(ServerState::getSubscriptionId).orElse(null),
             clientHandle);
       }
     }
@@ -1446,7 +1479,9 @@ public class OpcUaSubscription {
         deliveryQueue.execute(
             () -> {
               logger.debug(
-                  "id={}, watchdog timer expired after {}ms", serverState.subscriptionId, delay);
+                  "id={}, watchdog timer expired after {}ms",
+                  getServerState().map(ServerState::getSubscriptionId).orElse(null),
+                  delay);
 
               listener.onWatchdogTimerElapsed(OpcUaSubscription.this);
             });
@@ -1456,14 +1491,17 @@ public class OpcUaSubscription {
     @Override
     public void onSessionActive(UaSession session) {
       reset();
-      logger.debug("id={}, watchdog timer reset via onSessionActive()", serverState.subscriptionId);
+      logger.debug(
+          "id={}, watchdog timer reset via onSessionActive()",
+          getServerState().map(ServerState::getSubscriptionId).orElse(null));
     }
 
     @Override
     public void onSessionInactive(UaSession session) {
       cancel();
       logger.debug(
-          "id={}, watchdog timer cancelled via onSessionInactive()", serverState.subscriptionId);
+          "id={}, watchdog timer cancelled via onSessionInactive()",
+          getServerState().map(ServerState::getSubscriptionId).orElse(null));
     }
   }
 
