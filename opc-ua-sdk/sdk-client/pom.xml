@@ -32,12 +32,10 @@
     <dependency>
       <groupId>org.eclipse.milo</groupId>
       <artifactId>milo-transport</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.milo</groupId>
       <artifactId>milo-sdk-core</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.jspecify</groupId>

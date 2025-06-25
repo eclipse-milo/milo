@@ -32,7 +32,6 @@
     <dependency>
       <groupId>org.eclipse.milo</groupId>
       <artifactId>milo-transport</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>

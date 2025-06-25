@@ -32,12 +32,10 @@
     <dependency>
       <groupId>org.eclipse.milo</groupId>
       <artifactId>milo-dtd-core</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.milo</groupId>
       <artifactId>milo-sdk-server</artifactId>
-      <version>${project.version}</version>
     </dependency>
   </dependencies>
 
