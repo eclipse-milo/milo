@@ -134,6 +134,7 @@ public final class NumericRange {
 
   private static Object readFromValueAtRange(Object array, NumericRange range, int dimension)
       throws UaException {
+
     int dimensionCount = range.getDimensionCount();
     Bounds bounds = range.getDimensionBounds(dimension);
     int low = bounds.getLow();
@@ -158,14 +159,22 @@ public final class NumericRange {
       } else if (array instanceof String s) {
         int length = s.length();
         if (low >= length) {
-          throw new UaException(StatusCodes.Bad_IndexRangeNoData);
+          if (dimension > 1) {
+            return null;
+          } else {
+            throw new UaException(StatusCodes.Bad_IndexRangeNoData);
+          }
         }
         int to = Math.min(high + 1, length);
         return s.substring(low, to);
       } else if (array instanceof ByteString bs) {
         int length = bs.length();
         if (low >= length) {
-          throw new UaException(StatusCodes.Bad_IndexRangeNoData);
+          if (dimension > 1) {
+            return null;
+          } else {
+            throw new UaException(StatusCodes.Bad_IndexRangeNoData);
+          }
         }
         int to = Math.min(high + 1, length);
         byte[] copy = Arrays.copyOfRange(bs.bytesOrEmpty(), low, to);

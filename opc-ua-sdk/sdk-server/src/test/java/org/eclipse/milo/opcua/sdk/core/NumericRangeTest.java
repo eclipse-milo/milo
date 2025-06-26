@@ -151,6 +151,20 @@ public class NumericRangeTest {
   }
 
   @Test
+  public void testStringArrayOutOfRange() throws UaException {
+    String[] value = {"0123456789", "012345678", "0123456"};
+    var range = NumericRange.parse("0:2,7:9");
+
+    // the expected result is ["789", "78", null]
+    var expected = new String[] {"789", "78", null};
+
+    Object result = NumericRange.readFromValueAtRange(new Variant(value), range);
+
+    assertInstanceOf(String[].class, result);
+    assertTrue(Arrays.deepEquals(expected, (String[]) result));
+  }
+
+  @Test
   public void testByteString1d() throws UaException {
     NumericRange nr = NumericRange.parse("1:2");
     Variant value = new Variant(new ByteString(new byte[] {1, 2, 3, 4}));
@@ -189,6 +203,27 @@ public class NumericRangeTest {
 
     assertInstanceOf(ByteString.class, result);
     assertEquals(byteString, result);
+  }
+
+  @Test
+  public void testByteStringArrayOutOfRange() throws UaException {
+    ByteString[] value = {
+      new ByteString(new byte[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}),
+      new ByteString(new byte[] {0, 1, 2, 3, 4, 5, 6, 7, 8}),
+      new ByteString(new byte[] {0, 1, 2, 3, 4, 5, 6})
+    };
+    var range = NumericRange.parse("0:2,7:9");
+
+    // the expected result is [ByteString([7, 8, 9]), ByteString([7, 8]), null]
+    var expected =
+        new ByteString[] {
+          new ByteString(new byte[] {7, 8, 9}), new ByteString(new byte[] {7, 8}), null
+        };
+
+    Object result = NumericRange.readFromValueAtRange(new Variant(value), range);
+
+    assertInstanceOf(ByteString[].class, result);
+    assertTrue(Arrays.deepEquals(expected, (ByteString[]) result));
   }
 
   @ParameterizedTest
