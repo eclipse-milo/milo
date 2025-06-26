@@ -47,7 +47,6 @@
   </licenses>
 
   <modules>
-    <module>milo-bom</module>
     <module>milo-examples</module>
     <module>opc-ua-stack</module>
     <module>opc-ua-sdk</module>
@@ -414,13 +413,6 @@
 
   <dependencyManagement>
     <dependencies>
-      <dependency>
-        <groupId>org.eclipse.milo</groupId>
-        <artifactId>milo-bom</artifactId>
-        <version>${project.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
       <dependency>
         <groupId>org.junit</groupId>
         <artifactId>junit-bom</artifactId>

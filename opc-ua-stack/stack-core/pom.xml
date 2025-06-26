@@ -42,6 +42,7 @@
     <dependency>
       <groupId>org.eclipse.milo</groupId>
       <artifactId>milo-guava-dependencies</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>
@@ -61,16 +62,19 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
+      <version>${junit.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-engine</artifactId>
+      <version>${junit.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-params</artifactId>
+      <version>${junit.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

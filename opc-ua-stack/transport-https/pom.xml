@@ -23,6 +23,7 @@
   <name>Milo :: Transport HTTPS</name>
 
   <artifactId>milo-transport-https</artifactId>
+  <version>0.1-SNAPSHOT</version>
 
   <properties>
     <javaModuleName>org.eclipse.milo.opcua.stack.transport.https</javaModuleName>
@@ -32,10 +33,12 @@
     <dependency>
       <groupId>org.eclipse.milo</groupId>
       <artifactId>milo-stack-core</artifactId>
+      <version>${project.parent.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.milo</groupId>
       <artifactId>milo-transport</artifactId>
+      <version>${project.parent.version}</version>
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>
@@ -45,11 +48,13 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
+      <version>${junit.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-engine</artifactId>
+      <version>${junit.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -64,6 +69,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-deploy-plugin</artifactId>
+        <version>${maven-deploy-plugin.version}</version>
         <configuration>
           <skip>true</skip>
         </configuration>

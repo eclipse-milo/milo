@@ -32,11 +32,13 @@
     <dependency>
       <groupId>org.eclipse.milo</groupId>
       <artifactId>milo-sdk-client</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.milo</groupId>
       <artifactId>milo-sdk-server</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

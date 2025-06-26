@@ -32,6 +32,7 @@
     <dependency>
       <groupId>org.eclipse.milo</groupId>
       <artifactId>milo-stack-core</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>com.google.code.gson</groupId>
@@ -42,16 +43,19 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
+      <version>${junit.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-engine</artifactId>
+      <version>${junit.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-params</artifactId>
+      <version>${junit.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
