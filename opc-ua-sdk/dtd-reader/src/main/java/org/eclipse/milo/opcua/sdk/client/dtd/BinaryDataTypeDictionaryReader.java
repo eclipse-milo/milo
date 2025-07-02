@@ -10,7 +10,6 @@
 
 package org.eclipse.milo.opcua.sdk.client.dtd;
 
-import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.eclipse.milo.opcua.stack.core.util.FutureUtils.failedFuture;
@@ -25,14 +24,7 @@ import jakarta.xml.bind.JAXBException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
@@ -607,9 +599,15 @@ public class BinaryDataTypeDictionaryReader {
 
   private CompletableFuture<List<ReferenceDescription>> browseNode(
       BrowseDescription browseDescription) {
+
     return client
         .browseAsync(browseDescription)
-        .thenApply(result -> Arrays.asList(requireNonNull(result.getReferences())));
+        .thenCompose(
+            result -> {
+              var references = Collections.synchronizedList(new ArrayList<ReferenceDescription>());
+
+              return maybeBrowseNext(result, references);
+            });
   }
 
   private CompletionStage<List<ReferenceDescription>> maybeBrowseNext(
