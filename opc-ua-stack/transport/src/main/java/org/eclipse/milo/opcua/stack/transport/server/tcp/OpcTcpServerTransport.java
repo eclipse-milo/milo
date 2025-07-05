@@ -17,11 +17,12 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LoggingHandler;
 import java.net.InetSocketAddress;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ConcurrentSkipListSet;
+import org.eclipse.milo.opcua.stack.core.Stack;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.eclipse.milo.opcua.stack.transport.server.AttributeKeys;
 import org.eclipse.milo.opcua.stack.transport.server.OpcServerTransport;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.server.uasc.UascServerHelloHandler;
@@ -31,7 +32,15 @@ public class OpcTcpServerTransport implements OpcServerTransport {
 
   private final Set<InetSocketAddress> boundAddresses = new HashSet<>();
   private final Set<Channel> channelReferences = new HashSet<>();
-  private final Set<Channel> childChannelReferences = Collections.synchronizedSet(new HashSet<>());
+
+  private final ConcurrentSkipListSet<Channel> childChannelReferences =
+      new ConcurrentSkipListSet<>(
+          Comparator.comparingLong(
+              ch -> {
+                Long createdAt = ch.attr(AttributeKeys.CREATED_AT).get();
+                return createdAt != null ? createdAt : Long.MIN_VALUE;
+              }));
+
   private final Lazy<ServerBootstrap> serverBootstrap = new Lazy<>();
 
   private final OpcTcpServerTransportConfig config;
@@ -57,6 +66,8 @@ public class OpcTcpServerTransport implements OpcServerTransport {
                         new ChannelInitializer<SocketChannel>() {
                           @Override
                           protected void initChannel(SocketChannel channel) {
+                            channel.attr(AttributeKeys.CREATED_AT).set(System.nanoTime());
+
                             channel.pipeline().addLast(RateLimitingHandler.getInstance());
                             channel
                                 .pipeline()
@@ -68,7 +79,26 @@ public class OpcTcpServerTransport implements OpcServerTransport {
 
                             config.getChannelPipelineCustomizer().accept(channel.pipeline());
 
-                            childChannelReferences.add(channel);
+                            if (childChannelReferences.size()
+                                < Stack.ConnectionLimits.RATE_LIMIT_MAX_CONNECTIONS) {
+
+                              childChannelReferences.add(channel);
+                            } else {
+                              Channel oldestChannelWithoutSession =
+                                  childChannelReferences.stream()
+                                      .filter(c -> !c.hasAttr(AttributeKeys.SESSION_ID))
+                                      .findFirst()
+                                      .orElse(null);
+
+                              if (oldestChannelWithoutSession != null) {
+                                oldestChannelWithoutSession.close();
+
+                                childChannelReferences.add(channel);
+                              } else {
+                                channel.close();
+                              }
+                            }
+
                             channel
                                 .closeFuture()
                                 .addListener(future -> childChannelReferences.remove(channel));

@@ -68,6 +68,7 @@ import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
 import org.eclipse.milo.opcua.stack.core.util.SignatureUtil;
+import org.eclipse.milo.opcua.stack.transport.server.AttributeKeys;
 import org.eclipse.milo.opcua.stack.transport.server.ServiceRequestContext;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -343,6 +344,8 @@ public class SessionManager {
     createdSessions.put(authenticationToken, session);
 
     sessionListeners.forEach(l -> l.onSessionCreated(session));
+
+    context.getChannel().attr(AttributeKeys.SESSION_ID).set(sessionId);
 
     return new CreateSessionResponse(
         createResponseHeader(request),

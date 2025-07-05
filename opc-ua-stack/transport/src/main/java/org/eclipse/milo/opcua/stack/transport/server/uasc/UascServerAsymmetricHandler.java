@@ -17,7 +17,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
-import io.netty.util.AttributeKey;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.Timeout;
 import java.io.IOException;
@@ -70,13 +69,12 @@ import org.eclipse.milo.opcua.stack.core.util.BufferUtil;
 import org.eclipse.milo.opcua.stack.core.util.DigestUtil;
 import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
+import org.eclipse.milo.opcua.stack.transport.server.AttributeKeys;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements HeaderDecoder {
-
-  static final AttributeKey<EndpointDescription> ENDPOINT_KEY = AttributeKey.valueOf("endpoint");
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -289,7 +287,7 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
       // AsymmetricSecurityHeader is one that is supported by the configured
       // endpoints.
 
-      String endpointUrl = ctx.channel().attr(UascServerHelloHandler.ENDPOINT_URL_KEY).get();
+      String endpointUrl = ctx.channel().attr(AttributeKeys.ENDPOINT_URL_KEY).get();
 
       if (application.getEndpointDescriptions().stream()
           .noneMatch(
@@ -478,7 +476,7 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
     if (requestType == SecurityTokenRequestType.Issue) {
       secureChannel.setMessageSecurityMode(request.getSecurityMode());
 
-      String endpointUrl = ctx.channel().attr(UascServerHelloHandler.ENDPOINT_URL_KEY).get();
+      String endpointUrl = ctx.channel().attr(AttributeKeys.ENDPOINT_URL_KEY).get();
 
       EndpointDescription endpoint =
           application.getEndpointDescriptions().stream()
@@ -531,8 +529,6 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
 
                     return new UaException(StatusCodes.Bad_SecurityChecksFailed, message);
                   });
-
-      ctx.channel().attr(ENDPOINT_KEY).set(endpoint);
     } else if (requestType == SecurityTokenRequestType.Renew) {
       if (secureChannel.getMessageSecurityMode() != request.getSecurityMode()) {
         throw new UaException(

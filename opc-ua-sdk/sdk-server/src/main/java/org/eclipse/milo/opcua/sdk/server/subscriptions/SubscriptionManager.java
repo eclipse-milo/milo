@@ -16,7 +16,6 @@ import static org.eclipse.milo.opcua.sdk.server.servicesets.AbstractServiceSet.c
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.eclipse.milo.opcua.stack.core.util.FutureUtils.failedUaFuture;
 
-import io.netty.util.AttributeKey;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -107,8 +106,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SubscriptionManager {
-
-  static final AttributeKey<StatusCode[]> KEY_ACK_RESULTS = AttributeKey.valueOf("ackResults");
 
   private static final AtomicLong SUBSCRIPTION_IDS = new AtomicLong(0L);
 

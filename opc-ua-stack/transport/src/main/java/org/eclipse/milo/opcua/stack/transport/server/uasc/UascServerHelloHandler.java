@@ -14,7 +14,6 @@ import com.google.common.primitives.Ints;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
-import io.netty.util.AttributeKey;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
@@ -34,13 +33,12 @@ import org.eclipse.milo.opcua.stack.core.channel.messages.TcpMessageDecoder;
 import org.eclipse.milo.opcua.stack.core.channel.messages.TcpMessageEncoder;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
+import org.eclipse.milo.opcua.stack.transport.server.AttributeKeys;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class UascServerHelloHandler extends ByteToMessageDecoder implements HeaderDecoder {
-
-  static final AttributeKey<String> ENDPOINT_URL_KEY = AttributeKey.valueOf("endpoint-url");
 
   /** Cumulative count of all connection rejections for the lifetime of the server. */
   @SuppressWarnings("WeakerAccess")
@@ -166,7 +164,7 @@ public class UascServerHelloHandler extends ByteToMessageDecoder implements Head
           StatusCodes.Bad_TcpEndpointUrlInvalid, "unrecognized endpoint url: " + endpointUrl);
     }
 
-    ctx.channel().attr(ENDPOINT_URL_KEY).set(endpointUrl);
+    ctx.channel().attr(AttributeKeys.ENDPOINT_URL_KEY).set(endpointUrl);
 
     long remoteProtocolVersion = hello.getProtocolVersion();
     long remoteReceiveBufferSize = hello.getReceiveBufferSize();
