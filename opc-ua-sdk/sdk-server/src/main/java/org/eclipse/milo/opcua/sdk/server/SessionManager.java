@@ -548,6 +548,8 @@ public class SessionManager {
             session.setLastNonce(serverNonce);
             session.setLocaleIds(request.getLocaleIds());
 
+            context.getChannel().attr(AttributeKeys.SESSION_ID).set(session.getSessionId());
+
             return new ActivateSessionResponse(
                 createResponseHeader(request), serverNonce, results, new DiagnosticInfo[0]);
           } else {
