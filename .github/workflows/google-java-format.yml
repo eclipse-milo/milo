@@ -18,6 +18,6 @@ jobs:
         with:
           distribution: "temurin"
           java-version: 17
-      - uses: axel-op/googlejavaformat-action@v3.6.0
+      - uses: axel-op/googlejavaformat-action@v4
         with:
           args: "--set-exit-if-changed"
