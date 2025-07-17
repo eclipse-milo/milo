@@ -18,14 +18,16 @@
   <parent>
     <groupId>org.eclipse.milo</groupId>
     <artifactId>milo</artifactId>
-    <version>1.0.2-SNAPSHOT</version>
+    <version>1.0.3-SNAPSHOT</version>
   </parent>
+
+  <name>Milo :: Bill of Materials</name>
+  <description>This Bill of Materials POM can be used to ease dependency management when referencing multiple Eclipse
+    Milo artifacts.
+  </description>
 
   <artifactId>milo-bom</artifactId>
   <packaging>pom</packaging>
-
-  <name>Milo :: Bill of Materials</name>
-  <description>This Bill of Materials POM can be used to ease dependency management when referencing multiple Eclipse Milo artifacts.</description>
 
   <dependencyManagement>
     <dependencies>
@@ -97,7 +99,6 @@
             <dependencyManagement>extended_interpolate</dependencyManagement>
             <!-- remove optionals -->
             <properties>remove</properties>
-            <scm>remove</scm>
           </pomElements>
         </configuration>
         <executions>
