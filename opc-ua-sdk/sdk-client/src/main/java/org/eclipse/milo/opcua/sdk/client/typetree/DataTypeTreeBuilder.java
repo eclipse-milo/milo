@@ -351,7 +351,6 @@ public class DataTypeTreeBuilder {
   }
 
   private static UInteger[] readOperationLimits(OpcUaClient client) throws UaException {
-    client.getOperationLimits();
     UInteger[] operationLimits = new UInteger[2];
     operationLimits[0] = uint(10);
     operationLimits[1] = uint(100);
