@@ -31,6 +31,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executor;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity;
 import org.eclipse.milo.opcua.sdk.server.identity.IdentityValidator;
@@ -95,10 +96,10 @@ public class SessionManager {
 
   private final OpcUaServer server;
 
-  SessionManager(OpcUaServer server) {
+  SessionManager(OpcUaServer server, Executor executor) {
     this.server = server;
 
-    sessionListenerTaskQueue = new TaskQueue(server.getExecutorService());
+    sessionListenerTaskQueue = new TaskQueue(executor);
   }
 
   /**
