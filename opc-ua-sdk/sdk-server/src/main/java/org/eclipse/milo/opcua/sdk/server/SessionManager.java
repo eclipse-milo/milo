@@ -31,6 +31,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executor;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity;
 import org.eclipse.milo.opcua.sdk.server.identity.IdentityValidator;
@@ -68,6 +69,7 @@ import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
 import org.eclipse.milo.opcua.stack.core.util.SignatureUtil;
+import org.eclipse.milo.opcua.stack.core.util.TaskQueue;
 import org.eclipse.milo.opcua.stack.transport.server.ServiceRequestContext;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -82,6 +84,7 @@ public class SessionManager {
   private final Map<NodeId, Session> activeSessions = new ConcurrentHashMap<>();
 
   private final List<SessionListener> sessionListeners = new CopyOnWriteArrayList<>();
+  private final TaskQueue sessionListenerTaskQueue;
 
   /**
    * Store the last N client nonces and to make sure they aren't re-used.
@@ -93,8 +96,10 @@ public class SessionManager {
 
   private final OpcUaServer server;
 
-  SessionManager(OpcUaServer server) {
+  SessionManager(OpcUaServer server, Executor executor) {
     this.server = server;
+
+    sessionListenerTaskQueue = new TaskQueue(executor);
   }
 
   /**
@@ -107,7 +112,13 @@ public class SessionManager {
     activeSessions.values().stream()
         .filter(s -> s.getSessionId().equals(nodeId))
         .findFirst()
-        .ifPresent(s -> s.close(deleteSubscriptions));
+        .ifPresent(
+            s -> {
+              s.close(deleteSubscriptions);
+
+              sessionListenerTaskQueue.execute(
+                  () -> sessionListeners.forEach(l -> l.onSessionClosed(s)));
+            });
   }
 
   /**
@@ -337,12 +348,14 @@ public class SessionManager {
           createdSessions.remove(authenticationToken);
           activeSessions.remove(authenticationToken);
 
-          sessionListeners.forEach(l -> l.onSessionClosed(s));
+          sessionListenerTaskQueue.execute(
+              () -> sessionListeners.forEach(l -> l.onSessionClosed(s)));
         });
 
     createdSessions.put(authenticationToken, session);
 
-    sessionListeners.forEach(l -> l.onSessionCreated(session));
+    sessionListenerTaskQueue.execute(
+        () -> sessionListeners.forEach(l -> l.onSessionCreated(session)));
 
     return new CreateSessionResponse(
         createResponseHeader(request),

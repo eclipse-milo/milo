@@ -114,7 +114,7 @@ public class OpcUaServer extends AbstractServiceHandler {
   private final ServerTable serverTable = new ServerTable();
 
   private final AddressSpaceManager addressSpaceManager = new AddressSpaceManager(this);
-  private final SessionManager sessionManager = new SessionManager(this);
+  private final SessionManager sessionManager;
 
   private final EncodingManager encodingManager = DefaultEncodingManager.createAndInitialize();
 
@@ -250,6 +250,8 @@ public class OpcUaServer extends AbstractServiceHandler {
     VariableTypeInitializer.initialize(namespaceTable, variableTypeManager);
 
     serverTable.add(config.getApplicationUri());
+
+    sessionManager = new SessionManager(this, config.getExecutor());
 
     opcUaNamespace = new OpcUaNamespace(this);
     opcUaNamespace.startup();
