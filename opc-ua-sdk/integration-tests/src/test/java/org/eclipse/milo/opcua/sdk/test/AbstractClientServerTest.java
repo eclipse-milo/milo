@@ -41,7 +41,7 @@ public abstract class AbstractClientServerTest {
   }
 
   @AfterAll
-  public void stopClientAndServer() throws Exception {
+  public void stopClientAndServer() {
     try {
       client.disconnectAsync().get(2, TimeUnit.SECONDS);
     } catch (Exception e) {
