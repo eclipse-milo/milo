@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -10,7 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.test;
 
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
@@ -41,11 +41,18 @@ public abstract class AbstractClientServerTest {
   }
 
   @AfterAll
-  public void stopClientAndServer() throws ExecutionException, InterruptedException {
-    client.disconnectAsync().get();
-
-    testNamespace.shutdown();
-    server.shutdown().get();
+  public void stopClientAndServer() {
+    try {
+      client.disconnectAsync().get(2, TimeUnit.SECONDS);
+    } catch (Exception e) {
+      e.printStackTrace(System.err);
+    }
+    try {
+      testNamespace.shutdown();
+      server.shutdown().get(2, TimeUnit.SECONDS);
+    } catch (Exception e) {
+      e.printStackTrace(System.err);
+    }
   }
 
   /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -22,7 +22,6 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
 import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RequestHeader;
-import org.eclipse.milo.opcua.stack.core.util.ExecutionQueue;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.UascRequest;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.UascResponseHandler;
 import org.slf4j.Logger;
@@ -39,14 +38,10 @@ public abstract class AbstractUascClientTransport
       new ConcurrentHashMap<>();
   protected final Map<Long, Timeout> pendingTimeouts = new ConcurrentHashMap<>();
 
-  protected final ExecutionQueue executionQueue;
-
   protected final OpcClientTransportConfig config;
 
   public AbstractUascClientTransport(OpcClientTransportConfig config) {
     this.config = config;
-
-    executionQueue = new ExecutionQueue(config.getExecutor(), 1);
   }
 
   protected abstract CompletableFuture<Channel> getChannel();
@@ -142,7 +137,7 @@ public abstract class AbstractUascClientTransport
     if (responseFuture != null) {
       cancelRequestTimeout(requestId);
 
-      executionQueue.submit(() -> responseFuture.complete(responseMessage));
+      config.getExecutor().execute(() -> responseFuture.complete(responseMessage));
     } else {
       logger.warn("Received response for unknown request, requestId={}", requestId);
     }
@@ -155,7 +150,7 @@ public abstract class AbstractUascClientTransport
     if (responseFuture != null) {
       cancelRequestTimeout(requestId);
 
-      executionQueue.submit(() -> responseFuture.completeExceptionally(exception));
+      config.getExecutor().execute(() -> responseFuture.completeExceptionally(exception));
     } else {
       logger.warn("Send failed for unknown request, requestId={}", requestId);
     }
@@ -168,7 +163,7 @@ public abstract class AbstractUascClientTransport
     if (responseFuture != null) {
       cancelRequestTimeout(requestId);
 
-      executionQueue.submit(() -> responseFuture.completeExceptionally(exception));
+      config.getExecutor().execute(() -> responseFuture.completeExceptionally(exception));
     } else {
       logger.warn("Receive failed for unknown request, requestId={}", requestId);
     }
@@ -188,7 +183,7 @@ public abstract class AbstractUascClientTransport
     pendingRequests.forEach(
         (requestId, f) -> {
           cancelRequestTimeout(requestId);
-          executionQueue.submit(() -> f.completeExceptionally(exception));
+          config.getExecutor().execute(() -> f.completeExceptionally(exception));
         });
     pendingRequests.clear();
   }
