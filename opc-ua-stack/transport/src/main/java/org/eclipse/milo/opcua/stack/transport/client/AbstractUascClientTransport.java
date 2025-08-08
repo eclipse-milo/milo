@@ -21,7 +21,9 @@ import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
 import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
+import org.eclipse.milo.opcua.stack.core.types.structured.PublishResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.RequestHeader;
+import org.eclipse.milo.opcua.stack.core.util.ExecutionQueue;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.UascRequest;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.UascResponseHandler;
 import org.slf4j.Logger;
@@ -38,10 +40,14 @@ public abstract class AbstractUascClientTransport
       new ConcurrentHashMap<>();
   protected final Map<Long, Timeout> pendingTimeouts = new ConcurrentHashMap<>();
 
+  protected final ExecutionQueue publishResponseQueue;
+
   protected final OpcClientTransportConfig config;
 
   public AbstractUascClientTransport(OpcClientTransportConfig config) {
     this.config = config;
+
+    publishResponseQueue = new ExecutionQueue(config.getExecutor());
   }
 
   protected abstract CompletableFuture<Channel> getChannel();
@@ -137,7 +143,11 @@ public abstract class AbstractUascClientTransport
     if (responseFuture != null) {
       cancelRequestTimeout(requestId);
 
-      config.getExecutor().execute(() -> responseFuture.complete(responseMessage));
+      if (responseMessage instanceof PublishResponse) {
+        publishResponseQueue.submit(() -> responseFuture.complete(responseMessage));
+      } else {
+        config.getExecutor().execute(() -> responseFuture.complete(responseMessage));
+      }
     } else {
       logger.warn("Received response for unknown request, requestId={}", requestId);
     }
