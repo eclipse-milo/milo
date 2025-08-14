@@ -14,6 +14,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
@@ -24,6 +25,7 @@ import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaSubscription.SyncSta
 import org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MonitoringMode;
@@ -380,5 +382,27 @@ public class OpcUaSubscriptionTest extends AbstractClientServerTest {
     assertTrue(deleteResults.stream().allMatch(r -> r.operationResult().orElseThrow().isGood()));
 
     subscription.delete();
+  }
+
+  @Test
+  void addItemsToUninitializedSubscriptionThrows() {
+    var subscription = new OpcUaSubscription(client);
+
+    assertThrows(
+        UaRuntimeException.class,
+        () ->
+            subscription.addMonitoredItem(
+                OpcUaMonitoredItem.newDataItem(NodeIds.Server_ServerStatus_CurrentTime)));
+  }
+
+  @Test
+  void removeItemsFromUninitializedSubscriptionThrows() {
+    var subscription = new OpcUaSubscription(client);
+
+    assertThrows(
+        UaRuntimeException.class,
+        () ->
+            subscription.removeMonitoredItem(
+                OpcUaMonitoredItem.newDataItem(NodeIds.Server_ServerStatus_CurrentTime)));
   }
 }

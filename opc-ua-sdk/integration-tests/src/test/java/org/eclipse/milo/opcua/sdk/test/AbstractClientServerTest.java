@@ -48,6 +48,8 @@ public abstract class AbstractClientServerTest {
       e.printStackTrace(System.err);
     }
     try {
+      // let the session listener callbacks run
+      Thread.sleep(500);
       testNamespace.shutdown();
       server.shutdown().get(2, TimeUnit.SECONDS);
     } catch (Exception e) {

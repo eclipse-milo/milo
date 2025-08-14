@@ -28,6 +28,7 @@ import org.eclipse.milo.opcua.sdk.client.SessionActivityListener;
 import org.eclipse.milo.opcua.sdk.client.UaSession;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
@@ -305,8 +306,13 @@ public class OpcUaSubscription {
    * called.
    *
    * @param item the MonitoredItem to add.
+   * @throws UaRuntimeException if the Subscription has not been created yet.
    */
   public void addMonitoredItem(OpcUaMonitoredItem item) {
+    if (syncState == SyncState.INITIAL) {
+      throw new UaRuntimeException(StatusCodes.Bad_InvalidState, "subscription not created yet");
+    }
+
     if (!monitoredItems.containsValue(item)) {
       if (itemsToDelete.remove(item)) {
         monitoredItems.put(item.getClientHandle().orElseThrow(), item);
@@ -328,6 +334,7 @@ public class OpcUaSubscription {
    * called.
    *
    * @param items the MonitoredItems to add.
+   * @throws UaRuntimeException if the Subscription has not been created yet.
    */
   public void addMonitoredItems(List<OpcUaMonitoredItem> items) {
     items.forEach(this::addMonitoredItem);
@@ -340,8 +347,13 @@ public class OpcUaSubscription {
    * called
    *
    * @param item the MonitoredItem to remove.
+   * @throws UaRuntimeException if the Subscription has not been created yet.
    */
   public void removeMonitoredItem(OpcUaMonitoredItem item) {
+    if (syncState == SyncState.INITIAL) {
+      throw new UaRuntimeException(StatusCodes.Bad_InvalidState, "subscription not created yet");
+    }
+
     OpcUaMonitoredItem removedItem =
         item.getClientHandle().map(monitoredItems::remove).orElse(null);
 
@@ -358,6 +370,7 @@ public class OpcUaSubscription {
    * is called.
    *
    * @param items the MonitoredItems to remove.
+   * @throws UaRuntimeException if the Subscription has not been created yet.
    */
   public void removeMonitoredItems(List<OpcUaMonitoredItem> items) {
     items.forEach(this::removeMonitoredItem);
