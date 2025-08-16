@@ -163,10 +163,12 @@ public class PublishQueue {
           return pending;
         } else {
           logger.debug(
-              "Discarding expired PublishRequest requestHandle={} timestamp={} timeoutHint={}",
-              pending.request.getRequestHeader().getRequestHandle(),
+              "Discarding expired PublishRequest "
+                  + "requestHandle={} timestamp={} timeoutHint={} millisSinceReceived={}",
+              requestHeader.getRequestHandle(),
               requestHeader.getTimestamp().getJavaDate(),
-              timeoutHint);
+              timeoutHint,
+              millisSinceReceived);
 
           pending.responseFuture.completeExceptionally(new UaException(StatusCodes.Bad_Timeout));
         }
