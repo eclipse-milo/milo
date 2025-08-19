@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.sdk.client;
 
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -31,6 +33,18 @@ public interface OpcUaClientConfig {
    * @return the {@link EndpointDescription} to connect to.
    */
   EndpointDescription getEndpoint();
+
+  /**
+   * Get the endpoints that were returned during discovery, i.e., during the GetEndpoints service
+   * call.
+   *
+   * <p>If not empty, and Session endpoint validation is enabled, this list will be compared with
+   * the list returned by the Server in the CreateSessionResponse when a Session is created.
+   *
+   * @return the endpoints that were returned during discovery.
+   * @see #isSessionEndpointValidationEnabled()
+   */
+  List<EndpointDescription> getDiscoveryEndpoints();
 
   /**
    * Get the {@link KeyPair} to use.
@@ -140,6 +154,16 @@ public interface OpcUaClientConfig {
   UInteger getKeepAliveTimeout();
 
   /**
+   * Whether validation of the endpoints returned in CreateSessionResponse against the discovery
+   * endpoints is enabled. The discovery endpoints must be configured and non-empty.
+   *
+   * @return true if validation of the endpoints returned in CreateSessionResponse against the
+   *     discovery endpoints is enabled.
+   * @see #getDiscoveryEndpoints()
+   */
+  boolean isSessionEndpointValidationEnabled();
+
+  /**
    * @return a new {@link OpcUaClientConfigBuilder}.
    */
   static OpcUaClientConfigBuilder builder() {
@@ -159,6 +183,7 @@ public interface OpcUaClientConfig {
 
     builder.setEndpoint(config.getEndpoint());
     config.getKeyPair().ifPresent(builder::setKeyPair);
+    builder.setDiscoveryEndpoints(new ArrayList<>(config.getDiscoveryEndpoints()));
     config.getCertificate().ifPresent(builder::setCertificate);
     config.getCertificateChain().ifPresent(builder::setCertificateChain);
     builder.setApplicationName(config.getApplicationName());
@@ -174,6 +199,7 @@ public interface OpcUaClientConfig {
     builder.setKeepAliveInterval(config.getKeepAliveInterval());
     builder.setKeepAliveTimeout(config.getKeepAliveTimeout());
     builder.setSessionLocaleIds(config.getSessionLocaleIds());
+    builder.setSessionEndpointValidationEnabled(config.isSessionEndpointValidationEnabled());
 
     return builder;
   }

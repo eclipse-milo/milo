@@ -14,7 +14,9 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
 import org.eclipse.milo.opcua.sdk.client.identity.AnonymousProvider;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
@@ -42,6 +44,8 @@ public class OpcUaClientConfigTest {
     OpcUaClientConfig original =
         OpcUaClientConfig.builder()
             .setEndpoint(endpoint)
+            .setDiscoveryEndpoints(List.of(endpoint))
+            .setSessionEndpointValidationEnabled(true)
             .setSessionName(() -> "testSessionName")
             .setSessionTimeout(uint(60000 * 60))
             .setMaxResponseMessageSize(UInteger.MAX)
@@ -61,6 +65,9 @@ public class OpcUaClientConfigTest {
     assertEquals(original.getKeepAliveInterval(), copy.getKeepAliveInterval());
     assertEquals(original.getKeepAliveTimeout(), copy.getKeepAliveTimeout());
     assertEquals(original.getSessionLocaleIds(), copy.getSessionLocaleIds());
+    assertEquals(original.getDiscoveryEndpoints(), copy.getDiscoveryEndpoints());
+    assertEquals(
+        original.isSessionEndpointValidationEnabled(), copy.isSessionEndpointValidationEnabled());
   }
 
   @Test
@@ -68,12 +75,27 @@ public class OpcUaClientConfigTest {
     OpcUaClientConfig original =
         OpcUaClientConfig.builder()
             .setEndpoint(endpoint)
+            .setDiscoveryEndpoints(List.of(endpoint))
+            .setSessionEndpointValidationEnabled(false)
             .setSessionName(() -> "testSessionName")
             .setSessionTimeout(uint(60000 * 60))
             .setMaxResponseMessageSize(UInteger.MAX)
             .setMaxPendingPublishRequests(uint(2))
             .setIdentityProvider(new AnonymousProvider())
             .build();
+
+    EndpointDescription endpoint2 =
+        new EndpointDescription(
+            "opc.tcp://localhost:4840",
+            null,
+            null,
+            null,
+            null,
+            new UserTokenPolicy[] {
+              new UserTokenPolicy("anonymous", UserTokenType.Anonymous, null, null, null)
+            },
+            null,
+            null);
 
     OpcUaClientConfig copy =
         OpcUaClientConfig.copy(
@@ -88,7 +110,9 @@ public class OpcUaClientConfigTest {
                     .setKeepAliveFailuresAllowed(uint(2))
                     .setKeepAliveInterval(uint(10000))
                     .setKeepAliveTimeout(uint(15000))
-                    .setSessionLocaleIds(new String[] {"en", "es"}));
+                    .setSessionLocaleIds(new String[] {"en", "es"})
+                    .setDiscoveryEndpoints(List.of(endpoint2))
+                    .setSessionEndpointValidationEnabled(true));
 
     assertNotEquals(original.getSessionName(), copy.getSessionName());
     assertNotEquals(original.getIdentityProvider(), copy.getIdentityProvider());
@@ -101,5 +125,11 @@ public class OpcUaClientConfigTest {
     assertEquals(uint(10000), copy.getKeepAliveInterval());
     assertEquals(uint(15000), copy.getKeepAliveTimeout());
     assertArrayEquals(new String[] {"en", "es"}, copy.getSessionLocaleIds());
+
+    assertNotEquals(original.getDiscoveryEndpoints(), copy.getDiscoveryEndpoints());
+    assertEquals(List.of(endpoint2), copy.getDiscoveryEndpoints());
+    assertNotEquals(
+        original.isSessionEndpointValidationEnabled(), copy.isSessionEndpointValidationEnabled());
+    assertTrue(copy.isSessionEndpointValidationEnabled());
   }
 }

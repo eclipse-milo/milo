@@ -42,11 +42,13 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.client.*;
 import org.eclipse.milo.opcua.sdk.client.identity.SignedIdentityToken;
@@ -1198,11 +1200,98 @@ public class SessionFsmFactory {
                       signatureBytes);
                 }
 
+                if (client.getConfig().isSessionEndpointValidationEnabled()) {
+                  validateSessionEndpoints(
+                      endpoint.getTransportProfileUri(),
+                      client.getConfig().getDiscoveryEndpoints(),
+                      List.of(
+                          Objects.requireNonNullElse(
+                              response.getServerEndpoints(), new EndpointDescription[0])));
+                }
+
                 return completedFuture(response);
               } catch (UaException e) {
                 return failedFuture(e);
               }
             });
+  }
+
+  /**
+   * Validate the Session endpoints against the endpoints from discovery.
+   *
+   * <p>Client shall compare only the following parameters:
+   *
+   * <ul>
+   *   <li>server.applicationUri
+   *   <li>endpointUrl
+   *   <li>securityMode
+   *   <li>securityPolicyUri
+   *   <li>userIdentityTokens
+   *   <li>transportProfileUri
+   *   <li>securityLevel
+   * </ul>
+   *
+   * @param transportProfileUri the transport profile URI to filter endpoints by. Only endpoints
+   *     with matching transport profile URIs will be compared.
+   * @param discoveryEndpoints the list of endpoints obtained during the discovery process that will
+   *     be used as the reference for validation.
+   * @param sessionEndpoints the list of endpoints from the session that need to be validated
+   *     against the discovery endpoints.
+   */
+  static void validateSessionEndpoints(
+      String transportProfileUri,
+      List<EndpointDescription> discoveryEndpoints,
+      List<EndpointDescription> sessionEndpoints)
+      throws UaException {
+
+    List<EndpointDescription> filteredDiscoveryEndpoints =
+        discoveryEndpoints.stream()
+            .filter(e -> Objects.equals(transportProfileUri, e.getTransportProfileUri()))
+            .toList();
+
+    List<EndpointDescription> filteredSessionEndpoints =
+        sessionEndpoints.stream()
+            .filter(e -> Objects.equals(transportProfileUri, e.getTransportProfileUri()))
+            .collect(Collectors.toList());
+
+    if (filteredDiscoveryEndpoints.isEmpty()) {
+      return;
+    }
+
+    if (filteredDiscoveryEndpoints.size() != filteredSessionEndpoints.size()) {
+      throw new UaException(
+          StatusCodes.Bad_SecurityChecksFailed,
+          "endpoints returned during discovery do not match session endpoints");
+    }
+
+    for (EndpointDescription discoveryEndpoint : filteredDiscoveryEndpoints) {
+      boolean matched = false;
+      for (EndpointDescription sessionEndpoint : filteredSessionEndpoints) {
+        if (checkEndpointEquivalence(sessionEndpoint, discoveryEndpoint)) {
+          filteredSessionEndpoints.remove(sessionEndpoint);
+          matched = true;
+          break;
+        }
+      }
+      if (!matched) {
+        throw new UaException(
+            StatusCodes.Bad_SecurityChecksFailed,
+            "endpoints returned during discovery do not match session endpoints");
+      }
+    }
+  }
+
+  private static boolean checkEndpointEquivalence(
+      EndpointDescription endpoint1, EndpointDescription endpoint2) {
+
+    return Objects.equals(
+            endpoint1.getServer().getApplicationUri(), endpoint2.getServer().getApplicationUri())
+        && Objects.equals(endpoint1.getEndpointUrl(), endpoint2.getEndpointUrl())
+        && Objects.equals(endpoint1.getSecurityMode(), endpoint2.getSecurityMode())
+        && Objects.equals(endpoint1.getSecurityPolicyUri(), endpoint2.getSecurityPolicyUri())
+        && Arrays.equals(endpoint1.getUserIdentityTokens(), endpoint2.getUserIdentityTokens())
+        && Objects.equals(endpoint1.getTransportProfileUri(), endpoint2.getTransportProfileUri())
+        && Objects.equals(endpoint1.getSecurityLevel(), endpoint2.getSecurityLevel());
   }
 
   @SuppressWarnings("Duplicates")
@@ -1365,13 +1454,15 @@ public class SessionFsmFactory {
                           Streams.zip(
                                   subscriptionIds,
                                   statusCodes,
-                                  (i, s) ->
-                                      String.format(
-                                          "id=%s/%s",
-                                          i,
-                                          StatusCodes.lookup(s.value())
-                                              .map(sa -> sa[0])
-                                              .orElse(s.toString())))
+                                  (i, s) -> {
+                                    assert s != null;
+                                    return String.format(
+                                        "id=%s/%s",
+                                        i,
+                                        StatusCodes.lookup(s.value())
+                                            .map(sa -> sa[0])
+                                            .orElse(s.toString()));
+                                  })
                               .toArray(String[]::new);
 
                       LOGGER.debug("TransferSubscriptions results: {}", Arrays.toString(ss));

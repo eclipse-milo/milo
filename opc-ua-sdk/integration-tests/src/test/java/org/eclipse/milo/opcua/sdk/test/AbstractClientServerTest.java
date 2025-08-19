@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.sdk.test;
 
 import java.util.concurrent.TimeUnit;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfigBuilder;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -35,7 +36,7 @@ public abstract class AbstractClientServerTest {
 
     server.startup().get();
 
-    client = TestClient.create(server);
+    client = TestClient.create(server, this::customizeClientConfig);
 
     client.connect();
   }
@@ -56,6 +57,14 @@ public abstract class AbstractClientServerTest {
       e.printStackTrace(System.err);
     }
   }
+
+  /**
+   * Customize the configuration of the OPC UA client before it connects. This method can be
+   * overridden by subclasses to modify the default client configuration.
+   *
+   * @param configBuilder the {@link OpcUaClientConfigBuilder} to modify.
+   */
+  protected void customizeClientConfig(OpcUaClientConfigBuilder configBuilder) {}
 
   /**
    * Create a new {@link NodeId} in the {@link TestNamespace}.

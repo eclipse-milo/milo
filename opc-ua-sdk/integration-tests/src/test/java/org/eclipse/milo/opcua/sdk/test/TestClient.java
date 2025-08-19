@@ -12,7 +12,10 @@ package org.eclipse.milo.opcua.sdk.test;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
+import java.util.Objects;
+import java.util.function.Consumer;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfigBuilder;
 import org.eclipse.milo.opcua.sdk.server.EndpointConfig;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -22,20 +25,28 @@ public final class TestClient {
 
   private TestClient() {}
 
-  public static OpcUaClient create(OpcUaServer server) throws UaException {
+  public static OpcUaClient create(
+      OpcUaServer server, Consumer<OpcUaClientConfigBuilder> configCustomizer) throws UaException {
+
     EndpointConfig endpoint = server.getConfig().getEndpoints().iterator().next();
 
     return OpcUaClient.create(
         endpoint.getEndpointUrl(),
         endpoints ->
             endpoints.stream()
-                .filter(e -> e.getSecurityPolicyUri().equals(endpoint.getSecurityPolicy().getUri()))
+                .filter(
+                    e ->
+                        Objects.equals(
+                            e.getSecurityPolicyUri(), endpoint.getSecurityPolicy().getUri()))
                 .findFirst(),
         transportConfigBuilder -> {},
-        clientConfigBuilder ->
-            clientConfigBuilder
-                .setApplicationName(LocalizedText.english("eclipse milo test client"))
-                .setApplicationUri("urn:eclipse:milo:test:client")
-                .setRequestTimeout(uint(5_000)));
+        clientConfigBuilder -> {
+          clientConfigBuilder
+              .setApplicationName(LocalizedText.english("eclipse milo test client"))
+              .setApplicationUri("urn:eclipse:milo:test:client")
+              .setRequestTimeout(uint(5_000));
+
+          configCustomizer.accept(clientConfigBuilder);
+        });
   }
 }
