@@ -71,6 +71,44 @@ public class EndpointUtilTest {
     assertEquals("/", EndpointUtil.getPath(withoutPath));
   }
 
+  @Test
+  public void testUpdateUrlWithIpv6Hostname() {
+    String input1 = "opc.tcp://[::1]:4840";
+    String input2 = "opc.tcp://[::1]:4840/foo";
+    String input3 = "opc.tcp://[::1]";
+    String input4 = "opc.tcp://[::1]/foo";
+    String newHost = "[2001:db8::1]";
+
+    assertEquals("opc.tcp://[2001:db8::1]:4840", updateUrl(input1, newHost));
+    assertEquals("opc.tcp://[2001:db8::1]:4840/foo", updateUrl(input2, newHost));
+    assertEquals("opc.tcp://[2001:db8::1]", updateUrl(input3, newHost));
+    assertEquals("opc.tcp://[2001:db8::1]/foo", updateUrl(input4, newHost));
+  }
+
+  @Test
+  public void testUpdateUrlWithIpv6HostnameAndNewPort() {
+    String input1 = "opc.tcp://[::1]:4840";
+    String input2 = "opc.tcp://[::1]:4840/foo";
+    String input3 = "opc.tcp://[::1]";
+    String input4 = "opc.tcp://[::1]/foo";
+
+    String newHost = "[2001:db8::1]";
+    int newPort = 12685;
+
+    // change both host and port
+    assertEquals("opc.tcp://[2001:db8::1]:12685", updateUrl(input1, newHost, newPort));
+    assertEquals("opc.tcp://[2001:db8::1]:12685/foo", updateUrl(input2, newHost, newPort));
+    assertEquals("opc.tcp://[2001:db8::1]:12685", updateUrl(input3, newHost, newPort));
+    assertEquals("opc.tcp://[2001:db8::1]:12685", updateUrl("opc.tcp://[::1]:0", newHost, newPort));
+    assertEquals("opc.tcp://[2001:db8::1]:12685/foo", updateUrl(input4, newHost, newPort));
+
+    // change only port, keep host
+    assertEquals("opc.tcp://[::1]:12685", updateUrl(input1, null, newPort));
+    assertEquals("opc.tcp://[::1]:12685/foo", updateUrl(input2, null, newPort));
+    assertEquals("opc.tcp://[::1]:12685", updateUrl(input3, null, newPort));
+    assertEquals("opc.tcp://[::1]:12685/foo", updateUrl(input4, null, newPort));
+  }
+
   private void testReplaceUrlHostnameWithScheme(String scheme) {
     assertEquals(
         scheme + "://localhost2:4840", updateUrl(scheme + "://localhost:4840", "localhost2"));
