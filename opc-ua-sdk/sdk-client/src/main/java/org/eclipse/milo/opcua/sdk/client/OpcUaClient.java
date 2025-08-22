@@ -275,9 +275,15 @@ public class OpcUaClient {
           OpcTcpClientTransportConfig.newBuilder();
       configureTransport.accept(transportConfigBuilder);
 
-      OpcUaClientConfigBuilder clientConfigBuilder =
-          OpcUaClientConfig.builder().setEndpoint(endpoint);
+      OpcUaClientConfigBuilder clientConfigBuilder = OpcUaClientConfig.builder();
+      clientConfigBuilder.setEndpoint(endpoint);
+      clientConfigBuilder.setDiscoveryEndpoints(endpoints);
+      // Set up the discovery endpoints in case the user enables this, but default to false for
+      // backwards compatibility.
+      clientConfigBuilder.setSessionEndpointValidationEnabled(false);
+
       configureClient.accept(clientConfigBuilder);
+
       OpcUaClientConfig clientConfig = clientConfigBuilder.build();
 
       var transport = new OpcTcpClientTransport(transportConfigBuilder.build());

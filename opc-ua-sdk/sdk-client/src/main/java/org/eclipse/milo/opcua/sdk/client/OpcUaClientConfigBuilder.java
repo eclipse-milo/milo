@@ -14,6 +14,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.eclipse.milo.opcua.sdk.client.identity.AnonymousProvider;
@@ -27,6 +28,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 public class OpcUaClientConfigBuilder {
 
   private EndpointDescription endpoint;
+  private List<EndpointDescription> discoveryEndpoints;
   private KeyPair keyPair;
   private X509Certificate certificate;
   private X509Certificate[] certificateChain;
@@ -52,6 +54,8 @@ public class OpcUaClientConfigBuilder {
   private UInteger keepAliveFailuresAllowed = uint(1);
   private UInteger keepAliveInterval = uint(5000);
   private UInteger keepAliveTimeout = uint(5000);
+
+  private boolean sessionEndpointValidationEnabled = false;
 
   public OpcUaClientConfigBuilder setApplicationName(LocalizedText applicationName) {
     this.applicationName = applicationName;
@@ -123,8 +127,22 @@ public class OpcUaClientConfigBuilder {
     return this;
   }
 
+  public OpcUaClientConfigBuilder setSessionEndpointValidationEnabled(
+      boolean validateSessionEndpointsEnabled) {
+
+    this.sessionEndpointValidationEnabled = validateSessionEndpointsEnabled;
+    return this;
+  }
+
   public OpcUaClientConfigBuilder setEndpoint(EndpointDescription endpoint) {
     this.endpoint = endpoint;
+    return this;
+  }
+
+  public OpcUaClientConfigBuilder setDiscoveryEndpoints(
+      List<EndpointDescription> discoveryEndpoints) {
+
+    this.discoveryEndpoints = discoveryEndpoints;
     return this;
   }
 
@@ -158,6 +176,7 @@ public class OpcUaClientConfigBuilder {
 
     return new OpcUaClientConfigImpl(
         endpoint,
+        discoveryEndpoints,
         keyPair,
         certificate,
         certificateChain,
@@ -175,12 +194,14 @@ public class OpcUaClientConfigBuilder {
         identityProvider,
         keepAliveFailuresAllowed,
         keepAliveInterval,
-        keepAliveTimeout);
+        keepAliveTimeout,
+        sessionEndpointValidationEnabled);
   }
 
   static class OpcUaClientConfigImpl implements OpcUaClientConfig {
 
     private final EndpointDescription endpoint;
+    private final List<EndpointDescription> discoveryEndpoints;
     private final KeyPair keyPair;
     private final X509Certificate certificate;
     private final X509Certificate[] certificateChain;
@@ -200,9 +221,11 @@ public class OpcUaClientConfigBuilder {
     private final UInteger keepAliveFailuresAllowed;
     private final UInteger keepAliveInterval;
     private final UInteger keepAliveTimeout;
+    private final boolean sessionEndpointValidationEnabled;
 
     OpcUaClientConfigImpl(
         EndpointDescription endpoint,
+        List<EndpointDescription> discoveryEndpoints,
         KeyPair keyPair,
         X509Certificate certificate,
         X509Certificate[] certificateChain,
@@ -220,8 +243,11 @@ public class OpcUaClientConfigBuilder {
         IdentityProvider identityProvider,
         UInteger keepAliveFailuresAllowed,
         UInteger keepAliveInterval,
-        UInteger keepAliveTimeout) {
+        UInteger keepAliveTimeout,
+        boolean sessionEndpointValidationEnabled) {
+
       this.endpoint = endpoint;
+      this.discoveryEndpoints = discoveryEndpoints;
       this.keyPair = keyPair;
       this.certificate = certificate;
       this.certificateChain = certificateChain;
@@ -240,11 +266,17 @@ public class OpcUaClientConfigBuilder {
       this.keepAliveFailuresAllowed = keepAliveFailuresAllowed;
       this.keepAliveInterval = keepAliveInterval;
       this.keepAliveTimeout = keepAliveTimeout;
+      this.sessionEndpointValidationEnabled = sessionEndpointValidationEnabled;
     }
 
     @Override
     public EndpointDescription getEndpoint() {
       return endpoint;
+    }
+
+    @Override
+    public List<EndpointDescription> getDiscoveryEndpoints() {
+      return discoveryEndpoints;
     }
 
     @Override
@@ -335,6 +367,11 @@ public class OpcUaClientConfigBuilder {
     @Override
     public UInteger getKeepAliveTimeout() {
       return keepAliveTimeout;
+    }
+
+    @Override
+    public boolean isSessionEndpointValidationEnabled() {
+      return sessionEndpointValidationEnabled;
     }
   }
 }
