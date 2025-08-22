@@ -780,7 +780,14 @@ public class Subscription {
           subscriptionManager
               .getServer()
               .getScheduledExecutorService()
-              .schedule(this::onPublishingTimer, delayNanos, TimeUnit.NANOSECONDS);
+              .schedule(
+                  () ->
+                      subscriptionManager
+                          .getServer()
+                          .getExecutorService()
+                          .execute(this::onPublishingTimer),
+                  delayNanos,
+                  TimeUnit.NANOSECONDS);
     }
   }
 
