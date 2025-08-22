@@ -119,10 +119,7 @@ public class Session {
 
     subscriptionManager = new SubscriptionManager(this, server);
 
-    checkTimeoutFuture =
-        server
-            .getScheduledExecutorService()
-            .schedule(this::checkTimeout, sessionTimeout.toNanos(), TimeUnit.NANOSECONDS);
+    checkTimeoutFuture = scheduleTimeoutCheck(server, sessionTimeout);
   }
 
   public OpcUaServer getServer() {
@@ -307,17 +304,21 @@ public class Session {
 
       server.getDiagnosticsSummary().getSessionTimeoutCount().increment();
     } else {
-      long remaining = sessionTimeout.toNanos() - elapsed;
-      logger.trace(
-          "Session id={} timeout scheduled for +{}s.",
-          sessionId,
-          Duration.ofNanos(remaining).getSeconds());
+      Duration remaining = Duration.ofNanos(sessionTimeout.toNanos() - elapsed);
 
-      checkTimeoutFuture =
-          server
-              .getScheduledExecutorService()
-              .schedule(this::checkTimeout, remaining, TimeUnit.NANOSECONDS);
+      logger.trace("Session id={} timeout scheduled for +{}s.", sessionId, remaining.getSeconds());
+
+      checkTimeoutFuture = scheduleTimeoutCheck(server, remaining);
     }
+  }
+
+  private ScheduledFuture<?> scheduleTimeoutCheck(OpcUaServer server, Duration sessionTimeout) {
+    return server
+        .getScheduledExecutorService()
+        .schedule(
+            () -> server.getConfig().getExecutor().execute(this::checkTimeout),
+            sessionTimeout.toNanos(),
+            TimeUnit.NANOSECONDS);
   }
 
   public NodeId getSessionId() {
