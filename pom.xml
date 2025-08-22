@@ -10,13 +10,13 @@
   -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.eclipse.milo</groupId>
   <artifactId>milo</artifactId>
-    <version>1.0.4-SNAPSHOT</version>
+  <version>1.0.4</version>
   <packaging>pom</packaging>
 
   <name>Eclipse Milo - OPC UA (IEC 62541)</name>
@@ -157,7 +157,8 @@
               <publishingServerId>central</publishingServerId>
               <autoPublish>true</autoPublish>
               <waitUntil>published</waitUntil>
-              <centralSnapshotsUrl>https://central.sonatype.com/repository/maven-snapshots/</centralSnapshotsUrl>
+              <centralSnapshotsUrl>https://central.sonatype.com/repository/maven-snapshots/
+              </centralSnapshotsUrl>
             </configuration>
           </plugin>
         </plugins>
@@ -375,7 +376,8 @@
             <publishingServerId>central</publishingServerId>
             <autoPublish>true</autoPublish>
             <waitUntil>published</waitUntil>
-            <centralSnapshotsUrl>https://central.sonatype.com/repository/maven-snapshots/</centralSnapshotsUrl>
+            <centralSnapshotsUrl>https://central.sonatype.com/repository/maven-snapshots/
+            </centralSnapshotsUrl>
           </configuration>
         </plugin>
 
