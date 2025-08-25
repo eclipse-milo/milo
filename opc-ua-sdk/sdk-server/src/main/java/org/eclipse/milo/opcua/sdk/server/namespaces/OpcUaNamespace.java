@@ -68,6 +68,13 @@ import org.slf4j.LoggerFactory;
 
 public class OpcUaNamespace extends ManagedNamespaceWithLifecycle {
 
+  /**
+   * <a href="https://profiles.opcfoundation.org/profile/1333">Standard 2022 UA Server Profile</a>
+   */
+  @SuppressWarnings("HttpUrlsUsage")
+  private static final String SERVER_PROFILE_STANDARD_2022 =
+      "http://opcfoundation.org/UA-Profile/Server/StandardUA2022";
+
   private static final double MIN_SAMPLING_INTERVAL = 100.0;
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -230,8 +237,7 @@ public class OpcUaNamespace extends ManagedNamespaceWithLifecycle {
 
     final OpcUaServerConfigLimits limits = server.getConfig().getLimits();
     ServerCapabilitiesTypeNode serverCapabilities = serverTypeNode.getServerCapabilitiesNode();
-    serverCapabilities.setServerProfileArray(
-        new String[] {"http://opcfoundation.org/UA-Profile/Server/StandardUA"});
+    serverCapabilities.setServerProfileArray(new String[] {SERVER_PROFILE_STANDARD_2022});
     serverCapabilities.setLocaleIdArray(new String[] {Locale.ENGLISH.getLanguage()});
     serverCapabilities.setMaxArrayLength(limits.getMaxArrayLength());
     serverCapabilities.setMaxStringLength(limits.getMaxStringLength());
