@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
   ~ Copyright (c) 2025 the Eclipse Milo Authors
   ~
@@ -18,7 +18,7 @@
   <parent>
     <groupId>org.eclipse.milo</groupId>
     <artifactId>milo</artifactId>
-      <version>1.0.4-SNAPSHOT</version>
+    <version>1.0.5-SNAPSHOT</version>
   </parent>
 
   <name>Milo :: Bill of Materials</name>
