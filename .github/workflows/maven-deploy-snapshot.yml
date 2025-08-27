@@ -18,7 +18,7 @@ jobs:
           server-password: MAVEN_PASSWORD
 
       - name: Clean and Deploy
-        run: mvn -B clean deploy
+        run: mvn -B clean deploy -P deploy-snapshot
         env:
           MAVEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
