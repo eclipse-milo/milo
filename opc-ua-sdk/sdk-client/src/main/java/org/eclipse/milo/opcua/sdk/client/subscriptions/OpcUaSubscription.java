@@ -142,7 +142,11 @@ public class OpcUaSubscription {
               true,
               priority);
 
-      syncState = SyncState.SYNCHRONIZED;
+      if (monitoredItems.isEmpty()) {
+        syncState = SyncState.SYNCHRONIZED;
+      } else {
+        syncState = SyncState.UNSYNCHRONIZED;
+      }
 
       serverState =
           new ServerState(
@@ -309,10 +313,6 @@ public class OpcUaSubscription {
    * @throws UaRuntimeException if the Subscription has not been created yet.
    */
   public void addMonitoredItem(OpcUaMonitoredItem item) {
-    if (syncState == SyncState.INITIAL) {
-      throw new UaRuntimeException(StatusCodes.Bad_InvalidState, "subscription not created yet");
-    }
-
     if (!monitoredItems.containsValue(item)) {
       if (itemsToDelete.remove(item)) {
         monitoredItems.put(item.getClientHandle().orElseThrow(), item);
@@ -322,7 +322,9 @@ public class OpcUaSubscription {
 
         monitoredItems.put(clientHandle, item);
 
-        syncState = SyncState.UNSYNCHRONIZED;
+        if (syncState != SyncState.INITIAL) {
+          syncState = SyncState.UNSYNCHRONIZED;
+        }
       }
     }
   }
@@ -347,19 +349,17 @@ public class OpcUaSubscription {
    * called
    *
    * @param item the MonitoredItem to remove.
-   * @throws UaRuntimeException if the Subscription has not been created yet.
    */
   public void removeMonitoredItem(OpcUaMonitoredItem item) {
-    if (syncState == SyncState.INITIAL) {
-      throw new UaRuntimeException(StatusCodes.Bad_InvalidState, "subscription not created yet");
-    }
-
     OpcUaMonitoredItem removedItem =
         item.getClientHandle().map(monitoredItems::remove).orElse(null);
 
     if (removedItem != null) {
       itemsToDelete.add(removedItem);
-      syncState = SyncState.UNSYNCHRONIZED;
+
+      if (syncState != SyncState.INITIAL) {
+        syncState = SyncState.UNSYNCHRONIZED;
+      }
     }
   }
 
@@ -1248,18 +1248,26 @@ public class OpcUaSubscription {
    * <p>Resetting the Subscription removes it from the Client and PublishingManager, cancels the
    * watchdog timer, and sets the {@link SyncState} back to {@link SyncState#INITIAL}.
    *
+   * <p>{@link OpcUaMonitoredItem}s that have been added are reset, but the collection is not
+   * cleared. If the Subscription is created again, the call {@link #synchronizeMonitoredItems()} or
+   * {@link #createMonitoredItems()} to create the items on the Server again.
+   *
    * <p>This is called automatically when the Subscription is deleted, but can also be called
    * manually when necessary if it has been determined the Subscription no longer exists on the
    * Server.
    */
   public void reset() {
     if (syncState != SyncState.INITIAL) {
+      cancelWatchdogTimer();
       client.removeSubscription(this);
       client.getPublishingManager().removeSubscription(this);
 
-      cancelWatchdogTimer();
-
       serverState = null;
+      modifications = null;
+
+      monitoredItemPartitionSize.reset();
+      monitoredItems.values().forEach(OpcUaMonitoredItem::reset);
+
       syncState = SyncState.INITIAL;
     }
   }
@@ -1379,36 +1387,30 @@ public class OpcUaSubscription {
   void notifyKeepAliveReceived() {
     SubscriptionListener listener = this.listener;
     if (listener != null) {
-      listener.onKeepAliveReceived(this);
+      deliveryQueue.execute(() -> listener.onKeepAliveReceived(this));
     }
   }
 
   void notifyStatusChanged(StatusCode status) {
+    if (status.getValue() == StatusCodes.Bad_Timeout) {
+      reset();
+    }
+
     SubscriptionListener listener = this.listener;
     if (listener != null) {
-      listener.onStatusChanged(this, status);
+      deliveryQueue.execute(() -> listener.onStatusChanged(this, status));
     }
   }
 
   void notifyNotificationDataLost() {
     SubscriptionListener listener = this.listener;
     if (listener != null) {
-      listener.onNotificationDataLost(this);
+      deliveryQueue.execute(() -> listener.onNotificationDataLost(this));
     }
   }
 
   public void notifyTransferFailed(StatusCode status) {
-    cancelWatchdogTimer();
-    client.removeSubscription(this);
-    client.getPublishingManager().removeSubscription(this);
-
-    syncState = SyncState.INITIAL;
-    serverState = null;
-    modifications = null;
-
-    monitoredItemPartitionSize.reset();
-
-    monitoredItems.values().forEach(OpcUaMonitoredItem::notifyTransferFailed);
+    reset();
 
     SubscriptionListener listener = this.listener;
     if (listener != null) {
@@ -1652,7 +1654,7 @@ public class OpcUaSubscription {
      * elapsed without receiving a PublishResponse for this Subscription.
      *
      * <p>This is an indication that the Server may be experiencing problems servicing this
-     * Subscription and the absence of data change notifications no longer implies that values are
+     * Subscription, and the absence of data change notifications no longer implies that values are
      * not changing. Consider deleting and creating a new Subscription.
      *
      * @param subscription the Subscription whose watchdog timer has elapsed.
@@ -1675,7 +1677,7 @@ public class OpcUaSubscription {
     default void onStatusChanged(OpcUaSubscription subscription, StatusCode status) {}
 
     /**
-     * Called when a new Session is established after reconnecting but transferring this
+     * Called when a new Session is established after reconnecting, but transferring this
      * Subscription to the new Session was unsuccessful.
      *
      * @param subscription the Subscription that failed to transfer to the new Session.

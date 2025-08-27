@@ -14,18 +14,18 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaSubscription.SyncState;
 import org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MonitoringMode;
@@ -385,24 +385,40 @@ public class OpcUaSubscriptionTest extends AbstractClientServerTest {
   }
 
   @Test
-  void addItemsToUninitializedSubscriptionThrows() {
+  void addItemBeforeSubscriptionCreated() throws Exception {
     var subscription = new OpcUaSubscription(client);
 
-    assertThrows(
-        UaRuntimeException.class,
-        () ->
-            subscription.addMonitoredItem(
-                OpcUaMonitoredItem.newDataItem(NodeIds.Server_ServerStatus_CurrentTime)));
+    var item = OpcUaMonitoredItem.newDataItem(NodeIds.Server_ServerStatus_CurrentTime);
+
+    var dataReceived = new CountDownLatch(1);
+
+    item.setDataValueListener((item1, value) -> dataReceived.countDown());
+
+    subscription.addMonitoredItem(item);
+
+    subscription.create();
+
+    List<MonitoredItemServiceOperationResult> results = subscription.createMonitoredItems();
+    assertEquals(1, results.size());
+    assertTrue(results.get(0).serviceResult().isGood());
+    assertTrue(results.get(0).operationResult().orElseThrow().isGood());
+
+    assertEquals(1, subscription.getMonitoredItems().size());
+
+    assertTrue(dataReceived.await(2, TimeUnit.SECONDS));
   }
 
   @Test
-  void removeItemsFromUninitializedSubscriptionThrows() {
+  void removeItemBeforeSubscriptionCreated() throws Exception {
     var subscription = new OpcUaSubscription(client);
 
-    assertThrows(
-        UaRuntimeException.class,
-        () ->
-            subscription.removeMonitoredItem(
-                OpcUaMonitoredItem.newDataItem(NodeIds.Server_ServerStatus_CurrentTime)));
+    var item = OpcUaMonitoredItem.newDataItem(NodeIds.Server_ServerStatus_CurrentTime);
+    subscription.addMonitoredItem(item);
+    subscription.removeMonitoredItem(item);
+
+    subscription.create();
+
+    assertEquals(0, subscription.createMonitoredItems().size());
+    assertEquals(0, subscription.getMonitoredItems().size());
   }
 }
