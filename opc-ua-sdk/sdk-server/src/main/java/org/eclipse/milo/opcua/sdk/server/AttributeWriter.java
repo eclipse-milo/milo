@@ -12,8 +12,10 @@ package org.eclipse.milo.opcua.sdk.server;
 
 import static java.util.Objects.requireNonNullElse;
 
+import java.util.EnumSet;
 import java.util.Optional;
 import java.util.Set;
+import org.eclipse.milo.opcua.sdk.core.AccessLevel;
 import org.eclipse.milo.opcua.sdk.core.NumericRange;
 import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.ValueRanks;
@@ -24,10 +26,12 @@ import org.eclipse.milo.opcua.sdk.core.nodes.VariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaServerNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
+import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableTypeNode;
 import org.eclipse.milo.opcua.stack.core.*;
 import org.eclipse.milo.opcua.stack.core.types.builtin.*;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
 import org.eclipse.milo.opcua.stack.core.util.ArrayUtil;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -73,7 +77,31 @@ public class AttributeWriter {
       //
       // This Attribute shall not be writeable.
       return new StatusCode(StatusCodes.Bad_NotWritable);
-    } else if (attributeId != AttributeId.Value) {
+    } else if (attributeId == AttributeId.Value) {
+      if (node instanceof UaVariableNode variableNode) {
+        AccessLevelExType accessLevelEx = variableNode.getAccessLevelEx();
+
+        if (accessLevelEx != null) {
+          if (!accessLevelEx.getCurrentWrite()) {
+            return new StatusCode(StatusCodes.Bad_NotWritable);
+          }
+        } else {
+          Set<AccessLevel> accessLevels = AccessLevel.fromValue(variableNode.getAccessLevel());
+          if (!accessLevels.contains(AccessLevel.CurrentWrite)) {
+            return new StatusCode(StatusCodes.Bad_NotWritable);
+          }
+        }
+      } else if (node instanceof UaVariableTypeNode variableTypeNode) {
+        EnumSet<WriteMask> writeMasks = WriteMask.fromMask(variableTypeNode.getWriteMask());
+
+        if (!writeMasks.contains(WriteMask.ValueForVariableType)) {
+          return new StatusCode(StatusCodes.Bad_NotWritable);
+        }
+      } else {
+        return new StatusCode(StatusCodes.Bad_AttributeIdInvalid);
+      }
+    } else {
+      // attributeId != AttributeId.Value && attributeId != AttributeId.UserRolePermissions
       WriteMask writeMask = writeMaskForAttribute(attributeId);
 
       Set<WriteMask> writeMasks = WriteMask.fromMask(node.getWriteMask());
