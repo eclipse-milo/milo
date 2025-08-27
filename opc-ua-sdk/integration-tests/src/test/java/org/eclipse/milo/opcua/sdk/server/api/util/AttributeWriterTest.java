@@ -14,7 +14,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
+import org.eclipse.milo.opcua.sdk.core.WriteMask;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
+import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -80,6 +82,44 @@ public class AttributeWriterTest extends AbstractClientServerTest {
     assertEquals(StatusCode.GOOD, statusCode);
   }
 
+  @Test
+  void writeValue_VariableNode_SuccessAndFailure() throws Exception {
+    StatusCode ok =
+        client
+            .writeValues(
+                List.of(new NodeId(2, "ReadWriteVariable")),
+                List.of(DataValue.valueOnly(new Variant(42))))
+            .get(0);
+    assertEquals(StatusCode.GOOD, ok);
+
+    StatusCode fail =
+        client
+            .writeValues(
+                List.of(new NodeId(2, "ReadOnlyVariable")),
+                List.of(DataValue.valueOnly(new Variant(7))))
+            .get(0);
+    assertEquals(new StatusCode(StatusCodes.Bad_NotWritable), fail);
+  }
+
+  @Test
+  void writeValue_VariableTypeNode_SuccessAndFailure() throws Exception {
+    StatusCode ok =
+        client
+            .writeValues(
+                List.of(new NodeId(2, "ReadWriteVariableType")),
+                List.of(DataValue.valueOnly(new Variant(123))))
+            .get(0);
+    assertEquals(StatusCode.GOOD, ok);
+
+    StatusCode fail =
+        client
+            .writeValues(
+                List.of(new NodeId(2, "ReadOnlyVariableType")),
+                List.of(DataValue.valueOnly(new Variant(456))))
+            .get(0);
+    assertEquals(new StatusCode(StatusCodes.Bad_NotWritable), fail);
+  }
+
   @BeforeAll
   void configure() {
     testNamespace.configure(
@@ -136,6 +176,55 @@ public class AttributeWriterTest extends AbstractClientServerTest {
                 b.setArrayDimensions(new UInteger[] {UInteger.valueOf(0)});
                 b.setAccessLevel(AccessLevel.READ_WRITE);
                 b.setUserAccessLevel(AccessLevel.READ_WRITE);
+                return b.buildAndAdd();
+              });
+
+          UaVariableNode.build(
+              context,
+              b -> {
+                b.setNodeId(new NodeId(2, "ReadWriteVariable"));
+                b.setBrowseName(new QualifiedName(2, "ReadWriteVariable"));
+                b.setDisplayName(LocalizedText.english("ReadWriteVariable"));
+                b.setDataType(NodeIds.Int32);
+                b.setAccessLevel(AccessLevel.READ_WRITE);
+                b.setUserAccessLevel(AccessLevel.READ_WRITE);
+                return b.buildAndAdd();
+              });
+
+          UaVariableNode.build(
+              context,
+              b -> {
+                b.setNodeId(new NodeId(2, "ReadOnlyVariable"));
+                b.setBrowseName(new QualifiedName(2, "ReadOnlyVariable"));
+                b.setDisplayName(LocalizedText.english("ReadOnlyVariable"));
+                b.setDataType(NodeIds.Int32);
+                b.setAccessLevel(AccessLevel.READ_ONLY);
+                // allow the service call to reach AttributeWriter
+                b.setUserAccessLevel(AccessLevel.READ_WRITE);
+                return b.buildAndAdd();
+              });
+
+          UaVariableTypeNode.build(
+              context,
+              b -> {
+                b.setNodeId(new NodeId(2, "ReadWriteVariableType"));
+                b.setBrowseName(new QualifiedName(2, "ReadWriteVariableType"));
+                b.setDisplayName(LocalizedText.english("ReadWriteVariableType"));
+                b.setDataType(NodeIds.Int32);
+                b.setWriteMask(UInteger.valueOf(WriteMask.ValueForVariableType.getValue()));
+                b.setUserWriteMask(UInteger.valueOf(WriteMask.ValueForVariableType.getValue()));
+                return b.buildAndAdd();
+              });
+
+          UaVariableTypeNode.build(
+              context,
+              b -> {
+                b.setNodeId(new NodeId(2, "ReadOnlyVariableType"));
+                b.setBrowseName(new QualifiedName(2, "ReadOnlyVariableType"));
+                b.setDisplayName(LocalizedText.english("ReadOnlyVariableType"));
+                b.setDataType(NodeIds.Int32);
+                b.setWriteMask(UInteger.valueOf(0));
+                b.setUserWriteMask(UInteger.valueOf(0));
                 return b.buildAndAdd();
               });
         });
