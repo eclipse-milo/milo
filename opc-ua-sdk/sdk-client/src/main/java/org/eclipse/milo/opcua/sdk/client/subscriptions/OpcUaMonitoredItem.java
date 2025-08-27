@@ -495,7 +495,7 @@ public class OpcUaMonitoredItem {
     }
   }
 
-  void notifyTransferFailed() {
+  void reset() {
     syncState = SyncState.INITIAL;
     serverState = null;
     modifications = null;
