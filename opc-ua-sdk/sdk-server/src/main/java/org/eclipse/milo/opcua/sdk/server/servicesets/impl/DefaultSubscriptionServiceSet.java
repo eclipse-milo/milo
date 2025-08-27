@@ -225,7 +225,7 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
             if (session.getEndpoint().getSecurityMode() == MessageSecurityMode.None) {
               results.add(
                   new TransferResult(
-                      new StatusCode(StatusCodes.Bad_SecurityChecksFailed), new UInteger[0]));
+                      new StatusCode(StatusCodes.Bad_UserAccessDenied), new UInteger[0]));
               continue;
             }
 

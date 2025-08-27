@@ -29,6 +29,6 @@ public class SubscriptionTransferTest extends AbstractClientServerTest {
 
     TransferResult result = requireNonNull(response.getResults())[0];
 
-    assertEquals(StatusCodes.Bad_SecurityChecksFailed, result.getStatusCode().getValue());
+    assertEquals(StatusCodes.Bad_UserAccessDenied, result.getStatusCode().getValue());
   }
 }
