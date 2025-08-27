@@ -20,6 +20,7 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity;
+import org.eclipse.milo.opcua.sdk.server.identity.Identity.AnonymousIdentity;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredDataItem;
 import org.eclipse.milo.opcua.sdk.server.servicesets.SubscriptionServiceSet;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.Subscription;
@@ -28,6 +29,7 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.CreateSubscriptionRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CreateSubscriptionResponse;
@@ -214,6 +216,30 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
               new TransferResult(
                   new StatusCode(StatusCodes.Bad_UserAccessDenied), new UInteger[0]));
         } else {
+          if (session.getIdentity() instanceof AnonymousIdentity) {
+            // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.14.7
+            // If the Client uses an ANONYMOUS UserTokenType, the Server shall validate if the
+            // ApplicationUri is the same for the old and the new Session and the
+            // MessageSecurityMode is SIGN or SIGN_AND_ENCRYPT.
+
+            if (session.getEndpoint().getSecurityMode() == MessageSecurityMode.None) {
+              results.add(
+                  new TransferResult(
+                      new StatusCode(StatusCodes.Bad_UserAccessDenied), new UInteger[0]));
+              continue;
+            }
+
+            String toUri = session.getClientDescription().getApplicationUri();
+            String fromUri = otherSession.getClientDescription().getApplicationUri();
+
+            if (!Objects.equals(toUri, fromUri)) {
+              results.add(
+                  new TransferResult(
+                      new StatusCode(StatusCodes.Bad_UserAccessDenied), new UInteger[0]));
+              continue;
+            }
+          }
+
           UInteger[] availableSequenceNumbers;
 
           synchronized (subscription) {
