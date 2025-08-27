@@ -300,7 +300,7 @@ public class Session {
     if (elapsed > sessionTimeout.toNanos()) {
       logger.debug("Session id={} lifetime expired ({}ms).", sessionId, sessionTimeout.toMillis());
 
-      close(true);
+      close(false);
 
       server.getDiagnosticsSummary().getSessionTimeoutCount().increment();
     } else {
