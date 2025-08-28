@@ -421,4 +421,32 @@ public class OpcUaSubscriptionTest extends AbstractClientServerTest {
     assertEquals(0, subscription.createMonitoredItems().size());
     assertEquals(0, subscription.getMonitoredItems().size());
   }
+
+  @Test
+  void createSubscriptionAgainAfterDeleting() throws Exception {
+    var subscription = new OpcUaSubscription(client);
+    subscription.create();
+
+    var item = OpcUaMonitoredItem.newDataItem(NodeIds.Server_ServerStatus_CurrentTime);
+
+    var latch = new CountDownLatch(1);
+    item.setDataValueListener((i, v) -> latch.countDown());
+
+    subscription.addMonitoredItem(item);
+    subscription.synchronizeMonitoredItems();
+    assertEquals(1, subscription.getMonitoredItems().size());
+
+    assertTrue(latch.await(2, TimeUnit.SECONDS));
+
+    subscription.delete();
+    subscription.create();
+
+    var latch2 = new CountDownLatch(1);
+    item.setDataValueListener((i, v) -> latch2.countDown());
+
+    assertEquals(1, subscription.createMonitoredItems().size());
+    assertEquals(1, subscription.getMonitoredItems().size());
+
+    assertTrue(latch2.await(2, TimeUnit.SECONDS));
+  }
 }
