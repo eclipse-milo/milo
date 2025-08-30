@@ -10,7 +10,6 @@
 
 package org.eclipse.milo.opcua.sdk.server.servicesets.impl;
 
-import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.HashMap;
@@ -42,9 +41,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 class DefaultAccessControllerTest {
-
-  private static final org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger WM_ALL =
-      uint(0xFFFFFFFF);
 
   private static final NodeId ROLE_A = new NodeId(1, "RoleA");
   private static final NodeId ROLE_B = new NodeId(1, "RoleB");

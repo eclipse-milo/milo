@@ -197,14 +197,6 @@ public class DefaultAccessController implements AccessController {
     return pending.stream().collect(Collectors.toMap(p -> p.value, p -> p.result, (a, b) -> b));
   }
 
-  private static boolean checkWriteMask(UInteger attributeId, @Nullable UInteger writeMask) {
-    Set<WriteMask> writeMasks = writeMask == null ? Set.of() : WriteMask.fromMask(writeMask);
-
-    return AttributeId.from(attributeId)
-        .map(id -> writeMasks.contains(WriteMask.forAttribute(id)))
-        .orElse(false);
-  }
-
   // endregion
 
   // region Browse
