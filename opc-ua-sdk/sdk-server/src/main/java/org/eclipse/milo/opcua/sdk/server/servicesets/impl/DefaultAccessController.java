@@ -20,6 +20,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
+import org.eclipse.milo.opcua.sdk.core.WriteMask;
 import org.eclipse.milo.opcua.sdk.server.AddressSpace;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
@@ -174,10 +175,37 @@ public class DefaultAccessController implements AccessController {
             p.result = AccessResult.DENIED_USER_ACCESS;
           }
         }
+      } else {
+        List<NodeId> roleIds = context.getRoleIds().orElse(null);
+
+        UInteger userWriteMask = attributes.get(nodeId).userWriteMask();
+        RolePermissionType[] userRolePermissions = attributes.get(nodeId).userRolePermissions();
+
+        // first check if the UserWriteMask allows for write access
+        boolean hasAccess = checkWriteMask(attributeId, userWriteMask);
+
+        // if it does, refine access based on UserRolePermissions, if they exist
+        if (hasAccess && roleIds != null && userRolePermissions != null) {
+          hasAccess =
+              Stream.of(userRolePermissions)
+                  .anyMatch(rp -> rp.getPermissions().getWriteAttribute());
+        }
+
+        if (!hasAccess) {
+          p.result = AccessResult.DENIED_USER_ACCESS;
+        }
       }
     }
 
     return pending.stream().collect(Collectors.toMap(p -> p.value, p -> p.result, (a, b) -> b));
+  }
+
+  private static boolean checkWriteMask(UInteger attributeId, @Nullable UInteger writeMask) {
+    Set<WriteMask> writeMasks = writeMask == null ? Set.of() : WriteMask.fromMask(writeMask);
+
+    return AttributeId.from(attributeId)
+        .map(id -> writeMasks.contains(WriteMask.forAttribute(id)))
+        .orElse(false);
   }
 
   // endregion
@@ -522,6 +550,7 @@ public class DefaultAccessController implements AccessController {
   record AccessControlAttributes(
       @Nullable NodeClass nodeClass,
       @Nullable AccessRestrictionType accessRestrictions,
+      @Nullable UInteger userWriteMask,
       @Nullable UByte userAccessLevel,
       @Nullable Boolean userExecutable,
       RolePermissionType @Nullable [] userRolePermissions) {}
@@ -557,6 +586,7 @@ public class DefaultAccessController implements AccessController {
                         List.of(
                             new ReadValueId(id, AttributeId.NodeClass.uid(), null, null),
                             new ReadValueId(id, AttributeId.AccessRestrictions.uid(), null, null),
+                            new ReadValueId(id, AttributeId.UserWriteMask.uid(), null, null),
                             new ReadValueId(id, AttributeId.UserAccessLevel.uid(), null, null),
                             new ReadValueId(id, AttributeId.UserExecutable.uid(), null, null),
                             new ReadValueId(id, AttributeId.UserRolePermissions.uid(), null, null));
@@ -576,7 +606,7 @@ public class DefaultAccessController implements AccessController {
 
       var attributesMap = new HashMap<NodeId, AccessControlAttributes>();
 
-      for (int i = 0; i < readValueIds.size(); i += 5) {
+      for (int i = 0; i < readValueIds.size(); i += 6) {
         NodeId nodeId = readValueIds.get(i).getNodeId();
 
         Object v0 = values.get(i).value().value();
@@ -584,9 +614,11 @@ public class DefaultAccessController implements AccessController {
         Object v2 = values.get(i + 2).value().value();
         Object v3 = values.get(i + 3).value().value();
         Object v4 = values.get(i + 4).value().value();
+        Object v5 = values.get(i + 5).value().value();
 
         NodeClass nodeClass = null;
         AccessRestrictionType accessRestrictions = null;
+        UInteger userWriteMask = null;
         UByte userAccessLevel = null;
         Boolean userExecutable = null;
         RolePermissionType[] userRolePermissions = null;
@@ -597,13 +629,16 @@ public class DefaultAccessController implements AccessController {
         if (v1 instanceof AccessRestrictionType art) {
           accessRestrictions = art;
         }
-        if (v2 instanceof UByte ub) {
+        if (v2 instanceof UInteger um) {
+          userWriteMask = um;
+        }
+        if (v3 instanceof UByte ub) {
           userAccessLevel = ub;
         }
-        if (v3 instanceof Boolean b) {
+        if (v4 instanceof Boolean b) {
           userExecutable = b;
         }
-        if (v4 instanceof RolePermissionType[] rpt) {
+        if (v5 instanceof RolePermissionType[] rpt) {
           userRolePermissions = rpt;
         }
 
@@ -611,6 +646,7 @@ public class DefaultAccessController implements AccessController {
             new AccessControlAttributes(
                 nodeClass,
                 accessRestrictions,
+                userWriteMask,
                 userAccessLevel,
                 userExecutable,
                 userRolePermissions);
