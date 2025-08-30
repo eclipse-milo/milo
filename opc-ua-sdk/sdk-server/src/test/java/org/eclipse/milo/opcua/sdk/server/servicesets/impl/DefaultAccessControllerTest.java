@@ -27,6 +27,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AddReferencesItem;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodRequest;
@@ -174,7 +175,7 @@ class DefaultAccessControllerTest {
   }
 
   @Test
-  void checkWriteAccess_UserWriteMask_allows_but_no_WriteAttribute_permission_denied() {
+  void checkWriteAccess_AttributeProtectedByUserWriteMask_Allowed() {
     var nodeId = new NodeId(1, "wm-node");
 
     var wvDisplayName =
@@ -187,86 +188,12 @@ class DefaultAccessControllerTest {
         new WriteValue(
             nodeId, AttributeId.BrowseName.uid(), null, DataValue.valueOnly(Variant.NULL_VALUE));
 
+    // Roles/Permissions configuration is not required; they are implied by UserWriteMask value.
     attributesMap.put(
         nodeId,
         new AccessControlAttributes(
-            null,
-            null,
-            WM_ALL,
-            null,
-            null,
-            new RolePermissionType[] {new RolePermissionType(ROLE_A, PermissionType.of())}));
-    Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_A)));
-
-    var results =
-        DefaultAccessController.checkWriteAccess(
-            context, List.of(wvDisplayName, wvDescription, wvBrowseName));
-    assertEquals(AccessResult.DENIED_USER_ACCESS, results.get(wvDisplayName));
-    assertEquals(AccessResult.DENIED_USER_ACCESS, results.get(wvDescription));
-    assertEquals(AccessResult.DENIED_USER_ACCESS, results.get(wvBrowseName));
-  }
-
-  @Test
-  void checkWriteAccess_UserWriteMask_denies_even_with_WriteAttribute_permission() {
-    var nodeId = new NodeId(1, "wm-node");
-
-    var wvDisplayName =
-        new WriteValue(
-            nodeId, AttributeId.DisplayName.uid(), null, DataValue.valueOnly(Variant.NULL_VALUE));
-    var wvDescription =
-        new WriteValue(
-            nodeId, AttributeId.Description.uid(), null, DataValue.valueOnly(Variant.NULL_VALUE));
-    var wvBrowseName =
-        new WriteValue(
-            nodeId, AttributeId.BrowseName.uid(), null, DataValue.valueOnly(Variant.NULL_VALUE));
-
-    attributesMap.put(
-        nodeId,
-        new AccessControlAttributes(
-            null,
-            null,
-            uint(0),
-            null,
-            null,
-            new RolePermissionType[] {
-              new RolePermissionType(ROLE_B, PermissionType.of(PermissionType.Field.WriteAttribute))
-            }));
-    Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_B)));
-
-    var results =
-        DefaultAccessController.checkWriteAccess(
-            context, List.of(wvDisplayName, wvDescription, wvBrowseName));
-    assertEquals(AccessResult.DENIED_USER_ACCESS, results.get(wvDisplayName));
-    assertEquals(AccessResult.DENIED_USER_ACCESS, results.get(wvDescription));
-    assertEquals(AccessResult.DENIED_USER_ACCESS, results.get(wvBrowseName));
-  }
-
-  @Test
-  void checkWriteAccess_UserWriteMask_allows_and_WriteAttribute_permission_allowed() {
-    var nodeId = new NodeId(1, "wm-node");
-
-    var wvDisplayName =
-        new WriteValue(
-            nodeId, AttributeId.DisplayName.uid(), null, DataValue.valueOnly(Variant.NULL_VALUE));
-    var wvDescription =
-        new WriteValue(
-            nodeId, AttributeId.Description.uid(), null, DataValue.valueOnly(Variant.NULL_VALUE));
-    var wvBrowseName =
-        new WriteValue(
-            nodeId, AttributeId.BrowseName.uid(), null, DataValue.valueOnly(Variant.NULL_VALUE));
-
-    attributesMap.put(
-        nodeId,
-        new AccessControlAttributes(
-            null,
-            null,
-            WM_ALL,
-            null,
-            null,
-            new RolePermissionType[] {
-              new RolePermissionType(ROLE_B, PermissionType.of(PermissionType.Field.WriteAttribute))
-            }));
-    Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_B)));
+            null, null, UInteger.MAX, null, null, new RolePermissionType[] {}));
+    Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of()));
 
     var results =
         DefaultAccessController.checkWriteAccess(
@@ -274,6 +201,35 @@ class DefaultAccessControllerTest {
     assertEquals(AccessResult.ALLOWED, results.get(wvDisplayName));
     assertEquals(AccessResult.ALLOWED, results.get(wvDescription));
     assertEquals(AccessResult.ALLOWED, results.get(wvBrowseName));
+  }
+
+  @Test
+  void checkWriteAccess_AttributeProtectedByUserWriteMask_Denied() {
+    var nodeId = new NodeId(1, "wm-node");
+
+    var wvDisplayName =
+        new WriteValue(
+            nodeId, AttributeId.DisplayName.uid(), null, DataValue.valueOnly(Variant.NULL_VALUE));
+    var wvDescription =
+        new WriteValue(
+            nodeId, AttributeId.Description.uid(), null, DataValue.valueOnly(Variant.NULL_VALUE));
+    var wvBrowseName =
+        new WriteValue(
+            nodeId, AttributeId.BrowseName.uid(), null, DataValue.valueOnly(Variant.NULL_VALUE));
+
+    // Roles/Permissions configuration is not required; they are implied by UserWriteMask value.
+    attributesMap.put(
+        nodeId,
+        new AccessControlAttributes(
+            null, null, UInteger.MIN, null, null, new RolePermissionType[] {}));
+    Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of()));
+
+    var results =
+        DefaultAccessController.checkWriteAccess(
+            context, List.of(wvDisplayName, wvDescription, wvBrowseName));
+    assertEquals(AccessResult.DENIED_USER_ACCESS, results.get(wvDisplayName));
+    assertEquals(AccessResult.DENIED_USER_ACCESS, results.get(wvDescription));
+    assertEquals(AccessResult.DENIED_USER_ACCESS, results.get(wvBrowseName));
   }
 
   @Test

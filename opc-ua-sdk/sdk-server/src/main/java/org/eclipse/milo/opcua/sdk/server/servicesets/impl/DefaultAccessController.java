@@ -176,20 +176,17 @@ public class DefaultAccessController implements AccessController {
           }
         }
       } else {
-        List<NodeId> roleIds = context.getRoleIds().orElse(null);
-
         UInteger userWriteMask = attributes.get(nodeId).userWriteMask();
-        RolePermissionType[] userRolePermissions = attributes.get(nodeId).userRolePermissions();
+        Set<WriteMask> userWriteMasks =
+            userWriteMask == null ? Set.of() : WriteMask.fromMask(userWriteMask);
 
-        // first check if the UserWriteMask allows for write access
-        boolean hasAccess = checkWriteMask(attributeId, userWriteMask);
-
-        // if it does, refine access based on UserRolePermissions, if they exist
-        if (hasAccess && roleIds != null && userRolePermissions != null) {
-          hasAccess =
-              Stream.of(userRolePermissions)
-                  .anyMatch(rp -> rp.getPermissions().getWriteAttribute());
-        }
+        // The value of the UserWriteMask attribute implicitly accounts for whether Roles and
+        // Permission are configured and if the current Session is assigned a role that includes the
+        // WriteAttribute PermissionType bit.
+        boolean hasAccess =
+            AttributeId.from(attributeId)
+                .map(id -> userWriteMasks.contains(WriteMask.forAttribute(id)))
+                .orElse(false);
 
         if (!hasAccess) {
           p.result = AccessResult.DENIED_USER_ACCESS;
