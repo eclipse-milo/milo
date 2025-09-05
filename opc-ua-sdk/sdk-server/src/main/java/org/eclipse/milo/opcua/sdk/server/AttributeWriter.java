@@ -10,8 +10,6 @@
 
 package org.eclipse.milo.opcua.sdk.server;
 
-import static java.util.Objects.requireNonNullElse;
-
 import java.util.EnumSet;
 import java.util.Optional;
 import java.util.Set;
@@ -72,7 +70,7 @@ public class AttributeWriter {
       // Part 3, section 5.2.10
       // https://reference.opcfoundation.org/v104/Core/docs/Part3/5.2.10/
       // The value of this Attribute is derived from the rules used by the Server to
-      // map Sessions to Roles. This mapping may be vendor specific, or it may use the
+      // map Sessions to Roles. This mapping may be vendor-specific, or it may use the
       // standard Role model defined in 4.8.
       //
       // This Attribute shall not be writeable.
@@ -102,20 +100,11 @@ public class AttributeWriter {
       }
     } else {
       // attributeId != AttributeId.Value && attributeId != AttributeId.UserRolePermissions
-      WriteMask writeMask = writeMaskForAttribute(attributeId);
+      WriteMask writeMask = WriteMask.forAttribute(attributeId);
 
       Set<WriteMask> writeMasks = WriteMask.fromMask(node.getWriteMask());
       if (!writeMasks.contains(writeMask)) {
         return new StatusCode(StatusCodes.Bad_NotWritable);
-      }
-
-      Set<WriteMask> userWriteMasks =
-          WriteMask.fromMask(
-              (UInteger)
-                  requireNonNullElse(
-                      node.getAttribute(context, AttributeId.UserWriteMask), UInteger.MIN));
-      if (!userWriteMasks.contains(writeMask)) {
-        return new StatusCode(StatusCodes.Bad_UserAccessDenied);
       }
     }
 
@@ -208,38 +197,6 @@ public class AttributeWriter {
     } catch (UaException e) {
       return e.getStatusCode();
     }
-  }
-
-  private static WriteMask writeMaskForAttribute(AttributeId attributeId) {
-    return switch (attributeId) {
-      case AccessLevel -> WriteMask.AccessLevel;
-      case ArrayDimensions -> WriteMask.ArrayDimensions;
-      case BrowseName -> WriteMask.BrowseName;
-      case ContainsNoLoops -> WriteMask.ContainsNoLoops;
-      case DataType -> WriteMask.DataType;
-      case Description -> WriteMask.Description;
-      case DisplayName -> WriteMask.DisplayName;
-      case EventNotifier -> WriteMask.EventNotifier;
-      case Executable -> WriteMask.Executable;
-      case Historizing -> WriteMask.Historizing;
-      case InverseName -> WriteMask.InverseName;
-      case IsAbstract -> WriteMask.IsAbstract;
-      case MinimumSamplingInterval -> WriteMask.MinimumSamplingInterval;
-      case NodeClass -> WriteMask.NodeClass;
-      case NodeId -> WriteMask.NodeId;
-      case Symmetric -> WriteMask.Symmetric;
-      case UserAccessLevel -> WriteMask.UserAccessLevel;
-      case UserExecutable -> WriteMask.UserExecutable;
-      case UserWriteMask -> WriteMask.UserWriteMask;
-      case Value -> WriteMask.ValueForVariableType;
-      case ValueRank -> WriteMask.ValueRank;
-      case WriteMask -> WriteMask.WriteMask;
-      case RolePermissions -> WriteMask.RolePermissions;
-      case AccessRestrictions -> WriteMask.AccessRestrictions;
-      case AccessLevelEx -> WriteMask.AccessLevelEx;
-      case DataTypeDefinition -> WriteMask.DataTypeDefinition;
-      default -> throw new IllegalArgumentException("unknown AttributeId: " + attributeId);
-    };
   }
 
   private static DataValue validateDataType(
