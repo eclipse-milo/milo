@@ -170,18 +170,15 @@ public class SubscriptionModel extends AbstractLifecycle {
               items,
               MonitoredItem::getSession,
               session ->
-                  sessionItems -> {
-                    List<PendingRead> pending =
+                  (List<DataItem> sessionItems) -> {
+                    List<ReadValueId> readValueIds =
                         sessionItems.stream()
-                            .map(item -> new PendingRead(item.getReadValueId()))
-                            .toList();
-
-                    List<ReadValueId> ids =
-                        pending.stream().map(PendingRead::getInput).collect(Collectors.toList());
+                            .map(MonitoredItem::getReadValueId)
+                            .collect(Collectors.toList());
 
                     var context = new ReadContext(server, session);
 
-                    return addressSpace.read(context, 0d, TimestampsToReturn.Both, ids);
+                    return addressSpace.read(context, 0d, TimestampsToReturn.Both, readValueIds);
                   });
 
       Iterator<DataItem> ii = items.iterator();
