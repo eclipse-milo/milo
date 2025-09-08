@@ -58,8 +58,7 @@ import org.jspecify.annotations.Nullable;
 
 public class UaVariableNode extends UaNode implements VariableNode {
 
-  static final DataValue INITIAL_VALUE =
-      new DataValue(new StatusCode(StatusCodes.Uncertain_InitialValue));
+  static final DataValue INITIAL_VALUE = new DataValue(new StatusCode(StatusCodes.Bad_NoValue));
 
   private DataValue value = INITIAL_VALUE;
   private NodeId dataType = NodeIds.BaseDataType;
@@ -670,7 +669,7 @@ public class UaVariableNode extends UaNode implements VariableNode {
     private DataValue value =
         new DataValue(
             Variant.NULL_VALUE,
-            new StatusCode(StatusCodes.Uncertain_InitialValue),
+            new StatusCode(StatusCodes.Bad_NoValue),
             DateTime.NULL_VALUE,
             DateTime.now());
 
