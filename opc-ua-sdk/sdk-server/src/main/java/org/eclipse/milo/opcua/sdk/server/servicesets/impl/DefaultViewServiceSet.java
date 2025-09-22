@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -67,7 +67,7 @@ public class DefaultViewServiceSet implements ViewServiceSet {
       session.getSessionDiagnostics().getBrowseCount().incrementErrorCount();
       session.getSessionDiagnostics().getTotalRequestCount().incrementErrorCount();
 
-      throw UaException.extract(e).orElse(new UaException(e));
+      throw new UaException(e);
     } finally {
       session.getSessionDiagnostics().getBrowseCount().incrementTotalCount();
       session.getSessionDiagnostics().getTotalRequestCount().incrementTotalCount();
@@ -86,7 +86,7 @@ public class DefaultViewServiceSet implements ViewServiceSet {
       session.getSessionDiagnostics().getBrowseNextCount().incrementErrorCount();
       session.getSessionDiagnostics().getTotalRequestCount().incrementErrorCount();
 
-      throw UaException.extract(e).orElse(new UaException(e));
+      throw new UaException(e);
     } finally {
       session.getSessionDiagnostics().getBrowseNextCount().incrementTotalCount();
       session.getSessionDiagnostics().getTotalRequestCount().incrementTotalCount();
@@ -108,7 +108,7 @@ public class DefaultViewServiceSet implements ViewServiceSet {
       session.getSessionDiagnostics().getTranslateBrowsePathsToNodeIdsCount().incrementErrorCount();
       session.getSessionDiagnostics().getTotalRequestCount().incrementErrorCount();
 
-      throw UaException.extract(e).orElse(new UaException(e));
+      throw new UaException(e);
     } finally {
       session.getSessionDiagnostics().getTranslateBrowsePathsToNodeIdsCount().incrementTotalCount();
       session.getSessionDiagnostics().getTotalRequestCount().incrementTotalCount();
@@ -127,7 +127,7 @@ public class DefaultViewServiceSet implements ViewServiceSet {
       session.getSessionDiagnostics().getRegisterNodesCount().incrementErrorCount();
       session.getSessionDiagnostics().getTotalRequestCount().incrementErrorCount();
 
-      throw UaException.extract(e).orElse(new UaException(e));
+      throw new UaException(e);
     } finally {
       session.getSessionDiagnostics().getRegisterNodesCount().incrementTotalCount();
       session.getSessionDiagnostics().getTotalRequestCount().incrementTotalCount();
@@ -146,7 +146,7 @@ public class DefaultViewServiceSet implements ViewServiceSet {
       session.getSessionDiagnostics().getUnregisterNodesCount().incrementErrorCount();
       session.getSessionDiagnostics().getTotalRequestCount().incrementErrorCount();
 
-      throw UaException.extract(e).orElse(new UaException(e));
+      throw new UaException(e);
     } finally {
       session.getSessionDiagnostics().getUnregisterNodesCount().incrementTotalCount();
       session.getSessionDiagnostics().getTotalRequestCount().incrementTotalCount();

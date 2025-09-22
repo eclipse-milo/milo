@@ -256,7 +256,7 @@ public class UaObjectNode extends UaNode implements ObjectNode {
     try {
       return getMethodAsync(methodName).get();
     } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -369,7 +369,7 @@ public class UaObjectNode extends UaNode implements ObjectNode {
     try {
       return getObjectComponentAsync(name).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -387,7 +387,7 @@ public class UaObjectNode extends UaNode implements ObjectNode {
     try {
       return getObjectComponentAsync(namespaceUri, name).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -404,7 +404,7 @@ public class UaObjectNode extends UaNode implements ObjectNode {
     try {
       return getObjectComponentAsync(browseName).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -441,7 +441,7 @@ public class UaObjectNode extends UaNode implements ObjectNode {
     try {
       return getVariableComponentAsync(name).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -459,7 +459,7 @@ public class UaObjectNode extends UaNode implements ObjectNode {
     try {
       return getVariableComponentAsync(namespaceUri, name).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -476,7 +476,7 @@ public class UaObjectNode extends UaNode implements ObjectNode {
     try {
       return getVariableComponentAsync(browseName).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -504,7 +504,7 @@ public class UaObjectNode extends UaNode implements ObjectNode {
     try {
       return getTypeDefinitionAsync().get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 

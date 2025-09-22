@@ -299,7 +299,7 @@ public class OpcUaClient {
 
         return create(discoveryUrl.toString(), selectEndpoint, configureTransport, configureClient);
       } else {
-        throw UaException.extract(e).orElseGet(() -> new UaException(e));
+        throw new UaException(e);
       }
     }
   }
@@ -488,7 +488,7 @@ public class OpcUaClient {
     try {
       return connectAsync().get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -521,7 +521,7 @@ public class OpcUaClient {
     try {
       return disconnectAsync().get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -550,7 +550,7 @@ public class OpcUaClient {
     try {
       return getSessionAsync().get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -705,7 +705,7 @@ public class OpcUaClient {
     try {
       return readNamespaceTableAsync().get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -767,7 +767,7 @@ public class OpcUaClient {
     try {
       return readServerTableAsync().get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -855,7 +855,7 @@ public class OpcUaClient {
     try {
       return dataTypeTree.getOrThrow(() -> DataTypeTreeBuilder.build(this));
     } catch (Exception e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -995,7 +995,7 @@ public class OpcUaClient {
     try {
       return readAsync(maxAge, timestampsToReturn, readValueIds).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -1040,7 +1040,7 @@ public class OpcUaClient {
     try {
       return readValuesAsync(maxAge, timestampsToReturn, nodeIds).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -1118,7 +1118,7 @@ public class OpcUaClient {
     try {
       return writeAsync(writeValues).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -1137,7 +1137,7 @@ public class OpcUaClient {
     try {
       return writeValuesAsync(nodeIds, values).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -1217,7 +1217,7 @@ public class OpcUaClient {
 
       return future.get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -1271,7 +1271,7 @@ public class OpcUaClient {
     try {
       return historyUpdateAsync(historyUpdateDetails).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -1320,7 +1320,7 @@ public class OpcUaClient {
     try {
       return callAsync(requests).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -1373,7 +1373,7 @@ public class OpcUaClient {
     try {
       return createMonitoredItemsAsync(subscriptionId, timestampsToReturn, itemsToCreate).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -1432,7 +1432,7 @@ public class OpcUaClient {
     try {
       return modifyMonitoredItemsAsync(subscriptionId, timestampsToReturn, itemsToModify).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -1487,7 +1487,7 @@ public class OpcUaClient {
     try {
       return deleteMonitoredItemsAsync(subscriptionId, monitoredItemIds).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -1540,7 +1540,7 @@ public class OpcUaClient {
     try {
       return setMonitoringModeAsync(subscriptionId, monitoringMode, monitoredItemIds).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -1601,7 +1601,7 @@ public class OpcUaClient {
     try {
       return setTriggeringAsync(subscriptionId, triggeringItemId, linksToAdd, linksToRemove).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -1660,7 +1660,7 @@ public class OpcUaClient {
     try {
       return addNodesAsync(nodesToAdd).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -1700,7 +1700,7 @@ public class OpcUaClient {
     try {
       return addReferencesAsync(referencesToAdd).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -1741,7 +1741,7 @@ public class OpcUaClient {
     try {
       return deleteNodesAsync(nodesToDelete).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -1784,7 +1784,7 @@ public class OpcUaClient {
     try {
       return deleteReferencesAsync(referencesToDelete).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -1846,7 +1846,7 @@ public class OpcUaClient {
       return queryFirstAsync(view, nodeTypes, filter, maxDataSetsToReturn, maxReferencesToReturn)
           .get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -1909,7 +1909,7 @@ public class OpcUaClient {
     try {
       return queryNextAsync(releaseContinuationPoint, continuationPoint).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -1988,7 +1988,7 @@ public class OpcUaClient {
 
       return future.get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -2079,7 +2079,7 @@ public class OpcUaClient {
 
       return future.get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -2144,7 +2144,7 @@ public class OpcUaClient {
 
       return future.get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -2193,7 +2193,7 @@ public class OpcUaClient {
 
       return future.get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -2245,7 +2245,7 @@ public class OpcUaClient {
 
       return future.get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -2295,7 +2295,7 @@ public class OpcUaClient {
 
       return future.get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -2346,7 +2346,7 @@ public class OpcUaClient {
 
       return future.get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -2395,7 +2395,7 @@ public class OpcUaClient {
     try {
       return browseAsync(nodeToBrowse).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -2412,7 +2412,7 @@ public class OpcUaClient {
     try {
       return browseAsync(nodesToBrowse).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -2438,7 +2438,7 @@ public class OpcUaClient {
     try {
       return browseAsync(viewDescription, maxReferencesPerNode, nodesToBrowse).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -2521,7 +2521,7 @@ public class OpcUaClient {
     try {
       return browseNextAsync(releaseContinuationPoints, continuationPoints).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -2569,7 +2569,7 @@ public class OpcUaClient {
     try {
       return translateBrowsePathsAsync(browsePaths).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -2613,7 +2613,7 @@ public class OpcUaClient {
     try {
       return registerNodesAsync(nodesToRegister).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -2656,7 +2656,7 @@ public class OpcUaClient {
     try {
       return unregisterNodesAsync(nodesToUnregister).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -2698,7 +2698,7 @@ public class OpcUaClient {
     try {
       return sendRequestAsync(request).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 

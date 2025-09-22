@@ -758,7 +758,7 @@ public class UaVariableNode extends UaNode implements VariableNode {
     try {
       return getVariableComponentAsync(name).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -776,7 +776,7 @@ public class UaVariableNode extends UaNode implements VariableNode {
     try {
       return getVariableComponentAsync(namespaceUri, name).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -793,7 +793,7 @@ public class UaVariableNode extends UaNode implements VariableNode {
     try {
       return getVariableComponentAsync(browseName).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -821,7 +821,7 @@ public class UaVariableNode extends UaNode implements VariableNode {
     try {
       return getTypeDefinitionAsync().get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 

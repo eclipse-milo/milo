@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -18,7 +18,6 @@ import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.client.nodes.UaObjectNode;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
@@ -100,7 +99,15 @@ public class UaMethod {
     try {
       return callAsync(inputs).get();
     } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      if (UaException.extract(e).orElse(null) instanceof UaMethodException mx) {
+        throw new UaMethodException(
+            mx.getCause(),
+            mx.getStatusCode(),
+            mx.getInputArgumentResults(),
+            mx.getInputArgumentDiagnostics());
+      } else {
+        throw new UaException(e);
+      }
     }
   }
 

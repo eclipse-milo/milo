@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -102,7 +102,7 @@ public class DiscoveryClient {
     try {
       return connectAsync().get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -114,7 +114,7 @@ public class DiscoveryClient {
     try {
       return disconnectAsync().get();
     } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 

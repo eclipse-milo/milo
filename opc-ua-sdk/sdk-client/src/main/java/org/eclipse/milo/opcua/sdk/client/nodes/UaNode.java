@@ -786,7 +786,7 @@ public abstract class UaNode implements Node {
     try {
       return readAttributeAsync(attributeId).get();
     } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -804,7 +804,7 @@ public abstract class UaNode implements Node {
     try {
       return writeAttributeAsync(attributeId, value).get();
     } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -959,7 +959,7 @@ public abstract class UaNode implements Node {
     try {
       return refreshAsync(attributeIds).get();
     } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 
@@ -1008,7 +1008,7 @@ public abstract class UaNode implements Node {
     try {
       return synchronizeAsync(attributeIds).get();
     } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+      throw new UaException(e);
     }
   }
 

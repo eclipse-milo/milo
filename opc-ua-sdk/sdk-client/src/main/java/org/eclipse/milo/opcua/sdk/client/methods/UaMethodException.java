@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -31,6 +31,18 @@ public class UaMethodException extends UaException {
       DiagnosticInfo[] inputArgumentDiagnostics) {
 
     super(statusCode);
+
+    this.inputArgumentResults = inputArgumentResults;
+    this.inputArgumentDiagnostics = inputArgumentDiagnostics;
+  }
+
+  public UaMethodException(
+      Throwable cause,
+      StatusCode statusCode,
+      StatusCode[] inputArgumentResults,
+      DiagnosticInfo[] inputArgumentDiagnostics) {
+
+    super(statusCode.value(), cause);
 
     this.inputArgumentResults = inputArgumentResults;
     this.inputArgumentDiagnostics = inputArgumentDiagnostics;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -291,7 +291,7 @@ public abstract class AbstractServiceHandler {
         Thread.currentThread().interrupt();
         throw new UaException(StatusCodes.Bad_UnexpectedError, e);
       } catch (ExecutionException e) {
-        throw UaException.extract(e).orElse(new UaException(e));
+        throw new UaException(e);
       }
     }
 
