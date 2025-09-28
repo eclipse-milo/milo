@@ -296,10 +296,4 @@ public class UsernameProvider implements IdentityProvider {
   public String toString() {
     return "UsernameProvider{" + "username='" + username + '\'' + '}';
   }
-
-  public static UsernameProvider of(
-      String username, String password, CertificateValidator certificateValidator) {
-
-    return new UsernameProvider(username, password, certificateValidator);
-  }
 }
