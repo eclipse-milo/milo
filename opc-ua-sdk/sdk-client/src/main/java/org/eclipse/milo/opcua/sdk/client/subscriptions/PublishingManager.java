@@ -126,7 +126,7 @@ public class PublishingManager {
     }
   }
 
-  private void sendPublishRequest(OpcUaSession session, AtomicLong pendingCount) {
+  void sendPublishRequest(OpcUaSession session, AtomicLong pendingCount) {
     var subscriptionAcknowledgements = new ArrayList<SubscriptionAcknowledgement>();
 
     subscriptionDetails
@@ -174,8 +174,7 @@ public class PublishingManager {
     }
 
     client
-        .getTransport()
-        .sendRequestMessage(request)
+        .sendRequestAsync(request)
         .whenComplete(
             (response, ex) -> {
               if (response instanceof PublishResponse publishResponse) {
