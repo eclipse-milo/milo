@@ -174,8 +174,7 @@ public class PublishingManager {
     }
 
     client
-        .getTransport()
-        .sendRequestMessage(request)
+        .sendRequestAsync(request)
         .whenComplete(
             (response, ex) -> {
               if (response instanceof PublishResponse publishResponse) {
