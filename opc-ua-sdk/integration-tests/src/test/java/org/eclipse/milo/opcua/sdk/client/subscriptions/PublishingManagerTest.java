@@ -1,33 +1,30 @@
 package org.eclipse.milo.opcua.sdk.client.subscriptions;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.junit.jupiter.api.Test;
 
 public class PublishingManagerTest extends AbstractClientServerTest {
 
   @Test
   void serviceFaultListenersReceivePublishFaults() throws Exception {
-    var serviceFaultReceivedLatch = new CountDownLatch(1);
+    var statusCodeQueue = new LinkedBlockingQueue<StatusCode>();
 
     client.addFaultListener(
-        serviceFault -> {
-          assertEquals(
-              StatusCodes.Bad_NoSubscription,
-              serviceFault.getResponseHeader().getServiceResult().value());
-          serviceFaultReceivedLatch.countDown();
-        });
+        serviceFault -> statusCodeQueue.add(serviceFault.getResponseHeader().getServiceResult()));
 
     PublishingManager publishingManager = client.getPublishingManager();
 
     publishingManager.sendPublishRequest(client.getSession(), new AtomicLong(1));
 
-    assertTrue(serviceFaultReceivedLatch.await(5, TimeUnit.SECONDS));
+    StatusCode statusCode = statusCodeQueue.poll(5, TimeUnit.SECONDS);
+
+    assertEquals(new StatusCode(StatusCodes.Bad_NoSubscription), statusCode);
   }
 }
