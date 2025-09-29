@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -21,6 +21,7 @@ import java.security.GeneralSecurityException;
 import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.crypto.Cipher;
@@ -47,7 +48,7 @@ import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
 public class UsernameProvider implements IdentityProvider {
 
   private final String username;
-  private final String password;
+  private final Supplier<byte[]> passwordSupplier;
   private final CertificateValidator certificateValidator;
   private final Function<List<UserTokenPolicy>, UserTokenPolicy> policyChooser;
 
@@ -97,8 +98,68 @@ public class UsernameProvider implements IdentityProvider {
       CertificateValidator certificateValidator,
       Function<List<UserTokenPolicy>, UserTokenPolicy> policyChooser) {
 
+    this(
+        username,
+        () -> password.getBytes(StandardCharsets.UTF_8),
+        certificateValidator,
+        policyChooser);
+  }
+
+  /**
+   * Construct a {@link UsernameProvider} that does not validate the remote certificate and selects
+   * the first available {@link UserTokenPolicy} with {@link UserTokenType#UserName}.
+   *
+   * @param username the username to authenticate with.
+   * @param passwordSupplier a supplier providing the password bytes.
+   */
+  public UsernameProvider(String username, Supplier<byte[]> passwordSupplier) {
+    this(
+        username,
+        passwordSupplier,
+        new CertificateValidator.InsecureCertificateValidator(),
+        ps -> ps.get(0));
+  }
+
+  /**
+   * Construct a {@link UsernameProvider} that validates the remote certificate using {@code
+   * certificateValidator} and selects the first available {@link UserTokenPolicy} with {@link
+   * UserTokenType#UserName}.
+   *
+   * @param username the username to authenticate with.
+   * @param passwordSupplier a supplier providing the password bytes.
+   * @param certificateValidator the {@link CertificateValidator} used to validate the remote
+   *     certificate.
+   */
+  public UsernameProvider(
+      String username,
+      Supplier<byte[]> passwordSupplier,
+      CertificateValidator certificateValidator) {
+
+    this(username, passwordSupplier, certificateValidator, ps -> ps.get(0));
+  }
+
+  /**
+   * Construct a {@link UsernameProvider} that validates the remote certificate using {@code
+   * certificateValidator} and selects ta {@link UserTokenPolicy} using {@code policyChooser}.
+   *
+   * <p>Useful if the server might return more than one {@link UserTokenPolicy} with {@link
+   * UserTokenType#UserName}.
+   *
+   * @param username the username to authenticate with.
+   * @param passwordSupplier a supplier providing the password bytes.
+   * @param certificateValidator the {@link CertificateValidator} used to validate the remote
+   *     certificate.
+   * @param policyChooser a function that selects a {@link UserTokenPolicy} to use. The policy list
+   *     is guaranteed to be non-null and non-empty.
+   */
+  public UsernameProvider(
+      String username,
+      Supplier<byte[]> passwordSupplier,
+      CertificateValidator certificateValidator,
+      Function<List<UserTokenPolicy>, UserTokenPolicy> policyChooser) {
+
     this.username = username;
-    this.password = password;
+    this.passwordSupplier = passwordSupplier;
     this.certificateValidator = certificateValidator;
     this.policyChooser = policyChooser;
   }
@@ -133,7 +194,7 @@ public class UsernameProvider implements IdentityProvider {
       throw new UaException(StatusCodes.Bad_SecurityPolicyRejected, t);
     }
 
-    byte[] passwordBytes = password.getBytes(StandardCharsets.UTF_8);
+    byte[] passwordBytes = passwordSupplier.get();
     byte[] nonceBytes = serverNonce.bytesOrEmpty();
 
     ByteBuf buffer = Unpooled.buffer();
@@ -234,11 +295,5 @@ public class UsernameProvider implements IdentityProvider {
   @Override
   public String toString() {
     return "UsernameProvider{" + "username='" + username + '\'' + '}';
-  }
-
-  public static UsernameProvider of(
-      String username, String password, CertificateValidator certificateValidator) {
-
-    return new UsernameProvider(username, password, certificateValidator);
   }
 }
