@@ -126,7 +126,7 @@ public class PublishingManager {
     }
   }
 
-  private void sendPublishRequest(OpcUaSession session, AtomicLong pendingCount) {
+  void sendPublishRequest(OpcUaSession session, AtomicLong pendingCount) {
     var subscriptionAcknowledgements = new ArrayList<SubscriptionAcknowledgement>();
 
     subscriptionDetails
