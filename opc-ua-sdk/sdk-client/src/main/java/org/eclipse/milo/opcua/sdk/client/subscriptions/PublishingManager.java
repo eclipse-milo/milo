@@ -273,17 +273,14 @@ public class PublishingManager {
       }
 
       if (!republishSuccess) {
-        details
-            .subscription
-            .getDeliveryQueue()
-            .execute(details.subscription::notifyNotificationDataLost);
+        details.subscription.notifyNotificationDataLost();
       }
 
       details.lastSequenceNumber = expectedSequenceNumber;
     }
 
     if (receivedSequenceNumber == 1 || !isKeepAlive) {
-      // Set last sequence number only if either:
+      // Set the last sequence number only if either:
       // - this was the first PublishResponse received
       // - this *is not* a keep-alive PublishResponse
       details.lastSequenceNumber = receivedSequenceNumber;
@@ -305,7 +302,7 @@ public class PublishingManager {
             .submit(() -> deliverNotificationMessage(details, notificationMessage));
 
     if (callback != null) {
-      // Once delivery of notifications is complete we can consider sending another
+      // Once delivery of notifications is complete, we can consider sending another
       // PublishRequest. Waiting until the client has finished receiving notifications
       // is the backpressure mechanism that prevents the server from flooding the client
       // with data change notifications faster than it can process them.
