@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -46,7 +46,7 @@ public class DefaultMonitoredItemServiceSet implements MonitoredItemServiceSet {
       session.getSessionDiagnostics().getCreateMonitoredItemsCount().incrementErrorCount();
       session.getSessionDiagnostics().getTotalRequestCount().incrementErrorCount();
 
-      throw UaException.extract(t).orElse(new UaException(t));
+      throw new UaException(t);
     } finally {
       session.getSessionDiagnostics().getCreateMonitoredItemsCount().incrementTotalCount();
       session.getSessionDiagnostics().getTotalRequestCount().incrementTotalCount();
@@ -65,7 +65,7 @@ public class DefaultMonitoredItemServiceSet implements MonitoredItemServiceSet {
       session.getSessionDiagnostics().getModifyMonitoredItemsCount().incrementErrorCount();
       session.getSessionDiagnostics().getTotalRequestCount().incrementErrorCount();
 
-      throw UaException.extract(t).orElse(new UaException(t));
+      throw new UaException(t);
     } finally {
       session.getSessionDiagnostics().getModifyMonitoredItemsCount().incrementTotalCount();
       session.getSessionDiagnostics().getTotalRequestCount().incrementTotalCount();
@@ -84,7 +84,7 @@ public class DefaultMonitoredItemServiceSet implements MonitoredItemServiceSet {
       session.getSessionDiagnostics().getDeleteMonitoredItemsCount().incrementErrorCount();
       session.getSessionDiagnostics().getTotalRequestCount().incrementErrorCount();
 
-      throw UaException.extract(t).orElse(new UaException(t));
+      throw new UaException(t);
     } finally {
       session.getSessionDiagnostics().getDeleteMonitoredItemsCount().incrementTotalCount();
       session.getSessionDiagnostics().getTotalRequestCount().incrementTotalCount();
@@ -103,7 +103,7 @@ public class DefaultMonitoredItemServiceSet implements MonitoredItemServiceSet {
       session.getSessionDiagnostics().getSetMonitoringModeCount().incrementErrorCount();
       session.getSessionDiagnostics().getTotalRequestCount().incrementErrorCount();
 
-      throw UaException.extract(t).orElse(new UaException(t));
+      throw new UaException(t);
     } finally {
       session.getSessionDiagnostics().getSetMonitoringModeCount().incrementTotalCount();
       session.getSessionDiagnostics().getTotalRequestCount().incrementTotalCount();
@@ -122,7 +122,7 @@ public class DefaultMonitoredItemServiceSet implements MonitoredItemServiceSet {
       session.getSessionDiagnostics().getSetTriggeringCount().incrementErrorCount();
       session.getSessionDiagnostics().getTotalRequestCount().incrementErrorCount();
 
-      throw UaException.extract(t).orElse(new UaException(t));
+      throw new UaException(t);
     } finally {
       session.getSessionDiagnostics().getSetTriggeringCount().incrementTotalCount();
       session.getSessionDiagnostics().getTotalRequestCount().incrementTotalCount();

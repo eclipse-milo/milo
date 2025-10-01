@@ -219,7 +219,7 @@
 //    private void stopClient() {
 //        try {
 //            client.disconnect().get();
-//        } catch (InterruptedException | ExecutionException e) {
+//        } catch (ExecutionException | InterruptedException e) {
 //            logger.warn("Error disconnecting client.", e);
 //        }
 //    }
@@ -636,7 +636,7 @@
 //                        client.disconnect().get();
 //
 //                        Thread.sleep(10);
-//                    } catch (InterruptedException | ExecutionException e) {
+//                    } catch (ExecutionException | InterruptedException e) {
 //                        fail(e.getMessage(), e);
 //                    }
 //                }
@@ -767,7 +767,7 @@
 //                        createItemAndWait(notificationListener, lock, notificationArrived);
 //
 //                        future.complete(null);
-//                    } catch (InterruptedException | ExecutionException e) {
+//                    } catch (ExecutionException | InterruptedException e) {
 //                        logger.error("Error creating Subscription: {}", e.getMessage(), e);
 //
 //                        future.completeExceptionally(e);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -233,9 +233,7 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
     } catch (MessageEncodeException e) {
       logger.error("Error encoding {}: {}", request, e.getMessage(), e);
 
-      UaException responseException = UaException.extract(e).orElseGet(() -> new UaException(e));
-
-      UascResponse response = UascResponse.failure(request.getRequestId(), responseException);
+      UascResponse response = UascResponse.failure(request.getRequestId(), new UaException(e));
 
       ctx.fireUserEventTriggered(response);
 
@@ -244,9 +242,7 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
     } catch (UaSerializationException e) {
       logger.error("Error serializing {}: {}", request, e.getMessage(), e);
 
-      UaException responseException = UaException.extract(e).orElseGet(() -> new UaException(e));
-
-      UascResponse response = UascResponse.failure(request.getRequestId(), responseException);
+      UascResponse response = UascResponse.failure(request.getRequestId(), new UaException(e));
 
       ctx.fireUserEventTriggered(response);
     } finally {

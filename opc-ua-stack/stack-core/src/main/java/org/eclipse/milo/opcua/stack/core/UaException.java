@@ -25,10 +25,22 @@ public class UaException extends Exception implements UaExceptionStatus {
     this.statusCode = statusCode;
   }
 
+  /**
+   * Creates a new UaException with a cause.
+   *
+   * <p>The StatusCode is extracted from the cause or any of its nested causes by looking for an
+   * implementation of {@link UaExceptionStatus}, otherwise {@link StatusCodes#Bad_UnexpectedError}
+   * is used.
+   *
+   * @param cause the cause of this exception.
+   */
   public UaException(Throwable cause) {
     super(cause);
 
-    this.statusCode = new StatusCode(StatusCodes.Bad_InternalError);
+    this.statusCode =
+        UaExceptionStatus.extract(cause)
+            .map(UaExceptionStatus::getStatusCode)
+            .orElse(new StatusCode(StatusCodes.Bad_UnexpectedError));
   }
 
   public UaException(long statusCode, Throwable cause) {

@@ -785,8 +785,11 @@ public abstract class UaNode implements Node {
   public DataValue readAttribute(AttributeId attributeId) throws UaException {
     try {
       return readAttributeAsync(attributeId).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -803,8 +806,11 @@ public abstract class UaNode implements Node {
   public StatusCode writeAttribute(AttributeId attributeId, DataValue value) throws UaException {
     try {
       return writeAttributeAsync(attributeId, value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -958,8 +964,11 @@ public abstract class UaNode implements Node {
   public List<DataValue> refresh(Set<AttributeId> attributeIds) throws UaException {
     try {
       return refreshAsync(attributeIds).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -1007,8 +1016,11 @@ public abstract class UaNode implements Node {
   public List<StatusCode> synchronize(Set<AttributeId> attributeIds) throws UaException {
     try {
       return synchronizeAsync(attributeIds).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 

@@ -757,8 +757,11 @@ public class UaVariableNode extends UaNode implements VariableNode {
   public UaVariableNode getVariableComponent(String name) throws UaException {
     try {
       return getVariableComponentAsync(name).get();
-    } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -775,8 +778,11 @@ public class UaVariableNode extends UaNode implements VariableNode {
   public UaVariableNode getVariableComponent(String namespaceUri, String name) throws UaException {
     try {
       return getVariableComponentAsync(namespaceUri, name).get();
-    } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -792,8 +798,11 @@ public class UaVariableNode extends UaNode implements VariableNode {
   public UaVariableNode getVariableComponent(QualifiedName browseName) throws UaException {
     try {
       return getVariableComponentAsync(browseName).get();
-    } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -820,8 +829,11 @@ public class UaVariableNode extends UaNode implements VariableNode {
   public UaVariableTypeNode getTypeDefinition() throws UaException {
     try {
       return getTypeDefinitionAsync().get();
-    } catch (InterruptedException | ExecutionException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 

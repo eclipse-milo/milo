@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -69,7 +69,7 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
       session.getSessionDiagnostics().getCreateSubscriptionCount().incrementErrorCount();
       session.getSessionDiagnostics().getTotalRequestCount().incrementErrorCount();
 
-      throw UaException.extract(e).orElse(new UaException(e));
+      throw new UaException(e);
     } finally {
       session.getSessionDiagnostics().getCreateSubscriptionCount().incrementTotalCount();
       session.getSessionDiagnostics().getTotalRequestCount().incrementTotalCount();
@@ -88,7 +88,7 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
       session.getSessionDiagnostics().getModifySubscriptionCount().incrementErrorCount();
       session.getSessionDiagnostics().getTotalRequestCount().incrementErrorCount();
 
-      throw UaException.extract(e).orElse(new UaException(e));
+      throw new UaException(e);
     } finally {
       session.getSessionDiagnostics().getModifySubscriptionCount().incrementTotalCount();
       session.getSessionDiagnostics().getTotalRequestCount().incrementTotalCount();
@@ -107,7 +107,7 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
       session.getSessionDiagnostics().getDeleteSubscriptionsCount().incrementErrorCount();
       session.getSessionDiagnostics().getTotalRequestCount().incrementErrorCount();
 
-      throw UaException.extract(e).orElse(new UaException(e));
+      throw new UaException(e);
     } finally {
       session.getSessionDiagnostics().getDeleteSubscriptionsCount().incrementTotalCount();
       session.getSessionDiagnostics().getTotalRequestCount().incrementTotalCount();
@@ -126,7 +126,7 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
       session.getSessionDiagnostics().getTransferSubscriptionsCount().incrementErrorCount();
       session.getSessionDiagnostics().getTotalRequestCount().incrementErrorCount();
 
-      throw UaException.extract(e).orElse(new UaException(e));
+      throw new UaException(e);
     } finally {
       session.getSessionDiagnostics().getTransferSubscriptionsCount().incrementTotalCount();
       session.getSessionDiagnostics().getTotalRequestCount().incrementTotalCount();
@@ -145,7 +145,7 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
       session.getSessionDiagnostics().getSetPublishingModeCount().incrementErrorCount();
       session.getSessionDiagnostics().getTotalRequestCount().incrementErrorCount();
 
-      throw UaException.extract(e).orElse(new UaException(e));
+      throw new UaException(e);
     } finally {
       session.getSessionDiagnostics().getSetPublishingModeCount().incrementTotalCount();
       session.getSessionDiagnostics().getTotalRequestCount().incrementTotalCount();
@@ -164,7 +164,7 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
       session.getSessionDiagnostics().getRepublishCount().incrementErrorCount();
       session.getSessionDiagnostics().getTotalRequestCount().incrementErrorCount();
 
-      throw UaException.extract(e).orElse(new UaException(e));
+      throw new UaException(e);
     } finally {
       session.getSessionDiagnostics().getRepublishCount().incrementTotalCount();
       session.getSessionDiagnostics().getTotalRequestCount().incrementTotalCount();

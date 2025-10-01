@@ -99,8 +99,11 @@ public class AddressSpace {
   public UaNode getNode(NodeId nodeId) throws UaException {
     try {
       return getNodeAsync(nodeId).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -143,8 +146,11 @@ public class AddressSpace {
   public UaObjectNode getObjectNode(NodeId nodeId) throws UaException {
     try {
       return getObjectNodeAsync(nodeId).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -163,8 +169,11 @@ public class AddressSpace {
   public UaObjectNode getObjectNode(NodeId nodeId, NodeId typeDefinitionId) throws UaException {
     try {
       return getObjectNodeAsync(nodeId, typeDefinitionId).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -251,8 +260,11 @@ public class AddressSpace {
   public UaVariableNode getVariableNode(NodeId nodeId) throws UaException {
     try {
       return getVariableNodeAsync(nodeId).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -271,8 +283,11 @@ public class AddressSpace {
   public UaVariableNode getVariableNode(NodeId nodeId, NodeId typeDefinitionId) throws UaException {
     try {
       return getVariableNodeAsync(nodeId, typeDefinitionId).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -413,8 +428,11 @@ public class AddressSpace {
       throws UaException {
     try {
       return browseAsync(node, browseOptions).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -445,8 +463,11 @@ public class AddressSpace {
       throws UaException {
     try {
       return browseAsync(nodeId, browseOptions).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -551,8 +572,11 @@ public class AddressSpace {
       throws UaException {
     try {
       return browseNodesAsync(node, browseOptions).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -584,8 +608,11 @@ public class AddressSpace {
       throws UaException {
     try {
       return browseNodesAsync(nodeId, browseOptions).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -1220,7 +1247,7 @@ public class AddressSpace {
           isAbstract,
           dataTypeDefinition);
     } catch (Throwable t) {
-      throw UaException.extract(t).orElse(new UaException(StatusCodes.Bad_UnexpectedError, t));
+      throw new UaException(t);
     }
   }
 
@@ -1272,7 +1299,7 @@ public class AddressSpace {
           executable,
           userExecutable);
     } catch (Throwable t) {
-      throw UaException.extract(t).orElse(new UaException(StatusCodes.Bad_UnexpectedError, t));
+      throw new UaException(t);
     }
   }
 
@@ -1329,7 +1356,7 @@ public class AddressSpace {
           accessRestrictions,
           eventNotifier);
     } catch (Throwable t) {
-      throw UaException.extract(t).orElse(new UaException(StatusCodes.Bad_UnexpectedError, t));
+      throw new UaException(t);
     }
   }
 
@@ -1380,7 +1407,7 @@ public class AddressSpace {
           accessRestrictions,
           isAbstract);
     } catch (Throwable t) {
-      throw UaException.extract(t).orElse(new UaException(StatusCodes.Bad_UnexpectedError, t));
+      throw new UaException(t);
     }
   }
 
@@ -1436,7 +1463,7 @@ public class AddressSpace {
           symmetric,
           inverseName);
     } catch (Throwable t) {
-      throw UaException.extract(t).orElse(new UaException(StatusCodes.Bad_UnexpectedError, t));
+      throw new UaException(t);
     }
   }
 
@@ -1511,7 +1538,7 @@ public class AddressSpace {
           historizing,
           accessLevelEx);
     } catch (Throwable t) {
-      throw UaException.extract(t).orElse(new UaException(StatusCodes.Bad_UnexpectedError, t));
+      throw new UaException(t);
     }
   }
 
@@ -1570,7 +1597,7 @@ public class AddressSpace {
           arrayDimensions,
           isAbstract);
     } catch (Throwable t) {
-      throw UaException.extract(t).orElse(new UaException(StatusCodes.Bad_UnexpectedError, t));
+      throw new UaException(t);
     }
   }
 
@@ -1621,7 +1648,7 @@ public class AddressSpace {
           containsNoLoops,
           eventNotifier);
     } catch (Throwable t) {
-      throw UaException.extract(t).orElse(new UaException(StatusCodes.Bad_UnexpectedError, t));
+      throw new UaException(t);
     }
   }
 
