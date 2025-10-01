@@ -757,7 +757,7 @@ public class UaVariableNode extends UaNode implements VariableNode {
   public UaVariableNode getVariableComponent(String name) throws UaException {
     try {
       return getVariableComponentAsync(name).get();
-    } catch (InterruptedException | ExecutionException e) {
+    } catch (ExecutionException | InterruptedException e) {
       throw new UaException(e);
     }
   }
@@ -775,7 +775,7 @@ public class UaVariableNode extends UaNode implements VariableNode {
   public UaVariableNode getVariableComponent(String namespaceUri, String name) throws UaException {
     try {
       return getVariableComponentAsync(namespaceUri, name).get();
-    } catch (InterruptedException | ExecutionException e) {
+    } catch (ExecutionException | InterruptedException e) {
       throw new UaException(e);
     }
   }
@@ -792,7 +792,7 @@ public class UaVariableNode extends UaNode implements VariableNode {
   public UaVariableNode getVariableComponent(QualifiedName browseName) throws UaException {
     try {
       return getVariableComponentAsync(browseName).get();
-    } catch (InterruptedException | ExecutionException e) {
+    } catch (ExecutionException | InterruptedException e) {
       throw new UaException(e);
     }
   }
@@ -820,7 +820,7 @@ public class UaVariableNode extends UaNode implements VariableNode {
   public UaVariableTypeNode getTypeDefinition() throws UaException {
     try {
       return getTypeDefinitionAsync().get();
-    } catch (InterruptedException | ExecutionException e) {
+    } catch (ExecutionException | InterruptedException e) {
       throw new UaException(e);
     }
   }

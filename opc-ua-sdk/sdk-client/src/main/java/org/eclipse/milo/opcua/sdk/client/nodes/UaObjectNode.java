@@ -368,7 +368,7 @@ public class UaObjectNode extends UaNode implements ObjectNode {
   public UaObjectNode getObjectComponent(String name) throws UaException {
     try {
       return getObjectComponentAsync(name).get();
-    } catch (InterruptedException | ExecutionException e) {
+    } catch (ExecutionException | InterruptedException e) {
       throw new UaException(e);
     }
   }
@@ -386,7 +386,7 @@ public class UaObjectNode extends UaNode implements ObjectNode {
   public UaObjectNode getObjectComponent(String namespaceUri, String name) throws UaException {
     try {
       return getObjectComponentAsync(namespaceUri, name).get();
-    } catch (InterruptedException | ExecutionException e) {
+    } catch (ExecutionException | InterruptedException e) {
       throw new UaException(e);
     }
   }
@@ -403,7 +403,7 @@ public class UaObjectNode extends UaNode implements ObjectNode {
   public UaObjectNode getObjectComponent(QualifiedName browseName) throws UaException {
     try {
       return getObjectComponentAsync(browseName).get();
-    } catch (InterruptedException | ExecutionException e) {
+    } catch (ExecutionException | InterruptedException e) {
       throw new UaException(e);
     }
   }
@@ -440,7 +440,7 @@ public class UaObjectNode extends UaNode implements ObjectNode {
   public UaVariableNode getVariableComponent(String name) throws UaException {
     try {
       return getVariableComponentAsync(name).get();
-    } catch (InterruptedException | ExecutionException e) {
+    } catch (ExecutionException | InterruptedException e) {
       throw new UaException(e);
     }
   }
@@ -458,7 +458,7 @@ public class UaObjectNode extends UaNode implements ObjectNode {
   public UaVariableNode getVariableComponent(String namespaceUri, String name) throws UaException {
     try {
       return getVariableComponentAsync(namespaceUri, name).get();
-    } catch (InterruptedException | ExecutionException e) {
+    } catch (ExecutionException | InterruptedException e) {
       throw new UaException(e);
     }
   }
@@ -475,7 +475,7 @@ public class UaObjectNode extends UaNode implements ObjectNode {
   public UaVariableNode getVariableComponent(QualifiedName browseName) throws UaException {
     try {
       return getVariableComponentAsync(browseName).get();
-    } catch (InterruptedException | ExecutionException e) {
+    } catch (ExecutionException | InterruptedException e) {
       throw new UaException(e);
     }
   }
@@ -503,7 +503,7 @@ public class UaObjectNode extends UaNode implements ObjectNode {
   public UaObjectTypeNode getTypeDefinition() throws UaException {
     try {
       return getTypeDefinitionAsync().get();
-    } catch (InterruptedException | ExecutionException e) {
+    } catch (ExecutionException | InterruptedException e) {
       throw new UaException(e);
     }
   }

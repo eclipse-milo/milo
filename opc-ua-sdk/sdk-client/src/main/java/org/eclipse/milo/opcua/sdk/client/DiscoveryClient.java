@@ -101,7 +101,7 @@ public class DiscoveryClient {
   public DiscoveryClient connect() throws UaException {
     try {
       return connectAsync().get();
-    } catch (InterruptedException | ExecutionException e) {
+    } catch (ExecutionException | InterruptedException e) {
       throw new UaException(e);
     }
   }
@@ -113,7 +113,7 @@ public class DiscoveryClient {
   public DiscoveryClient disconnect() throws UaException {
     try {
       return disconnectAsync().get();
-    } catch (InterruptedException | ExecutionException e) {
+    } catch (ExecutionException | InterruptedException e) {
       throw new UaException(e);
     }
   }
