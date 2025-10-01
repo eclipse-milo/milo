@@ -134,6 +134,8 @@ public class OpcUaServer extends AbstractServiceHandler {
 
   private final ServerDiagnosticsSummary diagnosticsSummary = new ServerDiagnosticsSummary(this);
 
+  private final Lazy<List<EndpointDescription>> endpointDescriptions = new Lazy<>();
+
   private final List<EndpointConfig> boundEndpoints = new CopyOnWriteArrayList<>();
 
   /**
@@ -521,11 +523,23 @@ public class OpcUaServer extends AbstractServiceHandler {
     return List.copyOf(boundEndpoints);
   }
 
+  /**
+   * Reset the endpoint descriptions cache.
+   *
+   * <p>If any of the EndpointConfig returned by {@link OpcUaServerConfig#getEndpoints()} has
+   * changed, e.g., because the certificate has changed, the cached EndpointDescriptions need to be
+   * reset.
+   */
+  public void resetEndpointDescriptionCache() {
+    endpointDescriptions.reset();
+  }
+
   private class ServerApplicationContextImpl implements ServerApplicationContext {
 
     @Override
     public List<EndpointDescription> getEndpointDescriptions() {
-      return config.getEndpoints().stream().map(this::transformEndpoint).toList();
+      return endpointDescriptions.get(
+          () -> config.getEndpoints().stream().map(this::transformEndpoint).toList());
     }
 
     @Override
