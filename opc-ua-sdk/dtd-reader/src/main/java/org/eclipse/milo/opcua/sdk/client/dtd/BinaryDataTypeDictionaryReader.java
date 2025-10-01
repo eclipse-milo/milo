@@ -80,7 +80,7 @@ public class BinaryDataTypeDictionaryReader {
       Thread.currentThread().interrupt();
       throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     } catch (ExecutionException e) {
-      throw new UaException(e);
+      throw new UaException(e.getCause());
     }
   }
 
