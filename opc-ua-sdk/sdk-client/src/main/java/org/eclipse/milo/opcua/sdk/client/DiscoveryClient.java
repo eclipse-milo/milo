@@ -101,8 +101,11 @@ public class DiscoveryClient {
   public DiscoveryClient connect() throws UaException {
     try {
       return connectAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw new UaException(e);
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -113,8 +116,11 @@ public class DiscoveryClient {
   public DiscoveryClient disconnect() throws UaException {
     try {
       return disconnectAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw new UaException(e);
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
