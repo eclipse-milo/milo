@@ -80,8 +80,11 @@ public class TransactionDiagnosticsTypeNode extends BaseObjectTypeNode
   public DateTime readStartTime() throws UaException {
     try {
       return readStartTimeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -89,8 +92,11 @@ public class TransactionDiagnosticsTypeNode extends BaseObjectTypeNode
   public void writeStartTime(DateTime value) throws UaException {
     try {
       writeStartTimeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -112,8 +118,11 @@ public class TransactionDiagnosticsTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getStartTimeNode() throws UaException {
     try {
       return getStartTimeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -121,7 +130,7 @@ public class TransactionDiagnosticsTypeNode extends BaseObjectTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getStartTimeNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "StartTime", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "StartTime", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -141,8 +150,11 @@ public class TransactionDiagnosticsTypeNode extends BaseObjectTypeNode
   public DateTime readEndTime() throws UaException {
     try {
       return readEndTimeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -150,8 +162,11 @@ public class TransactionDiagnosticsTypeNode extends BaseObjectTypeNode
   public void writeEndTime(DateTime value) throws UaException {
     try {
       writeEndTimeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -173,8 +188,11 @@ public class TransactionDiagnosticsTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getEndTimeNode() throws UaException {
     try {
       return getEndTimeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -182,7 +200,7 @@ public class TransactionDiagnosticsTypeNode extends BaseObjectTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getEndTimeNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "EndTime", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "EndTime", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -202,8 +220,11 @@ public class TransactionDiagnosticsTypeNode extends BaseObjectTypeNode
   public StatusCode readResult() throws UaException {
     try {
       return readResultAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -211,8 +232,11 @@ public class TransactionDiagnosticsTypeNode extends BaseObjectTypeNode
   public void writeResult(StatusCode value) throws UaException {
     try {
       writeResultAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -234,8 +258,11 @@ public class TransactionDiagnosticsTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getResultNode() throws UaException {
     try {
       return getResultNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -243,7 +270,7 @@ public class TransactionDiagnosticsTypeNode extends BaseObjectTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getResultNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Result", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "Result", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -263,8 +290,11 @@ public class TransactionDiagnosticsTypeNode extends BaseObjectTypeNode
   public NodeId[] readAffectedTrustLists() throws UaException {
     try {
       return readAffectedTrustListsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -272,8 +302,11 @@ public class TransactionDiagnosticsTypeNode extends BaseObjectTypeNode
   public void writeAffectedTrustLists(NodeId[] value) throws UaException {
     try {
       writeAffectedTrustListsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -295,8 +328,11 @@ public class TransactionDiagnosticsTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getAffectedTrustListsNode() throws UaException {
     try {
       return getAffectedTrustListsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -306,7 +342,7 @@ public class TransactionDiagnosticsTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "AffectedTrustLists",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -327,8 +363,11 @@ public class TransactionDiagnosticsTypeNode extends BaseObjectTypeNode
   public NodeId[] readAffectedCertificateGroups() throws UaException {
     try {
       return readAffectedCertificateGroupsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -336,8 +375,11 @@ public class TransactionDiagnosticsTypeNode extends BaseObjectTypeNode
   public void writeAffectedCertificateGroups(NodeId[] value) throws UaException {
     try {
       writeAffectedCertificateGroupsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -360,8 +402,11 @@ public class TransactionDiagnosticsTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getAffectedCertificateGroupsNode() throws UaException {
     try {
       return getAffectedCertificateGroupsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -371,7 +416,7 @@ public class TransactionDiagnosticsTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "AffectedCertificateGroups",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -394,8 +439,11 @@ public class TransactionDiagnosticsTypeNode extends BaseObjectTypeNode
   public TransactionErrorType[] readErrors() throws UaException {
     try {
       return readErrorsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -403,8 +451,11 @@ public class TransactionDiagnosticsTypeNode extends BaseObjectTypeNode
   public void writeErrors(TransactionErrorType[] value) throws UaException {
     try {
       writeErrorsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -428,8 +479,11 @@ public class TransactionDiagnosticsTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getErrorsNode() throws UaException {
     try {
       return getErrorsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -437,7 +491,7 @@ public class TransactionDiagnosticsTypeNode extends BaseObjectTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getErrorsNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Errors", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "Errors", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 }

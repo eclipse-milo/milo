@@ -77,8 +77,11 @@ public class StateMachineTypeNode extends BaseObjectTypeNode implements StateMac
   public LocalizedText readCurrentState() throws UaException {
     try {
       return readCurrentStateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -86,8 +89,11 @@ public class StateMachineTypeNode extends BaseObjectTypeNode implements StateMac
   public void writeCurrentState(LocalizedText value) throws UaException {
     try {
       writeCurrentStateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -109,8 +115,11 @@ public class StateMachineTypeNode extends BaseObjectTypeNode implements StateMac
   public StateVariableTypeNode getCurrentStateNode() throws UaException {
     try {
       return getCurrentStateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -118,10 +127,7 @@ public class StateMachineTypeNode extends BaseObjectTypeNode implements StateMac
   public CompletableFuture<? extends StateVariableTypeNode> getCurrentStateNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "CurrentState",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "CurrentState", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (StateVariableTypeNode) node);
   }
 
@@ -141,8 +147,11 @@ public class StateMachineTypeNode extends BaseObjectTypeNode implements StateMac
   public LocalizedText readLastTransition() throws UaException {
     try {
       return readLastTransitionAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -150,8 +159,11 @@ public class StateMachineTypeNode extends BaseObjectTypeNode implements StateMac
   public void writeLastTransition(LocalizedText value) throws UaException {
     try {
       writeLastTransitionAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -173,8 +185,11 @@ public class StateMachineTypeNode extends BaseObjectTypeNode implements StateMac
   public TransitionVariableTypeNode getLastTransitionNode() throws UaException {
     try {
       return getLastTransitionNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -182,10 +197,7 @@ public class StateMachineTypeNode extends BaseObjectTypeNode implements StateMac
   public CompletableFuture<? extends TransitionVariableTypeNode> getLastTransitionNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "LastTransition",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "LastTransition", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (TransitionVariableTypeNode) node);
   }
 }

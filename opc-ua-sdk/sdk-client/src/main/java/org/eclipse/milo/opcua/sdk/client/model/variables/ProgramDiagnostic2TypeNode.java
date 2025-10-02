@@ -96,8 +96,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public DateTime readLastTransitionTime() throws UaException {
     try {
       return readLastTransitionTimeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -105,8 +108,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public void writeLastTransitionTime(DateTime value) throws UaException {
     try {
       writeLastTransitionTimeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -128,8 +134,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public PropertyTypeNode getLastTransitionTimeNode() throws UaException {
     try {
       return getLastTransitionTimeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -139,7 +148,7 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "LastTransitionTime",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -160,8 +169,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public NodeId readCreateSessionId() throws UaException {
     try {
       return readCreateSessionIdAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -169,8 +181,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public void writeCreateSessionId(NodeId value) throws UaException {
     try {
       writeCreateSessionIdAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -192,8 +207,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public BaseDataVariableTypeNode getCreateSessionIdNode() throws UaException {
     try {
       return getCreateSessionIdNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -201,10 +219,7 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public CompletableFuture<? extends BaseDataVariableTypeNode> getCreateSessionIdNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "CreateSessionId",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "CreateSessionId", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 
@@ -224,8 +239,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public String readCreateClientName() throws UaException {
     try {
       return readCreateClientNameAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -233,8 +251,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public void writeCreateClientName(String value) throws UaException {
     try {
       writeCreateClientNameAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -256,8 +277,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public BaseDataVariableTypeNode getCreateClientNameNode() throws UaException {
     try {
       return getCreateClientNameNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -267,7 +291,7 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "CreateClientName",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
@@ -288,8 +312,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public DateTime readInvocationCreationTime() throws UaException {
     try {
       return readInvocationCreationTimeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -297,8 +324,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public void writeInvocationCreationTime(DateTime value) throws UaException {
     try {
       writeInvocationCreationTimeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -321,8 +351,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public BaseDataVariableTypeNode getInvocationCreationTimeNode() throws UaException {
     try {
       return getInvocationCreationTimeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -333,7 +366,7 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "InvocationCreationTime",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
@@ -354,8 +387,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public String readLastMethodCall() throws UaException {
     try {
       return readLastMethodCallAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -363,8 +399,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public void writeLastMethodCall(String value) throws UaException {
     try {
       writeLastMethodCallAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -386,8 +425,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public BaseDataVariableTypeNode getLastMethodCallNode() throws UaException {
     try {
       return getLastMethodCallNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -395,10 +437,7 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public CompletableFuture<? extends BaseDataVariableTypeNode> getLastMethodCallNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "LastMethodCall",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "LastMethodCall", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 
@@ -418,8 +457,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public NodeId readLastMethodSessionId() throws UaException {
     try {
       return readLastMethodSessionIdAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -427,8 +469,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public void writeLastMethodSessionId(NodeId value) throws UaException {
     try {
       writeLastMethodSessionIdAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -450,8 +495,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public BaseDataVariableTypeNode getLastMethodSessionIdNode() throws UaException {
     try {
       return getLastMethodSessionIdNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -461,7 +509,7 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "LastMethodSessionId",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
@@ -484,8 +532,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public Argument[] readLastMethodInputArguments() throws UaException {
     try {
       return readLastMethodInputArgumentsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -493,8 +544,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public void writeLastMethodInputArguments(Argument[] value) throws UaException {
     try {
       writeLastMethodInputArgumentsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -519,8 +573,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public BaseDataVariableTypeNode getLastMethodInputArgumentsNode() throws UaException {
     try {
       return getLastMethodInputArgumentsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -531,7 +588,7 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "LastMethodInputArguments",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
@@ -554,8 +611,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public Argument[] readLastMethodOutputArguments() throws UaException {
     try {
       return readLastMethodOutputArgumentsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -563,8 +623,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public void writeLastMethodOutputArguments(Argument[] value) throws UaException {
     try {
       writeLastMethodOutputArgumentsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -589,8 +652,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public BaseDataVariableTypeNode getLastMethodOutputArgumentsNode() throws UaException {
     try {
       return getLastMethodOutputArgumentsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -601,7 +667,7 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "LastMethodOutputArguments",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
@@ -622,8 +688,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public Object[] readLastMethodInputValues() throws UaException {
     try {
       return readLastMethodInputValuesAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -631,8 +700,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public void writeLastMethodInputValues(Object[] value) throws UaException {
     try {
       writeLastMethodInputValuesAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -655,8 +727,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public BaseDataVariableTypeNode getLastMethodInputValuesNode() throws UaException {
     try {
       return getLastMethodInputValuesNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -666,7 +741,7 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "LastMethodInputValues",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
@@ -687,8 +762,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public Object[] readLastMethodOutputValues() throws UaException {
     try {
       return readLastMethodOutputValuesAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -696,8 +774,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public void writeLastMethodOutputValues(Object[] value) throws UaException {
     try {
       writeLastMethodOutputValuesAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -720,8 +801,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public BaseDataVariableTypeNode getLastMethodOutputValuesNode() throws UaException {
     try {
       return getLastMethodOutputValuesNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -732,7 +816,7 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "LastMethodOutputValues",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
@@ -753,8 +837,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public DateTime readLastMethodCallTime() throws UaException {
     try {
       return readLastMethodCallTimeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -762,8 +849,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public void writeLastMethodCallTime(DateTime value) throws UaException {
     try {
       writeLastMethodCallTimeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -785,8 +875,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public BaseDataVariableTypeNode getLastMethodCallTimeNode() throws UaException {
     try {
       return getLastMethodCallTimeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -796,7 +889,7 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "LastMethodCallTime",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
@@ -817,8 +910,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public StatusCode readLastMethodReturnStatus() throws UaException {
     try {
       return readLastMethodReturnStatusAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -826,8 +922,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public void writeLastMethodReturnStatus(StatusCode value) throws UaException {
     try {
       writeLastMethodReturnStatusAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -850,8 +949,11 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
   public BaseDataVariableTypeNode getLastMethodReturnStatusNode() throws UaException {
     try {
       return getLastMethodReturnStatusNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -862,7 +964,7 @@ public class ProgramDiagnostic2TypeNode extends BaseDataVariableTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "LastMethodReturnStatus",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }

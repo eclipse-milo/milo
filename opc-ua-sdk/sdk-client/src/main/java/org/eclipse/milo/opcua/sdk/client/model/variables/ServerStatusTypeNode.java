@@ -96,8 +96,11 @@ public class ServerStatusTypeNode extends BaseDataVariableTypeNode implements Se
   public DateTime readStartTime() throws UaException {
     try {
       return readStartTimeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -105,8 +108,11 @@ public class ServerStatusTypeNode extends BaseDataVariableTypeNode implements Se
   public void writeStartTime(DateTime value) throws UaException {
     try {
       writeStartTimeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -128,8 +134,11 @@ public class ServerStatusTypeNode extends BaseDataVariableTypeNode implements Se
   public BaseDataVariableTypeNode getStartTimeNode() throws UaException {
     try {
       return getStartTimeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -137,7 +146,7 @@ public class ServerStatusTypeNode extends BaseDataVariableTypeNode implements Se
   public CompletableFuture<? extends BaseDataVariableTypeNode> getStartTimeNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "StartTime", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "StartTime", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 
@@ -157,8 +166,11 @@ public class ServerStatusTypeNode extends BaseDataVariableTypeNode implements Se
   public DateTime readCurrentTime() throws UaException {
     try {
       return readCurrentTimeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -166,8 +178,11 @@ public class ServerStatusTypeNode extends BaseDataVariableTypeNode implements Se
   public void writeCurrentTime(DateTime value) throws UaException {
     try {
       writeCurrentTimeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -189,8 +204,11 @@ public class ServerStatusTypeNode extends BaseDataVariableTypeNode implements Se
   public BaseDataVariableTypeNode getCurrentTimeNode() throws UaException {
     try {
       return getCurrentTimeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -198,10 +216,7 @@ public class ServerStatusTypeNode extends BaseDataVariableTypeNode implements Se
   public CompletableFuture<? extends BaseDataVariableTypeNode> getCurrentTimeNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "CurrentTime",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "CurrentTime", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 
@@ -229,8 +244,11 @@ public class ServerStatusTypeNode extends BaseDataVariableTypeNode implements Se
   public ServerState readState() throws UaException {
     try {
       return readStateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -238,8 +256,11 @@ public class ServerStatusTypeNode extends BaseDataVariableTypeNode implements Se
   public void writeState(ServerState value) throws UaException {
     try {
       writeStateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -269,8 +290,11 @@ public class ServerStatusTypeNode extends BaseDataVariableTypeNode implements Se
   public BaseDataVariableTypeNode getStateNode() throws UaException {
     try {
       return getStateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -278,7 +302,7 @@ public class ServerStatusTypeNode extends BaseDataVariableTypeNode implements Se
   public CompletableFuture<? extends BaseDataVariableTypeNode> getStateNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "State", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "State", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 
@@ -299,8 +323,11 @@ public class ServerStatusTypeNode extends BaseDataVariableTypeNode implements Se
   public BuildInfo readBuildInfo() throws UaException {
     try {
       return readBuildInfoAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -308,8 +335,11 @@ public class ServerStatusTypeNode extends BaseDataVariableTypeNode implements Se
   public void writeBuildInfo(BuildInfo value) throws UaException {
     try {
       writeBuildInfoAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -332,8 +362,11 @@ public class ServerStatusTypeNode extends BaseDataVariableTypeNode implements Se
   public BuildInfoTypeNode getBuildInfoNode() throws UaException {
     try {
       return getBuildInfoNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -341,7 +374,7 @@ public class ServerStatusTypeNode extends BaseDataVariableTypeNode implements Se
   public CompletableFuture<? extends BuildInfoTypeNode> getBuildInfoNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "BuildInfo", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "BuildInfo", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BuildInfoTypeNode) node);
   }
 
@@ -361,8 +394,11 @@ public class ServerStatusTypeNode extends BaseDataVariableTypeNode implements Se
   public UInteger readSecondsTillShutdown() throws UaException {
     try {
       return readSecondsTillShutdownAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -370,8 +406,11 @@ public class ServerStatusTypeNode extends BaseDataVariableTypeNode implements Se
   public void writeSecondsTillShutdown(UInteger value) throws UaException {
     try {
       writeSecondsTillShutdownAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -393,8 +432,11 @@ public class ServerStatusTypeNode extends BaseDataVariableTypeNode implements Se
   public BaseDataVariableTypeNode getSecondsTillShutdownNode() throws UaException {
     try {
       return getSecondsTillShutdownNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -404,7 +446,7 @@ public class ServerStatusTypeNode extends BaseDataVariableTypeNode implements Se
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "SecondsTillShutdown",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
@@ -425,8 +467,11 @@ public class ServerStatusTypeNode extends BaseDataVariableTypeNode implements Se
   public LocalizedText readShutdownReason() throws UaException {
     try {
       return readShutdownReasonAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -434,8 +479,11 @@ public class ServerStatusTypeNode extends BaseDataVariableTypeNode implements Se
   public void writeShutdownReason(LocalizedText value) throws UaException {
     try {
       writeShutdownReasonAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -457,8 +505,11 @@ public class ServerStatusTypeNode extends BaseDataVariableTypeNode implements Se
   public BaseDataVariableTypeNode getShutdownReasonNode() throws UaException {
     try {
       return getShutdownReasonNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -466,10 +517,7 @@ public class ServerStatusTypeNode extends BaseDataVariableTypeNode implements Se
   public CompletableFuture<? extends BaseDataVariableTypeNode> getShutdownReasonNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ShutdownReason",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "ShutdownReason", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 }

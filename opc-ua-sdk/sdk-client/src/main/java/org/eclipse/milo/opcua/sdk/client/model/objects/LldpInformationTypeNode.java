@@ -59,8 +59,11 @@ public class LldpInformationTypeNode extends BaseObjectTypeNode implements LldpI
   public LldpRemoteStatisticsTypeNode getRemoteStatisticsNode() throws UaException {
     try {
       return getRemoteStatisticsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -70,7 +73,7 @@ public class LldpInformationTypeNode extends BaseObjectTypeNode implements LldpI
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "RemoteStatistics",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (LldpRemoteStatisticsTypeNode) node);
   }
@@ -79,8 +82,11 @@ public class LldpInformationTypeNode extends BaseObjectTypeNode implements LldpI
   public LldpLocalSystemTypeNode getLocalSystemDataNode() throws UaException {
     try {
       return getLocalSystemDataNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -88,10 +94,7 @@ public class LldpInformationTypeNode extends BaseObjectTypeNode implements LldpI
   public CompletableFuture<? extends LldpLocalSystemTypeNode> getLocalSystemDataNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "LocalSystemData",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "LocalSystemData", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (LldpLocalSystemTypeNode) node);
   }
 
@@ -99,8 +102,11 @@ public class LldpInformationTypeNode extends BaseObjectTypeNode implements LldpI
   public FolderTypeNode getPortsNode() throws UaException {
     try {
       return getPortsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -108,7 +114,7 @@ public class LldpInformationTypeNode extends BaseObjectTypeNode implements LldpI
   public CompletableFuture<? extends FolderTypeNode> getPortsNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Ports", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "Ports", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (FolderTypeNode) node);
   }
 }

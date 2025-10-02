@@ -77,8 +77,11 @@ public class NonTransparentRedundancyTypeNode extends ServerRedundancyTypeNode
   public String[] readServerUriArray() throws UaException {
     try {
       return readServerUriArrayAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -86,8 +89,11 @@ public class NonTransparentRedundancyTypeNode extends ServerRedundancyTypeNode
   public void writeServerUriArray(String[] value) throws UaException {
     try {
       writeServerUriArrayAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -109,8 +115,11 @@ public class NonTransparentRedundancyTypeNode extends ServerRedundancyTypeNode
   public PropertyTypeNode getServerUriArrayNode() throws UaException {
     try {
       return getServerUriArrayNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -118,10 +127,7 @@ public class NonTransparentRedundancyTypeNode extends ServerRedundancyTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getServerUriArrayNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ServerUriArray",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "ServerUriArray", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 }

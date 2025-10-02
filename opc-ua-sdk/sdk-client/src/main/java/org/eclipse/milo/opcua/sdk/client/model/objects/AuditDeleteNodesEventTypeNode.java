@@ -81,8 +81,11 @@ public class AuditDeleteNodesEventTypeNode extends AuditNodeManagementEventTypeN
   public DeleteNodesItem[] readNodesToDelete() throws UaException {
     try {
       return readNodesToDeleteAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -90,8 +93,11 @@ public class AuditDeleteNodesEventTypeNode extends AuditNodeManagementEventTypeN
   public void writeNodesToDelete(DeleteNodesItem[] value) throws UaException {
     try {
       writeNodesToDeleteAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -115,8 +121,11 @@ public class AuditDeleteNodesEventTypeNode extends AuditNodeManagementEventTypeN
   public PropertyTypeNode getNodesToDeleteNode() throws UaException {
     try {
       return getNodesToDeleteNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -124,10 +133,7 @@ public class AuditDeleteNodesEventTypeNode extends AuditNodeManagementEventTypeN
   public CompletableFuture<? extends PropertyTypeNode> getNodesToDeleteNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "NodesToDelete",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "NodesToDelete", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 }

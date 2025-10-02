@@ -77,8 +77,11 @@ public class LldpRemoteStatisticsTypeNode extends BaseObjectTypeNode
   public UInteger readLastChangeTime() throws UaException {
     try {
       return readLastChangeTimeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -86,8 +89,11 @@ public class LldpRemoteStatisticsTypeNode extends BaseObjectTypeNode
   public void writeLastChangeTime(UInteger value) throws UaException {
     try {
       writeLastChangeTimeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -109,8 +115,11 @@ public class LldpRemoteStatisticsTypeNode extends BaseObjectTypeNode
   public BaseDataVariableTypeNode getLastChangeTimeNode() throws UaException {
     try {
       return getLastChangeTimeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -118,10 +127,7 @@ public class LldpRemoteStatisticsTypeNode extends BaseObjectTypeNode
   public CompletableFuture<? extends BaseDataVariableTypeNode> getLastChangeTimeNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "LastChangeTime",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "LastChangeTime", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 
@@ -141,8 +147,11 @@ public class LldpRemoteStatisticsTypeNode extends BaseObjectTypeNode
   public UInteger readRemoteInserts() throws UaException {
     try {
       return readRemoteInsertsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -150,8 +159,11 @@ public class LldpRemoteStatisticsTypeNode extends BaseObjectTypeNode
   public void writeRemoteInserts(UInteger value) throws UaException {
     try {
       writeRemoteInsertsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -173,8 +185,11 @@ public class LldpRemoteStatisticsTypeNode extends BaseObjectTypeNode
   public BaseDataVariableTypeNode getRemoteInsertsNode() throws UaException {
     try {
       return getRemoteInsertsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -182,10 +197,7 @@ public class LldpRemoteStatisticsTypeNode extends BaseObjectTypeNode
   public CompletableFuture<? extends BaseDataVariableTypeNode> getRemoteInsertsNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "RemoteInserts",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "RemoteInserts", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 
@@ -205,8 +217,11 @@ public class LldpRemoteStatisticsTypeNode extends BaseObjectTypeNode
   public UInteger readRemoteDeletes() throws UaException {
     try {
       return readRemoteDeletesAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -214,8 +229,11 @@ public class LldpRemoteStatisticsTypeNode extends BaseObjectTypeNode
   public void writeRemoteDeletes(UInteger value) throws UaException {
     try {
       writeRemoteDeletesAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -237,8 +255,11 @@ public class LldpRemoteStatisticsTypeNode extends BaseObjectTypeNode
   public BaseDataVariableTypeNode getRemoteDeletesNode() throws UaException {
     try {
       return getRemoteDeletesNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -246,10 +267,7 @@ public class LldpRemoteStatisticsTypeNode extends BaseObjectTypeNode
   public CompletableFuture<? extends BaseDataVariableTypeNode> getRemoteDeletesNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "RemoteDeletes",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "RemoteDeletes", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 
@@ -269,8 +287,11 @@ public class LldpRemoteStatisticsTypeNode extends BaseObjectTypeNode
   public UInteger readRemoteDrops() throws UaException {
     try {
       return readRemoteDropsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -278,8 +299,11 @@ public class LldpRemoteStatisticsTypeNode extends BaseObjectTypeNode
   public void writeRemoteDrops(UInteger value) throws UaException {
     try {
       writeRemoteDropsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -301,8 +325,11 @@ public class LldpRemoteStatisticsTypeNode extends BaseObjectTypeNode
   public BaseDataVariableTypeNode getRemoteDropsNode() throws UaException {
     try {
       return getRemoteDropsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -310,10 +337,7 @@ public class LldpRemoteStatisticsTypeNode extends BaseObjectTypeNode
   public CompletableFuture<? extends BaseDataVariableTypeNode> getRemoteDropsNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "RemoteDrops",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "RemoteDrops", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 
@@ -333,8 +357,11 @@ public class LldpRemoteStatisticsTypeNode extends BaseObjectTypeNode
   public UInteger readRemoteAgeouts() throws UaException {
     try {
       return readRemoteAgeoutsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -342,8 +369,11 @@ public class LldpRemoteStatisticsTypeNode extends BaseObjectTypeNode
   public void writeRemoteAgeouts(UInteger value) throws UaException {
     try {
       writeRemoteAgeoutsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -365,8 +395,11 @@ public class LldpRemoteStatisticsTypeNode extends BaseObjectTypeNode
   public BaseDataVariableTypeNode getRemoteAgeoutsNode() throws UaException {
     try {
       return getRemoteAgeoutsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -374,10 +407,7 @@ public class LldpRemoteStatisticsTypeNode extends BaseObjectTypeNode
   public CompletableFuture<? extends BaseDataVariableTypeNode> getRemoteAgeoutsNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "RemoteAgeouts",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "RemoteAgeouts", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 }

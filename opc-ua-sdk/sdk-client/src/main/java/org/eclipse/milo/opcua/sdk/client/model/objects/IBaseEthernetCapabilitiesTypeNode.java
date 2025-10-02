@@ -77,8 +77,11 @@ public class IBaseEthernetCapabilitiesTypeNode extends BaseInterfaceTypeNode
   public Boolean readVlanTagCapable() throws UaException {
     try {
       return readVlanTagCapableAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -86,8 +89,11 @@ public class IBaseEthernetCapabilitiesTypeNode extends BaseInterfaceTypeNode
   public void writeVlanTagCapable(Boolean value) throws UaException {
     try {
       writeVlanTagCapableAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -109,8 +115,11 @@ public class IBaseEthernetCapabilitiesTypeNode extends BaseInterfaceTypeNode
   public BaseDataVariableTypeNode getVlanTagCapableNode() throws UaException {
     try {
       return getVlanTagCapableNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -118,10 +127,7 @@ public class IBaseEthernetCapabilitiesTypeNode extends BaseInterfaceTypeNode
   public CompletableFuture<? extends BaseDataVariableTypeNode> getVlanTagCapableNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "VlanTagCapable",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "VlanTagCapable", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 }

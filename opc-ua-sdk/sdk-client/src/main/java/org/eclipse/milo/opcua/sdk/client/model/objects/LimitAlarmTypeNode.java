@@ -77,8 +77,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public Double readHighHighLimit() throws UaException {
     try {
       return readHighHighLimitAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -86,8 +89,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public void writeHighHighLimit(Double value) throws UaException {
     try {
       writeHighHighLimitAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -109,8 +115,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public PropertyTypeNode getHighHighLimitNode() throws UaException {
     try {
       return getHighHighLimitNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -118,10 +127,7 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public CompletableFuture<? extends PropertyTypeNode> getHighHighLimitNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "HighHighLimit",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "HighHighLimit", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -141,8 +147,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public Double readHighLimit() throws UaException {
     try {
       return readHighLimitAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -150,8 +159,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public void writeHighLimit(Double value) throws UaException {
     try {
       writeHighLimitAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -173,8 +185,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public PropertyTypeNode getHighLimitNode() throws UaException {
     try {
       return getHighLimitNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -182,7 +197,7 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public CompletableFuture<? extends PropertyTypeNode> getHighLimitNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "HighLimit", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "HighLimit", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -202,8 +217,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public Double readLowLimit() throws UaException {
     try {
       return readLowLimitAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -211,8 +229,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public void writeLowLimit(Double value) throws UaException {
     try {
       writeLowLimitAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -234,8 +255,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public PropertyTypeNode getLowLimitNode() throws UaException {
     try {
       return getLowLimitNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -243,7 +267,7 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public CompletableFuture<? extends PropertyTypeNode> getLowLimitNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "LowLimit", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "LowLimit", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -263,8 +287,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public Double readLowLowLimit() throws UaException {
     try {
       return readLowLowLimitAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -272,8 +299,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public void writeLowLowLimit(Double value) throws UaException {
     try {
       writeLowLowLimitAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -295,8 +325,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public PropertyTypeNode getLowLowLimitNode() throws UaException {
     try {
       return getLowLowLimitNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -304,10 +337,7 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public CompletableFuture<? extends PropertyTypeNode> getLowLowLimitNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "LowLowLimit",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "LowLowLimit", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -327,8 +357,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public Double readBaseHighHighLimit() throws UaException {
     try {
       return readBaseHighHighLimitAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -336,8 +369,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public void writeBaseHighHighLimit(Double value) throws UaException {
     try {
       writeBaseHighHighLimitAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -359,8 +395,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public PropertyTypeNode getBaseHighHighLimitNode() throws UaException {
     try {
       return getBaseHighHighLimitNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -370,7 +409,7 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "BaseHighHighLimit",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -391,8 +430,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public Double readBaseHighLimit() throws UaException {
     try {
       return readBaseHighLimitAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -400,8 +442,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public void writeBaseHighLimit(Double value) throws UaException {
     try {
       writeBaseHighLimitAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -423,8 +468,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public PropertyTypeNode getBaseHighLimitNode() throws UaException {
     try {
       return getBaseHighLimitNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -432,10 +480,7 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public CompletableFuture<? extends PropertyTypeNode> getBaseHighLimitNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "BaseHighLimit",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "BaseHighLimit", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -455,8 +500,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public Double readBaseLowLimit() throws UaException {
     try {
       return readBaseLowLimitAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -464,8 +512,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public void writeBaseLowLimit(Double value) throws UaException {
     try {
       writeBaseLowLimitAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -487,8 +538,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public PropertyTypeNode getBaseLowLimitNode() throws UaException {
     try {
       return getBaseLowLimitNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -496,10 +550,7 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public CompletableFuture<? extends PropertyTypeNode> getBaseLowLimitNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "BaseLowLimit",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "BaseLowLimit", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -519,8 +570,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public Double readBaseLowLowLimit() throws UaException {
     try {
       return readBaseLowLowLimitAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -528,8 +582,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public void writeBaseLowLowLimit(Double value) throws UaException {
     try {
       writeBaseLowLowLimitAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -551,8 +608,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public PropertyTypeNode getBaseLowLowLimitNode() throws UaException {
     try {
       return getBaseLowLowLimitNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -560,10 +620,7 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public CompletableFuture<? extends PropertyTypeNode> getBaseLowLowLimitNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "BaseLowLowLimit",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "BaseLowLowLimit", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -583,8 +640,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public UShort readSeverityHighHigh() throws UaException {
     try {
       return readSeverityHighHighAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -592,8 +652,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public void writeSeverityHighHigh(UShort value) throws UaException {
     try {
       writeSeverityHighHighAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -615,8 +678,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public PropertyTypeNode getSeverityHighHighNode() throws UaException {
     try {
       return getSeverityHighHighNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -626,7 +692,7 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "SeverityHighHigh",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -647,8 +713,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public UShort readSeverityHigh() throws UaException {
     try {
       return readSeverityHighAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -656,8 +725,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public void writeSeverityHigh(UShort value) throws UaException {
     try {
       writeSeverityHighAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -679,8 +751,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public PropertyTypeNode getSeverityHighNode() throws UaException {
     try {
       return getSeverityHighNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -688,10 +763,7 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public CompletableFuture<? extends PropertyTypeNode> getSeverityHighNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "SeverityHigh",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "SeverityHigh", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -711,8 +783,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public UShort readSeverityLow() throws UaException {
     try {
       return readSeverityLowAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -720,8 +795,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public void writeSeverityLow(UShort value) throws UaException {
     try {
       writeSeverityLowAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -743,8 +821,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public PropertyTypeNode getSeverityLowNode() throws UaException {
     try {
       return getSeverityLowNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -752,10 +833,7 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public CompletableFuture<? extends PropertyTypeNode> getSeverityLowNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "SeverityLow",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "SeverityLow", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -775,8 +853,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public UShort readSeverityLowLow() throws UaException {
     try {
       return readSeverityLowLowAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -784,8 +865,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public void writeSeverityLowLow(UShort value) throws UaException {
     try {
       writeSeverityLowLowAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -807,8 +891,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public PropertyTypeNode getSeverityLowLowNode() throws UaException {
     try {
       return getSeverityLowLowNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -816,10 +903,7 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public CompletableFuture<? extends PropertyTypeNode> getSeverityLowLowNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "SeverityLowLow",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "SeverityLowLow", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -839,8 +923,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public Double readHighHighDeadband() throws UaException {
     try {
       return readHighHighDeadbandAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -848,8 +935,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public void writeHighHighDeadband(Double value) throws UaException {
     try {
       writeHighHighDeadbandAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -871,8 +961,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public PropertyTypeNode getHighHighDeadbandNode() throws UaException {
     try {
       return getHighHighDeadbandNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -882,7 +975,7 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "HighHighDeadband",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -903,8 +996,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public Double readHighDeadband() throws UaException {
     try {
       return readHighDeadbandAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -912,8 +1008,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public void writeHighDeadband(Double value) throws UaException {
     try {
       writeHighDeadbandAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -935,8 +1034,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public PropertyTypeNode getHighDeadbandNode() throws UaException {
     try {
       return getHighDeadbandNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -944,10 +1046,7 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public CompletableFuture<? extends PropertyTypeNode> getHighDeadbandNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "HighDeadband",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "HighDeadband", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -967,8 +1066,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public Double readLowDeadband() throws UaException {
     try {
       return readLowDeadbandAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -976,8 +1078,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public void writeLowDeadband(Double value) throws UaException {
     try {
       writeLowDeadbandAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -999,8 +1104,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public PropertyTypeNode getLowDeadbandNode() throws UaException {
     try {
       return getLowDeadbandNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -1008,10 +1116,7 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public CompletableFuture<? extends PropertyTypeNode> getLowDeadbandNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "LowDeadband",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "LowDeadband", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -1031,8 +1136,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public Double readLowLowDeadband() throws UaException {
     try {
       return readLowLowDeadbandAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -1040,8 +1148,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public void writeLowLowDeadband(Double value) throws UaException {
     try {
       writeLowLowDeadbandAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -1063,8 +1174,11 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public PropertyTypeNode getLowLowDeadbandNode() throws UaException {
     try {
       return getLowLowDeadbandNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -1072,10 +1186,7 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   public CompletableFuture<? extends PropertyTypeNode> getLowLowDeadbandNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "LowLowDeadband",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "LowLowDeadband", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 }

@@ -77,8 +77,11 @@ public class AuditSecurityEventTypeNode extends AuditEventTypeNode
   public StatusCode readStatusCodeId() throws UaException {
     try {
       return readStatusCodeIdAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -86,8 +89,11 @@ public class AuditSecurityEventTypeNode extends AuditEventTypeNode
   public void writeStatusCodeId(StatusCode value) throws UaException {
     try {
       writeStatusCodeIdAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -109,8 +115,11 @@ public class AuditSecurityEventTypeNode extends AuditEventTypeNode
   public PropertyTypeNode getStatusCodeIdNode() throws UaException {
     try {
       return getStatusCodeIdNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -118,10 +127,7 @@ public class AuditSecurityEventTypeNode extends AuditEventTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getStatusCodeIdNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "StatusCodeId",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "StatusCodeId", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 }

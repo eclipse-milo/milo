@@ -93,8 +93,11 @@ public class BuildInfoTypeNode extends BaseDataVariableTypeNode implements Build
   public String readProductUri() throws UaException {
     try {
       return readProductUriAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -102,8 +105,11 @@ public class BuildInfoTypeNode extends BaseDataVariableTypeNode implements Build
   public void writeProductUri(String value) throws UaException {
     try {
       writeProductUriAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -125,8 +131,11 @@ public class BuildInfoTypeNode extends BaseDataVariableTypeNode implements Build
   public BaseDataVariableTypeNode getProductUriNode() throws UaException {
     try {
       return getProductUriNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -134,7 +143,7 @@ public class BuildInfoTypeNode extends BaseDataVariableTypeNode implements Build
   public CompletableFuture<? extends BaseDataVariableTypeNode> getProductUriNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "ProductUri", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "ProductUri", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 
@@ -154,8 +163,11 @@ public class BuildInfoTypeNode extends BaseDataVariableTypeNode implements Build
   public String readManufacturerName() throws UaException {
     try {
       return readManufacturerNameAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -163,8 +175,11 @@ public class BuildInfoTypeNode extends BaseDataVariableTypeNode implements Build
   public void writeManufacturerName(String value) throws UaException {
     try {
       writeManufacturerNameAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -186,8 +201,11 @@ public class BuildInfoTypeNode extends BaseDataVariableTypeNode implements Build
   public BaseDataVariableTypeNode getManufacturerNameNode() throws UaException {
     try {
       return getManufacturerNameNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -197,7 +215,7 @@ public class BuildInfoTypeNode extends BaseDataVariableTypeNode implements Build
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ManufacturerName",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
@@ -218,8 +236,11 @@ public class BuildInfoTypeNode extends BaseDataVariableTypeNode implements Build
   public String readProductName() throws UaException {
     try {
       return readProductNameAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -227,8 +248,11 @@ public class BuildInfoTypeNode extends BaseDataVariableTypeNode implements Build
   public void writeProductName(String value) throws UaException {
     try {
       writeProductNameAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -250,8 +274,11 @@ public class BuildInfoTypeNode extends BaseDataVariableTypeNode implements Build
   public BaseDataVariableTypeNode getProductNameNode() throws UaException {
     try {
       return getProductNameNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -259,10 +286,7 @@ public class BuildInfoTypeNode extends BaseDataVariableTypeNode implements Build
   public CompletableFuture<? extends BaseDataVariableTypeNode> getProductNameNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ProductName",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "ProductName", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 
@@ -282,8 +306,11 @@ public class BuildInfoTypeNode extends BaseDataVariableTypeNode implements Build
   public String readSoftwareVersion() throws UaException {
     try {
       return readSoftwareVersionAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -291,8 +318,11 @@ public class BuildInfoTypeNode extends BaseDataVariableTypeNode implements Build
   public void writeSoftwareVersion(String value) throws UaException {
     try {
       writeSoftwareVersionAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -314,8 +344,11 @@ public class BuildInfoTypeNode extends BaseDataVariableTypeNode implements Build
   public BaseDataVariableTypeNode getSoftwareVersionNode() throws UaException {
     try {
       return getSoftwareVersionNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -323,10 +356,7 @@ public class BuildInfoTypeNode extends BaseDataVariableTypeNode implements Build
   public CompletableFuture<? extends BaseDataVariableTypeNode> getSoftwareVersionNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "SoftwareVersion",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "SoftwareVersion", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 
@@ -346,8 +376,11 @@ public class BuildInfoTypeNode extends BaseDataVariableTypeNode implements Build
   public String readBuildNumber() throws UaException {
     try {
       return readBuildNumberAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -355,8 +388,11 @@ public class BuildInfoTypeNode extends BaseDataVariableTypeNode implements Build
   public void writeBuildNumber(String value) throws UaException {
     try {
       writeBuildNumberAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -378,8 +414,11 @@ public class BuildInfoTypeNode extends BaseDataVariableTypeNode implements Build
   public BaseDataVariableTypeNode getBuildNumberNode() throws UaException {
     try {
       return getBuildNumberNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -387,10 +426,7 @@ public class BuildInfoTypeNode extends BaseDataVariableTypeNode implements Build
   public CompletableFuture<? extends BaseDataVariableTypeNode> getBuildNumberNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "BuildNumber",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "BuildNumber", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 
@@ -410,8 +446,11 @@ public class BuildInfoTypeNode extends BaseDataVariableTypeNode implements Build
   public DateTime readBuildDate() throws UaException {
     try {
       return readBuildDateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -419,8 +458,11 @@ public class BuildInfoTypeNode extends BaseDataVariableTypeNode implements Build
   public void writeBuildDate(DateTime value) throws UaException {
     try {
       writeBuildDateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -442,8 +484,11 @@ public class BuildInfoTypeNode extends BaseDataVariableTypeNode implements Build
   public BaseDataVariableTypeNode getBuildDateNode() throws UaException {
     try {
       return getBuildDateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -451,7 +496,7 @@ public class BuildInfoTypeNode extends BaseDataVariableTypeNode implements Build
   public CompletableFuture<? extends BaseDataVariableTypeNode> getBuildDateNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "BuildDate", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "BuildDate", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 }

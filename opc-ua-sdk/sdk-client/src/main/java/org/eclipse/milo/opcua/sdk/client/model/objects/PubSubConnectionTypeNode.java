@@ -79,8 +79,11 @@ public class PubSubConnectionTypeNode extends BaseObjectTypeNode implements PubS
   public Object readPublisherId() throws UaException {
     try {
       return readPublisherIdAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -88,8 +91,11 @@ public class PubSubConnectionTypeNode extends BaseObjectTypeNode implements PubS
   public void writePublisherId(Object value) throws UaException {
     try {
       writePublisherIdAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -111,8 +117,11 @@ public class PubSubConnectionTypeNode extends BaseObjectTypeNode implements PubS
   public PropertyTypeNode getPublisherIdNode() throws UaException {
     try {
       return getPublisherIdNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -120,10 +129,7 @@ public class PubSubConnectionTypeNode extends BaseObjectTypeNode implements PubS
   public CompletableFuture<? extends PropertyTypeNode> getPublisherIdNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "PublisherId",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "PublisherId", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -145,8 +151,11 @@ public class PubSubConnectionTypeNode extends BaseObjectTypeNode implements PubS
   public KeyValuePair[] readConnectionProperties() throws UaException {
     try {
       return readConnectionPropertiesAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -154,8 +163,11 @@ public class PubSubConnectionTypeNode extends BaseObjectTypeNode implements PubS
   public void writeConnectionProperties(KeyValuePair[] value) throws UaException {
     try {
       writeConnectionPropertiesAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -180,8 +192,11 @@ public class PubSubConnectionTypeNode extends BaseObjectTypeNode implements PubS
   public PropertyTypeNode getConnectionPropertiesNode() throws UaException {
     try {
       return getConnectionPropertiesNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -191,7 +206,7 @@ public class PubSubConnectionTypeNode extends BaseObjectTypeNode implements PubS
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ConnectionProperties",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -212,8 +227,11 @@ public class PubSubConnectionTypeNode extends BaseObjectTypeNode implements PubS
   public String readTransportProfileUri() throws UaException {
     try {
       return readTransportProfileUriAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -221,8 +239,11 @@ public class PubSubConnectionTypeNode extends BaseObjectTypeNode implements PubS
   public void writeTransportProfileUri(String value) throws UaException {
     try {
       writeTransportProfileUriAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -244,8 +265,11 @@ public class PubSubConnectionTypeNode extends BaseObjectTypeNode implements PubS
   public SelectionListTypeNode getTransportProfileUriNode() throws UaException {
     try {
       return getTransportProfileUriNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -255,7 +279,7 @@ public class PubSubConnectionTypeNode extends BaseObjectTypeNode implements PubS
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "TransportProfileUri",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (SelectionListTypeNode) node);
   }
@@ -264,8 +288,11 @@ public class PubSubConnectionTypeNode extends BaseObjectTypeNode implements PubS
   public NetworkAddressTypeNode getAddressNode() throws UaException {
     try {
       return getAddressNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -273,7 +300,7 @@ public class PubSubConnectionTypeNode extends BaseObjectTypeNode implements PubS
   public CompletableFuture<? extends NetworkAddressTypeNode> getAddressNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Address", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "Address", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (NetworkAddressTypeNode) node);
   }
 
@@ -281,8 +308,11 @@ public class PubSubConnectionTypeNode extends BaseObjectTypeNode implements PubS
   public ConnectionTransportTypeNode getTransportSettingsNode() throws UaException {
     try {
       return getTransportSettingsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -292,7 +322,7 @@ public class PubSubConnectionTypeNode extends BaseObjectTypeNode implements PubS
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "TransportSettings",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (ConnectionTransportTypeNode) node);
   }
@@ -301,8 +331,11 @@ public class PubSubConnectionTypeNode extends BaseObjectTypeNode implements PubS
   public PubSubStatusTypeNode getStatusNode() throws UaException {
     try {
       return getStatusNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -310,7 +343,7 @@ public class PubSubConnectionTypeNode extends BaseObjectTypeNode implements PubS
   public CompletableFuture<? extends PubSubStatusTypeNode> getStatusNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Status", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "Status", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (PubSubStatusTypeNode) node);
   }
 
@@ -318,8 +351,11 @@ public class PubSubConnectionTypeNode extends BaseObjectTypeNode implements PubS
   public PubSubDiagnosticsConnectionTypeNode getDiagnosticsNode() throws UaException {
     try {
       return getDiagnosticsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -328,10 +364,7 @@ public class PubSubConnectionTypeNode extends BaseObjectTypeNode implements PubS
       getDiagnosticsNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "Diagnostics",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "Diagnostics", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (PubSubDiagnosticsConnectionTypeNode) node);
   }
 }

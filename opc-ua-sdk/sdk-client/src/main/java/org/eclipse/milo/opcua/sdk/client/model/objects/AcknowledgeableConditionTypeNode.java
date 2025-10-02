@@ -77,8 +77,11 @@ public class AcknowledgeableConditionTypeNode extends ConditionTypeNode
   public LocalizedText readEnabledState() throws UaException {
     try {
       return readEnabledStateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -86,8 +89,11 @@ public class AcknowledgeableConditionTypeNode extends ConditionTypeNode
   public void writeEnabledState(LocalizedText value) throws UaException {
     try {
       writeEnabledStateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -109,8 +115,11 @@ public class AcknowledgeableConditionTypeNode extends ConditionTypeNode
   public TwoStateVariableTypeNode getEnabledStateNode() throws UaException {
     try {
       return getEnabledStateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -118,10 +127,7 @@ public class AcknowledgeableConditionTypeNode extends ConditionTypeNode
   public CompletableFuture<? extends TwoStateVariableTypeNode> getEnabledStateNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "EnabledState",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "EnabledState", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (TwoStateVariableTypeNode) node);
   }
 
@@ -141,8 +147,11 @@ public class AcknowledgeableConditionTypeNode extends ConditionTypeNode
   public LocalizedText readAckedState() throws UaException {
     try {
       return readAckedStateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -150,8 +159,11 @@ public class AcknowledgeableConditionTypeNode extends ConditionTypeNode
   public void writeAckedState(LocalizedText value) throws UaException {
     try {
       writeAckedStateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -173,8 +185,11 @@ public class AcknowledgeableConditionTypeNode extends ConditionTypeNode
   public TwoStateVariableTypeNode getAckedStateNode() throws UaException {
     try {
       return getAckedStateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -182,7 +197,7 @@ public class AcknowledgeableConditionTypeNode extends ConditionTypeNode
   public CompletableFuture<? extends TwoStateVariableTypeNode> getAckedStateNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "AckedState", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "AckedState", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (TwoStateVariableTypeNode) node);
   }
 
@@ -202,8 +217,11 @@ public class AcknowledgeableConditionTypeNode extends ConditionTypeNode
   public LocalizedText readConfirmedState() throws UaException {
     try {
       return readConfirmedStateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -211,8 +229,11 @@ public class AcknowledgeableConditionTypeNode extends ConditionTypeNode
   public void writeConfirmedState(LocalizedText value) throws UaException {
     try {
       writeConfirmedStateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -234,8 +255,11 @@ public class AcknowledgeableConditionTypeNode extends ConditionTypeNode
   public TwoStateVariableTypeNode getConfirmedStateNode() throws UaException {
     try {
       return getConfirmedStateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -243,10 +267,7 @@ public class AcknowledgeableConditionTypeNode extends ConditionTypeNode
   public CompletableFuture<? extends TwoStateVariableTypeNode> getConfirmedStateNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ConfirmedState",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "ConfirmedState", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (TwoStateVariableTypeNode) node);
   }
 }

@@ -77,8 +77,11 @@ public class AuditCertificateDataMismatchEventTypeNode extends AuditCertificateE
   public String readInvalidHostname() throws UaException {
     try {
       return readInvalidHostnameAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -86,8 +89,11 @@ public class AuditCertificateDataMismatchEventTypeNode extends AuditCertificateE
   public void writeInvalidHostname(String value) throws UaException {
     try {
       writeInvalidHostnameAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -109,8 +115,11 @@ public class AuditCertificateDataMismatchEventTypeNode extends AuditCertificateE
   public PropertyTypeNode getInvalidHostnameNode() throws UaException {
     try {
       return getInvalidHostnameNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -118,10 +127,7 @@ public class AuditCertificateDataMismatchEventTypeNode extends AuditCertificateE
   public CompletableFuture<? extends PropertyTypeNode> getInvalidHostnameNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "InvalidHostname",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "InvalidHostname", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -141,8 +147,11 @@ public class AuditCertificateDataMismatchEventTypeNode extends AuditCertificateE
   public String readInvalidUri() throws UaException {
     try {
       return readInvalidUriAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -150,8 +159,11 @@ public class AuditCertificateDataMismatchEventTypeNode extends AuditCertificateE
   public void writeInvalidUri(String value) throws UaException {
     try {
       writeInvalidUriAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -173,8 +185,11 @@ public class AuditCertificateDataMismatchEventTypeNode extends AuditCertificateE
   public PropertyTypeNode getInvalidUriNode() throws UaException {
     try {
       return getInvalidUriNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -182,7 +197,7 @@ public class AuditCertificateDataMismatchEventTypeNode extends AuditCertificateE
   public CompletableFuture<? extends PropertyTypeNode> getInvalidUriNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "InvalidUri", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "InvalidUri", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 }

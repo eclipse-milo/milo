@@ -96,8 +96,11 @@ public class PubSubDiagnosticsCounterTypeNode extends BaseDataVariableTypeNode
   public Boolean readActive() throws UaException {
     try {
       return readActiveAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -105,8 +108,11 @@ public class PubSubDiagnosticsCounterTypeNode extends BaseDataVariableTypeNode
   public void writeActive(Boolean value) throws UaException {
     try {
       writeActiveAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -128,8 +134,11 @@ public class PubSubDiagnosticsCounterTypeNode extends BaseDataVariableTypeNode
   public PropertyTypeNode getActiveNode() throws UaException {
     try {
       return getActiveNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -137,7 +146,7 @@ public class PubSubDiagnosticsCounterTypeNode extends BaseDataVariableTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getActiveNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Active", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "Active", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -165,8 +174,11 @@ public class PubSubDiagnosticsCounterTypeNode extends BaseDataVariableTypeNode
   public PubSubDiagnosticsCounterClassification readClassification() throws UaException {
     try {
       return readClassificationAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -174,8 +186,11 @@ public class PubSubDiagnosticsCounterTypeNode extends BaseDataVariableTypeNode
   public void writeClassification(PubSubDiagnosticsCounterClassification value) throws UaException {
     try {
       writeClassificationAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -207,8 +222,11 @@ public class PubSubDiagnosticsCounterTypeNode extends BaseDataVariableTypeNode
   public PropertyTypeNode getClassificationNode() throws UaException {
     try {
       return getClassificationNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -216,10 +234,7 @@ public class PubSubDiagnosticsCounterTypeNode extends BaseDataVariableTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getClassificationNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "Classification",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "Classification", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -247,8 +262,11 @@ public class PubSubDiagnosticsCounterTypeNode extends BaseDataVariableTypeNode
   public DiagnosticsLevel readDiagnosticsLevel() throws UaException {
     try {
       return readDiagnosticsLevelAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -256,8 +274,11 @@ public class PubSubDiagnosticsCounterTypeNode extends BaseDataVariableTypeNode
   public void writeDiagnosticsLevel(DiagnosticsLevel value) throws UaException {
     try {
       writeDiagnosticsLevelAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -288,8 +309,11 @@ public class PubSubDiagnosticsCounterTypeNode extends BaseDataVariableTypeNode
   public PropertyTypeNode getDiagnosticsLevelNode() throws UaException {
     try {
       return getDiagnosticsLevelNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -299,7 +323,7 @@ public class PubSubDiagnosticsCounterTypeNode extends BaseDataVariableTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "DiagnosticsLevel",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -320,8 +344,11 @@ public class PubSubDiagnosticsCounterTypeNode extends BaseDataVariableTypeNode
   public DateTime readTimeFirstChange() throws UaException {
     try {
       return readTimeFirstChangeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -329,8 +356,11 @@ public class PubSubDiagnosticsCounterTypeNode extends BaseDataVariableTypeNode
   public void writeTimeFirstChange(DateTime value) throws UaException {
     try {
       writeTimeFirstChangeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -352,8 +382,11 @@ public class PubSubDiagnosticsCounterTypeNode extends BaseDataVariableTypeNode
   public PropertyTypeNode getTimeFirstChangeNode() throws UaException {
     try {
       return getTimeFirstChangeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -361,10 +394,7 @@ public class PubSubDiagnosticsCounterTypeNode extends BaseDataVariableTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getTimeFirstChangeNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "TimeFirstChange",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "TimeFirstChange", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 }

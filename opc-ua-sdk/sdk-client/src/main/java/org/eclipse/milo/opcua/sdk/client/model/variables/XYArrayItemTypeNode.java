@@ -95,8 +95,11 @@ public class XYArrayItemTypeNode extends ArrayItemTypeNode implements XYArrayIte
   public AxisInformation readXAxisDefinition() throws UaException {
     try {
       return readXAxisDefinitionAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -104,8 +107,11 @@ public class XYArrayItemTypeNode extends ArrayItemTypeNode implements XYArrayIte
   public void writeXAxisDefinition(AxisInformation value) throws UaException {
     try {
       writeXAxisDefinitionAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -129,8 +135,11 @@ public class XYArrayItemTypeNode extends ArrayItemTypeNode implements XYArrayIte
   public PropertyTypeNode getXAxisDefinitionNode() throws UaException {
     try {
       return getXAxisDefinitionNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -138,10 +147,7 @@ public class XYArrayItemTypeNode extends ArrayItemTypeNode implements XYArrayIte
   public CompletableFuture<? extends PropertyTypeNode> getXAxisDefinitionNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "XAxisDefinition",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "XAxisDefinition", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 }

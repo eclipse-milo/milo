@@ -81,8 +81,11 @@ public class AuditAddReferencesEventTypeNode extends AuditNodeManagementEventTyp
   public AddReferencesItem[] readReferencesToAdd() throws UaException {
     try {
       return readReferencesToAddAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -90,8 +93,11 @@ public class AuditAddReferencesEventTypeNode extends AuditNodeManagementEventTyp
   public void writeReferencesToAdd(AddReferencesItem[] value) throws UaException {
     try {
       writeReferencesToAddAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -116,8 +122,11 @@ public class AuditAddReferencesEventTypeNode extends AuditNodeManagementEventTyp
   public PropertyTypeNode getReferencesToAddNode() throws UaException {
     try {
       return getReferencesToAddNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -125,10 +134,7 @@ public class AuditAddReferencesEventTypeNode extends AuditNodeManagementEventTyp
   public CompletableFuture<? extends PropertyTypeNode> getReferencesToAddNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ReferencesToAdd",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "ReferencesToAdd", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 }

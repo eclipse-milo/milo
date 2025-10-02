@@ -94,8 +94,11 @@ public class TransitionVariableTypeNode extends BaseDataVariableTypeNode
   public Object readId() throws UaException {
     try {
       return readIdAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -103,8 +106,11 @@ public class TransitionVariableTypeNode extends BaseDataVariableTypeNode
   public void writeId(Object value) throws UaException {
     try {
       writeIdAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -125,8 +131,11 @@ public class TransitionVariableTypeNode extends BaseDataVariableTypeNode
   public PropertyTypeNode getIdNode() throws UaException {
     try {
       return getIdNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -134,7 +143,7 @@ public class TransitionVariableTypeNode extends BaseDataVariableTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getIdNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Id", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "Id", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -154,8 +163,11 @@ public class TransitionVariableTypeNode extends BaseDataVariableTypeNode
   public QualifiedName readName() throws UaException {
     try {
       return readNameAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -163,8 +175,11 @@ public class TransitionVariableTypeNode extends BaseDataVariableTypeNode
   public void writeName(QualifiedName value) throws UaException {
     try {
       writeNameAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -186,8 +201,11 @@ public class TransitionVariableTypeNode extends BaseDataVariableTypeNode
   public PropertyTypeNode getNameNode() throws UaException {
     try {
       return getNameNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -195,7 +213,7 @@ public class TransitionVariableTypeNode extends BaseDataVariableTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getNameNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Name", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "Name", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -215,8 +233,11 @@ public class TransitionVariableTypeNode extends BaseDataVariableTypeNode
   public UInteger readNumber() throws UaException {
     try {
       return readNumberAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -224,8 +245,11 @@ public class TransitionVariableTypeNode extends BaseDataVariableTypeNode
   public void writeNumber(UInteger value) throws UaException {
     try {
       writeNumberAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -247,8 +271,11 @@ public class TransitionVariableTypeNode extends BaseDataVariableTypeNode
   public PropertyTypeNode getNumberNode() throws UaException {
     try {
       return getNumberNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -256,7 +283,7 @@ public class TransitionVariableTypeNode extends BaseDataVariableTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getNumberNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Number", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "Number", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -276,8 +303,11 @@ public class TransitionVariableTypeNode extends BaseDataVariableTypeNode
   public DateTime readTransitionTime() throws UaException {
     try {
       return readTransitionTimeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -285,8 +315,11 @@ public class TransitionVariableTypeNode extends BaseDataVariableTypeNode
   public void writeTransitionTime(DateTime value) throws UaException {
     try {
       writeTransitionTimeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -308,8 +341,11 @@ public class TransitionVariableTypeNode extends BaseDataVariableTypeNode
   public PropertyTypeNode getTransitionTimeNode() throws UaException {
     try {
       return getTransitionTimeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -317,10 +353,7 @@ public class TransitionVariableTypeNode extends BaseDataVariableTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getTransitionTimeNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "TransitionTime",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "TransitionTime", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -340,8 +373,11 @@ public class TransitionVariableTypeNode extends BaseDataVariableTypeNode
   public DateTime readEffectiveTransitionTime() throws UaException {
     try {
       return readEffectiveTransitionTimeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -349,8 +385,11 @@ public class TransitionVariableTypeNode extends BaseDataVariableTypeNode
   public void writeEffectiveTransitionTime(DateTime value) throws UaException {
     try {
       writeEffectiveTransitionTimeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -373,8 +412,11 @@ public class TransitionVariableTypeNode extends BaseDataVariableTypeNode
   public PropertyTypeNode getEffectiveTransitionTimeNode() throws UaException {
     try {
       return getEffectiveTransitionTimeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -384,7 +426,7 @@ public class TransitionVariableTypeNode extends BaseDataVariableTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "EffectiveTransitionTime",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }

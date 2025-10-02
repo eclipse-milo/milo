@@ -83,8 +83,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public Object readPublisherId() throws UaException {
     try {
       return readPublisherIdAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -92,8 +95,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public void writePublisherId(Object value) throws UaException {
     try {
       writePublisherIdAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -115,8 +121,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public PropertyTypeNode getPublisherIdNode() throws UaException {
     try {
       return getPublisherIdNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -124,10 +133,7 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public CompletableFuture<? extends PropertyTypeNode> getPublisherIdNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "PublisherId",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "PublisherId", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -147,8 +153,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public UShort readWriterGroupId() throws UaException {
     try {
       return readWriterGroupIdAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -156,8 +165,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public void writeWriterGroupId(UShort value) throws UaException {
     try {
       writeWriterGroupIdAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -179,8 +191,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public PropertyTypeNode getWriterGroupIdNode() throws UaException {
     try {
       return getWriterGroupIdNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -188,10 +203,7 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public CompletableFuture<? extends PropertyTypeNode> getWriterGroupIdNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "WriterGroupId",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "WriterGroupId", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -211,8 +223,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public UShort readDataSetWriterId() throws UaException {
     try {
       return readDataSetWriterIdAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -220,8 +235,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public void writeDataSetWriterId(UShort value) throws UaException {
     try {
       writeDataSetWriterIdAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -243,8 +261,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public PropertyTypeNode getDataSetWriterIdNode() throws UaException {
     try {
       return getDataSetWriterIdNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -252,10 +273,7 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public CompletableFuture<? extends PropertyTypeNode> getDataSetWriterIdNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "DataSetWriterId",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "DataSetWriterId", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -276,8 +294,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public DataSetMetaDataType readDataSetMetaData() throws UaException {
     try {
       return readDataSetMetaDataAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -285,8 +306,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public void writeDataSetMetaData(DataSetMetaDataType value) throws UaException {
     try {
       writeDataSetMetaDataAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -311,8 +335,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public PropertyTypeNode getDataSetMetaDataNode() throws UaException {
     try {
       return getDataSetMetaDataNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -320,10 +347,7 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public CompletableFuture<? extends PropertyTypeNode> getDataSetMetaDataNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "DataSetMetaData",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "DataSetMetaData", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -343,8 +367,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public DataSetFieldContentMask readDataSetFieldContentMask() throws UaException {
     try {
       return readDataSetFieldContentMaskAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -352,8 +379,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public void writeDataSetFieldContentMask(DataSetFieldContentMask value) throws UaException {
     try {
       writeDataSetFieldContentMaskAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -376,8 +406,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public PropertyTypeNode getDataSetFieldContentMaskNode() throws UaException {
     try {
       return getDataSetFieldContentMaskNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -387,7 +420,7 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "DataSetFieldContentMask",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -408,8 +441,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public Double readMessageReceiveTimeout() throws UaException {
     try {
       return readMessageReceiveTimeoutAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -417,8 +453,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public void writeMessageReceiveTimeout(Double value) throws UaException {
     try {
       writeMessageReceiveTimeoutAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -441,8 +480,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public PropertyTypeNode getMessageReceiveTimeoutNode() throws UaException {
     try {
       return getMessageReceiveTimeoutNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -452,7 +494,7 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MessageReceiveTimeout",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -473,8 +515,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public UInteger readKeyFrameCount() throws UaException {
     try {
       return readKeyFrameCountAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -482,8 +527,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public void writeKeyFrameCount(UInteger value) throws UaException {
     try {
       writeKeyFrameCountAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -505,8 +553,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public PropertyTypeNode getKeyFrameCountNode() throws UaException {
     try {
       return getKeyFrameCountNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -514,10 +565,7 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public CompletableFuture<? extends PropertyTypeNode> getKeyFrameCountNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "KeyFrameCount",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "KeyFrameCount", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -537,8 +585,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public String readHeaderLayoutUri() throws UaException {
     try {
       return readHeaderLayoutUriAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -546,8 +597,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public void writeHeaderLayoutUri(String value) throws UaException {
     try {
       writeHeaderLayoutUriAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -569,8 +623,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public PropertyTypeNode getHeaderLayoutUriNode() throws UaException {
     try {
       return getHeaderLayoutUriNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -578,10 +635,7 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public CompletableFuture<? extends PropertyTypeNode> getHeaderLayoutUriNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "HeaderLayoutUri",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "HeaderLayoutUri", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -609,8 +663,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public MessageSecurityMode readSecurityMode() throws UaException {
     try {
       return readSecurityModeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -618,8 +675,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public void writeSecurityMode(MessageSecurityMode value) throws UaException {
     try {
       writeSecurityModeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -649,8 +709,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public PropertyTypeNode getSecurityModeNode() throws UaException {
     try {
       return getSecurityModeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -658,10 +721,7 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public CompletableFuture<? extends PropertyTypeNode> getSecurityModeNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "SecurityMode",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "SecurityMode", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -681,8 +741,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public String readSecurityGroupId() throws UaException {
     try {
       return readSecurityGroupIdAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -690,8 +753,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public void writeSecurityGroupId(String value) throws UaException {
     try {
       writeSecurityGroupIdAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -713,8 +779,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public PropertyTypeNode getSecurityGroupIdNode() throws UaException {
     try {
       return getSecurityGroupIdNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -722,10 +791,7 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public CompletableFuture<? extends PropertyTypeNode> getSecurityGroupIdNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "SecurityGroupId",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "SecurityGroupId", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -747,8 +813,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public EndpointDescription[] readSecurityKeyServices() throws UaException {
     try {
       return readSecurityKeyServicesAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -756,8 +825,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public void writeSecurityKeyServices(EndpointDescription[] value) throws UaException {
     try {
       writeSecurityKeyServicesAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -782,8 +854,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public PropertyTypeNode getSecurityKeyServicesNode() throws UaException {
     try {
       return getSecurityKeyServicesNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -793,7 +868,7 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "SecurityKeyServices",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -816,8 +891,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public KeyValuePair[] readDataSetReaderProperties() throws UaException {
     try {
       return readDataSetReaderPropertiesAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -825,8 +903,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public void writeDataSetReaderProperties(KeyValuePair[] value) throws UaException {
     try {
       writeDataSetReaderPropertiesAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -851,8 +932,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public PropertyTypeNode getDataSetReaderPropertiesNode() throws UaException {
     try {
       return getDataSetReaderPropertiesNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -862,7 +946,7 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "DataSetReaderProperties",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -871,8 +955,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public DataSetReaderTransportTypeNode getTransportSettingsNode() throws UaException {
     try {
       return getTransportSettingsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -883,7 +970,7 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "TransportSettings",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (DataSetReaderTransportTypeNode) node);
   }
@@ -892,8 +979,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public DataSetReaderMessageTypeNode getMessageSettingsNode() throws UaException {
     try {
       return getMessageSettingsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -901,10 +991,7 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public CompletableFuture<? extends DataSetReaderMessageTypeNode> getMessageSettingsNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "MessageSettings",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "MessageSettings", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (DataSetReaderMessageTypeNode) node);
   }
 
@@ -912,8 +999,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public PubSubStatusTypeNode getStatusNode() throws UaException {
     try {
       return getStatusNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -921,7 +1011,7 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public CompletableFuture<? extends PubSubStatusTypeNode> getStatusNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Status", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "Status", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (PubSubStatusTypeNode) node);
   }
 
@@ -929,8 +1019,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public PubSubDiagnosticsDataSetReaderTypeNode getDiagnosticsNode() throws UaException {
     try {
       return getDiagnosticsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -939,10 +1032,7 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
       getDiagnosticsNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "Diagnostics",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "Diagnostics", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (PubSubDiagnosticsDataSetReaderTypeNode) node);
   }
 
@@ -950,8 +1040,11 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
   public SubscribedDataSetTypeNode getSubscribedDataSetNode() throws UaException {
     try {
       return getSubscribedDataSetNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -961,7 +1054,7 @@ public class DataSetReaderTypeNode extends BaseObjectTypeNode implements DataSet
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "SubscribedDataSet",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (SubscribedDataSetTypeNode) node);
   }

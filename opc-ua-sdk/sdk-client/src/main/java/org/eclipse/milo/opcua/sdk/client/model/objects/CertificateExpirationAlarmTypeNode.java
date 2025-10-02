@@ -79,8 +79,11 @@ public class CertificateExpirationAlarmTypeNode extends SystemOffNormalAlarmType
   public DateTime readExpirationDate() throws UaException {
     try {
       return readExpirationDateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -88,8 +91,11 @@ public class CertificateExpirationAlarmTypeNode extends SystemOffNormalAlarmType
   public void writeExpirationDate(DateTime value) throws UaException {
     try {
       writeExpirationDateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -111,8 +117,11 @@ public class CertificateExpirationAlarmTypeNode extends SystemOffNormalAlarmType
   public PropertyTypeNode getExpirationDateNode() throws UaException {
     try {
       return getExpirationDateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -120,10 +129,7 @@ public class CertificateExpirationAlarmTypeNode extends SystemOffNormalAlarmType
   public CompletableFuture<? extends PropertyTypeNode> getExpirationDateNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ExpirationDate",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "ExpirationDate", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -143,8 +149,11 @@ public class CertificateExpirationAlarmTypeNode extends SystemOffNormalAlarmType
   public Double readExpirationLimit() throws UaException {
     try {
       return readExpirationLimitAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -152,8 +161,11 @@ public class CertificateExpirationAlarmTypeNode extends SystemOffNormalAlarmType
   public void writeExpirationLimit(Double value) throws UaException {
     try {
       writeExpirationLimitAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -175,8 +187,11 @@ public class CertificateExpirationAlarmTypeNode extends SystemOffNormalAlarmType
   public PropertyTypeNode getExpirationLimitNode() throws UaException {
     try {
       return getExpirationLimitNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -184,10 +199,7 @@ public class CertificateExpirationAlarmTypeNode extends SystemOffNormalAlarmType
   public CompletableFuture<? extends PropertyTypeNode> getExpirationLimitNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ExpirationLimit",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "ExpirationLimit", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -207,8 +219,11 @@ public class CertificateExpirationAlarmTypeNode extends SystemOffNormalAlarmType
   public NodeId readCertificateType() throws UaException {
     try {
       return readCertificateTypeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -216,8 +231,11 @@ public class CertificateExpirationAlarmTypeNode extends SystemOffNormalAlarmType
   public void writeCertificateType(NodeId value) throws UaException {
     try {
       writeCertificateTypeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -239,8 +257,11 @@ public class CertificateExpirationAlarmTypeNode extends SystemOffNormalAlarmType
   public PropertyTypeNode getCertificateTypeNode() throws UaException {
     try {
       return getCertificateTypeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -248,10 +269,7 @@ public class CertificateExpirationAlarmTypeNode extends SystemOffNormalAlarmType
   public CompletableFuture<? extends PropertyTypeNode> getCertificateTypeNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "CertificateType",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "CertificateType", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -271,8 +289,11 @@ public class CertificateExpirationAlarmTypeNode extends SystemOffNormalAlarmType
   public ByteString readCertificate() throws UaException {
     try {
       return readCertificateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -280,8 +301,11 @@ public class CertificateExpirationAlarmTypeNode extends SystemOffNormalAlarmType
   public void writeCertificate(ByteString value) throws UaException {
     try {
       writeCertificateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -303,8 +327,11 @@ public class CertificateExpirationAlarmTypeNode extends SystemOffNormalAlarmType
   public PropertyTypeNode getCertificateNode() throws UaException {
     try {
       return getCertificateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -312,10 +339,7 @@ public class CertificateExpirationAlarmTypeNode extends SystemOffNormalAlarmType
   public CompletableFuture<? extends PropertyTypeNode> getCertificateNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "Certificate",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "Certificate", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 }

@@ -81,8 +81,11 @@ public class AuditAddNodesEventTypeNode extends AuditNodeManagementEventTypeNode
   public AddNodesItem[] readNodesToAdd() throws UaException {
     try {
       return readNodesToAddAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -90,8 +93,11 @@ public class AuditAddNodesEventTypeNode extends AuditNodeManagementEventTypeNode
   public void writeNodesToAdd(AddNodesItem[] value) throws UaException {
     try {
       writeNodesToAddAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -115,8 +121,11 @@ public class AuditAddNodesEventTypeNode extends AuditNodeManagementEventTypeNode
   public PropertyTypeNode getNodesToAddNode() throws UaException {
     try {
       return getNodesToAddNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -124,7 +133,7 @@ public class AuditAddNodesEventTypeNode extends AuditNodeManagementEventTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getNodesToAddNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "NodesToAdd", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "NodesToAdd", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 }

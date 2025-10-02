@@ -59,8 +59,11 @@ public class PubSubKeyServiceTypeNode extends BaseObjectTypeNode implements PubS
   public SecurityGroupFolderTypeNode getSecurityGroupsNode() throws UaException {
     try {
       return getSecurityGroupsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -68,10 +71,7 @@ public class PubSubKeyServiceTypeNode extends BaseObjectTypeNode implements PubS
   public CompletableFuture<? extends SecurityGroupFolderTypeNode> getSecurityGroupsNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "SecurityGroups",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "SecurityGroups", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (SecurityGroupFolderTypeNode) node);
   }
 
@@ -79,8 +79,11 @@ public class PubSubKeyServiceTypeNode extends BaseObjectTypeNode implements PubS
   public PubSubKeyPushTargetFolderTypeNode getKeyPushTargetsNode() throws UaException {
     try {
       return getKeyPushTargetsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -89,10 +92,7 @@ public class PubSubKeyServiceTypeNode extends BaseObjectTypeNode implements PubS
       getKeyPushTargetsNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "KeyPushTargets",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "KeyPushTargets", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (PubSubKeyPushTargetFolderTypeNode) node);
   }
 }

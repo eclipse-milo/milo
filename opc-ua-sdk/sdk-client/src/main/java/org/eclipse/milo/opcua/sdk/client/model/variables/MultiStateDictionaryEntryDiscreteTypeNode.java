@@ -94,8 +94,11 @@ public class MultiStateDictionaryEntryDiscreteTypeNode
   public NodeId[] readValueAsDictionaryEntries() throws UaException {
     try {
       return readValueAsDictionaryEntriesAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -103,8 +106,11 @@ public class MultiStateDictionaryEntryDiscreteTypeNode
   public void writeValueAsDictionaryEntries(NodeId[] value) throws UaException {
     try {
       writeValueAsDictionaryEntriesAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -127,8 +133,11 @@ public class MultiStateDictionaryEntryDiscreteTypeNode
   public PropertyTypeNode getValueAsDictionaryEntriesNode() throws UaException {
     try {
       return getValueAsDictionaryEntriesNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -138,7 +147,7 @@ public class MultiStateDictionaryEntryDiscreteTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ValueAsDictionaryEntries",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }

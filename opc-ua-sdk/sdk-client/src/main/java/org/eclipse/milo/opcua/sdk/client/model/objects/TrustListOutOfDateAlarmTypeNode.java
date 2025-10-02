@@ -78,8 +78,11 @@ public class TrustListOutOfDateAlarmTypeNode extends SystemOffNormalAlarmTypeNod
   public NodeId readTrustListId() throws UaException {
     try {
       return readTrustListIdAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -87,8 +90,11 @@ public class TrustListOutOfDateAlarmTypeNode extends SystemOffNormalAlarmTypeNod
   public void writeTrustListId(NodeId value) throws UaException {
     try {
       writeTrustListIdAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -110,8 +116,11 @@ public class TrustListOutOfDateAlarmTypeNode extends SystemOffNormalAlarmTypeNod
   public PropertyTypeNode getTrustListIdNode() throws UaException {
     try {
       return getTrustListIdNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -119,10 +128,7 @@ public class TrustListOutOfDateAlarmTypeNode extends SystemOffNormalAlarmTypeNod
   public CompletableFuture<? extends PropertyTypeNode> getTrustListIdNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "TrustListId",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "TrustListId", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -142,8 +148,11 @@ public class TrustListOutOfDateAlarmTypeNode extends SystemOffNormalAlarmTypeNod
   public DateTime readLastUpdateTime() throws UaException {
     try {
       return readLastUpdateTimeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -151,8 +160,11 @@ public class TrustListOutOfDateAlarmTypeNode extends SystemOffNormalAlarmTypeNod
   public void writeLastUpdateTime(DateTime value) throws UaException {
     try {
       writeLastUpdateTimeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -174,8 +186,11 @@ public class TrustListOutOfDateAlarmTypeNode extends SystemOffNormalAlarmTypeNod
   public PropertyTypeNode getLastUpdateTimeNode() throws UaException {
     try {
       return getLastUpdateTimeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -183,10 +198,7 @@ public class TrustListOutOfDateAlarmTypeNode extends SystemOffNormalAlarmTypeNod
   public CompletableFuture<? extends PropertyTypeNode> getLastUpdateTimeNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "LastUpdateTime",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "LastUpdateTime", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -206,8 +218,11 @@ public class TrustListOutOfDateAlarmTypeNode extends SystemOffNormalAlarmTypeNod
   public Double readUpdateFrequency() throws UaException {
     try {
       return readUpdateFrequencyAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -215,8 +230,11 @@ public class TrustListOutOfDateAlarmTypeNode extends SystemOffNormalAlarmTypeNod
   public void writeUpdateFrequency(Double value) throws UaException {
     try {
       writeUpdateFrequencyAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -238,8 +256,11 @@ public class TrustListOutOfDateAlarmTypeNode extends SystemOffNormalAlarmTypeNod
   public PropertyTypeNode getUpdateFrequencyNode() throws UaException {
     try {
       return getUpdateFrequencyNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -247,10 +268,7 @@ public class TrustListOutOfDateAlarmTypeNode extends SystemOffNormalAlarmTypeNod
   public CompletableFuture<? extends PropertyTypeNode> getUpdateFrequencyNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "UpdateFrequency",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "UpdateFrequency", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 }

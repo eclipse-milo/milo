@@ -77,8 +77,11 @@ public class NonExclusiveLimitAlarmTypeNode extends LimitAlarmTypeNode
   public LocalizedText readActiveState() throws UaException {
     try {
       return readActiveStateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -86,8 +89,11 @@ public class NonExclusiveLimitAlarmTypeNode extends LimitAlarmTypeNode
   public void writeActiveState(LocalizedText value) throws UaException {
     try {
       writeActiveStateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -109,8 +115,11 @@ public class NonExclusiveLimitAlarmTypeNode extends LimitAlarmTypeNode
   public TwoStateVariableTypeNode getActiveStateNode() throws UaException {
     try {
       return getActiveStateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -118,10 +127,7 @@ public class NonExclusiveLimitAlarmTypeNode extends LimitAlarmTypeNode
   public CompletableFuture<? extends TwoStateVariableTypeNode> getActiveStateNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ActiveState",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "ActiveState", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (TwoStateVariableTypeNode) node);
   }
 
@@ -141,8 +147,11 @@ public class NonExclusiveLimitAlarmTypeNode extends LimitAlarmTypeNode
   public LocalizedText readHighHighState() throws UaException {
     try {
       return readHighHighStateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -150,8 +159,11 @@ public class NonExclusiveLimitAlarmTypeNode extends LimitAlarmTypeNode
   public void writeHighHighState(LocalizedText value) throws UaException {
     try {
       writeHighHighStateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -173,8 +185,11 @@ public class NonExclusiveLimitAlarmTypeNode extends LimitAlarmTypeNode
   public TwoStateVariableTypeNode getHighHighStateNode() throws UaException {
     try {
       return getHighHighStateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -182,10 +197,7 @@ public class NonExclusiveLimitAlarmTypeNode extends LimitAlarmTypeNode
   public CompletableFuture<? extends TwoStateVariableTypeNode> getHighHighStateNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "HighHighState",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "HighHighState", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (TwoStateVariableTypeNode) node);
   }
 
@@ -205,8 +217,11 @@ public class NonExclusiveLimitAlarmTypeNode extends LimitAlarmTypeNode
   public LocalizedText readHighState() throws UaException {
     try {
       return readHighStateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -214,8 +229,11 @@ public class NonExclusiveLimitAlarmTypeNode extends LimitAlarmTypeNode
   public void writeHighState(LocalizedText value) throws UaException {
     try {
       writeHighStateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -237,8 +255,11 @@ public class NonExclusiveLimitAlarmTypeNode extends LimitAlarmTypeNode
   public TwoStateVariableTypeNode getHighStateNode() throws UaException {
     try {
       return getHighStateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -246,7 +267,7 @@ public class NonExclusiveLimitAlarmTypeNode extends LimitAlarmTypeNode
   public CompletableFuture<? extends TwoStateVariableTypeNode> getHighStateNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "HighState", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "HighState", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (TwoStateVariableTypeNode) node);
   }
 
@@ -266,8 +287,11 @@ public class NonExclusiveLimitAlarmTypeNode extends LimitAlarmTypeNode
   public LocalizedText readLowState() throws UaException {
     try {
       return readLowStateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -275,8 +299,11 @@ public class NonExclusiveLimitAlarmTypeNode extends LimitAlarmTypeNode
   public void writeLowState(LocalizedText value) throws UaException {
     try {
       writeLowStateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -298,8 +325,11 @@ public class NonExclusiveLimitAlarmTypeNode extends LimitAlarmTypeNode
   public TwoStateVariableTypeNode getLowStateNode() throws UaException {
     try {
       return getLowStateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -307,7 +337,7 @@ public class NonExclusiveLimitAlarmTypeNode extends LimitAlarmTypeNode
   public CompletableFuture<? extends TwoStateVariableTypeNode> getLowStateNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "LowState", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "LowState", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (TwoStateVariableTypeNode) node);
   }
 
@@ -327,8 +357,11 @@ public class NonExclusiveLimitAlarmTypeNode extends LimitAlarmTypeNode
   public LocalizedText readLowLowState() throws UaException {
     try {
       return readLowLowStateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -336,8 +369,11 @@ public class NonExclusiveLimitAlarmTypeNode extends LimitAlarmTypeNode
   public void writeLowLowState(LocalizedText value) throws UaException {
     try {
       writeLowLowStateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -359,8 +395,11 @@ public class NonExclusiveLimitAlarmTypeNode extends LimitAlarmTypeNode
   public TwoStateVariableTypeNode getLowLowStateNode() throws UaException {
     try {
       return getLowLowStateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -368,10 +407,7 @@ public class NonExclusiveLimitAlarmTypeNode extends LimitAlarmTypeNode
   public CompletableFuture<? extends TwoStateVariableTypeNode> getLowLowStateNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "LowLowState",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "LowLowState", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (TwoStateVariableTypeNode) node);
   }
 }

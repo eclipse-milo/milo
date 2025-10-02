@@ -93,8 +93,11 @@ public class MultiStateDiscreteTypeNode extends DiscreteItemTypeNode
   public LocalizedText[] readEnumStrings() throws UaException {
     try {
       return readEnumStringsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -102,8 +105,11 @@ public class MultiStateDiscreteTypeNode extends DiscreteItemTypeNode
   public void writeEnumStrings(LocalizedText[] value) throws UaException {
     try {
       writeEnumStringsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -125,8 +131,11 @@ public class MultiStateDiscreteTypeNode extends DiscreteItemTypeNode
   public PropertyTypeNode getEnumStringsNode() throws UaException {
     try {
       return getEnumStringsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -134,10 +143,7 @@ public class MultiStateDiscreteTypeNode extends DiscreteItemTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getEnumStringsNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "EnumStrings",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "EnumStrings", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 }

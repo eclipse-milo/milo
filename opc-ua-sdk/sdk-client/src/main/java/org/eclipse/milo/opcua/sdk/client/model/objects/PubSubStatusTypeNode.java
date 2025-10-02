@@ -85,8 +85,11 @@ public class PubSubStatusTypeNode extends BaseObjectTypeNode implements PubSubSt
   public PubSubState readState() throws UaException {
     try {
       return readStateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -94,8 +97,11 @@ public class PubSubStatusTypeNode extends BaseObjectTypeNode implements PubSubSt
   public void writeState(PubSubState value) throws UaException {
     try {
       writeStateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -125,8 +131,11 @@ public class PubSubStatusTypeNode extends BaseObjectTypeNode implements PubSubSt
   public BaseDataVariableTypeNode getStateNode() throws UaException {
     try {
       return getStateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -134,7 +143,7 @@ public class PubSubStatusTypeNode extends BaseObjectTypeNode implements PubSubSt
   public CompletableFuture<? extends BaseDataVariableTypeNode> getStateNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "State", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "State", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 }

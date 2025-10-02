@@ -77,8 +77,11 @@ public class AuditConditionRespondEventTypeNode extends AuditConditionEventTypeN
   public UInteger readSelectedResponse() throws UaException {
     try {
       return readSelectedResponseAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -86,8 +89,11 @@ public class AuditConditionRespondEventTypeNode extends AuditConditionEventTypeN
   public void writeSelectedResponse(UInteger value) throws UaException {
     try {
       writeSelectedResponseAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -109,8 +115,11 @@ public class AuditConditionRespondEventTypeNode extends AuditConditionEventTypeN
   public PropertyTypeNode getSelectedResponseNode() throws UaException {
     try {
       return getSelectedResponseNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -120,7 +129,7 @@ public class AuditConditionRespondEventTypeNode extends AuditConditionEventTypeN
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "SelectedResponse",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }

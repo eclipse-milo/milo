@@ -79,8 +79,11 @@ public class QuantityTypeNode extends BaseObjectTypeNode implements QuantityType
   public LocalizedText readSymbol() throws UaException {
     try {
       return readSymbolAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -88,8 +91,11 @@ public class QuantityTypeNode extends BaseObjectTypeNode implements QuantityType
   public void writeSymbol(LocalizedText value) throws UaException {
     try {
       writeSymbolAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -111,8 +117,11 @@ public class QuantityTypeNode extends BaseObjectTypeNode implements QuantityType
   public PropertyTypeNode getSymbolNode() throws UaException {
     try {
       return getSymbolNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -120,7 +129,7 @@ public class QuantityTypeNode extends BaseObjectTypeNode implements QuantityType
   public CompletableFuture<? extends PropertyTypeNode> getSymbolNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Symbol", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "Symbol", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -142,8 +151,11 @@ public class QuantityTypeNode extends BaseObjectTypeNode implements QuantityType
   public AnnotationDataType[] readAnnotation() throws UaException {
     try {
       return readAnnotationAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -151,8 +163,11 @@ public class QuantityTypeNode extends BaseObjectTypeNode implements QuantityType
   public void writeAnnotation(AnnotationDataType[] value) throws UaException {
     try {
       writeAnnotationAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -176,8 +191,11 @@ public class QuantityTypeNode extends BaseObjectTypeNode implements QuantityType
   public PropertyTypeNode getAnnotationNode() throws UaException {
     try {
       return getAnnotationNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -185,7 +203,7 @@ public class QuantityTypeNode extends BaseObjectTypeNode implements QuantityType
   public CompletableFuture<? extends PropertyTypeNode> getAnnotationNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Annotation", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "Annotation", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -205,8 +223,11 @@ public class QuantityTypeNode extends BaseObjectTypeNode implements QuantityType
   public String readConversionService() throws UaException {
     try {
       return readConversionServiceAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -214,8 +235,11 @@ public class QuantityTypeNode extends BaseObjectTypeNode implements QuantityType
   public void writeConversionService(String value) throws UaException {
     try {
       writeConversionServiceAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -237,8 +261,11 @@ public class QuantityTypeNode extends BaseObjectTypeNode implements QuantityType
   public PropertyTypeNode getConversionServiceNode() throws UaException {
     try {
       return getConversionServiceNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -248,7 +275,7 @@ public class QuantityTypeNode extends BaseObjectTypeNode implements QuantityType
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ConversionService",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -270,8 +297,11 @@ public class QuantityTypeNode extends BaseObjectTypeNode implements QuantityType
   public QuantityDimension readDimension() throws UaException {
     try {
       return readDimensionAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -279,8 +309,11 @@ public class QuantityTypeNode extends BaseObjectTypeNode implements QuantityType
   public void writeDimension(QuantityDimension value) throws UaException {
     try {
       writeDimensionAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -303,8 +336,11 @@ public class QuantityTypeNode extends BaseObjectTypeNode implements QuantityType
   public PropertyTypeNode getDimensionNode() throws UaException {
     try {
       return getDimensionNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -312,7 +348,7 @@ public class QuantityTypeNode extends BaseObjectTypeNode implements QuantityType
   public CompletableFuture<? extends PropertyTypeNode> getDimensionNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Dimension", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "Dimension", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -320,8 +356,11 @@ public class QuantityTypeNode extends BaseObjectTypeNode implements QuantityType
   public BaseObjectTypeNode getServerUnitsNode() throws UaException {
     try {
       return getServerUnitsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -329,10 +368,7 @@ public class QuantityTypeNode extends BaseObjectTypeNode implements QuantityType
   public CompletableFuture<? extends BaseObjectTypeNode> getServerUnitsNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ServerUnits",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "ServerUnits", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseObjectTypeNode) node);
   }
 }

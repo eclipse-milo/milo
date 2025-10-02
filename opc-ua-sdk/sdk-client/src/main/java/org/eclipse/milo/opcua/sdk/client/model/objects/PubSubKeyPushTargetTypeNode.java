@@ -81,8 +81,11 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   public String readApplicationUri() throws UaException {
     try {
       return readApplicationUriAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -90,8 +93,11 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   public void writeApplicationUri(String value) throws UaException {
     try {
       writeApplicationUriAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -113,8 +119,11 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getApplicationUriNode() throws UaException {
     try {
       return getApplicationUriNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -122,10 +131,7 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getApplicationUriNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ApplicationUri",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "ApplicationUri", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -145,8 +151,11 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   public String readEndpointUrl() throws UaException {
     try {
       return readEndpointUrlAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -154,8 +163,11 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   public void writeEndpointUrl(String value) throws UaException {
     try {
       writeEndpointUrlAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -177,8 +189,11 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getEndpointUrlNode() throws UaException {
     try {
       return getEndpointUrlNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -186,10 +201,7 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getEndpointUrlNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "EndpointUrl",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "EndpointUrl", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -209,8 +221,11 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   public String readSecurityPolicyUri() throws UaException {
     try {
       return readSecurityPolicyUriAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -218,8 +233,11 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   public void writeSecurityPolicyUri(String value) throws UaException {
     try {
       writeSecurityPolicyUriAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -241,8 +259,11 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getSecurityPolicyUriNode() throws UaException {
     try {
       return getSecurityPolicyUriNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -252,7 +273,7 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "SecurityPolicyUri",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -274,8 +295,11 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   public UserTokenPolicy readUserTokenType() throws UaException {
     try {
       return readUserTokenTypeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -283,8 +307,11 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   public void writeUserTokenType(UserTokenPolicy value) throws UaException {
     try {
       writeUserTokenTypeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -308,8 +335,11 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getUserTokenTypeNode() throws UaException {
     try {
       return getUserTokenTypeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -317,10 +347,7 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getUserTokenTypeNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "UserTokenType",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "UserTokenType", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -340,8 +367,11 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   public UShort readRequestedKeyCount() throws UaException {
     try {
       return readRequestedKeyCountAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -349,8 +379,11 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   public void writeRequestedKeyCount(UShort value) throws UaException {
     try {
       writeRequestedKeyCountAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -372,8 +405,11 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getRequestedKeyCountNode() throws UaException {
     try {
       return getRequestedKeyCountNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -383,7 +419,7 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "RequestedKeyCount",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -404,8 +440,11 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   public Double readRetryInterval() throws UaException {
     try {
       return readRetryIntervalAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -413,8 +452,11 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   public void writeRetryInterval(Double value) throws UaException {
     try {
       writeRetryIntervalAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -436,8 +478,11 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getRetryIntervalNode() throws UaException {
     try {
       return getRetryIntervalNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -445,10 +490,7 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getRetryIntervalNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "RetryInterval",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "RetryInterval", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -468,8 +510,11 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   public DateTime readLastPushExecutionTime() throws UaException {
     try {
       return readLastPushExecutionTimeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -477,8 +522,11 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   public void writeLastPushExecutionTime(DateTime value) throws UaException {
     try {
       writeLastPushExecutionTimeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -501,8 +549,11 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getLastPushExecutionTimeNode() throws UaException {
     try {
       return getLastPushExecutionTimeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -512,7 +563,7 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "LastPushExecutionTime",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -533,8 +584,11 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   public DateTime readLastPushErrorTime() throws UaException {
     try {
       return readLastPushErrorTimeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -542,8 +596,11 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   public void writeLastPushErrorTime(DateTime value) throws UaException {
     try {
       writeLastPushErrorTimeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -565,8 +622,11 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getLastPushErrorTimeNode() throws UaException {
     try {
       return getLastPushErrorTimeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -576,7 +636,7 @@ public class PubSubKeyPushTargetTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "LastPushErrorTime",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }

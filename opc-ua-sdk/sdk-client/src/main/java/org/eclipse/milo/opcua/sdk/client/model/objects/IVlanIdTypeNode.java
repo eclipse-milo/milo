@@ -77,8 +77,11 @@ public class IVlanIdTypeNode extends BaseInterfaceTypeNode implements IVlanIdTyp
   public UShort readVlanId() throws UaException {
     try {
       return readVlanIdAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -86,8 +89,11 @@ public class IVlanIdTypeNode extends BaseInterfaceTypeNode implements IVlanIdTyp
   public void writeVlanId(UShort value) throws UaException {
     try {
       writeVlanIdAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -109,8 +115,11 @@ public class IVlanIdTypeNode extends BaseInterfaceTypeNode implements IVlanIdTyp
   public BaseDataVariableTypeNode getVlanIdNode() throws UaException {
     try {
       return getVlanIdNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -118,7 +127,7 @@ public class IVlanIdTypeNode extends BaseInterfaceTypeNode implements IVlanIdTyp
   public CompletableFuture<? extends BaseDataVariableTypeNode> getVlanIdNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "VlanId", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "VlanId", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 }

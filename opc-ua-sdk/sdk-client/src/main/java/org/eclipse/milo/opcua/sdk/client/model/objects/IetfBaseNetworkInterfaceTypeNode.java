@@ -89,8 +89,11 @@ public class IetfBaseNetworkInterfaceTypeNode extends BaseObjectTypeNode
   public InterfaceAdminStatus readAdminStatus() throws UaException {
     try {
       return readAdminStatusAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -98,8 +101,11 @@ public class IetfBaseNetworkInterfaceTypeNode extends BaseObjectTypeNode
   public void writeAdminStatus(InterfaceAdminStatus value) throws UaException {
     try {
       writeAdminStatusAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -129,8 +135,11 @@ public class IetfBaseNetworkInterfaceTypeNode extends BaseObjectTypeNode
   public BaseDataVariableTypeNode getAdminStatusNode() throws UaException {
     try {
       return getAdminStatusNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -138,10 +147,7 @@ public class IetfBaseNetworkInterfaceTypeNode extends BaseObjectTypeNode
   public CompletableFuture<? extends BaseDataVariableTypeNode> getAdminStatusNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "AdminStatus",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "AdminStatus", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 
@@ -169,8 +175,11 @@ public class IetfBaseNetworkInterfaceTypeNode extends BaseObjectTypeNode
   public InterfaceOperStatus readOperStatus() throws UaException {
     try {
       return readOperStatusAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -178,8 +187,11 @@ public class IetfBaseNetworkInterfaceTypeNode extends BaseObjectTypeNode
   public void writeOperStatus(InterfaceOperStatus value) throws UaException {
     try {
       writeOperStatusAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -209,8 +221,11 @@ public class IetfBaseNetworkInterfaceTypeNode extends BaseObjectTypeNode
   public BaseDataVariableTypeNode getOperStatusNode() throws UaException {
     try {
       return getOperStatusNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -218,7 +233,7 @@ public class IetfBaseNetworkInterfaceTypeNode extends BaseObjectTypeNode
   public CompletableFuture<? extends BaseDataVariableTypeNode> getOperStatusNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "OperStatus", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "OperStatus", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 
@@ -238,8 +253,11 @@ public class IetfBaseNetworkInterfaceTypeNode extends BaseObjectTypeNode
   public String readPhysAddress() throws UaException {
     try {
       return readPhysAddressAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -247,8 +265,11 @@ public class IetfBaseNetworkInterfaceTypeNode extends BaseObjectTypeNode
   public void writePhysAddress(String value) throws UaException {
     try {
       writePhysAddressAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -270,8 +291,11 @@ public class IetfBaseNetworkInterfaceTypeNode extends BaseObjectTypeNode
   public BaseDataVariableTypeNode getPhysAddressNode() throws UaException {
     try {
       return getPhysAddressNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -279,10 +303,7 @@ public class IetfBaseNetworkInterfaceTypeNode extends BaseObjectTypeNode
   public CompletableFuture<? extends BaseDataVariableTypeNode> getPhysAddressNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "PhysAddress",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "PhysAddress", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 
@@ -302,8 +323,11 @@ public class IetfBaseNetworkInterfaceTypeNode extends BaseObjectTypeNode
   public ULong readSpeed() throws UaException {
     try {
       return readSpeedAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -311,8 +335,11 @@ public class IetfBaseNetworkInterfaceTypeNode extends BaseObjectTypeNode
   public void writeSpeed(ULong value) throws UaException {
     try {
       writeSpeedAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -334,8 +361,11 @@ public class IetfBaseNetworkInterfaceTypeNode extends BaseObjectTypeNode
   public AnalogUnitTypeNode getSpeedNode() throws UaException {
     try {
       return getSpeedNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -343,7 +373,7 @@ public class IetfBaseNetworkInterfaceTypeNode extends BaseObjectTypeNode
   public CompletableFuture<? extends AnalogUnitTypeNode> getSpeedNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Speed", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "Speed", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (AnalogUnitTypeNode) node);
   }
 }

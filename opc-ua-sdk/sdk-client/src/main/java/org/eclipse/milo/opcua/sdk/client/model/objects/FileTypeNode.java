@@ -79,8 +79,11 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
   public ULong readSize() throws UaException {
     try {
       return readSizeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -88,8 +91,11 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
   public void writeSize(ULong value) throws UaException {
     try {
       writeSizeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -111,8 +117,11 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
   public PropertyTypeNode getSizeNode() throws UaException {
     try {
       return getSizeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -120,7 +129,7 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
   public CompletableFuture<? extends PropertyTypeNode> getSizeNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Size", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "Size", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -140,8 +149,11 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
   public Boolean readWritable() throws UaException {
     try {
       return readWritableAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -149,8 +161,11 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
   public void writeWritable(Boolean value) throws UaException {
     try {
       writeWritableAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -172,8 +187,11 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
   public PropertyTypeNode getWritableNode() throws UaException {
     try {
       return getWritableNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -181,7 +199,7 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
   public CompletableFuture<? extends PropertyTypeNode> getWritableNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Writable", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "Writable", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -201,8 +219,11 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
   public Boolean readUserWritable() throws UaException {
     try {
       return readUserWritableAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -210,8 +231,11 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
   public void writeUserWritable(Boolean value) throws UaException {
     try {
       writeUserWritableAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -233,8 +257,11 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
   public PropertyTypeNode getUserWritableNode() throws UaException {
     try {
       return getUserWritableNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -242,10 +269,7 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
   public CompletableFuture<? extends PropertyTypeNode> getUserWritableNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "UserWritable",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "UserWritable", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -265,8 +289,11 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
   public UShort readOpenCount() throws UaException {
     try {
       return readOpenCountAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -274,8 +301,11 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
   public void writeOpenCount(UShort value) throws UaException {
     try {
       writeOpenCountAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -297,8 +327,11 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
   public PropertyTypeNode getOpenCountNode() throws UaException {
     try {
       return getOpenCountNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -306,7 +339,7 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
   public CompletableFuture<? extends PropertyTypeNode> getOpenCountNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "OpenCount", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "OpenCount", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -326,8 +359,11 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
   public String readMimeType() throws UaException {
     try {
       return readMimeTypeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -335,8 +371,11 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
   public void writeMimeType(String value) throws UaException {
     try {
       writeMimeTypeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -358,8 +397,11 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
   public PropertyTypeNode getMimeTypeNode() throws UaException {
     try {
       return getMimeTypeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -367,7 +409,7 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
   public CompletableFuture<? extends PropertyTypeNode> getMimeTypeNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "MimeType", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "MimeType", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -387,8 +429,11 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
   public UInteger readMaxByteStringLength() throws UaException {
     try {
       return readMaxByteStringLengthAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -396,8 +441,11 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
   public void writeMaxByteStringLength(UInteger value) throws UaException {
     try {
       writeMaxByteStringLengthAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -419,8 +467,11 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
   public PropertyTypeNode getMaxByteStringLengthNode() throws UaException {
     try {
       return getMaxByteStringLengthNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -430,7 +481,7 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MaxByteStringLength",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -451,8 +502,11 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
   public DateTime readLastModifiedTime() throws UaException {
     try {
       return readLastModifiedTimeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -460,8 +514,11 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
   public void writeLastModifiedTime(DateTime value) throws UaException {
     try {
       writeLastModifiedTimeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -483,8 +540,11 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
   public PropertyTypeNode getLastModifiedTimeNode() throws UaException {
     try {
       return getLastModifiedTimeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -494,7 +554,7 @@ public class FileTypeNode extends BaseObjectTypeNode implements FileType {
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "LastModifiedTime",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }

@@ -78,8 +78,11 @@ public class AuditCreateSessionEventTypeNode extends AuditSessionEventTypeNode
   public String readSecureChannelId() throws UaException {
     try {
       return readSecureChannelIdAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -87,8 +90,11 @@ public class AuditCreateSessionEventTypeNode extends AuditSessionEventTypeNode
   public void writeSecureChannelId(String value) throws UaException {
     try {
       writeSecureChannelIdAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -110,8 +116,11 @@ public class AuditCreateSessionEventTypeNode extends AuditSessionEventTypeNode
   public PropertyTypeNode getSecureChannelIdNode() throws UaException {
     try {
       return getSecureChannelIdNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -119,10 +128,7 @@ public class AuditCreateSessionEventTypeNode extends AuditSessionEventTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getSecureChannelIdNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "SecureChannelId",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "SecureChannelId", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -142,8 +148,11 @@ public class AuditCreateSessionEventTypeNode extends AuditSessionEventTypeNode
   public ByteString readClientCertificate() throws UaException {
     try {
       return readClientCertificateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -151,8 +160,11 @@ public class AuditCreateSessionEventTypeNode extends AuditSessionEventTypeNode
   public void writeClientCertificate(ByteString value) throws UaException {
     try {
       writeClientCertificateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -174,8 +186,11 @@ public class AuditCreateSessionEventTypeNode extends AuditSessionEventTypeNode
   public PropertyTypeNode getClientCertificateNode() throws UaException {
     try {
       return getClientCertificateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -185,7 +200,7 @@ public class AuditCreateSessionEventTypeNode extends AuditSessionEventTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ClientCertificate",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -206,8 +221,11 @@ public class AuditCreateSessionEventTypeNode extends AuditSessionEventTypeNode
   public String readClientCertificateThumbprint() throws UaException {
     try {
       return readClientCertificateThumbprintAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -215,8 +233,11 @@ public class AuditCreateSessionEventTypeNode extends AuditSessionEventTypeNode
   public void writeClientCertificateThumbprint(String value) throws UaException {
     try {
       writeClientCertificateThumbprintAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -239,8 +260,11 @@ public class AuditCreateSessionEventTypeNode extends AuditSessionEventTypeNode
   public PropertyTypeNode getClientCertificateThumbprintNode() throws UaException {
     try {
       return getClientCertificateThumbprintNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -250,7 +274,7 @@ public class AuditCreateSessionEventTypeNode extends AuditSessionEventTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ClientCertificateThumbprint",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -271,8 +295,11 @@ public class AuditCreateSessionEventTypeNode extends AuditSessionEventTypeNode
   public Double readRevisedSessionTimeout() throws UaException {
     try {
       return readRevisedSessionTimeoutAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -280,8 +307,11 @@ public class AuditCreateSessionEventTypeNode extends AuditSessionEventTypeNode
   public void writeRevisedSessionTimeout(Double value) throws UaException {
     try {
       writeRevisedSessionTimeoutAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -304,8 +334,11 @@ public class AuditCreateSessionEventTypeNode extends AuditSessionEventTypeNode
   public PropertyTypeNode getRevisedSessionTimeoutNode() throws UaException {
     try {
       return getRevisedSessionTimeoutNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -315,7 +348,7 @@ public class AuditCreateSessionEventTypeNode extends AuditSessionEventTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "RevisedSessionTimeout",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }

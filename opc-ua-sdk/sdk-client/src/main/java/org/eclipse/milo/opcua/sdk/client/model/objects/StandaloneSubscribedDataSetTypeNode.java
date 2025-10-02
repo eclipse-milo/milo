@@ -80,8 +80,11 @@ public class StandaloneSubscribedDataSetTypeNode extends BaseObjectTypeNode
   public DataSetMetaDataType readDataSetMetaData() throws UaException {
     try {
       return readDataSetMetaDataAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -89,8 +92,11 @@ public class StandaloneSubscribedDataSetTypeNode extends BaseObjectTypeNode
   public void writeDataSetMetaData(DataSetMetaDataType value) throws UaException {
     try {
       writeDataSetMetaDataAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -115,8 +121,11 @@ public class StandaloneSubscribedDataSetTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getDataSetMetaDataNode() throws UaException {
     try {
       return getDataSetMetaDataNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -124,10 +133,7 @@ public class StandaloneSubscribedDataSetTypeNode extends BaseObjectTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getDataSetMetaDataNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "DataSetMetaData",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "DataSetMetaData", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -147,8 +153,11 @@ public class StandaloneSubscribedDataSetTypeNode extends BaseObjectTypeNode
   public Boolean readIsConnected() throws UaException {
     try {
       return readIsConnectedAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -156,8 +165,11 @@ public class StandaloneSubscribedDataSetTypeNode extends BaseObjectTypeNode
   public void writeIsConnected(Boolean value) throws UaException {
     try {
       writeIsConnectedAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -179,8 +191,11 @@ public class StandaloneSubscribedDataSetTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getIsConnectedNode() throws UaException {
     try {
       return getIsConnectedNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -188,10 +203,7 @@ public class StandaloneSubscribedDataSetTypeNode extends BaseObjectTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getIsConnectedNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "IsConnected",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "IsConnected", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -199,8 +211,11 @@ public class StandaloneSubscribedDataSetTypeNode extends BaseObjectTypeNode
   public SubscribedDataSetTypeNode getSubscribedDataSetNode() throws UaException {
     try {
       return getSubscribedDataSetNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -210,7 +225,7 @@ public class StandaloneSubscribedDataSetTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "SubscribedDataSet",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (SubscribedDataSetTypeNode) node);
   }

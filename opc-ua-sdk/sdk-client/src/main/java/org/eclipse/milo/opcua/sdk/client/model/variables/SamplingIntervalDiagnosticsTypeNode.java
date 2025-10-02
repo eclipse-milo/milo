@@ -93,8 +93,11 @@ public class SamplingIntervalDiagnosticsTypeNode extends BaseDataVariableTypeNod
   public Double readSamplingInterval() throws UaException {
     try {
       return readSamplingIntervalAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -102,8 +105,11 @@ public class SamplingIntervalDiagnosticsTypeNode extends BaseDataVariableTypeNod
   public void writeSamplingInterval(Double value) throws UaException {
     try {
       writeSamplingIntervalAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -125,8 +131,11 @@ public class SamplingIntervalDiagnosticsTypeNode extends BaseDataVariableTypeNod
   public BaseDataVariableTypeNode getSamplingIntervalNode() throws UaException {
     try {
       return getSamplingIntervalNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -136,7 +145,7 @@ public class SamplingIntervalDiagnosticsTypeNode extends BaseDataVariableTypeNod
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "SamplingInterval",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
@@ -157,8 +166,11 @@ public class SamplingIntervalDiagnosticsTypeNode extends BaseDataVariableTypeNod
   public UInteger readSampledMonitoredItemsCount() throws UaException {
     try {
       return readSampledMonitoredItemsCountAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -166,8 +178,11 @@ public class SamplingIntervalDiagnosticsTypeNode extends BaseDataVariableTypeNod
   public void writeSampledMonitoredItemsCount(UInteger value) throws UaException {
     try {
       writeSampledMonitoredItemsCountAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -190,8 +205,11 @@ public class SamplingIntervalDiagnosticsTypeNode extends BaseDataVariableTypeNod
   public BaseDataVariableTypeNode getSampledMonitoredItemsCountNode() throws UaException {
     try {
       return getSampledMonitoredItemsCountNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -202,7 +220,7 @@ public class SamplingIntervalDiagnosticsTypeNode extends BaseDataVariableTypeNod
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "SampledMonitoredItemsCount",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
@@ -223,8 +241,11 @@ public class SamplingIntervalDiagnosticsTypeNode extends BaseDataVariableTypeNod
   public UInteger readMaxSampledMonitoredItemsCount() throws UaException {
     try {
       return readMaxSampledMonitoredItemsCountAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -232,8 +253,11 @@ public class SamplingIntervalDiagnosticsTypeNode extends BaseDataVariableTypeNod
   public void writeMaxSampledMonitoredItemsCount(UInteger value) throws UaException {
     try {
       writeMaxSampledMonitoredItemsCountAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -256,8 +280,11 @@ public class SamplingIntervalDiagnosticsTypeNode extends BaseDataVariableTypeNod
   public BaseDataVariableTypeNode getMaxSampledMonitoredItemsCountNode() throws UaException {
     try {
       return getMaxSampledMonitoredItemsCountNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -268,7 +295,7 @@ public class SamplingIntervalDiagnosticsTypeNode extends BaseDataVariableTypeNod
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MaxSampledMonitoredItemsCount",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
@@ -289,8 +316,11 @@ public class SamplingIntervalDiagnosticsTypeNode extends BaseDataVariableTypeNod
   public UInteger readDisabledMonitoredItemsSamplingCount() throws UaException {
     try {
       return readDisabledMonitoredItemsSamplingCountAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -298,8 +328,11 @@ public class SamplingIntervalDiagnosticsTypeNode extends BaseDataVariableTypeNod
   public void writeDisabledMonitoredItemsSamplingCount(UInteger value) throws UaException {
     try {
       writeDisabledMonitoredItemsSamplingCountAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -322,8 +355,11 @@ public class SamplingIntervalDiagnosticsTypeNode extends BaseDataVariableTypeNod
   public BaseDataVariableTypeNode getDisabledMonitoredItemsSamplingCountNode() throws UaException {
     try {
       return getDisabledMonitoredItemsSamplingCountNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -334,7 +370,7 @@ public class SamplingIntervalDiagnosticsTypeNode extends BaseDataVariableTypeNod
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "DisabledMonitoredItemsSamplingCount",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }

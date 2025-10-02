@@ -80,8 +80,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public String[] readServerProfileArray() throws UaException {
     try {
       return readServerProfileArrayAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -89,8 +92,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public void writeServerProfileArray(String[] value) throws UaException {
     try {
       writeServerProfileArrayAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -112,8 +118,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getServerProfileArrayNode() throws UaException {
     try {
       return getServerProfileArrayNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -123,7 +132,7 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ServerProfileArray",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -144,8 +153,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public String[] readLocaleIdArray() throws UaException {
     try {
       return readLocaleIdArrayAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -153,8 +165,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public void writeLocaleIdArray(String[] value) throws UaException {
     try {
       writeLocaleIdArrayAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -176,8 +191,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getLocaleIdArrayNode() throws UaException {
     try {
       return getLocaleIdArrayNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -185,10 +203,7 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getLocaleIdArrayNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "LocaleIdArray",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "LocaleIdArray", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -208,8 +223,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public Double readMinSupportedSampleRate() throws UaException {
     try {
       return readMinSupportedSampleRateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -217,8 +235,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public void writeMinSupportedSampleRate(Double value) throws UaException {
     try {
       writeMinSupportedSampleRateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -241,8 +262,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getMinSupportedSampleRateNode() throws UaException {
     try {
       return getMinSupportedSampleRateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -252,7 +276,7 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MinSupportedSampleRate",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -273,8 +297,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public UShort readMaxBrowseContinuationPoints() throws UaException {
     try {
       return readMaxBrowseContinuationPointsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -282,8 +309,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public void writeMaxBrowseContinuationPoints(UShort value) throws UaException {
     try {
       writeMaxBrowseContinuationPointsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -306,8 +336,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getMaxBrowseContinuationPointsNode() throws UaException {
     try {
       return getMaxBrowseContinuationPointsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -317,7 +350,7 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MaxBrowseContinuationPoints",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -338,8 +371,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public UShort readMaxQueryContinuationPoints() throws UaException {
     try {
       return readMaxQueryContinuationPointsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -347,8 +383,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public void writeMaxQueryContinuationPoints(UShort value) throws UaException {
     try {
       writeMaxQueryContinuationPointsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -371,8 +410,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getMaxQueryContinuationPointsNode() throws UaException {
     try {
       return getMaxQueryContinuationPointsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -382,7 +424,7 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MaxQueryContinuationPoints",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -403,8 +445,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public UShort readMaxHistoryContinuationPoints() throws UaException {
     try {
       return readMaxHistoryContinuationPointsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -412,8 +457,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public void writeMaxHistoryContinuationPoints(UShort value) throws UaException {
     try {
       writeMaxHistoryContinuationPointsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -436,8 +484,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getMaxHistoryContinuationPointsNode() throws UaException {
     try {
       return getMaxHistoryContinuationPointsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -447,7 +498,7 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MaxHistoryContinuationPoints",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -470,8 +521,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public SignedSoftwareCertificate[] readSoftwareCertificates() throws UaException {
     try {
       return readSoftwareCertificatesAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -479,8 +533,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public void writeSoftwareCertificates(SignedSoftwareCertificate[] value) throws UaException {
     try {
       writeSoftwareCertificatesAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -505,8 +562,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getSoftwareCertificatesNode() throws UaException {
     try {
       return getSoftwareCertificatesNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -516,7 +576,7 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "SoftwareCertificates",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -537,8 +597,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public UInteger readMaxArrayLength() throws UaException {
     try {
       return readMaxArrayLengthAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -546,8 +609,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public void writeMaxArrayLength(UInteger value) throws UaException {
     try {
       writeMaxArrayLengthAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -569,8 +635,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getMaxArrayLengthNode() throws UaException {
     try {
       return getMaxArrayLengthNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -578,10 +647,7 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getMaxArrayLengthNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "MaxArrayLength",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "MaxArrayLength", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -601,8 +667,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public UInteger readMaxStringLength() throws UaException {
     try {
       return readMaxStringLengthAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -610,8 +679,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public void writeMaxStringLength(UInteger value) throws UaException {
     try {
       writeMaxStringLengthAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -633,8 +705,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getMaxStringLengthNode() throws UaException {
     try {
       return getMaxStringLengthNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -642,10 +717,7 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getMaxStringLengthNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "MaxStringLength",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "MaxStringLength", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -665,8 +737,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public UInteger readMaxByteStringLength() throws UaException {
     try {
       return readMaxByteStringLengthAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -674,8 +749,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public void writeMaxByteStringLength(UInteger value) throws UaException {
     try {
       writeMaxByteStringLengthAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -697,8 +775,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getMaxByteStringLengthNode() throws UaException {
     try {
       return getMaxByteStringLengthNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -708,7 +789,7 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MaxByteStringLength",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -729,8 +810,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public UInteger readMaxSessions() throws UaException {
     try {
       return readMaxSessionsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -738,8 +822,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public void writeMaxSessions(UInteger value) throws UaException {
     try {
       writeMaxSessionsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -761,8 +848,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getMaxSessionsNode() throws UaException {
     try {
       return getMaxSessionsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -770,10 +860,7 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getMaxSessionsNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "MaxSessions",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "MaxSessions", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -793,8 +880,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public UInteger readMaxSubscriptions() throws UaException {
     try {
       return readMaxSubscriptionsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -802,8 +892,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public void writeMaxSubscriptions(UInteger value) throws UaException {
     try {
       writeMaxSubscriptionsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -825,8 +918,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getMaxSubscriptionsNode() throws UaException {
     try {
       return getMaxSubscriptionsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -836,7 +932,7 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MaxSubscriptions",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -857,8 +953,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public UInteger readMaxMonitoredItems() throws UaException {
     try {
       return readMaxMonitoredItemsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -866,8 +965,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public void writeMaxMonitoredItems(UInteger value) throws UaException {
     try {
       writeMaxMonitoredItemsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -889,8 +991,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getMaxMonitoredItemsNode() throws UaException {
     try {
       return getMaxMonitoredItemsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -900,7 +1005,7 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MaxMonitoredItems",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -921,8 +1026,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public UInteger readMaxSubscriptionsPerSession() throws UaException {
     try {
       return readMaxSubscriptionsPerSessionAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -930,8 +1038,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public void writeMaxSubscriptionsPerSession(UInteger value) throws UaException {
     try {
       writeMaxSubscriptionsPerSessionAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -954,8 +1065,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getMaxSubscriptionsPerSessionNode() throws UaException {
     try {
       return getMaxSubscriptionsPerSessionNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -965,7 +1079,7 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MaxSubscriptionsPerSession",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -986,8 +1100,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public UInteger readMaxMonitoredItemsPerSubscription() throws UaException {
     try {
       return readMaxMonitoredItemsPerSubscriptionAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -995,8 +1112,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public void writeMaxMonitoredItemsPerSubscription(UInteger value) throws UaException {
     try {
       writeMaxMonitoredItemsPerSubscriptionAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -1019,8 +1139,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getMaxMonitoredItemsPerSubscriptionNode() throws UaException {
     try {
       return getMaxMonitoredItemsPerSubscriptionNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -1031,7 +1154,7 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MaxMonitoredItemsPerSubscription",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -1052,8 +1175,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public UInteger readMaxSelectClauseParameters() throws UaException {
     try {
       return readMaxSelectClauseParametersAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -1061,8 +1187,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public void writeMaxSelectClauseParameters(UInteger value) throws UaException {
     try {
       writeMaxSelectClauseParametersAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -1085,8 +1214,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getMaxSelectClauseParametersNode() throws UaException {
     try {
       return getMaxSelectClauseParametersNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -1096,7 +1228,7 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MaxSelectClauseParameters",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -1117,8 +1249,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public UInteger readMaxWhereClauseParameters() throws UaException {
     try {
       return readMaxWhereClauseParametersAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -1126,8 +1261,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public void writeMaxWhereClauseParameters(UInteger value) throws UaException {
     try {
       writeMaxWhereClauseParametersAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -1150,8 +1288,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getMaxWhereClauseParametersNode() throws UaException {
     try {
       return getMaxWhereClauseParametersNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -1161,7 +1302,7 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MaxWhereClauseParameters",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -1182,8 +1323,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public UInteger readMaxMonitoredItemsQueueSize() throws UaException {
     try {
       return readMaxMonitoredItemsQueueSizeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -1191,8 +1335,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public void writeMaxMonitoredItemsQueueSize(UInteger value) throws UaException {
     try {
       writeMaxMonitoredItemsQueueSizeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -1215,8 +1362,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getMaxMonitoredItemsQueueSizeNode() throws UaException {
     try {
       return getMaxMonitoredItemsQueueSizeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -1226,7 +1376,7 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MaxMonitoredItemsQueueSize",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -1247,8 +1397,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public QualifiedName[] readConformanceUnits() throws UaException {
     try {
       return readConformanceUnitsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -1256,8 +1409,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public void writeConformanceUnits(QualifiedName[] value) throws UaException {
     try {
       writeConformanceUnitsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -1280,8 +1436,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getConformanceUnitsNode() throws UaException {
     try {
       return getConformanceUnitsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -1291,7 +1450,7 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ConformanceUnits",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -1300,8 +1459,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public OperationLimitsTypeNode getOperationLimitsNode() throws UaException {
     try {
       return getOperationLimitsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -1309,10 +1471,7 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public CompletableFuture<? extends OperationLimitsTypeNode> getOperationLimitsNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "OperationLimits",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "OperationLimits", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (OperationLimitsTypeNode) node);
   }
 
@@ -1320,8 +1479,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public FolderTypeNode getModellingRulesNode() throws UaException {
     try {
       return getModellingRulesNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -1329,10 +1491,7 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public CompletableFuture<? extends FolderTypeNode> getModellingRulesNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ModellingRules",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "ModellingRules", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (FolderTypeNode) node);
   }
 
@@ -1340,8 +1499,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public FolderTypeNode getAggregateFunctionsNode() throws UaException {
     try {
       return getAggregateFunctionsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -1351,7 +1513,7 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "AggregateFunctions",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (FolderTypeNode) node);
   }
@@ -1360,8 +1522,11 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public RoleSetTypeNode getRoleSetNode() throws UaException {
     try {
       return getRoleSetNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -1369,7 +1534,7 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   public CompletableFuture<? extends RoleSetTypeNode> getRoleSetNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "RoleSet", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "RoleSet", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (RoleSetTypeNode) node);
   }
 }

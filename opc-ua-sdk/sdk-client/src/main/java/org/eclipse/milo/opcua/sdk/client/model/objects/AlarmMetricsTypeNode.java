@@ -78,8 +78,11 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   public UInteger readAlarmCount() throws UaException {
     try {
       return readAlarmCountAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -87,8 +90,11 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   public void writeAlarmCount(UInteger value) throws UaException {
     try {
       writeAlarmCountAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -110,8 +116,11 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   public BaseDataVariableTypeNode getAlarmCountNode() throws UaException {
     try {
       return getAlarmCountNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -119,7 +128,7 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   public CompletableFuture<? extends BaseDataVariableTypeNode> getAlarmCountNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "AlarmCount", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "AlarmCount", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 
@@ -139,8 +148,11 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   public DateTime readStartTime() throws UaException {
     try {
       return readStartTimeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -148,8 +160,11 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   public void writeStartTime(DateTime value) throws UaException {
     try {
       writeStartTimeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -171,8 +186,11 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   public BaseDataVariableTypeNode getStartTimeNode() throws UaException {
     try {
       return getStartTimeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -180,7 +198,7 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   public CompletableFuture<? extends BaseDataVariableTypeNode> getStartTimeNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "StartTime", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "StartTime", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 
@@ -200,8 +218,11 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   public Double readMaximumActiveState() throws UaException {
     try {
       return readMaximumActiveStateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -209,8 +230,11 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   public void writeMaximumActiveState(Double value) throws UaException {
     try {
       writeMaximumActiveStateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -232,8 +256,11 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   public BaseDataVariableTypeNode getMaximumActiveStateNode() throws UaException {
     try {
       return getMaximumActiveStateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -243,7 +270,7 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MaximumActiveState",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
@@ -264,8 +291,11 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   public Double readMaximumUnAck() throws UaException {
     try {
       return readMaximumUnAckAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -273,8 +303,11 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   public void writeMaximumUnAck(Double value) throws UaException {
     try {
       writeMaximumUnAckAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -296,8 +329,11 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   public BaseDataVariableTypeNode getMaximumUnAckNode() throws UaException {
     try {
       return getMaximumUnAckNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -305,10 +341,7 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   public CompletableFuture<? extends BaseDataVariableTypeNode> getMaximumUnAckNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "MaximumUnAck",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "MaximumUnAck", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 
@@ -328,8 +361,11 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   public Double readCurrentAlarmRate() throws UaException {
     try {
       return readCurrentAlarmRateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -337,8 +373,11 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   public void writeCurrentAlarmRate(Double value) throws UaException {
     try {
       writeCurrentAlarmRateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -360,8 +399,11 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   public AlarmRateVariableTypeNode getCurrentAlarmRateNode() throws UaException {
     try {
       return getCurrentAlarmRateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -371,7 +413,7 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "CurrentAlarmRate",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (AlarmRateVariableTypeNode) node);
   }
@@ -392,8 +434,11 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   public Double readMaximumAlarmRate() throws UaException {
     try {
       return readMaximumAlarmRateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -401,8 +446,11 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   public void writeMaximumAlarmRate(Double value) throws UaException {
     try {
       writeMaximumAlarmRateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -424,8 +472,11 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   public AlarmRateVariableTypeNode getMaximumAlarmRateNode() throws UaException {
     try {
       return getMaximumAlarmRateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -435,7 +486,7 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MaximumAlarmRate",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (AlarmRateVariableTypeNode) node);
   }
@@ -456,8 +507,11 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   public UInteger readMaximumReAlarmCount() throws UaException {
     try {
       return readMaximumReAlarmCountAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -465,8 +519,11 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   public void writeMaximumReAlarmCount(UInteger value) throws UaException {
     try {
       writeMaximumReAlarmCountAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -488,8 +545,11 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   public BaseDataVariableTypeNode getMaximumReAlarmCountNode() throws UaException {
     try {
       return getMaximumReAlarmCountNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -499,7 +559,7 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MaximumReAlarmCount",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
@@ -520,8 +580,11 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   public Double readAverageAlarmRate() throws UaException {
     try {
       return readAverageAlarmRateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -529,8 +592,11 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   public void writeAverageAlarmRate(Double value) throws UaException {
     try {
       writeAverageAlarmRateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -552,8 +618,11 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
   public AlarmRateVariableTypeNode getAverageAlarmRateNode() throws UaException {
     try {
       return getAverageAlarmRateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -563,7 +632,7 @@ public class AlarmMetricsTypeNode extends BaseObjectTypeNode implements AlarmMet
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "AverageAlarmRate",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (AlarmRateVariableTypeNode) node);
   }

@@ -92,8 +92,11 @@ public class RationalNumberTypeNode extends BaseDataVariableTypeNode implements 
   public Integer readNumerator() throws UaException {
     try {
       return readNumeratorAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -101,8 +104,11 @@ public class RationalNumberTypeNode extends BaseDataVariableTypeNode implements 
   public void writeNumerator(Integer value) throws UaException {
     try {
       writeNumeratorAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -124,8 +130,11 @@ public class RationalNumberTypeNode extends BaseDataVariableTypeNode implements 
   public BaseDataVariableTypeNode getNumeratorNode() throws UaException {
     try {
       return getNumeratorNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -133,7 +142,7 @@ public class RationalNumberTypeNode extends BaseDataVariableTypeNode implements 
   public CompletableFuture<? extends BaseDataVariableTypeNode> getNumeratorNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Numerator", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "Numerator", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 
@@ -153,8 +162,11 @@ public class RationalNumberTypeNode extends BaseDataVariableTypeNode implements 
   public UInteger readDenominator() throws UaException {
     try {
       return readDenominatorAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -162,8 +174,11 @@ public class RationalNumberTypeNode extends BaseDataVariableTypeNode implements 
   public void writeDenominator(UInteger value) throws UaException {
     try {
       writeDenominatorAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -185,8 +200,11 @@ public class RationalNumberTypeNode extends BaseDataVariableTypeNode implements 
   public BaseDataVariableTypeNode getDenominatorNode() throws UaException {
     try {
       return getDenominatorNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -194,10 +212,7 @@ public class RationalNumberTypeNode extends BaseDataVariableTypeNode implements 
   public CompletableFuture<? extends BaseDataVariableTypeNode> getDenominatorNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "Denominator",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "Denominator", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 }

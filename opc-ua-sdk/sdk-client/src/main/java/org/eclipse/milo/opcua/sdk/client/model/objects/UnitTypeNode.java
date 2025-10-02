@@ -76,8 +76,11 @@ public class UnitTypeNode extends BaseObjectTypeNode implements UnitType {
   public LocalizedText readSymbol() throws UaException {
     try {
       return readSymbolAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -85,8 +88,11 @@ public class UnitTypeNode extends BaseObjectTypeNode implements UnitType {
   public void writeSymbol(LocalizedText value) throws UaException {
     try {
       writeSymbolAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -108,8 +114,11 @@ public class UnitTypeNode extends BaseObjectTypeNode implements UnitType {
   public PropertyTypeNode getSymbolNode() throws UaException {
     try {
       return getSymbolNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -117,7 +126,7 @@ public class UnitTypeNode extends BaseObjectTypeNode implements UnitType {
   public CompletableFuture<? extends PropertyTypeNode> getSymbolNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Symbol", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "Symbol", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -137,8 +146,11 @@ public class UnitTypeNode extends BaseObjectTypeNode implements UnitType {
   public String readUnitSystem() throws UaException {
     try {
       return readUnitSystemAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -146,8 +158,11 @@ public class UnitTypeNode extends BaseObjectTypeNode implements UnitType {
   public void writeUnitSystem(String value) throws UaException {
     try {
       writeUnitSystemAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -169,8 +184,11 @@ public class UnitTypeNode extends BaseObjectTypeNode implements UnitType {
   public PropertyTypeNode getUnitSystemNode() throws UaException {
     try {
       return getUnitSystemNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -178,7 +196,7 @@ public class UnitTypeNode extends BaseObjectTypeNode implements UnitType {
   public CompletableFuture<? extends PropertyTypeNode> getUnitSystemNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "UnitSystem", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "UnitSystem", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -198,8 +216,11 @@ public class UnitTypeNode extends BaseObjectTypeNode implements UnitType {
   public String readDiscipline() throws UaException {
     try {
       return readDisciplineAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -207,8 +228,11 @@ public class UnitTypeNode extends BaseObjectTypeNode implements UnitType {
   public void writeDiscipline(String value) throws UaException {
     try {
       writeDisciplineAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -230,8 +254,11 @@ public class UnitTypeNode extends BaseObjectTypeNode implements UnitType {
   public PropertyTypeNode getDisciplineNode() throws UaException {
     try {
       return getDisciplineNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -239,7 +266,7 @@ public class UnitTypeNode extends BaseObjectTypeNode implements UnitType {
   public CompletableFuture<? extends PropertyTypeNode> getDisciplineNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Discipline", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "Discipline", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 }

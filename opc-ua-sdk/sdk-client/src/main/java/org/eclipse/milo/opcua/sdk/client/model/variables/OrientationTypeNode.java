@@ -95,8 +95,11 @@ public class OrientationTypeNode extends BaseDataVariableTypeNode implements Ori
   public EUInformation readAngleUnit() throws UaException {
     try {
       return readAngleUnitAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -104,8 +107,11 @@ public class OrientationTypeNode extends BaseDataVariableTypeNode implements Ori
   public void writeAngleUnit(EUInformation value) throws UaException {
     try {
       writeAngleUnitAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -128,8 +134,11 @@ public class OrientationTypeNode extends BaseDataVariableTypeNode implements Ori
   public PropertyTypeNode getAngleUnitNode() throws UaException {
     try {
       return getAngleUnitNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -137,7 +146,7 @@ public class OrientationTypeNode extends BaseDataVariableTypeNode implements Ori
   public CompletableFuture<? extends PropertyTypeNode> getAngleUnitNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "AngleUnit", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "AngleUnit", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 }

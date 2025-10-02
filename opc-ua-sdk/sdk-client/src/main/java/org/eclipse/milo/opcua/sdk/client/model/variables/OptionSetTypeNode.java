@@ -92,8 +92,11 @@ public class OptionSetTypeNode extends BaseDataVariableTypeNode implements Optio
   public LocalizedText[] readOptionSetValues() throws UaException {
     try {
       return readOptionSetValuesAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -101,8 +104,11 @@ public class OptionSetTypeNode extends BaseDataVariableTypeNode implements Optio
   public void writeOptionSetValues(LocalizedText[] value) throws UaException {
     try {
       writeOptionSetValuesAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -124,8 +130,11 @@ public class OptionSetTypeNode extends BaseDataVariableTypeNode implements Optio
   public PropertyTypeNode getOptionSetValuesNode() throws UaException {
     try {
       return getOptionSetValuesNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -133,10 +142,7 @@ public class OptionSetTypeNode extends BaseDataVariableTypeNode implements Optio
   public CompletableFuture<? extends PropertyTypeNode> getOptionSetValuesNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "OptionSetValues",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "OptionSetValues", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -156,8 +162,11 @@ public class OptionSetTypeNode extends BaseDataVariableTypeNode implements Optio
   public Boolean[] readBitMask() throws UaException {
     try {
       return readBitMaskAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -165,8 +174,11 @@ public class OptionSetTypeNode extends BaseDataVariableTypeNode implements Optio
   public void writeBitMask(Boolean[] value) throws UaException {
     try {
       writeBitMaskAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -188,8 +200,11 @@ public class OptionSetTypeNode extends BaseDataVariableTypeNode implements Optio
   public PropertyTypeNode getBitMaskNode() throws UaException {
     try {
       return getBitMaskNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -197,7 +212,7 @@ public class OptionSetTypeNode extends BaseDataVariableTypeNode implements Optio
   public CompletableFuture<? extends PropertyTypeNode> getBitMaskNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "BitMask", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "BitMask", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 }

@@ -78,8 +78,11 @@ public class BrokerDataSetWriterTransportTypeNode extends DataSetWriterTransport
   public String readQueueName() throws UaException {
     try {
       return readQueueNameAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -87,8 +90,11 @@ public class BrokerDataSetWriterTransportTypeNode extends DataSetWriterTransport
   public void writeQueueName(String value) throws UaException {
     try {
       writeQueueNameAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -110,8 +116,11 @@ public class BrokerDataSetWriterTransportTypeNode extends DataSetWriterTransport
   public PropertyTypeNode getQueueNameNode() throws UaException {
     try {
       return getQueueNameNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -119,7 +128,7 @@ public class BrokerDataSetWriterTransportTypeNode extends DataSetWriterTransport
   public CompletableFuture<? extends PropertyTypeNode> getQueueNameNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "QueueName", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "QueueName", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -139,8 +148,11 @@ public class BrokerDataSetWriterTransportTypeNode extends DataSetWriterTransport
   public String readMetaDataQueueName() throws UaException {
     try {
       return readMetaDataQueueNameAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -148,8 +160,11 @@ public class BrokerDataSetWriterTransportTypeNode extends DataSetWriterTransport
   public void writeMetaDataQueueName(String value) throws UaException {
     try {
       writeMetaDataQueueNameAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -171,8 +186,11 @@ public class BrokerDataSetWriterTransportTypeNode extends DataSetWriterTransport
   public PropertyTypeNode getMetaDataQueueNameNode() throws UaException {
     try {
       return getMetaDataQueueNameNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -182,7 +200,7 @@ public class BrokerDataSetWriterTransportTypeNode extends DataSetWriterTransport
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MetaDataQueueName",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -203,8 +221,11 @@ public class BrokerDataSetWriterTransportTypeNode extends DataSetWriterTransport
   public String readResourceUri() throws UaException {
     try {
       return readResourceUriAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -212,8 +233,11 @@ public class BrokerDataSetWriterTransportTypeNode extends DataSetWriterTransport
   public void writeResourceUri(String value) throws UaException {
     try {
       writeResourceUriAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -235,8 +259,11 @@ public class BrokerDataSetWriterTransportTypeNode extends DataSetWriterTransport
   public PropertyTypeNode getResourceUriNode() throws UaException {
     try {
       return getResourceUriNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -244,10 +271,7 @@ public class BrokerDataSetWriterTransportTypeNode extends DataSetWriterTransport
   public CompletableFuture<? extends PropertyTypeNode> getResourceUriNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ResourceUri",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "ResourceUri", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -267,8 +291,11 @@ public class BrokerDataSetWriterTransportTypeNode extends DataSetWriterTransport
   public String readAuthenticationProfileUri() throws UaException {
     try {
       return readAuthenticationProfileUriAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -276,8 +303,11 @@ public class BrokerDataSetWriterTransportTypeNode extends DataSetWriterTransport
   public void writeAuthenticationProfileUri(String value) throws UaException {
     try {
       writeAuthenticationProfileUriAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -300,8 +330,11 @@ public class BrokerDataSetWriterTransportTypeNode extends DataSetWriterTransport
   public PropertyTypeNode getAuthenticationProfileUriNode() throws UaException {
     try {
       return getAuthenticationProfileUriNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -311,7 +344,7 @@ public class BrokerDataSetWriterTransportTypeNode extends DataSetWriterTransport
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "AuthenticationProfileUri",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -341,8 +374,11 @@ public class BrokerDataSetWriterTransportTypeNode extends DataSetWriterTransport
   public BrokerTransportQualityOfService readRequestedDeliveryGuarantee() throws UaException {
     try {
       return readRequestedDeliveryGuaranteeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -351,8 +387,11 @@ public class BrokerDataSetWriterTransportTypeNode extends DataSetWriterTransport
       throws UaException {
     try {
       writeRequestedDeliveryGuaranteeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -384,8 +423,11 @@ public class BrokerDataSetWriterTransportTypeNode extends DataSetWriterTransport
   public PropertyTypeNode getRequestedDeliveryGuaranteeNode() throws UaException {
     try {
       return getRequestedDeliveryGuaranteeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -395,7 +437,7 @@ public class BrokerDataSetWriterTransportTypeNode extends DataSetWriterTransport
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "RequestedDeliveryGuarantee",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -416,8 +458,11 @@ public class BrokerDataSetWriterTransportTypeNode extends DataSetWriterTransport
   public Double readMetaDataUpdateTime() throws UaException {
     try {
       return readMetaDataUpdateTimeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -425,8 +470,11 @@ public class BrokerDataSetWriterTransportTypeNode extends DataSetWriterTransport
   public void writeMetaDataUpdateTime(Double value) throws UaException {
     try {
       writeMetaDataUpdateTimeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -448,8 +496,11 @@ public class BrokerDataSetWriterTransportTypeNode extends DataSetWriterTransport
   public PropertyTypeNode getMetaDataUpdateTimeNode() throws UaException {
     try {
       return getMetaDataUpdateTimeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -459,7 +510,7 @@ public class BrokerDataSetWriterTransportTypeNode extends DataSetWriterTransport
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MetaDataUpdateTime",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }

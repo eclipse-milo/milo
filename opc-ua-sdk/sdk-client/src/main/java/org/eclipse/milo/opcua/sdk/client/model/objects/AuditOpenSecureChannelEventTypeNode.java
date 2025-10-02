@@ -80,8 +80,11 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
   public ByteString readClientCertificate() throws UaException {
     try {
       return readClientCertificateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -89,8 +92,11 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
   public void writeClientCertificate(ByteString value) throws UaException {
     try {
       writeClientCertificateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -112,8 +118,11 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
   public PropertyTypeNode getClientCertificateNode() throws UaException {
     try {
       return getClientCertificateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -123,7 +132,7 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ClientCertificate",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -144,8 +153,11 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
   public String readClientCertificateThumbprint() throws UaException {
     try {
       return readClientCertificateThumbprintAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -153,8 +165,11 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
   public void writeClientCertificateThumbprint(String value) throws UaException {
     try {
       writeClientCertificateThumbprintAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -177,8 +192,11 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
   public PropertyTypeNode getClientCertificateThumbprintNode() throws UaException {
     try {
       return getClientCertificateThumbprintNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -188,7 +206,7 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ClientCertificateThumbprint",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -217,8 +235,11 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
   public SecurityTokenRequestType readRequestType() throws UaException {
     try {
       return readRequestTypeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -226,8 +247,11 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
   public void writeRequestType(SecurityTokenRequestType value) throws UaException {
     try {
       writeRequestTypeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -257,8 +281,11 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
   public PropertyTypeNode getRequestTypeNode() throws UaException {
     try {
       return getRequestTypeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -266,10 +293,7 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
   public CompletableFuture<? extends PropertyTypeNode> getRequestTypeNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "RequestType",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "RequestType", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -289,8 +313,11 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
   public String readSecurityPolicyUri() throws UaException {
     try {
       return readSecurityPolicyUriAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -298,8 +325,11 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
   public void writeSecurityPolicyUri(String value) throws UaException {
     try {
       writeSecurityPolicyUriAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -321,8 +351,11 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
   public PropertyTypeNode getSecurityPolicyUriNode() throws UaException {
     try {
       return getSecurityPolicyUriNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -332,7 +365,7 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "SecurityPolicyUri",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -361,8 +394,11 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
   public MessageSecurityMode readSecurityMode() throws UaException {
     try {
       return readSecurityModeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -370,8 +406,11 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
   public void writeSecurityMode(MessageSecurityMode value) throws UaException {
     try {
       writeSecurityModeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -401,8 +440,11 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
   public PropertyTypeNode getSecurityModeNode() throws UaException {
     try {
       return getSecurityModeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -410,10 +452,7 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
   public CompletableFuture<? extends PropertyTypeNode> getSecurityModeNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "SecurityMode",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "SecurityMode", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -433,8 +472,11 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
   public Double readRequestedLifetime() throws UaException {
     try {
       return readRequestedLifetimeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -442,8 +484,11 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
   public void writeRequestedLifetime(Double value) throws UaException {
     try {
       writeRequestedLifetimeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -465,8 +510,11 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
   public PropertyTypeNode getRequestedLifetimeNode() throws UaException {
     try {
       return getRequestedLifetimeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -476,7 +524,7 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "RequestedLifetime",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -497,8 +545,11 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
   public ByteString readCertificateErrorEventId() throws UaException {
     try {
       return readCertificateErrorEventIdAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -506,8 +557,11 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
   public void writeCertificateErrorEventId(ByteString value) throws UaException {
     try {
       writeCertificateErrorEventIdAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -530,8 +584,11 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
   public PropertyTypeNode getCertificateErrorEventIdNode() throws UaException {
     try {
       return getCertificateErrorEventIdNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -541,7 +598,7 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "CertificateErrorEventId",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }

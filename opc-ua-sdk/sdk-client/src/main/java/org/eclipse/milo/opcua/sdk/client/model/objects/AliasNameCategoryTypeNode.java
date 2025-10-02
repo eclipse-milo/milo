@@ -76,8 +76,11 @@ public class AliasNameCategoryTypeNode extends FolderTypeNode implements AliasNa
   public UInteger readLastChange() throws UaException {
     try {
       return readLastChangeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -85,8 +88,11 @@ public class AliasNameCategoryTypeNode extends FolderTypeNode implements AliasNa
   public void writeLastChange(UInteger value) throws UaException {
     try {
       writeLastChangeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -108,8 +114,11 @@ public class AliasNameCategoryTypeNode extends FolderTypeNode implements AliasNa
   public PropertyTypeNode getLastChangeNode() throws UaException {
     try {
       return getLastChangeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -117,7 +126,7 @@ public class AliasNameCategoryTypeNode extends FolderTypeNode implements AliasNa
   public CompletableFuture<? extends PropertyTypeNode> getLastChangeNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "LastChange", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "LastChange", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 }

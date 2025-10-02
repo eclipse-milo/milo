@@ -79,8 +79,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public NodeId readConditionClassId() throws UaException {
     try {
       return readConditionClassIdAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -88,8 +91,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public void writeConditionClassId(NodeId value) throws UaException {
     try {
       writeConditionClassIdAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -111,8 +117,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public PropertyTypeNode getConditionClassIdNode() throws UaException {
     try {
       return getConditionClassIdNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -122,7 +131,7 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ConditionClassId",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -143,8 +152,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public LocalizedText readConditionClassName() throws UaException {
     try {
       return readConditionClassNameAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -152,8 +164,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public void writeConditionClassName(LocalizedText value) throws UaException {
     try {
       writeConditionClassNameAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -176,8 +191,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public PropertyTypeNode getConditionClassNameNode() throws UaException {
     try {
       return getConditionClassNameNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -187,7 +205,7 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ConditionClassName",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -208,8 +226,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public NodeId[] readConditionSubClassId() throws UaException {
     try {
       return readConditionSubClassIdAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -217,8 +238,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public void writeConditionSubClassId(NodeId[] value) throws UaException {
     try {
       writeConditionSubClassIdAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -240,8 +264,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public PropertyTypeNode getConditionSubClassIdNode() throws UaException {
     try {
       return getConditionSubClassIdNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -251,7 +278,7 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ConditionSubClassId",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -272,8 +299,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public LocalizedText[] readConditionSubClassName() throws UaException {
     try {
       return readConditionSubClassNameAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -281,8 +311,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public void writeConditionSubClassName(LocalizedText[] value) throws UaException {
     try {
       writeConditionSubClassNameAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -305,8 +338,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public PropertyTypeNode getConditionSubClassNameNode() throws UaException {
     try {
       return getConditionSubClassNameNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -316,7 +352,7 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ConditionSubClassName",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -337,8 +373,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public String readConditionName() throws UaException {
     try {
       return readConditionNameAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -346,8 +385,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public void writeConditionName(String value) throws UaException {
     try {
       writeConditionNameAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -369,8 +411,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public PropertyTypeNode getConditionNameNode() throws UaException {
     try {
       return getConditionNameNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -378,10 +423,7 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public CompletableFuture<? extends PropertyTypeNode> getConditionNameNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ConditionName",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "ConditionName", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -401,8 +443,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public NodeId readBranchId() throws UaException {
     try {
       return readBranchIdAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -410,8 +455,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public void writeBranchId(NodeId value) throws UaException {
     try {
       writeBranchIdAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -433,8 +481,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public PropertyTypeNode getBranchIdNode() throws UaException {
     try {
       return getBranchIdNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -442,7 +493,7 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public CompletableFuture<? extends PropertyTypeNode> getBranchIdNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "BranchId", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "BranchId", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -462,8 +513,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public Boolean readRetain() throws UaException {
     try {
       return readRetainAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -471,8 +525,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public void writeRetain(Boolean value) throws UaException {
     try {
       writeRetainAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -494,8 +551,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public PropertyTypeNode getRetainNode() throws UaException {
     try {
       return getRetainNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -503,7 +563,7 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public CompletableFuture<? extends PropertyTypeNode> getRetainNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Retain", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "Retain", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -523,8 +583,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public Boolean readSupportsFilteredRetain() throws UaException {
     try {
       return readSupportsFilteredRetainAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -532,8 +595,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public void writeSupportsFilteredRetain(Boolean value) throws UaException {
     try {
       writeSupportsFilteredRetainAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -556,8 +622,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public PropertyTypeNode getSupportsFilteredRetainNode() throws UaException {
     try {
       return getSupportsFilteredRetainNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -567,7 +636,7 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "SupportsFilteredRetain",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -588,8 +657,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public String readClientUserId() throws UaException {
     try {
       return readClientUserIdAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -597,8 +669,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public void writeClientUserId(String value) throws UaException {
     try {
       writeClientUserIdAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -620,8 +695,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public PropertyTypeNode getClientUserIdNode() throws UaException {
     try {
       return getClientUserIdNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -629,10 +707,7 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public CompletableFuture<? extends PropertyTypeNode> getClientUserIdNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ClientUserId",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "ClientUserId", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -652,8 +727,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public LocalizedText readEnabledState() throws UaException {
     try {
       return readEnabledStateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -661,8 +739,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public void writeEnabledState(LocalizedText value) throws UaException {
     try {
       writeEnabledStateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -684,8 +765,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public TwoStateVariableTypeNode getEnabledStateNode() throws UaException {
     try {
       return getEnabledStateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -693,10 +777,7 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public CompletableFuture<? extends TwoStateVariableTypeNode> getEnabledStateNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "EnabledState",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "EnabledState", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (TwoStateVariableTypeNode) node);
   }
 
@@ -716,8 +797,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public StatusCode readQuality() throws UaException {
     try {
       return readQualityAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -725,8 +809,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public void writeQuality(StatusCode value) throws UaException {
     try {
       writeQualityAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -748,8 +835,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public ConditionVariableTypeNode getQualityNode() throws UaException {
     try {
       return getQualityNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -757,7 +847,7 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public CompletableFuture<? extends ConditionVariableTypeNode> getQualityNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Quality", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "Quality", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (ConditionVariableTypeNode) node);
   }
 
@@ -777,8 +867,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public UShort readLastSeverity() throws UaException {
     try {
       return readLastSeverityAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -786,8 +879,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public void writeLastSeverity(UShort value) throws UaException {
     try {
       writeLastSeverityAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -809,8 +905,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public ConditionVariableTypeNode getLastSeverityNode() throws UaException {
     try {
       return getLastSeverityNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -818,10 +917,7 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public CompletableFuture<? extends ConditionVariableTypeNode> getLastSeverityNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "LastSeverity",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "LastSeverity", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (ConditionVariableTypeNode) node);
   }
 
@@ -841,8 +937,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public LocalizedText readComment() throws UaException {
     try {
       return readCommentAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -850,8 +949,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public void writeComment(LocalizedText value) throws UaException {
     try {
       writeCommentAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -873,8 +975,11 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public ConditionVariableTypeNode getCommentNode() throws UaException {
     try {
       return getCommentNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -882,7 +987,7 @@ public class ConditionTypeNode extends BaseEventTypeNode implements ConditionTyp
   public CompletableFuture<? extends ConditionVariableTypeNode> getCommentNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Comment", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "Comment", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (ConditionVariableTypeNode) node);
   }
 }

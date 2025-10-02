@@ -81,8 +81,11 @@ public class PriorityMappingTableTypeNode extends BaseObjectTypeNode
   public PriorityMappingEntryType[] readPriorityMapppingEntries() throws UaException {
     try {
       return readPriorityMapppingEntriesAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -90,8 +93,11 @@ public class PriorityMappingTableTypeNode extends BaseObjectTypeNode
   public void writePriorityMapppingEntries(PriorityMappingEntryType[] value) throws UaException {
     try {
       writePriorityMapppingEntriesAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -117,8 +123,11 @@ public class PriorityMappingTableTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getPriorityMapppingEntriesNode() throws UaException {
     try {
       return getPriorityMapppingEntriesNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -128,7 +137,7 @@ public class PriorityMappingTableTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "PriorityMapppingEntries",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }

@@ -79,8 +79,11 @@ public class DatagramWriterGroupTransportTypeNode extends WriterGroupTransportTy
   public UByte readMessageRepeatCount() throws UaException {
     try {
       return readMessageRepeatCountAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -88,8 +91,11 @@ public class DatagramWriterGroupTransportTypeNode extends WriterGroupTransportTy
   public void writeMessageRepeatCount(UByte value) throws UaException {
     try {
       writeMessageRepeatCountAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -111,8 +117,11 @@ public class DatagramWriterGroupTransportTypeNode extends WriterGroupTransportTy
   public PropertyTypeNode getMessageRepeatCountNode() throws UaException {
     try {
       return getMessageRepeatCountNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -122,7 +131,7 @@ public class DatagramWriterGroupTransportTypeNode extends WriterGroupTransportTy
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MessageRepeatCount",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -143,8 +152,11 @@ public class DatagramWriterGroupTransportTypeNode extends WriterGroupTransportTy
   public Double readMessageRepeatDelay() throws UaException {
     try {
       return readMessageRepeatDelayAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -152,8 +164,11 @@ public class DatagramWriterGroupTransportTypeNode extends WriterGroupTransportTy
   public void writeMessageRepeatDelay(Double value) throws UaException {
     try {
       writeMessageRepeatDelayAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -175,8 +190,11 @@ public class DatagramWriterGroupTransportTypeNode extends WriterGroupTransportTy
   public PropertyTypeNode getMessageRepeatDelayNode() throws UaException {
     try {
       return getMessageRepeatDelayNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -186,7 +204,7 @@ public class DatagramWriterGroupTransportTypeNode extends WriterGroupTransportTy
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MessageRepeatDelay",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -207,8 +225,11 @@ public class DatagramWriterGroupTransportTypeNode extends WriterGroupTransportTy
   public String readQosCategory() throws UaException {
     try {
       return readQosCategoryAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -216,8 +237,11 @@ public class DatagramWriterGroupTransportTypeNode extends WriterGroupTransportTy
   public void writeQosCategory(String value) throws UaException {
     try {
       writeQosCategoryAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -239,8 +263,11 @@ public class DatagramWriterGroupTransportTypeNode extends WriterGroupTransportTy
   public PropertyTypeNode getQosCategoryNode() throws UaException {
     try {
       return getQosCategoryNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -248,10 +275,7 @@ public class DatagramWriterGroupTransportTypeNode extends WriterGroupTransportTy
   public CompletableFuture<? extends PropertyTypeNode> getQosCategoryNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "QosCategory",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "QosCategory", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -273,8 +297,11 @@ public class DatagramWriterGroupTransportTypeNode extends WriterGroupTransportTy
   public TransmitQosDataType[] readDatagramQos() throws UaException {
     try {
       return readDatagramQosAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -282,8 +309,11 @@ public class DatagramWriterGroupTransportTypeNode extends WriterGroupTransportTy
   public void writeDatagramQos(TransmitQosDataType[] value) throws UaException {
     try {
       writeDatagramQosAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -307,8 +337,11 @@ public class DatagramWriterGroupTransportTypeNode extends WriterGroupTransportTy
   public PropertyTypeNode getDatagramQosNode() throws UaException {
     try {
       return getDatagramQosNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -316,10 +349,7 @@ public class DatagramWriterGroupTransportTypeNode extends WriterGroupTransportTy
   public CompletableFuture<? extends PropertyTypeNode> getDatagramQosNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "DatagramQos",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "DatagramQos", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -339,8 +369,11 @@ public class DatagramWriterGroupTransportTypeNode extends WriterGroupTransportTy
   public UInteger readDiscoveryAnnounceRate() throws UaException {
     try {
       return readDiscoveryAnnounceRateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -348,8 +381,11 @@ public class DatagramWriterGroupTransportTypeNode extends WriterGroupTransportTy
   public void writeDiscoveryAnnounceRate(UInteger value) throws UaException {
     try {
       writeDiscoveryAnnounceRateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -372,8 +408,11 @@ public class DatagramWriterGroupTransportTypeNode extends WriterGroupTransportTy
   public PropertyTypeNode getDiscoveryAnnounceRateNode() throws UaException {
     try {
       return getDiscoveryAnnounceRateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -383,7 +422,7 @@ public class DatagramWriterGroupTransportTypeNode extends WriterGroupTransportTy
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "DiscoveryAnnounceRate",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -404,8 +443,11 @@ public class DatagramWriterGroupTransportTypeNode extends WriterGroupTransportTy
   public String readTopic() throws UaException {
     try {
       return readTopicAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -413,8 +455,11 @@ public class DatagramWriterGroupTransportTypeNode extends WriterGroupTransportTy
   public void writeTopic(String value) throws UaException {
     try {
       writeTopicAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -436,8 +481,11 @@ public class DatagramWriterGroupTransportTypeNode extends WriterGroupTransportTy
   public PropertyTypeNode getTopicNode() throws UaException {
     try {
       return getTopicNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -445,7 +493,7 @@ public class DatagramWriterGroupTransportTypeNode extends WriterGroupTransportTy
   public CompletableFuture<? extends PropertyTypeNode> getTopicNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Topic", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "Topic", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -453,8 +501,11 @@ public class DatagramWriterGroupTransportTypeNode extends WriterGroupTransportTy
   public NetworkAddressTypeNode getAddressNode() throws UaException {
     try {
       return getAddressNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -462,7 +513,7 @@ public class DatagramWriterGroupTransportTypeNode extends WriterGroupTransportTy
   public CompletableFuture<? extends NetworkAddressTypeNode> getAddressNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Address", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "Address", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (NetworkAddressTypeNode) node);
   }
 }

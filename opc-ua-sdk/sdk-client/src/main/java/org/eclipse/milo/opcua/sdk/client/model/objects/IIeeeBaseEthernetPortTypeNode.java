@@ -81,8 +81,11 @@ public class IIeeeBaseEthernetPortTypeNode extends BaseInterfaceTypeNode
   public ULong readSpeed() throws UaException {
     try {
       return readSpeedAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -90,8 +93,11 @@ public class IIeeeBaseEthernetPortTypeNode extends BaseInterfaceTypeNode
   public void writeSpeed(ULong value) throws UaException {
     try {
       writeSpeedAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -113,8 +119,11 @@ public class IIeeeBaseEthernetPortTypeNode extends BaseInterfaceTypeNode
   public AnalogUnitTypeNode getSpeedNode() throws UaException {
     try {
       return getSpeedNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -122,7 +131,7 @@ public class IIeeeBaseEthernetPortTypeNode extends BaseInterfaceTypeNode
   public CompletableFuture<? extends AnalogUnitTypeNode> getSpeedNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Speed", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "Speed", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (AnalogUnitTypeNode) node);
   }
 
@@ -150,8 +159,11 @@ public class IIeeeBaseEthernetPortTypeNode extends BaseInterfaceTypeNode
   public Duplex readDuplex() throws UaException {
     try {
       return readDuplexAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -159,8 +171,11 @@ public class IIeeeBaseEthernetPortTypeNode extends BaseInterfaceTypeNode
   public void writeDuplex(Duplex value) throws UaException {
     try {
       writeDuplexAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -190,8 +205,11 @@ public class IIeeeBaseEthernetPortTypeNode extends BaseInterfaceTypeNode
   public BaseDataVariableTypeNode getDuplexNode() throws UaException {
     try {
       return getDuplexNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -199,7 +217,7 @@ public class IIeeeBaseEthernetPortTypeNode extends BaseInterfaceTypeNode
   public CompletableFuture<? extends BaseDataVariableTypeNode> getDuplexNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Duplex", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "Duplex", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 
@@ -219,8 +237,11 @@ public class IIeeeBaseEthernetPortTypeNode extends BaseInterfaceTypeNode
   public UShort readMaxFrameLength() throws UaException {
     try {
       return readMaxFrameLengthAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -228,8 +249,11 @@ public class IIeeeBaseEthernetPortTypeNode extends BaseInterfaceTypeNode
   public void writeMaxFrameLength(UShort value) throws UaException {
     try {
       writeMaxFrameLengthAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -251,8 +275,11 @@ public class IIeeeBaseEthernetPortTypeNode extends BaseInterfaceTypeNode
   public BaseDataVariableTypeNode getMaxFrameLengthNode() throws UaException {
     try {
       return getMaxFrameLengthNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -260,10 +287,7 @@ public class IIeeeBaseEthernetPortTypeNode extends BaseInterfaceTypeNode
   public CompletableFuture<? extends BaseDataVariableTypeNode> getMaxFrameLengthNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "MaxFrameLength",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "MaxFrameLength", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 }

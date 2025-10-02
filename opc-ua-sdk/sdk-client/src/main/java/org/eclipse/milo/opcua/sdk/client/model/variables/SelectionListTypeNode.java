@@ -92,8 +92,11 @@ public class SelectionListTypeNode extends BaseDataVariableTypeNode implements S
   public Object[] readSelections() throws UaException {
     try {
       return readSelectionsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -101,8 +104,11 @@ public class SelectionListTypeNode extends BaseDataVariableTypeNode implements S
   public void writeSelections(Object[] value) throws UaException {
     try {
       writeSelectionsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -124,8 +130,11 @@ public class SelectionListTypeNode extends BaseDataVariableTypeNode implements S
   public PropertyTypeNode getSelectionsNode() throws UaException {
     try {
       return getSelectionsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -133,7 +142,7 @@ public class SelectionListTypeNode extends BaseDataVariableTypeNode implements S
   public CompletableFuture<? extends PropertyTypeNode> getSelectionsNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Selections", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "Selections", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -153,8 +162,11 @@ public class SelectionListTypeNode extends BaseDataVariableTypeNode implements S
   public LocalizedText[] readSelectionDescriptions() throws UaException {
     try {
       return readSelectionDescriptionsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -162,8 +174,11 @@ public class SelectionListTypeNode extends BaseDataVariableTypeNode implements S
   public void writeSelectionDescriptions(LocalizedText[] value) throws UaException {
     try {
       writeSelectionDescriptionsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -186,8 +201,11 @@ public class SelectionListTypeNode extends BaseDataVariableTypeNode implements S
   public PropertyTypeNode getSelectionDescriptionsNode() throws UaException {
     try {
       return getSelectionDescriptionsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -197,7 +215,7 @@ public class SelectionListTypeNode extends BaseDataVariableTypeNode implements S
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "SelectionDescriptions",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -218,8 +236,11 @@ public class SelectionListTypeNode extends BaseDataVariableTypeNode implements S
   public Boolean readRestrictToList() throws UaException {
     try {
       return readRestrictToListAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -227,8 +248,11 @@ public class SelectionListTypeNode extends BaseDataVariableTypeNode implements S
   public void writeRestrictToList(Boolean value) throws UaException {
     try {
       writeRestrictToListAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -250,8 +274,11 @@ public class SelectionListTypeNode extends BaseDataVariableTypeNode implements S
   public PropertyTypeNode getRestrictToListNode() throws UaException {
     try {
       return getRestrictToListNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -259,10 +286,7 @@ public class SelectionListTypeNode extends BaseDataVariableTypeNode implements S
   public CompletableFuture<? extends PropertyTypeNode> getRestrictToListNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "RestrictToList",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "RestrictToList", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 }

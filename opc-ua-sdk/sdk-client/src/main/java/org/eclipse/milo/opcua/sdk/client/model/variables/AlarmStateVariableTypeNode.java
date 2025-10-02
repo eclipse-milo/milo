@@ -96,8 +96,11 @@ public class AlarmStateVariableTypeNode extends BaseDataVariableTypeNode
   public UShort readHighestActiveSeverity() throws UaException {
     try {
       return readHighestActiveSeverityAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -105,8 +108,11 @@ public class AlarmStateVariableTypeNode extends BaseDataVariableTypeNode
   public void writeHighestActiveSeverity(UShort value) throws UaException {
     try {
       writeHighestActiveSeverityAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -129,8 +135,11 @@ public class AlarmStateVariableTypeNode extends BaseDataVariableTypeNode
   public PropertyTypeNode getHighestActiveSeverityNode() throws UaException {
     try {
       return getHighestActiveSeverityNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -140,7 +149,7 @@ public class AlarmStateVariableTypeNode extends BaseDataVariableTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "HighestActiveSeverity",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -161,8 +170,11 @@ public class AlarmStateVariableTypeNode extends BaseDataVariableTypeNode
   public UShort readHighestUnackSeverity() throws UaException {
     try {
       return readHighestUnackSeverityAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -170,8 +182,11 @@ public class AlarmStateVariableTypeNode extends BaseDataVariableTypeNode
   public void writeHighestUnackSeverity(UShort value) throws UaException {
     try {
       writeHighestUnackSeverityAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -193,8 +208,11 @@ public class AlarmStateVariableTypeNode extends BaseDataVariableTypeNode
   public PropertyTypeNode getHighestUnackSeverityNode() throws UaException {
     try {
       return getHighestUnackSeverityNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -204,7 +222,7 @@ public class AlarmStateVariableTypeNode extends BaseDataVariableTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "HighestUnackSeverity",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -225,8 +243,11 @@ public class AlarmStateVariableTypeNode extends BaseDataVariableTypeNode
   public UInteger readActiveCount() throws UaException {
     try {
       return readActiveCountAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -234,8 +255,11 @@ public class AlarmStateVariableTypeNode extends BaseDataVariableTypeNode
   public void writeActiveCount(UInteger value) throws UaException {
     try {
       writeActiveCountAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -257,8 +281,11 @@ public class AlarmStateVariableTypeNode extends BaseDataVariableTypeNode
   public PropertyTypeNode getActiveCountNode() throws UaException {
     try {
       return getActiveCountNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -266,10 +293,7 @@ public class AlarmStateVariableTypeNode extends BaseDataVariableTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getActiveCountNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ActiveCount",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "ActiveCount", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -289,8 +313,11 @@ public class AlarmStateVariableTypeNode extends BaseDataVariableTypeNode
   public UInteger readUnacknowledgedCount() throws UaException {
     try {
       return readUnacknowledgedCountAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -298,8 +325,11 @@ public class AlarmStateVariableTypeNode extends BaseDataVariableTypeNode
   public void writeUnacknowledgedCount(UInteger value) throws UaException {
     try {
       writeUnacknowledgedCountAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -321,8 +351,11 @@ public class AlarmStateVariableTypeNode extends BaseDataVariableTypeNode
   public PropertyTypeNode getUnacknowledgedCountNode() throws UaException {
     try {
       return getUnacknowledgedCountNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -332,7 +365,7 @@ public class AlarmStateVariableTypeNode extends BaseDataVariableTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "UnacknowledgedCount",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -353,8 +386,11 @@ public class AlarmStateVariableTypeNode extends BaseDataVariableTypeNode
   public UInteger readUnconfirmedCount() throws UaException {
     try {
       return readUnconfirmedCountAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -362,8 +398,11 @@ public class AlarmStateVariableTypeNode extends BaseDataVariableTypeNode
   public void writeUnconfirmedCount(UInteger value) throws UaException {
     try {
       writeUnconfirmedCountAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -385,8 +424,11 @@ public class AlarmStateVariableTypeNode extends BaseDataVariableTypeNode
   public PropertyTypeNode getUnconfirmedCountNode() throws UaException {
     try {
       return getUnconfirmedCountNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -396,7 +438,7 @@ public class AlarmStateVariableTypeNode extends BaseDataVariableTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "UnconfirmedCount",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -418,8 +460,11 @@ public class AlarmStateVariableTypeNode extends BaseDataVariableTypeNode
   public ContentFilter readFilter() throws UaException {
     try {
       return readFilterAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -427,8 +472,11 @@ public class AlarmStateVariableTypeNode extends BaseDataVariableTypeNode
   public void writeFilter(ContentFilter value) throws UaException {
     try {
       writeFilterAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -451,8 +499,11 @@ public class AlarmStateVariableTypeNode extends BaseDataVariableTypeNode
   public PropertyTypeNode getFilterNode() throws UaException {
     try {
       return getFilterNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -460,7 +511,7 @@ public class AlarmStateVariableTypeNode extends BaseDataVariableTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getFilterNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Filter", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "Filter", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 }

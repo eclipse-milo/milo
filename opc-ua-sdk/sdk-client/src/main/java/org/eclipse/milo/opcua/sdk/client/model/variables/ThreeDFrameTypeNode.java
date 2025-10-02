@@ -96,8 +96,11 @@ public class ThreeDFrameTypeNode extends FrameTypeNode implements ThreeDFrameTyp
   public ThreeDCartesianCoordinates readCartesianCoordinates() throws UaException {
     try {
       return readCartesianCoordinatesAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -105,8 +108,11 @@ public class ThreeDFrameTypeNode extends FrameTypeNode implements ThreeDFrameTyp
   public void writeCartesianCoordinates(ThreeDCartesianCoordinates value) throws UaException {
     try {
       writeCartesianCoordinatesAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -131,8 +137,11 @@ public class ThreeDFrameTypeNode extends FrameTypeNode implements ThreeDFrameTyp
   public ThreeDCartesianCoordinatesTypeNode getCartesianCoordinatesNode() throws UaException {
     try {
       return getCartesianCoordinatesNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -143,7 +152,7 @@ public class ThreeDFrameTypeNode extends FrameTypeNode implements ThreeDFrameTyp
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "CartesianCoordinates",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (ThreeDCartesianCoordinatesTypeNode) node);
   }
@@ -165,8 +174,11 @@ public class ThreeDFrameTypeNode extends FrameTypeNode implements ThreeDFrameTyp
   public ThreeDOrientation readOrientation() throws UaException {
     try {
       return readOrientationAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -174,8 +186,11 @@ public class ThreeDFrameTypeNode extends FrameTypeNode implements ThreeDFrameTyp
   public void writeOrientation(ThreeDOrientation value) throws UaException {
     try {
       writeOrientationAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -199,8 +214,11 @@ public class ThreeDFrameTypeNode extends FrameTypeNode implements ThreeDFrameTyp
   public ThreeDOrientationTypeNode getOrientationNode() throws UaException {
     try {
       return getOrientationNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -208,10 +226,7 @@ public class ThreeDFrameTypeNode extends FrameTypeNode implements ThreeDFrameTyp
   public CompletableFuture<? extends ThreeDOrientationTypeNode> getOrientationNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "Orientation",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "Orientation", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (ThreeDOrientationTypeNode) node);
   }
 }

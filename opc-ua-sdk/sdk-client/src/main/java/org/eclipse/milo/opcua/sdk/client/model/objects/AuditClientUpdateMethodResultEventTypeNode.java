@@ -77,8 +77,11 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   public ExpandedNodeId readObjectId() throws UaException {
     try {
       return readObjectIdAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -86,8 +89,11 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   public void writeObjectId(ExpandedNodeId value) throws UaException {
     try {
       writeObjectIdAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -109,8 +115,11 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   public PropertyTypeNode getObjectIdNode() throws UaException {
     try {
       return getObjectIdNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -118,7 +127,7 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   public CompletableFuture<? extends PropertyTypeNode> getObjectIdNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "ObjectId", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "ObjectId", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -138,8 +147,11 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   public ExpandedNodeId readMethodId() throws UaException {
     try {
       return readMethodIdAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -147,8 +159,11 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   public void writeMethodId(ExpandedNodeId value) throws UaException {
     try {
       writeMethodIdAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -170,8 +185,11 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   public PropertyTypeNode getMethodIdNode() throws UaException {
     try {
       return getMethodIdNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -179,7 +197,7 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   public CompletableFuture<? extends PropertyTypeNode> getMethodIdNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "MethodId", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "MethodId", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -199,8 +217,11 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   public StatusCode readStatusCodeId() throws UaException {
     try {
       return readStatusCodeIdAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -208,8 +229,11 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   public void writeStatusCodeId(StatusCode value) throws UaException {
     try {
       writeStatusCodeIdAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -231,8 +255,11 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   public PropertyTypeNode getStatusCodeIdNode() throws UaException {
     try {
       return getStatusCodeIdNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -240,10 +267,7 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   public CompletableFuture<? extends PropertyTypeNode> getStatusCodeIdNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "StatusCodeId",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "StatusCodeId", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -263,8 +287,11 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   public Object[] readInputArguments() throws UaException {
     try {
       return readInputArgumentsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -272,8 +299,11 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   public void writeInputArguments(Object[] value) throws UaException {
     try {
       writeInputArgumentsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -295,8 +325,11 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   public PropertyTypeNode getInputArgumentsNode() throws UaException {
     try {
       return getInputArgumentsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -304,10 +337,7 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   public CompletableFuture<? extends PropertyTypeNode> getInputArgumentsNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "InputArguments",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "InputArguments", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -327,8 +357,11 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   public Object[] readOutputArguments() throws UaException {
     try {
       return readOutputArgumentsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -336,8 +369,11 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   public void writeOutputArguments(Object[] value) throws UaException {
     try {
       writeOutputArgumentsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -359,8 +395,11 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   public PropertyTypeNode getOutputArgumentsNode() throws UaException {
     try {
       return getOutputArgumentsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -368,10 +407,7 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   public CompletableFuture<? extends PropertyTypeNode> getOutputArgumentsNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "OutputArguments",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "OutputArguments", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 }

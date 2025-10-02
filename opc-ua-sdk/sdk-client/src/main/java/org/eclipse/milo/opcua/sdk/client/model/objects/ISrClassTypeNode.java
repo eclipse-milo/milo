@@ -77,8 +77,11 @@ public class ISrClassTypeNode extends BaseInterfaceTypeNode implements ISrClassT
   public UByte readId() throws UaException {
     try {
       return readIdAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -86,8 +89,11 @@ public class ISrClassTypeNode extends BaseInterfaceTypeNode implements ISrClassT
   public void writeId(UByte value) throws UaException {
     try {
       writeIdAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -108,8 +114,11 @@ public class ISrClassTypeNode extends BaseInterfaceTypeNode implements ISrClassT
   public BaseDataVariableTypeNode getIdNode() throws UaException {
     try {
       return getIdNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -117,7 +126,7 @@ public class ISrClassTypeNode extends BaseInterfaceTypeNode implements ISrClassT
   public CompletableFuture<? extends BaseDataVariableTypeNode> getIdNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Id", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "Id", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 
@@ -137,8 +146,11 @@ public class ISrClassTypeNode extends BaseInterfaceTypeNode implements ISrClassT
   public UByte readPriority() throws UaException {
     try {
       return readPriorityAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -146,8 +158,11 @@ public class ISrClassTypeNode extends BaseInterfaceTypeNode implements ISrClassT
   public void writePriority(UByte value) throws UaException {
     try {
       writePriorityAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -169,8 +184,11 @@ public class ISrClassTypeNode extends BaseInterfaceTypeNode implements ISrClassT
   public BaseDataVariableTypeNode getPriorityNode() throws UaException {
     try {
       return getPriorityNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -178,7 +196,7 @@ public class ISrClassTypeNode extends BaseInterfaceTypeNode implements ISrClassT
   public CompletableFuture<? extends BaseDataVariableTypeNode> getPriorityNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Priority", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "Priority", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 
@@ -198,8 +216,11 @@ public class ISrClassTypeNode extends BaseInterfaceTypeNode implements ISrClassT
   public UShort readVid() throws UaException {
     try {
       return readVidAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -207,8 +228,11 @@ public class ISrClassTypeNode extends BaseInterfaceTypeNode implements ISrClassT
   public void writeVid(UShort value) throws UaException {
     try {
       writeVidAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -230,8 +254,11 @@ public class ISrClassTypeNode extends BaseInterfaceTypeNode implements ISrClassT
   public BaseDataVariableTypeNode getVidNode() throws UaException {
     try {
       return getVidNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -239,7 +266,7 @@ public class ISrClassTypeNode extends BaseInterfaceTypeNode implements ISrClassT
   public CompletableFuture<? extends BaseDataVariableTypeNode> getVidNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Vid", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "Vid", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 }

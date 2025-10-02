@@ -87,8 +87,11 @@ public class ServerRedundancyTypeNode extends BaseObjectTypeNode implements Serv
   public RedundancySupport readRedundancySupport() throws UaException {
     try {
       return readRedundancySupportAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -96,8 +99,11 @@ public class ServerRedundancyTypeNode extends BaseObjectTypeNode implements Serv
   public void writeRedundancySupport(RedundancySupport value) throws UaException {
     try {
       writeRedundancySupportAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -128,8 +134,11 @@ public class ServerRedundancyTypeNode extends BaseObjectTypeNode implements Serv
   public PropertyTypeNode getRedundancySupportNode() throws UaException {
     try {
       return getRedundancySupportNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -139,7 +148,7 @@ public class ServerRedundancyTypeNode extends BaseObjectTypeNode implements Serv
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "RedundancySupport",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -162,8 +171,11 @@ public class ServerRedundancyTypeNode extends BaseObjectTypeNode implements Serv
   public RedundantServerDataType[] readRedundantServerArray() throws UaException {
     try {
       return readRedundantServerArrayAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -171,8 +183,11 @@ public class ServerRedundancyTypeNode extends BaseObjectTypeNode implements Serv
   public void writeRedundantServerArray(RedundantServerDataType[] value) throws UaException {
     try {
       writeRedundantServerArrayAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -197,8 +212,11 @@ public class ServerRedundancyTypeNode extends BaseObjectTypeNode implements Serv
   public PropertyTypeNode getRedundantServerArrayNode() throws UaException {
     try {
       return getRedundantServerArrayNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -208,7 +226,7 @@ public class ServerRedundancyTypeNode extends BaseObjectTypeNode implements Serv
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "RedundantServerArray",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }

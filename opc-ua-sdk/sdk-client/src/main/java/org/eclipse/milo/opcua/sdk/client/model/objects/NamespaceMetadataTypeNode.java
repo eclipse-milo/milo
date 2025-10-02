@@ -79,8 +79,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public String readNamespaceUri() throws UaException {
     try {
       return readNamespaceUriAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -88,8 +91,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public void writeNamespaceUri(String value) throws UaException {
     try {
       writeNamespaceUriAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -111,8 +117,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public PropertyTypeNode getNamespaceUriNode() throws UaException {
     try {
       return getNamespaceUriNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -120,10 +129,7 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public CompletableFuture<? extends PropertyTypeNode> getNamespaceUriNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "NamespaceUri",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "NamespaceUri", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -143,8 +149,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public String readNamespaceVersion() throws UaException {
     try {
       return readNamespaceVersionAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -152,8 +161,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public void writeNamespaceVersion(String value) throws UaException {
     try {
       writeNamespaceVersionAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -175,8 +187,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public PropertyTypeNode getNamespaceVersionNode() throws UaException {
     try {
       return getNamespaceVersionNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -186,7 +201,7 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "NamespaceVersion",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -207,8 +222,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public DateTime readNamespacePublicationDate() throws UaException {
     try {
       return readNamespacePublicationDateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -216,8 +234,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public void writeNamespacePublicationDate(DateTime value) throws UaException {
     try {
       writeNamespacePublicationDateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -240,8 +261,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public PropertyTypeNode getNamespacePublicationDateNode() throws UaException {
     try {
       return getNamespacePublicationDateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -251,7 +275,7 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "NamespacePublicationDate",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -272,8 +296,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public Boolean readIsNamespaceSubset() throws UaException {
     try {
       return readIsNamespaceSubsetAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -281,8 +308,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public void writeIsNamespaceSubset(Boolean value) throws UaException {
     try {
       writeIsNamespaceSubsetAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -304,8 +334,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public PropertyTypeNode getIsNamespaceSubsetNode() throws UaException {
     try {
       return getIsNamespaceSubsetNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -315,7 +348,7 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "IsNamespaceSubset",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -349,8 +382,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public IdType[] readStaticNodeIdTypes() throws UaException {
     try {
       return readStaticNodeIdTypesAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -358,8 +394,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public void writeStaticNodeIdTypes(IdType[] value) throws UaException {
     try {
       writeStaticNodeIdTypesAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -396,8 +435,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public PropertyTypeNode getStaticNodeIdTypesNode() throws UaException {
     try {
       return getStaticNodeIdTypesNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -407,7 +449,7 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "StaticNodeIdTypes",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -428,8 +470,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public String[] readStaticNumericNodeIdRange() throws UaException {
     try {
       return readStaticNumericNodeIdRangeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -437,8 +482,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public void writeStaticNumericNodeIdRange(String[] value) throws UaException {
     try {
       writeStaticNumericNodeIdRangeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -461,8 +509,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public PropertyTypeNode getStaticNumericNodeIdRangeNode() throws UaException {
     try {
       return getStaticNumericNodeIdRangeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -472,7 +523,7 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "StaticNumericNodeIdRange",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -493,8 +544,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public String readStaticStringNodeIdPattern() throws UaException {
     try {
       return readStaticStringNodeIdPatternAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -502,8 +556,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public void writeStaticStringNodeIdPattern(String value) throws UaException {
     try {
       writeStaticStringNodeIdPatternAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -526,8 +583,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public PropertyTypeNode getStaticStringNodeIdPatternNode() throws UaException {
     try {
       return getStaticStringNodeIdPatternNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -537,7 +597,7 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "StaticStringNodeIdPattern",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -560,8 +620,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public RolePermissionType[] readDefaultRolePermissions() throws UaException {
     try {
       return readDefaultRolePermissionsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -569,8 +632,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public void writeDefaultRolePermissions(RolePermissionType[] value) throws UaException {
     try {
       writeDefaultRolePermissionsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -595,8 +661,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public PropertyTypeNode getDefaultRolePermissionsNode() throws UaException {
     try {
       return getDefaultRolePermissionsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -606,7 +675,7 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "DefaultRolePermissions",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -629,8 +698,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public RolePermissionType[] readDefaultUserRolePermissions() throws UaException {
     try {
       return readDefaultUserRolePermissionsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -638,8 +710,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public void writeDefaultUserRolePermissions(RolePermissionType[] value) throws UaException {
     try {
       writeDefaultUserRolePermissionsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -664,8 +739,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public PropertyTypeNode getDefaultUserRolePermissionsNode() throws UaException {
     try {
       return getDefaultUserRolePermissionsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -675,7 +753,7 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "DefaultUserRolePermissions",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -696,8 +774,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public AccessRestrictionType readDefaultAccessRestrictions() throws UaException {
     try {
       return readDefaultAccessRestrictionsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -705,8 +786,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public void writeDefaultAccessRestrictions(AccessRestrictionType value) throws UaException {
     try {
       writeDefaultAccessRestrictionsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -729,8 +813,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public PropertyTypeNode getDefaultAccessRestrictionsNode() throws UaException {
     try {
       return getDefaultAccessRestrictionsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -740,7 +827,7 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "DefaultAccessRestrictions",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -761,8 +848,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public UInteger readConfigurationVersion() throws UaException {
     try {
       return readConfigurationVersionAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -770,8 +860,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public void writeConfigurationVersion(UInteger value) throws UaException {
     try {
       writeConfigurationVersionAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -794,8 +887,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public PropertyTypeNode getConfigurationVersionNode() throws UaException {
     try {
       return getConfigurationVersionNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -805,7 +901,7 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ConfigurationVersion",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -826,8 +922,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public String readModelVersion() throws UaException {
     try {
       return readModelVersionAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -835,8 +934,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public void writeModelVersion(String value) throws UaException {
     try {
       writeModelVersionAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -858,8 +960,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public PropertyTypeNode getModelVersionNode() throws UaException {
     try {
       return getModelVersionNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -867,10 +972,7 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public CompletableFuture<? extends PropertyTypeNode> getModelVersionNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ModelVersion",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "ModelVersion", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -878,8 +980,11 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public AddressSpaceFileTypeNode getNamespaceFileNode() throws UaException {
     try {
       return getNamespaceFileNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -887,10 +992,7 @@ public class NamespaceMetadataTypeNode extends BaseObjectTypeNode implements Nam
   public CompletableFuture<? extends AddressSpaceFileTypeNode> getNamespaceFileNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "NamespaceFile",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "NamespaceFile", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (AddressSpaceFileTypeNode) node);
   }
 }

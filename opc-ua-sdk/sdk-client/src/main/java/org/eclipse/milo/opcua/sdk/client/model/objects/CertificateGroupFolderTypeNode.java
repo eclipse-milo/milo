@@ -60,8 +60,11 @@ public class CertificateGroupFolderTypeNode extends FolderTypeNode
   public CertificateGroupTypeNode getDefaultApplicationGroupNode() throws UaException {
     try {
       return getDefaultApplicationGroupNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -72,7 +75,7 @@ public class CertificateGroupFolderTypeNode extends FolderTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "DefaultApplicationGroup",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (CertificateGroupTypeNode) node);
   }
@@ -81,8 +84,11 @@ public class CertificateGroupFolderTypeNode extends FolderTypeNode
   public CertificateGroupTypeNode getDefaultHttpsGroupNode() throws UaException {
     try {
       return getDefaultHttpsGroupNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -92,7 +98,7 @@ public class CertificateGroupFolderTypeNode extends FolderTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "DefaultHttpsGroup",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (CertificateGroupTypeNode) node);
   }
@@ -101,8 +107,11 @@ public class CertificateGroupFolderTypeNode extends FolderTypeNode
   public CertificateGroupTypeNode getDefaultUserTokenGroupNode() throws UaException {
     try {
       return getDefaultUserTokenGroupNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -112,7 +121,7 @@ public class CertificateGroupFolderTypeNode extends FolderTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "DefaultUserTokenGroup",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (CertificateGroupTypeNode) node);
   }

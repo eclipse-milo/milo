@@ -82,8 +82,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public Boolean readCreatable() throws UaException {
     try {
       return readCreatableAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -91,8 +94,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public void writeCreatable(Boolean value) throws UaException {
     try {
       writeCreatableAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -114,8 +120,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public PropertyTypeNode getCreatableNode() throws UaException {
     try {
       return getCreatableNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -123,7 +132,7 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getCreatableNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Creatable", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "Creatable", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -143,8 +152,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public Boolean readDeletable() throws UaException {
     try {
       return readDeletableAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -152,8 +164,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public void writeDeletable(Boolean value) throws UaException {
     try {
       writeDeletableAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -175,8 +190,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public PropertyTypeNode getDeletableNode() throws UaException {
     try {
       return getDeletableNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -184,7 +202,7 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getDeletableNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Deletable", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "Deletable", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -204,8 +222,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public Boolean readAutoDelete() throws UaException {
     try {
       return readAutoDeleteAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -213,8 +234,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public void writeAutoDelete(Boolean value) throws UaException {
     try {
       writeAutoDeleteAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -236,8 +260,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public PropertyTypeNode getAutoDeleteNode() throws UaException {
     try {
       return getAutoDeleteNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -245,7 +272,7 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getAutoDeleteNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "AutoDelete", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "AutoDelete", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -265,8 +292,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public Integer readRecycleCount() throws UaException {
     try {
       return readRecycleCountAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -274,8 +304,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public void writeRecycleCount(Integer value) throws UaException {
     try {
       writeRecycleCountAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -297,8 +330,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public PropertyTypeNode getRecycleCountNode() throws UaException {
     try {
       return getRecycleCountNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -306,10 +342,7 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getRecycleCountNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "RecycleCount",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "RecycleCount", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -329,8 +362,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public UInteger readInstanceCount() throws UaException {
     try {
       return readInstanceCountAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -338,8 +374,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public void writeInstanceCount(UInteger value) throws UaException {
     try {
       writeInstanceCountAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -361,8 +400,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public PropertyTypeNode getInstanceCountNode() throws UaException {
     try {
       return getInstanceCountNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -370,10 +412,7 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getInstanceCountNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "InstanceCount",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "InstanceCount", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -393,8 +432,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public UInteger readMaxInstanceCount() throws UaException {
     try {
       return readMaxInstanceCountAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -402,8 +444,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public void writeMaxInstanceCount(UInteger value) throws UaException {
     try {
       writeMaxInstanceCountAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -425,8 +470,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public PropertyTypeNode getMaxInstanceCountNode() throws UaException {
     try {
       return getMaxInstanceCountNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -436,7 +484,7 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MaxInstanceCount",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -457,8 +505,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public UInteger readMaxRecycleCount() throws UaException {
     try {
       return readMaxRecycleCountAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -466,8 +517,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public void writeMaxRecycleCount(UInteger value) throws UaException {
     try {
       writeMaxRecycleCountAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -489,8 +543,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public PropertyTypeNode getMaxRecycleCountNode() throws UaException {
     try {
       return getMaxRecycleCountNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -498,10 +555,7 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getMaxRecycleCountNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "MaxRecycleCount",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "MaxRecycleCount", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -521,8 +575,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public LocalizedText readCurrentState() throws UaException {
     try {
       return readCurrentStateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -530,8 +587,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public void writeCurrentState(LocalizedText value) throws UaException {
     try {
       writeCurrentStateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -553,8 +613,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public FiniteStateVariableTypeNode getCurrentStateNode() throws UaException {
     try {
       return getCurrentStateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -562,10 +625,7 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public CompletableFuture<? extends FiniteStateVariableTypeNode> getCurrentStateNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "CurrentState",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "CurrentState", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (FiniteStateVariableTypeNode) node);
   }
 
@@ -585,8 +645,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public LocalizedText readLastTransition() throws UaException {
     try {
       return readLastTransitionAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -594,8 +657,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public void writeLastTransition(LocalizedText value) throws UaException {
     try {
       writeLastTransitionAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -617,8 +683,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public FiniteTransitionVariableTypeNode getLastTransitionNode() throws UaException {
     try {
       return getLastTransitionNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -627,10 +696,7 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
       getLastTransitionNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "LastTransition",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "LastTransition", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (FiniteTransitionVariableTypeNode) node);
   }
 
@@ -651,8 +717,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public ProgramDiagnostic2DataType readProgramDiagnostic() throws UaException {
     try {
       return readProgramDiagnosticAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -660,8 +729,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public void writeProgramDiagnostic(ProgramDiagnostic2DataType value) throws UaException {
     try {
       writeProgramDiagnosticAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -686,8 +758,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public ProgramDiagnostic2TypeNode getProgramDiagnosticNode() throws UaException {
     try {
       return getProgramDiagnosticNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -697,7 +772,7 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ProgramDiagnostic",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (ProgramDiagnostic2TypeNode) node);
   }
@@ -706,8 +781,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public BaseObjectTypeNode getFinalResultDataNode() throws UaException {
     try {
       return getFinalResultDataNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -715,10 +793,7 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public CompletableFuture<? extends BaseObjectTypeNode> getFinalResultDataNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "FinalResultData",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "FinalResultData", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseObjectTypeNode) node);
   }
 
@@ -726,8 +801,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public StateTypeNode getHaltedNode() throws UaException {
     try {
       return getHaltedNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -735,7 +813,7 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public CompletableFuture<? extends StateTypeNode> getHaltedNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Halted", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "Halted", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (StateTypeNode) node);
   }
 
@@ -743,8 +821,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public StateTypeNode getReadyNode() throws UaException {
     try {
       return getReadyNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -752,7 +833,7 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public CompletableFuture<? extends StateTypeNode> getReadyNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Ready", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "Ready", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (StateTypeNode) node);
   }
 
@@ -760,8 +841,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public StateTypeNode getRunningNode() throws UaException {
     try {
       return getRunningNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -769,7 +853,7 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public CompletableFuture<? extends StateTypeNode> getRunningNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Running", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "Running", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (StateTypeNode) node);
   }
 
@@ -777,8 +861,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public StateTypeNode getSuspendedNode() throws UaException {
     try {
       return getSuspendedNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -786,7 +873,7 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public CompletableFuture<? extends StateTypeNode> getSuspendedNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Suspended", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "Suspended", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (StateTypeNode) node);
   }
 
@@ -794,8 +881,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public TransitionTypeNode getHaltedToReadyNode() throws UaException {
     try {
       return getHaltedToReadyNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -803,10 +893,7 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public CompletableFuture<? extends TransitionTypeNode> getHaltedToReadyNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "HaltedToReady",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "HaltedToReady", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (TransitionTypeNode) node);
   }
 
@@ -814,8 +901,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public TransitionTypeNode getReadyToRunningNode() throws UaException {
     try {
       return getReadyToRunningNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -823,10 +913,7 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public CompletableFuture<? extends TransitionTypeNode> getReadyToRunningNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ReadyToRunning",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "ReadyToRunning", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (TransitionTypeNode) node);
   }
 
@@ -834,8 +921,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public TransitionTypeNode getRunningToHaltedNode() throws UaException {
     try {
       return getRunningToHaltedNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -843,10 +933,7 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public CompletableFuture<? extends TransitionTypeNode> getRunningToHaltedNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "RunningToHalted",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "RunningToHalted", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (TransitionTypeNode) node);
   }
 
@@ -854,8 +941,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public TransitionTypeNode getRunningToReadyNode() throws UaException {
     try {
       return getRunningToReadyNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -863,10 +953,7 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public CompletableFuture<? extends TransitionTypeNode> getRunningToReadyNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "RunningToReady",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "RunningToReady", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (TransitionTypeNode) node);
   }
 
@@ -874,8 +961,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public TransitionTypeNode getRunningToSuspendedNode() throws UaException {
     try {
       return getRunningToSuspendedNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -885,7 +975,7 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "RunningToSuspended",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (TransitionTypeNode) node);
   }
@@ -894,8 +984,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public TransitionTypeNode getSuspendedToRunningNode() throws UaException {
     try {
       return getSuspendedToRunningNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -905,7 +998,7 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "SuspendedToRunning",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (TransitionTypeNode) node);
   }
@@ -914,8 +1007,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public TransitionTypeNode getSuspendedToHaltedNode() throws UaException {
     try {
       return getSuspendedToHaltedNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -925,7 +1021,7 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "SuspendedToHalted",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (TransitionTypeNode) node);
   }
@@ -934,8 +1030,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public TransitionTypeNode getSuspendedToReadyNode() throws UaException {
     try {
       return getSuspendedToReadyNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -945,7 +1044,7 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "SuspendedToReady",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (TransitionTypeNode) node);
   }
@@ -954,8 +1053,11 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public TransitionTypeNode getReadyToHaltedNode() throws UaException {
     try {
       return getReadyToHaltedNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -963,10 +1065,7 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   public CompletableFuture<? extends TransitionTypeNode> getReadyToHaltedNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ReadyToHalted",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "ReadyToHalted", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (TransitionTypeNode) node);
   }
 }

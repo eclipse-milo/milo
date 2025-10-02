@@ -95,8 +95,11 @@ public class ImageItemTypeNode extends ArrayItemTypeNode implements ImageItemTyp
   public AxisInformation readXAxisDefinition() throws UaException {
     try {
       return readXAxisDefinitionAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -104,8 +107,11 @@ public class ImageItemTypeNode extends ArrayItemTypeNode implements ImageItemTyp
   public void writeXAxisDefinition(AxisInformation value) throws UaException {
     try {
       writeXAxisDefinitionAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -129,8 +135,11 @@ public class ImageItemTypeNode extends ArrayItemTypeNode implements ImageItemTyp
   public PropertyTypeNode getXAxisDefinitionNode() throws UaException {
     try {
       return getXAxisDefinitionNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -138,10 +147,7 @@ public class ImageItemTypeNode extends ArrayItemTypeNode implements ImageItemTyp
   public CompletableFuture<? extends PropertyTypeNode> getXAxisDefinitionNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "XAxisDefinition",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "XAxisDefinition", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -162,8 +168,11 @@ public class ImageItemTypeNode extends ArrayItemTypeNode implements ImageItemTyp
   public AxisInformation readYAxisDefinition() throws UaException {
     try {
       return readYAxisDefinitionAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -171,8 +180,11 @@ public class ImageItemTypeNode extends ArrayItemTypeNode implements ImageItemTyp
   public void writeYAxisDefinition(AxisInformation value) throws UaException {
     try {
       writeYAxisDefinitionAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -196,8 +208,11 @@ public class ImageItemTypeNode extends ArrayItemTypeNode implements ImageItemTyp
   public PropertyTypeNode getYAxisDefinitionNode() throws UaException {
     try {
       return getYAxisDefinitionNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -205,10 +220,7 @@ public class ImageItemTypeNode extends ArrayItemTypeNode implements ImageItemTyp
   public CompletableFuture<? extends PropertyTypeNode> getYAxisDefinitionNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "YAxisDefinition",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "YAxisDefinition", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 }

@@ -78,8 +78,11 @@ public class IIeeeTsnInterfaceConfigurationTalkerTypeNode
   public UInteger readTimeAwareOffset() throws UaException {
     try {
       return readTimeAwareOffsetAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -87,8 +90,11 @@ public class IIeeeTsnInterfaceConfigurationTalkerTypeNode
   public void writeTimeAwareOffset(UInteger value) throws UaException {
     try {
       writeTimeAwareOffsetAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -110,8 +116,11 @@ public class IIeeeTsnInterfaceConfigurationTalkerTypeNode
   public BaseDataVariableTypeNode getTimeAwareOffsetNode() throws UaException {
     try {
       return getTimeAwareOffsetNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -119,10 +128,7 @@ public class IIeeeTsnInterfaceConfigurationTalkerTypeNode
   public CompletableFuture<? extends BaseDataVariableTypeNode> getTimeAwareOffsetNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "TimeAwareOffset",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "TimeAwareOffset", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 }

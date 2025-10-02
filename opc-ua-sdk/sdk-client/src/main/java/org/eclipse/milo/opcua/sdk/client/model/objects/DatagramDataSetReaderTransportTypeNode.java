@@ -79,8 +79,11 @@ public class DatagramDataSetReaderTransportTypeNode extends DataSetReaderTranspo
   public String readQosCategory() throws UaException {
     try {
       return readQosCategoryAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -88,8 +91,11 @@ public class DatagramDataSetReaderTransportTypeNode extends DataSetReaderTranspo
   public void writeQosCategory(String value) throws UaException {
     try {
       writeQosCategoryAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -111,8 +117,11 @@ public class DatagramDataSetReaderTransportTypeNode extends DataSetReaderTranspo
   public PropertyTypeNode getQosCategoryNode() throws UaException {
     try {
       return getQosCategoryNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -120,10 +129,7 @@ public class DatagramDataSetReaderTransportTypeNode extends DataSetReaderTranspo
   public CompletableFuture<? extends PropertyTypeNode> getQosCategoryNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "QosCategory",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "QosCategory", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -145,8 +151,11 @@ public class DatagramDataSetReaderTransportTypeNode extends DataSetReaderTranspo
   public ReceiveQosDataType[] readDatagramQos() throws UaException {
     try {
       return readDatagramQosAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -154,8 +163,11 @@ public class DatagramDataSetReaderTransportTypeNode extends DataSetReaderTranspo
   public void writeDatagramQos(ReceiveQosDataType[] value) throws UaException {
     try {
       writeDatagramQosAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -179,8 +191,11 @@ public class DatagramDataSetReaderTransportTypeNode extends DataSetReaderTranspo
   public PropertyTypeNode getDatagramQosNode() throws UaException {
     try {
       return getDatagramQosNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -188,10 +203,7 @@ public class DatagramDataSetReaderTransportTypeNode extends DataSetReaderTranspo
   public CompletableFuture<? extends PropertyTypeNode> getDatagramQosNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "DatagramQos",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "DatagramQos", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -211,8 +223,11 @@ public class DatagramDataSetReaderTransportTypeNode extends DataSetReaderTranspo
   public String readTopic() throws UaException {
     try {
       return readTopicAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -220,8 +235,11 @@ public class DatagramDataSetReaderTransportTypeNode extends DataSetReaderTranspo
   public void writeTopic(String value) throws UaException {
     try {
       writeTopicAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -243,8 +261,11 @@ public class DatagramDataSetReaderTransportTypeNode extends DataSetReaderTranspo
   public PropertyTypeNode getTopicNode() throws UaException {
     try {
       return getTopicNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -252,7 +273,7 @@ public class DatagramDataSetReaderTransportTypeNode extends DataSetReaderTranspo
   public CompletableFuture<? extends PropertyTypeNode> getTopicNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Topic", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "Topic", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -260,8 +281,11 @@ public class DatagramDataSetReaderTransportTypeNode extends DataSetReaderTranspo
   public NetworkAddressTypeNode getAddressNode() throws UaException {
     try {
       return getAddressNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -269,7 +293,7 @@ public class DatagramDataSetReaderTransportTypeNode extends DataSetReaderTranspo
   public CompletableFuture<? extends NetworkAddressTypeNode> getAddressNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Address", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "Address", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (NetworkAddressTypeNode) node);
   }
 }

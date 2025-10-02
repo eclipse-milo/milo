@@ -76,8 +76,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public UInteger readMaxNodesPerRead() throws UaException {
     try {
       return readMaxNodesPerReadAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -85,8 +88,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public void writeMaxNodesPerRead(UInteger value) throws UaException {
     try {
       writeMaxNodesPerReadAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -108,8 +114,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public PropertyTypeNode getMaxNodesPerReadNode() throws UaException {
     try {
       return getMaxNodesPerReadNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -117,10 +126,7 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public CompletableFuture<? extends PropertyTypeNode> getMaxNodesPerReadNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "MaxNodesPerRead",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "MaxNodesPerRead", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -140,8 +146,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public UInteger readMaxNodesPerHistoryReadData() throws UaException {
     try {
       return readMaxNodesPerHistoryReadDataAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -149,8 +158,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public void writeMaxNodesPerHistoryReadData(UInteger value) throws UaException {
     try {
       writeMaxNodesPerHistoryReadDataAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -173,8 +185,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public PropertyTypeNode getMaxNodesPerHistoryReadDataNode() throws UaException {
     try {
       return getMaxNodesPerHistoryReadDataNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -184,7 +199,7 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MaxNodesPerHistoryReadData",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -205,8 +220,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public UInteger readMaxNodesPerHistoryReadEvents() throws UaException {
     try {
       return readMaxNodesPerHistoryReadEventsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -214,8 +232,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public void writeMaxNodesPerHistoryReadEvents(UInteger value) throws UaException {
     try {
       writeMaxNodesPerHistoryReadEventsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -238,8 +259,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public PropertyTypeNode getMaxNodesPerHistoryReadEventsNode() throws UaException {
     try {
       return getMaxNodesPerHistoryReadEventsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -249,7 +273,7 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MaxNodesPerHistoryReadEvents",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -270,8 +294,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public UInteger readMaxNodesPerWrite() throws UaException {
     try {
       return readMaxNodesPerWriteAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -279,8 +306,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public void writeMaxNodesPerWrite(UInteger value) throws UaException {
     try {
       writeMaxNodesPerWriteAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -302,8 +332,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public PropertyTypeNode getMaxNodesPerWriteNode() throws UaException {
     try {
       return getMaxNodesPerWriteNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -313,7 +346,7 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MaxNodesPerWrite",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -334,8 +367,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public UInteger readMaxNodesPerHistoryUpdateData() throws UaException {
     try {
       return readMaxNodesPerHistoryUpdateDataAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -343,8 +379,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public void writeMaxNodesPerHistoryUpdateData(UInteger value) throws UaException {
     try {
       writeMaxNodesPerHistoryUpdateDataAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -367,8 +406,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public PropertyTypeNode getMaxNodesPerHistoryUpdateDataNode() throws UaException {
     try {
       return getMaxNodesPerHistoryUpdateDataNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -378,7 +420,7 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MaxNodesPerHistoryUpdateData",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -399,8 +441,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public UInteger readMaxNodesPerHistoryUpdateEvents() throws UaException {
     try {
       return readMaxNodesPerHistoryUpdateEventsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -408,8 +453,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public void writeMaxNodesPerHistoryUpdateEvents(UInteger value) throws UaException {
     try {
       writeMaxNodesPerHistoryUpdateEventsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -432,8 +480,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public PropertyTypeNode getMaxNodesPerHistoryUpdateEventsNode() throws UaException {
     try {
       return getMaxNodesPerHistoryUpdateEventsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -444,7 +495,7 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MaxNodesPerHistoryUpdateEvents",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -465,8 +516,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public UInteger readMaxNodesPerMethodCall() throws UaException {
     try {
       return readMaxNodesPerMethodCallAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -474,8 +528,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public void writeMaxNodesPerMethodCall(UInteger value) throws UaException {
     try {
       writeMaxNodesPerMethodCallAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -498,8 +555,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public PropertyTypeNode getMaxNodesPerMethodCallNode() throws UaException {
     try {
       return getMaxNodesPerMethodCallNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -509,7 +569,7 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MaxNodesPerMethodCall",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -530,8 +590,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public UInteger readMaxNodesPerBrowse() throws UaException {
     try {
       return readMaxNodesPerBrowseAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -539,8 +602,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public void writeMaxNodesPerBrowse(UInteger value) throws UaException {
     try {
       writeMaxNodesPerBrowseAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -562,8 +628,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public PropertyTypeNode getMaxNodesPerBrowseNode() throws UaException {
     try {
       return getMaxNodesPerBrowseNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -573,7 +642,7 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MaxNodesPerBrowse",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -594,8 +663,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public UInteger readMaxNodesPerRegisterNodes() throws UaException {
     try {
       return readMaxNodesPerRegisterNodesAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -603,8 +675,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public void writeMaxNodesPerRegisterNodes(UInteger value) throws UaException {
     try {
       writeMaxNodesPerRegisterNodesAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -627,8 +702,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public PropertyTypeNode getMaxNodesPerRegisterNodesNode() throws UaException {
     try {
       return getMaxNodesPerRegisterNodesNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -638,7 +716,7 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MaxNodesPerRegisterNodes",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -659,8 +737,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public UInteger readMaxNodesPerTranslateBrowsePathsToNodeIds() throws UaException {
     try {
       return readMaxNodesPerTranslateBrowsePathsToNodeIdsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -668,8 +749,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public void writeMaxNodesPerTranslateBrowsePathsToNodeIds(UInteger value) throws UaException {
     try {
       writeMaxNodesPerTranslateBrowsePathsToNodeIdsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -692,8 +776,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public PropertyTypeNode getMaxNodesPerTranslateBrowsePathsToNodeIdsNode() throws UaException {
     try {
       return getMaxNodesPerTranslateBrowsePathsToNodeIdsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -704,7 +791,7 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MaxNodesPerTranslateBrowsePathsToNodeIds",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -725,8 +812,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public UInteger readMaxNodesPerNodeManagement() throws UaException {
     try {
       return readMaxNodesPerNodeManagementAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -734,8 +824,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public void writeMaxNodesPerNodeManagement(UInteger value) throws UaException {
     try {
       writeMaxNodesPerNodeManagementAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -758,8 +851,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public PropertyTypeNode getMaxNodesPerNodeManagementNode() throws UaException {
     try {
       return getMaxNodesPerNodeManagementNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -769,7 +865,7 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MaxNodesPerNodeManagement",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -790,8 +886,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public UInteger readMaxMonitoredItemsPerCall() throws UaException {
     try {
       return readMaxMonitoredItemsPerCallAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -799,8 +898,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public void writeMaxMonitoredItemsPerCall(UInteger value) throws UaException {
     try {
       writeMaxMonitoredItemsPerCallAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -823,8 +925,11 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
   public PropertyTypeNode getMaxMonitoredItemsPerCallNode() throws UaException {
     try {
       return getMaxMonitoredItemsPerCallNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -834,7 +939,7 @@ public class OperationLimitsTypeNode extends FolderTypeNode implements Operation
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MaxMonitoredItemsPerCall",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }

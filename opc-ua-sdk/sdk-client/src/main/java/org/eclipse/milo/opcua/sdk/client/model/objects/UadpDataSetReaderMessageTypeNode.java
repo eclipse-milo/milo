@@ -81,8 +81,11 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   public UInteger readGroupVersion() throws UaException {
     try {
       return readGroupVersionAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -90,8 +93,11 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   public void writeGroupVersion(UInteger value) throws UaException {
     try {
       writeGroupVersionAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -113,8 +119,11 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   public PropertyTypeNode getGroupVersionNode() throws UaException {
     try {
       return getGroupVersionNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -122,10 +131,7 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   public CompletableFuture<? extends PropertyTypeNode> getGroupVersionNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "GroupVersion",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "GroupVersion", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -145,8 +151,11 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   public UShort readNetworkMessageNumber() throws UaException {
     try {
       return readNetworkMessageNumberAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -154,8 +163,11 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   public void writeNetworkMessageNumber(UShort value) throws UaException {
     try {
       writeNetworkMessageNumberAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -177,8 +189,11 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   public PropertyTypeNode getNetworkMessageNumberNode() throws UaException {
     try {
       return getNetworkMessageNumberNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -188,7 +203,7 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "NetworkMessageNumber",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -209,8 +224,11 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   public UShort readDataSetOffset() throws UaException {
     try {
       return readDataSetOffsetAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -218,8 +236,11 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   public void writeDataSetOffset(UShort value) throws UaException {
     try {
       writeDataSetOffsetAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -241,8 +262,11 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   public PropertyTypeNode getDataSetOffsetNode() throws UaException {
     try {
       return getDataSetOffsetNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -250,10 +274,7 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   public CompletableFuture<? extends PropertyTypeNode> getDataSetOffsetNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "DataSetOffset",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "DataSetOffset", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -273,8 +294,11 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   public UUID readDataSetClassId() throws UaException {
     try {
       return readDataSetClassIdAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -282,8 +306,11 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   public void writeDataSetClassId(UUID value) throws UaException {
     try {
       writeDataSetClassIdAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -305,8 +332,11 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   public PropertyTypeNode getDataSetClassIdNode() throws UaException {
     try {
       return getDataSetClassIdNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -314,10 +344,7 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   public CompletableFuture<? extends PropertyTypeNode> getDataSetClassIdNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "DataSetClassId",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "DataSetClassId", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -337,8 +364,11 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   public UadpNetworkMessageContentMask readNetworkMessageContentMask() throws UaException {
     try {
       return readNetworkMessageContentMaskAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -347,8 +377,11 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
       throws UaException {
     try {
       writeNetworkMessageContentMaskAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -372,8 +405,11 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   public PropertyTypeNode getNetworkMessageContentMaskNode() throws UaException {
     try {
       return getNetworkMessageContentMaskNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -383,7 +419,7 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "NetworkMessageContentMask",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -404,8 +440,11 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   public UadpDataSetMessageContentMask readDataSetMessageContentMask() throws UaException {
     try {
       return readDataSetMessageContentMaskAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -414,8 +453,11 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
       throws UaException {
     try {
       writeDataSetMessageContentMaskAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -439,8 +481,11 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   public PropertyTypeNode getDataSetMessageContentMaskNode() throws UaException {
     try {
       return getDataSetMessageContentMaskNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -450,7 +495,7 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "DataSetMessageContentMask",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -471,8 +516,11 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   public Double readPublishingInterval() throws UaException {
     try {
       return readPublishingIntervalAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -480,8 +528,11 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   public void writePublishingInterval(Double value) throws UaException {
     try {
       writePublishingIntervalAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -503,8 +554,11 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   public PropertyTypeNode getPublishingIntervalNode() throws UaException {
     try {
       return getPublishingIntervalNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -514,7 +568,7 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "PublishingInterval",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -535,8 +589,11 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   public Double readProcessingOffset() throws UaException {
     try {
       return readProcessingOffsetAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -544,8 +601,11 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   public void writeProcessingOffset(Double value) throws UaException {
     try {
       writeProcessingOffsetAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -567,8 +627,11 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   public PropertyTypeNode getProcessingOffsetNode() throws UaException {
     try {
       return getProcessingOffsetNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -578,7 +641,7 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ProcessingOffset",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -599,8 +662,11 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   public Double readReceiveOffset() throws UaException {
     try {
       return readReceiveOffsetAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -608,8 +674,11 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   public void writeReceiveOffset(Double value) throws UaException {
     try {
       writeReceiveOffsetAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -631,8 +700,11 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   public PropertyTypeNode getReceiveOffsetNode() throws UaException {
     try {
       return getReceiveOffsetNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -640,10 +712,7 @@ public class UadpDataSetReaderMessageTypeNode extends DataSetReaderMessageTypeNo
   public CompletableFuture<? extends PropertyTypeNode> getReceiveOffsetNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ReceiveOffset",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "ReceiveOffset", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 }

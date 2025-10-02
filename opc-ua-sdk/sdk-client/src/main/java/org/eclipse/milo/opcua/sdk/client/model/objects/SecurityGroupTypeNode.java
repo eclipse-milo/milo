@@ -76,8 +76,11 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
   public String readSecurityGroupId() throws UaException {
     try {
       return readSecurityGroupIdAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -85,8 +88,11 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
   public void writeSecurityGroupId(String value) throws UaException {
     try {
       writeSecurityGroupIdAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -108,8 +114,11 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
   public PropertyTypeNode getSecurityGroupIdNode() throws UaException {
     try {
       return getSecurityGroupIdNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -117,10 +126,7 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
   public CompletableFuture<? extends PropertyTypeNode> getSecurityGroupIdNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "SecurityGroupId",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "SecurityGroupId", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -140,8 +146,11 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
   public Double readKeyLifetime() throws UaException {
     try {
       return readKeyLifetimeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -149,8 +158,11 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
   public void writeKeyLifetime(Double value) throws UaException {
     try {
       writeKeyLifetimeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -172,8 +184,11 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
   public PropertyTypeNode getKeyLifetimeNode() throws UaException {
     try {
       return getKeyLifetimeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -181,10 +196,7 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
   public CompletableFuture<? extends PropertyTypeNode> getKeyLifetimeNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "KeyLifetime",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "KeyLifetime", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -204,8 +216,11 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
   public String readSecurityPolicyUri() throws UaException {
     try {
       return readSecurityPolicyUriAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -213,8 +228,11 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
   public void writeSecurityPolicyUri(String value) throws UaException {
     try {
       writeSecurityPolicyUriAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -236,8 +254,11 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
   public PropertyTypeNode getSecurityPolicyUriNode() throws UaException {
     try {
       return getSecurityPolicyUriNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -247,7 +268,7 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "SecurityPolicyUri",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -268,8 +289,11 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
   public UInteger readMaxFutureKeyCount() throws UaException {
     try {
       return readMaxFutureKeyCountAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -277,8 +301,11 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
   public void writeMaxFutureKeyCount(UInteger value) throws UaException {
     try {
       writeMaxFutureKeyCountAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -300,8 +327,11 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
   public PropertyTypeNode getMaxFutureKeyCountNode() throws UaException {
     try {
       return getMaxFutureKeyCountNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -311,7 +341,7 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MaxFutureKeyCount",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -332,8 +362,11 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
   public UInteger readMaxPastKeyCount() throws UaException {
     try {
       return readMaxPastKeyCountAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -341,8 +374,11 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
   public void writeMaxPastKeyCount(UInteger value) throws UaException {
     try {
       writeMaxPastKeyCountAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -364,8 +400,11 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
   public PropertyTypeNode getMaxPastKeyCountNode() throws UaException {
     try {
       return getMaxPastKeyCountNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -373,10 +412,7 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
   public CompletableFuture<? extends PropertyTypeNode> getMaxPastKeyCountNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "MaxPastKeyCount",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "MaxPastKeyCount", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 }

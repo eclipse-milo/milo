@@ -77,8 +77,11 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
   public UShort readWriterGroupId() throws UaException {
     try {
       return readWriterGroupIdAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -86,8 +89,11 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
   public void writeWriterGroupId(UShort value) throws UaException {
     try {
       writeWriterGroupIdAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -109,8 +115,11 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
   public PropertyTypeNode getWriterGroupIdNode() throws UaException {
     try {
       return getWriterGroupIdNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -118,10 +127,7 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
   public CompletableFuture<? extends PropertyTypeNode> getWriterGroupIdNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "WriterGroupId",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "WriterGroupId", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -141,8 +147,11 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
   public Double readPublishingInterval() throws UaException {
     try {
       return readPublishingIntervalAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -150,8 +159,11 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
   public void writePublishingInterval(Double value) throws UaException {
     try {
       writePublishingIntervalAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -173,8 +185,11 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
   public PropertyTypeNode getPublishingIntervalNode() throws UaException {
     try {
       return getPublishingIntervalNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -184,7 +199,7 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "PublishingInterval",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -205,8 +220,11 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
   public Double readKeepAliveTime() throws UaException {
     try {
       return readKeepAliveTimeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -214,8 +232,11 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
   public void writeKeepAliveTime(Double value) throws UaException {
     try {
       writeKeepAliveTimeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -237,8 +258,11 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
   public PropertyTypeNode getKeepAliveTimeNode() throws UaException {
     try {
       return getKeepAliveTimeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -246,10 +270,7 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
   public CompletableFuture<? extends PropertyTypeNode> getKeepAliveTimeNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "KeepAliveTime",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "KeepAliveTime", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -269,8 +290,11 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
   public UByte readPriority() throws UaException {
     try {
       return readPriorityAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -278,8 +302,11 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
   public void writePriority(UByte value) throws UaException {
     try {
       writePriorityAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -301,8 +328,11 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
   public PropertyTypeNode getPriorityNode() throws UaException {
     try {
       return getPriorityNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -310,7 +340,7 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
   public CompletableFuture<? extends PropertyTypeNode> getPriorityNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Priority", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "Priority", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -330,8 +360,11 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
   public String[] readLocaleIds() throws UaException {
     try {
       return readLocaleIdsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -339,8 +372,11 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
   public void writeLocaleIds(String[] value) throws UaException {
     try {
       writeLocaleIdsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -362,8 +398,11 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
   public PropertyTypeNode getLocaleIdsNode() throws UaException {
     try {
       return getLocaleIdsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -371,7 +410,7 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
   public CompletableFuture<? extends PropertyTypeNode> getLocaleIdsNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "LocaleIds", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "LocaleIds", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -391,8 +430,11 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
   public String readHeaderLayoutUri() throws UaException {
     try {
       return readHeaderLayoutUriAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -400,8 +442,11 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
   public void writeHeaderLayoutUri(String value) throws UaException {
     try {
       writeHeaderLayoutUriAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -423,8 +468,11 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
   public PropertyTypeNode getHeaderLayoutUriNode() throws UaException {
     try {
       return getHeaderLayoutUriNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -432,10 +480,7 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
   public CompletableFuture<? extends PropertyTypeNode> getHeaderLayoutUriNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "HeaderLayoutUri",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "HeaderLayoutUri", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -443,8 +488,11 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
   public WriterGroupTransportTypeNode getTransportSettingsNode() throws UaException {
     try {
       return getTransportSettingsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -454,7 +502,7 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "TransportSettings",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (WriterGroupTransportTypeNode) node);
   }
@@ -463,8 +511,11 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
   public WriterGroupMessageTypeNode getMessageSettingsNode() throws UaException {
     try {
       return getMessageSettingsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -472,10 +523,7 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
   public CompletableFuture<? extends WriterGroupMessageTypeNode> getMessageSettingsNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "MessageSettings",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "MessageSettings", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (WriterGroupMessageTypeNode) node);
   }
 
@@ -483,8 +531,11 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
   public PubSubDiagnosticsWriterGroupTypeNode getDiagnosticsNode() throws UaException {
     try {
       return getDiagnosticsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -493,10 +544,7 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
       getDiagnosticsNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "Diagnostics",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "Diagnostics", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (PubSubDiagnosticsWriterGroupTypeNode) node);
   }
 }

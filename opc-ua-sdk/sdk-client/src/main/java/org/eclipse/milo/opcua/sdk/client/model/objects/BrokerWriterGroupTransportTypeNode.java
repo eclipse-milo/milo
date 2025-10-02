@@ -78,8 +78,11 @@ public class BrokerWriterGroupTransportTypeNode extends WriterGroupTransportType
   public String readQueueName() throws UaException {
     try {
       return readQueueNameAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -87,8 +90,11 @@ public class BrokerWriterGroupTransportTypeNode extends WriterGroupTransportType
   public void writeQueueName(String value) throws UaException {
     try {
       writeQueueNameAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -110,8 +116,11 @@ public class BrokerWriterGroupTransportTypeNode extends WriterGroupTransportType
   public PropertyTypeNode getQueueNameNode() throws UaException {
     try {
       return getQueueNameNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -119,7 +128,7 @@ public class BrokerWriterGroupTransportTypeNode extends WriterGroupTransportType
   public CompletableFuture<? extends PropertyTypeNode> getQueueNameNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "QueueName", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "QueueName", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -139,8 +148,11 @@ public class BrokerWriterGroupTransportTypeNode extends WriterGroupTransportType
   public String readResourceUri() throws UaException {
     try {
       return readResourceUriAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -148,8 +160,11 @@ public class BrokerWriterGroupTransportTypeNode extends WriterGroupTransportType
   public void writeResourceUri(String value) throws UaException {
     try {
       writeResourceUriAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -171,8 +186,11 @@ public class BrokerWriterGroupTransportTypeNode extends WriterGroupTransportType
   public PropertyTypeNode getResourceUriNode() throws UaException {
     try {
       return getResourceUriNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -180,10 +198,7 @@ public class BrokerWriterGroupTransportTypeNode extends WriterGroupTransportType
   public CompletableFuture<? extends PropertyTypeNode> getResourceUriNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ResourceUri",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "ResourceUri", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -203,8 +218,11 @@ public class BrokerWriterGroupTransportTypeNode extends WriterGroupTransportType
   public String readAuthenticationProfileUri() throws UaException {
     try {
       return readAuthenticationProfileUriAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -212,8 +230,11 @@ public class BrokerWriterGroupTransportTypeNode extends WriterGroupTransportType
   public void writeAuthenticationProfileUri(String value) throws UaException {
     try {
       writeAuthenticationProfileUriAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -236,8 +257,11 @@ public class BrokerWriterGroupTransportTypeNode extends WriterGroupTransportType
   public PropertyTypeNode getAuthenticationProfileUriNode() throws UaException {
     try {
       return getAuthenticationProfileUriNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -247,7 +271,7 @@ public class BrokerWriterGroupTransportTypeNode extends WriterGroupTransportType
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "AuthenticationProfileUri",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -277,8 +301,11 @@ public class BrokerWriterGroupTransportTypeNode extends WriterGroupTransportType
   public BrokerTransportQualityOfService readRequestedDeliveryGuarantee() throws UaException {
     try {
       return readRequestedDeliveryGuaranteeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -287,8 +314,11 @@ public class BrokerWriterGroupTransportTypeNode extends WriterGroupTransportType
       throws UaException {
     try {
       writeRequestedDeliveryGuaranteeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -320,8 +350,11 @@ public class BrokerWriterGroupTransportTypeNode extends WriterGroupTransportType
   public PropertyTypeNode getRequestedDeliveryGuaranteeNode() throws UaException {
     try {
       return getRequestedDeliveryGuaranteeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -331,7 +364,7 @@ public class BrokerWriterGroupTransportTypeNode extends WriterGroupTransportType
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "RequestedDeliveryGuarantee",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }

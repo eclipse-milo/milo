@@ -78,8 +78,11 @@ public class JsonDataSetWriterMessageTypeNode extends DataSetWriterMessageTypeNo
   public JsonDataSetMessageContentMask readDataSetMessageContentMask() throws UaException {
     try {
       return readDataSetMessageContentMaskAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -88,8 +91,11 @@ public class JsonDataSetWriterMessageTypeNode extends DataSetWriterMessageTypeNo
       throws UaException {
     try {
       writeDataSetMessageContentMaskAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -113,8 +119,11 @@ public class JsonDataSetWriterMessageTypeNode extends DataSetWriterMessageTypeNo
   public PropertyTypeNode getDataSetMessageContentMaskNode() throws UaException {
     try {
       return getDataSetMessageContentMaskNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -124,7 +133,7 @@ public class JsonDataSetWriterMessageTypeNode extends DataSetWriterMessageTypeNo
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "DataSetMessageContentMask",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }

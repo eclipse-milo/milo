@@ -78,8 +78,11 @@ public class AuditConditionCommentEventTypeNode extends AuditConditionEventTypeN
   public ByteString readConditionEventId() throws UaException {
     try {
       return readConditionEventIdAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -87,8 +90,11 @@ public class AuditConditionCommentEventTypeNode extends AuditConditionEventTypeN
   public void writeConditionEventId(ByteString value) throws UaException {
     try {
       writeConditionEventIdAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -110,8 +116,11 @@ public class AuditConditionCommentEventTypeNode extends AuditConditionEventTypeN
   public PropertyTypeNode getConditionEventIdNode() throws UaException {
     try {
       return getConditionEventIdNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -121,7 +130,7 @@ public class AuditConditionCommentEventTypeNode extends AuditConditionEventTypeN
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ConditionEventId",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -142,8 +151,11 @@ public class AuditConditionCommentEventTypeNode extends AuditConditionEventTypeN
   public LocalizedText readComment() throws UaException {
     try {
       return readCommentAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -151,8 +163,11 @@ public class AuditConditionCommentEventTypeNode extends AuditConditionEventTypeN
   public void writeComment(LocalizedText value) throws UaException {
     try {
       writeCommentAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -174,8 +189,11 @@ public class AuditConditionCommentEventTypeNode extends AuditConditionEventTypeN
   public PropertyTypeNode getCommentNode() throws UaException {
     try {
       return getCommentNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -183,7 +201,7 @@ public class AuditConditionCommentEventTypeNode extends AuditConditionEventTypeN
   public CompletableFuture<? extends PropertyTypeNode> getCommentNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Comment", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "Comment", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 }

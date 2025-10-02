@@ -97,8 +97,11 @@ public class ReferenceDescriptionVariableTypeNode extends BaseDataVariableTypeNo
   public ReferenceListEntryDataType[] readReferenceRefinement() throws UaException {
     try {
       return readReferenceRefinementAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -106,8 +109,11 @@ public class ReferenceDescriptionVariableTypeNode extends BaseDataVariableTypeNo
   public void writeReferenceRefinement(ReferenceListEntryDataType[] value) throws UaException {
     try {
       writeReferenceRefinementAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -132,8 +138,11 @@ public class ReferenceDescriptionVariableTypeNode extends BaseDataVariableTypeNo
   public PropertyTypeNode getReferenceRefinementNode() throws UaException {
     try {
       return getReferenceRefinementNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -143,7 +152,7 @@ public class ReferenceDescriptionVariableTypeNode extends BaseDataVariableTypeNo
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ReferenceRefinement",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }

@@ -83,8 +83,11 @@ public class SessionsDiagnosticsSummaryTypeNode extends BaseObjectTypeNode
   public SessionDiagnosticsDataType[] readSessionDiagnosticsArray() throws UaException {
     try {
       return readSessionDiagnosticsArrayAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -92,8 +95,11 @@ public class SessionsDiagnosticsSummaryTypeNode extends BaseObjectTypeNode
   public void writeSessionDiagnosticsArray(SessionDiagnosticsDataType[] value) throws UaException {
     try {
       writeSessionDiagnosticsArrayAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -119,8 +125,11 @@ public class SessionsDiagnosticsSummaryTypeNode extends BaseObjectTypeNode
   public SessionDiagnosticsArrayTypeNode getSessionDiagnosticsArrayNode() throws UaException {
     try {
       return getSessionDiagnosticsArrayNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -131,7 +140,7 @@ public class SessionsDiagnosticsSummaryTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "SessionDiagnosticsArray",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (SessionDiagnosticsArrayTypeNode) node);
   }
@@ -157,8 +166,11 @@ public class SessionsDiagnosticsSummaryTypeNode extends BaseObjectTypeNode
       throws UaException {
     try {
       return readSessionSecurityDiagnosticsArrayAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -167,8 +179,11 @@ public class SessionsDiagnosticsSummaryTypeNode extends BaseObjectTypeNode
       throws UaException {
     try {
       writeSessionSecurityDiagnosticsArrayAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -196,8 +211,11 @@ public class SessionsDiagnosticsSummaryTypeNode extends BaseObjectTypeNode
       throws UaException {
     try {
       return getSessionSecurityDiagnosticsArrayNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -208,7 +226,7 @@ public class SessionsDiagnosticsSummaryTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "SessionSecurityDiagnosticsArray",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (SessionSecurityDiagnosticsArrayTypeNode) node);
   }

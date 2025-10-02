@@ -79,8 +79,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public Boolean readStepped() throws UaException {
     try {
       return readSteppedAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -88,8 +91,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public void writeStepped(Boolean value) throws UaException {
     try {
       writeSteppedAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -111,8 +117,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getSteppedNode() throws UaException {
     try {
       return getSteppedNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -120,7 +129,7 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getSteppedNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Stepped", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "Stepped", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -140,8 +149,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public String readDefinition() throws UaException {
     try {
       return readDefinitionAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -149,8 +161,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public void writeDefinition(String value) throws UaException {
     try {
       writeDefinitionAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -172,8 +187,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getDefinitionNode() throws UaException {
     try {
       return getDefinitionNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -181,7 +199,7 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getDefinitionNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Definition", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "Definition", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -201,8 +219,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public Double readMaxTimeInterval() throws UaException {
     try {
       return readMaxTimeIntervalAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -210,8 +231,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public void writeMaxTimeInterval(Double value) throws UaException {
     try {
       writeMaxTimeIntervalAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -233,8 +257,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getMaxTimeIntervalNode() throws UaException {
     try {
       return getMaxTimeIntervalNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -242,10 +269,7 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getMaxTimeIntervalNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "MaxTimeInterval",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "MaxTimeInterval", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -265,8 +289,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public Double readMinTimeInterval() throws UaException {
     try {
       return readMinTimeIntervalAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -274,8 +301,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public void writeMinTimeInterval(Double value) throws UaException {
     try {
       writeMinTimeIntervalAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -297,8 +327,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getMinTimeIntervalNode() throws UaException {
     try {
       return getMinTimeIntervalNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -306,10 +339,7 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getMinTimeIntervalNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "MinTimeInterval",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "MinTimeInterval", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -329,8 +359,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public Double readExceptionDeviation() throws UaException {
     try {
       return readExceptionDeviationAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -338,8 +371,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public void writeExceptionDeviation(Double value) throws UaException {
     try {
       writeExceptionDeviationAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -361,8 +397,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getExceptionDeviationNode() throws UaException {
     try {
       return getExceptionDeviationNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -372,7 +411,7 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ExceptionDeviation",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -401,8 +440,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public ExceptionDeviationFormat readExceptionDeviationFormat() throws UaException {
     try {
       return readExceptionDeviationFormatAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -410,8 +452,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public void writeExceptionDeviationFormat(ExceptionDeviationFormat value) throws UaException {
     try {
       writeExceptionDeviationFormatAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -442,8 +487,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getExceptionDeviationFormatNode() throws UaException {
     try {
       return getExceptionDeviationFormatNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -453,7 +501,7 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ExceptionDeviationFormat",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -474,8 +522,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public DateTime readStartOfArchive() throws UaException {
     try {
       return readStartOfArchiveAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -483,8 +534,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public void writeStartOfArchive(DateTime value) throws UaException {
     try {
       writeStartOfArchiveAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -506,8 +560,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getStartOfArchiveNode() throws UaException {
     try {
       return getStartOfArchiveNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -515,10 +572,7 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getStartOfArchiveNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "StartOfArchive",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "StartOfArchive", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -538,8 +592,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public DateTime readStartOfOnlineArchive() throws UaException {
     try {
       return readStartOfOnlineArchiveAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -547,8 +604,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public void writeStartOfOnlineArchive(DateTime value) throws UaException {
     try {
       writeStartOfOnlineArchiveAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -571,8 +631,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getStartOfOnlineArchiveNode() throws UaException {
     try {
       return getStartOfOnlineArchiveNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -582,7 +645,7 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "StartOfOnlineArchive",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -603,8 +666,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public Boolean readServerTimestampSupported() throws UaException {
     try {
       return readServerTimestampSupportedAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -612,8 +678,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public void writeServerTimestampSupported(Boolean value) throws UaException {
     try {
       writeServerTimestampSupportedAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -636,8 +705,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getServerTimestampSupportedNode() throws UaException {
     try {
       return getServerTimestampSupportedNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -647,7 +719,7 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ServerTimestampSupported",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -668,8 +740,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public Double readMaxTimeStoredValues() throws UaException {
     try {
       return readMaxTimeStoredValuesAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -677,8 +752,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public void writeMaxTimeStoredValues(Double value) throws UaException {
     try {
       writeMaxTimeStoredValuesAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -700,8 +778,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getMaxTimeStoredValuesNode() throws UaException {
     try {
       return getMaxTimeStoredValuesNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -711,7 +792,7 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MaxTimeStoredValues",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -732,8 +813,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public UInteger readMaxCountStoredValues() throws UaException {
     try {
       return readMaxCountStoredValuesAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -741,8 +825,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public void writeMaxCountStoredValues(UInteger value) throws UaException {
     try {
       writeMaxCountStoredValuesAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -765,8 +852,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public PropertyTypeNode getMaxCountStoredValuesNode() throws UaException {
     try {
       return getMaxCountStoredValuesNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -776,7 +866,7 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MaxCountStoredValues",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -785,8 +875,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public AggregateConfigurationTypeNode getAggregateConfigurationNode() throws UaException {
     try {
       return getAggregateConfigurationNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -797,7 +890,7 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "AggregateConfiguration",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (AggregateConfigurationTypeNode) node);
   }
@@ -806,8 +899,11 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   public FolderTypeNode getAggregateFunctionsNode() throws UaException {
     try {
       return getAggregateFunctionsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -817,7 +913,7 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "AggregateFunctions",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (FolderTypeNode) node);
   }

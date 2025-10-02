@@ -77,8 +77,11 @@ public class IPriorityMappingEntryTypeNode extends BaseInterfaceTypeNode
   public String readMappingUri() throws UaException {
     try {
       return readMappingUriAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -86,8 +89,11 @@ public class IPriorityMappingEntryTypeNode extends BaseInterfaceTypeNode
   public void writeMappingUri(String value) throws UaException {
     try {
       writeMappingUriAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -109,8 +115,11 @@ public class IPriorityMappingEntryTypeNode extends BaseInterfaceTypeNode
   public BaseDataVariableTypeNode getMappingUriNode() throws UaException {
     try {
       return getMappingUriNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -118,7 +127,7 @@ public class IPriorityMappingEntryTypeNode extends BaseInterfaceTypeNode
   public CompletableFuture<? extends BaseDataVariableTypeNode> getMappingUriNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "MappingUri", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "MappingUri", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 
@@ -138,8 +147,11 @@ public class IPriorityMappingEntryTypeNode extends BaseInterfaceTypeNode
   public String readPriorityLabel() throws UaException {
     try {
       return readPriorityLabelAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -147,8 +159,11 @@ public class IPriorityMappingEntryTypeNode extends BaseInterfaceTypeNode
   public void writePriorityLabel(String value) throws UaException {
     try {
       writePriorityLabelAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -170,8 +185,11 @@ public class IPriorityMappingEntryTypeNode extends BaseInterfaceTypeNode
   public BaseDataVariableTypeNode getPriorityLabelNode() throws UaException {
     try {
       return getPriorityLabelNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -179,10 +197,7 @@ public class IPriorityMappingEntryTypeNode extends BaseInterfaceTypeNode
   public CompletableFuture<? extends BaseDataVariableTypeNode> getPriorityLabelNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "PriorityLabel",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "PriorityLabel", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 
@@ -202,8 +217,11 @@ public class IPriorityMappingEntryTypeNode extends BaseInterfaceTypeNode
   public UByte readPriorityValuePcp() throws UaException {
     try {
       return readPriorityValuePcpAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -211,8 +229,11 @@ public class IPriorityMappingEntryTypeNode extends BaseInterfaceTypeNode
   public void writePriorityValuePcp(UByte value) throws UaException {
     try {
       writePriorityValuePcpAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -234,8 +255,11 @@ public class IPriorityMappingEntryTypeNode extends BaseInterfaceTypeNode
   public BaseDataVariableTypeNode getPriorityValuePcpNode() throws UaException {
     try {
       return getPriorityValuePcpNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -245,7 +269,7 @@ public class IPriorityMappingEntryTypeNode extends BaseInterfaceTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "PriorityValue_PCP",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
@@ -266,8 +290,11 @@ public class IPriorityMappingEntryTypeNode extends BaseInterfaceTypeNode
   public UInteger readPriorityValueDscp() throws UaException {
     try {
       return readPriorityValueDscpAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -275,8 +302,11 @@ public class IPriorityMappingEntryTypeNode extends BaseInterfaceTypeNode
   public void writePriorityValueDscp(UInteger value) throws UaException {
     try {
       writePriorityValueDscpAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -298,8 +328,11 @@ public class IPriorityMappingEntryTypeNode extends BaseInterfaceTypeNode
   public BaseDataVariableTypeNode getPriorityValueDscpNode() throws UaException {
     try {
       return getPriorityValueDscpNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -309,7 +342,7 @@ public class IPriorityMappingEntryTypeNode extends BaseInterfaceTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "PriorityValue_DSCP",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
