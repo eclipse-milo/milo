@@ -165,6 +165,8 @@ public class SubscriptionModel extends AbstractLifecycle {
     public void run() {
       if (cancelled) return;
 
+      long startNanos = System.nanoTime();
+
       List<DataValue> values =
           groupMapCollate(
               items,
@@ -203,7 +205,14 @@ public class SubscriptionModel extends AbstractLifecycle {
       }
 
       if (!cancelled) {
-        scheduler.schedule(() -> executor.execute(this), samplingInterval, TimeUnit.MILLISECONDS);
+        long elapsedNanos = System.nanoTime() - startNanos;
+        long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(elapsedNanos);
+        long delay = Math.max(0, samplingInterval - elapsedMillis);
+        if (delay == 0) {
+          executor.execute(this);
+        } else {
+          scheduler.schedule(() -> executor.execute(this), delay, TimeUnit.MILLISECONDS);
+        }
       }
     }
   }
