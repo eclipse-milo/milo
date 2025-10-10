@@ -81,8 +81,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public NodeId readInputNode() throws UaException {
     try {
       return readInputNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -90,8 +93,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public void writeInputNode(NodeId value) throws UaException {
     try {
       writeInputNodeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -113,8 +119,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public PropertyTypeNode getInputNodeNode() throws UaException {
     try {
       return getInputNodeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -122,7 +131,7 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getInputNodeNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "InputNode", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "InputNode", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -142,8 +151,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public Boolean readSuppressedOrShelved() throws UaException {
     try {
       return readSuppressedOrShelvedAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -151,8 +163,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public void writeSuppressedOrShelved(Boolean value) throws UaException {
     try {
       writeSuppressedOrShelvedAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -174,8 +189,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public PropertyTypeNode getSuppressedOrShelvedNode() throws UaException {
     try {
       return getSuppressedOrShelvedNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -185,7 +203,7 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "SuppressedOrShelved",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -206,8 +224,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public Double readMaxTimeShelved() throws UaException {
     try {
       return readMaxTimeShelvedAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -215,8 +236,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public void writeMaxTimeShelved(Double value) throws UaException {
     try {
       writeMaxTimeShelvedAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -238,8 +262,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public PropertyTypeNode getMaxTimeShelvedNode() throws UaException {
     try {
       return getMaxTimeShelvedNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -247,10 +274,7 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getMaxTimeShelvedNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "MaxTimeShelved",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "MaxTimeShelved", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -270,8 +294,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public Boolean readAudibleEnabled() throws UaException {
     try {
       return readAudibleEnabledAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -279,8 +306,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public void writeAudibleEnabled(Boolean value) throws UaException {
     try {
       writeAudibleEnabledAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -302,8 +332,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public PropertyTypeNode getAudibleEnabledNode() throws UaException {
     try {
       return getAudibleEnabledNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -311,10 +344,7 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getAudibleEnabledNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "AudibleEnabled",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "AudibleEnabled", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -334,8 +364,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public Double readOnDelay() throws UaException {
     try {
       return readOnDelayAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -343,8 +376,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public void writeOnDelay(Double value) throws UaException {
     try {
       writeOnDelayAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -366,8 +402,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public PropertyTypeNode getOnDelayNode() throws UaException {
     try {
       return getOnDelayNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -375,7 +414,7 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getOnDelayNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "OnDelay", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "OnDelay", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -395,8 +434,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public Double readOffDelay() throws UaException {
     try {
       return readOffDelayAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -404,8 +446,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public void writeOffDelay(Double value) throws UaException {
     try {
       writeOffDelayAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -427,8 +472,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public PropertyTypeNode getOffDelayNode() throws UaException {
     try {
       return getOffDelayNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -436,7 +484,7 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getOffDelayNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "OffDelay", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "OffDelay", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -456,8 +504,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public Double readReAlarmTime() throws UaException {
     try {
       return readReAlarmTimeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -465,8 +516,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public void writeReAlarmTime(Double value) throws UaException {
     try {
       writeReAlarmTimeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -488,8 +542,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public PropertyTypeNode getReAlarmTimeNode() throws UaException {
     try {
       return getReAlarmTimeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -497,10 +554,7 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getReAlarmTimeNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ReAlarmTime",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "ReAlarmTime", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -520,8 +574,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public LocalizedText readEnabledState() throws UaException {
     try {
       return readEnabledStateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -529,8 +586,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public void writeEnabledState(LocalizedText value) throws UaException {
     try {
       writeEnabledStateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -552,8 +612,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public TwoStateVariableTypeNode getEnabledStateNode() throws UaException {
     try {
       return getEnabledStateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -561,10 +624,7 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public CompletableFuture<? extends TwoStateVariableTypeNode> getEnabledStateNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "EnabledState",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "EnabledState", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (TwoStateVariableTypeNode) node);
   }
 
@@ -584,8 +644,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public LocalizedText readActiveState() throws UaException {
     try {
       return readActiveStateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -593,8 +656,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public void writeActiveState(LocalizedText value) throws UaException {
     try {
       writeActiveStateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -616,8 +682,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public TwoStateVariableTypeNode getActiveStateNode() throws UaException {
     try {
       return getActiveStateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -625,10 +694,7 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public CompletableFuture<? extends TwoStateVariableTypeNode> getActiveStateNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ActiveState",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "ActiveState", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (TwoStateVariableTypeNode) node);
   }
 
@@ -648,8 +714,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public LocalizedText readSuppressedState() throws UaException {
     try {
       return readSuppressedStateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -657,8 +726,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public void writeSuppressedState(LocalizedText value) throws UaException {
     try {
       writeSuppressedStateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -680,8 +752,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public TwoStateVariableTypeNode getSuppressedStateNode() throws UaException {
     try {
       return getSuppressedStateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -689,10 +764,7 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public CompletableFuture<? extends TwoStateVariableTypeNode> getSuppressedStateNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "SuppressedState",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "SuppressedState", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (TwoStateVariableTypeNode) node);
   }
 
@@ -712,8 +784,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public LocalizedText readOutOfServiceState() throws UaException {
     try {
       return readOutOfServiceStateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -721,8 +796,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public void writeOutOfServiceState(LocalizedText value) throws UaException {
     try {
       writeOutOfServiceStateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -745,8 +823,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public TwoStateVariableTypeNode getOutOfServiceStateNode() throws UaException {
     try {
       return getOutOfServiceStateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -756,7 +837,7 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "OutOfServiceState",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (TwoStateVariableTypeNode) node);
   }
@@ -765,8 +846,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public ShelvedStateMachineTypeNode getShelvingStateNode() throws UaException {
     try {
       return getShelvingStateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -774,10 +858,7 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public CompletableFuture<? extends ShelvedStateMachineTypeNode> getShelvingStateNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ShelvingState",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "ShelvingState", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (ShelvedStateMachineTypeNode) node);
   }
 
@@ -797,8 +878,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public ByteString readAudibleSound() throws UaException {
     try {
       return readAudibleSoundAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -806,8 +890,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public void writeAudibleSound(ByteString value) throws UaException {
     try {
       writeAudibleSoundAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -829,8 +916,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public AudioVariableTypeNode getAudibleSoundNode() throws UaException {
     try {
       return getAudibleSoundNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -838,10 +928,7 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public CompletableFuture<? extends AudioVariableTypeNode> getAudibleSoundNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "AudibleSound",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "AudibleSound", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (AudioVariableTypeNode) node);
   }
 
@@ -861,8 +948,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public LocalizedText readSilenceState() throws UaException {
     try {
       return readSilenceStateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -870,8 +960,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public void writeSilenceState(LocalizedText value) throws UaException {
     try {
       writeSilenceStateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -893,8 +986,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public TwoStateVariableTypeNode getSilenceStateNode() throws UaException {
     try {
       return getSilenceStateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -902,10 +998,7 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public CompletableFuture<? extends TwoStateVariableTypeNode> getSilenceStateNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "SilenceState",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "SilenceState", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (TwoStateVariableTypeNode) node);
   }
 
@@ -925,8 +1018,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public Boolean readFirstInGroupFlag() throws UaException {
     try {
       return readFirstInGroupFlagAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -934,8 +1030,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public void writeFirstInGroupFlag(Boolean value) throws UaException {
     try {
       writeFirstInGroupFlagAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -957,8 +1056,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public BaseDataVariableTypeNode getFirstInGroupFlagNode() throws UaException {
     try {
       return getFirstInGroupFlagNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -968,7 +1070,7 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "FirstInGroupFlag",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
@@ -977,8 +1079,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public AlarmGroupTypeNode getFirstInGroupNode() throws UaException {
     try {
       return getFirstInGroupNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -986,10 +1091,7 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public CompletableFuture<? extends AlarmGroupTypeNode> getFirstInGroupNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "FirstInGroup",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "FirstInGroup", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (AlarmGroupTypeNode) node);
   }
 
@@ -1009,8 +1111,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public LocalizedText readLatchedState() throws UaException {
     try {
       return readLatchedStateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -1018,8 +1123,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public void writeLatchedState(LocalizedText value) throws UaException {
     try {
       writeLatchedStateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -1041,8 +1149,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public TwoStateVariableTypeNode getLatchedStateNode() throws UaException {
     try {
       return getLatchedStateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -1050,10 +1161,7 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public CompletableFuture<? extends TwoStateVariableTypeNode> getLatchedStateNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "LatchedState",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "LatchedState", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (TwoStateVariableTypeNode) node);
   }
 
@@ -1073,8 +1181,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public Short readReAlarmRepeatCount() throws UaException {
     try {
       return readReAlarmRepeatCountAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -1082,8 +1193,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public void writeReAlarmRepeatCount(Short value) throws UaException {
     try {
       writeReAlarmRepeatCountAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -1105,8 +1219,11 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
   public BaseDataVariableTypeNode getReAlarmRepeatCountNode() throws UaException {
     try {
       return getReAlarmRepeatCountNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -1116,7 +1233,7 @@ public class AlarmConditionTypeNode extends AcknowledgeableConditionTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ReAlarmRepeatCount",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }

@@ -77,8 +77,11 @@ public class NonExclusiveDeviationAlarmTypeNode extends NonExclusiveLimitAlarmTy
   public NodeId readSetpointNode() throws UaException {
     try {
       return readSetpointNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -86,8 +89,11 @@ public class NonExclusiveDeviationAlarmTypeNode extends NonExclusiveLimitAlarmTy
   public void writeSetpointNode(NodeId value) throws UaException {
     try {
       writeSetpointNodeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -109,8 +115,11 @@ public class NonExclusiveDeviationAlarmTypeNode extends NonExclusiveLimitAlarmTy
   public PropertyTypeNode getSetpointNodeNode() throws UaException {
     try {
       return getSetpointNodeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -118,10 +127,7 @@ public class NonExclusiveDeviationAlarmTypeNode extends NonExclusiveLimitAlarmTy
   public CompletableFuture<? extends PropertyTypeNode> getSetpointNodeNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "SetpointNode",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "SetpointNode", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -141,8 +147,11 @@ public class NonExclusiveDeviationAlarmTypeNode extends NonExclusiveLimitAlarmTy
   public NodeId readBaseSetpointNode() throws UaException {
     try {
       return readBaseSetpointNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -150,8 +159,11 @@ public class NonExclusiveDeviationAlarmTypeNode extends NonExclusiveLimitAlarmTy
   public void writeBaseSetpointNode(NodeId value) throws UaException {
     try {
       writeBaseSetpointNodeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -173,8 +185,11 @@ public class NonExclusiveDeviationAlarmTypeNode extends NonExclusiveLimitAlarmTy
   public PropertyTypeNode getBaseSetpointNodeNode() throws UaException {
     try {
       return getBaseSetpointNodeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -184,7 +199,7 @@ public class NonExclusiveDeviationAlarmTypeNode extends NonExclusiveLimitAlarmTy
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "BaseSetpointNode",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }

@@ -77,8 +77,11 @@ public class CertificateUpdatedAuditEventTypeNode extends AuditUpdateMethodEvent
   public NodeId readCertificateGroup() throws UaException {
     try {
       return readCertificateGroupAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -86,8 +89,11 @@ public class CertificateUpdatedAuditEventTypeNode extends AuditUpdateMethodEvent
   public void writeCertificateGroup(NodeId value) throws UaException {
     try {
       writeCertificateGroupAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -109,8 +115,11 @@ public class CertificateUpdatedAuditEventTypeNode extends AuditUpdateMethodEvent
   public PropertyTypeNode getCertificateGroupNode() throws UaException {
     try {
       return getCertificateGroupNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -120,7 +129,7 @@ public class CertificateUpdatedAuditEventTypeNode extends AuditUpdateMethodEvent
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "CertificateGroup",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -141,8 +150,11 @@ public class CertificateUpdatedAuditEventTypeNode extends AuditUpdateMethodEvent
   public NodeId readCertificateType() throws UaException {
     try {
       return readCertificateTypeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -150,8 +162,11 @@ public class CertificateUpdatedAuditEventTypeNode extends AuditUpdateMethodEvent
   public void writeCertificateType(NodeId value) throws UaException {
     try {
       writeCertificateTypeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -173,8 +188,11 @@ public class CertificateUpdatedAuditEventTypeNode extends AuditUpdateMethodEvent
   public PropertyTypeNode getCertificateTypeNode() throws UaException {
     try {
       return getCertificateTypeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -182,10 +200,7 @@ public class CertificateUpdatedAuditEventTypeNode extends AuditUpdateMethodEvent
   public CompletableFuture<? extends PropertyTypeNode> getCertificateTypeNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "CertificateType",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "CertificateType", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 }

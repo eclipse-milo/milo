@@ -96,8 +96,11 @@ public class SessionDiagnosticsArrayTypeNode extends BaseDataVariableTypeNode
   public SessionDiagnosticsDataType readSessionDiagnostics() throws UaException {
     try {
       return readSessionDiagnosticsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -105,8 +108,11 @@ public class SessionDiagnosticsArrayTypeNode extends BaseDataVariableTypeNode
   public void writeSessionDiagnostics(SessionDiagnosticsDataType value) throws UaException {
     try {
       writeSessionDiagnosticsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -131,8 +137,11 @@ public class SessionDiagnosticsArrayTypeNode extends BaseDataVariableTypeNode
   public SessionDiagnosticsVariableTypeNode getSessionDiagnosticsNode() throws UaException {
     try {
       return getSessionDiagnosticsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -143,7 +152,7 @@ public class SessionDiagnosticsArrayTypeNode extends BaseDataVariableTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "SessionDiagnostics",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (SessionDiagnosticsVariableTypeNode) node);
   }

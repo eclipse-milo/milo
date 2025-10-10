@@ -97,8 +97,11 @@ public class ArrayItemTypeNode extends DataItemTypeNode implements ArrayItemType
   public Range readInstrumentRange() throws UaException {
     try {
       return readInstrumentRangeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -106,8 +109,11 @@ public class ArrayItemTypeNode extends DataItemTypeNode implements ArrayItemType
   public void writeInstrumentRange(Range value) throws UaException {
     try {
       writeInstrumentRangeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -131,8 +137,11 @@ public class ArrayItemTypeNode extends DataItemTypeNode implements ArrayItemType
   public PropertyTypeNode getInstrumentRangeNode() throws UaException {
     try {
       return getInstrumentRangeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -140,10 +149,7 @@ public class ArrayItemTypeNode extends DataItemTypeNode implements ArrayItemType
   public CompletableFuture<? extends PropertyTypeNode> getInstrumentRangeNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "InstrumentRange",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "InstrumentRange", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -164,8 +170,11 @@ public class ArrayItemTypeNode extends DataItemTypeNode implements ArrayItemType
   public Range readEuRange() throws UaException {
     try {
       return readEuRangeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -173,8 +182,11 @@ public class ArrayItemTypeNode extends DataItemTypeNode implements ArrayItemType
   public void writeEuRange(Range value) throws UaException {
     try {
       writeEuRangeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -197,8 +209,11 @@ public class ArrayItemTypeNode extends DataItemTypeNode implements ArrayItemType
   public PropertyTypeNode getEuRangeNode() throws UaException {
     try {
       return getEuRangeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -206,7 +221,7 @@ public class ArrayItemTypeNode extends DataItemTypeNode implements ArrayItemType
   public CompletableFuture<? extends PropertyTypeNode> getEuRangeNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "EURange", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "EURange", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -227,8 +242,11 @@ public class ArrayItemTypeNode extends DataItemTypeNode implements ArrayItemType
   public EUInformation readEngineeringUnits() throws UaException {
     try {
       return readEngineeringUnitsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -236,8 +254,11 @@ public class ArrayItemTypeNode extends DataItemTypeNode implements ArrayItemType
   public void writeEngineeringUnits(EUInformation value) throws UaException {
     try {
       writeEngineeringUnitsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -261,8 +282,11 @@ public class ArrayItemTypeNode extends DataItemTypeNode implements ArrayItemType
   public PropertyTypeNode getEngineeringUnitsNode() throws UaException {
     try {
       return getEngineeringUnitsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -272,7 +296,7 @@ public class ArrayItemTypeNode extends DataItemTypeNode implements ArrayItemType
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "EngineeringUnits",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -293,8 +317,11 @@ public class ArrayItemTypeNode extends DataItemTypeNode implements ArrayItemType
   public LocalizedText readTitle() throws UaException {
     try {
       return readTitleAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -302,8 +329,11 @@ public class ArrayItemTypeNode extends DataItemTypeNode implements ArrayItemType
   public void writeTitle(LocalizedText value) throws UaException {
     try {
       writeTitleAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -325,8 +355,11 @@ public class ArrayItemTypeNode extends DataItemTypeNode implements ArrayItemType
   public PropertyTypeNode getTitleNode() throws UaException {
     try {
       return getTitleNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -334,7 +367,7 @@ public class ArrayItemTypeNode extends DataItemTypeNode implements ArrayItemType
   public CompletableFuture<? extends PropertyTypeNode> getTitleNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Title", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "Title", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -362,8 +395,11 @@ public class ArrayItemTypeNode extends DataItemTypeNode implements ArrayItemType
   public AxisScaleEnumeration readAxisScaleType() throws UaException {
     try {
       return readAxisScaleTypeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -371,8 +407,11 @@ public class ArrayItemTypeNode extends DataItemTypeNode implements ArrayItemType
   public void writeAxisScaleType(AxisScaleEnumeration value) throws UaException {
     try {
       writeAxisScaleTypeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -402,8 +441,11 @@ public class ArrayItemTypeNode extends DataItemTypeNode implements ArrayItemType
   public PropertyTypeNode getAxisScaleTypeNode() throws UaException {
     try {
       return getAxisScaleTypeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -411,10 +453,7 @@ public class ArrayItemTypeNode extends DataItemTypeNode implements ArrayItemType
   public CompletableFuture<? extends PropertyTypeNode> getAxisScaleTypeNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "AxisScaleType",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "AxisScaleType", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 }

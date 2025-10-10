@@ -97,8 +97,11 @@ public class SessionSecurityDiagnosticsArrayTypeNode extends BaseDataVariableTyp
   public SessionSecurityDiagnosticsDataType readSessionSecurityDiagnostics() throws UaException {
     try {
       return readSessionSecurityDiagnosticsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -107,8 +110,11 @@ public class SessionSecurityDiagnosticsArrayTypeNode extends BaseDataVariableTyp
       throws UaException {
     try {
       writeSessionSecurityDiagnosticsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -134,8 +140,11 @@ public class SessionSecurityDiagnosticsArrayTypeNode extends BaseDataVariableTyp
   public SessionSecurityDiagnosticsTypeNode getSessionSecurityDiagnosticsNode() throws UaException {
     try {
       return getSessionSecurityDiagnosticsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -146,7 +155,7 @@ public class SessionSecurityDiagnosticsArrayTypeNode extends BaseDataVariableTyp
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "SessionSecurityDiagnostics",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (SessionSecurityDiagnosticsTypeNode) node);
   }

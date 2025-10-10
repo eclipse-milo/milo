@@ -79,8 +79,11 @@ public class AlternativeUnitTypeNode extends UnitTypeNode implements Alternative
   public LinearConversionDataType readLinearConversion() throws UaException {
     try {
       return readLinearConversionAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -88,8 +91,11 @@ public class AlternativeUnitTypeNode extends UnitTypeNode implements Alternative
   public void writeLinearConversion(LinearConversionDataType value) throws UaException {
     try {
       writeLinearConversionAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -114,8 +120,11 @@ public class AlternativeUnitTypeNode extends UnitTypeNode implements Alternative
   public PropertyTypeNode getLinearConversionNode() throws UaException {
     try {
       return getLinearConversionNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -125,7 +134,7 @@ public class AlternativeUnitTypeNode extends UnitTypeNode implements Alternative
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "LinearConversion",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -146,8 +155,11 @@ public class AlternativeUnitTypeNode extends UnitTypeNode implements Alternative
   public String readMathMlConversion() throws UaException {
     try {
       return readMathMlConversionAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -155,8 +167,11 @@ public class AlternativeUnitTypeNode extends UnitTypeNode implements Alternative
   public void writeMathMlConversion(String value) throws UaException {
     try {
       writeMathMlConversionAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -178,8 +193,11 @@ public class AlternativeUnitTypeNode extends UnitTypeNode implements Alternative
   public PropertyTypeNode getMathMlConversionNode() throws UaException {
     try {
       return getMathMlConversionNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -189,7 +207,7 @@ public class AlternativeUnitTypeNode extends UnitTypeNode implements Alternative
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MathMLConversion",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -210,8 +228,11 @@ public class AlternativeUnitTypeNode extends UnitTypeNode implements Alternative
   public String readMathMlInverseConversion() throws UaException {
     try {
       return readMathMlInverseConversionAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -219,8 +240,11 @@ public class AlternativeUnitTypeNode extends UnitTypeNode implements Alternative
   public void writeMathMlInverseConversion(String value) throws UaException {
     try {
       writeMathMlInverseConversionAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -243,8 +267,11 @@ public class AlternativeUnitTypeNode extends UnitTypeNode implements Alternative
   public PropertyTypeNode getMathMlInverseConversionNode() throws UaException {
     try {
       return getMathMlInverseConversionNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -254,7 +281,7 @@ public class AlternativeUnitTypeNode extends UnitTypeNode implements Alternative
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MathMLInverseConversion",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }

@@ -83,8 +83,11 @@ public class ServerDiagnosticsTypeNode extends BaseObjectTypeNode implements Ser
   public Boolean readEnabledFlag() throws UaException {
     try {
       return readEnabledFlagAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -92,8 +95,11 @@ public class ServerDiagnosticsTypeNode extends BaseObjectTypeNode implements Ser
   public void writeEnabledFlag(Boolean value) throws UaException {
     try {
       writeEnabledFlagAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -115,8 +121,11 @@ public class ServerDiagnosticsTypeNode extends BaseObjectTypeNode implements Ser
   public PropertyTypeNode getEnabledFlagNode() throws UaException {
     try {
       return getEnabledFlagNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -124,10 +133,7 @@ public class ServerDiagnosticsTypeNode extends BaseObjectTypeNode implements Ser
   public CompletableFuture<? extends PropertyTypeNode> getEnabledFlagNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "EnabledFlag",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "EnabledFlag", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -149,8 +155,11 @@ public class ServerDiagnosticsTypeNode extends BaseObjectTypeNode implements Ser
   public ServerDiagnosticsSummaryDataType readServerDiagnosticsSummary() throws UaException {
     try {
       return readServerDiagnosticsSummaryAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -159,8 +168,11 @@ public class ServerDiagnosticsTypeNode extends BaseObjectTypeNode implements Ser
       throws UaException {
     try {
       writeServerDiagnosticsSummaryAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -186,8 +198,11 @@ public class ServerDiagnosticsTypeNode extends BaseObjectTypeNode implements Ser
   public ServerDiagnosticsSummaryTypeNode getServerDiagnosticsSummaryNode() throws UaException {
     try {
       return getServerDiagnosticsSummaryNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -198,7 +213,7 @@ public class ServerDiagnosticsTypeNode extends BaseObjectTypeNode implements Ser
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ServerDiagnosticsSummary",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (ServerDiagnosticsSummaryTypeNode) node);
   }
@@ -224,8 +239,11 @@ public class ServerDiagnosticsTypeNode extends BaseObjectTypeNode implements Ser
       throws UaException {
     try {
       return readSamplingIntervalDiagnosticsArrayAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -234,8 +252,11 @@ public class ServerDiagnosticsTypeNode extends BaseObjectTypeNode implements Ser
       throws UaException {
     try {
       writeSamplingIntervalDiagnosticsArrayAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -263,8 +284,11 @@ public class ServerDiagnosticsTypeNode extends BaseObjectTypeNode implements Ser
       throws UaException {
     try {
       return getSamplingIntervalDiagnosticsArrayNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -275,7 +299,7 @@ public class ServerDiagnosticsTypeNode extends BaseObjectTypeNode implements Ser
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "SamplingIntervalDiagnosticsArray",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (SamplingIntervalDiagnosticsArrayTypeNode) node);
   }
@@ -299,8 +323,11 @@ public class ServerDiagnosticsTypeNode extends BaseObjectTypeNode implements Ser
   public SubscriptionDiagnosticsDataType[] readSubscriptionDiagnosticsArray() throws UaException {
     try {
       return readSubscriptionDiagnosticsArrayAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -309,8 +336,11 @@ public class ServerDiagnosticsTypeNode extends BaseObjectTypeNode implements Ser
       throws UaException {
     try {
       writeSubscriptionDiagnosticsArrayAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -338,8 +368,11 @@ public class ServerDiagnosticsTypeNode extends BaseObjectTypeNode implements Ser
       throws UaException {
     try {
       return getSubscriptionDiagnosticsArrayNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -350,7 +383,7 @@ public class ServerDiagnosticsTypeNode extends BaseObjectTypeNode implements Ser
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "SubscriptionDiagnosticsArray",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (SubscriptionDiagnosticsArrayTypeNode) node);
   }
@@ -359,8 +392,11 @@ public class ServerDiagnosticsTypeNode extends BaseObjectTypeNode implements Ser
   public SessionsDiagnosticsSummaryTypeNode getSessionsDiagnosticsSummaryNode() throws UaException {
     try {
       return getSessionsDiagnosticsSummaryNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -371,7 +407,7 @@ public class ServerDiagnosticsTypeNode extends BaseObjectTypeNode implements Ser
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "SessionsDiagnosticsSummary",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (SessionsDiagnosticsSummaryTypeNode) node);
   }

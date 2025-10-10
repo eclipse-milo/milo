@@ -77,8 +77,11 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   public LocalizedText readPrompt() throws UaException {
     try {
       return readPromptAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -86,8 +89,11 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   public void writePrompt(LocalizedText value) throws UaException {
     try {
       writePromptAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -109,8 +115,11 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   public PropertyTypeNode getPromptNode() throws UaException {
     try {
       return getPromptNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -118,7 +127,7 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   public CompletableFuture<? extends PropertyTypeNode> getPromptNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Prompt", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "Prompt", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -138,8 +147,11 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   public LocalizedText[] readResponseOptionSet() throws UaException {
     try {
       return readResponseOptionSetAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -147,8 +159,11 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   public void writeResponseOptionSet(LocalizedText[] value) throws UaException {
     try {
       writeResponseOptionSetAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -171,8 +186,11 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   public PropertyTypeNode getResponseOptionSetNode() throws UaException {
     try {
       return getResponseOptionSetNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -182,7 +200,7 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ResponseOptionSet",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -203,8 +221,11 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   public Integer readDefaultResponse() throws UaException {
     try {
       return readDefaultResponseAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -212,8 +233,11 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   public void writeDefaultResponse(Integer value) throws UaException {
     try {
       writeDefaultResponseAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -235,8 +259,11 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   public PropertyTypeNode getDefaultResponseNode() throws UaException {
     try {
       return getDefaultResponseNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -244,10 +271,7 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   public CompletableFuture<? extends PropertyTypeNode> getDefaultResponseNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "DefaultResponse",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "DefaultResponse", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -267,8 +291,11 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   public Integer readOkResponse() throws UaException {
     try {
       return readOkResponseAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -276,8 +303,11 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   public void writeOkResponse(Integer value) throws UaException {
     try {
       writeOkResponseAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -299,8 +329,11 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   public PropertyTypeNode getOkResponseNode() throws UaException {
     try {
       return getOkResponseNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -308,7 +341,7 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   public CompletableFuture<? extends PropertyTypeNode> getOkResponseNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "OkResponse", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "OkResponse", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -328,8 +361,11 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   public Integer readCancelResponse() throws UaException {
     try {
       return readCancelResponseAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -337,8 +373,11 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   public void writeCancelResponse(Integer value) throws UaException {
     try {
       writeCancelResponseAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -360,8 +399,11 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   public PropertyTypeNode getCancelResponseNode() throws UaException {
     try {
       return getCancelResponseNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -369,10 +411,7 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   public CompletableFuture<? extends PropertyTypeNode> getCancelResponseNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "CancelResponse",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "CancelResponse", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -392,8 +431,11 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   public Integer readLastResponse() throws UaException {
     try {
       return readLastResponseAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -401,8 +443,11 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   public void writeLastResponse(Integer value) throws UaException {
     try {
       writeLastResponseAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -424,8 +469,11 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   public PropertyTypeNode getLastResponseNode() throws UaException {
     try {
       return getLastResponseNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -433,10 +481,7 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   public CompletableFuture<? extends PropertyTypeNode> getLastResponseNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "LastResponse",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "LastResponse", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -456,8 +501,11 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   public LocalizedText readEnabledState() throws UaException {
     try {
       return readEnabledStateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -465,8 +513,11 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   public void writeEnabledState(LocalizedText value) throws UaException {
     try {
       writeEnabledStateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -488,8 +539,11 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   public TwoStateVariableTypeNode getEnabledStateNode() throws UaException {
     try {
       return getEnabledStateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -497,10 +551,7 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   public CompletableFuture<? extends TwoStateVariableTypeNode> getEnabledStateNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "EnabledState",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "EnabledState", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (TwoStateVariableTypeNode) node);
   }
 
@@ -520,8 +571,11 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   public LocalizedText readDialogState() throws UaException {
     try {
       return readDialogStateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -529,8 +583,11 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   public void writeDialogState(LocalizedText value) throws UaException {
     try {
       writeDialogStateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -552,8 +609,11 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   public TwoStateVariableTypeNode getDialogStateNode() throws UaException {
     try {
       return getDialogStateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -561,10 +621,7 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   public CompletableFuture<? extends TwoStateVariableTypeNode> getDialogStateNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "DialogState",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "DialogState", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (TwoStateVariableTypeNode) node);
   }
 }

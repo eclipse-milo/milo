@@ -80,8 +80,11 @@ public class PublishedEventsTypeNode extends PublishedDataSetTypeNode
   public NodeId readPubSubEventNotifier() throws UaException {
     try {
       return readPubSubEventNotifierAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -89,8 +92,11 @@ public class PublishedEventsTypeNode extends PublishedDataSetTypeNode
   public void writePubSubEventNotifier(NodeId value) throws UaException {
     try {
       writePubSubEventNotifierAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -112,8 +118,11 @@ public class PublishedEventsTypeNode extends PublishedDataSetTypeNode
   public PropertyTypeNode getPubSubEventNotifierNode() throws UaException {
     try {
       return getPubSubEventNotifierNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -123,7 +132,7 @@ public class PublishedEventsTypeNode extends PublishedDataSetTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "PubSubEventNotifier",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -146,8 +155,11 @@ public class PublishedEventsTypeNode extends PublishedDataSetTypeNode
   public SimpleAttributeOperand[] readSelectedFields() throws UaException {
     try {
       return readSelectedFieldsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -155,8 +167,11 @@ public class PublishedEventsTypeNode extends PublishedDataSetTypeNode
   public void writeSelectedFields(SimpleAttributeOperand[] value) throws UaException {
     try {
       writeSelectedFieldsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -181,8 +196,11 @@ public class PublishedEventsTypeNode extends PublishedDataSetTypeNode
   public PropertyTypeNode getSelectedFieldsNode() throws UaException {
     try {
       return getSelectedFieldsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -190,10 +208,7 @@ public class PublishedEventsTypeNode extends PublishedDataSetTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getSelectedFieldsNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "SelectedFields",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "SelectedFields", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -214,8 +229,11 @@ public class PublishedEventsTypeNode extends PublishedDataSetTypeNode
   public ContentFilter readFilter() throws UaException {
     try {
       return readFilterAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -223,8 +241,11 @@ public class PublishedEventsTypeNode extends PublishedDataSetTypeNode
   public void writeFilter(ContentFilter value) throws UaException {
     try {
       writeFilterAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -247,8 +268,11 @@ public class PublishedEventsTypeNode extends PublishedDataSetTypeNode
   public PropertyTypeNode getFilterNode() throws UaException {
     try {
       return getFilterNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -256,7 +280,7 @@ public class PublishedEventsTypeNode extends PublishedDataSetTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getFilterNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Filter", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "Filter", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 }

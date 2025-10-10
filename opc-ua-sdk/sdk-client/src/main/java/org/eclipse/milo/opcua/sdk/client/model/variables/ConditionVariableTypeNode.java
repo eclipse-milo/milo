@@ -94,8 +94,11 @@ public class ConditionVariableTypeNode extends BaseDataVariableTypeNode
   public DateTime readSourceTimestamp() throws UaException {
     try {
       return readSourceTimestampAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -103,8 +106,11 @@ public class ConditionVariableTypeNode extends BaseDataVariableTypeNode
   public void writeSourceTimestamp(DateTime value) throws UaException {
     try {
       writeSourceTimestampAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -126,8 +132,11 @@ public class ConditionVariableTypeNode extends BaseDataVariableTypeNode
   public PropertyTypeNode getSourceTimestampNode() throws UaException {
     try {
       return getSourceTimestampNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -135,10 +144,7 @@ public class ConditionVariableTypeNode extends BaseDataVariableTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getSourceTimestampNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "SourceTimestamp",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "SourceTimestamp", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 }

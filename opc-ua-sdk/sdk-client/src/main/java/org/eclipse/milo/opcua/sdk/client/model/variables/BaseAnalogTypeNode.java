@@ -96,8 +96,11 @@ public class BaseAnalogTypeNode extends DataItemTypeNode implements BaseAnalogTy
   public Range readInstrumentRange() throws UaException {
     try {
       return readInstrumentRangeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -105,8 +108,11 @@ public class BaseAnalogTypeNode extends DataItemTypeNode implements BaseAnalogTy
   public void writeInstrumentRange(Range value) throws UaException {
     try {
       writeInstrumentRangeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -130,8 +136,11 @@ public class BaseAnalogTypeNode extends DataItemTypeNode implements BaseAnalogTy
   public PropertyTypeNode getInstrumentRangeNode() throws UaException {
     try {
       return getInstrumentRangeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -139,10 +148,7 @@ public class BaseAnalogTypeNode extends DataItemTypeNode implements BaseAnalogTy
   public CompletableFuture<? extends PropertyTypeNode> getInstrumentRangeNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "InstrumentRange",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "InstrumentRange", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -163,8 +169,11 @@ public class BaseAnalogTypeNode extends DataItemTypeNode implements BaseAnalogTy
   public Range readEuRange() throws UaException {
     try {
       return readEuRangeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -172,8 +181,11 @@ public class BaseAnalogTypeNode extends DataItemTypeNode implements BaseAnalogTy
   public void writeEuRange(Range value) throws UaException {
     try {
       writeEuRangeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -196,8 +208,11 @@ public class BaseAnalogTypeNode extends DataItemTypeNode implements BaseAnalogTy
   public PropertyTypeNode getEuRangeNode() throws UaException {
     try {
       return getEuRangeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -205,7 +220,7 @@ public class BaseAnalogTypeNode extends DataItemTypeNode implements BaseAnalogTy
   public CompletableFuture<? extends PropertyTypeNode> getEuRangeNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "EURange", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "EURange", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -226,8 +241,11 @@ public class BaseAnalogTypeNode extends DataItemTypeNode implements BaseAnalogTy
   public EUInformation readEngineeringUnits() throws UaException {
     try {
       return readEngineeringUnitsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -235,8 +253,11 @@ public class BaseAnalogTypeNode extends DataItemTypeNode implements BaseAnalogTy
   public void writeEngineeringUnits(EUInformation value) throws UaException {
     try {
       writeEngineeringUnitsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -260,8 +281,11 @@ public class BaseAnalogTypeNode extends DataItemTypeNode implements BaseAnalogTy
   public PropertyTypeNode getEngineeringUnitsNode() throws UaException {
     try {
       return getEngineeringUnitsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -271,7 +295,7 @@ public class BaseAnalogTypeNode extends DataItemTypeNode implements BaseAnalogTy
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "EngineeringUnits",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }

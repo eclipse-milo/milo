@@ -77,8 +77,11 @@ public class ProgramTransitionAuditEventTypeNode extends AuditUpdateStateEventTy
   public LocalizedText readTransition() throws UaException {
     try {
       return readTransitionAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -86,8 +89,11 @@ public class ProgramTransitionAuditEventTypeNode extends AuditUpdateStateEventTy
   public void writeTransition(LocalizedText value) throws UaException {
     try {
       writeTransitionAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -109,8 +115,11 @@ public class ProgramTransitionAuditEventTypeNode extends AuditUpdateStateEventTy
   public FiniteTransitionVariableTypeNode getTransitionNode() throws UaException {
     try {
       return getTransitionNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -118,7 +127,7 @@ public class ProgramTransitionAuditEventTypeNode extends AuditUpdateStateEventTy
   public CompletableFuture<? extends FiniteTransitionVariableTypeNode> getTransitionNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Transition", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "Transition", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (FiniteTransitionVariableTypeNode) node);
   }
 }

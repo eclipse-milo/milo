@@ -59,8 +59,11 @@ public class ReaderGroupTypeNode extends PubSubGroupTypeNode implements ReaderGr
   public PubSubDiagnosticsReaderGroupTypeNode getDiagnosticsNode() throws UaException {
     try {
       return getDiagnosticsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -69,10 +72,7 @@ public class ReaderGroupTypeNode extends PubSubGroupTypeNode implements ReaderGr
       getDiagnosticsNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "Diagnostics",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "Diagnostics", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (PubSubDiagnosticsReaderGroupTypeNode) node);
   }
 
@@ -80,8 +80,11 @@ public class ReaderGroupTypeNode extends PubSubGroupTypeNode implements ReaderGr
   public ReaderGroupTransportTypeNode getTransportSettingsNode() throws UaException {
     try {
       return getTransportSettingsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -91,7 +94,7 @@ public class ReaderGroupTypeNode extends PubSubGroupTypeNode implements ReaderGr
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "TransportSettings",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (ReaderGroupTransportTypeNode) node);
   }
@@ -100,8 +103,11 @@ public class ReaderGroupTypeNode extends PubSubGroupTypeNode implements ReaderGr
   public ReaderGroupMessageTypeNode getMessageSettingsNode() throws UaException {
     try {
       return getMessageSettingsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -109,10 +115,7 @@ public class ReaderGroupTypeNode extends PubSubGroupTypeNode implements ReaderGr
   public CompletableFuture<? extends ReaderGroupMessageTypeNode> getMessageSettingsNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "MessageSettings",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "MessageSettings", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (ReaderGroupMessageTypeNode) node);
   }
 }

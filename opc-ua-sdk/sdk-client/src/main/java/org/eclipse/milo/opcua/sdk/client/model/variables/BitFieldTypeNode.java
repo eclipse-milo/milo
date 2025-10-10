@@ -96,8 +96,11 @@ public class BitFieldTypeNode extends BaseDataVariableTypeNode implements BitFie
   public BitFieldDefinition[] readBitFieldsDefinitions() throws UaException {
     try {
       return readBitFieldsDefinitionsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -105,8 +108,11 @@ public class BitFieldTypeNode extends BaseDataVariableTypeNode implements BitFie
   public void writeBitFieldsDefinitions(BitFieldDefinition[] value) throws UaException {
     try {
       writeBitFieldsDefinitionsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -131,8 +137,11 @@ public class BitFieldTypeNode extends BaseDataVariableTypeNode implements BitFie
   public PropertyTypeNode getBitFieldsDefinitionsNode() throws UaException {
     try {
       return getBitFieldsDefinitionsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -142,7 +151,7 @@ public class BitFieldTypeNode extends BaseDataVariableTypeNode implements BitFie
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "BitFieldsDefinitions",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }

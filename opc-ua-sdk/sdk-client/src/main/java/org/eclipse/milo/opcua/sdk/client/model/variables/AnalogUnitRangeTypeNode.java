@@ -95,8 +95,11 @@ public class AnalogUnitRangeTypeNode extends AnalogItemTypeNode implements Analo
   public EUInformation readEngineeringUnits() throws UaException {
     try {
       return readEngineeringUnitsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -104,8 +107,11 @@ public class AnalogUnitRangeTypeNode extends AnalogItemTypeNode implements Analo
   public void writeEngineeringUnits(EUInformation value) throws UaException {
     try {
       writeEngineeringUnitsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -129,8 +135,11 @@ public class AnalogUnitRangeTypeNode extends AnalogItemTypeNode implements Analo
   public PropertyTypeNode getEngineeringUnitsNode() throws UaException {
     try {
       return getEngineeringUnitsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -140,7 +149,7 @@ public class AnalogUnitRangeTypeNode extends AnalogItemTypeNode implements Analo
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "EngineeringUnits",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }

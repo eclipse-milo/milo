@@ -80,8 +80,11 @@ public class IIeeeBaseTsnTrafficSpecificationTypeNode extends BaseInterfaceTypeN
   public UShort readMaxIntervalFrames() throws UaException {
     try {
       return readMaxIntervalFramesAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -89,8 +92,11 @@ public class IIeeeBaseTsnTrafficSpecificationTypeNode extends BaseInterfaceTypeN
   public void writeMaxIntervalFrames(UShort value) throws UaException {
     try {
       writeMaxIntervalFramesAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -112,8 +118,11 @@ public class IIeeeBaseTsnTrafficSpecificationTypeNode extends BaseInterfaceTypeN
   public BaseDataVariableTypeNode getMaxIntervalFramesNode() throws UaException {
     try {
       return getMaxIntervalFramesNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -123,7 +132,7 @@ public class IIeeeBaseTsnTrafficSpecificationTypeNode extends BaseInterfaceTypeN
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MaxIntervalFrames",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
@@ -144,8 +153,11 @@ public class IIeeeBaseTsnTrafficSpecificationTypeNode extends BaseInterfaceTypeN
   public UInteger readMaxFrameSize() throws UaException {
     try {
       return readMaxFrameSizeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -153,8 +165,11 @@ public class IIeeeBaseTsnTrafficSpecificationTypeNode extends BaseInterfaceTypeN
   public void writeMaxFrameSize(UInteger value) throws UaException {
     try {
       writeMaxFrameSizeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -176,8 +191,11 @@ public class IIeeeBaseTsnTrafficSpecificationTypeNode extends BaseInterfaceTypeN
   public BaseDataVariableTypeNode getMaxFrameSizeNode() throws UaException {
     try {
       return getMaxFrameSizeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -185,10 +203,7 @@ public class IIeeeBaseTsnTrafficSpecificationTypeNode extends BaseInterfaceTypeN
   public CompletableFuture<? extends BaseDataVariableTypeNode> getMaxFrameSizeNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "MaxFrameSize",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "MaxFrameSize", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 
@@ -209,8 +224,11 @@ public class IIeeeBaseTsnTrafficSpecificationTypeNode extends BaseInterfaceTypeN
   public UnsignedRationalNumber readInterval() throws UaException {
     try {
       return readIntervalAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -218,8 +236,11 @@ public class IIeeeBaseTsnTrafficSpecificationTypeNode extends BaseInterfaceTypeN
   public void writeInterval(UnsignedRationalNumber value) throws UaException {
     try {
       writeIntervalAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -242,8 +263,11 @@ public class IIeeeBaseTsnTrafficSpecificationTypeNode extends BaseInterfaceTypeN
   public BaseDataVariableTypeNode getIntervalNode() throws UaException {
     try {
       return getIntervalNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -251,7 +275,7 @@ public class IIeeeBaseTsnTrafficSpecificationTypeNode extends BaseInterfaceTypeN
   public CompletableFuture<? extends BaseDataVariableTypeNode> getIntervalNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Interval", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "Interval", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 }

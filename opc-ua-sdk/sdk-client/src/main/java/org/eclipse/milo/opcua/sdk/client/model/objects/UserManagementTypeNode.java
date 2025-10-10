@@ -82,8 +82,11 @@ public class UserManagementTypeNode extends BaseObjectTypeNode implements UserMa
   public UserManagementDataType[] readUsers() throws UaException {
     try {
       return readUsersAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -91,8 +94,11 @@ public class UserManagementTypeNode extends BaseObjectTypeNode implements UserMa
   public void writeUsers(UserManagementDataType[] value) throws UaException {
     try {
       writeUsersAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -116,8 +122,11 @@ public class UserManagementTypeNode extends BaseObjectTypeNode implements UserMa
   public PropertyTypeNode getUsersNode() throws UaException {
     try {
       return getUsersNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -125,7 +134,7 @@ public class UserManagementTypeNode extends BaseObjectTypeNode implements UserMa
   public CompletableFuture<? extends PropertyTypeNode> getUsersNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Users", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "Users", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -146,8 +155,11 @@ public class UserManagementTypeNode extends BaseObjectTypeNode implements UserMa
   public Range readPasswordLength() throws UaException {
     try {
       return readPasswordLengthAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -155,8 +167,11 @@ public class UserManagementTypeNode extends BaseObjectTypeNode implements UserMa
   public void writePasswordLength(Range value) throws UaException {
     try {
       writePasswordLengthAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -180,8 +195,11 @@ public class UserManagementTypeNode extends BaseObjectTypeNode implements UserMa
   public PropertyTypeNode getPasswordLengthNode() throws UaException {
     try {
       return getPasswordLengthNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -189,10 +207,7 @@ public class UserManagementTypeNode extends BaseObjectTypeNode implements UserMa
   public CompletableFuture<? extends PropertyTypeNode> getPasswordLengthNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "PasswordLength",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "PasswordLength", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -212,8 +227,11 @@ public class UserManagementTypeNode extends BaseObjectTypeNode implements UserMa
   public PasswordOptionsMask readPasswordOptions() throws UaException {
     try {
       return readPasswordOptionsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -221,8 +239,11 @@ public class UserManagementTypeNode extends BaseObjectTypeNode implements UserMa
   public void writePasswordOptions(PasswordOptionsMask value) throws UaException {
     try {
       writePasswordOptionsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -245,8 +266,11 @@ public class UserManagementTypeNode extends BaseObjectTypeNode implements UserMa
   public PropertyTypeNode getPasswordOptionsNode() throws UaException {
     try {
       return getPasswordOptionsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -254,10 +278,7 @@ public class UserManagementTypeNode extends BaseObjectTypeNode implements UserMa
   public CompletableFuture<? extends PropertyTypeNode> getPasswordOptionsNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "PasswordOptions",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "PasswordOptions", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -277,8 +298,11 @@ public class UserManagementTypeNode extends BaseObjectTypeNode implements UserMa
   public LocalizedText readPasswordRestrictions() throws UaException {
     try {
       return readPasswordRestrictionsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -286,8 +310,11 @@ public class UserManagementTypeNode extends BaseObjectTypeNode implements UserMa
   public void writePasswordRestrictions(LocalizedText value) throws UaException {
     try {
       writePasswordRestrictionsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -310,8 +337,11 @@ public class UserManagementTypeNode extends BaseObjectTypeNode implements UserMa
   public PropertyTypeNode getPasswordRestrictionsNode() throws UaException {
     try {
       return getPasswordRestrictionsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -321,7 +351,7 @@ public class UserManagementTypeNode extends BaseObjectTypeNode implements UserMa
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "PasswordRestrictions",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }

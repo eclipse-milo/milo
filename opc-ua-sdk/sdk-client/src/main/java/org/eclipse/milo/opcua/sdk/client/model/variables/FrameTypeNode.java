@@ -95,8 +95,11 @@ public class FrameTypeNode extends BaseDataVariableTypeNode implements FrameType
   public Boolean readConstant() throws UaException {
     try {
       return readConstantAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -104,8 +107,11 @@ public class FrameTypeNode extends BaseDataVariableTypeNode implements FrameType
   public void writeConstant(Boolean value) throws UaException {
     try {
       writeConstantAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -127,8 +133,11 @@ public class FrameTypeNode extends BaseDataVariableTypeNode implements FrameType
   public PropertyTypeNode getConstantNode() throws UaException {
     try {
       return getConstantNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -136,7 +145,7 @@ public class FrameTypeNode extends BaseDataVariableTypeNode implements FrameType
   public CompletableFuture<? extends PropertyTypeNode> getConstantNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Constant", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "Constant", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -156,8 +165,11 @@ public class FrameTypeNode extends BaseDataVariableTypeNode implements FrameType
   public Boolean readFixedBase() throws UaException {
     try {
       return readFixedBaseAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -165,8 +177,11 @@ public class FrameTypeNode extends BaseDataVariableTypeNode implements FrameType
   public void writeFixedBase(Boolean value) throws UaException {
     try {
       writeFixedBaseAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -188,8 +203,11 @@ public class FrameTypeNode extends BaseDataVariableTypeNode implements FrameType
   public PropertyTypeNode getFixedBaseNode() throws UaException {
     try {
       return getFixedBaseNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -197,7 +215,7 @@ public class FrameTypeNode extends BaseDataVariableTypeNode implements FrameType
   public CompletableFuture<? extends PropertyTypeNode> getFixedBaseNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "FixedBase", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "FixedBase", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -218,8 +236,11 @@ public class FrameTypeNode extends BaseDataVariableTypeNode implements FrameType
   public CartesianCoordinates readCartesianCoordinates() throws UaException {
     try {
       return readCartesianCoordinatesAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -227,8 +248,11 @@ public class FrameTypeNode extends BaseDataVariableTypeNode implements FrameType
   public void writeCartesianCoordinates(CartesianCoordinates value) throws UaException {
     try {
       writeCartesianCoordinatesAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -253,8 +277,11 @@ public class FrameTypeNode extends BaseDataVariableTypeNode implements FrameType
   public CartesianCoordinatesTypeNode getCartesianCoordinatesNode() throws UaException {
     try {
       return getCartesianCoordinatesNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -265,7 +292,7 @@ public class FrameTypeNode extends BaseDataVariableTypeNode implements FrameType
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "CartesianCoordinates",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (CartesianCoordinatesTypeNode) node);
   }
@@ -287,8 +314,11 @@ public class FrameTypeNode extends BaseDataVariableTypeNode implements FrameType
   public Orientation readOrientation() throws UaException {
     try {
       return readOrientationAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -296,8 +326,11 @@ public class FrameTypeNode extends BaseDataVariableTypeNode implements FrameType
   public void writeOrientation(Orientation value) throws UaException {
     try {
       writeOrientationAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -321,8 +354,11 @@ public class FrameTypeNode extends BaseDataVariableTypeNode implements FrameType
   public OrientationTypeNode getOrientationNode() throws UaException {
     try {
       return getOrientationNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -330,10 +366,7 @@ public class FrameTypeNode extends BaseDataVariableTypeNode implements FrameType
   public CompletableFuture<? extends OrientationTypeNode> getOrientationNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "Orientation",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "Orientation", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (OrientationTypeNode) node);
   }
 
@@ -353,8 +386,11 @@ public class FrameTypeNode extends BaseDataVariableTypeNode implements FrameType
   public NodeId readBaseFrame() throws UaException {
     try {
       return readBaseFrameAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -362,8 +398,11 @@ public class FrameTypeNode extends BaseDataVariableTypeNode implements FrameType
   public void writeBaseFrame(NodeId value) throws UaException {
     try {
       writeBaseFrameAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -385,8 +424,11 @@ public class FrameTypeNode extends BaseDataVariableTypeNode implements FrameType
   public BaseDataVariableTypeNode getBaseFrameNode() throws UaException {
     try {
       return getBaseFrameNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -394,7 +436,7 @@ public class FrameTypeNode extends BaseDataVariableTypeNode implements FrameType
   public CompletableFuture<? extends BaseDataVariableTypeNode> getBaseFrameNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "BaseFrame", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "BaseFrame", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 }

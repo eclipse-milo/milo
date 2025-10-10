@@ -97,8 +97,11 @@ public class NDimensionArrayItemTypeNode extends ArrayItemTypeNode
   public AxisInformation[] readAxisDefinition() throws UaException {
     try {
       return readAxisDefinitionAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -106,8 +109,11 @@ public class NDimensionArrayItemTypeNode extends ArrayItemTypeNode
   public void writeAxisDefinition(AxisInformation[] value) throws UaException {
     try {
       writeAxisDefinitionAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -131,8 +137,11 @@ public class NDimensionArrayItemTypeNode extends ArrayItemTypeNode
   public PropertyTypeNode getAxisDefinitionNode() throws UaException {
     try {
       return getAxisDefinitionNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -140,10 +149,7 @@ public class NDimensionArrayItemTypeNode extends ArrayItemTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getAxisDefinitionNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "AxisDefinition",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "AxisDefinition", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 }

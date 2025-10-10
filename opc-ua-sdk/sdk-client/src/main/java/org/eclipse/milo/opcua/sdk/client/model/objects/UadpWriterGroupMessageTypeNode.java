@@ -79,8 +79,11 @@ public class UadpWriterGroupMessageTypeNode extends WriterGroupMessageTypeNode
   public UInteger readGroupVersion() throws UaException {
     try {
       return readGroupVersionAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -88,8 +91,11 @@ public class UadpWriterGroupMessageTypeNode extends WriterGroupMessageTypeNode
   public void writeGroupVersion(UInteger value) throws UaException {
     try {
       writeGroupVersionAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -111,8 +117,11 @@ public class UadpWriterGroupMessageTypeNode extends WriterGroupMessageTypeNode
   public PropertyTypeNode getGroupVersionNode() throws UaException {
     try {
       return getGroupVersionNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -120,10 +129,7 @@ public class UadpWriterGroupMessageTypeNode extends WriterGroupMessageTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getGroupVersionNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "GroupVersion",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "GroupVersion", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -151,8 +157,11 @@ public class UadpWriterGroupMessageTypeNode extends WriterGroupMessageTypeNode
   public DataSetOrderingType readDataSetOrdering() throws UaException {
     try {
       return readDataSetOrderingAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -160,8 +169,11 @@ public class UadpWriterGroupMessageTypeNode extends WriterGroupMessageTypeNode
   public void writeDataSetOrdering(DataSetOrderingType value) throws UaException {
     try {
       writeDataSetOrderingAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -192,8 +204,11 @@ public class UadpWriterGroupMessageTypeNode extends WriterGroupMessageTypeNode
   public PropertyTypeNode getDataSetOrderingNode() throws UaException {
     try {
       return getDataSetOrderingNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -201,10 +216,7 @@ public class UadpWriterGroupMessageTypeNode extends WriterGroupMessageTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getDataSetOrderingNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "DataSetOrdering",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "DataSetOrdering", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -224,8 +236,11 @@ public class UadpWriterGroupMessageTypeNode extends WriterGroupMessageTypeNode
   public UadpNetworkMessageContentMask readNetworkMessageContentMask() throws UaException {
     try {
       return readNetworkMessageContentMaskAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -234,8 +249,11 @@ public class UadpWriterGroupMessageTypeNode extends WriterGroupMessageTypeNode
       throws UaException {
     try {
       writeNetworkMessageContentMaskAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -259,8 +277,11 @@ public class UadpWriterGroupMessageTypeNode extends WriterGroupMessageTypeNode
   public PropertyTypeNode getNetworkMessageContentMaskNode() throws UaException {
     try {
       return getNetworkMessageContentMaskNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -270,7 +291,7 @@ public class UadpWriterGroupMessageTypeNode extends WriterGroupMessageTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "NetworkMessageContentMask",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -291,8 +312,11 @@ public class UadpWriterGroupMessageTypeNode extends WriterGroupMessageTypeNode
   public Double readSamplingOffset() throws UaException {
     try {
       return readSamplingOffsetAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -300,8 +324,11 @@ public class UadpWriterGroupMessageTypeNode extends WriterGroupMessageTypeNode
   public void writeSamplingOffset(Double value) throws UaException {
     try {
       writeSamplingOffsetAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -323,8 +350,11 @@ public class UadpWriterGroupMessageTypeNode extends WriterGroupMessageTypeNode
   public PropertyTypeNode getSamplingOffsetNode() throws UaException {
     try {
       return getSamplingOffsetNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -332,10 +362,7 @@ public class UadpWriterGroupMessageTypeNode extends WriterGroupMessageTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getSamplingOffsetNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "SamplingOffset",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "SamplingOffset", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -355,8 +382,11 @@ public class UadpWriterGroupMessageTypeNode extends WriterGroupMessageTypeNode
   public Double[] readPublishingOffset() throws UaException {
     try {
       return readPublishingOffsetAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -364,8 +394,11 @@ public class UadpWriterGroupMessageTypeNode extends WriterGroupMessageTypeNode
   public void writePublishingOffset(Double[] value) throws UaException {
     try {
       writePublishingOffsetAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -387,8 +420,11 @@ public class UadpWriterGroupMessageTypeNode extends WriterGroupMessageTypeNode
   public PropertyTypeNode getPublishingOffsetNode() throws UaException {
     try {
       return getPublishingOffsetNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -398,7 +434,7 @@ public class UadpWriterGroupMessageTypeNode extends WriterGroupMessageTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "PublishingOffset",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }

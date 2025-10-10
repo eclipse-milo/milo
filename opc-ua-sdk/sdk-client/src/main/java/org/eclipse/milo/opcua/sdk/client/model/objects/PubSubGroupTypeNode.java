@@ -88,8 +88,11 @@ public class PubSubGroupTypeNode extends BaseObjectTypeNode implements PubSubGro
   public MessageSecurityMode readSecurityMode() throws UaException {
     try {
       return readSecurityModeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -97,8 +100,11 @@ public class PubSubGroupTypeNode extends BaseObjectTypeNode implements PubSubGro
   public void writeSecurityMode(MessageSecurityMode value) throws UaException {
     try {
       writeSecurityModeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -128,8 +134,11 @@ public class PubSubGroupTypeNode extends BaseObjectTypeNode implements PubSubGro
   public PropertyTypeNode getSecurityModeNode() throws UaException {
     try {
       return getSecurityModeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -137,10 +146,7 @@ public class PubSubGroupTypeNode extends BaseObjectTypeNode implements PubSubGro
   public CompletableFuture<? extends PropertyTypeNode> getSecurityModeNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "SecurityMode",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "SecurityMode", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -160,8 +166,11 @@ public class PubSubGroupTypeNode extends BaseObjectTypeNode implements PubSubGro
   public String readSecurityGroupId() throws UaException {
     try {
       return readSecurityGroupIdAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -169,8 +178,11 @@ public class PubSubGroupTypeNode extends BaseObjectTypeNode implements PubSubGro
   public void writeSecurityGroupId(String value) throws UaException {
     try {
       writeSecurityGroupIdAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -192,8 +204,11 @@ public class PubSubGroupTypeNode extends BaseObjectTypeNode implements PubSubGro
   public PropertyTypeNode getSecurityGroupIdNode() throws UaException {
     try {
       return getSecurityGroupIdNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -201,10 +216,7 @@ public class PubSubGroupTypeNode extends BaseObjectTypeNode implements PubSubGro
   public CompletableFuture<? extends PropertyTypeNode> getSecurityGroupIdNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "SecurityGroupId",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "SecurityGroupId", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -226,8 +238,11 @@ public class PubSubGroupTypeNode extends BaseObjectTypeNode implements PubSubGro
   public EndpointDescription[] readSecurityKeyServices() throws UaException {
     try {
       return readSecurityKeyServicesAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -235,8 +250,11 @@ public class PubSubGroupTypeNode extends BaseObjectTypeNode implements PubSubGro
   public void writeSecurityKeyServices(EndpointDescription[] value) throws UaException {
     try {
       writeSecurityKeyServicesAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -261,8 +279,11 @@ public class PubSubGroupTypeNode extends BaseObjectTypeNode implements PubSubGro
   public PropertyTypeNode getSecurityKeyServicesNode() throws UaException {
     try {
       return getSecurityKeyServicesNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -272,7 +293,7 @@ public class PubSubGroupTypeNode extends BaseObjectTypeNode implements PubSubGro
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "SecurityKeyServices",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -293,8 +314,11 @@ public class PubSubGroupTypeNode extends BaseObjectTypeNode implements PubSubGro
   public UInteger readMaxNetworkMessageSize() throws UaException {
     try {
       return readMaxNetworkMessageSizeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -302,8 +326,11 @@ public class PubSubGroupTypeNode extends BaseObjectTypeNode implements PubSubGro
   public void writeMaxNetworkMessageSize(UInteger value) throws UaException {
     try {
       writeMaxNetworkMessageSizeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -326,8 +353,11 @@ public class PubSubGroupTypeNode extends BaseObjectTypeNode implements PubSubGro
   public PropertyTypeNode getMaxNetworkMessageSizeNode() throws UaException {
     try {
       return getMaxNetworkMessageSizeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -337,7 +367,7 @@ public class PubSubGroupTypeNode extends BaseObjectTypeNode implements PubSubGro
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MaxNetworkMessageSize",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -360,8 +390,11 @@ public class PubSubGroupTypeNode extends BaseObjectTypeNode implements PubSubGro
   public KeyValuePair[] readGroupProperties() throws UaException {
     try {
       return readGroupPropertiesAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -369,8 +402,11 @@ public class PubSubGroupTypeNode extends BaseObjectTypeNode implements PubSubGro
   public void writeGroupProperties(KeyValuePair[] value) throws UaException {
     try {
       writeGroupPropertiesAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -394,8 +430,11 @@ public class PubSubGroupTypeNode extends BaseObjectTypeNode implements PubSubGro
   public PropertyTypeNode getGroupPropertiesNode() throws UaException {
     try {
       return getGroupPropertiesNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -403,10 +442,7 @@ public class PubSubGroupTypeNode extends BaseObjectTypeNode implements PubSubGro
   public CompletableFuture<? extends PropertyTypeNode> getGroupPropertiesNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "GroupProperties",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "GroupProperties", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -414,8 +450,11 @@ public class PubSubGroupTypeNode extends BaseObjectTypeNode implements PubSubGro
   public PubSubStatusTypeNode getStatusNode() throws UaException {
     try {
       return getStatusNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -423,7 +462,7 @@ public class PubSubGroupTypeNode extends BaseObjectTypeNode implements PubSubGro
   public CompletableFuture<? extends PubSubStatusTypeNode> getStatusNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Status", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "Status", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (PubSubStatusTypeNode) node);
   }
 }

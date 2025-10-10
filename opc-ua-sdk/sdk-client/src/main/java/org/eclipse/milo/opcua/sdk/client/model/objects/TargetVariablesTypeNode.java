@@ -81,8 +81,11 @@ public class TargetVariablesTypeNode extends SubscribedDataSetTypeNode
   public FieldTargetDataType[] readTargetVariables() throws UaException {
     try {
       return readTargetVariablesAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -90,8 +93,11 @@ public class TargetVariablesTypeNode extends SubscribedDataSetTypeNode
   public void writeTargetVariables(FieldTargetDataType[] value) throws UaException {
     try {
       writeTargetVariablesAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -116,8 +122,11 @@ public class TargetVariablesTypeNode extends SubscribedDataSetTypeNode
   public PropertyTypeNode getTargetVariablesNode() throws UaException {
     try {
       return getTargetVariablesNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -125,10 +134,7 @@ public class TargetVariablesTypeNode extends SubscribedDataSetTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getTargetVariablesNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "TargetVariables",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "TargetVariables", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 }

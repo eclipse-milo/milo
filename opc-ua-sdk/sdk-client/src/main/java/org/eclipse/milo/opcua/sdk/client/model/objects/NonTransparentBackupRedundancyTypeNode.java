@@ -82,8 +82,11 @@ public class NonTransparentBackupRedundancyTypeNode extends NonTransparentRedund
   public RedundantServerDataType[] readRedundantServerArray() throws UaException {
     try {
       return readRedundantServerArrayAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -91,8 +94,11 @@ public class NonTransparentBackupRedundancyTypeNode extends NonTransparentRedund
   public void writeRedundantServerArray(RedundantServerDataType[] value) throws UaException {
     try {
       writeRedundantServerArrayAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -117,8 +123,11 @@ public class NonTransparentBackupRedundancyTypeNode extends NonTransparentRedund
   public PropertyTypeNode getRedundantServerArrayNode() throws UaException {
     try {
       return getRedundantServerArrayNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -128,7 +137,7 @@ public class NonTransparentBackupRedundancyTypeNode extends NonTransparentRedund
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "RedundantServerArray",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -157,8 +166,11 @@ public class NonTransparentBackupRedundancyTypeNode extends NonTransparentRedund
   public RedundantServerMode readMode() throws UaException {
     try {
       return readModeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -166,8 +178,11 @@ public class NonTransparentBackupRedundancyTypeNode extends NonTransparentRedund
   public void writeMode(RedundantServerMode value) throws UaException {
     try {
       writeModeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -197,8 +212,11 @@ public class NonTransparentBackupRedundancyTypeNode extends NonTransparentRedund
   public PropertyTypeNode getModeNode() throws UaException {
     try {
       return getModeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -206,7 +224,7 @@ public class NonTransparentBackupRedundancyTypeNode extends NonTransparentRedund
   public CompletableFuture<? extends PropertyTypeNode> getModeNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Mode", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "Mode", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 }

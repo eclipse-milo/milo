@@ -76,8 +76,11 @@ public class NetworkAddressTypeNode extends BaseObjectTypeNode implements Networ
   public String readNetworkInterface() throws UaException {
     try {
       return readNetworkInterfaceAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -85,8 +88,11 @@ public class NetworkAddressTypeNode extends BaseObjectTypeNode implements Networ
   public void writeNetworkInterface(String value) throws UaException {
     try {
       writeNetworkInterfaceAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -108,8 +114,11 @@ public class NetworkAddressTypeNode extends BaseObjectTypeNode implements Networ
   public SelectionListTypeNode getNetworkInterfaceNode() throws UaException {
     try {
       return getNetworkInterfaceNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -119,7 +128,7 @@ public class NetworkAddressTypeNode extends BaseObjectTypeNode implements Networ
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "NetworkInterface",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (SelectionListTypeNode) node);
   }

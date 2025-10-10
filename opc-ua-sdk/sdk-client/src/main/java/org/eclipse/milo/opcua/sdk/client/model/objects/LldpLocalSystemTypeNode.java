@@ -86,8 +86,11 @@ public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpL
   public ChassisIdSubtype readChassisIdSubtype() throws UaException {
     try {
       return readChassisIdSubtypeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -95,8 +98,11 @@ public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpL
   public void writeChassisIdSubtype(ChassisIdSubtype value) throws UaException {
     try {
       writeChassisIdSubtypeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -127,8 +133,11 @@ public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpL
   public PropertyTypeNode getChassisIdSubtypeNode() throws UaException {
     try {
       return getChassisIdSubtypeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -138,7 +147,7 @@ public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpL
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ChassisIdSubtype",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -159,8 +168,11 @@ public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpL
   public String readChassisId() throws UaException {
     try {
       return readChassisIdAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -168,8 +180,11 @@ public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpL
   public void writeChassisId(String value) throws UaException {
     try {
       writeChassisIdAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -191,8 +206,11 @@ public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpL
   public PropertyTypeNode getChassisIdNode() throws UaException {
     try {
       return getChassisIdNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -200,7 +218,7 @@ public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpL
   public CompletableFuture<? extends PropertyTypeNode> getChassisIdNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "ChassisId", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "ChassisId", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -220,8 +238,11 @@ public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpL
   public String readSystemName() throws UaException {
     try {
       return readSystemNameAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -229,8 +250,11 @@ public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpL
   public void writeSystemName(String value) throws UaException {
     try {
       writeSystemNameAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -252,8 +276,11 @@ public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpL
   public PropertyTypeNode getSystemNameNode() throws UaException {
     try {
       return getSystemNameNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -261,7 +288,7 @@ public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpL
   public CompletableFuture<? extends PropertyTypeNode> getSystemNameNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "SystemName", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "SystemName", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -281,8 +308,11 @@ public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpL
   public String readSystemDescription() throws UaException {
     try {
       return readSystemDescriptionAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -290,8 +320,11 @@ public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpL
   public void writeSystemDescription(String value) throws UaException {
     try {
       writeSystemDescriptionAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -313,8 +346,11 @@ public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpL
   public PropertyTypeNode getSystemDescriptionNode() throws UaException {
     try {
       return getSystemDescriptionNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -324,7 +360,7 @@ public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpL
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "SystemDescription",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -345,8 +381,11 @@ public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpL
   public LldpSystemCapabilitiesMap readSystemCapabilitiesSupported() throws UaException {
     try {
       return readSystemCapabilitiesSupportedAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -354,8 +393,11 @@ public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpL
   public void writeSystemCapabilitiesSupported(LldpSystemCapabilitiesMap value) throws UaException {
     try {
       writeSystemCapabilitiesSupportedAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -379,8 +421,11 @@ public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpL
   public PropertyTypeNode getSystemCapabilitiesSupportedNode() throws UaException {
     try {
       return getSystemCapabilitiesSupportedNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -390,7 +435,7 @@ public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpL
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "SystemCapabilitiesSupported",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -411,8 +456,11 @@ public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpL
   public LldpSystemCapabilitiesMap readSystemCapabilitiesEnabled() throws UaException {
     try {
       return readSystemCapabilitiesEnabledAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -420,8 +468,11 @@ public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpL
   public void writeSystemCapabilitiesEnabled(LldpSystemCapabilitiesMap value) throws UaException {
     try {
       writeSystemCapabilitiesEnabledAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -445,8 +496,11 @@ public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpL
   public PropertyTypeNode getSystemCapabilitiesEnabledNode() throws UaException {
     try {
       return getSystemCapabilitiesEnabledNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -456,7 +510,7 @@ public class LldpLocalSystemTypeNode extends BaseObjectTypeNode implements LldpL
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "SystemCapabilitiesEnabled",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }

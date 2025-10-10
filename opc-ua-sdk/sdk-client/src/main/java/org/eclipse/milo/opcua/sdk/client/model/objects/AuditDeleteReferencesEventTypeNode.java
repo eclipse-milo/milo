@@ -81,8 +81,11 @@ public class AuditDeleteReferencesEventTypeNode extends AuditNodeManagementEvent
   public DeleteReferencesItem[] readReferencesToDelete() throws UaException {
     try {
       return readReferencesToDeleteAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -90,8 +93,11 @@ public class AuditDeleteReferencesEventTypeNode extends AuditNodeManagementEvent
   public void writeReferencesToDelete(DeleteReferencesItem[] value) throws UaException {
     try {
       writeReferencesToDeleteAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -116,8 +122,11 @@ public class AuditDeleteReferencesEventTypeNode extends AuditNodeManagementEvent
   public PropertyTypeNode getReferencesToDeleteNode() throws UaException {
     try {
       return getReferencesToDeleteNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -127,7 +136,7 @@ public class AuditDeleteReferencesEventTypeNode extends AuditNodeManagementEvent
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ReferencesToDelete",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }

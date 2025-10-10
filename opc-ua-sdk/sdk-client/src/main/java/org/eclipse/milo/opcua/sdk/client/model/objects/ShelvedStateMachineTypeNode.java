@@ -77,8 +77,11 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
   public Double readUnshelveTime() throws UaException {
     try {
       return readUnshelveTimeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -86,8 +89,11 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
   public void writeUnshelveTime(Double value) throws UaException {
     try {
       writeUnshelveTimeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -109,8 +115,11 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
   public PropertyTypeNode getUnshelveTimeNode() throws UaException {
     try {
       return getUnshelveTimeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -118,10 +127,7 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getUnshelveTimeNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "UnshelveTime",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "UnshelveTime", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -129,8 +135,11 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
   public StateTypeNode getUnshelvedNode() throws UaException {
     try {
       return getUnshelvedNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -138,7 +147,7 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
   public CompletableFuture<? extends StateTypeNode> getUnshelvedNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Unshelved", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "Unshelved", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (StateTypeNode) node);
   }
 
@@ -146,8 +155,11 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
   public StateTypeNode getTimedShelvedNode() throws UaException {
     try {
       return getTimedShelvedNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -155,10 +167,7 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
   public CompletableFuture<? extends StateTypeNode> getTimedShelvedNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "TimedShelved",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "TimedShelved", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (StateTypeNode) node);
   }
 
@@ -166,8 +175,11 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
   public StateTypeNode getOneShotShelvedNode() throws UaException {
     try {
       return getOneShotShelvedNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -175,10 +187,7 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
   public CompletableFuture<? extends StateTypeNode> getOneShotShelvedNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "OneShotShelved",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "OneShotShelved", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (StateTypeNode) node);
   }
 
@@ -186,8 +195,11 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
   public TransitionTypeNode getUnshelvedToTimedShelvedNode() throws UaException {
     try {
       return getUnshelvedToTimedShelvedNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -197,7 +209,7 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "UnshelvedToTimedShelved",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (TransitionTypeNode) node);
   }
@@ -206,8 +218,11 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
   public TransitionTypeNode getUnshelvedToOneShotShelvedNode() throws UaException {
     try {
       return getUnshelvedToOneShotShelvedNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -217,7 +232,7 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "UnshelvedToOneShotShelved",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (TransitionTypeNode) node);
   }
@@ -226,8 +241,11 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
   public TransitionTypeNode getTimedShelvedToUnshelvedNode() throws UaException {
     try {
       return getTimedShelvedToUnshelvedNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -237,7 +255,7 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "TimedShelvedToUnshelved",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (TransitionTypeNode) node);
   }
@@ -246,8 +264,11 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
   public TransitionTypeNode getTimedShelvedToOneShotShelvedNode() throws UaException {
     try {
       return getTimedShelvedToOneShotShelvedNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -258,7 +279,7 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "TimedShelvedToOneShotShelved",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (TransitionTypeNode) node);
   }
@@ -267,8 +288,11 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
   public TransitionTypeNode getOneShotShelvedToUnshelvedNode() throws UaException {
     try {
       return getOneShotShelvedToUnshelvedNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -278,7 +302,7 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "OneShotShelvedToUnshelved",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (TransitionTypeNode) node);
   }
@@ -287,8 +311,11 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
   public TransitionTypeNode getOneShotShelvedToTimedShelvedNode() throws UaException {
     try {
       return getOneShotShelvedToTimedShelvedNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -299,7 +326,7 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "OneShotShelvedToTimedShelved",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (TransitionTypeNode) node);
   }

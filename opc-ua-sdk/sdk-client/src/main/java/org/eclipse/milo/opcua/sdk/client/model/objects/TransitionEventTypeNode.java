@@ -77,8 +77,11 @@ public class TransitionEventTypeNode extends BaseEventTypeNode implements Transi
   public LocalizedText readTransition() throws UaException {
     try {
       return readTransitionAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -86,8 +89,11 @@ public class TransitionEventTypeNode extends BaseEventTypeNode implements Transi
   public void writeTransition(LocalizedText value) throws UaException {
     try {
       writeTransitionAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -109,8 +115,11 @@ public class TransitionEventTypeNode extends BaseEventTypeNode implements Transi
   public TransitionVariableTypeNode getTransitionNode() throws UaException {
     try {
       return getTransitionNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -118,7 +127,7 @@ public class TransitionEventTypeNode extends BaseEventTypeNode implements Transi
   public CompletableFuture<? extends TransitionVariableTypeNode> getTransitionNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Transition", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "Transition", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (TransitionVariableTypeNode) node);
   }
 
@@ -138,8 +147,11 @@ public class TransitionEventTypeNode extends BaseEventTypeNode implements Transi
   public LocalizedText readFromState() throws UaException {
     try {
       return readFromStateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -147,8 +159,11 @@ public class TransitionEventTypeNode extends BaseEventTypeNode implements Transi
   public void writeFromState(LocalizedText value) throws UaException {
     try {
       writeFromStateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -170,8 +185,11 @@ public class TransitionEventTypeNode extends BaseEventTypeNode implements Transi
   public StateVariableTypeNode getFromStateNode() throws UaException {
     try {
       return getFromStateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -179,7 +197,7 @@ public class TransitionEventTypeNode extends BaseEventTypeNode implements Transi
   public CompletableFuture<? extends StateVariableTypeNode> getFromStateNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "FromState", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "FromState", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (StateVariableTypeNode) node);
   }
 
@@ -199,8 +217,11 @@ public class TransitionEventTypeNode extends BaseEventTypeNode implements Transi
   public LocalizedText readToState() throws UaException {
     try {
       return readToStateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -208,8 +229,11 @@ public class TransitionEventTypeNode extends BaseEventTypeNode implements Transi
   public void writeToState(LocalizedText value) throws UaException {
     try {
       writeToStateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -231,8 +255,11 @@ public class TransitionEventTypeNode extends BaseEventTypeNode implements Transi
   public StateVariableTypeNode getToStateNode() throws UaException {
     try {
       return getToStateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -240,7 +267,7 @@ public class TransitionEventTypeNode extends BaseEventTypeNode implements Transi
   public CompletableFuture<? extends StateVariableTypeNode> getToStateNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "ToState", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "ToState", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (StateVariableTypeNode) node);
   }
 }

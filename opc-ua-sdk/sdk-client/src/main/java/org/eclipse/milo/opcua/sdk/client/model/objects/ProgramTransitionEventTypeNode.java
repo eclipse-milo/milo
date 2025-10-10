@@ -77,8 +77,11 @@ public class ProgramTransitionEventTypeNode extends TransitionEventTypeNode
   public Object readIntermediateResult() throws UaException {
     try {
       return readIntermediateResultAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -86,8 +89,11 @@ public class ProgramTransitionEventTypeNode extends TransitionEventTypeNode
   public void writeIntermediateResult(Object value) throws UaException {
     try {
       writeIntermediateResultAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -109,8 +115,11 @@ public class ProgramTransitionEventTypeNode extends TransitionEventTypeNode
   public BaseDataVariableTypeNode getIntermediateResultNode() throws UaException {
     try {
       return getIntermediateResultNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -120,7 +129,7 @@ public class ProgramTransitionEventTypeNode extends TransitionEventTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "IntermediateResult",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }

@@ -60,8 +60,11 @@ public class FileTransferStateMachineTypeNode extends FiniteStateMachineTypeNode
   public InitialStateTypeNode getIdleNode() throws UaException {
     try {
       return getIdleNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -69,7 +72,7 @@ public class FileTransferStateMachineTypeNode extends FiniteStateMachineTypeNode
   public CompletableFuture<? extends InitialStateTypeNode> getIdleNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Idle", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "Idle", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (InitialStateTypeNode) node);
   }
 
@@ -77,8 +80,11 @@ public class FileTransferStateMachineTypeNode extends FiniteStateMachineTypeNode
   public StateTypeNode getReadPrepareNode() throws UaException {
     try {
       return getReadPrepareNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -86,10 +92,7 @@ public class FileTransferStateMachineTypeNode extends FiniteStateMachineTypeNode
   public CompletableFuture<? extends StateTypeNode> getReadPrepareNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ReadPrepare",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "ReadPrepare", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (StateTypeNode) node);
   }
 
@@ -97,8 +100,11 @@ public class FileTransferStateMachineTypeNode extends FiniteStateMachineTypeNode
   public StateTypeNode getReadTransferNode() throws UaException {
     try {
       return getReadTransferNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -106,10 +112,7 @@ public class FileTransferStateMachineTypeNode extends FiniteStateMachineTypeNode
   public CompletableFuture<? extends StateTypeNode> getReadTransferNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ReadTransfer",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "ReadTransfer", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (StateTypeNode) node);
   }
 
@@ -117,8 +120,11 @@ public class FileTransferStateMachineTypeNode extends FiniteStateMachineTypeNode
   public StateTypeNode getApplyWriteNode() throws UaException {
     try {
       return getApplyWriteNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -126,7 +132,7 @@ public class FileTransferStateMachineTypeNode extends FiniteStateMachineTypeNode
   public CompletableFuture<? extends StateTypeNode> getApplyWriteNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "ApplyWrite", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "ApplyWrite", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (StateTypeNode) node);
   }
 
@@ -134,8 +140,11 @@ public class FileTransferStateMachineTypeNode extends FiniteStateMachineTypeNode
   public StateTypeNode getErrorNode() throws UaException {
     try {
       return getErrorNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -143,7 +152,7 @@ public class FileTransferStateMachineTypeNode extends FiniteStateMachineTypeNode
   public CompletableFuture<? extends StateTypeNode> getErrorNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Error", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "Error", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (StateTypeNode) node);
   }
 
@@ -151,8 +160,11 @@ public class FileTransferStateMachineTypeNode extends FiniteStateMachineTypeNode
   public TransitionTypeNode getIdleToReadPrepareNode() throws UaException {
     try {
       return getIdleToReadPrepareNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -162,7 +174,7 @@ public class FileTransferStateMachineTypeNode extends FiniteStateMachineTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "IdleToReadPrepare",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (TransitionTypeNode) node);
   }
@@ -171,8 +183,11 @@ public class FileTransferStateMachineTypeNode extends FiniteStateMachineTypeNode
   public TransitionTypeNode getReadPrepareToReadTransferNode() throws UaException {
     try {
       return getReadPrepareToReadTransferNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -182,7 +197,7 @@ public class FileTransferStateMachineTypeNode extends FiniteStateMachineTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ReadPrepareToReadTransfer",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (TransitionTypeNode) node);
   }
@@ -191,8 +206,11 @@ public class FileTransferStateMachineTypeNode extends FiniteStateMachineTypeNode
   public TransitionTypeNode getReadTransferToIdleNode() throws UaException {
     try {
       return getReadTransferToIdleNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -202,7 +220,7 @@ public class FileTransferStateMachineTypeNode extends FiniteStateMachineTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ReadTransferToIdle",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (TransitionTypeNode) node);
   }
@@ -211,8 +229,11 @@ public class FileTransferStateMachineTypeNode extends FiniteStateMachineTypeNode
   public TransitionTypeNode getIdleToApplyWriteNode() throws UaException {
     try {
       return getIdleToApplyWriteNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -222,7 +243,7 @@ public class FileTransferStateMachineTypeNode extends FiniteStateMachineTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "IdleToApplyWrite",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (TransitionTypeNode) node);
   }
@@ -231,8 +252,11 @@ public class FileTransferStateMachineTypeNode extends FiniteStateMachineTypeNode
   public TransitionTypeNode getApplyWriteToIdleNode() throws UaException {
     try {
       return getApplyWriteToIdleNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -242,7 +266,7 @@ public class FileTransferStateMachineTypeNode extends FiniteStateMachineTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ApplyWriteToIdle",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (TransitionTypeNode) node);
   }
@@ -251,8 +275,11 @@ public class FileTransferStateMachineTypeNode extends FiniteStateMachineTypeNode
   public TransitionTypeNode getReadPrepareToErrorNode() throws UaException {
     try {
       return getReadPrepareToErrorNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -262,7 +289,7 @@ public class FileTransferStateMachineTypeNode extends FiniteStateMachineTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ReadPrepareToError",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (TransitionTypeNode) node);
   }
@@ -271,8 +298,11 @@ public class FileTransferStateMachineTypeNode extends FiniteStateMachineTypeNode
   public TransitionTypeNode getReadTransferToErrorNode() throws UaException {
     try {
       return getReadTransferToErrorNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -282,7 +312,7 @@ public class FileTransferStateMachineTypeNode extends FiniteStateMachineTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ReadTransferToError",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (TransitionTypeNode) node);
   }
@@ -291,8 +321,11 @@ public class FileTransferStateMachineTypeNode extends FiniteStateMachineTypeNode
   public TransitionTypeNode getApplyWriteToErrorNode() throws UaException {
     try {
       return getApplyWriteToErrorNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -302,7 +335,7 @@ public class FileTransferStateMachineTypeNode extends FiniteStateMachineTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ApplyWriteToError",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (TransitionTypeNode) node);
   }
@@ -311,8 +344,11 @@ public class FileTransferStateMachineTypeNode extends FiniteStateMachineTypeNode
   public TransitionTypeNode getErrorToIdleNode() throws UaException {
     try {
       return getErrorToIdleNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -320,10 +356,7 @@ public class FileTransferStateMachineTypeNode extends FiniteStateMachineTypeNode
   public CompletableFuture<? extends TransitionTypeNode> getErrorToIdleNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ErrorToIdle",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "ErrorToIdle", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (TransitionTypeNode) node);
   }
 }

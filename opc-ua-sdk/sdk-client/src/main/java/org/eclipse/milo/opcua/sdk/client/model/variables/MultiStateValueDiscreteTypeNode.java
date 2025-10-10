@@ -97,8 +97,11 @@ public class MultiStateValueDiscreteTypeNode extends DiscreteItemTypeNode
   public EnumValueType[] readEnumValues() throws UaException {
     try {
       return readEnumValuesAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -106,8 +109,11 @@ public class MultiStateValueDiscreteTypeNode extends DiscreteItemTypeNode
   public void writeEnumValues(EnumValueType[] value) throws UaException {
     try {
       writeEnumValuesAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -131,8 +137,11 @@ public class MultiStateValueDiscreteTypeNode extends DiscreteItemTypeNode
   public PropertyTypeNode getEnumValuesNode() throws UaException {
     try {
       return getEnumValuesNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -140,7 +149,7 @@ public class MultiStateValueDiscreteTypeNode extends DiscreteItemTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getEnumValuesNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "EnumValues", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "EnumValues", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -160,8 +169,11 @@ public class MultiStateValueDiscreteTypeNode extends DiscreteItemTypeNode
   public LocalizedText readValueAsText() throws UaException {
     try {
       return readValueAsTextAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -169,8 +181,11 @@ public class MultiStateValueDiscreteTypeNode extends DiscreteItemTypeNode
   public void writeValueAsText(LocalizedText value) throws UaException {
     try {
       writeValueAsTextAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -192,8 +207,11 @@ public class MultiStateValueDiscreteTypeNode extends DiscreteItemTypeNode
   public PropertyTypeNode getValueAsTextNode() throws UaException {
     try {
       return getValueAsTextNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -201,10 +219,7 @@ public class MultiStateValueDiscreteTypeNode extends DiscreteItemTypeNode
   public CompletableFuture<? extends PropertyTypeNode> getValueAsTextNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ValueAsText",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "ValueAsText", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 }

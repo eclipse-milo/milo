@@ -96,8 +96,11 @@ public class SubscriptionDiagnosticsArrayTypeNode extends BaseDataVariableTypeNo
   public SubscriptionDiagnosticsDataType readSubscriptionDiagnostics() throws UaException {
     try {
       return readSubscriptionDiagnosticsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -106,8 +109,11 @@ public class SubscriptionDiagnosticsArrayTypeNode extends BaseDataVariableTypeNo
       throws UaException {
     try {
       writeSubscriptionDiagnosticsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -133,8 +139,11 @@ public class SubscriptionDiagnosticsArrayTypeNode extends BaseDataVariableTypeNo
   public SubscriptionDiagnosticsTypeNode getSubscriptionDiagnosticsNode() throws UaException {
     try {
       return getSubscriptionDiagnosticsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -145,7 +154,7 @@ public class SubscriptionDiagnosticsArrayTypeNode extends BaseDataVariableTypeNo
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "SubscriptionDiagnostics",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (SubscriptionDiagnosticsTypeNode) node);
   }

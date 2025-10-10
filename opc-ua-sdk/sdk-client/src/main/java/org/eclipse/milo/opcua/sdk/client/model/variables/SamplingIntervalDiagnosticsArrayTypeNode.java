@@ -97,8 +97,11 @@ public class SamplingIntervalDiagnosticsArrayTypeNode extends BaseDataVariableTy
   public SamplingIntervalDiagnosticsDataType readSamplingIntervalDiagnostics() throws UaException {
     try {
       return readSamplingIntervalDiagnosticsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -107,8 +110,11 @@ public class SamplingIntervalDiagnosticsArrayTypeNode extends BaseDataVariableTy
       throws UaException {
     try {
       writeSamplingIntervalDiagnosticsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -135,8 +141,11 @@ public class SamplingIntervalDiagnosticsArrayTypeNode extends BaseDataVariableTy
       throws UaException {
     try {
       return getSamplingIntervalDiagnosticsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -147,7 +156,7 @@ public class SamplingIntervalDiagnosticsArrayTypeNode extends BaseDataVariableTy
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "SamplingIntervalDiagnostics",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (SamplingIntervalDiagnosticsTypeNode) node);
   }

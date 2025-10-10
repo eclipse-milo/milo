@@ -88,8 +88,11 @@ public class AuditHistoryAnnotationUpdateEventTypeNode extends AuditHistoryUpdat
   public PerformUpdateType readPerformInsertReplace() throws UaException {
     try {
       return readPerformInsertReplaceAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -97,8 +100,11 @@ public class AuditHistoryAnnotationUpdateEventTypeNode extends AuditHistoryUpdat
   public void writePerformInsertReplace(PerformUpdateType value) throws UaException {
     try {
       writePerformInsertReplaceAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -129,8 +135,11 @@ public class AuditHistoryAnnotationUpdateEventTypeNode extends AuditHistoryUpdat
   public PropertyTypeNode getPerformInsertReplaceNode() throws UaException {
     try {
       return getPerformInsertReplaceNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -140,7 +149,7 @@ public class AuditHistoryAnnotationUpdateEventTypeNode extends AuditHistoryUpdat
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "PerformInsertReplace",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -163,8 +172,11 @@ public class AuditHistoryAnnotationUpdateEventTypeNode extends AuditHistoryUpdat
   public Annotation[] readNewValues() throws UaException {
     try {
       return readNewValuesAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -172,8 +184,11 @@ public class AuditHistoryAnnotationUpdateEventTypeNode extends AuditHistoryUpdat
   public void writeNewValues(Annotation[] value) throws UaException {
     try {
       writeNewValuesAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -197,8 +212,11 @@ public class AuditHistoryAnnotationUpdateEventTypeNode extends AuditHistoryUpdat
   public PropertyTypeNode getNewValuesNode() throws UaException {
     try {
       return getNewValuesNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -206,7 +224,7 @@ public class AuditHistoryAnnotationUpdateEventTypeNode extends AuditHistoryUpdat
   public CompletableFuture<? extends PropertyTypeNode> getNewValuesNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "NewValues", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "NewValues", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -228,8 +246,11 @@ public class AuditHistoryAnnotationUpdateEventTypeNode extends AuditHistoryUpdat
   public Annotation[] readOldValues() throws UaException {
     try {
       return readOldValuesAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -237,8 +258,11 @@ public class AuditHistoryAnnotationUpdateEventTypeNode extends AuditHistoryUpdat
   public void writeOldValues(Annotation[] value) throws UaException {
     try {
       writeOldValuesAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -262,8 +286,11 @@ public class AuditHistoryAnnotationUpdateEventTypeNode extends AuditHistoryUpdat
   public PropertyTypeNode getOldValuesNode() throws UaException {
     try {
       return getOldValuesNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -271,7 +298,7 @@ public class AuditHistoryAnnotationUpdateEventTypeNode extends AuditHistoryUpdat
   public CompletableFuture<? extends PropertyTypeNode> getOldValuesNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "OldValues", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "OldValues", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 }

@@ -76,8 +76,11 @@ public class CertificateGroupTypeNode extends BaseObjectTypeNode implements Cert
   public NodeId[] readCertificateTypes() throws UaException {
     try {
       return readCertificateTypesAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -85,8 +88,11 @@ public class CertificateGroupTypeNode extends BaseObjectTypeNode implements Cert
   public void writeCertificateTypes(NodeId[] value) throws UaException {
     try {
       writeCertificateTypesAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -108,8 +114,11 @@ public class CertificateGroupTypeNode extends BaseObjectTypeNode implements Cert
   public PropertyTypeNode getCertificateTypesNode() throws UaException {
     try {
       return getCertificateTypesNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -119,7 +128,7 @@ public class CertificateGroupTypeNode extends BaseObjectTypeNode implements Cert
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "CertificateTypes",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -128,8 +137,11 @@ public class CertificateGroupTypeNode extends BaseObjectTypeNode implements Cert
   public TrustListTypeNode getTrustListNode() throws UaException {
     try {
       return getTrustListNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -137,7 +149,7 @@ public class CertificateGroupTypeNode extends BaseObjectTypeNode implements Cert
   public CompletableFuture<? extends TrustListTypeNode> getTrustListNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "TrustList", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "TrustList", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (TrustListTypeNode) node);
   }
 
@@ -145,8 +157,11 @@ public class CertificateGroupTypeNode extends BaseObjectTypeNode implements Cert
   public CertificateExpirationAlarmTypeNode getCertificateExpiredNode() throws UaException {
     try {
       return getCertificateExpiredNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -157,7 +172,7 @@ public class CertificateGroupTypeNode extends BaseObjectTypeNode implements Cert
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "CertificateExpired",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (CertificateExpirationAlarmTypeNode) node);
   }
@@ -166,8 +181,11 @@ public class CertificateGroupTypeNode extends BaseObjectTypeNode implements Cert
   public TrustListOutOfDateAlarmTypeNode getTrustListOutOfDateNode() throws UaException {
     try {
       return getTrustListOutOfDateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -178,7 +196,7 @@ public class CertificateGroupTypeNode extends BaseObjectTypeNode implements Cert
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "TrustListOutOfDate",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (TrustListOutOfDateAlarmTypeNode) node);
   }

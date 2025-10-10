@@ -85,8 +85,11 @@ public class ServerUnitTypeNode extends UnitTypeNode implements ServerUnitType {
   public ConversionLimitEnum readConversionLimit() throws UaException {
     try {
       return readConversionLimitAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -94,8 +97,11 @@ public class ServerUnitTypeNode extends UnitTypeNode implements ServerUnitType {
   public void writeConversionLimit(ConversionLimitEnum value) throws UaException {
     try {
       writeConversionLimitAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -126,8 +132,11 @@ public class ServerUnitTypeNode extends UnitTypeNode implements ServerUnitType {
   public PropertyTypeNode getConversionLimitNode() throws UaException {
     try {
       return getConversionLimitNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -135,10 +144,7 @@ public class ServerUnitTypeNode extends UnitTypeNode implements ServerUnitType {
   public CompletableFuture<? extends PropertyTypeNode> getConversionLimitNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "ConversionLimit",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "ConversionLimit", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -146,8 +152,11 @@ public class ServerUnitTypeNode extends UnitTypeNode implements ServerUnitType {
   public BaseObjectTypeNode getAlternativeUnitsNode() throws UaException {
     try {
       return getAlternativeUnitsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -157,7 +166,7 @@ public class ServerUnitTypeNode extends UnitTypeNode implements ServerUnitType {
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "AlternativeUnits",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (BaseObjectTypeNode) node);
   }
@@ -166,8 +175,11 @@ public class ServerUnitTypeNode extends UnitTypeNode implements ServerUnitType {
   public UnitTypeNode getCoherentUnitNode() throws UaException {
     try {
       return getCoherentUnitNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -175,10 +187,7 @@ public class ServerUnitTypeNode extends UnitTypeNode implements ServerUnitType {
   public CompletableFuture<? extends UnitTypeNode> getCoherentUnitNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "CoherentUnit",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "CoherentUnit", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (UnitTypeNode) node);
   }
 }

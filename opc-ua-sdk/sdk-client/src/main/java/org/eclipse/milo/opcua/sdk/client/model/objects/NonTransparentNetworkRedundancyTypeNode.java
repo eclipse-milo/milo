@@ -81,8 +81,11 @@ public class NonTransparentNetworkRedundancyTypeNode extends NonTransparentRedun
   public NetworkGroupDataType[] readServerNetworkGroups() throws UaException {
     try {
       return readServerNetworkGroupsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -90,8 +93,11 @@ public class NonTransparentNetworkRedundancyTypeNode extends NonTransparentRedun
   public void writeServerNetworkGroups(NetworkGroupDataType[] value) throws UaException {
     try {
       writeServerNetworkGroupsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -116,8 +122,11 @@ public class NonTransparentNetworkRedundancyTypeNode extends NonTransparentRedun
   public PropertyTypeNode getServerNetworkGroupsNode() throws UaException {
     try {
       return getServerNetworkGroupsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -127,7 +136,7 @@ public class NonTransparentNetworkRedundancyTypeNode extends NonTransparentRedun
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ServerNetworkGroups",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }

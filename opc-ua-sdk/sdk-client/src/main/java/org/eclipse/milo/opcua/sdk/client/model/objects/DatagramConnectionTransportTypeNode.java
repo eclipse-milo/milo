@@ -79,8 +79,11 @@ public class DatagramConnectionTransportTypeNode extends ConnectionTransportType
   public UInteger readDiscoveryAnnounceRate() throws UaException {
     try {
       return readDiscoveryAnnounceRateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -88,8 +91,11 @@ public class DatagramConnectionTransportTypeNode extends ConnectionTransportType
   public void writeDiscoveryAnnounceRate(UInteger value) throws UaException {
     try {
       writeDiscoveryAnnounceRateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -112,8 +118,11 @@ public class DatagramConnectionTransportTypeNode extends ConnectionTransportType
   public PropertyTypeNode getDiscoveryAnnounceRateNode() throws UaException {
     try {
       return getDiscoveryAnnounceRateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -123,7 +132,7 @@ public class DatagramConnectionTransportTypeNode extends ConnectionTransportType
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "DiscoveryAnnounceRate",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -144,8 +153,11 @@ public class DatagramConnectionTransportTypeNode extends ConnectionTransportType
   public UInteger readDiscoveryMaxMessageSize() throws UaException {
     try {
       return readDiscoveryMaxMessageSizeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -153,8 +165,11 @@ public class DatagramConnectionTransportTypeNode extends ConnectionTransportType
   public void writeDiscoveryMaxMessageSize(UInteger value) throws UaException {
     try {
       writeDiscoveryMaxMessageSizeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -177,8 +192,11 @@ public class DatagramConnectionTransportTypeNode extends ConnectionTransportType
   public PropertyTypeNode getDiscoveryMaxMessageSizeNode() throws UaException {
     try {
       return getDiscoveryMaxMessageSizeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -188,7 +206,7 @@ public class DatagramConnectionTransportTypeNode extends ConnectionTransportType
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "DiscoveryMaxMessageSize",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -209,8 +227,11 @@ public class DatagramConnectionTransportTypeNode extends ConnectionTransportType
   public String readQosCategory() throws UaException {
     try {
       return readQosCategoryAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -218,8 +239,11 @@ public class DatagramConnectionTransportTypeNode extends ConnectionTransportType
   public void writeQosCategory(String value) throws UaException {
     try {
       writeQosCategoryAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -241,8 +265,11 @@ public class DatagramConnectionTransportTypeNode extends ConnectionTransportType
   public PropertyTypeNode getQosCategoryNode() throws UaException {
     try {
       return getQosCategoryNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -250,10 +277,7 @@ public class DatagramConnectionTransportTypeNode extends ConnectionTransportType
   public CompletableFuture<? extends PropertyTypeNode> getQosCategoryNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "QosCategory",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "QosCategory", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -275,8 +299,11 @@ public class DatagramConnectionTransportTypeNode extends ConnectionTransportType
   public QosDataType[] readDatagramQos() throws UaException {
     try {
       return readDatagramQosAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -284,8 +311,11 @@ public class DatagramConnectionTransportTypeNode extends ConnectionTransportType
   public void writeDatagramQos(QosDataType[] value) throws UaException {
     try {
       writeDatagramQosAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -309,8 +339,11 @@ public class DatagramConnectionTransportTypeNode extends ConnectionTransportType
   public PropertyTypeNode getDatagramQosNode() throws UaException {
     try {
       return getDatagramQosNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -318,10 +351,7 @@ public class DatagramConnectionTransportTypeNode extends ConnectionTransportType
   public CompletableFuture<? extends PropertyTypeNode> getDatagramQosNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "DatagramQos",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "DatagramQos", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -329,8 +359,11 @@ public class DatagramConnectionTransportTypeNode extends ConnectionTransportType
   public NetworkAddressTypeNode getDiscoveryAddressNode() throws UaException {
     try {
       return getDiscoveryAddressNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -340,7 +373,7 @@ public class DatagramConnectionTransportTypeNode extends ConnectionTransportType
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "DiscoveryAddress",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (NetworkAddressTypeNode) node);
   }

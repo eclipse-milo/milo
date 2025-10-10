@@ -81,8 +81,11 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
   public IdentityMappingRuleType[] readIdentities() throws UaException {
     try {
       return readIdentitiesAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -90,8 +93,11 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
   public void writeIdentities(IdentityMappingRuleType[] value) throws UaException {
     try {
       writeIdentitiesAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -115,8 +121,11 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
   public PropertyTypeNode getIdentitiesNode() throws UaException {
     try {
       return getIdentitiesNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -124,7 +133,7 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
   public CompletableFuture<? extends PropertyTypeNode> getIdentitiesNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Identities", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "Identities", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -144,8 +153,11 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
   public Boolean readApplicationsExclude() throws UaException {
     try {
       return readApplicationsExcludeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -153,8 +165,11 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
   public void writeApplicationsExclude(Boolean value) throws UaException {
     try {
       writeApplicationsExcludeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -176,8 +191,11 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
   public PropertyTypeNode getApplicationsExcludeNode() throws UaException {
     try {
       return getApplicationsExcludeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -187,7 +205,7 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ApplicationsExclude",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -208,8 +226,11 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
   public String[] readApplications() throws UaException {
     try {
       return readApplicationsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -217,8 +238,11 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
   public void writeApplications(String[] value) throws UaException {
     try {
       writeApplicationsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -240,8 +264,11 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
   public PropertyTypeNode getApplicationsNode() throws UaException {
     try {
       return getApplicationsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -249,10 +276,7 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
   public CompletableFuture<? extends PropertyTypeNode> getApplicationsNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "Applications",
-            ExpandedNodeId.parse("ns=0;i=46"),
-            false);
+            "http://opcfoundation.org/UA/", "Applications", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -272,8 +296,11 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
   public Boolean readEndpointsExclude() throws UaException {
     try {
       return readEndpointsExcludeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -281,8 +308,11 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
   public void writeEndpointsExclude(Boolean value) throws UaException {
     try {
       writeEndpointsExcludeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -304,8 +334,11 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
   public PropertyTypeNode getEndpointsExcludeNode() throws UaException {
     try {
       return getEndpointsExcludeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -315,7 +348,7 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "EndpointsExclude",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -338,8 +371,11 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
   public EndpointType[] readEndpoints() throws UaException {
     try {
       return readEndpointsAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -347,8 +383,11 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
   public void writeEndpoints(EndpointType[] value) throws UaException {
     try {
       writeEndpointsAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -372,8 +411,11 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
   public PropertyTypeNode getEndpointsNode() throws UaException {
     try {
       return getEndpointsNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -381,7 +423,7 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
   public CompletableFuture<? extends PropertyTypeNode> getEndpointsNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Endpoints", ExpandedNodeId.parse("ns=0;i=46"), false);
+            "http://opcfoundation.org/UA/", "Endpoints", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 
@@ -401,8 +443,11 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
   public Boolean readCustomConfiguration() throws UaException {
     try {
       return readCustomConfigurationAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -410,8 +455,11 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
   public void writeCustomConfiguration(Boolean value) throws UaException {
     try {
       writeCustomConfigurationAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -433,8 +481,11 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
   public PropertyTypeNode getCustomConfigurationNode() throws UaException {
     try {
       return getCustomConfigurationNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -444,7 +495,7 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "CustomConfiguration",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }

@@ -60,8 +60,11 @@ public class PubSubDiagnosticsRootTypeNode extends PubSubDiagnosticsTypeNode
   public BaseObjectTypeNode getLiveValuesNode() throws UaException {
     try {
       return getLiveValuesNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -69,7 +72,7 @@ public class PubSubDiagnosticsRootTypeNode extends PubSubDiagnosticsTypeNode
   public CompletableFuture<? extends BaseObjectTypeNode> getLiveValuesNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "LiveValues", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "LiveValues", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseObjectTypeNode) node);
   }
 }

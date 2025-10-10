@@ -93,8 +93,11 @@ public class MultiStateDictionaryEntryDiscreteBaseTypeNode extends MultiStateVal
   public Object readEnumDictionaryEntries() throws UaException {
     try {
       return readEnumDictionaryEntriesAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -102,8 +105,11 @@ public class MultiStateDictionaryEntryDiscreteBaseTypeNode extends MultiStateVal
   public void writeEnumDictionaryEntries(Object value) throws UaException {
     try {
       writeEnumDictionaryEntriesAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -126,8 +132,11 @@ public class MultiStateDictionaryEntryDiscreteBaseTypeNode extends MultiStateVal
   public PropertyTypeNode getEnumDictionaryEntriesNode() throws UaException {
     try {
       return getEnumDictionaryEntriesNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -137,7 +146,7 @@ public class MultiStateDictionaryEntryDiscreteBaseTypeNode extends MultiStateVal
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "EnumDictionaryEntries",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
@@ -158,8 +167,11 @@ public class MultiStateDictionaryEntryDiscreteBaseTypeNode extends MultiStateVal
   public NodeId[] readValueAsDictionaryEntries() throws UaException {
     try {
       return readValueAsDictionaryEntriesAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -167,8 +179,11 @@ public class MultiStateDictionaryEntryDiscreteBaseTypeNode extends MultiStateVal
   public void writeValueAsDictionaryEntries(NodeId[] value) throws UaException {
     try {
       writeValueAsDictionaryEntriesAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -191,8 +206,11 @@ public class MultiStateDictionaryEntryDiscreteBaseTypeNode extends MultiStateVal
   public PropertyTypeNode getValueAsDictionaryEntriesNode() throws UaException {
     try {
       return getValueAsDictionaryEntriesNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -202,7 +220,7 @@ public class MultiStateDictionaryEntryDiscreteBaseTypeNode extends MultiStateVal
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ValueAsDictionaryEntries",
-            ExpandedNodeId.parse("ns=0;i=46"),
+            ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }

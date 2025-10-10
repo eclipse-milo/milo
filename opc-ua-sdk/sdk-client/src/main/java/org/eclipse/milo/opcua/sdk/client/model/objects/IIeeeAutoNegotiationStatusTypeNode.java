@@ -86,8 +86,11 @@ public class IIeeeAutoNegotiationStatusTypeNode extends BaseInterfaceTypeNode
   public NegotiationStatus readNegotiationStatus() throws UaException {
     try {
       return readNegotiationStatusAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -95,8 +98,11 @@ public class IIeeeAutoNegotiationStatusTypeNode extends BaseInterfaceTypeNode
   public void writeNegotiationStatus(NegotiationStatus value) throws UaException {
     try {
       writeNegotiationStatusAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -127,8 +133,11 @@ public class IIeeeAutoNegotiationStatusTypeNode extends BaseInterfaceTypeNode
   public BaseDataVariableTypeNode getNegotiationStatusNode() throws UaException {
     try {
       return getNegotiationStatusNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -138,7 +147,7 @@ public class IIeeeAutoNegotiationStatusTypeNode extends BaseInterfaceTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "NegotiationStatus",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }

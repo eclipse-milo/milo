@@ -95,8 +95,11 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   public NodeId readSessionId() throws UaException {
     try {
       return readSessionIdAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -104,8 +107,11 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   public void writeSessionId(NodeId value) throws UaException {
     try {
       writeSessionIdAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -127,8 +133,11 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   public BaseDataVariableTypeNode getSessionIdNode() throws UaException {
     try {
       return getSessionIdNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -136,7 +145,7 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   public CompletableFuture<? extends BaseDataVariableTypeNode> getSessionIdNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "SessionId", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "SessionId", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 
@@ -156,8 +165,11 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   public String readClientUserIdOfSession() throws UaException {
     try {
       return readClientUserIdOfSessionAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -165,8 +177,11 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   public void writeClientUserIdOfSession(String value) throws UaException {
     try {
       writeClientUserIdOfSessionAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -189,8 +204,11 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   public BaseDataVariableTypeNode getClientUserIdOfSessionNode() throws UaException {
     try {
       return getClientUserIdOfSessionNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -200,7 +218,7 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ClientUserIdOfSession",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
@@ -221,8 +239,11 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   public String[] readClientUserIdHistory() throws UaException {
     try {
       return readClientUserIdHistoryAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -230,8 +251,11 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   public void writeClientUserIdHistory(String[] value) throws UaException {
     try {
       writeClientUserIdHistoryAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -253,8 +277,11 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   public BaseDataVariableTypeNode getClientUserIdHistoryNode() throws UaException {
     try {
       return getClientUserIdHistoryNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -264,7 +291,7 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ClientUserIdHistory",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
@@ -285,8 +312,11 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   public String readAuthenticationMechanism() throws UaException {
     try {
       return readAuthenticationMechanismAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -294,8 +324,11 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   public void writeAuthenticationMechanism(String value) throws UaException {
     try {
       writeAuthenticationMechanismAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -318,8 +351,11 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   public BaseDataVariableTypeNode getAuthenticationMechanismNode() throws UaException {
     try {
       return getAuthenticationMechanismNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -330,7 +366,7 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "AuthenticationMechanism",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
@@ -351,8 +387,11 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   public String readEncoding() throws UaException {
     try {
       return readEncodingAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -360,8 +399,11 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   public void writeEncoding(String value) throws UaException {
     try {
       writeEncodingAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -383,8 +425,11 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   public BaseDataVariableTypeNode getEncodingNode() throws UaException {
     try {
       return getEncodingNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -392,7 +437,7 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   public CompletableFuture<? extends BaseDataVariableTypeNode> getEncodingNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/", "Encoding", ExpandedNodeId.parse("ns=0;i=47"), false);
+            "http://opcfoundation.org/UA/", "Encoding", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 
@@ -412,8 +457,11 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   public String readTransportProtocol() throws UaException {
     try {
       return readTransportProtocolAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -421,8 +469,11 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   public void writeTransportProtocol(String value) throws UaException {
     try {
       writeTransportProtocolAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -444,8 +495,11 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   public BaseDataVariableTypeNode getTransportProtocolNode() throws UaException {
     try {
       return getTransportProtocolNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -455,7 +509,7 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "TransportProtocol",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
@@ -484,8 +538,11 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   public MessageSecurityMode readSecurityMode() throws UaException {
     try {
       return readSecurityModeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -493,8 +550,11 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   public void writeSecurityMode(MessageSecurityMode value) throws UaException {
     try {
       writeSecurityModeAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -524,8 +584,11 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   public BaseDataVariableTypeNode getSecurityModeNode() throws UaException {
     try {
       return getSecurityModeNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -533,10 +596,7 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   public CompletableFuture<? extends BaseDataVariableTypeNode> getSecurityModeNodeAsync() {
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
-            "http://opcfoundation.org/UA/",
-            "SecurityMode",
-            ExpandedNodeId.parse("ns=0;i=47"),
-            false);
+            "http://opcfoundation.org/UA/", "SecurityMode", ExpandedNodeId.parse("i=47"), false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
 
@@ -556,8 +616,11 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   public String readSecurityPolicyUri() throws UaException {
     try {
       return readSecurityPolicyUriAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -565,8 +628,11 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   public void writeSecurityPolicyUri(String value) throws UaException {
     try {
       writeSecurityPolicyUriAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -588,8 +654,11 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   public BaseDataVariableTypeNode getSecurityPolicyUriNode() throws UaException {
     try {
       return getSecurityPolicyUriNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -599,7 +668,7 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "SecurityPolicyUri",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
@@ -620,8 +689,11 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   public ByteString readClientCertificate() throws UaException {
     try {
       return readClientCertificateAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -629,8 +701,11 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   public void writeClientCertificate(ByteString value) throws UaException {
     try {
       writeClientCertificateAsync(value).get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError, e));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -652,8 +727,11 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   public BaseDataVariableTypeNode getClientCertificateNode() throws UaException {
     try {
       return getClientCertificateNodeAsync().get();
-    } catch (ExecutionException | InterruptedException e) {
-      throw UaException.extract(e).orElse(new UaException(StatusCodes.Bad_UnexpectedError));
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
   }
 
@@ -663,7 +741,7 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "ClientCertificate",
-            ExpandedNodeId.parse("ns=0;i=47"),
+            ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (BaseDataVariableTypeNode) node);
   }
