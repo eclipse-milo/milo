@@ -175,7 +175,7 @@ public class PublishingManager {
 
     client
         .sendRequestAsync(request)
-        .whenComplete(
+        .whenCompleteAsync(
             (response, ex) -> {
               if (response instanceof PublishResponse publishResponse) {
                 logger.debug(
@@ -215,7 +215,8 @@ public class PublishingManager {
                     statusCode,
                     ex);
               }
-            });
+            },
+            client.getTransport().getConfig().getExecutor());
   }
 
   private void processPublishResponse(PublishResponse response, AtomicLong pendingCount) {
