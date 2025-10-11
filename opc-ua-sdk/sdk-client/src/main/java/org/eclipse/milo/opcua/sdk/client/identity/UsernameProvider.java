@@ -19,6 +19,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -110,7 +111,8 @@ public class UsernameProvider implements IdentityProvider {
    * the first available {@link UserTokenPolicy} with {@link UserTokenType#UserName}.
    *
    * @param username the username to authenticate with.
-   * @param passwordSupplier a supplier providing the password bytes.
+   * @param passwordSupplier a supplier providing the password bytes. The supplied byte[] will be
+   *     zeroed out after being retrieved and used.
    */
   public UsernameProvider(String username, Supplier<byte[]> passwordSupplier) {
     this(
@@ -126,7 +128,8 @@ public class UsernameProvider implements IdentityProvider {
    * UserTokenType#UserName}.
    *
    * @param username the username to authenticate with.
-   * @param passwordSupplier a supplier providing the password bytes.
+   * @param passwordSupplier a supplier providing the password bytes. The supplied byte[] will be
+   *     zeroed out after being retrieved and used.
    * @param certificateValidator the {@link CertificateValidator} used to validate the remote
    *     certificate.
    */
@@ -146,7 +149,8 @@ public class UsernameProvider implements IdentityProvider {
    * UserTokenType#UserName}.
    *
    * @param username the username to authenticate with.
-   * @param passwordSupplier a supplier providing the password bytes.
+   * @param passwordSupplier a supplier providing the password bytes. The supplied byte[] will be
+   *     zeroed out after being retrieved and used.
    * @param certificateValidator the {@link CertificateValidator} used to validate the remote
    *     certificate.
    * @param policyChooser a function that selects a {@link UserTokenPolicy} to use. The policy list
@@ -201,12 +205,16 @@ public class UsernameProvider implements IdentityProvider {
 
     if (securityPolicy == SecurityPolicy.None) {
       buffer.writeBytes(passwordBytes);
+
+      Arrays.fill(passwordBytes, (byte) 0);
     } else {
       NonceUtil.validateNonce(serverNonce);
 
       buffer.writeIntLE(passwordBytes.length + nonceBytes.length);
       buffer.writeBytes(passwordBytes);
       buffer.writeBytes(nonceBytes);
+
+      Arrays.fill(passwordBytes, (byte) 0);
 
       ByteString bs = endpoint.getServerCertificate();
 
