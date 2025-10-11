@@ -14,8 +14,12 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import java.util.Set;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HostnameUtilTest {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(HostnameUtilTest.class);
 
   @Test
   public void testGetHostnames_ExcludeLocal() throws Exception {
@@ -25,7 +29,7 @@ public class HostnameUtilTest {
         hostname -> {
           assertNotEquals("127.0.0.1", hostname);
           assertNotEquals("localhost", hostname);
-          System.out.println(hostname);
+          LOGGER.debug("{}", hostname);
         });
   }
 }

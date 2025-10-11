@@ -37,7 +37,7 @@ class KeyStoreLoader {
   private static final String SERVER_ALIAS = "server-ai";
   private static final char[] PASSWORD = "password".toCharArray();
 
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+  private static final Logger LOGGER = LoggerFactory.getLogger(KeyStoreLoader.class);
 
   private X509Certificate[] serverCertificateChain;
   private X509Certificate serverCertificate;
@@ -48,7 +48,7 @@ class KeyStoreLoader {
 
     File serverKeyStore = baseDir.toPath().resolve("example-server.pfx").toFile();
 
-    logger.info("Loading KeyStore at {}", serverKeyStore);
+    LOGGER.debug("Loading KeyStore at {}", serverKeyStore);
 
     if (!serverKeyStore.exists()) {
       keyStore.load(null, PASSWORD);

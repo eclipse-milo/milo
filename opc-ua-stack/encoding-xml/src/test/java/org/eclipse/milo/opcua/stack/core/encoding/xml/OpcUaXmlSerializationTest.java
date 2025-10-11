@@ -37,10 +37,14 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.diff.Diff;
 
 public class OpcUaXmlSerializationTest {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpcUaXmlSerializationTest.class);
 
   @MethodSource("booleanArguments")
   @ParameterizedTest
@@ -51,8 +55,8 @@ public class OpcUaXmlSerializationTest {
       encoded = encoder.getOutputString();
     }
 
-    System.out.println("value: " + value);
-    System.out.println("encoded: " + encoded);
+    LOGGER.debug("value: {}", value);
+    LOGGER.debug("encoded: {}", encoded);
 
     boolean decoded;
     try (var decoder = new OpcUaXmlDecoder(new DefaultEncodingContext())) {
@@ -77,8 +81,8 @@ public class OpcUaXmlSerializationTest {
       encoded = encoder.getOutputString();
     }
 
-    System.out.println("value: " + value);
-    System.out.println("encoded: " + encoded);
+    LOGGER.debug("value: {}", value);
+    LOGGER.debug("encoded: {}", encoded);
 
     byte decoded;
     try (var decoder = new OpcUaXmlDecoder(new DefaultEncodingContext())) {
@@ -104,8 +108,8 @@ public class OpcUaXmlSerializationTest {
       encoded = encoder.getOutputString();
     }
 
-    System.out.println("value: " + value);
-    System.out.println("encoded: " + encoded);
+    LOGGER.debug("value: {}", value);
+    LOGGER.debug("encoded: {}", encoded);
 
     UByte decoded;
     try (var decoder = new OpcUaXmlDecoder(new DefaultEncodingContext())) {
@@ -131,8 +135,8 @@ public class OpcUaXmlSerializationTest {
       encoded = encoder.getOutputString();
     }
 
-    System.out.println("value: " + value);
-    System.out.println("encoded: " + encoded);
+    LOGGER.debug("value: {}", value);
+    LOGGER.debug("encoded: {}", encoded);
 
     short decoded;
     try (var decoder = new OpcUaXmlDecoder(new DefaultEncodingContext())) {
@@ -158,8 +162,8 @@ public class OpcUaXmlSerializationTest {
       encoded = encoder.getOutputString();
     }
 
-    System.out.println("value: " + value);
-    System.out.println("encoded: " + encoded);
+    LOGGER.debug("value: {}", value);
+    LOGGER.debug("encoded: {}", encoded);
 
     UShort decoded;
     try (var decoder = new OpcUaXmlDecoder(new DefaultEncodingContext())) {
@@ -185,8 +189,8 @@ public class OpcUaXmlSerializationTest {
       encoded = encoder.getOutputString();
     }
 
-    System.out.println("value: " + value);
-    System.out.println("encoded: " + encoded);
+    LOGGER.debug("value: {}", value);
+    LOGGER.debug("encoded: {}", encoded);
 
     int decoded;
     try (var decoder = new OpcUaXmlDecoder(new DefaultEncodingContext())) {
@@ -212,8 +216,8 @@ public class OpcUaXmlSerializationTest {
       encoded = encoder.getOutputString();
     }
 
-    System.out.println("value: " + value);
-    System.out.println("encoded: " + encoded);
+    LOGGER.debug("value: {}", value);
+    LOGGER.debug("encoded: {}", encoded);
 
     UInteger decoded;
     try (var decoder = new OpcUaXmlDecoder(new DefaultEncodingContext())) {
@@ -241,8 +245,8 @@ public class OpcUaXmlSerializationTest {
       encoded = encoder.getOutputString();
     }
 
-    System.out.println("value: " + value);
-    System.out.println("encoded: " + encoded);
+    LOGGER.debug("value: {}", value);
+    LOGGER.debug("encoded: {}", encoded);
 
     long decoded;
     try (var decoder = new OpcUaXmlDecoder(new DefaultEncodingContext())) {
@@ -267,8 +271,8 @@ public class OpcUaXmlSerializationTest {
       encoded = encoder.getOutputString();
     }
 
-    System.out.println("value: " + value);
-    System.out.println("encoded: " + encoded);
+    LOGGER.debug("value: {}", value);
+    LOGGER.debug("encoded: {}", encoded);
 
     ULong decoded;
     try (var decoder = new OpcUaXmlDecoder(new DefaultEncodingContext())) {
@@ -296,8 +300,8 @@ public class OpcUaXmlSerializationTest {
       encoded = encoder.getOutputString();
     }
 
-    System.out.println("value: " + value);
-    System.out.println("encoded: " + encoded);
+    LOGGER.debug("value: {}", value);
+    LOGGER.debug("encoded: {}", encoded);
 
     float decoded;
     try (var decoder = new OpcUaXmlDecoder(new DefaultEncodingContext())) {
@@ -328,8 +332,8 @@ public class OpcUaXmlSerializationTest {
       encoded = encoder.getOutputString();
     }
 
-    System.out.println("value: " + value);
-    System.out.println("encoded: " + encoded);
+    LOGGER.debug("value: {}", value);
+    LOGGER.debug("encoded: {}", encoded);
 
     double decoded;
     try (var decoder = new OpcUaXmlDecoder(new DefaultEncodingContext())) {
@@ -362,8 +366,8 @@ public class OpcUaXmlSerializationTest {
       encoded = encoder.getOutputString();
     }
 
-    System.out.println("value: " + value);
-    System.out.println("encoded: " + encoded);
+    LOGGER.debug("value: {}", value);
+    LOGGER.debug("encoded: {}", encoded);
 
     String decoded;
     try (var decoder = new OpcUaXmlDecoder(new DefaultEncodingContext())) {
@@ -394,8 +398,8 @@ public class OpcUaXmlSerializationTest {
       encoded = encoder.getOutputString();
     }
 
-    System.out.println("value: " + value);
-    System.out.println("encoded: " + encoded);
+    LOGGER.debug("value: {}", value);
+    LOGGER.debug("encoded: {}", encoded);
 
     DateTime decoded;
     try (var decoder = new OpcUaXmlDecoder(new DefaultEncodingContext())) {
@@ -430,8 +434,8 @@ public class OpcUaXmlSerializationTest {
       encoded = encoder.getOutputString();
     }
 
-    System.out.println("value: " + value);
-    System.out.println("encoded: " + encoded);
+    LOGGER.debug("value: {}", value);
+    LOGGER.debug("encoded: {}", encoded);
 
     UUID decoded;
     try (var decoder = new OpcUaXmlDecoder(new DefaultEncodingContext())) {
@@ -456,8 +460,8 @@ public class OpcUaXmlSerializationTest {
       encoded = encoder.getOutputString();
     }
 
-    System.out.println("value: " + value);
-    System.out.println("encoded: " + encoded);
+    LOGGER.debug("value: {}", value);
+    LOGGER.debug("encoded: {}", encoded);
 
     ByteString decoded;
     try (var decoder = new OpcUaXmlDecoder(new DefaultEncodingContext())) {
@@ -490,8 +494,8 @@ public class OpcUaXmlSerializationTest {
       encoded = encoder.getOutputString();
     }
 
-    System.out.println("value: " + value);
-    System.out.println("encoded: " + encoded);
+    LOGGER.debug("value: {}", value);
+    LOGGER.debug("encoded: {}", encoded);
 
     XmlElement decoded;
     try (var decoder = new OpcUaXmlDecoder(new DefaultEncodingContext())) {
@@ -526,8 +530,8 @@ public class OpcUaXmlSerializationTest {
       encoded = encoder.getOutputString();
     }
 
-    System.out.println("value: " + value);
-    System.out.println("encoded: " + encoded);
+    LOGGER.debug("value: {}", value);
+    LOGGER.debug("encoded: {}", encoded);
 
     NodeId decoded;
     try (var decoder = new OpcUaXmlDecoder(new DefaultEncodingContext())) {
@@ -557,8 +561,8 @@ public class OpcUaXmlSerializationTest {
       encoded = encoder.getOutputString();
     }
 
-    System.out.println("value: " + value);
-    System.out.println("encoded: " + encoded);
+    LOGGER.debug("value: {}", value);
+    LOGGER.debug("encoded: {}", encoded);
 
     ExpandedNodeId decoded;
     try (var decoder = new OpcUaXmlDecoder(new DefaultEncodingContext())) {
@@ -589,8 +593,8 @@ public class OpcUaXmlSerializationTest {
       encoded = encoder.getOutputString();
     }
 
-    System.out.println("value: " + value);
-    System.out.println("encoded: " + encoded);
+    LOGGER.debug("value: {}", value);
+    LOGGER.debug("encoded: {}", encoded);
 
     StatusCode decoded;
     try (var decoder = new OpcUaXmlDecoder(new DefaultEncodingContext())) {
@@ -618,8 +622,8 @@ public class OpcUaXmlSerializationTest {
       encoded = encoder.getOutputString();
     }
 
-    System.out.println("value: " + value);
-    System.out.println("encoded: " + encoded);
+    LOGGER.debug("value: {}", value);
+    LOGGER.debug("encoded: {}", encoded);
 
     QualifiedName decoded;
     try (var decoder = new OpcUaXmlDecoder(new DefaultEncodingContext())) {
@@ -647,8 +651,8 @@ public class OpcUaXmlSerializationTest {
       encoded = encoder.getOutputString();
     }
 
-    System.out.println("value: " + value);
-    System.out.println("encoded: " + encoded);
+    LOGGER.debug("value: {}", value);
+    LOGGER.debug("encoded: {}", encoded);
 
     LocalizedText decoded;
     try (var decoder = new OpcUaXmlDecoder(new DefaultEncodingContext())) {
@@ -678,8 +682,8 @@ public class OpcUaXmlSerializationTest {
       encoded = encoder.getOutputString();
     }
 
-    System.out.println("value: " + value);
-    System.out.println("encoded: " + encoded);
+    LOGGER.debug("value: {}", value);
+    LOGGER.debug("encoded: {}", encoded);
 
     ExtensionObject decoded;
     try (var decoder = new OpcUaXmlDecoder(new DefaultEncodingContext())) {
@@ -706,8 +710,8 @@ public class OpcUaXmlSerializationTest {
       encoded = encoder.getOutputString();
     }
 
-    System.out.println("value: " + value);
-    System.out.println("encoded: " + encoded);
+    LOGGER.debug("value: {}", value);
+    LOGGER.debug("encoded: {}", encoded);
 
     DataValue decoded;
     try (var decoder = new OpcUaXmlDecoder(new DefaultEncodingContext())) {
@@ -738,8 +742,8 @@ public class OpcUaXmlSerializationTest {
       encoded = encoder.getOutputString();
     }
 
-    System.out.println("value: " + value);
-    System.out.println("encoded: " + encoded);
+    LOGGER.debug("value: {}", value);
+    LOGGER.debug("encoded: {}", encoded);
 
     Variant decoded;
     try (var decoder = new OpcUaXmlDecoder(new DefaultEncodingContext())) {
@@ -769,8 +773,8 @@ public class OpcUaXmlSerializationTest {
       encoded = encoder.getOutputString();
     }
 
-    System.out.println("value: " + value);
-    System.out.println("encoded: " + encoded);
+    LOGGER.debug("value: {}", value);
+    LOGGER.debug("encoded: {}", encoded);
 
     DiagnosticInfo decoded;
     try (var decoder = new OpcUaXmlDecoder(new DefaultEncodingContext())) {

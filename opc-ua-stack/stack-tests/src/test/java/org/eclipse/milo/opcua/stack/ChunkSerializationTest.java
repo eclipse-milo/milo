@@ -48,7 +48,7 @@ public class ChunkSerializationTest extends SecureChannelFixture {
     Security.addProvider(new BouncyCastleProvider());
   }
 
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+  private static final Logger LOGGER = LoggerFactory.getLogger(ChunkSerializationTest.class);
 
   private final ChannelParameters smallParameters =
       new ChannelParameters(32 * 8196, 8196, 8196, 64, 32 * 8196, 8196, 8196, 64);
@@ -237,7 +237,7 @@ public class ChunkSerializationTest extends SecureChannelFixture {
       SecurityPolicy securityPolicy, MessageSecurityMode messageSecurity, int messageSize)
       throws Exception {
 
-    logger.info(
+    LOGGER.debug(
         "Asymmetric chunk serialization, securityPolicy={}, messageSecurityMode={}, messageSize={}",
         securityPolicy,
         messageSecurity,
@@ -321,7 +321,7 @@ public class ChunkSerializationTest extends SecureChannelFixture {
   public void testSymmetricMessage(
       SecurityPolicy securityPolicy, MessageSecurityMode messageSecurity) throws Exception {
 
-    logger.info(
+    LOGGER.debug(
         "Symmetric chunk serialization, " + "securityPolicy={}, messageSecurityMode={}",
         securityPolicy,
         messageSecurity);

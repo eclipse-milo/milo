@@ -46,9 +46,13 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Disabled
 public class NodeFactoryTest {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(NodeFactoryTest.class);
 
   private OpcUaServer server;
   private UaNodeManager nodeManager;
@@ -151,11 +155,10 @@ public class NodeFactoryTest {
                   @Override
                   public void onMethodAdded(@Nullable UaObjectNode parent, UaMethodNode instance) {
                     String pbn = parent != null ? parent.getBrowseName().name() : null;
-                    System.out.println(
-                        "onMethodAdded parent="
-                            + pbn
-                            + " instance="
-                            + instance.getBrowseName().name());
+                    LOGGER.debug(
+                        "onMethodAdded parent={} instance={}",
+                        pbn,
+                        instance.getBrowseName().name());
                     methodAdded.set(true);
                   }
 
@@ -163,11 +166,10 @@ public class NodeFactoryTest {
                   public void onObjectAdded(
                       @Nullable UaNode parent, UaObjectNode instance, NodeId typeDefinitionId) {
                     String pbn = parent != null ? parent.getBrowseName().name() : null;
-                    System.out.println(
-                        "onObjectAdded parent="
-                            + pbn
-                            + " instance="
-                            + instance.getBrowseName().name());
+                    LOGGER.debug(
+                        "onObjectAdded parent={} instance={}",
+                        pbn,
+                        instance.getBrowseName().name());
                     objectAdded.set(true);
                   }
 
@@ -175,11 +177,10 @@ public class NodeFactoryTest {
                   public void onVariableAdded(
                       @Nullable UaNode parent, UaVariableNode instance, NodeId typeDefinitionId) {
                     String pbn = parent != null ? parent.getBrowseName().name() : null;
-                    System.out.println(
-                        "onVariableAdded parent="
-                            + pbn
-                            + " instance="
-                            + instance.getBrowseName().name());
+                    LOGGER.debug(
+                        "onVariableAdded parent={} instance={}",
+                        pbn,
+                        instance.getBrowseName().name());
                     variableAdded.set(true);
                   }
                 });

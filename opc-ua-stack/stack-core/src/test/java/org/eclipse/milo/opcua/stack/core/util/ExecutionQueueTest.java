@@ -19,8 +19,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ExecutionQueueTest {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(ExecutionQueueTest.class);
 
   private final ExecutorService executor = Executors.newCachedThreadPool();
 
@@ -38,7 +42,7 @@ public class ExecutionQueueTest {
           () -> {
             int nn = n.getAndIncrement();
             if (ii != nn) {
-              System.out.println("n=" + nn + " i=" + ii);
+              LOGGER.debug("n={} i={}", nn, ii);
               failed.set(true);
             }
           });

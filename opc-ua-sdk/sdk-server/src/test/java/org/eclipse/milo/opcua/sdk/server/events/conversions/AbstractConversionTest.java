@@ -18,8 +18,12 @@ import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 abstract class AbstractConversionTest<S> {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(AbstractConversionTest.class);
 
   @Test
   public void testNullConversion() {
@@ -41,7 +45,7 @@ abstract class AbstractConversionTest<S> {
           fail("expected conversions for " + targetType);
         }
 
-        System.out.printf("%s -> %s [%s]%n", sourceType, targetType, conversionType);
+        LOGGER.debug("{} -> {} [{}]", sourceType, targetType, conversionType);
 
         for (Conversion conversion : conversions) {
           assertEquals(conversion.targetType, targetType);
@@ -52,7 +56,7 @@ abstract class AbstractConversionTest<S> {
           Object convertedValue =
               convert(fromValue, targetType, conversionType == ConversionType.IMPLICIT);
 
-          System.out.printf("\tfromValue=%s targetValue=%s%n", fromValue, targetValue);
+          LOGGER.debug("\tfromValue={} targetValue={}", fromValue, targetValue);
 
           assertEquals(targetValue, convertedValue);
         }
@@ -99,9 +103,12 @@ abstract class AbstractConversionTest<S> {
 
           Object convertedValue = convert(fromValue, targetType, false);
 
-          System.out.printf(
-              "[%s] fromValue=%s targetType=%s targetValue=%s%n",
-              conversionType, fromValue, targetType, conversion.targetValue);
+          LOGGER.debug(
+              "[{}] fromValue={} targetType={} targetValue={}",
+              conversionType,
+              fromValue,
+              targetType,
+              conversion.targetValue);
 
           assertEquals(conversion.targetValue, convertedValue);
         }

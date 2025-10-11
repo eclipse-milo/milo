@@ -20,10 +20,14 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ThreeDVector;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.diff.Diff;
 
 class OpcUaXmlEncoderTest {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpcUaXmlEncoderTest.class);
 
   private static final boolean DEBUG = true;
 
@@ -122,8 +126,8 @@ class OpcUaXmlEncoderTest {
    */
   static void maybePrintXml(Diff diff, String expected, String actual) {
     if (diff.hasDifferences() || DEBUG) {
-      System.out.printf("Expected:%n%s%n", expected);
-      System.out.printf("Actual:%n%s%n", actual);
+      LOGGER.debug("Expected:\n{}", expected);
+      LOGGER.debug("Actual:\n{}", actual);
     }
   }
 

@@ -20,8 +20,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AsyncGroupMapCollateTest {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(AsyncGroupMapCollateTest.class);
 
   @Test
   public void testGroupMapCollate() throws ExecutionException, InterruptedException {
@@ -37,8 +41,7 @@ public class AsyncGroupMapCollateTest {
               item -> item % mod,
               remainder ->
                   group -> {
-                    System.out.println(
-                        "mod=" + mod + " remainder=" + remainder + " group=" + group);
+                    LOGGER.debug("mod={} remainder={} group={}", mod, remainder, group);
 
                     CompletableFuture<List<String>> future = new CompletableFuture<>();
 
@@ -52,7 +55,7 @@ public class AsyncGroupMapCollateTest {
       for (int j = 0; j < strings.size(); j++) {
         assertEquals(String.valueOf(j), strings.get(j));
       }
-      System.out.println("--");
+      LOGGER.debug("--");
     }
   }
 }

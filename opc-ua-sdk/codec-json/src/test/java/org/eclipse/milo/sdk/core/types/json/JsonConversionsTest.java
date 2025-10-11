@@ -39,8 +39,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class JsonConversionsTest {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(JsonConversionsTest.class);
 
   @ParameterizedTest
   @ValueSource(ints = {Byte.MIN_VALUE, 0, Byte.MAX_VALUE})
@@ -342,7 +346,7 @@ class JsonConversionsTest {
   @MethodSource("convertDataValueProvider")
   void convertDataValue(DataValue dataValue, String expectedJson) {
     JsonElement asJson = JsonConversions.fromDataValue(dataValue);
-    System.out.println(asJson);
+    LOGGER.debug("{}", asJson);
 
     assertEquals(expectedJson, asJson.toString());
 
