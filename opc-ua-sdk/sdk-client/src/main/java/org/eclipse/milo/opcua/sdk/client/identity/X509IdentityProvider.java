@@ -18,6 +18,7 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -41,16 +42,52 @@ public class X509IdentityProvider implements IdentityProvider {
   private final List<X509Certificate> certificateChain =
       Collections.synchronizedList(new ArrayList<>());
 
-  private final PrivateKey privateKey;
+  private final Supplier<PrivateKey> privateKeySupplier;
 
+  /**
+   * Construct an {@link X509IdentityProvider} with a single certificate.
+   *
+   * @param certificate the {@link X509Certificate} to authenticate with.
+   * @param privateKey the {@link PrivateKey} corresponding to the certificate.
+   */
   public X509IdentityProvider(X509Certificate certificate, PrivateKey privateKey) {
-    this.privateKey = privateKey;
+    this(certificate, () -> privateKey);
+  }
+
+  /**
+   * Construct an {@link X509IdentityProvider} with a certificate chain.
+   *
+   * @param certificateChain the certificate chain to authenticate with.
+   * @param privateKey the {@link PrivateKey} corresponding to the certificate.
+   */
+  public X509IdentityProvider(List<X509Certificate> certificateChain, PrivateKey privateKey) {
+    this(certificateChain, () -> privateKey);
+  }
+
+  /**
+   * Construct an {@link X509IdentityProvider} with a single certificate.
+   *
+   * @param certificate the {@link X509Certificate} to authenticate with.
+   * @param privateKeySupplier a supplier providing the {@link PrivateKey} corresponding to the
+   *     certificate.
+   */
+  public X509IdentityProvider(
+      X509Certificate certificate, Supplier<PrivateKey> privateKeySupplier) {
+    this.privateKeySupplier = privateKeySupplier;
 
     certificateChain.add(certificate);
   }
 
-  public X509IdentityProvider(List<X509Certificate> certificateChain, PrivateKey privateKey) {
-    this.privateKey = privateKey;
+  /**
+   * Construct an {@link X509IdentityProvider} with a certificate chain.
+   *
+   * @param certificateChain the certificate chain to authenticate with.
+   * @param privateKeySupplier a supplier providing the {@link PrivateKey} corresponding to the
+   *     certificate.
+   */
+  public X509IdentityProvider(
+      List<X509Certificate> certificateChain, Supplier<PrivateKey> privateKeySupplier) {
+    this.privateKeySupplier = privateKeySupplier;
 
     this.certificateChain.addAll(certificateChain);
   }
@@ -102,7 +139,7 @@ public class X509IdentityProvider implements IdentityProvider {
       byte[] signature =
           SignatureUtil.sign(
               securityPolicy.getAsymmetricSignatureAlgorithm(),
-              privateKey,
+              privateKeySupplier.get(),
               ByteBuffer.wrap(serverCertificateBytes),
               ByteBuffer.wrap(serverNonceBytes));
 
