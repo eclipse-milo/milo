@@ -23,6 +23,7 @@ import java.security.Security;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -32,8 +33,10 @@ import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig;
 import org.eclipse.milo.opcua.sdk.server.identity.AnonymousIdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.CompositeValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.UsernameIdentityValidator;
+import org.eclipse.milo.opcua.sdk.server.identity.X509IdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.util.HostnameUtil;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.security.DefaultApplicationGroup;
 import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
@@ -49,25 +52,47 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.structured.BuildInfo;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
+import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
-import org.eclipse.milo.opcua.stack.core.util.SelfSignedHttpsCertificateBuilder;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransport;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransportConfig;
 import org.slf4j.LoggerFactory;
 
 public final class TestServer {
 
-  private static final int TCP_BIND_PORT = 12686;
-  private static final int HTTPS_BIND_PORT = 8443;
-
   static {
     // Required for SecurityPolicy.Aes256_Sha256_RsaPss
     Security.addProvider(new BouncyCastleProvider());
   }
 
-  private TestServer() {}
+  private final OpcUaServer opcUaServer;
+  private final TestIdentityCertificate identityCert1;
+  private final TestIdentityCertificate identityCert2;
 
-  public static OpcUaServer create() throws Exception {
+  private TestServer(
+      OpcUaServer opcUaServer,
+      TestIdentityCertificate identityCert1,
+      TestIdentityCertificate identityCert2) {
+    this.opcUaServer = opcUaServer;
+    this.identityCert1 = identityCert1;
+    this.identityCert2 = identityCert2;
+  }
+
+  public OpcUaServer getServer() {
+    return opcUaServer;
+  }
+
+  public TestIdentityCertificate getIdentityCertificate1() {
+    return identityCert1;
+  }
+
+  public TestIdentityCertificate getIdentityCertificate2() {
+    return identityCert2;
+  }
+
+  public record TestIdentityCertificate(X509Certificate certificate, KeyPair keyPair) {}
+
+  public static TestServer create() throws Exception {
     int port = new Random().nextInt(65535 - 10000) + 10000;
 
     try {
@@ -83,7 +108,7 @@ public final class TestServer {
     }
   }
 
-  public static OpcUaServer create(int port) throws Exception {
+  public static TestServer create(int port) throws Exception {
     File securityTempDir = new File(System.getProperty("java.io.tmpdir"), "security");
     if (!securityTempDir.exists() && !securityTempDir.mkdirs()) {
       throw new Exception("unable to create security temp dir: " + securityTempDir);
@@ -122,15 +147,29 @@ public final class TestServer {
 
     var certificateManager = new DefaultCertificateManager(certificateQuarantine, defaultGroup);
 
-    KeyPair httpsKeyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+    // Generate test X509 identity certificates
+    KeyPair identityKeyPair1 = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+    SelfSignedCertificateBuilder identityCertBuilder1 =
+        new SelfSignedCertificateBuilder(identityKeyPair1);
+    identityCertBuilder1.setCommonName("TestIdentity1");
+    identityCertBuilder1.setApplicationUri("urn:eclipse:milo:test:identity1");
+    X509Certificate identityCertificate1 = identityCertBuilder1.build();
 
-    SelfSignedHttpsCertificateBuilder httpsCertificateBuilder =
-        new SelfSignedHttpsCertificateBuilder(httpsKeyPair);
-    httpsCertificateBuilder.setCommonName(HostnameUtil.getHostname());
-    HostnameUtil.getHostnames("localhost", false).forEach(httpsCertificateBuilder::addDnsName);
-    X509Certificate httpsCertificate = httpsCertificateBuilder.build();
+    KeyPair identityKeyPair2 = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+    SelfSignedCertificateBuilder identityCertBuilder2 =
+        new SelfSignedCertificateBuilder(identityKeyPair2);
+    identityCertBuilder2.setCommonName("TestIdentity2");
+    identityCertBuilder2.setApplicationUri("urn:eclipse:milo:test:identity2");
+    X509Certificate identityCertificate2 = identityCertBuilder2.build();
 
-    UsernameIdentityValidator identityValidator =
+    // Create trust list manager for user identity certificates
+    var userIdentityTrustListManager = new MemoryTrustListManager();
+    userIdentityTrustListManager.addTrustedCertificate(identityCertificate1);
+    userIdentityTrustListManager.addTrustedCertificate(identityCertificate2);
+
+    var userIdentityCertificateQuarantine = new MemoryCertificateQuarantine();
+
+    UsernameIdentityValidator usernameIdentityValidator =
         new UsernameIdentityValidator(
             authChallenge -> {
               String username = authChallenge.getUsername();
@@ -141,6 +180,21 @@ public final class TestServer {
               boolean admin = "admin".equals(username) && "password".equals(password);
 
               return user1 || user2 || admin;
+            });
+
+    var x509IdentityValidator =
+        new X509IdentityValidator(
+            cert -> {
+              var validator =
+                  new DefaultServerCertificateValidator(
+                      userIdentityTrustListManager, userIdentityCertificateQuarantine);
+
+              try {
+                validator.validateCertificateChain(List.of(cert), null, null);
+                return true;
+              } catch (UaException e) {
+                return false;
+              }
             });
 
     X509Certificate certificate = loader.getServerCertificate();
@@ -171,22 +225,31 @@ public final class TestServer {
                     DateTime.now()))
             .setCertificateManager(certificateManager)
             .setIdentityValidator(
-                new CompositeValidator(AnonymousIdentityValidator.INSTANCE, identityValidator))
+                new CompositeValidator(
+                    AnonymousIdentityValidator.INSTANCE,
+                    usernameIdentityValidator,
+                    x509IdentityValidator))
             .setProductUri("urn:eclipse:milo:example-server")
             .build();
 
-    return new OpcUaServer(
-        serverConfig,
-        transportProfile -> {
-          if (transportProfile == TransportProfile.TCP_UASC_UABINARY) {
-            OpcTcpServerTransportConfig transportConfig =
-                OpcTcpServerTransportConfig.newBuilder().build();
+    OpcUaServer opcUaServer =
+        new OpcUaServer(
+            serverConfig,
+            transportProfile -> {
+              if (transportProfile == TransportProfile.TCP_UASC_UABINARY) {
+                OpcTcpServerTransportConfig transportConfig =
+                    OpcTcpServerTransportConfig.newBuilder().build();
 
-            return new OpcTcpServerTransport(transportConfig);
-          } else {
-            throw new RuntimeException("unexpected TransportProfile: " + transportProfile);
-          }
-        });
+                return new OpcTcpServerTransport(transportConfig);
+              } else {
+                throw new RuntimeException("unexpected TransportProfile: " + transportProfile);
+              }
+            });
+
+    return new TestServer(
+        opcUaServer,
+        new TestIdentityCertificate(identityCertificate1, identityKeyPair1),
+        new TestIdentityCertificate(identityCertificate2, identityKeyPair2));
   }
 
   private static Set<EndpointConfig> createEndpointConfigs(X509Certificate certificate, int port) {

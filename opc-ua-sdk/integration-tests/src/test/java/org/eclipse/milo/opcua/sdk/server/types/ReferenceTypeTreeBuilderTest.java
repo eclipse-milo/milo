@@ -24,7 +24,7 @@ public class ReferenceTypeTreeBuilderTest {
 
   @BeforeAll
   public void buildReferenceTypeTree() throws Exception {
-    referenceTypeTree = ReferenceTypeTreeBuilder.build(TestServer.create());
+    referenceTypeTree = ReferenceTypeTreeBuilder.build(TestServer.create().getServer());
   }
 
   @Test
