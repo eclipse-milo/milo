@@ -59,8 +59,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class OpcTcpTransportTest extends SecurityFixture {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpcTcpTransportTest.class);
 
   static {
     // Required for SecurityPolicy.Aes256_Sha256_RsaPss
@@ -126,17 +130,17 @@ class OpcTcpTransportTest extends SecurityFixture {
 
     var transport = new OpcTcpClientTransport(config);
 
-    System.out.println("connecting...");
+    LOGGER.debug("connecting...");
     transport.connect(applicationContext).get();
-    System.out.println("connected");
+    LOGGER.debug("connected");
 
-    System.out.println("disconnecting...");
+    LOGGER.debug("disconnecting...");
     transport.disconnect().get();
-    System.out.println("disconnected");
+    LOGGER.debug("disconnected");
 
-    System.out.println("unbinding server transport...");
+    LOGGER.debug("unbinding server transport...");
     serverTransport.unbind();
-    System.out.println("server transport unbound");
+    LOGGER.debug("server transport unbound");
   }
 
   @Test
@@ -191,17 +195,17 @@ class OpcTcpTransportTest extends SecurityFixture {
 
     var transport = new OpcTcpClientTransport(config);
 
-    System.out.println("connecting...");
+    LOGGER.debug("connecting...");
     transport.connect(applicationContext).get();
-    System.out.println("connected");
+    LOGGER.debug("connected");
 
-    System.out.println("disconnecting...");
+    LOGGER.debug("disconnecting...");
     transport.disconnect().get();
-    System.out.println("disconnected");
+    LOGGER.debug("disconnected");
 
-    System.out.println("unbinding server transport...");
+    LOGGER.debug("unbinding server transport...");
     serverTransport.unbind();
-    System.out.println("server transport unbound");
+    LOGGER.debug("server transport unbound");
   }
 
   @Test
@@ -254,9 +258,9 @@ class OpcTcpTransportTest extends SecurityFixture {
 
     var transport = new OpcTcpClientTransport(config);
 
-    System.out.println("connecting...");
+    LOGGER.debug("connecting...");
     transport.connect(applicationContext).get();
-    System.out.println("connected");
+    LOGGER.debug("connected");
 
     assertThrows(ExecutionException.class, () -> createSession(transport));
 
@@ -342,7 +346,7 @@ class OpcTcpTransportTest extends SecurityFixture {
               }
             }
 
-            System.out.println("request: " + requestMessage);
+            LOGGER.debug("request: {}", requestMessage);
 
             return CompletableFuture.failedFuture(new RuntimeException("not implemented"));
           }

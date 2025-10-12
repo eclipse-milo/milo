@@ -22,8 +22,12 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SubscriptionWatchdogTimerTest extends AbstractClientServerTest {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(SubscriptionWatchdogTimerTest.class);
 
   @Test
   void subscriptionWatchdogTimerCallback() throws UaException, InterruptedException {
@@ -47,8 +51,7 @@ public class SubscriptionWatchdogTimerTest extends AbstractClientServerTest {
               List<OpcUaMonitoredItem> items,
               List<DataValue> values) {
 
-            System.out.println(
-                "onDataReceived() id=" + subscription.getSubscriptionId().orElseThrow());
+            LOGGER.debug("onDataReceived() id={}", subscription.getSubscriptionId().orElseThrow());
 
             // kill the subscription after the first notification is received
             UInteger subscriptionId = subscription.getSubscriptionId().orElseThrow();
@@ -63,9 +66,10 @@ public class SubscriptionWatchdogTimerTest extends AbstractClientServerTest {
           public void onWatchdogTimerElapsed(OpcUaSubscription subscription) {
             var elapsed = System.currentTimeMillis() - start.get();
 
-            System.out.printf(
-                "onWatchdogTimerElapsed() id=%s, elapsed=%sms%n",
-                subscription.getSubscriptionId().orElseThrow(), elapsed);
+            LOGGER.debug(
+                "onWatchdogTimerElapsed() id={}, elapsed={}ms",
+                subscription.getSubscriptionId().orElseThrow(),
+                elapsed);
 
             latch.countDown();
           }

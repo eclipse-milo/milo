@@ -17,23 +17,27 @@ import java.util.Calendar;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DateTimeConversionsTest {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(DateTimeConversionsTest.class);
 
   @Test
   public void testDateTimeToString() {
     DateTime now = DateTime.now();
     String nowAsString = (String) DateTimeConversions.convert(now, OpcUaDataType.String, false);
 
-    System.out.println("now: " + now);
-    System.out.println("nowAsString: " + nowAsString);
+    LOGGER.debug("now: {}", now);
+    LOGGER.debug("nowAsString: {}", nowAsString);
 
     assertNotNull(nowAsString);
 
     DateTime nowAsStringAsDateTime =
         (DateTime) StringConversions.convert(nowAsString, OpcUaDataType.DateTime, false);
 
-    System.out.println("nowAsStringAsDateTime: " + nowAsStringAsDateTime);
+    LOGGER.debug("nowAsStringAsDateTime: {}", nowAsStringAsDateTime);
 
     assertNotNull(nowAsStringAsDateTime);
 

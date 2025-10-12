@@ -33,8 +33,12 @@ import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.opcfoundation.opcua.binaryschema.StructuredType;
 import org.opcfoundation.opcua.binaryschema.TypeDictionary;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class AbstractBsdCodecTest {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(AbstractBsdCodecTest.class);
 
   private static final String BSD_CODEC_TEST_NAMESPACE = "https://github.com/eclipse-milo/milo";
 
@@ -121,9 +125,9 @@ public abstract class AbstractBsdCodecTest {
   }
 
   protected void assertRoundTrip(String type, Object originalValue, BinaryDataTypeCodec codec) {
-    System.out.printf("--- assertRoundTrip Type: %s ---\n", type);
+    LOGGER.debug("--- assertRoundTrip Type: {} ---", type);
 
-    System.out.println("originalValue:\t" + originalValue);
+    LOGGER.debug("originalValue:\t{}", originalValue);
     ByteBuf buffer = Unpooled.buffer();
     codec.encodeBinary(
         context,
@@ -131,12 +135,12 @@ public abstract class AbstractBsdCodecTest {
         (UaStructuredType) originalValue);
 
     ByteBuf encodedValue = buffer.copy();
-    System.out.println("encodedValue:\t" + ByteBufUtil.hexDump(encodedValue));
+    LOGGER.debug("encodedValue:\t{}", ByteBufUtil.hexDump(encodedValue));
 
     Object decodedValue =
         codec.decodeBinary(context, new OpcUaBinaryDecoder(context).setBuffer(buffer));
     assertEquals(originalValue, decodedValue);
-    System.out.println("decodedValue:\t" + decodedValue);
+    LOGGER.debug("decodedValue:\t{}", decodedValue);
   }
 
   /**
@@ -150,9 +154,9 @@ public abstract class AbstractBsdCodecTest {
   protected void assertRoundTripUsingToString(
       String type, Object originalValue, BinaryDataTypeCodec codec) {
 
-    System.out.printf("--- assertRoundTrip Type: %s ---\n", type);
+    LOGGER.debug("--- assertRoundTrip Type: {} ---", type);
 
-    System.out.println("originalValue:\t" + originalValue);
+    LOGGER.debug("originalValue:\t{}", originalValue);
     ByteBuf buffer = Unpooled.buffer();
     codec.encodeBinary(
         context,
@@ -160,11 +164,11 @@ public abstract class AbstractBsdCodecTest {
         (UaStructuredType) originalValue);
 
     ByteBuf encodedValue = buffer.copy();
-    System.out.println("encodedValue:\t" + ByteBufUtil.hexDump(encodedValue));
+    LOGGER.debug("encodedValue:\t{}", ByteBufUtil.hexDump(encodedValue));
 
     Object decodedValue =
         codec.decodeBinary(context, new OpcUaBinaryDecoder(context).setBuffer(buffer));
     assertEquals(originalValue.toString(), decodedValue.toString());
-    System.out.println("decodedValue:\t" + decodedValue);
+    LOGGER.debug("decodedValue:\t{}", decodedValue);
   }
 }

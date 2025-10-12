@@ -16,9 +16,13 @@ import org.eclipse.milo.opcua.sdk.test.TestServer;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class ReferenceTypeTreeBuilderTest {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(ReferenceTypeTreeBuilderTest.class);
 
   private ReferenceTypeTree referenceTypeTree;
 
@@ -33,10 +37,11 @@ public class ReferenceTypeTreeBuilderTest {
         .getRoot()
         .traverseWithDepth(
             (dataType, depth) -> {
+              StringBuilder indent = new StringBuilder();
               for (int i = 0; i < depth; i++) {
-                System.out.print("\t");
+                indent.append("\t");
               }
-              System.out.println(dataType.getBrowseName().toParseableString());
+              LOGGER.debug("{}{}", indent, dataType.getBrowseName().toParseableString());
             });
   }
 }

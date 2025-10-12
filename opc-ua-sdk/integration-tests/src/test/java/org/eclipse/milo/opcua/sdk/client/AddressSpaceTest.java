@@ -28,8 +28,12 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrowseDirection;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AddressSpaceTest extends AbstractClientServerTest {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(AddressSpaceTest.class);
 
   @Test
   public void browse() throws UaException {
@@ -40,14 +44,14 @@ public class AddressSpaceTest extends AbstractClientServerTest {
 
     nodes.forEach(
         n -> {
-          System.out.printf(
-              "%s (%s) [%s]%n",
+          LOGGER.debug(
+              "{} ({}) [{}]",
               n.getBrowseName().toParseableString(),
               n.getNodeId().toParseableString(),
               n.getNodeClass());
 
           if (n instanceof UaVariableNode) {
-            System.out.println("└─ value = " + ((UaVariableNode) n).getValue().value());
+            LOGGER.debug("└─ value = {}", ((UaVariableNode) n).getValue().value());
           }
         });
   }

@@ -40,8 +40,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class BinaryDataTypeDictionaryReaderTest {
+
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(BinaryDataTypeDictionaryReaderTest.class);
 
   private final OpcTcpClientTransport transport = Mockito.mock(OpcTcpClientTransport.class);
   private final OpcTcpClientTransportConfig transportConfig =
@@ -80,7 +85,7 @@ class BinaryDataTypeDictionaryReaderTest {
           dictionary[i] = b;
         }
 
-        System.out.printf("fragmentSize=%d dictionarySize=%d\n", fragmentSize, dictionarySize);
+        LOGGER.debug("fragmentSize={} dictionarySize={}", fragmentSize, dictionarySize);
 
         testReadDataTypeDictionaryBytes(ByteString.of(dictionary), fragmentSize);
       }

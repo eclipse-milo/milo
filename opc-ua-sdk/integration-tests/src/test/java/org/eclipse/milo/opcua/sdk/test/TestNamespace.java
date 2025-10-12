@@ -68,7 +68,7 @@ public class TestNamespace extends ManagedNamespaceWithLifecycle {
 
   public static final String NAMESPACE_URI = "urn:eclipse:milo:test";
 
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+  private static final Logger LOGGER = LoggerFactory.getLogger(TestNamespace.class);
 
   private volatile Thread eventThread;
   private volatile boolean keepPostingEvents = true;
@@ -494,7 +494,7 @@ public class TestNamespace extends ManagedNamespaceWithLifecycle {
 
                     eventNode.delete();
                   } catch (Throwable e) {
-                    logger.error("Error creating EventNode: {}", e.getMessage(), e);
+                    LOGGER.debug("Error creating EventNode: {}", e.getMessage(), e);
                   }
 
                   try {

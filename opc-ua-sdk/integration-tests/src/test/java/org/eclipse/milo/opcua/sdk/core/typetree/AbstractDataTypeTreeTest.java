@@ -34,9 +34,13 @@ import org.eclipse.milo.opcua.stack.core.util.Tree;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public abstract class AbstractDataTypeTreeTest extends AbstractClientServerTest {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(AbstractDataTypeTreeTest.class);
 
   private DataTypeTree dataTypeTree;
 
@@ -53,10 +57,11 @@ public abstract class AbstractDataTypeTreeTest extends AbstractClientServerTest 
         .getRoot()
         .traverseWithDepth(
             (dataType, depth) -> {
+              StringBuilder indent = new StringBuilder();
               for (int i = 0; i < depth; i++) {
-                System.out.print("\t");
+                indent.append("\t");
               }
-              System.out.println(dataType.getBrowseName().toParseableString());
+              LOGGER.debug("{}{}", indent, dataType.getBrowseName().toParseableString());
             },
             (o1, o2) -> {
               String name1 = requireNonNullElse(o1.getValue().getBrowseName().name(), "");
@@ -101,7 +106,7 @@ public abstract class AbstractDataTypeTreeTest extends AbstractClientServerTest 
     nodeIdNode.traverse(
         dataType -> {
           Class<?> backingClass = dataTypeTree.getBackingClass(dataType.getNodeId());
-          System.out.println(dataType.getBrowseName().toParseableString() + " : " + backingClass);
+          LOGGER.debug("{} : {}", dataType.getBrowseName().toParseableString(), backingClass);
           assertEquals(expectedBackingClass, backingClass);
         });
   }

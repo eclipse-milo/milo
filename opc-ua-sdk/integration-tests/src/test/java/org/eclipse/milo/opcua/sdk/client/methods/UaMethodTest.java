@@ -31,8 +31,12 @@ import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class UaMethodTest extends AbstractClientServerTest {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(UaMethodTest.class);
 
   OpcUaSubscription subscription;
   OpcUaMonitoredItem monitoredItem;
@@ -168,9 +172,8 @@ public class UaMethodTest extends AbstractClientServerTest {
                 new QualifiedName(2, "onlyAcceptsPositiveInputs()"),
                 new Variant[] {new Variant(-1)});
           } catch (UaMethodException e) {
-            System.out.println("result: " + e.getStatusCode());
-            System.out.println(
-                "inputArgumentResults: " + Arrays.toString(e.getInputArgumentResults()));
+            LOGGER.debug("result: {}", e.getStatusCode());
+            LOGGER.debug("inputArgumentResults: {}", Arrays.toString(e.getInputArgumentResults()));
 
             throw e;
           }

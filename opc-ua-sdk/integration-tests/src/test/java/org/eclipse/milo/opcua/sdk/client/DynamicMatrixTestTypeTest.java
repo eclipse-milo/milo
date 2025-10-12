@@ -22,8 +22,12 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DynamicMatrixTestTypeTest extends AbstractClientServerTest {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(DynamicMatrixTestTypeTest.class);
 
   @Test
   public void read() throws UaException {
@@ -42,6 +46,6 @@ public class DynamicMatrixTestTypeTest extends AbstractClientServerTest {
     assertEquals(
         MatrixTestType.TYPE_ID,
         decoded.getTypeId().absolute(client.getNamespaceTable()).orElseThrow());
-    System.out.println(decoded);
+    LOGGER.debug("{}", decoded);
   }
 }

@@ -39,8 +39,13 @@ import org.eclipse.milo.opcua.stack.core.types.structured.CallResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.ThreeDVector;
 import org.eclipse.milo.opcua.stack.core.types.structured.XVType;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AbstractMethodInvocationHandlerTest extends AbstractClientServerTest {
+
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(AbstractMethodInvocationHandlerTest.class);
 
   @Test
   public void inputArgumentResultsIsEmptyOnSuccess() throws UaException {
@@ -69,8 +74,8 @@ public class AbstractMethodInvocationHandlerTest extends AbstractClientServerTes
       objectsNode.callMethod(
           new QualifiedName(2, "onlyAcceptsPositiveInputs()"), new Variant[] {new Variant(-1)});
     } catch (UaMethodException e) {
-      System.out.println("result: " + e.getStatusCode());
-      System.out.println("inputArgumentResults: " + Arrays.toString(e.getInputArgumentResults()));
+      LOGGER.debug("result: {}", e.getStatusCode());
+      LOGGER.debug("inputArgumentResults: {}", Arrays.toString(e.getInputArgumentResults()));
 
       assertEquals(StatusCode.of(Bad_InvalidArgument), e.getStatusCode());
       assertEquals(StatusCode.of(Bad_OutOfRange), e.getInputArgumentResults()[0]);

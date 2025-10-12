@@ -41,8 +41,12 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ReadResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class UaNodeTest extends AbstractClientServerTest {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(UaNodeTest.class);
 
   @Test
   public void browse() throws UaException {
@@ -119,7 +123,7 @@ public class UaNodeTest extends AbstractClientServerTest {
 
     ReadResponse response = client.readAsync(0.0, TimestampsToReturn.Both, readValueIds).get();
 
-    Arrays.stream(response.getResults()).forEach(v -> System.out.println(v.value().value()));
+    Arrays.stream(response.getResults()).forEach(v -> LOGGER.debug("{}", v.value().value()));
   }
 
   @Test

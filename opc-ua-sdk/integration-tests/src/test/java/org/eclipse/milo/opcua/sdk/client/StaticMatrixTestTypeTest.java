@@ -19,8 +19,12 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class StaticMatrixTestTypeTest extends AbstractClientServerTest {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(StaticMatrixTestTypeTest.class);
 
   @Test
   public void read() throws Exception {
@@ -46,6 +50,6 @@ public class StaticMatrixTestTypeTest extends AbstractClientServerTest {
     assert xo != null;
 
     MatrixTestType decoded = (MatrixTestType) xo.decode(client.getStaticEncodingContext());
-    System.out.println(decoded);
+    LOGGER.debug("{}", decoded);
   }
 }
