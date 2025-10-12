@@ -25,11 +25,13 @@ public abstract class AbstractClientServerTest {
 
   protected OpcUaClient client;
   protected OpcUaServer server;
+  protected TestServer testServer;
   protected TestNamespace testNamespace;
 
   @BeforeAll
   public void startClientAndServer() throws Exception {
-    server = TestServer.create();
+    testServer = TestServer.create();
+    server = testServer.getServer();
 
     testNamespace = new TestNamespace(server);
     testNamespace.startup();
