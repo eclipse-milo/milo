@@ -2920,8 +2920,7 @@ public class OpcUaClient {
 
     @Override
     public void initialize(
-        NamespaceTable namespaceTable, DataTypeTree dataTypeTree, DataTypeManager dataTypeManager)
-        throws UaException {
+        NamespaceTable namespaceTable, DataTypeTree dataTypeTree, DataTypeManager dataTypeManager) {
 
       Tree<DataType> structureNode = dataTypeTree.getTreeNode(NodeIds.Structure);
 
@@ -2944,33 +2943,37 @@ public class OpcUaClient {
                           + dataType.getNodeId().toParseableString());
                 }
 
-                NodeId binaryEncodingId = dataType.getBinaryEncodingId();
-
-                if (binaryEncodingId == null
-                    && dataType.getDataTypeDefinition() instanceof StructureDefinition definition) {
-
-                  // Hail mary work around for non-compliant Servers that don't have encoding nodes
-                  // in their address space. The DefaultEncodingId in a StructureDefinition shall
-                  // always be the Default Binary encoding, so let's see if the Server at least set
-                  // this correctly.
-                  // See https://reference.opcfoundation.org/Core/Part3/v105/docs/8.48
-
-                  binaryEncodingId = definition.getDefaultEncodingId();
-                }
-
                 dataTypeManager.registerType(
                     dataType.getNodeId(),
                     codecFactory.create(dataType, dataTypeTree),
-                    binaryEncodingId,
+                    getBinaryEncodingId(dataType),
                     dataType.getXmlEncodingId(),
                     dataType.getJsonEncodingId());
               }
             });
       } else {
-        throw new UaException(
-            StatusCodes.Bad_UnexpectedError,
-            "tree for NodeIds.Structure not found; is the server DataType hierarchy sane?");
+        LoggerFactory.getLogger(getClass())
+            .warn(
+                "Structure (i=22) not found in the DataType tree; is the Server's DataType hierarchy sane?");
       }
+    }
+
+    private static NodeId getBinaryEncodingId(DataType dataType) {
+      NodeId binaryEncodingId = dataType.getBinaryEncodingId();
+
+      if (binaryEncodingId == null
+          && dataType.getDataTypeDefinition() instanceof StructureDefinition definition) {
+
+        // Hail mary work around for non-compliant Servers that don't have encoding nodes
+        // in their address space. The DefaultEncodingId in a StructureDefinition shall
+        // always be the Default Binary encoding, so let's see if the Server at least set
+        // this correctly.
+        // See https://reference.opcfoundation.org/Core/Part3/v105/docs/8.48
+
+        binaryEncodingId = definition.getDefaultEncodingId();
+      }
+
+      return binaryEncodingId;
     }
   }
 }
