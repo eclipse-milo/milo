@@ -2954,7 +2954,8 @@ public class OpcUaClient {
       } else {
         LoggerFactory.getLogger(getClass())
             .warn(
-                "Structure (i=22) not found in the DataType tree; is the Server's DataType hierarchy sane?");
+                "Structure (i=22) not found in the DataType tree; is the Server's DataType"
+                    + " hierarchy sane?");
       }
     }
 
