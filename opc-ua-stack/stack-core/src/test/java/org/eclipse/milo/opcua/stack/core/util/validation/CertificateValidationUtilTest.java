@@ -14,16 +14,22 @@ import static java.util.Collections.emptySet;
 import static org.eclipse.milo.opcua.stack.core.util.validation.CertificateValidationUtil.buildTrustedCertPath;
 import static org.eclipse.milo.opcua.stack.core.util.validation.CertificateValidationUtil.checkHostnameOrIpAddress;
 import static org.eclipse.milo.opcua.stack.core.util.validation.CertificateValidationUtil.validateTrustedCertPath;
+import static org.eclipse.milo.opcua.stack.core.util.validation.TestCertificateGenerator.ALIAS_CA_INTERMEDIATE;
+import static org.eclipse.milo.opcua.stack.core.util.validation.TestCertificateGenerator.ALIAS_CA_ROOT;
+import static org.eclipse.milo.opcua.stack.core.util.validation.TestCertificateGenerator.ALIAS_LEAF_INTERMEDIATE_SIGNED;
+import static org.eclipse.milo.opcua.stack.core.util.validation.TestCertificateGenerator.ALIAS_LEAF_SELF_SIGNED;
+import static org.eclipse.milo.opcua.stack.core.util.validation.TestCertificateGenerator.ALIAS_NO_KEY_USAGE_NO_CA;
+import static org.eclipse.milo.opcua.stack.core.util.validation.TestCertificateGenerator.ALIAS_NO_KEY_USAGE_YES_CA;
+import static org.eclipse.milo.opcua.stack.core.util.validation.TestCertificateGenerator.ALIAS_URI_WITH_SPACES;
+import static org.eclipse.milo.opcua.stack.core.util.validation.TestCertificateGenerator.ALIAS_YES_KEY_USAGE_NO_CA;
+import static org.eclipse.milo.opcua.stack.core.util.validation.TestCertificateGenerator.ALIAS_YES_KEY_USAGE_YES_CA;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.InputStream;
 import java.security.KeyPair;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
 import java.security.PrivateKey;
 import java.security.Security;
 import java.security.cert.PKIXCertPathBuilderResult;
@@ -45,7 +51,8 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
-import org.junit.jupiter.api.BeforeEach;
+import org.eclipse.milo.opcua.stack.core.util.validation.TestCertificateGenerator.TestCertificates;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 public class CertificateValidationUtilTest {
@@ -54,34 +61,28 @@ public class CertificateValidationUtilTest {
     Security.addProvider(new BouncyCastleProvider());
   }
 
-  private static final String ALIAS_CA_INTERMEDIATE = "ca-intermediate";
-  private static final String ALIAS_CA_ROOT = "ca-root";
-  private static final String ALIAS_LEAF_INTERMEDIATE_SIGNED = "leaf-intermediate-signed";
-  private static final String ALIAS_LEAF_SELF_SIGNED = "leaf-self-signed";
-  private static final String ALIAS_URI_WITH_SPACES = "uri-with-spaces";
+  private static TestCertificates testCertificates;
+  private static X509Certificate caIntermediate;
+  private static X509Certificate caRoot;
+  private static X509Certificate leafSelfSigned;
+  private static X509Certificate leafIntermediateSigned;
+  private static X509Certificate uriWithSpaces;
 
-  private KeyStore keyStore;
-  private X509Certificate caIntermediate;
-  private X509Certificate caRoot;
-  private X509Certificate leafSelfSigned;
-  private X509Certificate leafIntermediateSigned;
-  private X509Certificate uriWithSpaces;
+  @BeforeAll
+  public static void generateCertificates() throws Exception {
+    testCertificates = TestCertificateGenerator.generateAll();
 
-  @BeforeEach
-  public void loadKeyStore() throws Exception {
-    keyStore = KeyStore.getInstance("PKCS12");
+    caIntermediate = testCertificates.getCertificate(ALIAS_CA_INTERMEDIATE);
+    caRoot = testCertificates.getCertificate(ALIAS_CA_ROOT);
+    leafSelfSigned = testCertificates.getCertificate(ALIAS_LEAF_SELF_SIGNED);
+    leafIntermediateSigned = testCertificates.getCertificate(ALIAS_LEAF_INTERMEDIATE_SIGNED);
+    uriWithSpaces = testCertificates.getCertificate(ALIAS_URI_WITH_SPACES);
 
-    InputStream inputStream = getClass().getResourceAsStream("validation-certs.pfx");
-
-    assertNotNull(inputStream);
-
-    keyStore.load(inputStream, "password".toCharArray());
-
-    caIntermediate = getCertificate(ALIAS_CA_INTERMEDIATE);
-    caRoot = getCertificate(ALIAS_CA_ROOT);
-    leafSelfSigned = getCertificate(ALIAS_LEAF_SELF_SIGNED);
-    leafIntermediateSigned = getCertificate(ALIAS_LEAF_INTERMEDIATE_SIGNED);
-    uriWithSpaces = getCertificate(ALIAS_URI_WITH_SPACES);
+    assertNotNull(caIntermediate);
+    assertNotNull(caRoot);
+    assertNotNull(leafSelfSigned);
+    assertNotNull(leafIntermediateSigned);
+    assertNotNull(uriWithSpaces);
   }
 
   @Test
@@ -202,13 +203,10 @@ public class CertificateValidationUtilTest {
               () -> {
                 Set<X509CRL> x509CRLS =
                     Set.of(
-                        generateCrl(
-                            caRoot,
-                            (PrivateKey) keyStore.getKey(ALIAS_CA_ROOT, "password".toCharArray())),
+                        generateCrl(caRoot, testCertificates.getPrivateKey(ALIAS_CA_ROOT)),
                         generateCrl(
                             caIntermediate,
-                            (PrivateKey)
-                                keyStore.getKey(ALIAS_CA_INTERMEDIATE, "password".toCharArray()),
+                            testCertificates.getPrivateKey(ALIAS_CA_INTERMEDIATE),
                             leafIntermediateSigned));
 
                 PKIXCertPathBuilderResult pathBuilderResult =
@@ -246,13 +244,9 @@ public class CertificateValidationUtilTest {
                 Set<X509CRL> x509CRLS =
                     Set.of(
                         generateCrl(
-                            caRoot,
-                            (PrivateKey) keyStore.getKey(ALIAS_CA_ROOT, "password".toCharArray()),
-                            caIntermediate),
+                            caRoot, testCertificates.getPrivateKey(ALIAS_CA_ROOT), caIntermediate),
                         generateCrl(
-                            caIntermediate,
-                            (PrivateKey)
-                                keyStore.getKey(ALIAS_CA_INTERMEDIATE, "password".toCharArray())));
+                            caIntermediate, testCertificates.getPrivateKey(ALIAS_CA_INTERMEDIATE)));
 
                 PKIXCertPathBuilderResult pathBuilderResult =
                     buildTrustedCertPath(certificateChain, Set.of(caIntermediate), Set.of(caRoot));
@@ -346,9 +340,7 @@ public class CertificateValidationUtilTest {
                 Set<X509CRL> x509CRLS =
                     Set.of(
                         generateCrl(
-                            caRoot,
-                            (PrivateKey) keyStore.getKey(ALIAS_CA_ROOT, "password".toCharArray()),
-                            caIntermediate));
+                            caRoot, testCertificates.getPrivateKey(ALIAS_CA_ROOT), caIntermediate));
 
                 PKIXCertPathBuilderResult pathBuilderResult =
                     buildTrustedCertPath(certificateChain, Set.of(caRoot), Set.of(caIntermediate));
@@ -373,11 +365,19 @@ public class CertificateValidationUtilTest {
   }
 
   @Test
-  public void testCertificateIsCa() throws KeyStoreException {
-    assertTrue(CertificateValidationUtil.certificateIsCa(getCertificate("yes-key-usage-yes-ca")));
-    assertTrue(CertificateValidationUtil.certificateIsCa(getCertificate("no-key-usage-yes-ca")));
-    assertTrue(CertificateValidationUtil.certificateIsCa(getCertificate("yes-key-usage-no-ca")));
-    assertFalse(CertificateValidationUtil.certificateIsCa(getCertificate("no-key-usage-no-ca")));
+  public void testCertificateIsCa() {
+    assertTrue(
+        CertificateValidationUtil.certificateIsCa(
+            testCertificates.getCertificate(ALIAS_YES_KEY_USAGE_YES_CA)));
+    assertTrue(
+        CertificateValidationUtil.certificateIsCa(
+            testCertificates.getCertificate(ALIAS_NO_KEY_USAGE_YES_CA)));
+    assertTrue(
+        CertificateValidationUtil.certificateIsCa(
+            testCertificates.getCertificate(ALIAS_YES_KEY_USAGE_NO_CA)));
+    assertFalse(
+        CertificateValidationUtil.certificateIsCa(
+            testCertificates.getCertificate(ALIAS_NO_KEY_USAGE_NO_CA)));
   }
 
   @Test
@@ -397,7 +397,8 @@ public class CertificateValidationUtilTest {
   private X509CRL generateCrl(
       X509Certificate ca, PrivateKey caPrivateKey, X509Certificate... revoked) throws Exception {
     X509v2CRLBuilder builder =
-        new X509v2CRLBuilder(new X500Name(ca.getSubjectDN().getName()), new Date());
+        new X509v2CRLBuilder(
+            X500Name.getInstance(ca.getSubjectX500Principal().getEncoded()), new Date());
 
     builder.setNextUpdate(new Date(System.currentTimeMillis() + 60_000));
 
@@ -420,12 +421,6 @@ public class CertificateValidationUtilTest {
     converter.setProvider("BC");
 
     return converter.getCRL(crlHolder);
-  }
-
-  private X509Certificate getCertificate(String alias) throws KeyStoreException {
-    X509Certificate certificate = (X509Certificate) keyStore.getCertificate(alias);
-    assertNotNull(certificate);
-    return certificate;
   }
 
   private static X509Certificate createSelfSignedCertificate(String dnsName) throws Exception {
