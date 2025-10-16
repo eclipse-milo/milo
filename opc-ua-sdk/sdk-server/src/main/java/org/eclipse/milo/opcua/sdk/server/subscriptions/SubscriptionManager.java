@@ -89,6 +89,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.MonitoringParameters;
 import org.eclipse.milo.opcua.stack.core.types.structured.NotificationMessage;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishResponse;
+import org.eclipse.milo.opcua.stack.core.types.structured.Range;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.eclipse.milo.opcua.stack.core.types.structured.RepublishRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.RepublishResponse;
@@ -562,8 +563,35 @@ public class SubscriptionManager {
         throw new UaException(StatusCodes.Bad_InternalError, t);
       }
 
-      MonitoredDataItem monitoredDataItem =
-          new MonitoredDataItem(
+      // Check if this is an AnalogItemType node
+      boolean isAnalogItem = false;
+      Range euRange = null;
+
+              NodeId nodeIdMonitoredItem = request.getItemToMonitor().getNodeId();
+              isAnalogItem = org.eclipse.milo.opcua.sdk.server.util.AnalogItemUtil.isAnalogItemType(server, nodeIdMonitoredItem);
+
+             if (isAnalogItem) {
+                  euRange = org.eclipse.milo.opcua.sdk.server.util.AnalogItemUtil.getEuRange(server, nodeIdMonitoredItem);
+              }
+
+      BaseMonitoredItem<?> monitoredItem;
+
+      if (isAnalogItem) {
+          monitoredItem = new org.eclipse.milo.opcua.sdk.server.items.AnalogItemMonitoredDataItem(
+              server,
+              session,
+              uint(subscription.nextItemId()),
+              subscription.getId(),
+              request.getItemToMonitor(),
+              request.getMonitoringMode(),
+              timestamps,
+              request.getRequestedParameters().getClientHandle(),
+              revisedParameters.revisedSamplingInterval(),
+              revisedParameters.revisedQueueSize(),
+              request.getRequestedParameters().getDiscardOldest(),
+              euRange);
+      } else {
+          monitoredItem = new MonitoredDataItem(
               server,
               session,
               uint(subscription.nextItemId()),
@@ -575,10 +603,11 @@ public class SubscriptionManager {
               revisedParameters.revisedSamplingInterval(),
               revisedParameters.revisedQueueSize(),
               request.getRequestedParameters().getDiscardOldest());
+      }
 
-      monitoredDataItem.installFilter(filter);
+      monitoredItem.installFilter(filter);
 
-      return monitoredDataItem;
+      return monitoredItem;
     }
   }
 
@@ -594,12 +623,9 @@ public class SubscriptionManager {
           throw new UaException(StatusCodes.Bad_DeadbandFilterInvalid);
         }
 
-        if (deadbandType == DeadbandType.Percent) {
-          // Percent deadband is not currently implemented
-          throw new UaException(StatusCodes.Bad_MonitoredItemFilterUnsupported);
-        }
+        // Percent deadband is now supported for AnalogItemType nodes
 
-        if (deadbandType == DeadbandType.Absolute && attributeId != AttributeId.Value) {
+        if ((deadbandType == DeadbandType.Absolute || deadbandType == DeadbandType.Percent) && attributeId != AttributeId.Value) {
           // Absolute deadband is only allowed for Value attributes
           throw new UaException(StatusCodes.Bad_FilterNotAllowed);
         }
