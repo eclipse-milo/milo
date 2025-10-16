@@ -28,57 +28,76 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 /**
  * A {@link MonitoredDataItem} extension for AnalogItems that supports percent deadband filtering.
  */
-@SuppressWarnings("checkstyle:LineLength")
 public class AnalogItemMonitoredDataItem extends MonitoredDataItem {
 
-	@SuppressWarnings("checkstyle:Indentation")
-	private final Range euRange;
+  private final Range euRange;
 
-	@SuppressWarnings({"checkstyle:FileTabCharacter", "checkstyle:Indentation", "checkstyle:LineLength", "checkstyle:MissingJavadocMethod"})
-	public AnalogItemMonitoredDataItem(OpcUaServer server, Session session, UInteger id, UInteger subscriptionId, ReadValueId readValueId, MonitoringMode monitoringMode, TimestampsToReturn timestamps, UInteger clientHandle, double samplingInterval, UInteger queueSize, boolean discardOldest, Range euRange) {
+  public AnalogItemMonitoredDataItem(
+      OpcUaServer server,
+      Session session,
+      UInteger id,
+      UInteger subscriptionId,
+      ReadValueId readValueId,
+      MonitoringMode monitoringMode,
+      TimestampsToReturn timestamps,
+      UInteger clientHandle,
+      double samplingInterval,
+      UInteger queueSize,
+      boolean discardOldest,
+      Range euRange) {
 
-		super(server, session, id, subscriptionId, readValueId, monitoringMode, timestamps, clientHandle, samplingInterval, queueSize, discardOldest);
+    super(
+        server,
+        session,
+        id,
+        subscriptionId,
+        readValueId,
+        monitoringMode,
+        timestamps,
+        clientHandle,
+        samplingInterval,
+        queueSize,
+        discardOldest);
 
-		this.euRange = euRange;
-	}
+    this.euRange = euRange;
+  }
 
-	@SuppressWarnings({"checkstyle:FileTabCharacter", "checkstyle:Indentation", "checkstyle:LineLength"})
-	@Override
-	public synchronized void setValue(DataValue value) {
+  @Override
+  public synchronized void setValue(DataValue value) {
 
-		boolean valuePassesFilter = DataChangeMonitoringFilter.filter(getLastValue(), value, getFilter(), euRange);
+    boolean valuePassesFilter =
+        DataChangeMonitoringFilter.filter(getLastValue(), value, getFilter(), euRange);
 
-		if (valuePassesFilter) {
-			super.setLastValue(value);
-			enqueue(value);
+    if (valuePassesFilter) {
+      super.setLastValue(value);
+      enqueue(value);
 
-			if (getTriggeredItems() != null) {
-				getTriggeredItems().values().forEach(item -> item.triggered = true);
-			}
-		}
-	}
+      if (getTriggeredItems() != null) {
+        getTriggeredItems().values().forEach(item -> item.triggered = true);
+      }
+    }
+  }
 
-	@SuppressWarnings({"checkstyle:FileTabCharacter", "checkstyle:Indentation", "checkstyle:LineLength", "checkstyle:WhitespaceAround"})
-	@Override
-	public void installFilter(MonitoringFilter filter) throws UaException {
-		if (filter instanceof DataChangeFilter dataChangeFilter) {
+  @Override
+  public void installFilter(MonitoringFilter filter) throws UaException {
+    if (filter instanceof DataChangeFilter dataChangeFilter) {
 
-			DeadbandType deadbandType = DeadbandType.from(dataChangeFilter.getDeadbandType().intValue());
+      DeadbandType deadbandType = DeadbandType.from(dataChangeFilter.getDeadbandType().intValue());
 
-			if (deadbandType == DeadbandType.Percent) {
-				Double deadBandPercent = dataChangeFilter.getDeadbandValue();
-				if (deadBandPercent < 0.0 || deadBandPercent > 100.0) {
-					throw new UaException(StatusCodes.Bad_DeadbandFilterInvalid);
-				}
-				if (euRange == null) {
-					throw new UaException(StatusCodes.Bad_MonitoredItemFilterUnsupported, "EURange property not found for AnalogItemType node");
-				}
-
-			}
-			setFilter(dataChangeFilter);
-		} else {
-			throw new UaException(StatusCodes.Bad_MonitoredItemFilterUnsupported);
-		}
-	}
-
+      if (deadbandType == DeadbandType.Percent) {
+        Double deadBandPercent = dataChangeFilter.getDeadbandValue();
+        if (deadBandPercent < 0.0 || deadBandPercent > 100.0) {
+          throw new UaException(StatusCodes.Bad_DeadbandFilterInvalid);
+        }
+        if (euRange == null) {
+          throw new UaException(
+              StatusCodes.Bad_MonitoredItemFilterUnsupported,
+              "EURange property not found for AnalogItemType node");
+        }
+      }
+      setFilter(dataChangeFilter);
+    } else {
+      throw new UaException(StatusCodes.Bad_MonitoredItemFilterUnsupported);
+    }
+  }
 }

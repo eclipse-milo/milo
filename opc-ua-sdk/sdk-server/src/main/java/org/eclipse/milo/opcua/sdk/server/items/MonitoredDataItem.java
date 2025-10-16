@@ -12,8 +12,6 @@ package org.eclipse.milo.opcua.sdk.server.items;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
-import java.util.Map;
-
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.Subscription;
@@ -44,23 +42,7 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
 
   private volatile DataValue lastValue = null;
   private volatile DataChangeFilter filter = null;
-  private volatile ExtensionObject filterResult = null;
-  
-  protected DataValue getLastValue() {
-    return lastValue;
-  }
-  
-  protected void setLastValue(DataValue lastValue) {
-    this.lastValue = lastValue;
-  }
-  
-  protected DataChangeFilter getFilter() {
-    return filter;
-  }
-  
-  protected void setFilter(DataChangeFilter filter) {
-    this.filter = filter;
-  }
+  private final ExtensionObject filterResult = null;
 
   public MonitoredDataItem(
       OpcUaServer server,
@@ -87,6 +69,22 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
         samplingInterval,
         queueSize,
         discardOldest);
+  }
+
+  protected DataValue getLastValue() {
+    return lastValue;
+  }
+
+  protected void setLastValue(DataValue lastValue) {
+    this.lastValue = lastValue;
+  }
+
+  protected DataChangeFilter getFilter() {
+    return filter;
+  }
+
+  protected void setFilter(DataChangeFilter filter) {
+    this.filter = filter;
   }
 
   @Override
