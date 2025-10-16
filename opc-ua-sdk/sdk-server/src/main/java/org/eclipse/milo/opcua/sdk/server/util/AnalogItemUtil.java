@@ -29,8 +29,10 @@ import org.eclipse.milo.opcua.stack.core.types.structured.Range;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 
 
+@SuppressWarnings({"checkstyle:Indentation", "checkstyle:LineLength", "checkstyle:MissingJavadocType"})
 public class AnalogItemUtil {
 
+	@SuppressWarnings({"checkstyle:Indentation", "checkstyle:FileTabCharacter"})
 	private static final NodeId ANALOG_ITEM_TYPE = NodeIds.AnalogItemType;
 
 	/**
@@ -41,6 +43,7 @@ public class AnalogItemUtil {
 	 *
 	 * @return true if the node is an AnalogItemType or a subtype of AnalogItemType
 	 */
+	@SuppressWarnings({"checkstyle:FileTabCharacter", "checkstyle:Indentation", "checkstyle:LineLength"})
 	public static boolean isAnalogItemType(OpcUaServer server, NodeId nodeId) {
 		try {
 			NodeId typeDefinitionId = getTypeDefinition(server, nodeId);
@@ -58,6 +61,7 @@ public class AnalogItemUtil {
 	 *
 	 * @return the EURange property value, or null if not found
 	 */
+	@SuppressWarnings({"checkstyle:FileTabCharacter", "checkstyle:Indentation", "checkstyle:LineLength"})
 	public static Range getEuRange(OpcUaServer server, NodeId nodeId) {
 		try {
 			NodeId euRangeNodeId = getEuRangeNodeId(server, nodeId);
@@ -77,6 +81,7 @@ public class AnalogItemUtil {
 		}
 	}
 
+	@SuppressWarnings({"checkstyle:FileTabCharacter", "checkstyle:Indentation", "checkstyle:LineLength"})
 	private static NodeId getTypeDefinition(OpcUaServer server, NodeId nodeId) throws UaException {
 
 		try {
@@ -100,6 +105,7 @@ public class AnalogItemUtil {
 
 	}
 
+	@SuppressWarnings({"checkstyle:FileTabCharacter", "checkstyle:Indentation", "checkstyle:LineLength"})
 	private static NodeId getEuRangeNodeId(OpcUaServer server, NodeId nodeId) throws UaException {
 
 		try {
@@ -132,6 +138,7 @@ public class AnalogItemUtil {
 		}
 	}
 
+	@SuppressWarnings({"checkstyle:FileTabCharacter", "checkstyle:Indentation", "checkstyle:LineLength"})
 	private static boolean isSubtypeOf(OpcUaServer server, NodeId typeId, NodeId superTypeId) {
 		if (typeId.equals(superTypeId)) {
 			return true;
@@ -163,5 +170,6 @@ public class AnalogItemUtil {
 		} catch (Exception e) {
 			return false;
 		}
+
 	}
 }

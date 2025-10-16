@@ -17,7 +17,6 @@ import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
-import org.eclipse.milo.opcua.stack.core.types.enumerated.DataChangeTrigger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.DeadbandType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MonitoringMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
@@ -29,10 +28,13 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 /**
  * A {@link MonitoredDataItem} extension for AnalogItems that supports percent deadband filtering.
  */
+@SuppressWarnings("checkstyle:LineLength")
 public class AnalogItemMonitoredDataItem extends MonitoredDataItem {
 
+	@SuppressWarnings("checkstyle:Indentation")
 	private final Range euRange;
 
+	@SuppressWarnings({"checkstyle:FileTabCharacter", "checkstyle:Indentation", "checkstyle:LineLength", "checkstyle:MissingJavadocMethod"})
 	public AnalogItemMonitoredDataItem(OpcUaServer server, Session session, UInteger id, UInteger subscriptionId, ReadValueId readValueId, MonitoringMode monitoringMode, TimestampsToReturn timestamps, UInteger clientHandle, double samplingInterval, UInteger queueSize, boolean discardOldest, Range euRange) {
 
 		super(server, session, id, subscriptionId, readValueId, monitoringMode, timestamps, clientHandle, samplingInterval, queueSize, discardOldest);
@@ -40,6 +42,7 @@ public class AnalogItemMonitoredDataItem extends MonitoredDataItem {
 		this.euRange = euRange;
 	}
 
+	@SuppressWarnings({"checkstyle:FileTabCharacter", "checkstyle:Indentation", "checkstyle:LineLength"})
 	@Override
 	public synchronized void setValue(DataValue value) {
 
@@ -55,20 +58,20 @@ public class AnalogItemMonitoredDataItem extends MonitoredDataItem {
 		}
 	}
 
+	@SuppressWarnings({"checkstyle:FileTabCharacter", "checkstyle:Indentation", "checkstyle:LineLength", "checkstyle:WhitespaceAround"})
 	@Override
 	public void installFilter(MonitoringFilter filter) throws UaException {
 		if (filter instanceof DataChangeFilter dataChangeFilter) {
 
 			DeadbandType deadbandType = DeadbandType.from(dataChangeFilter.getDeadbandType().intValue());
 
-			if (deadbandType == DeadbandType.Percent){
-				Double deadBandPercent=dataChangeFilter.getDeadbandValue();
-				if (deadBandPercent < 0.0 || deadBandPercent >100.0){
+			if (deadbandType == DeadbandType.Percent) {
+				Double deadBandPercent = dataChangeFilter.getDeadbandValue();
+				if (deadBandPercent < 0.0 || deadBandPercent > 100.0) {
 					throw new UaException(StatusCodes.Bad_DeadbandFilterInvalid);
 				}
 				if (euRange == null) {
-				    throw new UaException(StatusCodes.Bad_MonitoredItemFilterUnsupported,
-					     "EURange property not found for AnalogItemType node");
+					throw new UaException(StatusCodes.Bad_MonitoredItemFilterUnsupported, "EURange property not found for AnalogItemType node");
 				}
 
 			}
