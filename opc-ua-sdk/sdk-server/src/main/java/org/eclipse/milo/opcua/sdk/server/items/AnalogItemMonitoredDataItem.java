@@ -85,8 +85,8 @@ public class AnalogItemMonitoredDataItem extends MonitoredDataItem {
       DeadbandType deadbandType = DeadbandType.from(dataChangeFilter.getDeadbandType().intValue());
 
       if (deadbandType == DeadbandType.Percent) {
-        Double deadBandPercent = dataChangeFilter.getDeadbandValue();
-        if (deadBandPercent < 0.0 || deadBandPercent > 100.0) {
+        Double deadbandPercent = dataChangeFilter.getDeadbandValue();
+        if (deadbandPercent < 0.0 || deadbandPercent > 100.0) {
           throw new UaException(StatusCodes.Bad_DeadbandFilterInvalid);
         }
         if (euRange == null) {

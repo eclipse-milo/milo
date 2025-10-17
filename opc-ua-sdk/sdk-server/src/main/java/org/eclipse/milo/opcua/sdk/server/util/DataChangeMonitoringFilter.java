@@ -148,8 +148,8 @@ public class DataChangeMonitoringFilter {
     try {
       double lastD = ((Number) last).doubleValue();
       double currentD = ((Number) current).doubleValue();
-      // in some cases inital Value is NaN but abs from NaN is not possible
-      if (lastD == Double.NaN && currentD != Double.NaN) {
+      // in some cases initial Value is NaN but abs from NaN is not possible
+      if (Double.isNaN(lastD) && !Double.isNaN(currentD)) {
         return true;
       }
       return Math.abs(lastD - currentD) > deadband;
@@ -166,8 +166,8 @@ public class DataChangeMonitoringFilter {
     double range = euRange.getHigh() - euRange.getLow();
 
     // Avoid division by zero
-    // in some cases inital Value is NaN but abs from NaN is not possible
-    if (range <= 0.0 || (lastD == Double.NaN && currentD != Double.NaN)) {
+    // in some cases initial Value is NaN but abs from NaN is not possible
+    if (range <= 0.0 || (Double.isNaN(lastD) && !Double.isNaN(currentD))) {
       return true;
     }
     try {
