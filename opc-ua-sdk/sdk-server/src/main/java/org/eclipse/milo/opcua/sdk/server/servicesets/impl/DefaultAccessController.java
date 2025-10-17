@@ -69,6 +69,12 @@ public class DefaultAccessController implements AccessController {
 
     Map<NodeId, AccessControlAttributes> attributes = context.readAccessControlAttributes(nodeIds);
 
+    for (PendingResult<ReadValueId> p : pending) {
+      if (!AttributeId.isValid(p.value.getAttributeId())) {
+        p.result = AccessResult.DENIED_ATTRIBUTE_ID_INVALID;
+      }
+    }
+
     checkAccessRestrictions(context, pending, attributes, ReadValueId::getNodeId);
 
     for (PendingResult<ReadValueId> p : pending) {
@@ -122,11 +128,18 @@ public class DefaultAccessController implements AccessController {
 
   static Map<WriteValue, AccessResult> checkWriteAccess(
       AccessControlContext context, List<WriteValue> writeValues) {
+
     List<PendingResult<WriteValue>> pending = writeValues.stream().map(PendingResult::new).toList();
 
     List<NodeId> nodeIds = writeValues.stream().map(WriteValue::getNodeId).toList();
 
     Map<NodeId, AccessControlAttributes> attributes = context.readAccessControlAttributes(nodeIds);
+
+    for (PendingResult<WriteValue> p : pending) {
+      if (!AttributeId.isValid(p.value.getAttributeId())) {
+        p.result = AccessResult.DENIED_ATTRIBUTE_ID_INVALID;
+      }
+    }
 
     checkAccessRestrictions(context, pending, attributes, WriteValue::getNodeId);
 
@@ -177,19 +190,20 @@ public class DefaultAccessController implements AccessController {
         }
       } else {
         UInteger userWriteMask = attributes.get(nodeId).userWriteMask();
-        Set<WriteMask> userWriteMasks =
-            userWriteMask == null ? Set.of() : WriteMask.fromMask(userWriteMask);
+        if (userWriteMask != null) {
+          Set<WriteMask> userWriteMasks = WriteMask.fromMask(userWriteMask);
 
-        // The value of the UserWriteMask attribute implicitly accounts for whether Roles and
-        // Permission are configured and if the current Session is assigned a role that includes the
-        // WriteAttribute PermissionType bit.
-        boolean hasAccess =
-            AttributeId.from(attributeId)
-                .map(id -> userWriteMasks.contains(WriteMask.forAttribute(id)))
-                .orElse(false);
+          // The value of the UserWriteMask attribute implicitly accounts for whether Roles and
+          // Permission are configured and if the current Session is assigned a role that includes
+          // the WriteAttribute PermissionType bit.
+          boolean hasAccess =
+              AttributeId.from(attributeId)
+                  .map(id -> userWriteMasks.contains(WriteMask.forAttribute(id)))
+                  .orElse(false);
 
-        if (!hasAccess) {
-          p.result = AccessResult.DENIED_USER_ACCESS;
+          if (!hasAccess) {
+            p.result = AccessResult.DENIED_USER_ACCESS;
+          }
         }
       }
     }
