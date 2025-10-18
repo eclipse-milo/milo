@@ -18,6 +18,6 @@ public class ClientVariableTypeTreeTest extends AbstractVariableTypeTreeTest {
 
   @Override
   protected VariableTypeTree getVariableTypeTree() throws UaException {
-    return VariableTypeTreeBuilder.build(client);
+    return client.getVariableTypeTree();
   }
 }

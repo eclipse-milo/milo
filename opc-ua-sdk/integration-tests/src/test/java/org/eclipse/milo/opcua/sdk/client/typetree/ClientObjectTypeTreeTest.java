@@ -18,6 +18,6 @@ public class ClientObjectTypeTreeTest extends AbstractObjectTypeTreeTest {
 
   @Override
   protected ObjectTypeTree getObjectTypeTree() throws UaException {
-    return ObjectTypeTreeBuilder.build(client);
+    return client.getObjectTypeTree();
   }
 }
