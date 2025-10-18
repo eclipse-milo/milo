@@ -39,9 +39,13 @@ import org.eclipse.milo.opcua.sdk.client.session.SessionFsmFactory;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaSubscription;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.PublishingManager;
 import org.eclipse.milo.opcua.sdk.client.typetree.DataTypeTreeBuilder;
+import org.eclipse.milo.opcua.sdk.client.typetree.ObjectTypeTreeBuilder;
+import org.eclipse.milo.opcua.sdk.client.typetree.VariableTypeTreeBuilder;
 import org.eclipse.milo.opcua.sdk.core.types.codec.DynamicCodecFactory;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
+import org.eclipse.milo.opcua.sdk.core.typetree.ObjectTypeTree;
+import org.eclipse.milo.opcua.sdk.core.typetree.VariableTypeTree;
 import org.eclipse.milo.opcua.stack.core.*;
 import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
 import org.eclipse.milo.opcua.stack.core.encoding.DataTypeCodec;
@@ -338,6 +342,8 @@ public class OpcUaClient {
   private final Lazy<EncodingContext> dynamicEncodingContext = new Lazy<>();
 
   private final Lazy<DataTypeTree> dataTypeTree = new Lazy<>();
+  private final Lazy<ObjectTypeTree> objectTypeTree = new Lazy<>();
+  private final Lazy<VariableTypeTree> variableTypeTree = new Lazy<>();
 
   private final PublishingManager publishingManager;
   private final Map<UInteger, OpcUaSubscription> subscriptions = new ConcurrentHashMap<>();
@@ -900,6 +906,96 @@ public class OpcUaClient {
         () -> {
           try {
             return readDataTypeTree();
+          } catch (UaException e) {
+            throw new CompletionException(e);
+          }
+        },
+        transport.getConfig().getExecutor());
+  }
+
+  /**
+   * Get the {@link ObjectTypeTree}, reading it from the server if necessary.
+   *
+   * @return the {@link ObjectTypeTree}.
+   * @throws UaException if an error occurs while reading the ObjectTypes.
+   */
+  public ObjectTypeTree getObjectTypeTree() throws UaException {
+    try {
+      return objectTypeTree.getOrThrow(() -> ObjectTypeTreeBuilder.build(this));
+    } catch (Exception e) {
+      throw new UaException(e);
+    }
+  }
+
+  /**
+   * Read the {@link ObjectTypeTree} from the server and update the local copy.
+   *
+   * @return the updated {@link ObjectTypeTree}.
+   * @throws UaException if an error occurs while reading the ObjectTypes.
+   */
+  public ObjectTypeTree readObjectTypeTree() throws UaException {
+    objectTypeTree.reset();
+
+    return getObjectTypeTree();
+  }
+
+  /**
+   * Read the {@link ObjectTypeTree} from the server and update the local copy.
+   *
+   * @return a {@link CompletionStage} that completes successfully with the updated {@link
+   *     ObjectTypeTree}, or completes exceptionally if an error occurs while reading the
+   *     ObjectTypes.
+   */
+  public CompletionStage<ObjectTypeTree> readObjectTypeTreeAsync() {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return readObjectTypeTree();
+          } catch (UaException e) {
+            throw new CompletionException(e);
+          }
+        },
+        transport.getConfig().getExecutor());
+  }
+
+  /**
+   * Get the {@link VariableTypeTree}, reading it from the server if necessary.
+   *
+   * @return the {@link VariableTypeTree}.
+   * @throws UaException if an error occurs while reading the VariableTypes.
+   */
+  public VariableTypeTree getVariableTypeTree() throws UaException {
+    try {
+      return variableTypeTree.getOrThrow(() -> VariableTypeTreeBuilder.build(this));
+    } catch (Exception e) {
+      throw new UaException(e);
+    }
+  }
+
+  /**
+   * Read the {@link VariableTypeTree} from the server and update the local copy.
+   *
+   * @return the updated {@link VariableTypeTree}.
+   * @throws UaException if an error occurs while reading the VariableTypes.
+   */
+  public VariableTypeTree readVariableTypeTree() throws UaException {
+    variableTypeTree.reset();
+
+    return getVariableTypeTree();
+  }
+
+  /**
+   * Read the {@link VariableTypeTree} from the server and update the local copy.
+   *
+   * @return a {@link CompletionStage} that completes successfully with the updated {@link
+   *     VariableTypeTree}, or completes exceptionally if an error occurs while reading the
+   *     VariableTypes.
+   */
+  public CompletionStage<VariableTypeTree> readVariableTypeTreeAsync() {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return readVariableTypeTree();
           } catch (UaException e) {
             throw new CompletionException(e);
           }
