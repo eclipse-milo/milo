@@ -32,7 +32,9 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
+import org.eclipse.milo.opcua.sdk.core.typetree.ObjectTypeTree;
 import org.eclipse.milo.opcua.sdk.core.typetree.ReferenceTypeTree;
+import org.eclipse.milo.opcua.sdk.core.typetree.VariableTypeTree;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.ServerDiagnosticsSummary;
 import org.eclipse.milo.opcua.sdk.server.model.ObjectTypeInitializer;
 import org.eclipse.milo.opcua.sdk.server.model.VariableTypeInitializer;
@@ -53,7 +55,9 @@ import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultSubscriptionSer
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultViewServiceSet;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.Subscription;
 import org.eclipse.milo.opcua.sdk.server.typetree.DataTypeTreeBuilder;
+import org.eclipse.milo.opcua.sdk.server.typetree.ObjectTypeTreeBuilder;
 import org.eclipse.milo.opcua.sdk.server.typetree.ReferenceTypeTreeBuilder;
+import org.eclipse.milo.opcua.sdk.server.typetree.VariableTypeTreeBuilder;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.ServerTable;
 import org.eclipse.milo.opcua.stack.core.Stack;
@@ -122,7 +126,9 @@ public class OpcUaServer extends AbstractServiceHandler {
   private final VariableTypeManager variableTypeManager = new VariableTypeManager();
 
   private final Lazy<DataTypeTree> dataTypeTree = new Lazy<>();
+  private final Lazy<ObjectTypeTree> objectTypeTree = new Lazy<>();
   private final Lazy<ReferenceTypeTree> referenceTypeTree = new Lazy<>();
+  private final Lazy<VariableTypeTree> variableTypeTree = new Lazy<>();
 
   private final DataTypeManager staticDataTypeManager =
       DefaultDataTypeManager.createAndInitialize(namespaceTable);
@@ -459,6 +465,26 @@ public class OpcUaServer extends AbstractServiceHandler {
   }
 
   /**
+   * Get the Server's {@link ObjectTypeTree}.
+   *
+   * @return the Server's {@link ObjectTypeTree}.
+   */
+  public ObjectTypeTree getObjectTypeTree() {
+    return objectTypeTree.get(() -> ObjectTypeTreeBuilder.build(this));
+  }
+
+  /**
+   * Re-build and return the Server's {@link ObjectTypeTree}.
+   *
+   * @return the re-built {@link ObjectTypeTree}.
+   */
+  public ObjectTypeTree updateObjectTypeTree() {
+    objectTypeTree.reset();
+
+    return getObjectTypeTree();
+  }
+
+  /**
    * Get the Server's {@link ReferenceTypeTree}.
    *
    * @return the Server's {@link ReferenceTypeTree}.
@@ -476,6 +502,26 @@ public class OpcUaServer extends AbstractServiceHandler {
     referenceTypeTree.reset();
 
     return getReferenceTypeTree();
+  }
+
+  /**
+   * Get the Server's {@link VariableTypeTree}.
+   *
+   * @return the Server's {@link VariableTypeTree}.
+   */
+  public VariableTypeTree getVariableTypeTree() {
+    return variableTypeTree.get(() -> VariableTypeTreeBuilder.build(this));
+  }
+
+  /**
+   * Re-build and return the Server's {@link VariableTypeTree}.
+   *
+   * @return the re-built {@link VariableTypeTree}.
+   */
+  public VariableTypeTree updateVariableTypeTree() {
+    variableTypeTree.reset();
+
+    return getVariableTypeTree();
   }
 
   public Set<NodeId> getRegisteredViews() {
