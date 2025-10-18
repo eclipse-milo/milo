@@ -25,3 +25,9 @@ test-output/
 # macOS .DS_Store
 .DS_Store
 **/.DS_Store
+
+# ".local" folder
+.local/
+
+# Local Claude Code memory
+CLAUDE.local.md
