@@ -85,9 +85,9 @@ public class DataChangeMonitoringFilterTest {
     var euRange = new Range(0.0, 1000.0); // Range of 1000
 
     var lastValue = new DataValue(new Variant(500.0));
-    var currentValue = new DataValue(new Variant(549.0)); // 49 units = 4.9% of range
+    var currentValue = new DataValue(new Variant(549.0)); // 49 units = 4.9% of the range
 
-    // 4.9% change is within 5% deadband
+    // 4.9% change is within 5% of deadband
     boolean result = DataChangeMonitoringFilter.filter(lastValue, currentValue, filter, euRange);
     assertFalse(result);
   }
@@ -136,7 +136,7 @@ public class DataChangeMonitoringFilterTest {
     var lastValue = new DataValue(new Variant(50.0));
     var currentValue = new DataValue(new Variant(50.0));
 
-    // Zero range should return true (cannot calculate percentage)
+    // Zero ranges should return true (cannot calculate percentage)
     boolean result = DataChangeMonitoringFilter.filter(lastValue, currentValue, filter, euRange);
     assertTrue(result);
   }
@@ -292,6 +292,7 @@ public class DataChangeMonitoringFilterTest {
 
   // Test first value (null lastValue)
 
+  @SuppressWarnings("ConstantValue")
   @Test
   public void testFirstValue_AlwaysPasses() {
     var filter =
@@ -300,11 +301,12 @@ public class DataChangeMonitoringFilterTest {
 
     var currentValue = new DataValue(new Variant(100.0));
 
-    // First value (null lastValue) should always pass
+    // The first value (null lastValue) should always pass
     boolean result = DataChangeMonitoringFilter.filter(null, currentValue, filter);
     assertTrue(result, "First value should always pass filter");
   }
 
+  @SuppressWarnings("ConstantValue")
   @Test
   public void testFirstValue_WithDeadband() {
     var filter =
@@ -313,7 +315,7 @@ public class DataChangeMonitoringFilterTest {
 
     var currentValue = new DataValue(new Variant(1.0));
 
-    // First value should pass even with large deadband
+    // The first value should pass even with a large deadband
     boolean result = DataChangeMonitoringFilter.filter(null, currentValue, filter);
     assertTrue(result);
   }
