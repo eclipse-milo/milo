@@ -38,6 +38,8 @@ import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.factories.NodeFactory;
+import org.eclipse.milo.opcua.sdk.server.util.SubscriptionModel;
+import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -53,13 +55,16 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.StructureType;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.PermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.Range;
+import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.StructureDefinition;
 import org.eclipse.milo.opcua.stack.core.types.structured.StructureField;
+import org.eclipse.milo.opcua.stack.core.types.structured.WriteValue;
 import org.eclipse.milo.opcua.stack.core.types.structured.XVType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,11 +75,16 @@ public class TestNamespace extends ManagedNamespaceWithLifecycle {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TestNamespace.class);
 
+  private final SubscriptionModel subscriptionModel;
+
   private volatile Thread eventThread;
   private volatile boolean keepPostingEvents = true;
 
   public TestNamespace(OpcUaServer server) {
     super(server, NAMESPACE_URI);
+
+    subscriptionModel = new SubscriptionModel(server, this);
+    getLifecycleManager().addLifecycle(subscriptionModel);
 
     getLifecycleManager()
         .addLifecycle(
@@ -620,19 +630,83 @@ public class TestNamespace extends ManagedNamespaceWithLifecycle {
   }
 
   @Override
-  public void onDataItemsCreated(List<DataItem> dataItems) {}
+  public void onDataItemsCreated(List<DataItem> dataItems) {
+    subscriptionModel.onDataItemsCreated(dataItems);
+  }
 
   @Override
-  public void onDataItemsModified(List<DataItem> dataItems) {}
+  public void onDataItemsModified(List<DataItem> dataItems) {
+    subscriptionModel.onDataItemsModified(dataItems);
+  }
 
   @Override
-  public void onDataItemsDeleted(List<DataItem> dataItems) {}
+  public void onDataItemsDeleted(List<DataItem> dataItems) {
+    subscriptionModel.onDataItemsDeleted(dataItems);
+  }
 
   @Override
-  public void onMonitoringModeChanged(List<MonitoredItem> monitoredItems) {}
+  public void onMonitoringModeChanged(List<MonitoredItem> monitoredItems) {
+    subscriptionModel.onMonitoringModeChanged(monitoredItems);
+  }
 
   public void configure(BiConsumer<UaNodeContext, UaNodeManager> consumer) {
     consumer.accept(getNodeContext(), getNodeManager());
+  }
+
+  @Override
+  public List<DataValue> read(
+      ReadContext context,
+      Double maxAge,
+      TimestampsToReturn timestamps,
+      List<ReadValueId> readValueIds) {
+
+    for (ReadValueId readValueId : readValueIds) {
+      LOGGER.debug(
+          "READ: NodeId={}, AttributeId={}",
+          readValueId.getNodeId(),
+          AttributeId.from(readValueId.getAttributeId()).map(Object::toString).orElse("unknown"));
+    }
+
+    List<DataValue> results = super.read(context, maxAge, timestamps, readValueIds);
+
+    for (int i = 0; i < readValueIds.size(); i++) {
+      ReadValueId readValueId = readValueIds.get(i);
+      DataValue dataValue = results.get(i);
+      LOGGER.debug(
+          "READ RESULT: NodeId={}, AttributeId={}, Value={}, StatusCode={}",
+          readValueId.getNodeId(),
+          AttributeId.from(readValueId.getAttributeId()).map(Object::toString).orElse("unknown"),
+          dataValue.value(),
+          dataValue.getStatusCode());
+    }
+
+    return results;
+  }
+
+  @Override
+  public List<StatusCode> write(WriteContext context, List<WriteValue> writeValues) {
+    for (WriteValue writeValue : writeValues) {
+      LOGGER.debug(
+          "WRITE: NodeId={}, AttributeId={}, Value={}",
+          writeValue.getNodeId(),
+          AttributeId.from(writeValue.getAttributeId()).map(Object::toString).orElse("unknown"),
+          writeValue.getValue().value());
+    }
+
+    List<StatusCode> results = super.write(context, writeValues);
+
+    for (int i = 0; i < writeValues.size(); i++) {
+      WriteValue writeValue = writeValues.get(i);
+      StatusCode result = results.get(i);
+      LOGGER.debug(
+          "WRITE RESULT: NodeId={}, AttributeId={}, Value={}, StatusCode={}",
+          writeValue.getNodeId(),
+          AttributeId.from(writeValue.getAttributeId()).map(Object::toString).orElse("unknown"),
+          writeValue.getValue().value(),
+          result);
+    }
+
+    return results;
   }
 
   static class ScalarAbstractTypeMethod extends AbstractEchoMethod {

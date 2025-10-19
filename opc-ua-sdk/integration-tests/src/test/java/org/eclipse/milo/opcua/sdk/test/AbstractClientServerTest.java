@@ -38,6 +38,8 @@ public abstract class AbstractClientServerTest {
 
     server.startup().get();
 
+    configureTestNamespace(testNamespace);
+
     client = TestClient.create(server, this::customizeClientConfig);
 
     client.connect();
@@ -67,6 +69,16 @@ public abstract class AbstractClientServerTest {
    * @param configBuilder the {@link OpcUaClientConfigBuilder} to modify.
    */
   protected void customizeClientConfig(OpcUaClientConfigBuilder configBuilder) {}
+
+  /**
+   * Configure the test namespace with test-specific nodes.
+   *
+   * <p>This method is called after the server has started but before the client connects, allowing
+   * subclasses to add nodes that will be available to the client.
+   *
+   * @param namespace the {@link TestNamespace} to configure.
+   */
+  protected void configureTestNamespace(TestNamespace namespace) {}
 
   /**
    * Create a new {@link NodeId} in the {@link TestNamespace}.
