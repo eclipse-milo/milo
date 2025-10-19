@@ -32,8 +32,10 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataChangeFilter;
 import org.eclipse.milo.opcua.stack.core.types.structured.MonitoredItemNotification;
 import org.eclipse.milo.opcua.stack.core.types.structured.MonitoringFilter;
+import org.eclipse.milo.opcua.stack.core.types.structured.Range;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements DataItem {
 
@@ -42,7 +44,7 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
 
   private volatile DataValue lastValue = null;
   private volatile DataChangeFilter filter = null;
-  private final ExtensionObject filterResult = null;
+  private volatile @Nullable Range euRange = null;
 
   public MonitoredDataItem(
       OpcUaServer server,
@@ -87,9 +89,35 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
     this.filter = filter;
   }
 
+  /**
+   * Gets the engineering unit range for this monitored item.
+   *
+   * <p>The EURange is required for Percent Deadband filtering on AnalogItemType nodes. For other
+   * monitoring configurations, this may be null.
+   *
+   * @return the engineering unit range, or null if not set.
+   */
+  public @Nullable Range getEuRange() {
+    return euRange;
+  }
+
+  /**
+   * Sets the engineering unit range for this monitored item.
+   *
+   * <p>Must be set before calling {@link #installFilter(MonitoringFilter)} if the filter uses
+   * Percent Deadband. The EURange defines the span of valid values for the analog item and is used
+   * to calculate the absolute deadband value from the percentage.
+   *
+   * @param euRange the engineering unit range, or null if not applicable.
+   */
+  public void setEuRange(@Nullable Range euRange) {
+    this.euRange = euRange;
+  }
+
   @Override
   public synchronized void setValue(DataValue value) {
-    boolean valuePassesFilter = DataChangeMonitoringFilter.filter(lastValue, value, filter);
+    boolean valuePassesFilter =
+        DataChangeMonitoringFilter.filter(lastValue, value, filter, euRange);
 
     if (valuePassesFilter) {
       lastValue = value;
@@ -165,8 +193,21 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
 
   @Override
   public void installFilter(MonitoringFilter filter) throws UaException {
-    if (filter instanceof DataChangeFilter) {
-      this.filter = (DataChangeFilter) filter;
+    if (filter instanceof DataChangeFilter dataChangeFilter) {
+      DeadbandType deadbandType = DeadbandType.from(dataChangeFilter.getDeadbandType().intValue());
+
+      if (deadbandType == DeadbandType.Percent) {
+        Double deadbandPercent = dataChangeFilter.getDeadbandValue();
+        if (deadbandPercent < 0.0 || deadbandPercent > 100.0) {
+          throw new UaException(StatusCodes.Bad_DeadbandFilterInvalid);
+        }
+        if (euRange == null) {
+          throw new UaException(
+              StatusCodes.Bad_MonitoredItemFilterUnsupported,
+              "Percent Deadband requires AnalogItemType with valid EURange property");
+        }
+      }
+      this.filter = dataChangeFilter;
     } else {
       throw new UaException(StatusCodes.Bad_MonitoredItemFilterUnsupported);
     }
@@ -174,7 +215,8 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
 
   @Override
   public ExtensionObject getFilterResult() {
-    return filterResult;
+    // Always null because this isn't going to be a AggregateFilterResult or EventFilterResult.
+    return null;
   }
 
   @Override
@@ -194,7 +236,7 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
       sourceTimeUpdated = true;
     }
 
-    // remove server timestamp if not requested, add if requested but not present
+    // remove the server timestamp if not requested, add if requested but not present
     boolean serverTimeUpdated = false;
     DateTime serverTime = value.serverTime();
     UShort serverPicoseconds = value.serverPicoseconds();
