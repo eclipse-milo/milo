@@ -54,6 +54,8 @@ public class PercentDeadbandTest extends AbstractClientServerTest {
   private static final String NODE_ID_RANGE_100 = "PercentDeadbandTest_Range100";
   private static final String NODE_ID_RANGE_1000 = "PercentDeadbandTest_Range1000";
   private static final String NODE_ID_NEGATIVE_RANGE = "PercentDeadbandTest_NegativeRange";
+  private static final String NODE_ID_ARRAY_DOUBLE = "PercentDeadbandTest_ArrayDouble";
+  private static final String NODE_ID_ARRAY_INT32 = "PercentDeadbandTest_ArrayInt32";
 
   private OpcUaSubscription subscription;
 
@@ -77,6 +79,20 @@ public class PercentDeadbandTest extends AbstractClientServerTest {
       createAnalogItemNode(namespace, NODE_ID_RANGE_1000, new Range(0.0, 1000.0), 500.0);
 
       createAnalogItemNode(namespace, NODE_ID_NEGATIVE_RANGE, new Range(-50.0, 50.0), 0.0);
+
+      createAnalogItemArrayNode(
+          namespace,
+          NODE_ID_ARRAY_DOUBLE,
+          new Range(0.0, 100.0),
+          new Double[] {10.0, 20.0, 30.0},
+          NodeIds.Double);
+
+      createAnalogItemArrayNode(
+          namespace,
+          NODE_ID_ARRAY_INT32,
+          new Range(0.0, 100.0),
+          new Integer[] {10, 20, 30},
+          NodeIds.Int32);
     } catch (UaException e) {
       throw new RuntimeException(e);
     }
@@ -513,6 +529,500 @@ public class PercentDeadbandTest extends AbstractClientServerTest {
     assertEquals(63.0, receivedValues.get(0).value().value());
   }
 
+  @Test
+  void testPercentDeadband_ArrayValue_SingleElementExceeds() throws Exception {
+    NodeId nodeId = newNodeId(NODE_ID_ARRAY_DOUBLE);
+
+    var receivedValues = new CopyOnWriteArrayList<DataValue>();
+    var latch = new CountDownLatch(1);
+
+    OpcUaMonitoredItem monitoredItem = OpcUaMonitoredItem.newDataItem(nodeId);
+
+    var filter =
+        new DataChangeFilter(
+            DataChangeTrigger.StatusValue, uint(DeadbandType.Percent.getValue()), 10.0);
+    monitoredItem.setFilter(filter);
+
+    monitoredItem.setDataValueListener(
+        (item, value) -> {
+          receivedValues.add(value);
+          latch.countDown();
+        });
+
+    subscription.addMonitoredItem(monitoredItem);
+    subscription.synchronizeMonitoredItems();
+
+    // Wait for the initial value
+    assertTrue(latch.await(5, TimeUnit.SECONDS), "Initial value not received");
+    assertEquals(1, receivedValues.size());
+    receivedValues.clear();
+
+    // Write a value where one element exceeds deadband
+    // Range is 100, so 10% deadband = 10 units
+    // Change the last element from 30.0 to 41.0 = 11 units = 11% change
+    var latch2 = new CountDownLatch(1);
+    monitoredItem.setDataValueListener(
+        (item, value) -> {
+          receivedValues.add(value);
+          latch2.countDown();
+        });
+
+    AddressSpace addressSpace = client.getAddressSpace();
+    UaVariableNode variableNode = (UaVariableNode) addressSpace.getNode(nodeId);
+    variableNode.writeValue(new Variant(new Double[] {10.0, 20.0, 41.0}));
+
+    // Wait for notification
+    assertTrue(
+        latch2.await(5, TimeUnit.SECONDS),
+        "Should receive notification when one element exceeds deadband");
+    assertEquals(1, receivedValues.size());
+  }
+
+  @Test
+  void testPercentDeadband_ArrayValue_AllWithinDeadband() throws Exception {
+    NodeId nodeId = newNodeId(NODE_ID_ARRAY_DOUBLE);
+
+    var receivedValues = new CopyOnWriteArrayList<DataValue>();
+    var latch = new CountDownLatch(1);
+
+    OpcUaMonitoredItem monitoredItem = OpcUaMonitoredItem.newDataItem(nodeId);
+
+    var filter =
+        new DataChangeFilter(
+            DataChangeTrigger.StatusValue, uint(DeadbandType.Percent.getValue()), 10.0);
+    monitoredItem.setFilter(filter);
+
+    monitoredItem.setDataValueListener(
+        (item, value) -> {
+          receivedValues.add(value);
+          latch.countDown();
+        });
+
+    subscription.addMonitoredItem(monitoredItem);
+    subscription.synchronizeMonitoredItems();
+
+    // Wait for the initial value
+    assertTrue(latch.await(5, TimeUnit.SECONDS), "Initial value not received");
+    assertEquals(1, receivedValues.size());
+    receivedValues.clear();
+
+    // Write values where all elements stay within the deadband
+    // Initial: {10.0, 20.0, 30.0}
+    // New: {10.0, 29.0, 39.0} = {0, 9, 9} units change = all <= 10%
+    var latch2 = new CountDownLatch(1);
+    monitoredItem.setDataValueListener(
+        (item, value) -> {
+          receivedValues.add(value);
+          latch2.countDown();
+        });
+
+    AddressSpace addressSpace = client.getAddressSpace();
+    UaVariableNode variableNode = (UaVariableNode) addressSpace.getNode(nodeId);
+    variableNode.writeValue(new Variant(new Double[] {10.0, 29.0, 39.0}));
+
+    // Wait a bit to ensure no notification is sent
+    boolean notified = latch2.await(1, TimeUnit.SECONDS);
+
+    assertFalse(notified, "Should not receive notification when all elements within deadband");
+    assertEquals(0, receivedValues.size());
+  }
+
+  @Test
+  void testPercentDeadband_ArrayValue_ExactlyAtDeadband() throws Exception {
+    NodeId nodeId = newNodeId(NODE_ID_ARRAY_DOUBLE);
+
+    var receivedValues = new CopyOnWriteArrayList<DataValue>();
+    var latch = new CountDownLatch(1);
+
+    OpcUaMonitoredItem monitoredItem = OpcUaMonitoredItem.newDataItem(nodeId);
+
+    var filter =
+        new DataChangeFilter(
+            DataChangeTrigger.StatusValue, uint(DeadbandType.Percent.getValue()), 10.0);
+    monitoredItem.setFilter(filter);
+
+    monitoredItem.setDataValueListener(
+        (item, value) -> {
+          receivedValues.add(value);
+          latch.countDown();
+        });
+
+    subscription.addMonitoredItem(monitoredItem);
+    subscription.synchronizeMonitoredItems();
+
+    // Wait for the initial value
+    assertTrue(latch.await(5, TimeUnit.SECONDS), "Initial value not received");
+    assertEquals(1, receivedValues.size());
+    receivedValues.clear();
+
+    // Write value where one element is exactly at deadband threshold
+    // Change last element from 30.0 to 40.0 = 10 units = exactly 10%
+    var latch2 = new CountDownLatch(1);
+    monitoredItem.setDataValueListener(
+        (item, value) -> {
+          receivedValues.add(value);
+          latch2.countDown();
+        });
+
+    AddressSpace addressSpace = client.getAddressSpace();
+    UaVariableNode variableNode = (UaVariableNode) addressSpace.getNode(nodeId);
+    variableNode.writeValue(new Variant(new Double[] {10.0, 20.0, 40.0}));
+
+    // Wait a bit to ensure no notification is sent
+    boolean notified = latch2.await(1, TimeUnit.SECONDS);
+
+    assertFalse(notified, "Should not receive notification when element is exactly at deadband");
+    assertEquals(0, receivedValues.size());
+  }
+
+  @Test
+  void testPercentDeadband_ArrayValue_FirstElementExceeds() throws Exception {
+    NodeId nodeId = newNodeId(NODE_ID_ARRAY_DOUBLE);
+
+    var receivedValues = new CopyOnWriteArrayList<DataValue>();
+    var latch = new CountDownLatch(1);
+
+    OpcUaMonitoredItem monitoredItem = OpcUaMonitoredItem.newDataItem(nodeId);
+
+    var filter =
+        new DataChangeFilter(
+            DataChangeTrigger.StatusValue, uint(DeadbandType.Percent.getValue()), 10.0);
+    monitoredItem.setFilter(filter);
+
+    monitoredItem.setDataValueListener(
+        (item, value) -> {
+          receivedValues.add(value);
+          latch.countDown();
+        });
+
+    subscription.addMonitoredItem(monitoredItem);
+    subscription.synchronizeMonitoredItems();
+
+    // Wait for the initial value
+    assertTrue(latch.await(5, TimeUnit.SECONDS), "Initial value not received");
+    assertEquals(1, receivedValues.size());
+    receivedValues.clear();
+
+    // Write value where the first element exceeds deadband
+    // Change the first element from 10.0 to 21.0 = 11 units = 11% change
+    var latch2 = new CountDownLatch(1);
+    monitoredItem.setDataValueListener(
+        (item, value) -> {
+          receivedValues.add(value);
+          latch2.countDown();
+        });
+
+    AddressSpace addressSpace = client.getAddressSpace();
+    UaVariableNode variableNode = (UaVariableNode) addressSpace.getNode(nodeId);
+    variableNode.writeValue(new Variant(new Double[] {21.0, 20.0, 30.0}));
+
+    // Wait for notification
+    assertTrue(
+        latch2.await(5, TimeUnit.SECONDS),
+        "Should receive notification when first element exceeds deadband");
+    assertEquals(1, receivedValues.size());
+  }
+
+  @Test
+  void testPercentDeadband_ArrayValue_MultipleElementsExceed() throws Exception {
+    NodeId nodeId = newNodeId(NODE_ID_ARRAY_DOUBLE);
+
+    var receivedValues = new CopyOnWriteArrayList<DataValue>();
+    var latch = new CountDownLatch(1);
+
+    OpcUaMonitoredItem monitoredItem = OpcUaMonitoredItem.newDataItem(nodeId);
+
+    var filter =
+        new DataChangeFilter(
+            DataChangeTrigger.StatusValue, uint(DeadbandType.Percent.getValue()), 10.0);
+    monitoredItem.setFilter(filter);
+
+    monitoredItem.setDataValueListener(
+        (item, value) -> {
+          receivedValues.add(value);
+          latch.countDown();
+        });
+
+    subscription.addMonitoredItem(monitoredItem);
+    subscription.synchronizeMonitoredItems();
+
+    // Wait for the initial value
+    assertTrue(latch.await(5, TimeUnit.SECONDS), "Initial value not received");
+    assertEquals(1, receivedValues.size());
+    receivedValues.clear();
+
+    // Write value where multiple elements exceed deadband
+    // Change the first element from 10.0 to 21.0 = 11 units = 11% change.
+    // Change the second element from 20.0 to 31.0 = 11 units = 11% change.
+    var latch2 = new CountDownLatch(1);
+    monitoredItem.setDataValueListener(
+        (item, value) -> {
+          receivedValues.add(value);
+          latch2.countDown();
+        });
+
+    AddressSpace addressSpace = client.getAddressSpace();
+    UaVariableNode variableNode = (UaVariableNode) addressSpace.getNode(nodeId);
+    variableNode.writeValue(new Variant(new Double[] {21.0, 31.0, 30.0}));
+
+    // Wait for notification
+    assertTrue(
+        latch2.await(5, TimeUnit.SECONDS),
+        "Should receive notification when multiple elements exceed deadband");
+    assertEquals(1, receivedValues.size());
+  }
+
+  @Test
+  void testPercentDeadband_ArrayValue_LengthIncreases() throws Exception {
+    NodeId nodeId = newNodeId(NODE_ID_ARRAY_DOUBLE);
+
+    var receivedValues = new CopyOnWriteArrayList<DataValue>();
+    var latch = new CountDownLatch(1);
+
+    OpcUaMonitoredItem monitoredItem = OpcUaMonitoredItem.newDataItem(nodeId);
+
+    var filter =
+        new DataChangeFilter(
+            DataChangeTrigger.StatusValue, uint(DeadbandType.Percent.getValue()), 10.0);
+    monitoredItem.setFilter(filter);
+
+    monitoredItem.setDataValueListener(
+        (item, value) -> {
+          receivedValues.add(value);
+          latch.countDown();
+        });
+
+    subscription.addMonitoredItem(monitoredItem);
+    subscription.synchronizeMonitoredItems();
+
+    // Wait for the initial value
+    assertTrue(latch.await(5, TimeUnit.SECONDS), "Initial value not received");
+    assertEquals(1, receivedValues.size());
+    receivedValues.clear();
+
+    // Write value where array length increases
+    // Initial: {10.0, 20.0, 30.0}
+    // New: {10.0, 20.0, 30.0, 40.0}
+    var latch2 = new CountDownLatch(1);
+    monitoredItem.setDataValueListener(
+        (item, value) -> {
+          receivedValues.add(value);
+          latch2.countDown();
+        });
+
+    AddressSpace addressSpace = client.getAddressSpace();
+    UaVariableNode variableNode = (UaVariableNode) addressSpace.getNode(nodeId);
+    variableNode.writeValue(new Variant(new Double[] {10.0, 20.0, 30.0, 40.0}));
+
+    // Wait for notification
+    assertTrue(
+        latch2.await(5, TimeUnit.SECONDS),
+        "Should receive notification when array length increases");
+    assertEquals(1, receivedValues.size());
+  }
+
+  @Test
+  void testPercentDeadband_ArrayValue_LengthDecreases() throws Exception {
+    NodeId nodeId = newNodeId(NODE_ID_ARRAY_DOUBLE);
+
+    var receivedValues = new CopyOnWriteArrayList<DataValue>();
+    var latch = new CountDownLatch(1);
+
+    OpcUaMonitoredItem monitoredItem = OpcUaMonitoredItem.newDataItem(nodeId);
+
+    var filter =
+        new DataChangeFilter(
+            DataChangeTrigger.StatusValue, uint(DeadbandType.Percent.getValue()), 10.0);
+    monitoredItem.setFilter(filter);
+
+    monitoredItem.setDataValueListener(
+        (item, value) -> {
+          receivedValues.add(value);
+          latch.countDown();
+        });
+
+    subscription.addMonitoredItem(monitoredItem);
+    subscription.synchronizeMonitoredItems();
+
+    // Wait for the initial value
+    assertTrue(latch.await(5, TimeUnit.SECONDS), "Initial value not received");
+    assertEquals(1, receivedValues.size());
+    receivedValues.clear();
+
+    // Write value where array length decreases
+    // Initial: {10.0, 20.0, 30.0}
+    // New: {10.0, 20.0}
+    var latch2 = new CountDownLatch(1);
+    monitoredItem.setDataValueListener(
+        (item, value) -> {
+          receivedValues.add(value);
+          latch2.countDown();
+        });
+
+    AddressSpace addressSpace = client.getAddressSpace();
+    UaVariableNode variableNode = (UaVariableNode) addressSpace.getNode(nodeId);
+    variableNode.writeValue(new Variant(new Double[] {10.0, 20.0}));
+
+    // Wait for notification
+    assertTrue(
+        latch2.await(5, TimeUnit.SECONDS),
+        "Should receive notification when array length decreases");
+    assertEquals(1, receivedValues.size());
+  }
+
+  @Test
+  void testPercentDeadband_ArrayValue_Int32Array() throws Exception {
+    NodeId nodeId = newNodeId(NODE_ID_ARRAY_INT32);
+
+    var receivedValues = new CopyOnWriteArrayList<DataValue>();
+    var latch = new CountDownLatch(1);
+
+    OpcUaMonitoredItem monitoredItem = OpcUaMonitoredItem.newDataItem(nodeId);
+
+    var filter =
+        new DataChangeFilter(
+            DataChangeTrigger.StatusValue, uint(DeadbandType.Percent.getValue()), 10.0);
+    monitoredItem.setFilter(filter);
+
+    monitoredItem.setDataValueListener(
+        (item, value) -> {
+          receivedValues.add(value);
+          latch.countDown();
+        });
+
+    subscription.addMonitoredItem(monitoredItem);
+    subscription.synchronizeMonitoredItems();
+
+    // Wait for the initial value
+    assertTrue(latch.await(5, TimeUnit.SECONDS), "Initial value not received");
+    assertEquals(1, receivedValues.size());
+    receivedValues.clear();
+
+    // Write value where one element exceeds deadband
+    // Range is 100, so 10% deadband = 10 units
+    // Change the last element from 30 to 41 = 11 units = 11% change
+    var latch2 = new CountDownLatch(1);
+    monitoredItem.setDataValueListener(
+        (item, value) -> {
+          receivedValues.add(value);
+          latch2.countDown();
+        });
+
+    AddressSpace addressSpace = client.getAddressSpace();
+    UaVariableNode variableNode = (UaVariableNode) addressSpace.getNode(nodeId);
+    variableNode.writeValue(new Variant(new Integer[] {10, 20, 41}));
+
+    // Wait for notification
+    assertTrue(
+        latch2.await(5, TimeUnit.SECONDS),
+        "Should receive notification when Int32 array element exceeds deadband");
+    assertEquals(1, receivedValues.size());
+  }
+
+  @Test
+  void testPercentDeadband_ArrayValue_NaN() throws Exception {
+    NodeId nodeId = newNodeId(NODE_ID_ARRAY_DOUBLE);
+
+    // Set the initial value with NaN in one element
+    AddressSpace addressSpace = client.getAddressSpace();
+    UaVariableNode variableNode = (UaVariableNode) addressSpace.getNode(nodeId);
+    variableNode.writeValue(new Variant(new Double[] {10.0, Double.NaN, 30.0}));
+
+    var receivedValues = new CopyOnWriteArrayList<DataValue>();
+    var latch = new CountDownLatch(1);
+
+    OpcUaMonitoredItem monitoredItem = OpcUaMonitoredItem.newDataItem(nodeId);
+
+    var filter =
+        new DataChangeFilter(
+            DataChangeTrigger.StatusValue, uint(DeadbandType.Percent.getValue()), 10.0);
+    monitoredItem.setFilter(filter);
+
+    monitoredItem.setDataValueListener(
+        (item, value) -> {
+          receivedValues.add(value);
+          latch.countDown();
+        });
+
+    subscription.addMonitoredItem(monitoredItem);
+    subscription.synchronizeMonitoredItems();
+
+    // Wait for the initial value
+    assertTrue(latch.await(5, TimeUnit.SECONDS), "Initial value not received");
+    assertEquals(1, receivedValues.size());
+    receivedValues.clear();
+
+    // Write value where NaN element transitions to valid value
+    // Initial: {10.0, Double.NaN, 30.0}
+    // New: {10.0, 20.0, 30.0}
+    var latch2 = new CountDownLatch(1);
+    monitoredItem.setDataValueListener(
+        (item, value) -> {
+          receivedValues.add(value);
+          latch2.countDown();
+        });
+
+    variableNode.writeValue(new Variant(new Double[] {10.0, 20.0, 30.0}));
+
+    // Wait for notification
+    assertTrue(
+        latch2.await(5, TimeUnit.SECONDS),
+        "Should receive notification when NaN element becomes valid value");
+    assertEquals(1, receivedValues.size());
+  }
+
+  @Test
+  void testPercentDeadband_ArrayValue_Infinity() throws Exception {
+    NodeId nodeId = newNodeId(NODE_ID_ARRAY_DOUBLE);
+
+    // Set the initial value with Infinity in one element
+    AddressSpace addressSpace = client.getAddressSpace();
+    UaVariableNode variableNode = (UaVariableNode) addressSpace.getNode(nodeId);
+    variableNode.writeValue(new Variant(new Double[] {10.0, Double.POSITIVE_INFINITY, 30.0}));
+
+    var receivedValues = new CopyOnWriteArrayList<DataValue>();
+    var latch = new CountDownLatch(1);
+
+    OpcUaMonitoredItem monitoredItem = OpcUaMonitoredItem.newDataItem(nodeId);
+
+    var filter =
+        new DataChangeFilter(
+            DataChangeTrigger.StatusValue, uint(DeadbandType.Percent.getValue()), 10.0);
+    monitoredItem.setFilter(filter);
+
+    monitoredItem.setDataValueListener(
+        (item, value) -> {
+          receivedValues.add(value);
+          latch.countDown();
+        });
+
+    subscription.addMonitoredItem(monitoredItem);
+    subscription.synchronizeMonitoredItems();
+
+    // Wait for the initial value
+    assertTrue(latch.await(5, TimeUnit.SECONDS), "Initial value not received");
+    assertEquals(1, receivedValues.size());
+    receivedValues.clear();
+
+    // Write value where an Infinity element transitions to valid value
+    // Initial: {10.0, Double.POSITIVE_INFINITY, 30.0}
+    // New: {10.0, 20.0, 30.0}
+    var latch2 = new CountDownLatch(1);
+    monitoredItem.setDataValueListener(
+        (item, value) -> {
+          receivedValues.add(value);
+          latch2.countDown();
+        });
+
+    variableNode.writeValue(new Variant(new Double[] {10.0, 20.0, 30.0}));
+
+    // Wait for notification
+    assertTrue(
+        latch2.await(5, TimeUnit.SECONDS),
+        "Should receive notification when Infinity element becomes valid value");
+    assertEquals(1, receivedValues.size());
+  }
+
   private void createAnalogItemNode(
       TestNamespace namespace, String identifier, Range euRange, double initialValue)
       throws UaException {
@@ -552,6 +1062,50 @@ public class PercentDeadbandTest extends AbstractClientServerTest {
     namespace.getNodeManager().addNode(node);
   }
 
+  private void createAnalogItemArrayNode(
+      TestNamespace namespace,
+      String identifier,
+      Range euRange,
+      Object initialValue,
+      NodeId dataType)
+      throws UaException {
+
+    var nodeId = new NodeId(namespace.getNamespaceIndex(), identifier);
+
+    AnalogItemTypeNode node =
+        (AnalogItemTypeNode)
+            namespace
+                .getNodeFactory()
+                .createNode(
+                    nodeId,
+                    NodeIds.AnalogItemType,
+                    new NodeFactory.InstantiationCallback() {
+                      @Override
+                      public boolean includeOptionalNode(
+                          NodeId typeDefinitionId, QualifiedName browseName) {
+                        return true;
+                      }
+                    });
+
+    node.setBrowseName(new QualifiedName(namespace.getNamespaceIndex(), identifier));
+    node.setDisplayName(LocalizedText.english(identifier));
+    node.setDataType(dataType);
+    node.setValueRank(1); // One-dimensional array
+    node.setValue(new DataValue(new Variant(initialValue)));
+    node.setAccessLevel(AccessLevel.toValue(AccessLevel.READ_WRITE));
+    node.setUserAccessLevel(AccessLevel.toValue(AccessLevel.READ_WRITE));
+    node.setEuRange(euRange);
+
+    node.addReference(
+        new Reference(
+            node.getNodeId(),
+            NodeIds.HasComponent,
+            NodeIds.ObjectsFolder.expanded(),
+            Reference.Direction.INVERSE));
+
+    namespace.getNodeManager().addNode(node);
+  }
+
   private void resetNodeValues() throws Exception {
     AddressSpace addressSpace = client.getAddressSpace();
 
@@ -563,5 +1117,11 @@ public class PercentDeadbandTest extends AbstractClientServerTest {
 
     UaVariableNode node3 = (UaVariableNode) addressSpace.getNode(newNodeId(NODE_ID_NEGATIVE_RANGE));
     node3.writeValue(new Variant(0.0));
+
+    UaVariableNode node4 = (UaVariableNode) addressSpace.getNode(newNodeId(NODE_ID_ARRAY_DOUBLE));
+    node4.writeValue(new Variant(new Double[] {10.0, 20.0, 30.0}));
+
+    UaVariableNode node5 = (UaVariableNode) addressSpace.getNode(newNodeId(NODE_ID_ARRAY_INT32));
+    node5.writeValue(new Variant(new Integer[] {10, 20, 30}));
   }
 }
