@@ -33,7 +33,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.core.NumericRange;
-import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.util.GroupMapCollate;
 import org.eclipse.milo.opcua.sdk.server.AddressSpace.ReadContext;
 import org.eclipse.milo.opcua.sdk.server.AddressSpace.RevisedDataItemParameters;
@@ -46,7 +45,6 @@ import org.eclipse.milo.opcua.sdk.server.items.EventItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredDataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredEventItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
-import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.AccessResult;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.helpers.BrowseHelper;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.helpers.BrowsePathsHelper;
@@ -135,42 +133,6 @@ public class SubscriptionManager {
     } catch (Throwable t) {
       LoggerFactory.getLogger(SubscriptionManager.class)
           .error("Uncaught Throwable in eventItemConsumer", t);
-    }
-  }
-
-  /**
-   * @return {@code true} if {@code dataTypeId} is a subtype of {@code potentialSuperTypeId}.
-   */
-  private static boolean subtypeOf(
-      OpcUaServer server, NodeId dataTypeId, NodeId potentialSuperTypeId) {
-    UaNode dataTypeNode = server.getAddressSpaceManager().getManagedNode(dataTypeId).orElse(null);
-
-    if (dataTypeNode != null) {
-      NodeId superTypeId = getSuperTypeId(server, dataTypeId);
-
-      if (superTypeId != null) {
-        return superTypeId.equals(potentialSuperTypeId)
-            || subtypeOf(server, superTypeId, potentialSuperTypeId);
-      } else {
-        return false;
-      }
-    } else {
-      return false;
-    }
-  }
-
-  @Nullable
-  private static NodeId getSuperTypeId(OpcUaServer server, NodeId dataTypeId) {
-    UaNode dataTypeNode = server.getAddressSpaceManager().getManagedNode(dataTypeId).orElse(null);
-
-    if (dataTypeNode != null) {
-      return dataTypeNode.getReferences().stream()
-          .filter(Reference.SUBTYPE_OF)
-          .flatMap(r -> r.getTargetNodeId().toNodeId(server.getNamespaceTable()).stream())
-          .findFirst()
-          .orElse(null);
-    } else {
-      return null;
     }
   }
 
@@ -760,7 +722,7 @@ public class SubscriptionManager {
           }
 
           if (!NodeIds.Number.equals(dataTypeId)
-              && !subtypeOf(server, dataTypeId, NodeIds.Number)) {
+              && !server.getDataTypeTree().isSubtypeOf(dataTypeId, NodeIds.Number)) {
             throw new UaException(StatusCodes.Bad_FilterNotAllowed);
           }
         }
