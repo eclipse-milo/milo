@@ -604,4 +604,124 @@ public class DataChangeMonitoringFilterTest {
     result = DataChangeMonitoringFilter.filter(lastValue, currentValue, filter);
     assertTrue(result);
   }
+
+  // Test type transitions
+
+  @Test
+  public void testTypeTransition_ScalarToArray() {
+    var filter =
+        new DataChangeFilter(
+            DataChangeTrigger.StatusValue, uint(DeadbandType.Absolute.getValue()), 5.0);
+
+    var lastValue = new DataValue(new Variant(100.0)); // Scalar
+    var currentValue = new DataValue(new Variant(new double[] {100.0, 200.0})); // Array
+
+    // Type change should always trigger notification
+    boolean result = DataChangeMonitoringFilter.filter(lastValue, currentValue, filter);
+    assertTrue(result, "Scalar to array transition should trigger notification");
+  }
+
+  @Test
+  public void testTypeTransition_ArrayToScalar() {
+    var filter =
+        new DataChangeFilter(
+            DataChangeTrigger.StatusValue, uint(DeadbandType.Absolute.getValue()), 5.0);
+
+    var lastValue = new DataValue(new Variant(new double[] {100.0, 200.0})); // Array
+    var currentValue = new DataValue(new Variant(100.0)); // Scalar
+
+    // Type change should always trigger notification
+    boolean result = DataChangeMonitoringFilter.filter(lastValue, currentValue, filter);
+    assertTrue(result, "Array to scalar transition should trigger notification");
+  }
+
+  @Test
+  public void testTypeTransition_ScalarToMatrix() {
+    var filter =
+        new DataChangeFilter(
+            DataChangeTrigger.StatusValue, uint(DeadbandType.Absolute.getValue()), 5.0);
+
+    var lastValue = new DataValue(new Variant(100.0)); // Scalar
+    var currentMatrix = Matrix.ofDouble(new double[][] {{100.0, 200.0}}); // Matrix
+    var currentValue = new DataValue(new Variant(currentMatrix));
+
+    // Type change should always trigger notification
+    boolean result = DataChangeMonitoringFilter.filter(lastValue, currentValue, filter);
+    assertTrue(result, "Scalar to matrix transition should trigger notification");
+  }
+
+  @Test
+  public void testTypeTransition_MatrixToScalar() {
+    var filter =
+        new DataChangeFilter(
+            DataChangeTrigger.StatusValue, uint(DeadbandType.Absolute.getValue()), 5.0);
+
+    var lastMatrix = Matrix.ofDouble(new double[][] {{100.0, 200.0}}); // Matrix
+    var lastValue = new DataValue(new Variant(lastMatrix));
+    var currentValue = new DataValue(new Variant(100.0)); // Scalar
+
+    // Type change should always trigger notification
+    boolean result = DataChangeMonitoringFilter.filter(lastValue, currentValue, filter);
+    assertTrue(result, "Matrix to scalar transition should trigger notification");
+  }
+
+  @Test
+  public void testTypeTransition_ArrayToMatrix() {
+    var filter =
+        new DataChangeFilter(
+            DataChangeTrigger.StatusValue, uint(DeadbandType.Absolute.getValue()), 5.0);
+
+    var lastValue = new DataValue(new Variant(new double[] {100.0, 200.0})); // Array
+    var currentMatrix = Matrix.ofDouble(new double[][] {{100.0, 200.0}}); // Matrix
+    var currentValue = new DataValue(new Variant(currentMatrix));
+
+    // Type change should always trigger notification
+    boolean result = DataChangeMonitoringFilter.filter(lastValue, currentValue, filter);
+    assertTrue(result, "Array to matrix transition should trigger notification");
+  }
+
+  @Test
+  public void testTypeTransition_MatrixToArray() {
+    var filter =
+        new DataChangeFilter(
+            DataChangeTrigger.StatusValue, uint(DeadbandType.Absolute.getValue()), 5.0);
+
+    var lastMatrix = Matrix.ofDouble(new double[][] {{100.0, 200.0}}); // Matrix
+    var lastValue = new DataValue(new Variant(lastMatrix));
+    var currentValue = new DataValue(new Variant(new double[] {100.0, 200.0})); // Array
+
+    // Type change should always trigger notification
+    boolean result = DataChangeMonitoringFilter.filter(lastValue, currentValue, filter);
+    assertTrue(result, "Matrix to array transition should trigger notification");
+  }
+
+  @Test
+  public void testTypeTransition_WithPercentDeadband() {
+    var filter =
+        new DataChangeFilter(
+            DataChangeTrigger.StatusValue, uint(DeadbandType.Percent.getValue()), 10.0);
+
+    var euRange = new Range(0.0, 100.0);
+
+    var lastValue = new DataValue(new Variant(50.0)); // Scalar
+    var currentValue = new DataValue(new Variant(new double[] {50.0, 60.0})); // Array
+
+    // Type change should trigger notification even with percent deadband
+    boolean result = DataChangeMonitoringFilter.filter(lastValue, currentValue, filter, euRange);
+    assertTrue(result, "Type transition should trigger notification with percent deadband");
+  }
+
+  @Test
+  public void testTypeTransition_WithNoDeadband() {
+    var filter =
+        new DataChangeFilter(
+            DataChangeTrigger.StatusValue, uint(DeadbandType.None.getValue()), 0.0);
+
+    var lastValue = new DataValue(new Variant(100.0)); // Scalar
+    var currentValue = new DataValue(new Variant(new double[] {100.0})); // Array
+
+    // Type change should trigger notification even with no deadband
+    boolean result = DataChangeMonitoringFilter.filter(lastValue, currentValue, filter);
+    assertTrue(result, "Type transition should trigger notification with no deadband");
+  }
 }

@@ -200,7 +200,14 @@ public class DataChangeMonitoringFilter {
 
     if (last == null || current == null) {
       return valueChanged(lastValue, currentValue);
-    } else if (last instanceof Matrix lastMatrix && current instanceof Matrix currentMatrix) {
+    }
+
+    // Type transitions (scalar ↔ array ↔ matrix) should always trigger notifications
+    if (getValueType(last) != getValueType(current)) {
+      return true;
+    }
+
+    if (last instanceof Matrix lastMatrix && current instanceof Matrix currentMatrix) {
       Object lastElements = lastMatrix.getElements();
       Object currentElements = currentMatrix.getElements();
 
@@ -361,5 +368,30 @@ public class DataChangeMonitoringFilter {
 
   private static boolean timestampChanged(DataValue lastValue, DataValue currentValue) {
     return !Objects.equals(lastValue.sourceTime(), currentValue.sourceTime());
+  }
+
+  /** Classifies the type of value for deadband filtering. */
+  private enum ValueType {
+    SCALAR,
+    ARRAY,
+    MATRIX
+  }
+
+  /**
+   * Determines the value type classification for deadband filtering.
+   *
+   * @param value the value to classify.
+   * @return the value type, or null if the value is null.
+   */
+  private static @Nullable ValueType getValueType(@Nullable Object value) {
+    if (value == null) {
+      return null;
+    } else if (value instanceof Matrix) {
+      return ValueType.MATRIX;
+    } else if (value.getClass().isArray()) {
+      return ValueType.ARRAY;
+    } else {
+      return ValueType.SCALAR;
+    }
   }
 }
