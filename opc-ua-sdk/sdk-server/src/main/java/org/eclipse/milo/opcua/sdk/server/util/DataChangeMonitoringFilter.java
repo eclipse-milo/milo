@@ -10,8 +10,10 @@
 
 package org.eclipse.milo.opcua.sdk.server.util;
 
+import java.lang.reflect.Array;
 import java.util.Objects;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.DataChangeTrigger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.DeadbandType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataChangeFilter;
@@ -198,6 +200,22 @@ public class DataChangeMonitoringFilter {
 
     if (last == null || current == null) {
       return valueChanged(lastValue, currentValue);
+    } else if (last instanceof Matrix lastMatrix && current instanceof Matrix currentMatrix) {
+      Object lastElements = lastMatrix.getElements();
+      Object currentElements = currentMatrix.getElements();
+
+      if (lastElements == null || currentElements == null) {
+        return valueChanged(lastValue, currentValue);
+      }
+
+      if (deadbandType == DeadbandType.Absolute) {
+        return compareArrayAbsoluteDeadband(
+            lastElements, currentElements, filter.getDeadbandValue());
+      } else if (deadbandType == DeadbandType.Percent && euRange != null) {
+        return compareArrayPercentDeadband(
+            lastElements, currentElements, filter.getDeadbandValue(), euRange);
+      }
+      return valueChanged(lastValue, currentValue);
     } else if (last.getClass().isArray() && current.getClass().isArray()) {
       if (deadbandType == DeadbandType.Absolute) {
         return compareArrayAbsoluteDeadband(last, current, filter.getDeadbandValue());
@@ -218,45 +236,46 @@ public class DataChangeMonitoringFilter {
   private static boolean compareArrayAbsoluteDeadband(
       Object last, Object current, double deadband) {
 
-    // Cast to Object[] to handle boxed numeric arrays (Double[], Float[], etc.).
-    // Primitive arrays (double[], float[]) will fail the isArray() check earlier
-    // and fall back to valueChanged() comparison.
-    Object[] lastA = (Object[]) last;
-    Object[] currentA = (Object[]) current;
+    // Use Array API to handle both primitive arrays (double[], float[], int[], etc.)
+    // and boxed arrays (Double[], Float[], Integer[], etc.).
+    int lastLength = Array.getLength(last);
+    int currentLength = Array.getLength(current);
 
-    if (lastA.length != currentA.length) {
+    if (lastLength != currentLength) {
       return true;
     } else {
-      boolean exceeds = false;
-
-      for (int i = 0; i < lastA.length; i++) {
-        exceeds = exceeds || exceedsAbsoluteDeadband(lastA[i], currentA[i], deadband);
+      for (int i = 0; i < lastLength; i++) {
+        Object lastElement = Array.get(last, i);
+        Object currentElement = Array.get(current, i);
+        if (exceedsAbsoluteDeadband(lastElement, currentElement, deadband)) {
+          return true;
+        }
       }
 
-      return exceeds;
+      return false;
     }
   }
 
   private static boolean compareArrayPercentDeadband(
       Object last, Object current, double deadbandPercent, Range euRange) {
 
-    // Cast to Object[] to handle boxed numeric arrays (Double[], Float[], etc.).
-    // Primitive arrays (double[], float[]) will fail the isArray() check earlier
-    // and fall back to valueChanged() comparison.
-    Object[] lastA = (Object[]) last;
-    Object[] currentA = (Object[]) current;
+    // Use Array API to handle both primitive arrays (double[], float[], int[], etc.)
+    // and boxed arrays (Double[], Float[], Integer[], etc.).
+    int lastLength = Array.getLength(last);
+    int currentLength = Array.getLength(current);
 
-    if (lastA.length != currentA.length) {
+    if (lastLength != currentLength) {
       return true;
     } else {
-      boolean exceeds = false;
-
-      for (int i = 0; i < lastA.length; i++) {
-        exceeds =
-            exceeds || exceedsPercentDeadband(lastA[i], currentA[i], deadbandPercent, euRange);
+      for (int i = 0; i < lastLength; i++) {
+        Object lastElement = Array.get(last, i);
+        Object currentElement = Array.get(current, i);
+        if (exceedsPercentDeadband(lastElement, currentElement, deadbandPercent, euRange)) {
+          return true;
+        }
       }
 
-      return exceeds;
+      return false;
     }
   }
 

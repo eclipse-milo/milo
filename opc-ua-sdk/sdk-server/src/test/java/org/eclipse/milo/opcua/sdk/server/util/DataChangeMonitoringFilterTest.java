@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.DataChangeTrigger;
@@ -344,6 +345,48 @@ public class DataChangeMonitoringFilterTest {
   }
 
   @Test
+  public void testPercentDeadband_PrimitiveDoubleArrayValue() {
+    var filter =
+        new DataChangeFilter(
+            DataChangeTrigger.StatusValue, uint(DeadbandType.Percent.getValue()), 10.0);
+
+    var euRange = new Range(0.0, 100.0);
+
+    var lastValue = new DataValue(new Variant(new double[] {10.0, 20.0, 30.0}));
+    var currentValue =
+        new DataValue(new Variant(new double[] {10.0, 20.0, 40.0})); // 10 change = 10%
+
+    // Exactly 10% change in one element should not pass
+    boolean result = DataChangeMonitoringFilter.filter(lastValue, currentValue, filter, euRange);
+    assertFalse(result);
+
+    currentValue = new DataValue(new Variant(new double[] {10.0, 20.0, 41.0})); // 11 change = 11%
+    result = DataChangeMonitoringFilter.filter(lastValue, currentValue, filter, euRange);
+    assertTrue(result);
+  }
+
+  @Test
+  public void testPercentDeadband_PrimitiveFloatArrayValue() {
+    var filter =
+        new DataChangeFilter(
+            DataChangeTrigger.StatusValue, uint(DeadbandType.Percent.getValue()), 10.0);
+
+    var euRange = new Range(0.0, 100.0);
+
+    var lastValue = new DataValue(new Variant(new float[] {10.0f, 20.0f, 30.0f}));
+    var currentValue =
+        new DataValue(new Variant(new float[] {10.0f, 20.0f, 40.0f})); // 10 change = 10%
+
+    // Exactly 10% change in one element should not pass
+    boolean result = DataChangeMonitoringFilter.filter(lastValue, currentValue, filter, euRange);
+    assertFalse(result);
+
+    currentValue = new DataValue(new Variant(new float[] {10.0f, 20.0f, 41.0f})); // 11 change = 11%
+    result = DataChangeMonitoringFilter.filter(lastValue, currentValue, filter, euRange);
+    assertTrue(result);
+  }
+
+  @Test
   public void testAbsoluteDeadband_ArrayValue() {
     var filter =
         new DataChangeFilter(
@@ -356,6 +399,58 @@ public class DataChangeMonitoringFilterTest {
     assertFalse(result);
 
     currentValue = new DataValue(new Variant(new Double[] {100.0, 200.0, 306.0})); // 6.0 change
+    result = DataChangeMonitoringFilter.filter(lastValue, currentValue, filter);
+    assertTrue(result);
+  }
+
+  @Test
+  public void testAbsoluteDeadband_PrimitiveDoubleArrayValue() {
+    var filter =
+        new DataChangeFilter(
+            DataChangeTrigger.StatusValue, uint(DeadbandType.Absolute.getValue()), 5.0);
+
+    var lastValue = new DataValue(new Variant(new double[] {100.0, 200.0, 300.0}));
+    var currentValue = new DataValue(new Variant(new double[] {100.0, 200.0, 304.0})); // 4.0 change
+
+    boolean result = DataChangeMonitoringFilter.filter(lastValue, currentValue, filter);
+    assertFalse(result);
+
+    currentValue = new DataValue(new Variant(new double[] {100.0, 200.0, 306.0})); // 6.0 change
+    result = DataChangeMonitoringFilter.filter(lastValue, currentValue, filter);
+    assertTrue(result);
+  }
+
+  @Test
+  public void testAbsoluteDeadband_PrimitiveIntArrayValue() {
+    var filter =
+        new DataChangeFilter(
+            DataChangeTrigger.StatusValue, uint(DeadbandType.Absolute.getValue()), 5.0);
+
+    var lastValue = new DataValue(new Variant(new int[] {100, 200, 300}));
+    var currentValue = new DataValue(new Variant(new int[] {100, 200, 304})); // 4 change
+
+    boolean result = DataChangeMonitoringFilter.filter(lastValue, currentValue, filter);
+    assertFalse(result);
+
+    currentValue = new DataValue(new Variant(new int[] {100, 200, 306})); // 6 change
+    result = DataChangeMonitoringFilter.filter(lastValue, currentValue, filter);
+    assertTrue(result);
+  }
+
+  @Test
+  public void testAbsoluteDeadband_PrimitiveFloatArrayValue() {
+    var filter =
+        new DataChangeFilter(
+            DataChangeTrigger.StatusValue, uint(DeadbandType.Absolute.getValue()), 5.0);
+
+    var lastValue = new DataValue(new Variant(new float[] {100.0f, 200.0f, 300.0f}));
+    var currentValue =
+        new DataValue(new Variant(new float[] {100.0f, 200.0f, 304.0f})); // 4.0 change
+
+    boolean result = DataChangeMonitoringFilter.filter(lastValue, currentValue, filter);
+    assertFalse(result);
+
+    currentValue = new DataValue(new Variant(new float[] {100.0f, 200.0f, 306.0f})); // 6.0 change
     result = DataChangeMonitoringFilter.filter(lastValue, currentValue, filter);
     assertTrue(result);
   }
@@ -392,6 +487,121 @@ public class DataChangeMonitoringFilterTest {
 
     // Infinity changes should always pass
     boolean result = DataChangeMonitoringFilter.filter(lastValue, currentValue, filter);
+    assertTrue(result);
+  }
+
+  // Test Matrix values
+
+  @Test
+  public void testAbsoluteDeadband_PrimitiveDoubleMatrixValue() {
+    var filter =
+        new DataChangeFilter(
+            DataChangeTrigger.StatusValue, uint(DeadbandType.Absolute.getValue()), 5.0);
+
+    var lastMatrix = Matrix.ofDouble(new double[][] {{100.0, 200.0}, {300.0, 400.0}});
+    var currentMatrix =
+        Matrix.ofDouble(new double[][] {{100.0, 200.0}, {300.0, 404.0}}); // 4.0 change
+
+    var lastValue = new DataValue(new Variant(lastMatrix));
+    var currentValue = new DataValue(new Variant(currentMatrix));
+
+    boolean result = DataChangeMonitoringFilter.filter(lastValue, currentValue, filter);
+    assertFalse(result);
+
+    currentMatrix = Matrix.ofDouble(new double[][] {{100.0, 200.0}, {300.0, 406.0}}); // 6.0 change
+    currentValue = new DataValue(new Variant(currentMatrix));
+    result = DataChangeMonitoringFilter.filter(lastValue, currentValue, filter);
+    assertTrue(result);
+  }
+
+  @Test
+  public void testPercentDeadband_PrimitiveDoubleMatrixValue() {
+    var filter =
+        new DataChangeFilter(
+            DataChangeTrigger.StatusValue, uint(DeadbandType.Percent.getValue()), 10.0);
+
+    var euRange = new Range(0.0, 100.0);
+
+    var lastMatrix = Matrix.ofDouble(new double[][] {{10.0, 20.0}, {30.0, 40.0}});
+    var currentMatrix =
+        Matrix.ofDouble(new double[][] {{10.0, 20.0}, {30.0, 50.0}}); // 10 change = 10%
+
+    var lastValue = new DataValue(new Variant(lastMatrix));
+    var currentValue = new DataValue(new Variant(currentMatrix));
+
+    // Exactly 10% change should not pass
+    boolean result = DataChangeMonitoringFilter.filter(lastValue, currentValue, filter, euRange);
+    assertFalse(result);
+
+    currentMatrix = Matrix.ofDouble(new double[][] {{10.0, 20.0}, {30.0, 51.0}}); // 11 change = 11%
+    currentValue = new DataValue(new Variant(currentMatrix));
+    result = DataChangeMonitoringFilter.filter(lastValue, currentValue, filter, euRange);
+    assertTrue(result);
+  }
+
+  @Test
+  public void testAbsoluteDeadband_PrimitiveFloatMatrixValue() {
+    var filter =
+        new DataChangeFilter(
+            DataChangeTrigger.StatusValue, uint(DeadbandType.Absolute.getValue()), 5.0);
+
+    var lastMatrix = Matrix.ofFloat(new float[][] {{100.0f, 200.0f}, {300.0f, 400.0f}});
+    var currentMatrix =
+        Matrix.ofFloat(new float[][] {{100.0f, 200.0f}, {300.0f, 404.0f}}); // 4.0 change
+
+    var lastValue = new DataValue(new Variant(lastMatrix));
+    var currentValue = new DataValue(new Variant(currentMatrix));
+
+    boolean result = DataChangeMonitoringFilter.filter(lastValue, currentValue, filter);
+    assertFalse(result);
+
+    currentMatrix =
+        Matrix.ofFloat(new float[][] {{100.0f, 200.0f}, {300.0f, 406.0f}}); // 6.0 change
+    currentValue = new DataValue(new Variant(currentMatrix));
+    result = DataChangeMonitoringFilter.filter(lastValue, currentValue, filter);
+    assertTrue(result);
+  }
+
+  @Test
+  public void testAbsoluteDeadband_PrimitiveIntMatrixValue() {
+    var filter =
+        new DataChangeFilter(
+            DataChangeTrigger.StatusValue, uint(DeadbandType.Absolute.getValue()), 5.0);
+
+    var lastMatrix = Matrix.ofInt32(new int[][] {{100, 200}, {300, 400}});
+    var currentMatrix = Matrix.ofInt32(new int[][] {{100, 200}, {300, 404}}); // 4 change
+
+    var lastValue = new DataValue(new Variant(lastMatrix));
+    var currentValue = new DataValue(new Variant(currentMatrix));
+
+    boolean result = DataChangeMonitoringFilter.filter(lastValue, currentValue, filter);
+    assertFalse(result);
+
+    currentMatrix = Matrix.ofInt32(new int[][] {{100, 200}, {300, 406}}); // 6 change
+    currentValue = new DataValue(new Variant(currentMatrix));
+    result = DataChangeMonitoringFilter.filter(lastValue, currentValue, filter);
+    assertTrue(result);
+  }
+
+  @Test
+  public void testAbsoluteDeadband_BoxedDoubleMatrixValue() {
+    var filter =
+        new DataChangeFilter(
+            DataChangeTrigger.StatusValue, uint(DeadbandType.Absolute.getValue()), 5.0);
+
+    var lastMatrix = Matrix.ofDouble(new Double[][] {{100.0, 200.0}, {300.0, 400.0}});
+    var currentMatrix =
+        Matrix.ofDouble(new Double[][] {{100.0, 200.0}, {300.0, 404.0}}); // 4.0 change
+
+    var lastValue = new DataValue(new Variant(lastMatrix));
+    var currentValue = new DataValue(new Variant(currentMatrix));
+
+    boolean result = DataChangeMonitoringFilter.filter(lastValue, currentValue, filter);
+    assertFalse(result);
+
+    currentMatrix = Matrix.ofDouble(new Double[][] {{100.0, 200.0}, {300.0, 406.0}}); // 6.0 change
+    currentValue = new DataValue(new Variant(currentMatrix));
+    result = DataChangeMonitoringFilter.filter(lastValue, currentValue, filter);
     assertTrue(result);
   }
 }
