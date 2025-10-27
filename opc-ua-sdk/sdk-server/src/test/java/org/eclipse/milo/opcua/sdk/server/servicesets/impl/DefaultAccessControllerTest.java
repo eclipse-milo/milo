@@ -135,6 +135,21 @@ class DefaultAccessControllerTest {
   }
 
   @Test
+  void checkReadAccess_InvalidAttributeId() {
+    var nodeId = new NodeId(1, "foo");
+    var invalidAttributeId = UInteger.valueOf(9999);
+    var readValueId = new ReadValueId(nodeId, invalidAttributeId, null, null);
+
+    var attributes = new AccessControlAttributes(null, null, null, null, null, null);
+    attributesMap.put(nodeId, attributes);
+
+    AccessResult result =
+        DefaultAccessController.checkReadAccess(context, List.of(readValueId)).get(readValueId);
+
+    assertEquals(AccessResult.DENIED_ATTRIBUTE_ID_INVALID, result);
+  }
+
+  @Test
   void checkWriteAccess_Value_Allowed() {
     var nodeId = new NodeId(1, "foo");
     var writeValue =
@@ -168,6 +183,22 @@ class DefaultAccessControllerTest {
         DefaultAccessController.checkWriteAccess(context, List.of(writeValue)).get(writeValue);
 
     assertEquals(AccessResult.DENIED_USER_ACCESS, result);
+  }
+
+  @Test
+  void checkWriteAccess_InvalidAttributeId() {
+    var nodeId = new NodeId(1, "foo");
+    var invalidAttributeId = UInteger.valueOf(9999);
+    var writeValue =
+        new WriteValue(nodeId, invalidAttributeId, null, DataValue.valueOnly(Variant.NULL_VALUE));
+
+    var attributes = new AccessControlAttributes(null, null, null, null, null, null);
+    attributesMap.put(nodeId, attributes);
+
+    AccessResult result =
+        DefaultAccessController.checkWriteAccess(context, List.of(writeValue)).get(writeValue);
+
+    assertEquals(AccessResult.DENIED_ATTRIBUTE_ID_INVALID, result);
   }
 
   @Test
@@ -226,6 +257,46 @@ class DefaultAccessControllerTest {
     assertEquals(AccessResult.DENIED_USER_ACCESS, results.get(wvDisplayName));
     assertEquals(AccessResult.DENIED_USER_ACCESS, results.get(wvDescription));
     assertEquals(AccessResult.DENIED_USER_ACCESS, results.get(wvBrowseName));
+  }
+
+  @Test
+  void checkWriteAccess_NullUserWriteMask_Allowed() {
+    // Simulate a non-existent node - all attributes would be null/unreadable
+    var nonExistentNodeId = new NodeId(1, "non-existent-node");
+
+    var wvDisplayName =
+        new WriteValue(
+            nonExistentNodeId,
+            AttributeId.DisplayName.uid(),
+            null,
+            DataValue.valueOnly(Variant.NULL_VALUE));
+    var wvDescription =
+        new WriteValue(
+            nonExistentNodeId,
+            AttributeId.Description.uid(),
+            null,
+            DataValue.valueOnly(Variant.NULL_VALUE));
+    var wvBrowseName =
+        new WriteValue(
+            nonExistentNodeId,
+            AttributeId.BrowseName.uid(),
+            null,
+            DataValue.valueOnly(Variant.NULL_VALUE));
+
+    // For a non-existent node, all attributes including userWriteMask would be null.
+    // The access check should return ALLOWED so the operation proceeds and fails
+    // later with Bad_NodeIdUnknown rather than incorrectly returning Bad_UserAccessDenied.
+    attributesMap.put(
+        nonExistentNodeId, new AccessControlAttributes(null, null, null, null, null, null));
+    Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of()));
+
+    var results =
+        DefaultAccessController.checkWriteAccess(
+            context, List.of(wvDisplayName, wvDescription, wvBrowseName));
+
+    assertEquals(AccessResult.ALLOWED, results.get(wvDisplayName));
+    assertEquals(AccessResult.ALLOWED, results.get(wvDescription));
+    assertEquals(AccessResult.ALLOWED, results.get(wvBrowseName));
   }
 
   @Test

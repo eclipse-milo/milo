@@ -102,8 +102,16 @@ public interface AccessController {
   /** The result of an access control check. */
   sealed interface AccessResult {
 
+    /** Access is allowed. */
     AccessResult ALLOWED = new Allowed();
+
+    /** Access is denied due to an invalid attribute id. */
+    AccessResult DENIED_ATTRIBUTE_ID_INVALID = new Denied(StatusCodes.Bad_AttributeIdInvalid);
+
+    /** Access is denied due to insufficient user access rights. */
     AccessResult DENIED_USER_ACCESS = new Denied(StatusCodes.Bad_UserAccessDenied);
+
+    /** Access is denied due to insufficient security mode. */
     AccessResult DENIED_SECURITY_MODE = new Denied(StatusCodes.Bad_SecurityModeInsufficient);
 
     /** Access is allowed. */
