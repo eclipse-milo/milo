@@ -64,6 +64,11 @@
 
       <dependency>
         <groupId>org.eclipse.milo</groupId>
+        <artifactId>milo-encoding-json</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.milo</groupId>
         <artifactId>milo-encoding-xml</artifactId>
         <version>${project.version}</version>
       </dependency>
