@@ -130,6 +130,7 @@ public class SubscriptionManager {
 
   private static final AtomicLong SUBSCRIPTION_IDS = new AtomicLong(0L);
   private static final QualifiedName EU_RANGE_BROWSE_NAME = new QualifiedName(0, "EURange");
+
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final Map<UInteger, Subscription> subscriptions = new ConcurrentHashMap<>();
   private final List<Subscription> transferred = new CopyOnWriteArrayList<>();
@@ -143,54 +144,6 @@ public class SubscriptionManager {
     this.server = server;
 
     publishQueue = new PublishQueue(server.getConfig().getExecutor());
-  }
-
-  private static UInteger nextSubscriptionId() {
-    return uint(SUBSCRIPTION_IDS.incrementAndGet());
-  }
-
-  /**
-   * Split {@code monitoredItems} into a list of {@link DataItem}s and a list of {@link EventItem}s
-   * and invoke the corresponding {@link Consumer} for each list if non-empty.
-   *
-   * @param monitoredItems the list of MonitoredItems to group.
-   * @param dataItemConsumer a {@link Consumer} that accepts a non-empty list of {@link DataItem}s.
-   * @param eventItemConsumer a {@link Consumer} that accepts a non-empty list of {@link
-   *     EventItem}s.
-   */
-  private static void byMonitoredItemType(
-      Collection<BaseMonitoredItem<?>> monitoredItems,
-      Consumer<List<DataItem>> dataItemConsumer,
-      Consumer<List<EventItem>> eventItemConsumer) {
-
-    var dataItems = new ArrayList<DataItem>();
-    var eventItems = new ArrayList<EventItem>();
-
-    for (BaseMonitoredItem<?> item : monitoredItems) {
-      if (item instanceof MonitoredDataItem) {
-        dataItems.add((DataItem) item);
-      } else if (item instanceof MonitoredEventItem) {
-        eventItems.add((EventItem) item);
-      }
-    }
-
-    try {
-      if (!dataItems.isEmpty()) {
-        dataItemConsumer.accept(dataItems);
-      }
-    } catch (Throwable t) {
-      LoggerFactory.getLogger(SubscriptionManager.class)
-          .error("Uncaught Throwable in dataItemConsumer", t);
-    }
-
-    try {
-      if (!eventItems.isEmpty()) {
-        eventItemConsumer.accept(eventItems);
-      }
-    } catch (Throwable t) {
-      LoggerFactory.getLogger(SubscriptionManager.class)
-          .error("Uncaught Throwable in eventItemConsumer", t);
-    }
   }
 
   public Session getSession() {
@@ -1677,6 +1630,59 @@ public class SubscriptionManager {
       subscription.publishStatusChangeNotification(pending, status);
     } else {
       transferred.add(subscription);
+    }
+  }
+
+  /**
+   * Generates and returns the next unique subscription identifier.
+   *
+   * @return the next unique subscription identifier as an {@link UInteger}.
+   */
+  private static UInteger nextSubscriptionId() {
+    return uint(SUBSCRIPTION_IDS.incrementAndGet());
+  }
+
+  /**
+   * Split {@code monitoredItems} into a list of {@link DataItem}s and a list of {@link EventItem}s
+   * and invoke the corresponding {@link Consumer} for each list if non-empty.
+   *
+   * @param monitoredItems the list of MonitoredItems to group.
+   * @param dataItemConsumer a {@link Consumer} that accepts a non-empty list of {@link DataItem}s.
+   * @param eventItemConsumer a {@link Consumer} that accepts a non-empty list of {@link
+   *     EventItem}s.
+   */
+  private static void byMonitoredItemType(
+      Collection<BaseMonitoredItem<?>> monitoredItems,
+      Consumer<List<DataItem>> dataItemConsumer,
+      Consumer<List<EventItem>> eventItemConsumer) {
+
+    var dataItems = new ArrayList<DataItem>();
+    var eventItems = new ArrayList<EventItem>();
+
+    for (BaseMonitoredItem<?> item : monitoredItems) {
+      if (item instanceof MonitoredDataItem) {
+        dataItems.add((DataItem) item);
+      } else if (item instanceof MonitoredEventItem) {
+        eventItems.add((EventItem) item);
+      }
+    }
+
+    try {
+      if (!dataItems.isEmpty()) {
+        dataItemConsumer.accept(dataItems);
+      }
+    } catch (Throwable t) {
+      LoggerFactory.getLogger(SubscriptionManager.class)
+          .error("Uncaught Throwable in dataItemConsumer", t);
+    }
+
+    try {
+      if (!eventItems.isEmpty()) {
+        eventItemConsumer.accept(eventItems);
+      }
+    } catch (Throwable t) {
+      LoggerFactory.getLogger(SubscriptionManager.class)
+          .error("Uncaught Throwable in eventItemConsumer", t);
     }
   }
 
