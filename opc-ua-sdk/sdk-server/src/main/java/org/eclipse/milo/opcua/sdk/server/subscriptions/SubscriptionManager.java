@@ -1680,36 +1680,25 @@ public class SubscriptionManager {
     }
   }
 
-  // ============================================================================================
-  // Response Types for Monitoring Attribute Reads
-  // ============================================================================================
-  //
-  // This sealed type hierarchy represents the results of bulk attribute reads during monitored
-  // item creation. The response type determines which specialized creation method is invoked:
-  //
-  //   - MonitoringAttributes → regular data items or event items
-  //   - AnalogItemAttributes → AnalogItemType nodes with Percent Deadband support
-  //   - NegativeResponse → attribute read failures
-  //
-  // The splitting logic in createMonitoredItems() ensures that expensive AnalogItem attribute
-  // reads (TypeDefinition + EURange) are only performed for Value attributes with percent
-  // deadband filters, optimizing the common case where Percent Deadband isn't used.
-  // ============================================================================================
-
   /**
    * Response from bulk attribute reads for monitored item creation.
+   *
+   * <p>This sealed interface represents the results of bulk attribute reads during monitored item
+   * creation. The response type determines which specialized creation method is invoked:
+   *
+   * <ul>
+   *   <li>{@link MonitoringAttributes} → regular data items or event items
+   *   <li>{@link AnalogItemAttributes} → AnalogItemType nodes with Percent Deadband support
+   *   <li>{@link NegativeResponse} → attribute read failures
+   * </ul>
    *
    * <p>This sealed interface provides type-safe responses that flow through the monitored item
    * creation process. Pattern matching on this type in {@link #createMonitoredItem} determines
    * which specialized creation method to invoke.
    *
-   * <p>Implementations:
-   *
-   * <ul>
-   *   <li>{@link MonitoringAttributes} - Standard attributes for regular monitored items
-   *   <li>{@link AnalogItemAttributes} - Extended attributes for Percent Deadband items
-   *   <li>{@link NegativeResponse} - Error case when attribute reads fail
-   * </ul>
+   * <p>The splitting logic in {@link #createMonitoredItems} ensures that expensive AnalogItem
+   * attribute reads (TypeDefinition + EURange) are only performed for Value attributes with Percent
+   * Deadband filters, optimizing the common case where Percent Deadband isn't used.
    */
   sealed interface AttributesResponse
       permits MonitoringAttributes, AnalogItemAttributes, NegativeResponse {}
