@@ -16,7 +16,6 @@ import static org.eclipse.milo.opcua.sdk.server.servicesets.AbstractServiceSet.c
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.eclipse.milo.opcua.stack.core.util.FutureUtils.failedUaFuture;
 
-import io.netty.util.AttributeKey;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -24,6 +23,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -32,7 +33,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.core.NumericRange;
-import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.util.GroupMapCollate;
 import org.eclipse.milo.opcua.sdk.server.AddressSpace.ReadContext;
 import org.eclipse.milo.opcua.sdk.server.AddressSpace.RevisedDataItemParameters;
@@ -45,8 +45,9 @@ import org.eclipse.milo.opcua.sdk.server.items.EventItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredDataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredEventItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
-import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.AccessResult;
+import org.eclipse.milo.opcua.sdk.server.servicesets.impl.helpers.BrowseHelper;
+import org.eclipse.milo.opcua.sdk.server.servicesets.impl.helpers.BrowsePathsHelper;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.PublishQueue.PendingPublish;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.Subscription.State;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
@@ -55,6 +56,7 @@ import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
@@ -62,10 +64,18 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.BrowseDirection;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.BrowseResultMask;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.DeadbandType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MonitoringMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
+import org.eclipse.milo.opcua.stack.core.types.structured.BrowseDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.BrowsePath;
+import org.eclipse.milo.opcua.stack.core.types.structured.BrowsePathResult;
+import org.eclipse.milo.opcua.stack.core.types.structured.BrowsePathTarget;
+import org.eclipse.milo.opcua.stack.core.types.structured.BrowseRequest;
+import org.eclipse.milo.opcua.stack.core.types.structured.BrowseResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.CreateMonitoredItemsRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CreateMonitoredItemsResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.CreateSubscriptionRequest;
@@ -89,9 +99,14 @@ import org.eclipse.milo.opcua.stack.core.types.structured.MonitoringParameters;
 import org.eclipse.milo.opcua.stack.core.types.structured.NotificationMessage;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishResponse;
+import org.eclipse.milo.opcua.stack.core.types.structured.Range;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
+import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.RelativePath;
+import org.eclipse.milo.opcua.stack.core.types.structured.RelativePathElement;
 import org.eclipse.milo.opcua.stack.core.types.structured.RepublishRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.RepublishResponse;
+import org.eclipse.milo.opcua.stack.core.types.structured.RequestHeader;
 import org.eclipse.milo.opcua.stack.core.types.structured.ResponseHeader;
 import org.eclipse.milo.opcua.stack.core.types.structured.SetMonitoringModeRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.SetMonitoringModeResponse;
@@ -100,31 +115,27 @@ import org.eclipse.milo.opcua.stack.core.types.structured.SetPublishingModeRespo
 import org.eclipse.milo.opcua.stack.core.types.structured.SetTriggeringRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.SetTriggeringResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.SubscriptionAcknowledgement;
+import org.eclipse.milo.opcua.stack.core.types.structured.TranslateBrowsePathsToNodeIdsRequest;
+import org.eclipse.milo.opcua.stack.core.types.structured.TranslateBrowsePathsToNodeIdsResponse;
+import org.eclipse.milo.opcua.stack.core.types.structured.ViewDescription;
 import org.eclipse.milo.opcua.stack.core.util.Lists;
 import org.eclipse.milo.opcua.stack.transport.server.ServiceRequestContext;
+import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@NullMarked
 public class SubscriptionManager {
 
-  static final AttributeKey<StatusCode[]> KEY_ACK_RESULTS = AttributeKey.valueOf("ackResults");
-
   private static final AtomicLong SUBSCRIPTION_IDS = new AtomicLong(0L);
-
-  private static UInteger nextSubscriptionId() {
-    return uint(SUBSCRIPTION_IDS.incrementAndGet());
-  }
+  private static final QualifiedName EU_RANGE_BROWSE_NAME = new QualifiedName(0, "EURange");
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
-
   private final Map<UInteger, Subscription> subscriptions = new ConcurrentHashMap<>();
   private final List<Subscription> transferred = new CopyOnWriteArrayList<>();
-
   private final AtomicLong monitoredItemCount = new AtomicLong(0L);
-
   private final PublishQueue publishQueue;
-
   private final Session session;
   private final OpcUaServer server;
 
@@ -381,16 +392,45 @@ public class SubscriptionManager {
       TimestampsToReturn timestamps,
       List<MonitoredItemCreateRequest> requests) {
 
-    Map<NodeId, AttributesResponse> attributeResponses =
-        readMonitoringAttributes(
-            requests.stream().map(r -> r.getItemToMonitor().getNodeId()).toList());
+    // Split requests by filter type to enable targeted attribute reading.
+    // Only Percent Deadband requests on Value attributes need the expensive TypeDefinition +
+    // EURange lookups, since Percent Deadband filtering only applies to Value attributes.
+    var regularRequests = new ArrayList<MonitoredItemCreateRequest>();
+    var percentDeadbandRequests = new ArrayList<MonitoredItemCreateRequest>();
+
+    for (MonitoredItemCreateRequest request : requests) {
+      boolean isValueAttribute =
+          request.getItemToMonitor().getAttributeId().equals(AttributeId.Value.uid());
+
+      if (isValueAttribute && hasPercentDeadbandFilter(request)) {
+        percentDeadbandRequests.add(request);
+      } else {
+        regularRequests.add(request);
+      }
+    }
+
+    Map<NodeId, AttributesResponse> regularAttributes;
+    if (regularRequests.isEmpty()) {
+      regularAttributes = Collections.emptyMap();
+    } else {
+      regularAttributes =
+          readMonitoringAttributes(
+              regularRequests.stream().map(r -> r.getItemToMonitor().getNodeId()).toList());
+    }
+
+    Map<NodeId, AttributesResponse> analogItemAttributes;
+    if (percentDeadbandRequests.isEmpty()) {
+      analogItemAttributes = Collections.emptyMap();
+    } else {
+      analogItemAttributes =
+          readAnalogItemAttributes(
+              percentDeadbandRequests.stream().map(r -> r.getItemToMonitor().getNodeId()).toList());
+    }
 
     var results = new ArrayList<MonitoredItemCreateResult>();
-
     List<BaseMonitoredItem<?>> monitoredItems = new ArrayList<>();
 
     long globalMax = server.getConfig().getLimits().getMaxMonitoredItems().longValue();
-
     long sessionMax = server.getConfig().getLimits().getMaxMonitoredItemsPerSession().longValue();
 
     for (MonitoredItemCreateRequest request : requests) {
@@ -399,8 +439,18 @@ public class SubscriptionManager {
         long sessionCount = monitoredItemCount.incrementAndGet();
 
         if (globalCount <= globalMax && sessionCount <= sessionMax) {
-          BaseMonitoredItem<?> monitoredItem =
-              createMonitoredItem(request, subscription, timestamps, attributeResponses);
+          BaseMonitoredItem<?> monitoredItem;
+
+          boolean isValueAttribute =
+              request.getItemToMonitor().getAttributeId().equals(AttributeId.Value.uid());
+
+          AttributesResponse attributesResponse =
+              (isValueAttribute && hasPercentDeadbandFilter(request))
+                  ? analogItemAttributes.get(request.getItemToMonitor().getNodeId())
+                  : regularAttributes.get(request.getItemToMonitor().getNodeId());
+
+          monitoredItem =
+              createMonitoredItem(request, subscription, timestamps, attributesResponse);
 
           monitoredItems.add(monitoredItem);
 
@@ -426,8 +476,6 @@ public class SubscriptionManager {
 
     subscription.addMonitoredItems(monitoredItems);
 
-    // Notify AddressSpaces of the items we just created.
-
     byMonitoredItemType(
         monitoredItems,
         dataItems -> server.getAddressSpaceManager().onDataItemsCreated(dataItems),
@@ -436,14 +484,179 @@ public class SubscriptionManager {
     return results;
   }
 
+  private boolean hasPercentDeadbandFilter(MonitoredItemCreateRequest request) {
+    try {
+      ExtensionObject filterXo = request.getRequestedParameters().getFilter();
+      if (filterXo == null || filterXo.isNull()) {
+        return false;
+      }
+
+      Object filterObject = filterXo.decode(server.getStaticEncodingContext());
+      if (filterObject instanceof DataChangeFilter filter) {
+        DeadbandType deadbandType = DeadbandType.from(filter.getDeadbandType().intValue());
+        return deadbandType == DeadbandType.Percent;
+      }
+
+      return false;
+    } catch (UaSerializationException e) {
+      logger.debug("Failed to decode filter when checking for Percent Deadband", e);
+      return false;
+    }
+  }
+
+  /** Create a {@link MonitoredDataItem}. */
+  private MonitoredDataItem createMonitoredDataItem(
+      MonitoredItemCreateRequest request,
+      Subscription subscription,
+      TimestampsToReturn timestamps,
+      AttributeId attributeId,
+      MonitoringAttributes attributes,
+      @Nullable Range euRange)
+      throws UaException {
+
+    NodeClass nodeClass = attributes.nodeClass();
+    if (nodeClass == null) {
+      throw new UaException(StatusCodes.Bad_NodeIdUnknown);
+    }
+    if (!AttributeId.getAttributes(nodeClass).contains(attributeId)) {
+      throw new UaException(StatusCodes.Bad_AttributeIdInvalid);
+    }
+
+    // Validate the requested index range by parsing it.
+    String indexRange = request.getItemToMonitor().getIndexRange();
+    if (indexRange != null && !indexRange.isEmpty()) {
+      NumericRange.parse(indexRange);
+    }
+
+    Double minimumSamplingInterval = attributes.minimumSamplingInterval();
+    if (minimumSamplingInterval == null) {
+      minimumSamplingInterval = server.getConfig().getLimits().getMinSupportedSampleRate();
+    }
+
+    MonitoringFilter filter = MonitoredDataItem.DEFAULT_FILTER;
+
+    try {
+      ExtensionObject filterXo = request.getRequestedParameters().getFilter();
+
+      if (filterXo != null && !filterXo.isNull()) {
+        Object filterObject = filterXo.decode(server.getStaticEncodingContext());
+
+        filter = validateDataItemFilter(filterObject, attributeId, attributes);
+      }
+    } catch (UaSerializationException e) {
+      logger.debug("error decoding MonitoringFilter", e);
+
+      throw new UaException(StatusCodes.Bad_MonitoredItemFilterInvalid, e);
+    }
+
+    double requestedSamplingInterval =
+        getSamplingInterval(
+            subscription,
+            minimumSamplingInterval,
+            request.getRequestedParameters().getSamplingInterval());
+
+    RevisedDataItemParameters revisedParameters;
+
+    try {
+      revisedParameters =
+          server
+              .getAddressSpaceManager()
+              .onCreateDataItem(
+                  request.getItemToMonitor(),
+                  requestedSamplingInterval,
+                  request.getRequestedParameters().getQueueSize());
+    } catch (Throwable t) {
+      throw new UaException(StatusCodes.Bad_InternalError, t);
+    }
+
+    MonitoredDataItem monitoredItem =
+        new MonitoredDataItem(
+            server,
+            session,
+            uint(subscription.nextItemId()),
+            subscription.getId(),
+            request.getItemToMonitor(),
+            request.getMonitoringMode(),
+            timestamps,
+            request.getRequestedParameters().getClientHandle(),
+            revisedParameters.revisedSamplingInterval(),
+            revisedParameters.revisedQueueSize(),
+            request.getRequestedParameters().getDiscardOldest());
+
+    // Set euRange before installFilter() so Percent Deadband validation can access it
+    if (euRange != null) {
+      monitoredItem.setEuRange(euRange);
+    }
+
+    monitoredItem.installFilter(filter);
+
+    return monitoredItem;
+  }
+
+  /** Create a {@link MonitoredEventItem} for EventNotifier attribute monitoring. */
+  private MonitoredEventItem createMonitoredEventItem(
+      MonitoredItemCreateRequest request,
+      Subscription subscription,
+      TimestampsToReturn timestamps,
+      MonitoringAttributes attributes)
+      throws UaException {
+
+    UByte eventNotifier = attributes.eventNotifier();
+
+    // Verify that the SubscribeToEvents bit is set
+    if (eventNotifier == null || (eventNotifier.intValue() & 1) == 0) {
+      throw new UaException(StatusCodes.Bad_AttributeIdInvalid);
+    }
+
+    Object filterObject =
+        request.getRequestedParameters().getFilter().decode(server.getStaticEncodingContext());
+
+    MonitoringFilter filter = validateEventItemFilter(filterObject);
+
+    RevisedEventItemParameters revisedParameters;
+
+    try {
+      revisedParameters =
+          server
+              .getAddressSpaceManager()
+              .onCreateEventItem(
+                  request.getItemToMonitor(), request.getRequestedParameters().getQueueSize());
+    } catch (Throwable t) {
+      throw new UaException(StatusCodes.Bad_InternalError, t);
+    }
+
+    MonitoredEventItem monitoredEventItem =
+        new MonitoredEventItem(
+            server,
+            session,
+            uint(subscription.nextItemId()),
+            subscription.getId(),
+            request.getItemToMonitor(),
+            request.getMonitoringMode(),
+            timestamps,
+            request.getRequestedParameters().getClientHandle(),
+            0.0,
+            revisedParameters.revisedQueueSize(),
+            request.getRequestedParameters().getDiscardOldest());
+
+    monitoredEventItem.installFilter(filter);
+
+    return monitoredEventItem;
+  }
+
+  /**
+   * Create a monitored item, dispatching to the appropriate specialized method based on the
+   * response type. Pattern matches on AttributesResponse to route to event items or data items. For
+   * AnalogItemType nodes with EURange, sets the euRange on the MonitoredDataItem to enable Percent
+   * Deadband filtering.
+   */
   private BaseMonitoredItem<?> createMonitoredItem(
       MonitoredItemCreateRequest request,
       Subscription subscription,
       TimestampsToReturn timestamps,
-      Map<NodeId, AttributesResponse> attributeResponses)
+      AttributesResponse attributeResponse)
       throws UaException {
 
-    NodeId nodeId = request.getItemToMonitor().getNodeId();
     QualifiedName dataEncoding = request.getItemToMonitor().getDataEncoding();
     AttributeId attributeId =
         AttributeId.from(request.getItemToMonitor().getAttributeId())
@@ -459,126 +672,36 @@ public class SubscriptionManager {
       }
     }
 
-    MonitoringAttributes attributes;
-
-    AttributesResponse response = attributeResponses.get(nodeId);
-    if (response instanceof NegativeResponse negativeResponse) {
+    if (attributeResponse instanceof NegativeResponse negativeResponse) {
       throw new UaException(negativeResponse.statusCode());
+    } else if (attributeResponse instanceof AnalogItemAttributes analogItemAttributes) {
+      // AnalogItemAttributes should only be received for Value attribute requests.
+      // This is guaranteed by the request splitting logic in createMonitoredItems().
+      if (attributeId != AttributeId.Value) {
+        throw new IllegalStateException(
+            "AnalogItemAttributes received for non-Value attribute: " + attributeId);
+      }
+
+      MonitoringAttributes monitoringAttributes = analogItemAttributes.monitoringAttributes();
+      Range euRange = analogItemAttributes.euRange();
+
+      if (euRange == null) {
+        throw new UaException(
+            StatusCodes.Bad_MonitoredItemFilterUnsupported,
+            "Percent Deadband requires AnalogItemType with valid EURange property");
+      }
+
+      return createMonitoredDataItem(
+          request, subscription, timestamps, attributeId, monitoringAttributes, euRange);
+    } else if (attributeResponse instanceof MonitoringAttributes monitoringAttributes) {
+      if (attributeId == AttributeId.EventNotifier) {
+        return createMonitoredEventItem(request, subscription, timestamps, monitoringAttributes);
+      } else {
+        return createMonitoredDataItem(
+            request, subscription, timestamps, attributeId, monitoringAttributes, null);
+      }
     } else {
-      attributes = (MonitoringAttributes) response;
-    }
-
-    if (attributeId == AttributeId.EventNotifier) {
-      UByte eventNotifier = attributes.eventNotifier();
-
-      // Verify that the SubscribeToEvents bit is set
-      if (eventNotifier == null || (eventNotifier.intValue() & 1) == 0) {
-        throw new UaException(StatusCodes.Bad_AttributeIdInvalid);
-      }
-
-      Object filterObject =
-          request.getRequestedParameters().getFilter().decode(server.getStaticEncodingContext());
-
-      MonitoringFilter filter = validateEventItemFilter(filterObject, attributes);
-
-      RevisedEventItemParameters revisedParameters;
-
-      try {
-        revisedParameters =
-            server
-                .getAddressSpaceManager()
-                .onCreateEventItem(
-                    request.getItemToMonitor(), request.getRequestedParameters().getQueueSize());
-      } catch (Throwable t) {
-        throw new UaException(StatusCodes.Bad_InternalError, t);
-      }
-
-      MonitoredEventItem monitoredEventItem =
-          new MonitoredEventItem(
-              server,
-              session,
-              uint(subscription.nextItemId()),
-              subscription.getId(),
-              request.getItemToMonitor(),
-              request.getMonitoringMode(),
-              timestamps,
-              request.getRequestedParameters().getClientHandle(),
-              0.0,
-              revisedParameters.revisedQueueSize(),
-              request.getRequestedParameters().getDiscardOldest());
-
-      monitoredEventItem.installFilter(filter);
-
-      return monitoredEventItem;
-    } else {
-      if (!AttributeId.getAttributes(attributes.nodeClass()).contains(attributeId)) {
-        throw new UaException(StatusCodes.Bad_AttributeIdInvalid);
-      }
-
-      // Validate the requested index range by parsing it.
-      String indexRange = request.getItemToMonitor().getIndexRange();
-      if (indexRange != null && !indexRange.isEmpty()) {
-        NumericRange.parse(indexRange);
-      }
-
-      Double minimumSamplingInterval = attributes.minimumSamplingInterval();
-      if (minimumSamplingInterval == null) {
-        minimumSamplingInterval = server.getConfig().getLimits().getMinSupportedSampleRate();
-      }
-
-      MonitoringFilter filter = MonitoredDataItem.DEFAULT_FILTER;
-
-      try {
-        ExtensionObject filterXo = request.getRequestedParameters().getFilter();
-
-        if (filterXo != null && !filterXo.isNull()) {
-          Object filterObject = filterXo.decode(server.getStaticEncodingContext());
-
-          filter = validateDataItemFilter(filterObject, attributeId, attributes);
-        }
-      } catch (UaSerializationException e) {
-        logger.debug("error decoding MonitoringFilter", e);
-
-        throw new UaException(StatusCodes.Bad_MonitoredItemFilterInvalid, e);
-      }
-
-      double requestedSamplingInterval =
-          getSamplingInterval(
-              subscription,
-              minimumSamplingInterval,
-              request.getRequestedParameters().getSamplingInterval());
-
-      RevisedDataItemParameters revisedParameters;
-
-      try {
-        revisedParameters =
-            server
-                .getAddressSpaceManager()
-                .onCreateDataItem(
-                    request.getItemToMonitor(),
-                    requestedSamplingInterval,
-                    request.getRequestedParameters().getQueueSize());
-      } catch (Throwable t) {
-        throw new UaException(StatusCodes.Bad_InternalError, t);
-      }
-
-      MonitoredDataItem monitoredDataItem =
-          new MonitoredDataItem(
-              server,
-              session,
-              uint(subscription.nextItemId()),
-              subscription.getId(),
-              request.getItemToMonitor(),
-              request.getMonitoringMode(),
-              timestamps,
-              request.getRequestedParameters().getClientHandle(),
-              revisedParameters.revisedSamplingInterval(),
-              revisedParameters.revisedQueueSize(),
-              request.getRequestedParameters().getDiscardOldest());
-
-      monitoredDataItem.installFilter(filter);
-
-      return monitoredDataItem;
+      throw new UaException(StatusCodes.Bad_InternalError, "Unexpected AttributesResponse type");
     }
   }
 
@@ -594,12 +717,10 @@ public class SubscriptionManager {
           throw new UaException(StatusCodes.Bad_DeadbandFilterInvalid);
         }
 
-        if (deadbandType == DeadbandType.Percent) {
-          // Percent deadband is not currently implemented
-          throw new UaException(StatusCodes.Bad_MonitoredItemFilterUnsupported);
-        }
+        // Percent Deadband is now supported for AnalogItemType nodes
 
-        if (deadbandType == DeadbandType.Absolute && attributeId != AttributeId.Value) {
+        if ((deadbandType == DeadbandType.Absolute || deadbandType == DeadbandType.Percent)
+            && attributeId != AttributeId.Value) {
           // Absolute deadband is only allowed for Value attributes
           throw new UaException(StatusCodes.Bad_FilterNotAllowed);
         }
@@ -611,7 +732,7 @@ public class SubscriptionManager {
           }
 
           if (!NodeIds.Number.equals(dataTypeId)
-              && !subtypeOf(server, dataTypeId, NodeIds.Number)) {
+              && !server.getDataTypeTree().isSubtypeOf(dataTypeId, NodeIds.Number)) {
             throw new UaException(StatusCodes.Bad_FilterNotAllowed);
           }
         }
@@ -628,9 +749,7 @@ public class SubscriptionManager {
     }
   }
 
-  private MonitoringFilter validateEventItemFilter(
-      Object filterObject, MonitoringAttributes monitoringAttributes) throws UaException {
-
+  private MonitoringFilter validateEventItemFilter(Object filterObject) throws UaException {
     if (filterObject instanceof MonitoringFilter) {
       if (!(filterObject instanceof EventFilter)) {
         throw new UaException(StatusCodes.Bad_FilterNotAllowed);
@@ -711,7 +830,7 @@ public class SubscriptionManager {
         eventItems -> server.getAddressSpaceManager().onEventItemsModified(eventItems));
 
     /*
-     * AddressSpaces have been notified; send response.
+     * AddressSpaces have been notified; send the response.
      */
 
     ResponseHeader header = createResponseHeader(request);
@@ -752,7 +871,7 @@ public class SubscriptionManager {
       Object filterObject =
           request.getRequestedParameters().getFilter().decode(server.getStaticEncodingContext());
 
-      MonitoringFilter filter = validateEventItemFilter(filterObject, monitoringAttributes);
+      MonitoringFilter filter = validateEventItemFilter(filterObject);
 
       RevisedEventItemParameters revisedParameters;
 
@@ -782,6 +901,39 @@ public class SubscriptionManager {
           Object filterObject = filterXo.decode(server.getStaticEncodingContext());
 
           filter = validateDataItemFilter(filterObject, attributeId, monitoringAttributes);
+
+          // If Percent Deadband is requested and the item doesn't have euRange yet, read it from
+          // the address space.
+          if (filterObject instanceof DataChangeFilter dataChangeFilter
+              && monitoredItem instanceof MonitoredDataItem dataItem
+              && attributeId == AttributeId.Value) {
+            DeadbandType deadbandType =
+                DeadbandType.from(dataChangeFilter.getDeadbandType().intValue());
+
+            if (deadbandType == DeadbandType.Percent && dataItem.getEuRange() == null) {
+              // Read AnalogItemAttributes to get EURange
+              Map<NodeId, AttributesResponse> analogAttrs =
+                  readAnalogItemAttributes(List.of(nodeId));
+              AttributesResponse analogResponse = analogAttrs.get(nodeId);
+
+              if (analogResponse instanceof AnalogItemAttributes analogItemAttributes) {
+                Range euRange = analogItemAttributes.euRange();
+                if (euRange == null) {
+                  throw new UaException(
+                      StatusCodes.Bad_MonitoredItemFilterUnsupported,
+                      "Percent Deadband requires AnalogItemType with valid EURange property");
+                }
+                dataItem.setEuRange(euRange);
+              } else if (analogResponse instanceof NegativeResponse negResp) {
+                throw new UaException(negResp.statusCode());
+              } else {
+                // Node is not AnalogItemType
+                throw new UaException(
+                    StatusCodes.Bad_MonitoredItemFilterUnsupported,
+                    "Percent Deadband requires AnalogItemType with valid EURange property");
+              }
+            }
+          }
         }
       } catch (UaSerializationException e) {
         logger.debug("error decoding MonitoringFilter", e);
@@ -835,7 +987,7 @@ public class SubscriptionManager {
       samplingInterval = subscription.getPublishingInterval();
     } else if (requestedSamplingInterval == 0) {
       if (minimumSamplingInterval < 0) {
-        // Node has no opinion on sampling interval (indeterminate)
+        // Node has no opinion on the sampling interval (indeterminate)
         samplingInterval = subscription.getPublishingInterval();
       } else if (minimumSamplingInterval == 0) {
         // Node allows report-by-exception
@@ -925,6 +1077,190 @@ public class SubscriptionManager {
     }
 
     return attributesMap;
+  }
+
+  /**
+   * Read monitoring attributes plus AnalogItem-specific metadata for nodes with Percent Deadband
+   * filters. This extended read includes TypeDefinition lookup and EURange property reading, which
+   * are only needed when the client explicitly requests Percent Deadband filtering. Combining these
+   * reads avoids the overhead for the common case where Percent Deadband isn't used.
+   *
+   * @param nodeIds the nodes to read attributes for.
+   * @return map of nodeId to AttributesResponse (AnalogItemAttributes if AnalogItemType, else
+   *     MonitoringAttributes).
+   */
+  private Map<NodeId, AttributesResponse> readAnalogItemAttributes(List<NodeId> nodeIds) {
+    Map<NodeId, AttributesResponse> basicAttributes = readMonitoringAttributes(nodeIds);
+
+    List<NodeId> distinctNodeIds = nodeIds.stream().distinct().toList();
+    Map<NodeId, NodeId> typeDefinitions = readTypeDefinitions(distinctNodeIds);
+
+    var analogItemNodeIds = new ArrayList<NodeId>();
+    for (var entry : typeDefinitions.entrySet()) {
+      if (isAnalogItemType(entry.getValue())) {
+        analogItemNodeIds.add(entry.getKey());
+      }
+    }
+
+    Map<NodeId, Range> euRanges = readEURanges(analogItemNodeIds);
+
+    var result = new HashMap<NodeId, AttributesResponse>();
+
+    for (NodeId nodeId : nodeIds) {
+      AttributesResponse attrs = basicAttributes.get(nodeId);
+      Range euRange = euRanges.get(nodeId);
+
+      if (attrs instanceof MonitoringAttributes monitoringAttrs) {
+        result.put(nodeId, new AnalogItemAttributes(monitoringAttrs, euRange));
+      } else if (attrs instanceof NegativeResponse negResp) {
+        result.put(nodeId, negResp);
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Read TypeDefinition NodeIds for multiple nodes via bulk browse operation.
+   *
+   * @param nodeIds the nodes to read TypeDefinitions for.
+   * @return map of nodeId to typeDefinitionId (null if not found).
+   */
+  private Map<NodeId, NodeId> readTypeDefinitions(List<NodeId> nodeIds) {
+    var browseDescriptions =
+        nodeIds.stream()
+            .map(
+                nodeId ->
+                    new BrowseDescription(
+                        nodeId,
+                        BrowseDirection.Forward,
+                        NodeIds.HasTypeDefinition,
+                        false,
+                        uint(NodeClass.ObjectType.getValue() | NodeClass.VariableType.getValue()),
+                        uint(BrowseResultMask.None.getValue())))
+            .toArray(BrowseDescription[]::new);
+
+    var browseRequest =
+        new BrowseRequest(
+            new RequestHeader(
+                NodeId.NULL_VALUE, DateTime.now(), uint(0), uint(0), null, uint(0), null),
+            new ViewDescription(NodeId.NULL_VALUE, DateTime.NULL_VALUE, uint(0)),
+            uint(0),
+            browseDescriptions);
+
+    List<BrowseResult> results =
+        BrowseHelper.browse(server, () -> Optional.of(session), browseRequest);
+
+    var typeDefinitions = new HashMap<NodeId, NodeId>();
+
+    for (int i = 0; i < results.size(); i++) {
+      BrowseResult result = results.get(i);
+      if (result.getStatusCode().isGood() && result.getReferences() != null) {
+        ReferenceDescription[] references = result.getReferences();
+        if (references.length > 0) {
+          Optional<NodeId> targetId =
+              references[0].getNodeId().toNodeId(server.getNamespaceTable());
+          if (targetId.isPresent()) {
+            typeDefinitions.put(nodeIds.get(i), targetId.get());
+          }
+        }
+      }
+    }
+
+    return typeDefinitions;
+  }
+
+  /**
+   * Check if the type identified by {@code typeDefinitionId} is AnalogItemType or a subtype. Uses
+   * the server's VariableTypeTree, which handles caching internally.
+   *
+   * @param typeDefinitionId the TypeDefinition NodeId to check.
+   * @return true if typeDefId is AnalogItemType or a subtype.
+   */
+  private boolean isAnalogItemType(NodeId typeDefinitionId) {
+    return typeDefinitionId.equals(NodeIds.AnalogItemType)
+        || server.getVariableTypeTree().isSubtypeOf(typeDefinitionId, NodeIds.AnalogItemType);
+  }
+
+  /**
+   * Read EURange properties for multiple AnalogItem nodes in bulk.
+   *
+   * @param analogItemNodeIds nodes that are AnalogItemType.
+   * @return map of nodeId to Range (null if EURange not found).
+   */
+  private Map<NodeId, Range> readEURanges(List<NodeId> analogItemNodeIds) {
+    if (analogItemNodeIds.isEmpty()) {
+      return Collections.emptyMap();
+    }
+
+    var browsePaths =
+        analogItemNodeIds.stream().map(this::createEURangeBrowsePath).toArray(BrowsePath[]::new);
+
+    var request =
+        new TranslateBrowsePathsToNodeIdsRequest(
+            new RequestHeader(
+                NodeId.NULL_VALUE, DateTime.now(), uint(0), uint(0), null, uint(0), null),
+            browsePaths);
+
+    TranslateBrowsePathsToNodeIdsResponse response;
+    try {
+      var helper = new BrowsePathsHelper(() -> Optional.of(session), server);
+      response = helper.translateBrowsePaths(request);
+    } catch (UaException e) {
+      logger.warn("Failed to translate EURange browse paths", e);
+      return Collections.emptyMap();
+    }
+
+    var euRangeNodeIds = new ArrayList<NodeId>();
+    var nodeIdMapping = new HashMap<Integer, NodeId>();
+
+    for (int i = 0; i < Objects.requireNonNull(response.getResults()).length; i++) {
+      BrowsePathResult result = response.getResults()[i];
+      if (result.getStatusCode().isGood()
+          && Objects.requireNonNull(result.getTargets()).length > 0) {
+        BrowsePathTarget target = result.getTargets()[0];
+        Optional<NodeId> euRangeNodeId = target.getTargetId().toNodeId(server.getNamespaceTable());
+        if (euRangeNodeId.isPresent()) {
+          nodeIdMapping.put(euRangeNodeIds.size(), analogItemNodeIds.get(i));
+          euRangeNodeIds.add(euRangeNodeId.get());
+        }
+      }
+    }
+
+    if (euRangeNodeIds.isEmpty()) {
+      return Collections.emptyMap();
+    }
+
+    List<ReadValueId> readValueIds =
+        euRangeNodeIds.stream()
+            .map(id -> new ReadValueId(id, AttributeId.Value.uid(), null, QualifiedName.NULL_VALUE))
+            .toList();
+
+    var context = new ReadContext(server, session);
+    List<DataValue> values =
+        server
+            .getAddressSpaceManager()
+            .read(context, 0.0, TimestampsToReturn.Neither, readValueIds);
+
+    var euRanges = new HashMap<NodeId, Range>();
+    for (int i = 0; i < values.size(); i++) {
+      DataValue value = values.get(i);
+      if (value.getStatusCode().isGood() && value.getValue().isNotNull()) {
+        Object rangeObj = value.getValue().getValue();
+        if (rangeObj instanceof Range range) {
+          NodeId originalNodeId = nodeIdMapping.get(i);
+          euRanges.put(originalNodeId, range);
+        }
+      }
+    }
+
+    return euRanges;
+  }
+
+  private BrowsePath createEURangeBrowsePath(NodeId startNodeId) {
+    var element = new RelativePathElement(NodeIds.HasProperty, false, true, EU_RANGE_BROWSE_NAME);
+
+    return new BrowsePath(startNodeId, new RelativePath(new RelativePathElement[] {element}));
   }
 
   public CompletableFuture<DeleteMonitoredItemsResponse> deleteMonitoredItems(
@@ -1083,7 +1419,7 @@ public class SubscriptionManager {
           pending, new StatusCode(StatusCodes.Good_SubscriptionTransferred));
     } else if (subscriptions.isEmpty() && publishQueue.isWaitListEmpty()) {
       // waitList must also be empty because the last remaining subscription could have
-      // expired, which removes it from bookkeeping, but leaves it in the PublishQueue
+      // expired, which removes it from bookkeeping but leaves it in the PublishQueue
       // waitList if there were no available requests to send Bad_Timeout.
 
       pending.responseFuture.completeExceptionally(new UaException(StatusCodes.Bad_NoSubscription));
@@ -1298,6 +1634,15 @@ public class SubscriptionManager {
   }
 
   /**
+   * Generates and returns the next unique subscription identifier.
+   *
+   * @return the next unique subscription identifier as an {@link UInteger}.
+   */
+  private static UInteger nextSubscriptionId() {
+    return uint(SUBSCRIPTION_IDS.incrementAndGet());
+  }
+
+  /**
    * Split {@code monitoredItems} into a list of {@link DataItem}s and a list of {@link EventItem}s
    * and invoke the corresponding {@link Consumer} for each list if non-empty.
    *
@@ -1342,49 +1687,78 @@ public class SubscriptionManager {
   }
 
   /**
-   * @return {@code true} if {@code dataTypeId} is a subtype of {@code potentialSuperTypeId}.
+   * Response from bulk attribute reads for monitored item creation.
+   *
+   * <p>This sealed interface represents the results of bulk attribute reads during monitored item
+   * creation. The response type determines which specialized creation method is invoked:
+   *
+   * <ul>
+   *   <li>{@link MonitoringAttributes} → regular data items or event items
+   *   <li>{@link AnalogItemAttributes} → AnalogItemType nodes with Percent Deadband support
+   *   <li>{@link NegativeResponse} → attribute read failures
+   * </ul>
+   *
+   * <p>This sealed interface provides type-safe responses that flow through the monitored item
+   * creation process. Pattern matching on this type in {@link #createMonitoredItem} determines
+   * which specialized creation method to invoke.
+   *
+   * <p>The splitting logic in {@link #createMonitoredItems} ensures that expensive AnalogItem
+   * attribute reads (TypeDefinition + EURange) are only performed for Value attributes with Percent
+   * Deadband filters, optimizing the common case where Percent Deadband isn't used.
    */
-  private static boolean subtypeOf(
-      OpcUaServer server, NodeId dataTypeId, NodeId potentialSuperTypeId) {
-    UaNode dataTypeNode = server.getAddressSpaceManager().getManagedNode(dataTypeId).orElse(null);
+  sealed interface AttributesResponse
+      permits MonitoringAttributes, AnalogItemAttributes, NegativeResponse {}
 
-    if (dataTypeNode != null) {
-      NodeId superTypeId = getSuperTypeId(server, dataTypeId);
-
-      if (superTypeId != null) {
-        return superTypeId.equals(potentialSuperTypeId)
-            || subtypeOf(server, superTypeId, potentialSuperTypeId);
-      } else {
-        return false;
-      }
-    } else {
-      return false;
-    }
-  }
-
-  @Nullable
-  private static NodeId getSuperTypeId(OpcUaServer server, NodeId dataTypeId) {
-    UaNode dataTypeNode = server.getAddressSpaceManager().getManagedNode(dataTypeId).orElse(null);
-
-    if (dataTypeNode != null) {
-      return dataTypeNode.getReferences().stream()
-          .filter(Reference.SUBTYPE_OF)
-          .flatMap(r -> r.getTargetNodeId().toNodeId(server.getNamespaceTable()).stream())
-          .findFirst()
-          .orElse(null);
-    } else {
-      return null;
-    }
-  }
-
-  sealed interface AttributesResponse {}
-
+  /**
+   * Standard monitoring attributes read from the address space.
+   *
+   * <p>Contains the four core attributes needed to create any monitored item: NodeClass,
+   * EventNotifier, DataType, and MinimumSamplingInterval. Returned by {@link
+   * #readMonitoringAttributes} for regular monitored item requests.
+   *
+   * <p>Used for:
+   *
+   * <ul>
+   *   <li>Regular data item monitoring (non-Percent Deadband)
+   *   <li>Event item monitoring
+   *   <li>All non-Value attributes
+   * </ul>
+   */
   private record MonitoringAttributes(
-      NodeClass nodeClass,
+      @Nullable NodeClass nodeClass,
       @Nullable UByte eventNotifier,
       @Nullable NodeId dataType,
       @Nullable Double minimumSamplingInterval)
       implements AttributesResponse {}
 
+  /**
+   * Extended monitoring attributes for AnalogItemType nodes with Percent Deadband filtering.
+   *
+   * <p>Contains the standard {@link MonitoringAttributes} plus the EURange property needed for
+   * Percent Deadband calculation. Only returned by {@link #readAnalogItemAttributes} when the
+   * client requests Percent Deadband filtering on a Value attribute.
+   *
+   * <p>The {@code euRange} field may be {@code null} if:
+   *
+   * <ul>
+   *   <li>The node is not an AnalogItemType
+   *   <li>The node is an AnalogItemType but lacks the EURange property
+   *   <li>The EURange property read failed
+   * </ul>
+   *
+   * <p>A {@code null} euRange with Percent Deadband will cause {@link #createMonitoredItem} to
+   * throw {@link UaException} with {@code Bad_MonitoredItemFilterUnsupported}.
+   */
+  private record AnalogItemAttributes(
+      MonitoringAttributes monitoringAttributes, @Nullable Range euRange)
+      implements AttributesResponse {}
+
+  /**
+   * Error response when attribute reads fail.
+   *
+   * <p>Represents a failed bulk attribute read operation, containing the bad {@link StatusCode}
+   * that caused the failure. When received by {@link #createMonitoredItem}, immediately throws
+   * {@link UaException} with this status code.
+   */
   private record NegativeResponse(StatusCode statusCode) implements AttributesResponse {}
 }
