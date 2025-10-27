@@ -17,7 +17,7 @@
   <parent>
     <groupId>org.eclipse.milo</groupId>
     <artifactId>milo-opc-ua-stack</artifactId>
-    <version>1.0.7-SNAPSHOT</version>
+    <version>1.0.7</version>
   </parent>
 
   <name>Milo :: Stack Core</name>
