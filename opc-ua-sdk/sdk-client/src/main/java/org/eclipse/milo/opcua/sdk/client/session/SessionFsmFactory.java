@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.sdk.client.session;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_CHANNEL_FSM_TRANSITION_LISTENER;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_CLOSE_FUTURE;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_KEEP_ALIVE_FAILURE_COUNT;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_KEEP_ALIVE_SCHEDULED_FUTURE;
@@ -239,6 +240,9 @@ public class SessionFsmFactory {
               }
 
               KEY_WAIT_TIME.remove(ctx);
+
+              handleFailureToOpenSession(
+                  client, ctx, new UaException(StatusCodes.Bad_SessionClosed));
 
               Event.CloseSession event = (Event.CloseSession) ctx.event();
 
@@ -630,7 +634,7 @@ public class SessionFsmFactory {
               if (transport instanceof OpcTcpClientTransport) {
                 ChannelFsm channelFsm = ((OpcTcpClientTransport) transport).getChannelFsm();
 
-                channelFsm.addTransitionListener(
+                ChannelFsm.TransitionListener listener =
                     new ChannelFsm.TransitionListener() {
                       @Override
                       public void onStateTransition(
@@ -640,8 +644,6 @@ public class SessionFsmFactory {
 
                         if (from == com.digitalpetri.netty.fsm.State.Connected
                             && to != com.digitalpetri.netty.fsm.State.Connected) {
-
-                          channelFsm.removeTransitionListener(this);
 
                           try (MDCCloseable ignored =
                               MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
@@ -653,7 +655,10 @@ public class SessionFsmFactory {
                           ctx.fireEvent(new Event.ConnectionLost());
                         }
                       }
-                    });
+                    };
+
+                channelFsm.addTransitionListener(listener);
+                KEY_CHANNEL_FSM_TRANSITION_LISTENER.set(ctx, listener);
               }
 
               client
@@ -669,7 +674,7 @@ public class SessionFsmFactory {
         .execute(FsmContext::processShelvedEvents);
 
     fb.onTransitionFrom(State.Active)
-        .to(s -> s == State.Closing || s == State.ReactivatingWait)
+        .to(s -> s != State.Active)
         .viaAny()
         .execute(
             ctx -> {
@@ -677,6 +682,16 @@ public class SessionFsmFactory {
 
               if (scheduledFuture != null) {
                 scheduledFuture.cancel(false);
+              }
+
+              ChannelFsm.TransitionListener listener =
+                  KEY_CHANNEL_FSM_TRANSITION_LISTENER.remove(ctx);
+
+              if (listener != null) {
+                OpcClientTransport clientTransport = client.getTransport();
+                if (clientTransport instanceof OpcTcpClientTransport tcpClientTransport) {
+                  tcpClientTransport.getChannelFsm().removeTransitionListener(listener);
+                }
               }
             });
 
@@ -936,6 +951,9 @@ public class SessionFsmFactory {
               }
 
               KEY_WAIT_TIME.remove(ctx);
+
+              handleFailureToOpenSession(
+                  client, ctx, new UaException(StatusCodes.Bad_SessionClosed));
             });
 
     /* Internal Transition Actions */

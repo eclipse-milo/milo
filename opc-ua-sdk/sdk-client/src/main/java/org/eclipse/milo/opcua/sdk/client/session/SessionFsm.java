@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.sdk.client.session;
 
 import com.digitalpetri.fsm.Fsm;
 import com.digitalpetri.fsm.FsmContext;
+import com.digitalpetri.netty.fsm.ChannelFsm;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -128,6 +129,9 @@ public class SessionFsm {
 
   static final FsmContext.Key<ScheduledFuture> KEY_KEEP_ALIVE_SCHEDULED_FUTURE =
       new FsmContext.Key<>("keepAliveScheduledFuture", ScheduledFuture.class);
+
+  static final FsmContext.Key<ChannelFsm.TransitionListener> KEY_CHANNEL_FSM_TRANSITION_LISTENER =
+      new FsmContext.Key<>("channelFsmTransitionListener", ChannelFsm.TransitionListener.class);
 
   static final FsmContext.Key<SessionInitializers> KEY_SESSION_INITIALIZERS =
       new FsmContext.Key<>("sessionInitializers", SessionInitializers.class);
