@@ -10,7 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.client.session;
 
-enum State {
+public enum State {
   Inactive,
   CreatingWait,
   Creating,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -11,9 +11,17 @@
 package org.eclipse.milo.opcua.sdk.client.session;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfig;
+import org.eclipse.milo.opcua.sdk.client.OpcUaSession;
+import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
+import org.eclipse.milo.opcua.sdk.test.TestClient;
+import org.eclipse.milo.opcua.sdk.test.TestServer;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
@@ -46,5 +54,59 @@ public class SessionFsmTest {
     SessionFsm sessionFsm = SessionFsmFactory.newSessionFsm(client);
 
     assertNotNull(sessionFsm.closeSession().get());
+  }
+
+  /**
+   * Verify that SessionFuture instances are properly completed with an exception when
+   * closeSession() is called in the CreatingWait state.
+   */
+  @Test
+  public void testCloseSessionCompletesSessionFutureInCreatingWait() throws Exception {
+    OpcUaServer server = TestServer.create().getServer();
+    server.startup().get();
+
+    OpcUaClient client = TestClient.create(server, cfg -> {});
+
+    server.shutdown().get();
+    client.connectAsync();
+
+    SessionFsm sessionFsm = client.getSessionFsm();
+    while (sessionFsm.getState() != State.CreatingWait) {
+      //noinspection BusyWait
+      Thread.sleep(100);
+    }
+
+    CompletableFuture<OpcUaSession> sessionFuture = sessionFsm.getSession();
+    sessionFsm.closeSession();
+
+    assertThrows(ExecutionException.class, () -> sessionFuture.get(5, TimeUnit.SECONDS));
+  }
+
+  /**
+   * Verify that SessionFuture instances are properly completed with an exception when
+   * closeSession() is called in the ReactivatingWait state.
+   */
+  @Test
+  public void testCloseSessionCompletesSessionFutureInReactivatingWait() throws Exception {
+    OpcUaServer server = TestServer.create().getServer();
+    server.startup().get();
+
+    OpcUaClient client = TestClient.create(server, cfg -> {});
+    client.connect();
+
+    Thread.sleep(1000);
+
+    server.shutdown().get();
+
+    SessionFsm sessionFsm = client.getSessionFsm();
+    while (sessionFsm.getState() != State.ReactivatingWait) {
+      //noinspection BusyWait
+      Thread.sleep(100);
+    }
+
+    CompletableFuture<OpcUaSession> sessionFuture = sessionFsm.getSession();
+    sessionFsm.closeSession();
+
+    assertThrows(ExecutionException.class, () -> sessionFuture.get(5, TimeUnit.SECONDS));
   }
 }
