@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -54,6 +54,32 @@ public class SessionFsmTest {
     SessionFsm sessionFsm = SessionFsmFactory.newSessionFsm(client);
 
     assertNotNull(sessionFsm.closeSession().get());
+  }
+
+  /**
+   * Verify that SessionFuture instances are properly completed with an exception when
+   * closeSession() is called in the CreatingWait state.
+   */
+  @Test
+  public void testCloseSessionCompletesSessionFutureInCreatingWait() throws Exception {
+    OpcUaServer server = TestServer.create().getServer();
+    server.startup().get();
+
+    OpcUaClient client = TestClient.create(server, cfg -> {});
+
+    server.shutdown().get();
+    client.connectAsync();
+
+    SessionFsm sessionFsm = client.getSessionFsm();
+    while (sessionFsm.getState() != State.CreatingWait) {
+      //noinspection BusyWait
+      Thread.sleep(100);
+    }
+
+    CompletableFuture<OpcUaSession> sessionFuture = sessionFsm.getSession();
+    sessionFsm.closeSession();
+
+    assertThrows(ExecutionException.class, () -> sessionFuture.get(5, TimeUnit.SECONDS));
   }
 
   /**
