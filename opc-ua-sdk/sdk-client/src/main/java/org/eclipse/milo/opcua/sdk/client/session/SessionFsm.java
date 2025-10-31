@@ -94,6 +94,15 @@ public class SessionFsm {
     }
   }
 
+  /**
+   * Get the current state of the SessionFsm.
+   *
+   * @return the current {@link State} of the SessionFsm.
+   */
+  public State getState() {
+    return fsm.getState();
+  }
+
   public void addInitializer(SessionInitializer initializer) {
     sessionInitializers.add(initializer);
   }

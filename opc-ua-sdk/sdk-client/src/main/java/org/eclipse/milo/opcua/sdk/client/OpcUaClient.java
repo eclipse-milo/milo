@@ -582,6 +582,15 @@ public class OpcUaClient {
     return sessionFsm.getSession();
   }
 
+  /**
+   * Get the {@link SessionFsm} managing this client's session lifecycle.
+   *
+   * @return the {@link SessionFsm} for this client.
+   */
+  public SessionFsm getSessionFsm() {
+    return sessionFsm;
+  }
+
   public OpcUaClientConfig getConfig() {
     return config;
   }
