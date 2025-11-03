@@ -1,4 +1,6 @@
 name: Run `mvn verify` on JDK 17
+permissions:
+  contents: read
 
 on:
   pull_request:
