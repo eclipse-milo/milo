@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -14,10 +14,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
+import java.util.concurrent.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -176,6 +173,10 @@ public final class TaskQueue {
   public List<Task> shutdown(boolean awaitQuiescence) throws InterruptedException {
     taskQueueLock.lock();
     try {
+      if (shutdown) {
+        return List.of();
+      }
+
       shutdown = true;
 
       if (taskQueue.isEmpty() && pending == 0) {
@@ -196,8 +197,8 @@ public final class TaskQueue {
       taskQueueLock.unlock();
     }
 
-    // if we made it this far we have pending tasks to await
-    assert shutdownLatch != null;
+    // if we made it this far, we have pending tasks to await
+    Objects.requireNonNull(shutdownLatch);
     shutdownLatch.await();
 
     taskQueueLock.lock();
@@ -224,8 +225,16 @@ public final class TaskQueue {
     taskQueueLock.lock();
     try {
       if (pending < maxConcurrentTasks && !paused && !shutdown && !taskQueue.isEmpty()) {
-        executor.execute(Objects.requireNonNull(taskQueue.poll()));
-        pending++;
+        TaskWrapper task = Objects.requireNonNull(taskQueue.poll());
+
+        try {
+          executor.execute(task);
+          pending++;
+        } catch (RejectedExecutionException e) {
+          if (task.callback != null) {
+            task.callback.completeExceptionally(e);
+          }
+        }
       }
     } finally {
       taskQueueLock.unlock();
@@ -259,10 +268,14 @@ public final class TaskQueue {
         task.execute();
 
         if (callback != null) {
-          executor.execute(() -> callback.complete(Unit.VALUE));
+          notifyCallback(callback);
         }
       } catch (Throwable throwable) {
         logger.warn("Uncaught Throwable during Task execution.", throwable);
+
+        if (callback != null) {
+          notifyCallbackExceptionally(callback, throwable);
+        }
       }
 
       TaskWrapper inlineTask = null;
@@ -276,7 +289,7 @@ public final class TaskQueue {
             shutdownLatch.countDown();
           }
         } else {
-          // pending count remains the same
+          // the pending count remains the same
           inlineTask = taskQueue.poll();
         }
       } finally {
@@ -286,12 +299,18 @@ public final class TaskQueue {
       if (inlineTask != null) {
         try {
           inlineTask.task.execute();
+
           if (inlineTask.callback != null) {
             CompletableFuture<Unit> callback = inlineTask.callback;
-            executor.execute(() -> callback.complete(Unit.VALUE));
+            notifyCallback(callback);
           }
         } catch (Throwable throwable) {
           logger.warn("Uncaught Throwable during Task execution.", throwable);
+
+          if (inlineTask.callback != null) {
+            CompletableFuture<Unit> callback = inlineTask.callback;
+            notifyCallbackExceptionally(callback, throwable);
+          }
         }
 
         taskQueueLock.lock();
@@ -303,12 +322,40 @@ public final class TaskQueue {
               shutdownLatch.countDown();
             }
           } else {
-            // pending count remains the same
-            executor.execute(Objects.requireNonNull(taskQueue.poll()));
+            // the pending count remains the same
+            TaskWrapper nextTask = Objects.requireNonNull(taskQueue.poll());
+            try {
+              executor.execute(nextTask);
+            } catch (RejectedExecutionException e) {
+              pending--;
+
+              if (nextTask.callback != null) {
+                nextTask.callback.completeExceptionally(e);
+              }
+            }
           }
         } finally {
           taskQueueLock.unlock();
         }
+      }
+    }
+
+    private void notifyCallback(CompletableFuture<Unit> callback) {
+      try {
+        executor.execute(() -> callback.complete(Unit.VALUE));
+      } catch (RejectedExecutionException e) {
+        // complete the notification inline, still a success, because the task was executed.
+        callback.complete(Unit.VALUE);
+      }
+    }
+
+    private void notifyCallbackExceptionally(
+        CompletableFuture<Unit> callback, Throwable throwable) {
+      try {
+        executor.execute(() -> callback.completeExceptionally(throwable));
+      } catch (RejectedExecutionException e) {
+        // complete the notification inline, using the original failure.
+        callback.completeExceptionally(throwable);
       }
     }
   }
