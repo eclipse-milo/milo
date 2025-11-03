@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -10,19 +10,12 @@
 
 package org.eclipse.milo.opcua.stack.core.util;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.ArrayList;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 
 class TaskQueueTest {
@@ -252,6 +245,66 @@ class TaskQueueTest {
     }
   }
 
+  @Test
+  void callbackCompletesExceptionallyWhenTaskThrows() throws Exception {
+    var taskExecutor = new TaskQueue(executor);
+
+    var task =
+        new TestTask() {
+          @Override
+          public void execute() {
+            throw new RuntimeException("Task execution failed");
+          }
+        };
+
+    CompletionStage<Unit> callback = taskExecutor.submit(task);
+    assertNotNull(callback);
+
+    // Expected: callback completes exceptionally when the task throws
+    assertThrows(
+        ExecutionException.class,
+        () -> callback.toCompletableFuture().get(250, TimeUnit.MILLISECONDS),
+        "Callback should complete exceptionally when task throws");
+  }
+
+  @Test
+  void callbackCompletesWhenSchedulingCallbackFails() throws Exception {
+    // Executor that runs the first task submission normally but throws on later executions
+    Executor flakyExecutor =
+        new Executor() {
+          final AtomicInteger calls = new AtomicInteger();
+
+          @Override
+          public void execute(@NonNull Runnable command) {
+            if (calls.getAndIncrement() == 0) {
+              // Schedule the TaskQueue's first task execution on the real executor
+              executor.execute(command);
+            } else {
+              // Simulate executor failing to schedule the callback completion runnable
+              throw new RejectedExecutionException("simulated execution rejection");
+            }
+          }
+        };
+
+    var taskExecutor = TaskQueue.newBuilder().setExecutor(flakyExecutor).build();
+
+    var task = new TestTask();
+    var callback = taskExecutor.submit(task);
+    assertNotNull(callback);
+
+    // Ensure the task itself executed successfully
+    task.awaitExecution();
+
+    // Give a brief moment for any (failing) callback scheduling attempt
+    Thread.sleep(25);
+
+    // Expected: even if scheduling the callback completion throws, the callback should be
+    // completed.
+    assertDoesNotThrow(
+        () -> callback.toCompletableFuture().get(250, TimeUnit.MILLISECONDS),
+        "Callback should complete even when scheduling the completion throws");
+  }
+
   private final AtomicInteger sequence = new AtomicInteger(0);
 
   private class TestTask implements TaskQueue.Task {
@@ -270,6 +323,14 @@ class TaskQueueTest {
     void awaitExecution() {
       try {
         executed.await();
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+    }
+
+    boolean awaitExecution(long timeout, TimeUnit unit) {
+      try {
+        return executed.await(timeout, unit);
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
       }
