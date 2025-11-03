@@ -18,7 +18,7 @@
   <parent>
     <groupId>org.eclipse.milo</groupId>
     <artifactId>milo</artifactId>
-    <version>1.0.8-SNAPSHOT</version>
+    <version>1.0.8</version>
   </parent>
 
   <name>Milo :: Bill of Materials</name>
