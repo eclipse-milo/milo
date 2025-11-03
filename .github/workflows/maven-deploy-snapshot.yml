@@ -1,4 +1,6 @@
 name: Deploy SNAPSHOT to Maven Central
+permissions:
+  contents: read
 on:
   workflow_dispatch:
 
