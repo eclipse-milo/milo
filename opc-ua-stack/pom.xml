@@ -17,7 +17,7 @@
   <parent>
     <groupId>org.eclipse.milo</groupId>
     <artifactId>milo</artifactId>
-    <version>1.0.8</version>
+    <version>1.0.9-SNAPSHOT</version>
   </parent>
 
   <name>Milo :: OPC UA Stack</name>
