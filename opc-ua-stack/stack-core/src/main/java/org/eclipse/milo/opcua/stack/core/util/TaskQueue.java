@@ -323,16 +323,14 @@ public final class TaskQueue {
             }
           } else {
             // the pending count remains the same
-            TaskWrapper nextTask = taskQueue.poll();
-            if (nextTask != null) {
-              try {
-                executor.execute(nextTask);
-              } catch (RejectedExecutionException e) {
-                pending--;
+            TaskWrapper nextTask = Objects.requireNonNull(taskQueue.poll());
+            try {
+              executor.execute(nextTask);
+            } catch (RejectedExecutionException e) {
+              pending--;
 
-                if (nextTask.callback != null) {
-                  nextTask.callback.completeExceptionally(e);
-                }
+              if (nextTask.callback != null) {
+                nextTask.callback.completeExceptionally(e);
               }
             }
           }
