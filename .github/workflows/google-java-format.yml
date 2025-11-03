@@ -1,4 +1,6 @@
 name: check google-java-format
+permissions:
+  contents: read
 
 on:
   push:
