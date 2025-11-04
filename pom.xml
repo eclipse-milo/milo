@@ -285,6 +285,7 @@
                   <classifier>sources</classifier>
                   <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
                   <outputDirectory>${maven.multiModuleProjectDirectory}/external/src</outputDirectory>
+                  <excludeGroupIds>org.eclipse.milo</excludeGroupIds>
                 </configuration>
               </execution>
             </executions>
