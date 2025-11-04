@@ -253,6 +253,19 @@ public final class TestServer {
 
     Set<String> hostnames = HostnameUtil.getHostnames("localhost", true);
 
+    List<SecurityPolicy> securityPolicies =
+        List.of(
+            SecurityPolicy.None,
+            SecurityPolicy.Basic128Rsa15,
+            SecurityPolicy.Basic256,
+            SecurityPolicy.Basic256Sha256,
+            SecurityPolicy.Aes128_Sha256_RsaOaep,
+            SecurityPolicy.Aes256_Sha256_RsaPss);
+
+    List<MessageSecurityMode> messageSecurityModes =
+        List.of(
+            MessageSecurityMode.None, MessageSecurityMode.Sign, MessageSecurityMode.SignAndEncrypt);
+
     for (String bindAddress : bindAddresses) {
       for (String hostname : hostnames) {
         EndpointConfig.Builder builder =
@@ -266,31 +279,34 @@ public final class TestServer {
                     USER_TOKEN_POLICY_USERNAME,
                     USER_TOKEN_POLICY_X509);
 
-        EndpointConfig.Builder noSecurityBuilder =
-            builder
-                .copy()
-                .setSecurityPolicy(SecurityPolicy.None)
-                .setSecurityMode(MessageSecurityMode.None);
+        // Create endpoints for all SecurityPolicy/MessageSecurityMode combinations
+        // SecurityPolicy.None must only be combined with MessageSecurityMode.None
+        for (SecurityPolicy securityPolicy : securityPolicies) {
+          for (MessageSecurityMode messageMode : messageSecurityModes) {
+            // SecurityPolicy.None is only valid with MessageSecurityMode.None
+            if (securityPolicy == SecurityPolicy.None && messageMode != MessageSecurityMode.None) {
+              continue;
+            }
+            // MessageSecurityMode.None is only valid with SecurityPolicy.None
+            if (messageMode == MessageSecurityMode.None && securityPolicy != SecurityPolicy.None) {
+              continue;
+            }
 
-        endpointConfigurations.add(buildTcpEndpoint(port, noSecurityBuilder));
-
-        // TCP Basic256Sha256 / SignAndEncrypt
-        endpointConfigurations.add(
-            buildTcpEndpoint(
-                port,
-                builder
-                    .copy()
-                    .setSecurityPolicy(SecurityPolicy.Basic256Sha256)
-                    .setSecurityMode(MessageSecurityMode.SignAndEncrypt)));
+            endpointConfigurations.add(
+                buildTcpEndpoint(
+                    port,
+                    builder.copy().setSecurityPolicy(securityPolicy).setSecurityMode(messageMode)));
+          }
+        }
 
         /*
          * It's good practice to provide a discovery-specific endpoint with no security.
          * It's required practice if all regular endpoints have security configured.
          *
-         * Usage of the  "/discovery" suffix is defined by OPC UA Part 6:
+         * OPC UA Part 6 defines usage of the "/discovery" suffix:
          *
          * Each OPC UA Server Application implements the Discovery Service Set. If the OPC UA Server requires a
-         * different address for this Endpoint it shall create the address by appending the path "/discovery" to
+         * different address for this Endpoint, it shall create the address by appending the path "/discovery" to
          * its base address.
          */
 
