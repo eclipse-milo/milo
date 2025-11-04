@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -16,7 +16,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.net.InetSocketAddress;
 import java.security.KeyPair;
-import java.security.Security;
 import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Objects;
@@ -25,7 +24,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.channel.messages.ErrorMessage;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
@@ -65,11 +63,6 @@ import org.slf4j.LoggerFactory;
 class OpcTcpTransportTest extends SecurityFixture {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OpcTcpTransportTest.class);
-
-  static {
-    // Required for SecurityPolicy.Aes256_Sha256_RsaPss
-    Security.addProvider(new BouncyCastleProvider());
-  }
 
   private static Stream<Arguments> provideSecurityParameters() {
     return Stream.of(

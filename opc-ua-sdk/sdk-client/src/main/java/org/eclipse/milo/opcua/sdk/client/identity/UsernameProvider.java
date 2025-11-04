@@ -17,7 +17,6 @@ import io.netty.buffer.Unpooled;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.security.GeneralSecurityException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.List;
@@ -31,6 +30,7 @@ import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.channel.SecureChannel;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
+import org.eclipse.milo.opcua.stack.core.security.SecurityAlgorithm;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
@@ -39,6 +39,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.SignatureData;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserNameIdentityToken;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
+import org.eclipse.milo.opcua.stack.core.util.CipherFactory;
 import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
 
@@ -250,7 +251,10 @@ public class UsernameProvider implements IdentityProvider {
           SecureChannel.getAsymmetricCipherTextBlockSize(
               certificate, securityPolicy.getAsymmetricEncryptionAlgorithm());
       int blockCount = (buffer.readableBytes() + plainTextBlockSize - 1) / plainTextBlockSize;
-      Cipher cipher = getAndInitializeCipher(certificate, securityPolicy);
+
+      Cipher cipher =
+          CipherFactory.createForEncryption(
+              securityPolicy.getAsymmetricEncryptionAlgorithm(), certificate.getPublicKey());
 
       ByteBuffer plainTextNioBuffer = buffer.nioBuffer();
       ByteBuffer cipherTextNioBuffer =
@@ -290,14 +294,9 @@ public class UsernameProvider implements IdentityProvider {
 
     assert (serverCertificate != null);
 
-    try {
-      String transformation = securityPolicy.getAsymmetricEncryptionAlgorithm().getTransformation();
-      Cipher cipher = Cipher.getInstance(transformation);
-      cipher.init(Cipher.ENCRYPT_MODE, serverCertificate.getPublicKey());
-      return cipher;
-    } catch (GeneralSecurityException e) {
-      throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
-    }
+    SecurityAlgorithm algorithm = securityPolicy.getAsymmetricEncryptionAlgorithm();
+
+    return CipherFactory.createForEncryption(algorithm, serverCertificate.getPublicKey());
   }
 
   @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -35,6 +35,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.UserNameIdentityToken;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.eclipse.milo.opcua.stack.core.types.structured.X509IdentityToken;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
+import org.eclipse.milo.opcua.stack.core.util.CipherFactory;
 import org.eclipse.milo.opcua.stack.core.util.DigestUtil;
 
 public abstract class AbstractIdentityValidator implements IdentityValidator {
@@ -200,7 +201,7 @@ public abstract class AbstractIdentityValidator implements IdentityValidator {
               .getKeyPair(ByteString.of(DigestUtil.sha1(certificate.getEncoded())))
               .orElseThrow(() -> new UaException(StatusCodes.Bad_SecurityChecksFailed));
 
-      Cipher cipher = getCipher(algorithm, keyPair);
+      Cipher cipher = CipherFactory.createForDecryption(algorithm, keyPair.getPrivate());
 
       for (int blockNumber = 0; blockNumber < blockCount; blockNumber++) {
         ((Buffer) passwordNioBuffer).limit(passwordNioBuffer.position() + cipherTextBlockSize);
@@ -212,16 +213,5 @@ public abstract class AbstractIdentityValidator implements IdentityValidator {
     }
 
     return plainTextBytes;
-  }
-
-  private Cipher getCipher(SecurityAlgorithm algorithm, KeyPair keyPair) throws UaException {
-    try {
-      String transformation = algorithm.getTransformation();
-      Cipher cipher = Cipher.getInstance(transformation);
-      cipher.init(Cipher.DECRYPT_MODE, keyPair.getPrivate());
-      return cipher;
-    } catch (GeneralSecurityException e) {
-      throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
-    }
   }
 }

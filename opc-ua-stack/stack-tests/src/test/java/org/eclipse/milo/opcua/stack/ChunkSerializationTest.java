@@ -17,10 +17,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.util.ReferenceCountUtil;
-import java.security.Security;
 import java.util.ArrayList;
 import java.util.List;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.eclipse.milo.opcua.stack.core.channel.ChannelParameters;
 import org.eclipse.milo.opcua.stack.core.channel.ChunkDecoder;
 import org.eclipse.milo.opcua.stack.core.channel.ChunkEncoder;
@@ -42,11 +40,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ChunkSerializationTest extends SecureChannelFixture {
-
-  static {
-    // Required for SecurityPolicy.Aes256_Sha256_RsaPss
-    Security.addProvider(new BouncyCastleProvider());
-  }
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ChunkSerializationTest.class);
 

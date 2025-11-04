@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -37,7 +37,6 @@ import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509ExtensionUtils;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.jspecify.annotations.Nullable;
@@ -145,9 +144,7 @@ public class SelfSignedCertificateGenerator {
     addSubjectAlternativeNames(certificateBuilder, keyPair, applicationUri, dnsNames, ipAddresses);
 
     ContentSigner contentSigner =
-        new JcaContentSignerBuilder(signatureAlgorithm)
-            .setProvider(new BouncyCastleProvider())
-            .build(keyPair.getPrivate());
+        new JcaContentSignerBuilder(signatureAlgorithm).build(keyPair.getPrivate());
 
     X509CertificateHolder certificateHolder = certificateBuilder.build(contentSigner);
 

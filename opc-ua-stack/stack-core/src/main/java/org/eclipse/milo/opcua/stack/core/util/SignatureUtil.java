@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -12,12 +12,11 @@ package org.eclipse.milo.opcua.stack.core.util;
 
 import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
-import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.Signature;
-import java.security.SignatureException;
 import java.security.cert.X509Certificate;
+import java.security.spec.AlgorithmParameterSpec;
 import java.util.HashMap;
 import java.util.Map;
 import javax.crypto.Mac;
@@ -43,9 +42,15 @@ public class SignatureUtil {
       throws UaException {
 
     String transformation = securityAlgorithm.getTransformation();
+    AlgorithmParameterSpec parameterSpec = securityAlgorithm.getAlgorithmParameterSpec();
 
     try {
       Signature signature = Signature.getInstance(transformation);
+
+      if (parameterSpec != null) {
+        signature.setParameter(parameterSpec);
+      }
+
       signature.initSign(privateKey);
 
       for (ByteBuffer buffer : buffers) {
@@ -76,7 +81,15 @@ public class SignatureUtil {
       throws UaException {
 
     try {
-      Signature signature = Signature.getInstance(algorithm.getTransformation());
+      String transformation = algorithm.getTransformation();
+      AlgorithmParameterSpec parameterSpec = algorithm.getAlgorithmParameterSpec();
+
+      Signature signature = Signature.getInstance(transformation);
+
+      if (parameterSpec != null) {
+        signature.setParameter(parameterSpec);
+      }
+
       signature.initVerify(certificate);
 
       signature.update(dataBytes);
@@ -84,9 +97,9 @@ public class SignatureUtil {
       if (!signature.verify(signatureBytes)) {
         throw new UaException(StatusCodes.Bad_SecurityChecksFailed, "could not verify signature");
       }
-    } catch (NoSuchAlgorithmException | SignatureException e) {
+    } catch (NoSuchAlgorithmException e) {
       throw new UaException(StatusCodes.Bad_InternalError, e);
-    } catch (InvalidKeyException e) {
+    } catch (GeneralSecurityException e) {
       throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
     }
   }
