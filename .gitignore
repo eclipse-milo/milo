@@ -31,3 +31,6 @@ test-output/
 
 # Local Claude Code memory
 CLAUDE.local.md
+
+# External src and other files
+external/
