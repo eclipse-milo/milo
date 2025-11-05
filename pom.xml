@@ -69,11 +69,16 @@
     <netty-channel-fsm.version>1.0.2</netty-channel-fsm.version>
     <slf4j.version>2.0.17</slf4j.version>
     <jspecify.version>1.0.0</jspecify.version>
+    <xmlunit.version>2.10.0</xmlunit.version>
+
+    <!-- Incubating Module Version -->
+    <incubating.version>0.1-SNAPSHOT</incubating.version>
 
     <!-- Plugin Dependency Versions -->
     <central-publishing-maven-plugin.version>0.8.0</central-publishing-maven-plugin.version>
     <checkstyle.version>11.0.1</checkstyle.version>
     <jaxb2-maven-plugin.version>3.3.0</jaxb2-maven-plugin.version>
+    <license-tool-plugin.version>1.1.0</license-tool-plugin.version>
     <maven-bundle-plugin.version>6.0.0</maven-bundle-plugin.version>
     <maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
     <maven-clean-plugin.version>3.5.0</maven-clean-plugin.version>
@@ -85,8 +90,11 @@
     <maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
     <maven-install-plugin.version>3.1.4</maven-install-plugin.version>
     <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
+    <maven-javadoc-plugin.version>3.11.3</maven-javadoc-plugin.version>
     <maven-release-plugin.version>3.1.1</maven-release-plugin.version>
+    <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
     <maven-shade-plugin.version>3.6.0</maven-shade-plugin.version>
+    <maven-site-plugin.version>4.0.0-M9</maven-site-plugin.version>
     <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
     <maven-surefire-plugin.version>3.5.3</maven-surefire-plugin.version>
     <versions-maven-plugin.version>2.19.0</versions-maven-plugin.version>
@@ -105,7 +113,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-javadoc-plugin</artifactId>
-            <version>3.11.3</version>
+            <version>${maven-javadoc-plugin.version}</version>
             <configuration>
               <doclint>none</doclint>
               <failOnError>false</failOnError>
@@ -173,7 +181,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-javadoc-plugin</artifactId>
-            <version>3.11.3</version>
+            <version>${maven-javadoc-plugin.version}</version>
             <configuration>
               <doclint>none</doclint>
               <failOnError>false</failOnError>
@@ -220,7 +228,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-javadoc-plugin</artifactId>
-            <version>3.11.3</version>
+            <version>${maven-javadoc-plugin.version}</version>
             <configuration>
               <doclint>none</doclint>
               <failOnError>false</failOnError>
@@ -245,7 +253,7 @@
           <plugin>
             <groupId>org.eclipse.dash</groupId>
             <artifactId>license-tool-plugin</artifactId>
-            <version>1.1.0</version>
+            <version>${license-tool-plugin.version}</version>
             <configuration>
               <projectId>iot.milo</projectId>
               <repo>https://github.com/eclipse-milo/milo</repo>
@@ -477,12 +485,12 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-resources-plugin</artifactId>
-          <version>3.3.1</version>
+          <version>${maven-resources-plugin.version}</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-site-plugin</artifactId>
-          <version>4.0.0-M9</version>
+          <version>${maven-site-plugin.version}</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
