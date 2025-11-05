@@ -23,7 +23,7 @@
   <name>Milo :: Codec JSON</name>
 
   <artifactId>milo-codec-json</artifactId>
-  <version>0.1-SNAPSHOT</version>
+  <version>${incubating.version}</version>
 
   <properties>
     <javaModuleName>org.eclipse.milo.opcua.sdk.codec.json</javaModuleName>
