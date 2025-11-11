@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -28,7 +28,8 @@ public class SelfSignedHttpsCertificateBuilder {
   private final HttpsCertificateGenerator generator = new HttpsCertificateGenerator();
 
   private Period validityPeriod = Period.ofYears(3);
-  private String commonName;
+  private String commonName = "";
+  private String organization = "";
   private List<String> dnsNames = new ArrayList<>();
   private List<String> ipAddresses = new ArrayList<>();
 
@@ -51,6 +52,11 @@ public class SelfSignedHttpsCertificateBuilder {
    */
   public SelfSignedHttpsCertificateBuilder setCommonName(String commonName) {
     this.commonName = commonName;
+    return this;
+  }
+
+  public SelfSignedHttpsCertificateBuilder setOrganization(String organization) {
+    this.organization = organization;
     return this;
   }
 
@@ -77,7 +83,7 @@ public class SelfSignedHttpsCertificateBuilder {
         notBefore,
         notAfter,
         commonName,
-        null,
+        organization,
         null,
         null,
         null,
