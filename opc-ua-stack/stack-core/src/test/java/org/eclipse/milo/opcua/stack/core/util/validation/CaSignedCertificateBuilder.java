@@ -40,7 +40,6 @@ import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509ExtensionUtils;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.jspecify.annotations.Nullable;
@@ -364,9 +363,7 @@ public class CaSignedCertificateBuilder {
     }
 
     ContentSigner contentSigner =
-        new JcaContentSignerBuilder(signatureAlgorithm)
-            .setProvider(new BouncyCastleProvider())
-            .build(issuerPrivateKey);
+        new JcaContentSignerBuilder(signatureAlgorithm).build(issuerPrivateKey);
 
     X509CertificateHolder certificateHolder = certificateBuilder.build(contentSigner);
 

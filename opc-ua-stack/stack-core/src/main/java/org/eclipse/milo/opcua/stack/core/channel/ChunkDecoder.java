@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -23,6 +23,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.Signature;
 import java.security.SignatureException;
+import java.security.spec.AlgorithmParameterSpec;
 import java.util.List;
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
@@ -37,6 +38,7 @@ import org.eclipse.milo.opcua.stack.core.channel.messages.ErrorMessage;
 import org.eclipse.milo.opcua.stack.core.security.SecurityAlgorithm;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.util.BufferUtil;
+import org.eclipse.milo.opcua.stack.core.util.CipherFactory;
 import org.eclipse.milo.opcua.stack.core.util.SignatureUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -311,15 +313,9 @@ public final class ChunkDecoder {
 
     @Override
     public Cipher getCipher(SecureChannel channel) throws UaException {
-      try {
-        String transformation =
-            channel.getSecurityPolicy().getAsymmetricEncryptionAlgorithm().getTransformation();
-        Cipher cipher = Cipher.getInstance(transformation);
-        cipher.init(Cipher.DECRYPT_MODE, channel.getKeyPair().getPrivate());
-        return cipher;
-      } catch (GeneralSecurityException e) {
-        throw new UaException(StatusCodes.Bad_InternalError, e);
-      }
+      SecurityAlgorithm algorithm = channel.getSecurityPolicy().getAsymmetricEncryptionAlgorithm();
+
+      return CipherFactory.createForDecryption(algorithm, channel.getKeyPair().getPrivate());
     }
 
     @Override
@@ -336,6 +332,8 @@ public final class ChunkDecoder {
     public void verifyChunk(SecureChannel channel, ByteBuf chunkBuffer) throws UaException {
       String transformation =
           channel.getSecurityPolicy().getAsymmetricSignatureAlgorithm().getTransformation();
+      AlgorithmParameterSpec parameterSpec =
+          channel.getSecurityPolicy().getAsymmetricSignatureAlgorithm().getAlgorithmParameterSpec();
       int signatureSize = channel.getRemoteAsymmetricSignatureSize();
 
       ByteBuffer chunkNioBuffer = chunkBuffer.nioBuffer(0, chunkBuffer.writerIndex());
@@ -344,6 +342,10 @@ public final class ChunkDecoder {
 
       try {
         Signature signature = Signature.getInstance(transformation);
+
+        if (parameterSpec != null) {
+          signature.setParameter(parameterSpec);
+        }
 
         signature.initVerify(channel.getRemoteCertificate().getPublicKey());
         signature.update(chunkNioBuffer);
@@ -361,6 +363,8 @@ public final class ChunkDecoder {
         throw new UaException(StatusCodes.Bad_ApplicationSignatureInvalid, e);
       } catch (InvalidKeyException e) {
         throw new UaException(StatusCodes.Bad_CertificateInvalid, e);
+      } catch (GeneralSecurityException e) {
+        throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
       }
     }
 

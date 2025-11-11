@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -34,6 +34,7 @@ import org.eclipse.milo.opcua.stack.core.channel.messages.MessageType;
 import org.eclipse.milo.opcua.stack.core.security.SecurityAlgorithm;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.util.BufferUtil;
+import org.eclipse.milo.opcua.stack.core.util.CipherFactory;
 import org.eclipse.milo.opcua.stack.core.util.LongSequence;
 import org.eclipse.milo.opcua.stack.core.util.SignatureUtil;
 
@@ -301,15 +302,9 @@ public final class ChunkEncoder {
 
       assert (remoteCertificate != null);
 
-      try {
-        String transformation =
-            channel.getSecurityPolicy().getAsymmetricEncryptionAlgorithm().getTransformation();
-        Cipher cipher = Cipher.getInstance(transformation);
-        cipher.init(Cipher.ENCRYPT_MODE, remoteCertificate.getPublicKey());
-        return cipher;
-      } catch (GeneralSecurityException e) {
-        throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
-      }
+      SecurityAlgorithm algorithm = channel.getSecurityPolicy().getAsymmetricEncryptionAlgorithm();
+
+      return CipherFactory.createForEncryption(algorithm, remoteCertificate.getPublicKey());
     }
 
     @Override

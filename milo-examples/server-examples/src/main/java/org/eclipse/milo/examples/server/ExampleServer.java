@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -19,7 +19,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.KeyPair;
-import java.security.Security;
 import java.security.cert.X509Certificate;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -28,7 +27,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.eclipse.milo.opcua.sdk.server.EndpointConfig;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig;
@@ -63,9 +61,6 @@ public class ExampleServer {
   private static final int TCP_BIND_PORT = 12686;
 
   static {
-    // Required for SecurityPolicy.Aes256_Sha256_RsaPss
-    Security.addProvider(new BouncyCastleProvider());
-
     try {
       NonceUtil.blockUntilSecureRandomSeeded(10, TimeUnit.SECONDS);
     } catch (ExecutionException | InterruptedException | TimeoutException e) {

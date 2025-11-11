@@ -31,7 +31,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.security.KeyPair;
 import java.security.PrivateKey;
-import java.security.Security;
 import java.security.cert.PKIXCertPathBuilderResult;
 import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
@@ -44,7 +43,6 @@ import org.bouncycastle.asn1.x509.CRLReason;
 import org.bouncycastle.cert.X509CRLHolder;
 import org.bouncycastle.cert.X509v2CRLBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509CRLConverter;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -56,10 +54,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 public class CertificateValidationUtilTest {
-
-  static {
-    Security.addProvider(new BouncyCastleProvider());
-  }
 
   private static TestCertificates testCertificates;
   private static X509Certificate caIntermediate;
@@ -412,13 +406,9 @@ public class CertificateValidationUtilTest {
     JcaContentSignerBuilder contentSignerBuilder =
         new JcaContentSignerBuilder("SHA256WithRSAEncryption");
 
-    contentSignerBuilder.setProvider("BC");
-
     X509CRLHolder crlHolder = builder.build(contentSignerBuilder.build(caPrivateKey));
 
     JcaX509CRLConverter converter = new JcaX509CRLConverter();
-
-    converter.setProvider("BC");
 
     return converter.getCRL(crlHolder);
   }
