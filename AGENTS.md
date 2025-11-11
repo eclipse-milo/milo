@@ -555,27 +555,3 @@ mvn generate-resources -Pdownload-external-src
 
 This will create the `external/src` directory with sources from all dependencies in a single
 top-level location.
-
-## Commit Messages
-
-Keep the title of the commit message to ~72 characters.
-
-Use the body to summarize the changes made in the commit. If the commit contains a number of
-unrelated changes, try to generate a brief one-line subject, then summarize using bullet points. Be
-concise.
-
-Avoid subjective justification or explanation for changes; state changes on their own merit.
-
-Do not include counts (files, tests, lines, changes, etc.).
-
-Do not include a "generated with Claude Code" line or similar.
-
-## Pull Requests
-
-Do not include a "Test Plan" section in PRs.
-
-Do not mention the build was successful or tests passed.
-
-Do not include counts (files, tests, lines, changes, etc.).
-
-Do not include a "generated with Claude Code" line or similar.
