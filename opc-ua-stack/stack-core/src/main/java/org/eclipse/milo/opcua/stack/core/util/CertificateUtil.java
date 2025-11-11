@@ -36,10 +36,14 @@ import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.style.IETFUtils;
 import org.bouncycastle.asn1.x500.style.RFC4519Style;
+import org.bouncycastle.asn1.x509.BasicConstraints;
+import org.bouncycastle.asn1.x509.ExtendedKeyUsage;
 import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.asn1.x509.ExtensionsGenerator;
 import org.bouncycastle.asn1.x509.GeneralName;
 import org.bouncycastle.asn1.x509.GeneralNames;
+import org.bouncycastle.asn1.x509.KeyPurposeId;
+import org.bouncycastle.asn1.x509.KeyUsage;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.openssl.MiscPEMGenerator;
 import org.bouncycastle.operator.ContentSigner;
@@ -143,6 +147,23 @@ public class CertificateUtil {
 
     ExtensionsGenerator extGen = new ExtensionsGenerator();
     extGen.addExtension(Extension.subjectAlternativeName, false, subjectAltNames);
+
+    KeyUsage keyUsage =
+        new KeyUsage(
+            KeyUsage.digitalSignature
+                | KeyUsage.nonRepudiation
+                | KeyUsage.keyEncipherment
+                | KeyUsage.dataEncipherment);
+    extGen.addExtension(Extension.keyUsage, true, keyUsage);
+
+    ExtendedKeyUsage extendedKeyUsage =
+        new ExtendedKeyUsage(
+            new KeyPurposeId[] {KeyPurposeId.id_kp_clientAuth, KeyPurposeId.id_kp_serverAuth});
+    extGen.addExtension(Extension.extendedKeyUsage, false, extendedKeyUsage);
+
+    BasicConstraints basicConstraints = new BasicConstraints(false);
+    extGen.addExtension(Extension.basicConstraints, true, basicConstraints);
+
     builder.addAttribute(PKCSObjectIdentifiers.pkcs_9_at_extensionRequest, extGen.generate());
 
     JcaContentSignerBuilder signerBuilder =
@@ -224,6 +245,22 @@ public class CertificateUtil {
         Extension.subjectAlternativeName,
         false,
         new GeneralNames(generalNames.toArray(new GeneralName[0])));
+
+    KeyUsage keyUsage =
+        new KeyUsage(
+            KeyUsage.digitalSignature
+                | KeyUsage.nonRepudiation
+                | KeyUsage.keyEncipherment
+                | KeyUsage.dataEncipherment);
+    extGen.addExtension(Extension.keyUsage, true, keyUsage);
+
+    ExtendedKeyUsage extendedKeyUsage =
+        new ExtendedKeyUsage(
+            new KeyPurposeId[] {KeyPurposeId.id_kp_clientAuth, KeyPurposeId.id_kp_serverAuth});
+    extGen.addExtension(Extension.extendedKeyUsage, false, extendedKeyUsage);
+
+    BasicConstraints basicConstraints = new BasicConstraints(false);
+    extGen.addExtension(Extension.basicConstraints, true, basicConstraints);
 
     builder.addAttribute(PKCSObjectIdentifiers.pkcs_9_at_extensionRequest, extGen.generate());
 
