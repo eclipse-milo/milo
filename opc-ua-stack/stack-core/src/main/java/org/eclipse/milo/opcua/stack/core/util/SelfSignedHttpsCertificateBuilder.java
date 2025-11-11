@@ -28,8 +28,8 @@ public class SelfSignedHttpsCertificateBuilder {
   private final HttpsCertificateGenerator generator = new HttpsCertificateGenerator();
 
   private Period validityPeriod = Period.ofYears(3);
-  private String commonName = "";
-  private String organization = "";
+  private String commonName = "not configured";
+  private String organization = "not configured";
   private List<String> dnsNames = new ArrayList<>();
   private List<String> ipAddresses = new ArrayList<>();
 

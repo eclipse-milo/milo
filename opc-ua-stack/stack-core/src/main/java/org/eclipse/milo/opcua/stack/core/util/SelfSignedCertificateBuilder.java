@@ -45,8 +45,8 @@ public class SelfSignedCertificateBuilder {
 
   private Period validityPeriod = Period.ofYears(3);
 
-  private String commonName = "";
-  private String organization = "";
+  private String commonName = "not configured";
+  private String organization = "not configured";
   private String organizationalUnit = null;
   private String localityName = null;
   private String stateName = null;
