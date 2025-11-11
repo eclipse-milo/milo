@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -9,6 +9,8 @@
  */
 
 package org.eclipse.milo.opcua.stack.core.util;
+
+import static java.util.Objects.requireNonNullElse;
 
 import java.math.BigInteger;
 import java.security.KeyPair;
@@ -76,8 +78,8 @@ public class SelfSignedCertificateGenerator {
       KeyPair keyPair,
       Date notBefore,
       Date notAfter,
-      @Nullable String commonName,
-      @Nullable String organization,
+      String commonName,
+      String organization,
       @Nullable String organizationalUnit,
       @Nullable String localityName,
       @Nullable String stateName,
@@ -90,22 +92,22 @@ public class SelfSignedCertificateGenerator {
 
     X500NameBuilder nameBuilder = new X500NameBuilder();
 
-    if (commonName != null) {
-      nameBuilder.addRDN(BCStyle.CN, commonName);
-    }
-    if (organization != null) {
-      nameBuilder.addRDN(BCStyle.O, organization);
-    }
-    if (organizationalUnit != null) {
+    // Common Name and Organization are required attributes.
+    nameBuilder.addRDN(BCStyle.CN, requireNonNullElse(commonName, "not configured"));
+    nameBuilder.addRDN(BCStyle.O, requireNonNullElse(organization, "not configured"));
+
+    // Optional attributes; only add if non-null and non-empty.
+
+    if (organizationalUnit != null && !organizationalUnit.isEmpty()) {
       nameBuilder.addRDN(BCStyle.OU, organizationalUnit);
     }
-    if (localityName != null) {
+    if (localityName != null && !localityName.isEmpty()) {
       nameBuilder.addRDN(BCStyle.L, localityName);
     }
-    if (stateName != null) {
+    if (stateName != null && !stateName.isEmpty()) {
       nameBuilder.addRDN(BCStyle.ST, stateName);
     }
-    if (countryCode != null) {
+    if (countryCode != null && !countryCode.isEmpty()) {
       nameBuilder.addRDN(BCStyle.C, countryCode);
     }
 

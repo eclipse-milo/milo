@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -45,12 +45,12 @@ public class SelfSignedCertificateBuilder {
 
   private Period validityPeriod = Period.ofYears(3);
 
-  private String commonName = "";
-  private String organization = "";
-  private String organizationalUnit = "";
-  private String localityName = "";
-  private String stateName = "";
-  private String countryCode = "";
+  private String commonName = "not configured";
+  private String organization = "not configured";
+  private String organizationalUnit = null;
+  private String localityName = null;
+  private String stateName = null;
+  private String countryCode = null;
 
   private String applicationUri = "";
   private List<String> dnsNames = new ArrayList<>();
@@ -140,7 +140,7 @@ public class SelfSignedCertificateBuilder {
   }
 
   public X509Certificate build() throws Exception {
-    // Calculate start and end date based on validity period
+    // Calculate start and end date based on the validity period
     LocalDate now = LocalDate.now();
     LocalDate expiration = now.plus(validityPeriod);
 
