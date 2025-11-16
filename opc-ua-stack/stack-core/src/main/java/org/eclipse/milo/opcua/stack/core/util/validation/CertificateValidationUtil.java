@@ -423,15 +423,18 @@ public class CertificateValidationUtil {
    *
    * @return {@code true} if a given {@link X509Certificate} is self-signed.
    */
-  private static boolean certificateIsSelfSigned(X509Certificate cert) throws UaException {
+  static boolean certificateIsSelfSigned(X509Certificate cert) throws UaException {
+    // Check that subject and issuer are the same
+    if (!Objects.equals(cert.getSubjectX500Principal(), cert.getIssuerX500Principal())) {
+      return false;
+    }
+
     try {
-      // Verify certificate signature with its own public key
+      // Verify the certificate signature with its own public key
       PublicKey key = cert.getPublicKey();
       cert.verify(key);
-
-      // Check that subject and issuer are the same
-      return Objects.equals(cert.getSubjectX500Principal(), cert.getIssuerX500Principal());
-    } catch (SignatureException | InvalidKeyException sigEx) {
+      return true;
+    } catch (SignatureException | InvalidKeyException e) {
       // Invalid signature or key: not self-signed
       return false;
     } catch (Exception e) {
