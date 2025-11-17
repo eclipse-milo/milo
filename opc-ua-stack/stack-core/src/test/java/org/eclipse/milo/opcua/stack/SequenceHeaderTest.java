@@ -10,7 +10,6 @@
 
 package org.eclipse.milo.opcua.stack;
 
-import com.google.common.primitives.UnsignedInteger;
 import org.eclipse.milo.opcua.stack.core.channel.headers.SequenceHeader;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -24,7 +23,7 @@ public class SequenceHeaderTest extends SerializationFixture2 {
       {Integer.MAX_VALUE - 1, Integer.MAX_VALUE - 1},
       {Integer.MAX_VALUE, Integer.MAX_VALUE},
       {Integer.MAX_VALUE + 1L, Integer.MAX_VALUE + 1L},
-      {UnsignedInteger.MAX_VALUE.longValue(), UnsignedInteger.MAX_VALUE.longValue()}
+      {0xFFFF_FFFFL, 0xFFFF_FFFFL}
     };
   }
 
