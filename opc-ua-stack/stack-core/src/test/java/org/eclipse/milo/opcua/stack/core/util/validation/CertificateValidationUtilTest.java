@@ -29,8 +29,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.Security;
 import java.security.cert.PKIXCertPathBuilderResult;
 import java.security.cert.X509CRL;
@@ -41,10 +43,14 @@ import java.util.List;
 import java.util.Set;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.CRLReason;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.cert.X509CRLHolder;
 import org.bouncycastle.cert.X509v2CRLBuilder;
+import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509CRLConverter;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -381,6 +387,26 @@ public class CertificateValidationUtilTest {
   }
 
   @Test
+  public void testCertificateIsSelfSigned() throws Exception {
+    assertTrue(CertificateValidationUtil.certificateIsSelfSigned(leafSelfSigned));
+    assertTrue(CertificateValidationUtil.certificateIsSelfSigned(caRoot));
+    assertFalse(CertificateValidationUtil.certificateIsSelfSigned(leafIntermediateSigned));
+    assertFalse(CertificateValidationUtil.certificateIsSelfSigned(caIntermediate));
+  }
+
+  @Test
+  public void testCertificateIsSelfSigned_MatchingPrincipalsWrongKey() throws Exception {
+    KeyPair keyPair1 = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+    KeyPair keyPair2 = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+
+    // Intentionally use the wrong private key, so the signature will be invalid.
+    X509Certificate certificate =
+        createCertificateWithKeys(keyPair1.getPublic(), keyPair2.getPrivate());
+
+    assertFalse(CertificateValidationUtil.certificateIsSelfSigned(certificate));
+  }
+
+  @Test
   public void testUriWithSpaces() throws Exception {
     CertificateValidationUtil.checkApplicationUri(uriWithSpaces, "this URI has spaces");
   }
@@ -432,5 +458,28 @@ public class CertificateValidationUtilTest {
             .addDnsName(dnsName);
 
     return builder.build();
+  }
+
+  private static X509Certificate createCertificateWithKeys(
+      PublicKey publicKey, PrivateKey privateKey) throws Exception {
+
+    X500Name subject = new X500Name("CN=Test Certificate");
+    BigInteger serialNumber = BigInteger.valueOf(System.currentTimeMillis());
+    Date notBefore = new Date(System.currentTimeMillis() - 86400000);
+    Date notAfter = new Date(System.currentTimeMillis() + 31536000000L);
+
+    SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfo.getInstance(publicKey.getEncoded());
+
+    X509v3CertificateBuilder certBuilder =
+        new X509v3CertificateBuilder(
+            subject, serialNumber, notBefore, notAfter, subject, publicKeyInfo);
+
+    JcaContentSignerBuilder signerBuilder = new JcaContentSignerBuilder("SHA256WithRSA");
+    signerBuilder.setProvider("BC");
+    ContentSigner signer = signerBuilder.build(privateKey);
+
+    JcaX509CertificateConverter converter = new JcaX509CertificateConverter();
+    converter.setProvider("BC");
+    return converter.getCertificate(certBuilder.build(signer));
   }
 }
