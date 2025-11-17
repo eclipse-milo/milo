@@ -23,7 +23,7 @@
   <name>Milo :: Transport HTTPS</name>
 
   <artifactId>milo-transport-https</artifactId>
-  <version>${incubating.version}</version>
+  <version>0.1-SNAPSHOT</version>
 
   <properties>
     <javaModuleName>org.eclipse.milo.opcua.stack.transport.https</javaModuleName>
