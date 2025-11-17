@@ -23,7 +23,7 @@
   <name>Milo :: Transport Websocket</name>
 
   <artifactId>milo-transport-websocket</artifactId>
-  <version>${incubating.version}</version>
+  <version>0.1-SNAPSHOT</version>
 
   <properties>
     <javaModuleName>org.eclipse.milo.opcua.stack.transport.websocket</javaModuleName>
