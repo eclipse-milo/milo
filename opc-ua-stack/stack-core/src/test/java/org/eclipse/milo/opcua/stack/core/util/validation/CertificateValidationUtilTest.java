@@ -474,8 +474,12 @@ public class CertificateValidationUtilTest {
         new X509v3CertificateBuilder(
             subject, serialNumber, notBefore, notAfter, subject, publicKeyInfo);
 
-    ContentSigner signer = new JcaContentSignerBuilder("SHA256WithRSA").build(privateKey);
+    JcaContentSignerBuilder signerBuilder = new JcaContentSignerBuilder("SHA256WithRSA");
+    signerBuilder.setProvider("BC");
+    ContentSigner signer = signerBuilder.build(privateKey);
 
-    return new JcaX509CertificateConverter().getCertificate(certBuilder.build(signer));
+    JcaX509CertificateConverter converter = new JcaX509CertificateConverter();
+    converter.setProvider("BC");
+    return converter.getCertificate(certBuilder.build(signer));
   }
 }
