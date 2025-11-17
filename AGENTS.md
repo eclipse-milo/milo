@@ -6,8 +6,8 @@ Follow these Java conventions when working with this codebase.
 
 ### Variables and Types
 
-Choose type declarations that make the code's intent immediately clear to readers. While `var` reduces verbosity,
-explicit types often communicate intent more effectively.
+Choose type declarations that make the code's intent immediately clear to readers. While `var`
+reduces verbosity, explicit types often communicate intent more effectively.
 
 #### Type Declarations
 
@@ -66,8 +66,8 @@ var callback = createHandler(); // What functional interface?
 
 ### Records
 
-Leverage records as the default choice for immutable data carriers. They provide concise syntax while maintaining type
-safety and clarity.
+Leverage records as the default choice for immutable data carriers. They provide concise syntax
+while maintaining type safety and clarity.
 
 - Prefer record classes for immutable data carriers
 
@@ -100,7 +100,8 @@ safety and clarity.
 
 ### Sealed Classes
 
-Use sealed classes to create explicit, type-safe hierarchies that the compiler can verify exhaustively.
+Use sealed classes to create explicit, type-safe hierarchies that the compiler can verify
+exhaustively.
 
 - Use sealed classes to restrict inheritance hierarchies
 
@@ -129,7 +130,8 @@ Use sealed classes to create explicit, type-safe hierarchies that the compiler c
 
 ### Pattern Matching
 
-Pattern matching eliminates boilerplate and makes type-safe operations more expressive and less error-prone.
+Pattern matching removes boilerplate and makes type-safe operations more expressive and less
+error-prone.
 
 - Use pattern matching for `instanceof` checks (JDK 16+)
 
@@ -189,8 +191,8 @@ Text blocks improve readability for multi-line strings and eliminate error-prone
 
 ### Null Handling
 
-Validate inputs immediately with specific error messages. Use `Optional` to explicitly signal absence in return values,
-never for parameters.
+Validate inputs immediately with specific error messages. Use `Optional` to explicitly signal
+absence in return values, never for parameters.
 
 - Use `Optional` for return types that may be absent, **never** for parameters
 
@@ -252,8 +254,8 @@ never for parameters.
 
 ### Exception Handling
 
-Throw specific exceptions early with clear messages that help diagnose problems. Don't mask failures with generic catch
-blocks.
+Throw specific exceptions early with clear messages that help diagnose problems. Don't mask failures
+with generic catch blocks.
 
 - Prefer specific exception types over generic ones
 
@@ -323,8 +325,8 @@ blocks.
 
 ### Code Organization
 
-Design flexible, composable systems using interfaces and composition. Avoid deep inheritance hierarchies that create
-rigid coupling.
+Design flexible, composable systems using interfaces and composition. Avoid deep inheritance
+hierarchies that create rigid coupling.
 
 - Keep methods short and focused on a single responsibility
 
@@ -380,8 +382,9 @@ rigid coupling.
 
 ### Immutability
 
-Design classes and data structures to be immutable unless there's a clear need for mutability. Immutable objects are
-inherently thread-safe, easier to reason about, and prevent entire categories of bugs.
+Design classes and data structures to be immutable unless there's a clear need for mutability.
+Immutable objects are inherently thread-safe, easier to reason about, and prevent entire categories
+of bugs.
 
 - Make classes immutable by default (prefer records for data carriers)
 
@@ -396,6 +399,7 @@ inherently thread-safe, easier to reason about, and prevent entire categories of
 ```java
 // Good: Immutable record
 record User(String id, String name, List<String> roles) {
+
   // Defensive copy for mutable field
   public User {
     roles = List.copyOf(roles);
@@ -404,6 +408,7 @@ record User(String id, String name, List<String> roles) {
 
 // Good: Immutable class
 public final class Configuration {
+
   private final String host;
   private final int port;
   private final Map<String, String> properties;
@@ -444,24 +449,27 @@ public final class Configuration {
 For any coding practices not explicitly covered by these conventions, defer to established Java best
 practices and community standards.
 
-## Maven
+## Building and Testing
 
-### Building and Testing
+Delegate to a subagent when running Maven commands.
 
-#### Build/Compile the Project
+**Note:** All Maven commands below use the `-q` (quiet) flag to reduce verbose output. If you need
+to debug build issues or see detailed output, remove the `-q` flag and re-run the command.
+
+### Build/Compile the Project
 
 To compile the project without running tests:
 
 ```bash
-mvn clean compile
+mvn -q clean compile
 ```
 
-#### Run All Tests
+### Run All Tests
 
 To run all tests and verify the project:
 
 ```bash
-mvn clean verify
+mvn -q clean verify
 ```
 
 This command will:
@@ -472,74 +480,54 @@ This command will:
 - Run integration tests (if configured)
 - Run code quality checks (like Spotless)
 
-#### Run Specific Tests
+### Run Specific Tests
+
+This is a multi-module project. When you want to run a specific test or pattern, you should target
+the module that contains the test; otherwise Maven will try to apply the filter to all modules. Use
+`-pl` to specify the module (optionally add `-am` to also build required dependent modules).
+
+The examples below assume the test lives in the `opc-ua-stack/stack-core` module — adjust the module
+path as needed (e.g., `opc-ua-sdk/sdk-core`, `opc-ua-sdk/sdk-client`, etc.).
 
 To run a specific test class:
 
 ```bash
-mvn test -Dtest=ClassName
+mvn -q -pl opc-ua-stack/stack-core test -Dtest=ClassName
 ```
 
 To run a specific test method:
 
 ```bash
-mvn test -Dtest=ClassName#methodName
+mvn -q -pl opc-ua-stack/stack-core test -Dtest=ClassName#methodName
 ```
 
 To run multiple test classes:
 
 ```bash
-mvn test -Dtest=ClassOne,ClassTwo
+mvn -q -pl opc-ua-stack/stack-core test -Dtest=ClassOne,ClassTwo
 ```
 
 To run tests matching a pattern:
 
 ```bash
-mvn test -Dtest=*ServiceTest
+mvn -q -pl opc-ua-stack/stack-core test -Dtest=*ServiceTest
 ```
 
-#### Other Common Maven Commands
-
-**Run tests only (skip compilation if already compiled):**
-
-```bash
-mvn test
-```
-
-**Package the project (creates JAR/WAR file):**
-
-```bash
-mvn clean package
-```
-
-**Install to local Maven repository:**
-
-```bash
-mvn clean install
-```
-
-**Run only unit tests (skip integration tests):**
-
-```bash
-mvn clean test
-```
-
-### Code Formatting
+## Code Formatting
 
 This project uses Spotless with Google Java Format for code formatting.
 
 The `spotless:check` goal is bound to the `verify` phase and will fail the build if code is not
 properly formatted.
 
-If the build fails due to formatting issues, run:
+If the build fails due to formatting issues, run the `spotless:apply` goal to automatically format
+the code:
 
 ```bash
-mvn spotless:apply
+mvn -q spotless:apply
 ```
 
-This will automatically format all Java files according to Google Java Format standards.
-
-### Dependency Source Code
+## Dependency Source Code
 
 To examine dependency source code, check the `external/src` directory at the project root. This
 directory contains unpacked source files from all dependencies, organized by package structure for
@@ -550,7 +538,7 @@ easy browsing and searching.
 Run this command from the project root to download and unpack all dependency sources:
 
 ```bash
-mvn generate-resources -Pdownload-external-src
+mvn -q generate-resources -Pdownload-external-src
 ```
 
 This will create the `external/src` directory with sources from all dependencies in a single
