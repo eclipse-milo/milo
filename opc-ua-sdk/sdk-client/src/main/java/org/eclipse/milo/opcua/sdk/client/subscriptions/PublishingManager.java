@@ -307,8 +307,13 @@ public class PublishingManager {
       // PublishRequest. Waiting until the client has finished receiving notifications
       // is the backpressure mechanism that prevents the server from flooding the client
       // with data change notifications faster than it can process them.
-      callback.thenRunAsync(
-          () -> {
+      callback.whenCompleteAsync(
+          (unit, ex) -> {
+            if (ex != null) {
+              logger.warn(
+                  "Notification delivery threw an unexpected Exception: {}", ex.getMessage(), ex);
+            }
+
             pendingCount.getAndUpdate(p -> (p > 0) ? p - 1 : 0);
 
             maybeSendPublishRequests();
