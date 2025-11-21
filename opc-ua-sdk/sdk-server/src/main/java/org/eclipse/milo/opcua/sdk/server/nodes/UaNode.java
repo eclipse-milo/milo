@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.sdk.server.nodes;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -36,7 +37,9 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
@@ -380,7 +383,33 @@ public abstract class UaNode implements UaServerNode {
       QualifiedName browseName = new QualifiedName(namespaceIndex, property.getBrowseName());
 
       try {
-        return getProperty(browseName).map(property.getJavaType()::cast);
+        Object v = getProperty(browseName).orElse(null);
+
+        if (v instanceof ExtensionObject xo) {
+          v = xo.decode(context.getServer().getStaticEncodingContext());
+        } else if (v instanceof ExtensionObject[] xos) {
+          Object array = Array.newInstance(property.getJavaType().getComponentType(), xos.length);
+
+          for (int i = 0; i < xos.length; i++) {
+            Array.set(array, i, xos[i].decode(context.getServer().getStaticEncodingContext()));
+          }
+
+          v = array;
+        } else if (v instanceof Matrix matrix
+            && matrix.getElements() instanceof ExtensionObject[]) {
+
+          v =
+              matrix.transform(
+                  e -> {
+                    if (e instanceof ExtensionObject xo) {
+                      return xo.decode(context.getServer().getStaticEncodingContext());
+                    } else {
+                      return e;
+                    }
+                  });
+        }
+
+        return Optional.ofNullable(property.getJavaType().cast(v));
       } catch (Throwable t) {
         return Optional.empty();
       }
