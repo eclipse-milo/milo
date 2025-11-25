@@ -200,18 +200,18 @@ public class OperationLimits {
     List<DataValue> values =
         client.readValues(0.0, TimestampsToReturn.Neither, OPERATION_LIMITS_NODES);
 
-    UInteger maxNodesPerRead = (UInteger) values.get(0).value().value();
-    UInteger maxNodesPerWrite = (UInteger) values.get(1).value().value();
-    UInteger maxNodesPerMethodCall = (UInteger) values.get(2).value().value();
-    UInteger maxNodesPerBrowse = (UInteger) values.get(3).value().value();
-    UInteger maxNodesPerRegisterNodes = (UInteger) values.get(4).value().value();
-    UInteger maxNodesPerTranslateBrowsePathsToNodeIds = (UInteger) values.get(5).value().value();
-    UInteger maxNodesPerNodeManagement = (UInteger) values.get(6).value().value();
-    UInteger maxMonitoredItemsPerCall = (UInteger) values.get(7).value().value();
-    UInteger maxNodesPerHistoryReadData = (UInteger) values.get(8).value().value();
-    UInteger maxNodesPerHistoryReadEvents = (UInteger) values.get(9).value().value();
-    UInteger maxNodesPerHistoryUpdateData = (UInteger) values.get(10).value().value();
-    UInteger maxNodesPerHistoryUpdateEvents = (UInteger) values.get(11).value().value();
+    UInteger maxNodesPerRead = toUInteger(values.get(0).value().value());
+    UInteger maxNodesPerWrite = toUInteger(values.get(1).value().value());
+    UInteger maxNodesPerMethodCall = toUInteger(values.get(2).value().value());
+    UInteger maxNodesPerBrowse = toUInteger(values.get(3).value().value());
+    UInteger maxNodesPerRegisterNodes = toUInteger(values.get(4).value().value());
+    UInteger maxNodesPerTranslateBrowsePathsToNodeIds = toUInteger(values.get(5).value().value());
+    UInteger maxNodesPerNodeManagement = toUInteger(values.get(6).value().value());
+    UInteger maxMonitoredItemsPerCall = toUInteger(values.get(7).value().value());
+    UInteger maxNodesPerHistoryReadData = toUInteger(values.get(8).value().value());
+    UInteger maxNodesPerHistoryReadEvents = toUInteger(values.get(9).value().value());
+    UInteger maxNodesPerHistoryUpdateData = toUInteger(values.get(10).value().value());
+    UInteger maxNodesPerHistoryUpdateEvents = toUInteger(values.get(11).value().value());
 
     return new OperationLimits(
         maxNodesPerRead,
@@ -232,8 +232,8 @@ public class OperationLimits {
     Function<NodeId, UInteger> read =
         nodeId -> {
           try {
-            return (UInteger)
-                client.readValue(0.0, TimestampsToReturn.Neither, nodeId).value().value();
+            return toUInteger(
+                client.readValue(0.0, TimestampsToReturn.Neither, nodeId).value().value());
           } catch (UaException e) {
             return null;
           }
@@ -282,5 +282,29 @@ public class OperationLimits {
         maxNodesPerHistoryReadEvents,
         maxNodesPerHistoryUpdateData,
         maxNodesPerHistoryUpdateEvents);
+  }
+
+  /**
+   * Converts a value to a {@link UInteger}, handling various numeric types that a server might
+   * return.
+   *
+   * @param value the value to convert.
+   * @return the value as a {@link UInteger}, or {@code null} if the value is {@code null} or cannot
+   *     be converted.
+   */
+  private static @Nullable UInteger toUInteger(@Nullable Object value) {
+    if (value == null) {
+      return null;
+    }
+
+    if (value instanceof UInteger uInteger) {
+      return uInteger;
+    }
+
+    if (value instanceof Number number) {
+      return UInteger.valueOf(number.longValue());
+    }
+
+    return null;
   }
 }
