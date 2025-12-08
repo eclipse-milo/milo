@@ -24,6 +24,7 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.util.concurrent.FutureListener;
+import java.net.InetSocketAddress;
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
 import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
@@ -131,7 +132,7 @@ public class OpcHttpClientTransport implements OpcClientTransport {
         new Bootstrap()
             .channel(NioSocketChannel.class)
             .group(config.getEventLoop())
-            .remoteAddress(host, port);
+            .remoteAddress(new InetSocketAddress(host, port));
 
     return new SimpleChannelPool(
         bootstrap,

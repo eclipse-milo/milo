@@ -47,6 +47,7 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import java.net.ConnectException;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -230,7 +231,7 @@ public class OpcWebSocketClientTransport extends AbstractUascClientTransport {
       int port = EndpointUtil.getPort(endpointUrl);
 
       bootstrap
-          .connect(host, port)
+          .connect(new InetSocketAddress(host, port))
           .addListener(
               (ChannelFuture f) -> {
                 if (!f.isSuccess()) {
