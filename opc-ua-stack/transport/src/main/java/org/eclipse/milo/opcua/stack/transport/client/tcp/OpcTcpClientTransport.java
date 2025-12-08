@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -34,6 +34,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import java.net.ConnectException;
+import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -168,7 +169,7 @@ public class OpcTcpClientTransport extends AbstractUascClientTransport {
       int port = EndpointUtil.getPort(endpointUrl);
 
       bootstrap
-          .connect(host, port)
+          .connect(new InetSocketAddress(host, port))
           .addListener(
               (ChannelFuture f) -> {
                 if (!f.isSuccess()) {
