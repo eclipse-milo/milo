@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.sdk.client.subscriptions;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.LinkedList;
@@ -195,6 +196,6 @@ public class OpcUaMonitoredItemTest extends AbstractClientServerTest {
     // Verify the sampling interval is set to 0.0 for event items
     assertEquals(0.0, monitoredItem.getSamplingInterval());
     // Verify the filter is null as specified
-    assertEquals(null, monitoredItem.getFilter());
+    assertNull(monitoredItem.getFilter());
   }
 }
