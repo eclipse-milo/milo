@@ -21,6 +21,7 @@ import org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.MonitoringMode;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -182,5 +183,18 @@ public class OpcUaMonitoredItemTest extends AbstractClientServerTest {
     subscription.removeMonitoredItem(toRemove);
     subscription.removeMonitoredItem(toRemove);
     subscription.synchronizeMonitoredItems();
+  }
+
+  @Test
+  void createEventItemWithMonitoringMode() {
+    var monitoredItem =
+        OpcUaMonitoredItem.newEventItem(NodeIds.Server, MonitoringMode.Sampling, null);
+
+    // Verify the MonitoringMode is set correctly
+    assertEquals(MonitoringMode.Sampling, monitoredItem.getMonitoringMode());
+    // Verify the sampling interval is set to 0.0 for event items
+    assertEquals(0.0, monitoredItem.getSamplingInterval());
+    // Verify the filter is null as specified
+    assertEquals(null, monitoredItem.getFilter());
   }
 }
