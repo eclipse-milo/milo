@@ -707,4 +707,32 @@ public class OpcUaMonitoredItem {
 
     return item;
   }
+
+  /**
+   * Create a new MonitoredItem for the EventNotifier attribute of the Node identified by {@code
+   * nodeId}, with the specified {@code monitoringMode} and {@code eventFilter}.
+   *
+   * <p>This item will not exist on the server until it has been added to an {@link
+   * OpcUaSubscription} and the subscription has been synchronized.
+   *
+   * @param nodeId the {@link NodeId} of the Node to monitor.
+   * @param monitoringMode the initial {@link MonitoringMode} to use when the MonitoredItem is
+   *     created.
+   * @param eventFilter the {@link EventFilter} to use for the MonitoredItem.
+   * @return a new MonitoredItem for the EventNotifier attribute of the Node identified by {@code
+   *     nodeId}, with the specified {@code monitoringMode} and {@code eventFilter}.
+   * @see OpcUaSubscription#addMonitoredItem(OpcUaMonitoredItem)
+   * @see OpcUaSubscription#synchronizeMonitoredItems()
+   */
+  public static OpcUaMonitoredItem newEventItem(
+      NodeId nodeId, MonitoringMode monitoringMode, @Nullable EventFilter eventFilter) {
+    var readValueId =
+        new ReadValueId(nodeId, AttributeId.EventNotifier.uid(), null, QualifiedName.NULL_VALUE);
+
+    var item = new OpcUaMonitoredItem(readValueId, monitoringMode);
+    item.setSamplingInterval(0.0);
+    item.setFilter(eventFilter);
+
+    return item;
+  }
 }
