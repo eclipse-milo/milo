@@ -10,13 +10,9 @@
 
 package org.eclipse.milo.opcua.sdk.client.typetree;
 
-import static java.util.Objects.requireNonNull;
-import static java.util.Objects.requireNonNullElse;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
-import static org.eclipse.milo.opcua.stack.core.util.Lists.partition;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
@@ -24,18 +20,13 @@ import org.eclipse.milo.opcua.sdk.client.OperationLimits;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrowseDirection;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrowseResultMask;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
-import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.eclipse.milo.opcua.stack.core.types.structured.BrowseDescription;
-import org.eclipse.milo.opcua.stack.core.types.structured.BrowseNextResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.BrowseResult;
-import org.eclipse.milo.opcua.stack.core.types.structured.ReadResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
 import org.jspecify.annotations.Nullable;
@@ -125,35 +116,7 @@ final class LazyTypeTreeUtils {
   static List<DataValue> readWithOperationLimits(
       OpcUaClient client, List<ReadValueId> readValueIds, OperationLimits limits) {
 
-    if (readValueIds.isEmpty()) {
-      return List.of();
-    }
-
-    LOGGER.debug("readWithOperationLimits: {}", readValueIds.size());
-
-    int partitionSize =
-        limits
-            .maxNodesPerRead()
-            .map(UInteger::intValue)
-            .filter(v -> v > 0)
-            .orElse(Integer.MAX_VALUE);
-
-    var values = new ArrayList<DataValue>();
-
-    partition(readValueIds, partitionSize)
-        .forEach(
-            partitionList -> {
-              try {
-                ReadResponse response = client.read(0.0, TimestampsToReturn.Neither, partitionList);
-                DataValue[] results = response.getResults();
-                Collections.addAll(values, requireNonNull(results));
-              } catch (UaException e) {
-                var value = new DataValue(e.getStatusCode());
-                values.addAll(Collections.nCopies(partitionList.size(), value));
-              }
-            });
-
-    return values;
+    return ClientBrowseUtils.readWithOperationLimits(client, readValueIds, limits);
   }
 
   /**
@@ -167,87 +130,6 @@ final class LazyTypeTreeUtils {
   static List<List<ReferenceDescription>> browseWithOperationLimits(
       OpcUaClient client, List<BrowseDescription> browseDescriptions, OperationLimits limits) {
 
-    if (browseDescriptions.isEmpty()) {
-      return List.of();
-    }
-
-    LOGGER.debug("browseWithOperationLimits: {}", browseDescriptions.size());
-
-    int partitionSize =
-        limits
-            .maxNodesPerBrowse()
-            .map(UInteger::intValue)
-            .filter(v -> v > 0)
-            .orElse(Integer.MAX_VALUE);
-
-    var references = new ArrayList<List<ReferenceDescription>>();
-
-    partition(browseDescriptions, partitionSize)
-        .forEach(partitionList -> references.addAll(browse(client, partitionList)));
-
-    return references;
-  }
-
-  private static List<List<ReferenceDescription>> browse(
-      OpcUaClient client, List<BrowseDescription> browseDescriptions) {
-
-    if (browseDescriptions.isEmpty()) {
-      return List.of();
-    }
-
-    final var referenceDescriptionLists = new ArrayList<List<ReferenceDescription>>();
-
-    try {
-      client
-          .browse(browseDescriptions)
-          .forEach(
-              result -> {
-                if (result.getStatusCode().isGood()) {
-                  var references = new ArrayList<ReferenceDescription>();
-
-                  ReferenceDescription[] refs =
-                      requireNonNullElse(result.getReferences(), new ReferenceDescription[0]);
-                  Collections.addAll(references, refs);
-
-                  ByteString continuationPoint = result.getContinuationPoint();
-                  List<ReferenceDescription> nextRefs = maybeBrowseNext(client, continuationPoint);
-                  references.addAll(nextRefs);
-
-                  referenceDescriptionLists.add(references);
-                } else {
-                  referenceDescriptionLists.add(List.of());
-                }
-              });
-    } catch (UaException e) {
-      referenceDescriptionLists.addAll(Collections.nCopies(browseDescriptions.size(), List.of()));
-    }
-
-    return referenceDescriptionLists;
-  }
-
-  private static List<ReferenceDescription> maybeBrowseNext(
-      OpcUaClient client, ByteString continuationPoint) {
-
-    var references = new ArrayList<ReferenceDescription>();
-
-    while (continuationPoint != null && continuationPoint.isNotNull()) {
-      try {
-        BrowseNextResponse response = client.browseNext(false, List.of(continuationPoint));
-
-        BrowseResult result = requireNonNull(response.getResults())[0];
-
-        ReferenceDescription[] rds =
-            requireNonNullElse(result.getReferences(), new ReferenceDescription[0]);
-
-        references.addAll(List.of(rds));
-
-        continuationPoint = result.getContinuationPoint();
-      } catch (Exception e) {
-        LOGGER.warn("BrowseNext failed: {}", e.getMessage(), e);
-        return references;
-      }
-    }
-
-    return references;
+    return ClientBrowseUtils.browseWithOperationLimits(client, browseDescriptions, limits);
   }
 }

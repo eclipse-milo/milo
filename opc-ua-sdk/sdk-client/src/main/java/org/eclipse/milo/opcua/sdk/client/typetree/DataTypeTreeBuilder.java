@@ -10,19 +10,16 @@
 
 package org.eclipse.milo.opcua.sdk.client.typetree;
 
-import static java.util.Objects.requireNonNull;
-import static java.util.Objects.requireNonNullElse;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
-import static org.eclipse.milo.opcua.stack.core.util.Lists.partition;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.OperationLimits;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
@@ -30,13 +27,17 @@ import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.DataTypeEncoding;
-import org.eclipse.milo.opcua.stack.core.types.builtin.*;
-import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrowseDirection;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrowseResultMask;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
-import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
-import org.eclipse.milo.opcua.stack.core.types.structured.*;
+import org.eclipse.milo.opcua.stack.core.types.structured.BrowseDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.DataTypeDefinition;
+import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
+import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
 import org.eclipse.milo.opcua.stack.core.util.Tree;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -72,11 +73,9 @@ public class DataTypeTreeBuilder {
 
     NamespaceTable namespaceTable = client.readNamespaceTable();
 
-    UInteger[] operationLimits = readOperationLimits(client);
-    UInteger maxNodesPerBrowse = operationLimits[0];
-    UInteger maxNodesPerRead = operationLimits[1];
+    OperationLimits operationLimits = ClientBrowseUtils.getOperationLimits(client);
 
-    addChildren(List.of(root), client, namespaceTable, maxNodesPerBrowse, maxNodesPerRead);
+    addChildren(List.of(root), client, namespaceTable, operationLimits);
 
     return new DataTypeTree(root);
   }
@@ -105,11 +104,10 @@ public class DataTypeTreeBuilder {
       List<Tree<DataType>> parentTypes,
       OpcUaClient client,
       NamespaceTable namespaceTable,
-      UInteger maxNodesPerBrowse,
-      UInteger maxNodesPerRead) {
+      OperationLimits operationLimits) {
 
     List<List<ReferenceDescription>> parentSubtypes =
-        browseWithOperationLimits(
+        ClientBrowseUtils.browseWithOperationLimits(
             client,
             parentTypes.stream()
                 .map(
@@ -122,7 +120,7 @@ public class DataTypeTreeBuilder {
                             uint(NodeClass.DataType.getValue()),
                             uint(BrowseResultMask.All.getValue())))
                 .collect(Collectors.toList()),
-            maxNodesPerBrowse);
+            operationLimits);
 
     var childTypes = new ArrayList<Tree<DataType>>();
 
@@ -138,10 +136,10 @@ public class DataTypeTreeBuilder {
               .collect(Collectors.toList());
 
       List<List<ReferenceDescription>> encodingReferences =
-          browseEncodings(client, dataTypeIds, maxNodesPerBrowse);
+          browseEncodings(client, dataTypeIds, operationLimits);
 
       List<Attributes> dataTypeAttributes =
-          readDataTypeAttributes(client, dataTypeIds, maxNodesPerRead);
+          readDataTypeAttributes(client, dataTypeIds, operationLimits);
 
       assert subtypes.size() == dataTypeIds.size()
           && subtypes.size() == encodingReferences.size()
@@ -202,75 +200,12 @@ public class DataTypeTreeBuilder {
     }
 
     if (!childTypes.isEmpty()) {
-      addChildren(childTypes, client, namespaceTable, maxNodesPerBrowse, maxNodesPerRead);
+      addChildren(childTypes, client, namespaceTable, operationLimits);
     }
-  }
-
-  private static List<List<ReferenceDescription>> browse(
-      OpcUaClient client, List<BrowseDescription> browseDescriptions) {
-
-    if (browseDescriptions.isEmpty()) {
-      return List.of();
-    }
-
-    final var referenceDescriptionLists = new ArrayList<List<ReferenceDescription>>();
-
-    try {
-      client
-          .browse(browseDescriptions)
-          .forEach(
-              result -> {
-                if (result.getStatusCode().isGood()) {
-                  var references = new ArrayList<ReferenceDescription>();
-
-                  ReferenceDescription[] refs =
-                      requireNonNullElse(result.getReferences(), new ReferenceDescription[0]);
-                  Collections.addAll(references, refs);
-
-                  ByteString continuationPoint = result.getContinuationPoint();
-                  List<ReferenceDescription> nextRefs = maybeBrowseNext(client, continuationPoint);
-                  references.addAll(nextRefs);
-
-                  referenceDescriptionLists.add(references);
-                } else {
-                  referenceDescriptionLists.add(List.of());
-                }
-              });
-    } catch (UaException e) {
-      referenceDescriptionLists.addAll(Collections.nCopies(browseDescriptions.size(), List.of()));
-    }
-
-    return referenceDescriptionLists;
-  }
-
-  private static List<ReferenceDescription> maybeBrowseNext(
-      OpcUaClient client, ByteString continuationPoint) {
-
-    var references = new ArrayList<ReferenceDescription>();
-
-    while (continuationPoint != null && continuationPoint.isNotNull()) {
-      try {
-        BrowseNextResponse response = client.browseNext(false, List.of(continuationPoint));
-
-        BrowseResult result = requireNonNull(response.getResults())[0];
-
-        ReferenceDescription[] rds =
-            requireNonNullElse(result.getReferences(), new ReferenceDescription[0]);
-
-        references.addAll(List.of(rds));
-
-        continuationPoint = result.getContinuationPoint();
-      } catch (Exception e) {
-        LOGGER.warn("BrowseNext failed: {}", e.getMessage(), e);
-        return references;
-      }
-    }
-
-    return references;
   }
 
   private static List<List<ReferenceDescription>> browseEncodings(
-      OpcUaClient client, List<NodeId> dataTypeIds, UInteger maxNodesPerBrowse) {
+      OpcUaClient client, List<NodeId> dataTypeIds, OperationLimits operationLimits) {
 
     List<BrowseDescription> browseDescriptions =
         dataTypeIds.stream()
@@ -285,11 +220,11 @@ public class DataTypeTreeBuilder {
                         uint(BrowseResultMask.All.getValue())))
             .collect(Collectors.toList());
 
-    return browseWithOperationLimits(client, browseDescriptions, maxNodesPerBrowse);
+    return ClientBrowseUtils.browseWithOperationLimits(client, browseDescriptions, operationLimits);
   }
 
   private static List<@Nullable Attributes> readDataTypeAttributes(
-      OpcUaClient client, List<NodeId> dataTypeIds, UInteger maxNodesPerRead) {
+      OpcUaClient client, List<NodeId> dataTypeIds, OperationLimits operationLimits) {
 
     if (dataTypeIds.isEmpty()) {
       return List.of();
@@ -308,7 +243,8 @@ public class DataTypeTreeBuilder {
 
     var attributes = new ArrayList<Attributes>();
 
-    List<DataValue> values = readWithOperationLimits(client, readValueIds, maxNodesPerRead);
+    List<DataValue> values =
+        ClientBrowseUtils.readWithOperationLimits(client, readValueIds, operationLimits);
 
     for (int i = 0; i < values.size(); i += 2) {
       DataValue isAbstractValue = values.get(i);
@@ -348,97 +284,5 @@ public class DataTypeTreeBuilder {
       this.isAbstract = isAbstract;
       this.definition = definition;
     }
-  }
-
-  private static UInteger[] readOperationLimits(OpcUaClient client) throws UaException {
-    UInteger[] operationLimits = new UInteger[2];
-    operationLimits[0] = uint(10);
-    operationLimits[1] = uint(100);
-
-    List<DataValue> dataValues =
-        client.readValues(
-            0.0,
-            TimestampsToReturn.Neither,
-            List.of(
-                NodeIds.OperationLimitsType_MaxNodesPerBrowse,
-                NodeIds.OperationLimitsType_MaxNodesPerRead));
-
-    DataValue maxNodesPerBrowse = dataValues.get(0);
-    if (maxNodesPerBrowse.statusCode().isGood()
-        && maxNodesPerBrowse.value().value() instanceof UInteger) {
-
-      operationLimits[0] = (UInteger) maxNodesPerBrowse.value().value();
-    }
-
-    DataValue maxNodesPerRead = dataValues.get(1);
-    if (maxNodesPerRead.statusCode().isGood()
-        && dataValues.get(1).value().value() instanceof UInteger) {
-
-      operationLimits[1] = (UInteger) maxNodesPerRead.value().value();
-    }
-
-    return operationLimits;
-  }
-
-  private static List<DataValue> readWithOperationLimits(
-      OpcUaClient client, List<ReadValueId> readValueIds, UInteger maxNodesPerRead) {
-
-    if (readValueIds.isEmpty()) {
-      return List.of();
-    }
-
-    LOGGER.debug("readWithOperationLimits: {}", readValueIds.size());
-
-    int partitionSize =
-        maxNodesPerRead.longValue() > Integer.MAX_VALUE
-            ? Integer.MAX_VALUE
-            : maxNodesPerRead.intValue();
-
-    if (partitionSize == 0) {
-      partitionSize = Integer.MAX_VALUE;
-    }
-
-    var values = new ArrayList<DataValue>();
-
-    partition(readValueIds, partitionSize)
-        .forEach(
-            partition -> {
-              try {
-                ReadResponse response = client.read(0.0, TimestampsToReturn.Neither, partition);
-                DataValue[] results = response.getResults();
-                Collections.addAll(values, requireNonNull(results));
-              } catch (UaException e) {
-                var value = new DataValue(e.getStatusCode());
-                values.addAll(Collections.nCopies(partition.size(), value));
-              }
-            });
-
-    return values;
-  }
-
-  private static List<List<ReferenceDescription>> browseWithOperationLimits(
-      OpcUaClient client, List<BrowseDescription> browseDescriptions, UInteger maxNodesPerBrowse) {
-
-    if (browseDescriptions.isEmpty()) {
-      return List.of();
-    }
-
-    LOGGER.debug("browseWithOperationLimits: {}", browseDescriptions.size());
-
-    int partitionSize =
-        maxNodesPerBrowse.longValue() > Integer.MAX_VALUE
-            ? Integer.MAX_VALUE
-            : maxNodesPerBrowse.intValue();
-
-    if (partitionSize == 0) {
-      partitionSize = Integer.MAX_VALUE;
-    }
-
-    var references = new ArrayList<List<ReferenceDescription>>();
-
-    partition(browseDescriptions, partitionSize)
-        .forEach(partition -> references.addAll(browse(client, partition)));
-
-    return references;
   }
 }
