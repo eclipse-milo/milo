@@ -72,7 +72,7 @@ public class VariableTypeTreeBuilder {
 
     NamespaceTable namespaceTable = client.readNamespaceTable();
 
-    OperationLimits operationLimits = ClientBrowseUtils.getOperationLimits(client);
+    OperationLimits operationLimits = client.getOperationLimits();
 
     addChildren(List.of(root), client, namespaceTable, operationLimits);
 

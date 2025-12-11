@@ -43,17 +43,6 @@ final class ClientBrowseUtils {
   private ClientBrowseUtils() {}
 
   /**
-   * Get the server's operation limits from the client.
-   *
-   * @param client the OPC UA client.
-   * @return the operation limits.
-   * @throws UaException if fetching operation limits fails.
-   */
-  static OperationLimits getOperationLimits(OpcUaClient client) throws UaException {
-    return client.getOperationLimits();
-  }
-
-  /**
    * Read values with operation limits, partitioning requests as necessary.
    *
    * @param client the OPC UA client.
