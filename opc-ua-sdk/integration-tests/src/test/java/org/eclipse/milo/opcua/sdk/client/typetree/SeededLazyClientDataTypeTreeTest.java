@@ -120,60 +120,67 @@ public class SeededLazyClientDataTypeTreeTest extends AbstractDataTypeTreeTest {
   }
 
   @Test
-  void enumerationBaseTypeIsSeeded() {
+  void enumerationSubtypesAreSeeded() {
     var seededTree =
         new LazyClientDataTypeTree(client, LazyClientDataTypeTreeSeed.createSeedTree());
 
-    // Enumeration base type is in the seed
+    // Enumeration and its subtypes are in the seed
     assertTrue(seededTree.isResolved(NodeIds.Enumeration));
-
-    // Enumeration subtypes are NOT seeded - they require lazy resolution
-    assertFalse(seededTree.isResolved(NodeIds.NodeClass));
-    assertFalse(seededTree.isResolved(NodeIds.ServerState));
-    assertFalse(seededTree.isResolved(NodeIds.RedundancySupport));
+    assertTrue(seededTree.isResolved(NodeIds.NodeClass));
+    assertTrue(seededTree.isResolved(NodeIds.ServerState));
+    assertTrue(seededTree.isResolved(NodeIds.RedundancySupport));
   }
 
   @Test
-  void enumerationSubtypesRequireLazyResolution() {
+  void seededEnumerationSubtypesHaveDefinitions() {
     var seededTree =
         new LazyClientDataTypeTree(client, LazyClientDataTypeTreeSeed.createSeedTree());
 
-    // Enumeration is in the seed, but NodeClass (a concrete enum subtype) is not
-    assertTrue(seededTree.isResolved(NodeIds.Enumeration));
-    assertFalse(seededTree.isResolved(NodeIds.NodeClass));
-
-    // Querying NodeClass should trigger lazy resolution
+    // NodeClass is a seeded enum subtype with an EnumDefinition
     DataType nodeClassType = seededTree.getDataType(NodeIds.NodeClass);
     assertNotNull(nodeClassType);
     assertEquals("NodeClass", nodeClassType.getBrowseName().name());
-
-    // Now NodeClass should be resolved
     assertTrue(seededTree.isResolved(NodeIds.NodeClass));
-
-    // Should have DataTypeDefinition from resolution (enums have EnumDefinition)
     assertNotNull(nodeClassType.getDataTypeDefinition());
+
+    // ServerState is a seeded enum subtype with an EnumDefinition
+    DataType serverStateType = seededTree.getDataType(NodeIds.ServerState);
+    assertNotNull(serverStateType);
+    assertEquals("ServerState", serverStateType.getBrowseName().name());
+    assertNotNull(serverStateType.getDataTypeDefinition());
   }
 
   @Test
-  void structureSubtypesRequireLazyResolution() {
+  void structureSubtypesAreSeeded() {
     var seededTree =
         new LazyClientDataTypeTree(client, LazyClientDataTypeTreeSeed.createSeedTree());
 
-    // Structure is in the seed, but XVType (a concrete structure subtype) is not
+    // Structure and its subtypes are in the seed
     assertTrue(seededTree.isResolved(NodeIds.Structure));
-    assertFalse(seededTree.isResolved(NodeIds.XVType));
+    assertTrue(seededTree.isResolved(NodeIds.XVType));
+    assertTrue(seededTree.isResolved(NodeIds.RolePermissionType));
+    assertTrue(seededTree.isResolved(NodeIds.StructureDefinition));
+  }
 
-    // Querying XVType should trigger lazy resolution
+  @Test
+  void seededStructureSubtypesHaveEncodingIdsAndDefinitions() {
+    var seededTree =
+        new LazyClientDataTypeTree(client, LazyClientDataTypeTreeSeed.createSeedTree());
+
+    // XVType is a seeded structure subtype with encoding IDs and definition
     DataType xvType = seededTree.getDataType(NodeIds.XVType);
     assertNotNull(xvType);
     assertEquals("XVType", xvType.getBrowseName().name());
-
-    // Now XVType should be resolved
     assertTrue(seededTree.isResolved(NodeIds.XVType));
-
-    // Should have encoding IDs and DataTypeDefinition from resolution
     assertNotNull(xvType.getBinaryEncodingId());
     assertNotNull(xvType.getDataTypeDefinition());
+
+    // RolePermissionType is a seeded structure subtype with encoding IDs and definition
+    DataType rolePermType = seededTree.getDataType(NodeIds.RolePermissionType);
+    assertNotNull(rolePermType);
+    assertEquals("RolePermissionType", rolePermType.getBrowseName().name());
+    assertNotNull(rolePermType.getBinaryEncodingId());
+    assertNotNull(rolePermType.getDataTypeDefinition());
   }
 
   @Test
@@ -272,11 +279,11 @@ public class SeededLazyClientDataTypeTreeTest extends AbstractDataTypeTreeTest {
   }
 
   @Test
-  void isEnumTypeWorksWithLazyResolution() {
+  void isEnumTypeWorksForSeededTypes() {
     var seededTree =
         new LazyClientDataTypeTree(client, LazyClientDataTypeTreeSeed.createSeedTree());
 
-    // Enumeration subtypes are not seeded but isEnumType triggers lazy resolution
+    // Enumeration subtypes are seeded and isEnumType works immediately
     assertTrue(seededTree.isEnumType(NodeIds.NodeClass));
     assertTrue(seededTree.isEnumType(NodeIds.ServerState));
     assertTrue(seededTree.isEnumType(NodeIds.RedundancySupport));
@@ -303,9 +310,8 @@ public class SeededLazyClientDataTypeTreeTest extends AbstractDataTypeTreeTest {
     assertFalse(seededTree.isStructType(NodeIds.String));
     assertFalse(seededTree.isStructType(NodeIds.Boolean));
 
-    // Lazily resolve a concrete struct type and verify isStructType works
-    DataType xvType = seededTree.getDataType(NodeIds.XVType);
-    assertNotNull(xvType);
+    // Seeded structure subtypes can be verified with isStructType immediately
     assertTrue(seededTree.isStructType(NodeIds.XVType));
+    assertTrue(seededTree.isStructType(NodeIds.RolePermissionType));
   }
 }
