@@ -9906,7 +9906,8 @@ public final class LazyClientDataTypeTreeSeed {
                           LocalizedText.NULL_VALUE,
                           new LocalizedText(
                               "",
-                              "The modelling rule defines a constraint and the BrowseName is not used in an instance of the type."),
+                              "The modelling rule defines a constraint and the BrowseName is not"
+                                  + " used in an instance of the type."),
                           "Constraint")
                     }),
                 false));
@@ -10553,21 +10554,25 @@ public final class LazyClientDataTypeTreeSeed {
                           LocalizedText.NULL_VALUE,
                           new LocalizedText(
                               "",
-                              "The rule specifies the combination of an application identity and an Anonymous UserIdentityToken."),
+                              "The rule specifies the combination of an application identity and an"
+                                  + " Anonymous UserIdentityToken."),
                           "Application"),
                       new EnumField(
                           8L,
                           LocalizedText.NULL_VALUE,
                           new LocalizedText(
                               "",
-                              "The rule specifies the X509 subject name of a user or CA Certificate."),
+                              "The rule specifies the X509 subject name of a user or CA"
+                                  + " Certificate."),
                           "X509Subject"),
                       new EnumField(
                           9L,
                           LocalizedText.NULL_VALUE,
                           new LocalizedText(
                               "",
-                              "The rule specifies any trusted application that has been authenticated with a trusted ApplicationInstance Certificate."),
+                              "The rule specifies any trusted application that has been"
+                                  + " authenticated with a trusted ApplicationInstance"
+                                  + " Certificate."),
                           "TrustedApplication")
                     }),
                 false));
@@ -10623,42 +10628,60 @@ public final class LazyClientDataTypeTreeSeed {
                           LocalizedText.NULL_VALUE,
                           new LocalizedText(
                               "",
-                              "Represents a chassis identifier based on the value of entPhysicalAlias object (defined in IETF RFC 2737) for a chassis component (i.e., an entPhysicalClass value of chassis(3))"),
+                              "Represents a chassis identifier based on the value of"
+                                  + " entPhysicalAlias object (defined in IETF RFC 2737) for a"
+                                  + " chassis component (i.e., an entPhysicalClass value of"
+                                  + " chassis(3))"),
                           "ChassisComponent"),
                       new EnumField(
                           2L,
                           LocalizedText.NULL_VALUE,
                           new LocalizedText(
                               "",
-                              "Represents a chassis identifier based on the value of ifAlias object (defined in IETF RFC 2863) for an interface on the containing chassis."),
+                              "Represents a chassis identifier based on the value of ifAlias object"
+                                  + " (defined in IETF RFC 2863) for an interface on the containing"
+                                  + " chassis."),
                           "InterfaceAlias"),
                       new EnumField(
                           3L,
                           LocalizedText.NULL_VALUE,
                           new LocalizedText(
                               "",
-                              "Represents a chassis identifier based on the value of entPhysicalAlias object (defined in IETF RFC 2737) for a port or backplane component (i.e., entPhysicalClass has a value of port(10), or backplane(4)), within the containing chassis."),
+                              "Represents a chassis identifier based on the value of"
+                                  + " entPhysicalAlias object (defined in IETF RFC 2737) for a port"
+                                  + " or backplane component (i.e., entPhysicalClass has a value of"
+                                  + " port(10), or backplane(4)), within the containing chassis."),
                           "PortComponent"),
                       new EnumField(
                           4L,
                           LocalizedText.NULL_VALUE,
                           new LocalizedText(
                               "",
-                              "Represents a chassis identifier based on the value of a unicast source address (encoded in network byte order and IEEE 802.3 canonical bit order) of a port on the containing chassis as defined in IEEE Std 802-2014."),
+                              "Represents a chassis identifier based on the value of a unicast"
+                                  + " source address (encoded in network byte order and IEEE 802.3"
+                                  + " canonical bit order) of a port on the containing chassis as"
+                                  + " defined in IEEE Std 802-2014."),
                           "MacAddress"),
                       new EnumField(
                           5L,
                           LocalizedText.NULL_VALUE,
                           new LocalizedText(
                               "",
-                              "Represents a chassis identifier based on a network address associated with a particular chassis. The encoded address is actually composed of two fields. The first field is a single octet, representing the IANA AddressFamilyNumbers value for the specific address type, and the second field is the network address value."),
+                              "Represents a chassis identifier based on a network address"
+                                  + " associated with a particular chassis. The encoded address is"
+                                  + " actually composed of two fields. The first field is a single"
+                                  + " octet, representing the IANA AddressFamilyNumbers value for"
+                                  + " the specific address type, and the second field is the"
+                                  + " network address value."),
                           "NetworkAddress"),
                       new EnumField(
                           6L,
                           LocalizedText.NULL_VALUE,
                           new LocalizedText(
                               "",
-                              "Represents a chassis identifier based on the value of ifName object (defined in IETF RFC 2863) for an interface on the containing chassis."),
+                              "Represents a chassis identifier based on the value of ifName object"
+                                  + " (defined in IETF RFC 2863) for an interface on the containing"
+                                  + " chassis."),
                           "InterfaceName"),
                       new EnumField(
                           7L,
@@ -10684,42 +10707,53 @@ public final class LazyClientDataTypeTreeSeed {
                           LocalizedText.NULL_VALUE,
                           new LocalizedText(
                               "",
-                              "Represents a port identifier based on the ifAlias MIB object defined in IETF RFC 2863."),
+                              "Represents a port identifier based on the ifAlias MIB object defined"
+                                  + " in IETF RFC 2863."),
                           "InterfaceAlias"),
                       new EnumField(
                           2L,
                           LocalizedText.NULL_VALUE,
                           new LocalizedText(
                               "",
-                              "Represents a port identifier based on the value of entPhysicalAlias (defined in IETF RFC 2737) for a port component (i.e., entPhysicalClass value of port(10) or backplane(4)), within the containing chassis."),
+                              "Represents a port identifier based on the value of entPhysicalAlias"
+                                  + " (defined in IETF RFC 2737) for a port component (i.e.,"
+                                  + " entPhysicalClass value of port(10) or backplane(4)), within"
+                                  + " the containing chassis."),
                           "PortComponent"),
                       new EnumField(
                           3L,
                           LocalizedText.NULL_VALUE,
                           new LocalizedText(
                               "",
-                              "Represents a port identifier based on a unicast source address (encoded in network byte order and IEEE 802.3 canonical bit order) which has been detected by the agent and associated with a particular port (IEEE Std 802-2014)."),
+                              "Represents a port identifier based on a unicast source address"
+                                  + " (encoded in network byte order and IEEE 802.3 canonical bit"
+                                  + " order) which has been detected by the agent and associated"
+                                  + " with a particular port (IEEE Std 802-2014)."),
                           "MacAddress"),
                       new EnumField(
                           4L,
                           LocalizedText.NULL_VALUE,
                           new LocalizedText(
                               "",
-                              "Represents a port identifier based on a network address, detected by the agent and associated with a particular port."),
+                              "Represents a port identifier based on a network address, detected by"
+                                  + " the agent and associated with a particular port."),
                           "NetworkAddress"),
                       new EnumField(
                           5L,
                           LocalizedText.NULL_VALUE,
                           new LocalizedText(
                               "",
-                              "Represents a port identifier based on the ifName MIB object, defined in IETF RFC 2863."),
+                              "Represents a port identifier based on the ifName MIB object, defined"
+                                  + " in IETF RFC 2863."),
                           "InterfaceName"),
                       new EnumField(
                           6L,
                           LocalizedText.NULL_VALUE,
                           new LocalizedText(
                               "",
-                              "Represents a port identifier based on the agent-local identifier of the circuit (defined in IETF RFC 3046), detected by the agent and associated with a particular port."),
+                              "Represents a port identifier based on the agent-local identifier of"
+                                  + " the circuit (defined in IETF RFC 3046), detected by the agent"
+                                  + " and associated with a particular port."),
                           "AgentCircuitId"),
                       new EnumField(
                           7L,
@@ -10938,7 +10972,8 @@ public final class LazyClientDataTypeTreeSeed {
                           LocalizedText.NULL_VALUE,
                           new LocalizedText(
                               "",
-                              "The auto-negotiation protocol is running and negotiation is currently in-progress."),
+                              "The auto-negotiation protocol is running and negotiation is"
+                                  + " currently in-progress."),
                           "InProgress"),
                       new EnumField(
                           1L,
@@ -10956,14 +10991,18 @@ public final class LazyClientDataTypeTreeSeed {
                           LocalizedText.NULL_VALUE,
                           new LocalizedText(
                               "",
-                              "The auto-negotiation status is not currently known, this could be because it is still negotiating or the protocol cannot run (e.g., if no medium is present)."),
+                              "The auto-negotiation status is not currently known, this could be"
+                                  + " because it is still negotiating or the protocol cannot run"
+                                  + " (e.g., if no medium is present)."),
                           "Unknown"),
                       new EnumField(
                           4L,
                           LocalizedText.NULL_VALUE,
                           new LocalizedText(
                               "",
-                              "No auto-negotiation is executed. The auto-negotiation function is either not supported on this interface or has not been enabled."),
+                              "No auto-negotiation is executed. The auto-negotiation function is"
+                                  + " either not supported on this interface or has not been"
+                                  + " enabled."),
                           "NoNegotiation")
                     }),
                 false));
@@ -11095,7 +11134,8 @@ public final class LazyClientDataTypeTreeSeed {
                           LocalizedText.NULL_VALUE,
                           new LocalizedText(
                               "",
-                              "Nearest Bridge cannot provide network identification for stream transformation"),
+                              "Nearest Bridge cannot provide network identification for stream"
+                                  + " transformation"),
                           "BridgeDoesNotProvideNetworkId"),
                       new EnumField(
                           23L,
@@ -11137,21 +11177,27 @@ public final class LazyClientDataTypeTreeSeed {
                           LocalizedText.NULL_VALUE,
                           new LocalizedText(
                               "",
-                              "The related TSN Stream is in the process of receiving configuration parameters from the TSN Control Layer."),
+                              "The related TSN Stream is in the process of receiving configuration"
+                                  + " parameters from the TSN Control Layer."),
                           "Configuring"),
                       new EnumField(
                           2L,
                           LocalizedText.NULL_VALUE,
                           new LocalizedText(
                               "",
-                              "The related TSN Stream has successfully received and applied the configuration from the TSN Control Layer. The related TSN Stream is not fully operational as long as local preconditions (e.g. synchronization state) are not valid."),
+                              "The related TSN Stream has successfully received and applied the"
+                                  + " configuration from the TSN Control Layer. The related TSN"
+                                  + " Stream is not fully operational as long as local"
+                                  + " preconditions (e.g. synchronization state) are not valid."),
                           "Ready"),
                       new EnumField(
                           3L,
                           LocalizedText.NULL_VALUE,
                           new LocalizedText(
                               "",
-                              "The related TSN Stream object is configured and all other required preconditions (e.g. synchronization state) for sending / receiving data are valid."),
+                              "The related TSN Stream object is configured and all other required"
+                                  + " preconditions (e.g. synchronization state) for sending /"
+                                  + " receiving data are valid."),
                           "Operational"),
                       new EnumField(
                           4L,
