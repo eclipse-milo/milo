@@ -39,6 +39,7 @@ import org.eclipse.milo.opcua.sdk.client.session.SessionFsmFactory;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaSubscription;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.PublishingManager;
 import org.eclipse.milo.opcua.sdk.client.typetree.DataTypeTreeBuilder;
+import org.eclipse.milo.opcua.sdk.client.typetree.DataTypeTreeFactory;
 import org.eclipse.milo.opcua.sdk.client.typetree.ObjectTypeTreeBuilder;
 import org.eclipse.milo.opcua.sdk.client.typetree.VariableTypeTreeBuilder;
 import org.eclipse.milo.opcua.sdk.core.types.codec.DynamicCodecFactory;
@@ -331,6 +332,8 @@ public class OpcUaClient {
 
   private DataTypeManagerInitializer dataTypeManagerInitializer =
       new DefaultDataTypeManagerInitializer();
+
+  private DataTypeTreeFactory dataTypeTreeFactory = DataTypeTreeFactory.eager();
 
   private final EncodingManager encodingManager = DefaultEncodingManager.createAndInitialize();
 
@@ -886,7 +889,7 @@ public class OpcUaClient {
    */
   public DataTypeTree getDataTypeTree() throws UaException {
     try {
-      return dataTypeTree.getOrThrow(() -> DataTypeTreeBuilder.build(this));
+      return dataTypeTree.getOrThrow(() -> dataTypeTreeFactory.create(this));
     } catch (Exception e) {
       throw new UaException(e);
     }
@@ -1093,6 +1096,30 @@ public class OpcUaClient {
 
     dynamicDataTypeManager.reset();
     dynamicEncodingContext.reset();
+  }
+
+  /**
+   * Set the {@link DataTypeTreeFactory} used to create the {@link DataTypeTree}.
+   *
+   * <p>By default, the client uses {@link DataTypeTreeFactory#eager()}, which eagerly builds the
+   * complete DataTypeTree using {@link DataTypeTreeBuilder#build(OpcUaClient)}.
+   *
+   * <p>Use {@link DataTypeTreeFactory#lazy()} to configure the client with a lazy-loading tree that
+   * resolves types on demand. This can be more efficient when only a subset of types is needed or
+   * when the server doesn't support recursive forward browsing of the DataType hierarchy.
+   *
+   * <p>This resets the client's cached {@link DataTypeTree}. It will be built or rebuilt the next
+   * time it is accessed.
+   *
+   * @param dataTypeTreeFactory the {@link DataTypeTreeFactory} to set.
+   * @see #getDataTypeTree()
+   * @see DataTypeTreeFactory#eager()
+   * @see DataTypeTreeFactory#lazy()
+   */
+  public void setDataTypeTreeFactory(DataTypeTreeFactory dataTypeTreeFactory) {
+    this.dataTypeTreeFactory = dataTypeTreeFactory;
+
+    dataTypeTree.reset();
   }
 
   // region Attribute Services
