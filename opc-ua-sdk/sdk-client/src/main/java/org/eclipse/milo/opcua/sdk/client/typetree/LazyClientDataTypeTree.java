@@ -36,6 +36,7 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.BrowseDirection;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrowseResultMask;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.BrowseDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.BrowseResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataTypeDefinition;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
@@ -239,8 +240,7 @@ public class LazyClientDataTypeTree extends DataTypeTree {
     NamespaceTable nsTable = getNamespaceTable();
     OperationLimits limits = client.getOperationLimits();
 
-    List<NodeId> pathToResolve =
-        LazyTypeTreeUtils.browseInverseUntilKnown(client, dataTypeId, types.keySet(), nsTable);
+    List<NodeId> pathToResolve = browseInverseUntilKnown(dataTypeId, types.keySet(), nsTable);
 
     if (pathToResolve.isEmpty() || pathToResolve.size() < 2) {
       LOGGER.debug("Could not resolve path to known ancestor for DataType {}", dataTypeId);
@@ -285,7 +285,7 @@ public class LazyClientDataTypeTree extends DataTypeTree {
     }
 
     List<DataValue> values =
-        LazyTypeTreeUtils.readWithOperationLimits(client, readValueIds, limits);
+        ClientBrowseUtils.readWithOperationLimits(client, readValueIds, limits);
 
     // Browse encodings
     List<List<ReferenceDescription>> encodingRefs = browseEncodings(nodeIds, limits);
@@ -332,6 +332,67 @@ public class LazyClientDataTypeTree extends DataTypeTree {
     return result;
   }
 
+  /**
+   * Browse inverse HasSubtype references from {@code startId} until reaching a node that exists in
+   * {@code knownTypeIds}.
+   *
+   * @param startId the NodeId to start browsing from.
+   * @param knownTypeIds the set of NodeIds that are already known/loaded.
+   * @param namespaceTable the namespace table for converting ExpandedNodeIds.
+   * @return path from startId to known ancestor (inclusive), or empty list if unreachable.
+   */
+  private List<NodeId> browseInverseUntilKnown(
+      NodeId startId, Set<NodeId> knownTypeIds, NamespaceTable namespaceTable) {
+
+    List<NodeId> path = new ArrayList<>();
+    NodeId current = startId;
+
+    while (current != null && !knownTypeIds.contains(current)) {
+      path.add(current);
+      current = browseInverseParent(current, namespaceTable);
+    }
+
+    if (current != null && knownTypeIds.contains(current)) {
+      path.add(current);
+      return path;
+    }
+
+    return List.of();
+  }
+
+  /**
+   * Browse the inverse HasSubtype reference from {@code nodeId} to find its parent type.
+   *
+   * @param nodeId the NodeId to browse from.
+   * @param namespaceTable the namespace table for converting ExpandedNodeIds.
+   * @return the parent NodeId, or null if not found.
+   */
+  private @Nullable NodeId browseInverseParent(NodeId nodeId, NamespaceTable namespaceTable) {
+    try {
+      BrowseDescription bd =
+          new BrowseDescription(
+              nodeId,
+              BrowseDirection.Inverse,
+              NodeIds.HasSubtype,
+              false,
+              uint(NodeClass.DataType.getValue()),
+              uint(BrowseResultMask.All.getValue()));
+
+      BrowseResult result = client.browse(bd);
+
+      if (result.getStatusCode().isGood()
+          && result.getReferences() != null
+          && result.getReferences().length > 0) {
+
+        return result.getReferences()[0].getNodeId().toNodeId(namespaceTable).orElse(null);
+      }
+    } catch (UaException e) {
+      LOGGER.debug("Failed to browse inverse parent for {}: {}", nodeId, e.getMessage());
+    }
+
+    return null;
+  }
+
   private List<List<ReferenceDescription>> browseEncodings(
       List<NodeId> dataTypeIds, OperationLimits limits) {
 
@@ -348,7 +409,7 @@ public class LazyClientDataTypeTree extends DataTypeTree {
                         uint(BrowseResultMask.All.getValue())))
             .toList();
 
-    return LazyTypeTreeUtils.browseWithOperationLimits(client, browseDescriptions, limits);
+    return ClientBrowseUtils.browseWithOperationLimits(client, browseDescriptions, limits);
   }
 
   private static QualifiedName extractBrowseName(DataValue value) {
