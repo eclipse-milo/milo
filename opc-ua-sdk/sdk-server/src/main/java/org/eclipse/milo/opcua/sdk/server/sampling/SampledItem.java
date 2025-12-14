@@ -21,47 +21,16 @@ import org.jspecify.annotations.Nullable;
  * Wraps a {@link DataItem} with a cached, bucketed sampling interval.
  *
  * <p>The sampling interval is immutable once created. If the requested sampling interval changes,
- * the SampledItem must be removed from its current SamplingGroup and a new one created.
+ * the SampledItem must be removed from its current {@link SamplingGroup} and a new one created.
+ *
+ * @param dataItem the wrapped DataItem.
+ * @param samplingInterval the bucketed sampling interval in milliseconds. Use {@link
+ *     #bucket(double, double)} to compute this from a requested interval.
+ * @see SamplingGroup
+ * @see SampledValue
+ * @see SamplingManager
  */
-public class SampledItem {
-
-  private final DataItem dataItem;
-  private final double samplingInterval;
-
-  /**
-   * Create a new SampledItem.
-   *
-   * @param dataItem the underlying DataItem.
-   * @param samplingInterval the bucketed sampling interval in milliseconds.
-   */
-  public SampledItem(DataItem dataItem, double samplingInterval) {
-    this.dataItem = dataItem;
-    this.samplingInterval = samplingInterval;
-  }
-
-  // === Immutable / cached ===
-
-  /**
-   * Get the bucketed sampling interval in milliseconds.
-   *
-   * <p>This value is immutable and represents the interval after bucketing has been applied.
-   *
-   * @return the bucketed sampling interval in milliseconds.
-   */
-  public double getSamplingInterval() {
-    return samplingInterval;
-  }
-
-  // === Live delegates to DataItem ===
-
-  /**
-   * Get the underlying {@link DataItem}.
-   *
-   * @return the underlying DataItem.
-   */
-  public DataItem getDataItem() {
-    return dataItem;
-  }
+public record SampledItem(DataItem dataItem, double samplingInterval) {
 
   /**
    * Get the NodeId of the node being monitored.
@@ -110,7 +79,7 @@ public class SampledItem {
   /**
    * Get the originally requested sampling interval from the DataItem.
    *
-   * <p>This value is live and may differ from {@link #getSamplingInterval()} which is the bucketed
+   * <p>This value is live and may differ from {@link #samplingInterval()} which is the bucketed
    * value.
    *
    * @return the requested sampling interval in milliseconds.

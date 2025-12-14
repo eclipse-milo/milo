@@ -21,6 +21,11 @@ package org.eclipse.milo.opcua.sdk.server.sampling;
  * </ul>
  *
  * <p>Uses a bulk-only API to encourage efficient batching.
+ *
+ * @see Sample
+ * @see SampledValue
+ * @see AsyncValueChannel
+ * @see BlockingValueChannel
  */
 public interface SampleSink {
 

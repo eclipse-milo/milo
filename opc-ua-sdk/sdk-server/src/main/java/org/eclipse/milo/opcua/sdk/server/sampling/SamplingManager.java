@@ -39,6 +39,33 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
  *
  * <p>Manages the mapping from DataItems to SampledItems, groups items by bucketed sampling
  * interval, and handles both scheduled and immediate sampling.
+ *
+ * <h2>Thread Safety</h2>
+ *
+ * <p>All public methods are thread-safe. This class uses:
+ *
+ * <ul>
+ *   <li>{@link java.util.concurrent.ConcurrentHashMap ConcurrentHashMap} for item and group
+ *       tracking
+ *   <li>{@link java.util.concurrent.ConcurrentLinkedQueue ConcurrentLinkedQueue} for the immediate
+ *       sampling queue
+ *   <li>{@link java.util.concurrent.atomic.AtomicBoolean AtomicBoolean} for scheduling state
+ * </ul>
+ *
+ * <h2>Bucket Size</h2>
+ *
+ * <p>Sampling intervals are bucketed to reduce the number of distinct groups. The default bucket
+ * size is {@value #DEFAULT_BUCKET_SIZE}ms. Use the constructor with a {@code bucketSize} parameter
+ * to customize this value.
+ *
+ * <p>Note: The bucket size cannot be changed through {@link
+ * org.eclipse.milo.opcua.sdk.server.SampledAddressSpaceFragmentWithLifecycle
+ * SampledAddressSpaceFragmentWithLifecycle} directly; subclass this class if you need a custom
+ * bucket size.
+ *
+ * @see SampledAddressSpaceFragmentWithLifecycle
+ * @see SamplingGroup
+ * @see SampledItem
  */
 public class SamplingManager extends AbstractLifecycle {
 
@@ -169,9 +196,9 @@ public class SamplingManager extends AbstractLifecycle {
       double newBucketedInterval = SampledItem.bucket(newRequestedInterval, bucketSize);
 
       // Check if the bucketed interval changed
-      if (existingItem.getSamplingInterval() != newBucketedInterval) {
+      if (existingItem.samplingInterval() != newBucketedInterval) {
         // Remove from the old group
-        SamplingGroup oldGroup = groupsByInterval.get(existingItem.getSamplingInterval());
+        SamplingGroup oldGroup = groupsByInterval.get(existingItem.samplingInterval());
         if (oldGroup != null) {
           oldGroup.removeItems(List.of(existingItem));
           maybeRemoveGroup(oldGroup);
@@ -187,7 +214,7 @@ public class SamplingManager extends AbstractLifecycle {
         newGroup.addItems(List.of(newItem));
       } else {
         // Interval unchanged, but mark group dirty for monitoring mode changes
-        SamplingGroup group = groupsByInterval.get(existingItem.getSamplingInterval());
+        SamplingGroup group = groupsByInterval.get(existingItem.samplingInterval());
         if (group != null) {
           group.markDirty();
         }
@@ -204,7 +231,7 @@ public class SamplingManager extends AbstractLifecycle {
     for (DataItem dataItem : dataItems) {
       SampledItem sampledItem = itemsByDataItem.remove(dataItem);
       if (sampledItem != null) {
-        SamplingGroup group = groupsByInterval.get(sampledItem.getSamplingInterval());
+        SamplingGroup group = groupsByInterval.get(sampledItem.samplingInterval());
         if (group != null) {
           group.removeItems(List.of(sampledItem));
           maybeRemoveGroup(group);
@@ -310,7 +337,7 @@ public class SamplingManager extends AbstractLifecycle {
   }
 
   private void setDataItemValue(SampledItem item, DataValue value) {
-    DataItem dataItem = item.getDataItem();
+    DataItem dataItem = item.dataItem();
     TimestampsToReturn timestamps = dataItem.getTimestampsToReturn();
 
     if (timestamps != null) {

@@ -24,6 +24,9 @@ import org.jspecify.annotations.Nullable;
  * @param sourceTime an optional source timestamp that came from the original data source (e.g.,
  *     protocols like DNP3 that provide timestamps with their values). If {@code null}, the
  *     timestamp from the {@link Sample} will be used.
+ * @see Sample
+ * @see SampledItem
+ * @see SampleSink
  */
 public record SampledValue(
     SampledItem item,

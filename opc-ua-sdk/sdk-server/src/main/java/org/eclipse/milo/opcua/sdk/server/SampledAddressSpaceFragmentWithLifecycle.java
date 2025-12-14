@@ -47,6 +47,20 @@ import org.eclipse.milo.opcua.sdk.server.sampling.SamplingManager;
  * <p>For nodes with static values or values updated by other means (direct writes, background
  * processes), the default no-op {@code sampleItems()} is sufficient.
  *
+ * <h2>Lifecycle Integration</h2>
+ *
+ * <p>The {@link SamplingManager} is automatically registered with the {@link
+ * org.eclipse.milo.opcua.sdk.server.LifecycleManager LifecycleManager}, so startup and shutdown are
+ * handled automatically when the address space fragment starts or stops.
+ *
+ * <h2>DataItem Lifecycle</h2>
+ *
+ * <p>This class overrides {@link #onDataItemsCreated}, {@link #onDataItemsModified}, {@link
+ * #onDataItemsDeleted}, and {@link #onMonitoringModeChanged} to delegate to the {@link
+ * SamplingManager}. These methods do <b>not</b> call {@code super} because the sampling
+ * infrastructure fully handles monitored item lifecycle. The parent class's default implementations
+ * are no-ops anyway.
+ *
  * <h2>Usage Example</h2>
  *
  * <pre>{@code
@@ -79,6 +93,10 @@ import org.eclipse.milo.opcua.sdk.server.sampling.SamplingManager;
  *     }
  * }
  * }</pre>
+ *
+ * @see SamplingManager
+ * @see SamplingGroup
+ * @see SampledItem
  */
 public abstract class SampledAddressSpaceFragmentWithLifecycle
     extends ManagedAddressSpaceFragmentWithLifecycle {
@@ -152,8 +170,6 @@ public abstract class SampledAddressSpaceFragmentWithLifecycle
     getLifecycleManager().addLifecycle(samplingManager);
   }
 
-  // === Hooks for subclasses ===
-
   /**
    * Called during {@link SamplingGroup} execution to allow external value updates.
    *
@@ -211,7 +227,17 @@ public abstract class SampledAddressSpaceFragmentWithLifecycle
    */
   protected void onGroupRemoved(SamplingGroup group) {}
 
-  // === DataItem lifecycle callbacks ===
+  /**
+   * Get the {@link SamplingManager} for this fragment.
+   *
+   * <p>Most subclasses won't need to access this directly. It may be useful for advanced use cases
+   * such as monitoring statistics or custom group management.
+   *
+   * @return the {@link SamplingManager}.
+   */
+  protected SamplingManager getSamplingManager() {
+    return samplingManager;
+  }
 
   @Override
   public void onDataItemsCreated(List<DataItem> dataItems) {
@@ -240,16 +266,5 @@ public abstract class SampledAddressSpaceFragmentWithLifecycle
     if (!dataItems.isEmpty()) {
       samplingManager.modifyItems(dataItems);
     }
-  }
-
-  // === Accessors ===
-
-  /**
-   * Get the {@link SamplingManager} for this fragment.
-   *
-   * @return the {@link SamplingManager}.
-   */
-  protected SamplingManager getSamplingManager() {
-    return samplingManager;
   }
 }

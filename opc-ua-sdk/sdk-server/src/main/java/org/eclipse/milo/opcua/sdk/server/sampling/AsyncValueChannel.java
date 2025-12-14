@@ -37,6 +37,19 @@ import org.eclipse.milo.opcua.stack.core.util.ExecutionQueue;
  *   <li><b>Inline optimization</b> - reduces context switches when tasks complete and more are
  *       queued
  * </ul>
+ *
+ * <p><b>Silent failure behavior</b>: Values are silently skipped (not applied) if:
+ *
+ * <ul>
+ *   <li>The node does not exist in the {@link UaNodeManager}
+ *   <li>The {@link org.eclipse.milo.opcua.stack.core.AttributeId AttributeId} is invalid (null)
+ * </ul>
+ *
+ * <p>This is intentional - nodes may be deleted between sampling and value application, and logging
+ * every skip would be noisy.
+ *
+ * @see BlockingValueChannel
+ * @see SampleSink
  */
 public class AsyncValueChannel implements SampleSink {
 

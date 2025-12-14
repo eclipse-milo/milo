@@ -19,5 +19,8 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
  * @param timestamp the time the sample was taken. Used as the SourceTime when a {@link
  *     SampledValue} doesn't explicitly include one.
  * @param values a list of SampledValue entries to apply.
+ * @see SampleSink
+ * @see SampledValue
+ * @see SamplingGroup
  */
 public record Sample(DateTime timestamp, List<SampledValue> values) {}

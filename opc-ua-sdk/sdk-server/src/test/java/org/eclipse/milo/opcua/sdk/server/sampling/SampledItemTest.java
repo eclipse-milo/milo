@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -63,7 +63,7 @@ public class SampledItemTest {
     DataItem mockDataItem = createMockDataItem();
     SampledItem item = new SampledItem(mockDataItem, 125.0);
 
-    assertEquals(125.0, item.getSamplingInterval());
+    assertEquals(125.0, item.samplingInterval());
   }
 
   @Test
@@ -71,7 +71,7 @@ public class SampledItemTest {
     DataItem mockDataItem = createMockDataItem();
     SampledItem item = new SampledItem(mockDataItem, 100.0);
 
-    assertEquals(mockDataItem, item.getDataItem());
+    assertEquals(mockDataItem, item.dataItem());
   }
 
   @Test

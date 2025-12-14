@@ -24,6 +24,19 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
  *
  * <p>Used for immediate sampling where values must be applied to UaNodes before internal sampling
  * reads from them.
+ *
+ * <p><b>Silent failure behavior</b>: Values are silently skipped (not applied) if:
+ *
+ * <ul>
+ *   <li>The node does not exist in the {@link UaNodeManager}
+ *   <li>The {@link org.eclipse.milo.opcua.stack.core.AttributeId AttributeId} is invalid (null)
+ * </ul>
+ *
+ * <p>This is intentional - nodes may be deleted between sampling and value application, and logging
+ * every skip would be noisy.
+ *
+ * @see AsyncValueChannel
+ * @see SampleSink
  */
 public class BlockingValueChannel implements SampleSink {
 

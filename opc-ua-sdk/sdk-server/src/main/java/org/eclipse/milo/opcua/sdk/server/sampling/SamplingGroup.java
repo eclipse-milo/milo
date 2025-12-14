@@ -25,6 +25,18 @@ import java.util.function.BiConsumer;
  *
  * <p>Provides scheduling infrastructure for periodic sampling execution and tracks which items
  * should be sampled.
+ *
+ * <p>There are two types of SamplingGroup instances:
+ *
+ * <ul>
+ *   <li><b>Scheduled groups</b>: Created by {@link SamplingManager}, have interval &gt; 0, execute
+ *       periodically
+ *   <li><b>Temporary groups</b>: Created for immediate sampling, have interval = 0.0, execute once
+ * </ul>
+ *
+ * @see SamplingManager
+ * @see SampledItem
+ * @see SampleSink
  */
 public class SamplingGroup {
 
