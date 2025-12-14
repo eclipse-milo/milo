@@ -25,6 +25,7 @@ import java.util.function.Consumer;
 import org.eclipse.milo.opcua.sdk.server.AbstractLifecycle;
 import org.eclipse.milo.opcua.sdk.server.AccessContext;
 import org.eclipse.milo.opcua.sdk.server.AttributeReader;
+import org.eclipse.milo.opcua.sdk.server.SampledAddressSpaceFragmentWithLifecycle;
 import org.eclipse.milo.opcua.sdk.server.UaNodeManager;
 import org.eclipse.milo.opcua.sdk.server.items.DataItem;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaServerNode;
@@ -59,9 +60,8 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
  * to customize this value.
  *
  * <p>Note: The bucket size cannot be changed through {@link
- * org.eclipse.milo.opcua.sdk.server.SampledAddressSpaceFragmentWithLifecycle
- * SampledAddressSpaceFragmentWithLifecycle} directly; subclass this class if you need a custom
- * bucket size.
+ * SampledAddressSpaceFragmentWithLifecycle SampledAddressSpaceFragmentWithLifecycle} directly;
+ * subclass this class if you need a custom bucket size.
  *
  * @see SampledAddressSpaceFragmentWithLifecycle
  * @see SamplingGroup
