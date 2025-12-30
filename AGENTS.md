@@ -1,96 +1,46 @@
 # Agent Instructions
 
+## Project Overview
+
+Milo is an open-source OPC UA (IEC 62541) implementation for Java, enabling industrial communication
+and IoT integration. It provides a complete client/server SDK for building OPC UA applications.
+
+**Architecture:**
+
+- **opc-ua-stack**: Low-level protocol layer (encoding, transport, security, channels)
+- **opc-ua-sdk**: High-level API layer (client and server SDKs built on the stack)
+
+## Key Entry Points
+
+- Client API: `opc-ua-sdk/sdk-client/src/main/java/org/eclipse/milo/opcua/sdk/client/OpcUaClient.java`
+- Server API: `opc-ua-sdk/sdk-server/src/main/java/org/eclipse/milo/opcua/sdk/server/OpcUaServer.java`
+- Examples: `milo-examples/client-examples/` and `milo-examples/server-examples/`
+
 ## Building and Testing
 
-Delegate to a subagent when running Maven commands.
+ALWAYS use the `maven-command-runner` agent when running Maven commands. It captures output and
+provides better error analysis when builds fail.
 
-**Note:** All Maven commands below use the `-q` (quiet) flag to reduce verbose output. If you need
-to debug build issues or see detailed output, remove the `-q` flag and re-run the command.
+| Command                 | Purpose                          |
+|-------------------------|----------------------------------|
+| `mvn -q clean compile`  | Compile without tests            |
+| `mvn -q clean verify`   | Full build with tests and checks |
+| `mvn -q spotless:apply` | Fix code formatting issues       |
 
-### Build/Compile the Project
-
-To compile the project without running tests:
-
-```bash
-mvn -q clean compile
-```
-
-### Run All Tests
-
-To run all tests and verify the project:
-
-```bash
-mvn -q clean verify
-```
-
-This command will:
-
-- Clean previous builds
-- Compile the code
-- Run all unit tests
-- Run integration tests (if configured)
-- Run code quality checks (like Spotless)
-
-### Run Specific Tests
-
-This is a multi-module project. When you want to run a specific test or pattern, you should target
-the module that contains the test; otherwise Maven will try to apply the filter to all modules. Use
-`-pl` to specify the module (optionally add `-am` to also build required dependent modules).
-
-The examples below assume the test lives in the `opc-ua-stack/stack-core` module — adjust the module
-path as needed (e.g., `opc-ua-sdk/sdk-core`, `opc-ua-sdk/sdk-client`, etc.).
-
-To run a specific test class:
-
-```bash
-mvn -q -pl opc-ua-stack/stack-core test -Dtest=ClassName
-```
-
-To run a specific test method:
-
-```bash
-mvn -q -pl opc-ua-stack/stack-core test -Dtest=ClassName#methodName
-```
-
-To run multiple test classes:
-
-```bash
-mvn -q -pl opc-ua-stack/stack-core test -Dtest=ClassOne,ClassTwo
-```
-
-To run tests matching a pattern:
-
-```bash
-mvn -q -pl opc-ua-stack/stack-core test -Dtest=*ServiceTest
-```
+For running specific tests and module targeting, see `.claude/docs/testing.md`.
 
 ## Code Formatting
 
-This project uses Spotless with Google Java Format for code formatting.
+This project uses Spotless with Google Java Format. The `spotless:check` goal runs during `verify`
+and will fail the build if code is not properly formatted. Run `mvn -q spotless:apply` to fix.
 
-The `spotless:check` goal is bound to the `verify` phase and will fail the build if code is not
-properly formatted.
+## Nullability
 
-If the build fails due to formatting issues, run the `spotless:apply` goal to automatically format
-the code:
+Packages should be annotated `@NullMarked` (JSpecify). Assume non-null by default; use `@Nullable`
+only for parameters, fields, or return types that genuinely accept or return null.
 
-```bash
-mvn -q spotless:apply
-```
+## Additional Resources
 
-## Dependency Source Code
-
-To examine dependency source code, check the `external/src` directory at the project root. This
-directory contains unpacked source files from all dependencies, organized by package structure for
-easy browsing and searching.
-
-**If the directory doesn't exist or content is missing:**
-
-Run this command from the project root to download and unpack all dependency sources:
-
-```bash
-mvn -q generate-resources -Pdownload-external-src
-```
-
-This will create the `external/src` directory with sources from all dependencies in a single
-top-level location.
+- Testing patterns and module reference: `.claude/docs/testing.md`
+- Java coding conventions: `.claude/docs/java-coding-conventions.md`
+- Dependency source code: `.claude/docs/dependencies.md`
