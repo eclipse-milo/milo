@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2025 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.sdk.client.dtd;
 
 import java.util.List;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.typetree.DataTypeManagerFactory;
 import org.eclipse.milo.opcua.sdk.core.dtd.generic.StructCodec;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
@@ -19,7 +20,15 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.DataTypeDictionary;
 import org.eclipse.milo.opcua.stack.core.types.DataTypeManager;
 
-public class LegacyDataTypeManagerInitializer implements OpcUaClient.DataTypeManagerInitializer {
+/**
+ * A {@link DataTypeManagerFactory.Initializer} that reads legacy DataTypeDictionary information
+ * from the server and registers codecs based on that.
+ *
+ * <p>This is for servers that support the legacy (OPC UA <= 1.03) DataTypeDictionary mechanism.
+ *
+ * @see DataTypeManagerFactory#eager(DataTypeManagerFactory.Initializer)
+ */
+public class LegacyDataTypeManagerInitializer implements DataTypeManagerFactory.Initializer {
 
   private final OpcUaClient client;
   private final BinaryCodecFactory codecFactory;

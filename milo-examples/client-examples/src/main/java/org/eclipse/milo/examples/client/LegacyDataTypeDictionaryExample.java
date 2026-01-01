@@ -12,8 +12,8 @@ package org.eclipse.milo.examples.client;
 
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
-import org.eclipse.milo.opcua.sdk.client.OpcUaClient.DefaultDataTypeManagerInitializer;
 import org.eclipse.milo.opcua.sdk.client.dtd.LegacyDataTypeManagerInitializer;
+import org.eclipse.milo.opcua.sdk.client.typetree.DataTypeManagerFactory;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
@@ -27,7 +27,8 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
  * specification.
  *
  * <p>This was the default (and only supported mechanism) in Milo 0.6.x and earlier. Milo 1.x now
- * uses the DataTypeDefinition attribute instead via {@link DefaultDataTypeManagerInitializer}.
+ * uses the DataTypeDefinition attribute instead via {@link
+ * DataTypeManagerFactory.DefaultInitializer}.
  *
  * <p>Requires a server that still supports DataTypeDictionary, such as the Unified Automation C++
  * demo server, which this example is configured for by default.
@@ -42,7 +43,8 @@ public class LegacyDataTypeDictionaryExample implements ClientExample {
 
   @Override
   public void run(OpcUaClient client, CompletableFuture<OpcUaClient> future) throws Exception {
-    client.setDataTypeManagerInitializer(new LegacyDataTypeManagerInitializer(client));
+    client.setDynamicDataTypeManagerFactory(
+        DataTypeManagerFactory.eager(new LegacyDataTypeManagerInitializer(client)));
 
     client.connect();
 

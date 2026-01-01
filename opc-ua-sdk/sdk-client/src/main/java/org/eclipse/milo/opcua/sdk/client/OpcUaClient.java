@@ -38,17 +38,17 @@ import org.eclipse.milo.opcua.sdk.client.session.SessionFsm;
 import org.eclipse.milo.opcua.sdk.client.session.SessionFsmFactory;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaSubscription;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.PublishingManager;
+import org.eclipse.milo.opcua.sdk.client.typetree.DataTypeManagerFactory;
 import org.eclipse.milo.opcua.sdk.client.typetree.DataTypeTreeBuilder;
+import org.eclipse.milo.opcua.sdk.client.typetree.DataTypeTreeFactory;
+import org.eclipse.milo.opcua.sdk.client.typetree.LazyClientDataTypeManager;
 import org.eclipse.milo.opcua.sdk.client.typetree.ObjectTypeTreeBuilder;
 import org.eclipse.milo.opcua.sdk.client.typetree.VariableTypeTreeBuilder;
-import org.eclipse.milo.opcua.sdk.core.types.codec.DynamicCodecFactory;
-import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
 import org.eclipse.milo.opcua.sdk.core.typetree.ObjectTypeTree;
 import org.eclipse.milo.opcua.sdk.core.typetree.VariableTypeTree;
 import org.eclipse.milo.opcua.stack.core.*;
 import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
-import org.eclipse.milo.opcua.stack.core.encoding.DataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingManager;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingManager;
@@ -139,7 +139,6 @@ import org.eclipse.milo.opcua.stack.core.types.structured.SetPublishingModeReque
 import org.eclipse.milo.opcua.stack.core.types.structured.SetPublishingModeResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.SetTriggeringRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.SetTriggeringResponse;
-import org.eclipse.milo.opcua.stack.core.types.structured.StructureDefinition;
 import org.eclipse.milo.opcua.stack.core.types.structured.SubscriptionAcknowledgement;
 import org.eclipse.milo.opcua.stack.core.types.structured.TransferSubscriptionsRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.TransferSubscriptionsResponse;
@@ -158,7 +157,6 @@ import org.eclipse.milo.opcua.stack.core.util.Lists;
 import org.eclipse.milo.opcua.stack.core.util.LongSequence;
 import org.eclipse.milo.opcua.stack.core.util.ManifestUtil;
 import org.eclipse.milo.opcua.stack.core.util.Namespaces;
-import org.eclipse.milo.opcua.stack.core.util.Tree;
 import org.eclipse.milo.opcua.stack.core.util.Unit;
 import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransport;
@@ -329,8 +327,9 @@ public class OpcUaClient {
 
   private final VariableTypeManager variableTypeManager = new VariableTypeManager();
 
-  private DataTypeManagerInitializer dataTypeManagerInitializer =
-      new DefaultDataTypeManagerInitializer();
+  private DataTypeTreeFactory dataTypeTreeFactory = DataTypeTreeFactory.eager();
+
+  private DataTypeManagerFactory dynamicDataTypeManagerFactory = DataTypeManagerFactory.eager();
 
   private final EncodingManager encodingManager = DefaultEncodingManager.createAndInitialize();
 
@@ -642,21 +641,22 @@ public class OpcUaClient {
   /**
    * Get the client's "dynamic" {@link DataTypeManager}.
    *
-   * <p>This {@link DataTypeManager} is for dynamic codecs that were created by reading datatype
-   * information from the server at runtime.
+   * <p>This {@link DataTypeManager} is for dynamic codecs created by reading datatype information
+   * from the server at runtime.
+   *
+   * <p>By default, the client uses {@link DataTypeManagerFactory#eager()}, which creates a {@link
+   * DefaultDataTypeManager} with all known types eagerly registered.
+   *
+   * <p>Use {@link #setDynamicDataTypeManagerFactory(DataTypeManagerFactory)} with {@link
+   * DataTypeManagerFactory#lazy()} to configure the client with a {@link LazyClientDataTypeManager}
+   * that resolves codecs on demand.
    *
    * @return the client's dynamic {@link DataTypeManager}.
-   * @see #setDataTypeManagerInitializer(DataTypeManagerInitializer)
+   * @see #setDynamicDataTypeManagerFactory(DataTypeManagerFactory)
    */
   public DataTypeManager getDynamicDataTypeManager() throws UaException {
     return dynamicDataTypeManager.getOrThrow(
-        () -> {
-          DataTypeManager dataTypeManager =
-              DefaultDataTypeManager.createAndInitialize(getNamespaceTable());
-          dataTypeManagerInitializer.initialize(
-              getNamespaceTable(), getDataTypeTree(), dataTypeManager);
-          return dataTypeManager;
-        });
+        () -> dynamicDataTypeManagerFactory.create(this, getNamespaceTable(), getDataTypeTree()));
   }
 
   /**
@@ -886,7 +886,7 @@ public class OpcUaClient {
    */
   public DataTypeTree getDataTypeTree() throws UaException {
     try {
-      return dataTypeTree.getOrThrow(() -> DataTypeTreeBuilder.build(this));
+      return dataTypeTree.getOrThrow(() -> dataTypeTreeFactory.create(this));
     } catch (Exception e) {
       throw new UaException(e);
     }
@@ -1079,17 +1079,51 @@ public class OpcUaClient {
   }
 
   /**
-   * Set the {@link DataTypeManagerInitializer} that called to register codecs with the client's
-   * dynamic {@link DataTypeManager}.
+   * Set the {@link DataTypeTreeFactory} used to create the {@link DataTypeTree}.
    *
-   * <p>This resets the client's dynamic {@link DataTypeManager} and {@link EncodingContext}. They
-   * will be built or rebuilt the next time they are accessed.
+   * <p>By default, the client uses {@link DataTypeTreeFactory#eager()}, which eagerly builds the
+   * complete DataTypeTree using {@link DataTypeTreeBuilder#build(OpcUaClient)}.
    *
-   * @param dataTypeManagerInitializer the {@link DataTypeManagerInitializer} to set.
-   * @see #getDynamicDataTypeManager()
+   * <p>Use {@link DataTypeTreeFactory#lazy()} to configure the client with a lazy-loading tree that
+   * resolves types on demand. This can be more efficient when only a subset of types is needed or
+   * when the server doesn't support recursive forward browsing of the DataType hierarchy.
+   *
+   * <p>This resets the client's cached {@link DataTypeTree}. It will be built or rebuilt the next
+   * time it is accessed.
+   *
+   * @param dataTypeTreeFactory the {@link DataTypeTreeFactory} to set.
+   * @see #getDataTypeTree()
+   * @see DataTypeTreeFactory#eager()
+   * @see DataTypeTreeFactory#lazy()
    */
-  public void setDataTypeManagerInitializer(DataTypeManagerInitializer dataTypeManagerInitializer) {
-    this.dataTypeManagerInitializer = dataTypeManagerInitializer;
+  public void setDataTypeTreeFactory(DataTypeTreeFactory dataTypeTreeFactory) {
+    this.dataTypeTreeFactory = dataTypeTreeFactory;
+
+    dataTypeTree.reset();
+  }
+
+  /**
+   * Set the {@link DataTypeManagerFactory} used to create the dynamic {@link DataTypeManager}.
+   *
+   * <p>By default, the client uses {@link DataTypeManagerFactory#eager()}, which creates a {@link
+   * DefaultDataTypeManager} with all known types eagerly registered.
+   *
+   * <p>Use {@link DataTypeManagerFactory#lazy()} to configure the client with a {@link
+   * LazyClientDataTypeManager} that resolves codecs on demand. This pairs well with {@link
+   * DataTypeTreeFactory#lazy()} for a fully lazy type resolution system.
+   *
+   * <p>This resets the client's cached {@link DataTypeManager}. It will be created again the next
+   * time it is accessed.
+   *
+   * @param dynamicDataTypeManagerFactory the {@link DataTypeManagerFactory} to set.
+   * @see #getDynamicDataTypeManager()
+   * @see DataTypeManagerFactory#eager()
+   * @see DataTypeManagerFactory#lazy()
+   */
+  public void setDynamicDataTypeManagerFactory(
+      DataTypeManagerFactory dynamicDataTypeManagerFactory) {
+
+    this.dynamicDataTypeManagerFactory = dynamicDataTypeManagerFactory;
 
     dynamicDataTypeManager.reset();
     dynamicEncodingContext.reset();
@@ -2986,100 +3020,5 @@ public class OpcUaClient {
   public void removeSessionInitializer(SessionInitializer initializer) {
     sessionFsm.removeInitializer(initializer);
     logger.debug("Removed SessionInitializer: {}", initializer);
-  }
-
-  public interface DataTypeManagerInitializer {
-
-    /**
-     * Register codecs for custom data types.
-     *
-     * @param namespaceTable the Server's {@link NamespaceTable}.
-     * @param dataTypeTree the Client's {@link DataTypeTree}.
-     * @param dataTypeManager the {@link DataTypeManager} to register codecs with.
-     */
-    void initialize(
-        NamespaceTable namespaceTable, DataTypeTree dataTypeTree, DataTypeManager dataTypeManager)
-        throws UaException;
-  }
-
-  public static class DefaultDataTypeManagerInitializer implements DataTypeManagerInitializer {
-
-    private final CodecFactory codecFactory;
-
-    /**
-     * Create a new {@link DefaultDataTypeManagerInitializer} that uses {@link DynamicCodecFactory}.
-     */
-    public DefaultDataTypeManagerInitializer() {
-      this(DynamicCodecFactory::create);
-    }
-
-    /**
-     * Create a new {@link DefaultDataTypeManagerInitializer} using the provided {@link
-     * CodecFactory}.
-     *
-     * @param codecFactory the {@link CodecFactory} to use when creating {@link DataTypeCodec}s.
-     */
-    public DefaultDataTypeManagerInitializer(CodecFactory codecFactory) {
-      this.codecFactory = codecFactory;
-    }
-
-    @Override
-    public void initialize(
-        NamespaceTable namespaceTable, DataTypeTree dataTypeTree, DataTypeManager dataTypeManager) {
-
-      Tree<DataType> structureNode = dataTypeTree.getTreeNode(NodeIds.Structure);
-
-      if (structureNode != null) {
-        structureNode.traverse(
-            dataType -> {
-              if (dataType.getDataTypeDefinition() != null) {
-                LoggerFactory.getLogger(getClass())
-                    .debug(
-                        "Registering type: name={}, dataTypeId={}",
-                        dataType.getBrowseName(),
-                        dataType.getNodeId());
-
-                String namespaceUri = namespaceTable.get(dataType.getNodeId().getNamespaceIndex());
-
-                if (namespaceUri == null) {
-                  throw new UaRuntimeException(
-                      StatusCodes.Bad_UnexpectedError,
-                      "DataType namespace not registered: "
-                          + dataType.getNodeId().toParseableString());
-                }
-
-                dataTypeManager.registerType(
-                    dataType.getNodeId(),
-                    codecFactory.create(dataType, dataTypeTree),
-                    getBinaryEncodingId(dataType),
-                    dataType.getXmlEncodingId(),
-                    dataType.getJsonEncodingId());
-              }
-            });
-      } else {
-        LoggerFactory.getLogger(getClass())
-            .warn(
-                "Structure (i=22) not found in the DataType tree; is the Server's DataType"
-                    + " hierarchy sane?");
-      }
-    }
-
-    private static NodeId getBinaryEncodingId(DataType dataType) {
-      NodeId binaryEncodingId = dataType.getBinaryEncodingId();
-
-      if (binaryEncodingId == null
-          && dataType.getDataTypeDefinition() instanceof StructureDefinition definition) {
-
-        // Hail mary work around for non-compliant Servers that don't have encoding nodes
-        // in their address space. The DefaultEncodingId in a StructureDefinition shall
-        // always be the Default Binary encoding, so let's see if the Server at least set
-        // this correctly.
-        // See https://reference.opcfoundation.org/Core/Part3/v105/docs/8.48
-
-        binaryEncodingId = definition.getDefaultEncodingId();
-      }
-
-      return binaryEncodingId;
-    }
   }
 }
