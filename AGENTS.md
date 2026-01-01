@@ -35,6 +35,20 @@ For running specific tests and module targeting, see `.claude/docs/testing.md`.
 - Java conventions: `.claude/docs/java-coding-conventions.md`
 - Dependencies: `.claude/docs/dependencies.md`
 
+## Verification
+
+Use these steps to verify any completed work. Implementation plans should include these as success criteria.
+
+1. **Format and compile** using the `maven-command-runner` agent:
+    - `mvn -q spotless:apply` - Format code
+    - `mvn -q clean compile` - Compile (skip tests)
+
+2. **Request code review** from the `preflight` agent, which will:
+    - Review changes for correctness, style, and adherence to project conventions
+    - Report **APPROVED** or **CHANGES REQUESTED**
+
+Before committing, ensure all verification steps pass and preflight approval is received.
+
 ---
 
 > **Build Rule:** ALWAYS use the `maven-command-runner` agent for Maven commands.
