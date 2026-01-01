@@ -1,8 +1,6 @@
-# Agent Instructions
+# Project Context
 
-## Project Overview
-
-**Tech Stack:** Java 17, Maven, Netty
+**Tech Stack:** Java 17, Maven multi-module
 
 Milo is an open-source OPC UA (IEC 62541) implementation for Java, enabling
 industrial communication and IoT integration. It provides a complete client/server
