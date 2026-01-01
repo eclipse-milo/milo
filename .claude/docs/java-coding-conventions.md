@@ -59,6 +59,51 @@ var callback = createHandler(); // What functional interface?
 
 **When in doubt, prefer explicit types.**
 
+## Imports
+
+Prefer importing classes and using their simple names over inline fully qualified class names.
+Fully qualified names add visual clutter and make code harder to read.
+
+**Use imports and simple names:**
+
+```java
+import com.inductiveautomation.ignition.gateway.redundancy.types.ProjectState;
+import com.inductiveautomation.ignition.gateway.redundancy.types.HistoryLevel;
+
+// Good: Clean and readable
+return new RedundancyState(
+    NodeRole.Backup,
+    ProjectState.Unknown,
+    HistoryLevel.Partial,
+    activityLevel);
+```
+
+**Avoid inline fully qualified names:**
+
+```java
+// Avoid: Verbose and cluttered
+return new RedundancyState(
+    NodeRole.Backup,
+    com.inductiveautomation.ignition.gateway.redundancy.types.ProjectState.Unknown,
+    com.inductiveautomation.ignition.gateway.redundancy.types.HistoryLevel.Partial,
+    activityLevel);
+```
+
+**Exception:** Use fully qualified names only when necessary to resolve ambiguity between classes
+with the same simple name:
+
+```java
+import java.util.Date;
+
+// Acceptable: Resolves ambiguity with java.util.Date
+java.sql.Date sqlDate = new java.sql.Date(timestamp);
+```
+
+## Nullability
+
+Packages should be annotated `@NullMarked` (JSpecify). Assume non-null by default; use `@Nullable`
+only for parameters, fields, or return types that genuinely accept or return null.
+
 ## Documentation
 
 - Document public APIs with Javadoc

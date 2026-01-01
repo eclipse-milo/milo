@@ -2,13 +2,16 @@
 
 ## Project Overview
 
-Milo is an open-source OPC UA (IEC 62541) implementation for Java, enabling industrial communication
-and IoT integration. It provides a complete client/server SDK for building OPC UA applications.
+**Tech Stack:** Java 17, Maven, Netty
+
+Milo is an open-source OPC UA (IEC 62541) implementation for Java, enabling
+industrial communication and IoT integration. It provides a complete client/server
+SDK for building OPC UA applications.
 
 **Architecture:**
 
 - **opc-ua-stack**: Low-level protocol layer (encoding, transport, security, channels)
-- **opc-ua-sdk**: High-level API layer (client and server SDKs built on the stack)
+- **opc-ua-sdk**: High-level API layer — the primary API for most applications
 
 ## Key Entry Points
 
@@ -18,29 +21,20 @@ and IoT integration. It provides a complete client/server SDK for building OPC U
 
 ## Building and Testing
 
-ALWAYS use the `maven-command-runner` agent when running Maven commands. It captures output and
-provides better error analysis when builds fail.
-
-| Command                 | Purpose                          |
-|-------------------------|----------------------------------|
-| `mvn -q clean compile`  | Compile without tests            |
-| `mvn -q clean verify`   | Full build with tests and checks |
-| `mvn -q spotless:apply` | Fix code formatting issues       |
+| Command                 | Purpose                                    |
+|-------------------------|--------------------------------------------|
+| `mvn -q clean compile`  | Compile without tests                      |
+| `mvn -q clean verify`   | Full build with tests and formatting check |
+| `mvn -q spotless:apply` | Fix code formatting issues                 |
 
 For running specific tests and module targeting, see `.claude/docs/testing.md`.
 
-## Code Formatting
-
-This project uses Spotless with Google Java Format. The `spotless:check` goal runs during `verify`
-and will fail the build if code is not properly formatted. Run `mvn -q spotless:apply` to fix.
-
-## Nullability
-
-Packages should be annotated `@NullMarked` (JSpecify). Assume non-null by default; use `@Nullable`
-only for parameters, fields, or return types that genuinely accept or return null.
-
 ## Additional Resources
 
-- Testing patterns and module reference: `.claude/docs/testing.md`
-- Java coding conventions: `.claude/docs/java-coding-conventions.md`
-- Dependency source code: `.claude/docs/dependencies.md`
+- Testing patterns: `.claude/docs/testing.md`
+- Java conventions: `.claude/docs/java-coding-conventions.md`
+- Dependencies: `.claude/docs/dependencies.md`
+
+---
+
+> **Build Rule:** ALWAYS use the `maven-command-runner` agent for Maven commands.
