@@ -68,7 +68,8 @@ public class OpcUaSubscription {
    * MonitoredItems that have been removed from the Subscription and are pending deletion on the
    * Server.
    */
-  private final List<OpcUaMonitoredItem> itemsToDelete = new ArrayList<>();
+  private final Set<OpcUaMonitoredItem> itemsToDelete =
+      Collections.newSetFromMap(new ConcurrentHashMap<>());
 
   private final ClientHandleSequence clientHandleSequence =
       new ClientHandleSequence(monitoredItems::containsKey);
@@ -313,18 +314,30 @@ public class OpcUaSubscription {
    * @throws UaRuntimeException if the Subscription has not been created yet.
    */
   public void addMonitoredItem(OpcUaMonitoredItem item) {
-    if (!monitoredItems.containsValue(item)) {
+    Optional<UInteger> existingHandle = item.getClientHandle();
+
+    if (existingHandle.isPresent()) {
+      UInteger handle = existingHandle.get();
+
+      // O(1) check: if this item is already in the map, nothing to do
+      if (monitoredItems.get(handle) == item) {
+        return;
+      }
+
+      // Item has a handle but isn't in map - check if pending deletion
       if (itemsToDelete.remove(item)) {
-        monitoredItems.put(item.getClientHandle().orElseThrow(), item);
-      } else {
-        UInteger clientHandle = clientHandleSequence.nextClientHandle();
-        item.setClientHandle(clientHandle);
+        monitoredItems.put(handle, item);
+      }
+      // else: item has a handle from a different context, ignore
+    } else {
+      // Brand-new item with no handle
+      UInteger clientHandle = clientHandleSequence.nextClientHandle();
+      item.setClientHandle(clientHandle);
 
-        monitoredItems.put(clientHandle, item);
+      monitoredItems.put(clientHandle, item);
 
-        if (syncState != SyncState.INITIAL) {
-          syncState = SyncState.UNSYNCHRONIZED;
-        }
+      if (syncState != SyncState.INITIAL) {
+        syncState = SyncState.UNSYNCHRONIZED;
       }
     }
   }
