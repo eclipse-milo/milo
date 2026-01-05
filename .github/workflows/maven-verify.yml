@@ -4,7 +4,7 @@ permissions:
 
 on:
   pull_request:
-    branches: [ "1.0" ]
+    branches: [ "main" ]
 
 jobs:
   build:

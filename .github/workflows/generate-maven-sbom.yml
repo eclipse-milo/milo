@@ -8,7 +8,7 @@ on:
     inputs:
       version:
         description: 'Version'
-        default: '1.0'
+        default: 'main'
         required: true
 
 env:
