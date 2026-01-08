@@ -305,6 +305,56 @@ class TaskQueueTest {
         "Callback should complete even when scheduling the completion throws");
   }
 
+  @Test
+  void getQueueSizeAndPending() throws InterruptedException {
+    var taskQueue = TaskQueue.newBuilder().setExecutor(executor).setMaxConcurrentTasks(1).build();
+
+    // Initially both should be 0
+    assertEquals(0, taskQueue.getQueueSize());
+    assertEquals(0, taskQueue.getPending());
+
+    var taskStarted = new CountDownLatch(1);
+    var taskRelease = new CountDownLatch(1);
+
+    // Submit a blocking task
+    taskQueue.execute(
+        new TestTask() {
+          @Override
+          public void execute() {
+            taskStarted.countDown();
+            try {
+              taskRelease.await();
+            } catch (InterruptedException e) {
+              Thread.currentThread().interrupt();
+            }
+            super.execute();
+          }
+        });
+
+    // Wait for the task to start executing
+    assertTrue(taskStarted.await(1, TimeUnit.SECONDS));
+
+    // Now pending should be 1, queue should be 0
+    assertEquals(0, taskQueue.getQueueSize());
+    assertEquals(1, taskQueue.getPending());
+
+    // Add more tasks while the first is blocked
+    taskQueue.execute(new TestTask());
+    taskQueue.execute(new TestTask());
+
+    // Queue should now have 2, pending still 1
+    assertEquals(2, taskQueue.getQueueSize());
+    assertEquals(1, taskQueue.getPending());
+
+    // Release the blocking task and shutdown
+    taskRelease.countDown();
+    taskQueue.shutdown(true);
+
+    // After shutdown, both should be 0
+    assertEquals(0, taskQueue.getQueueSize());
+    assertEquals(0, taskQueue.getPending());
+  }
+
   private final AtomicInteger sequence = new AtomicInteger(0);
 
   private class TestTask implements TaskQueue.Task {

@@ -221,6 +221,38 @@ public final class TaskQueue {
     }
   }
 
+  /**
+   * Get the current number of tasks waiting in the queue.
+   *
+   * <p>This count does not include tasks that are currently executing.
+   *
+   * @return the current number of tasks waiting in the queue.
+   */
+  public int getQueueSize() {
+    taskQueueLock.lock();
+    try {
+      return taskQueue.size();
+    } finally {
+      taskQueueLock.unlock();
+    }
+  }
+
+  /**
+   * Get the current number of tasks that are pending execution.
+   *
+   * <p>Pending tasks have been dequeued and submitted to the executor but have not yet completed.
+   *
+   * @return the current number of tasks pending execution.
+   */
+  public int getPending() {
+    taskQueueLock.lock();
+    try {
+      return pending;
+    } finally {
+      taskQueueLock.unlock();
+    }
+  }
+
   private void maybePollAndExecute() {
     taskQueueLock.lock();
     try {
