@@ -18,7 +18,6 @@ import io.netty.buffer.ByteBufUtil;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.FileSystems;
@@ -435,11 +434,7 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
                 .map(X509CRL.class::cast)
                 .collect(Collectors.toList()));
       }
-    } catch (CertificateException | FileNotFoundException | CRLException e) {
-      LOGGER.warn("Error decoding CRL file: {}", path, e);
-
-      return Optional.empty();
-    } catch (IOException e) {
+    } catch (CertificateException | CRLException | IOException e) {
       LOGGER.warn("Error decoding CRL file: {}", path, e);
 
       return Optional.empty();
