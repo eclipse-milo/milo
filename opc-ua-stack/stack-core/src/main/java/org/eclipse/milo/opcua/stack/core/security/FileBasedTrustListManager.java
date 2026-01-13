@@ -426,14 +426,20 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
   private static Optional<List<X509CRL>> decodeCrlFile(Path path) {
     try {
       CertificateFactory factory = CertificateFactory.getInstance("X.509");
-      Collection<? extends CRL> crls = factory.generateCRLs(new FileInputStream(path.toFile()));
+      try (FileInputStream inputStream = new FileInputStream(path.toFile())) {
+        Collection<? extends CRL> crls = factory.generateCRLs(inputStream);
 
-      return Optional.of(
-          crls.stream()
-              .filter(crl -> crl instanceof X509CRL)
-              .map(X509CRL.class::cast)
-              .collect(Collectors.toList()));
+        return Optional.of(
+            crls.stream()
+                .filter(crl -> crl instanceof X509CRL)
+                .map(X509CRL.class::cast)
+                .collect(Collectors.toList()));
+      }
     } catch (CertificateException | FileNotFoundException | CRLException e) {
+      LOGGER.warn("Error decoding CRL file: {}", path, e);
+
+      return Optional.empty();
+    } catch (IOException e) {
       LOGGER.warn("Error decoding CRL file: {}", path, e);
 
       return Optional.empty();
