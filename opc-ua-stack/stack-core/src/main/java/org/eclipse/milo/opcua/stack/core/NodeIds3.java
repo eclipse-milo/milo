@@ -15,7 +15,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 
-abstract class NodeIds3 extends NodeIds4 {
+public abstract class NodeIds3 extends NodeIds4 {
   public static final NodeId PubSubDiagnosticsType_TotalInformation_TimeFirstChange =
       new NodeId(UShort.MIN, uint(19683));
 
