@@ -12,7 +12,7 @@ package org.eclipse.milo.opcua.stack.core;
 
 import org.eclipse.milo.opcua.stack.core.util.annotations.Description;
 
-abstract class StatusCodes0 {
+public abstract class StatusCodes0 {
   /** The operation succeeded. */
   @Description("The operation succeeded.")
   public static final long Good = 0x00000000L;

@@ -15,7 +15,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 
-abstract class NodeIds2 extends NodeIds3 {
+public abstract class NodeIds2 extends NodeIds3 {
   public static final NodeId AddPublishedDataItemsTemplateMethodType_OutputArguments =
       new NodeId(UShort.MIN, uint(17032));
 
