@@ -95,6 +95,21 @@
         </configuration>
       </plugin>
       <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <configuration>
+          <instructions>
+            <!-- Export the shaded Guava packages for OSGi.
+                 The maven-bundle-plugin runs before maven-shade-plugin, so it doesn't
+                 see the relocated packages. We explicitly declare them here using
+                 _exportcontents which adds exports without copying classes. -->
+            <_exportcontents>
+              org.eclipse.milo.shaded.com.google.common.*;version="${project.version}"
+            </_exportcontents>
+          </instructions>
+        </configuration>
+      </plugin>
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
         <executions>
