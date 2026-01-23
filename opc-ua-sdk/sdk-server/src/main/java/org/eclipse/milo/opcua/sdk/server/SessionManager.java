@@ -363,7 +363,7 @@ public class SessionManager {
         authenticationToken,
         revisedSessionTimeout,
         serverNonce,
-        securityConfiguration.getServerCertificateBytes(),
+        session.getEndpoint().getServerCertificate(),
         serverEndpoints,
         new SignedSoftwareCertificate[0],
         serverSignature,
