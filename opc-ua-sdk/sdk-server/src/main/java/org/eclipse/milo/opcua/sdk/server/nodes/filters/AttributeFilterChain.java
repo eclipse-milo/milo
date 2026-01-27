@@ -279,6 +279,7 @@ public class AttributeFilterChain {
    * @return this {@link AttributeFilterChain}.
    */
   public synchronized AttributeFilterChain remove(AttributeFilter attributeFilter) {
+    requireNonNull(attributeFilter);
     ConcurrentLinkedDeque<AttributeFilter> deque = filterDeque;
     if (deque != null) {
       deque.remove(attributeFilter);

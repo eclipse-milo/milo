@@ -239,4 +239,17 @@ public class AttributeFilterChainTest {
     DataValue value = (DataValue) chain.getAttribute(null, AttributeId.Value);
     assertEquals("A", value.value().value());
   }
+
+  @Test
+  public void testRemoveNull() {
+    AttributeFilterChain chain = new AttributeFilterChain();
+
+    // Should throw NullPointerException for consistency with addFirst/addLast
+    try {
+      chain.remove(null);
+      throw new AssertionError("Expected NullPointerException");
+    } catch (NullPointerException e) {
+      // Expected
+    }
+  }
 }
