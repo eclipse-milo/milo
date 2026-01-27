@@ -127,4 +127,116 @@ public class AttributeFilterChainTest {
 
     assertTrue(observed.get());
   }
+
+  @Test
+  public void testRemoveFromEmptyChain() {
+    AttributeFilterChain chain = new AttributeFilterChain();
+    AttributeFilter filter = AttributeFilters.getValue(ctx -> new DataValue(new Variant("A")));
+
+    // Should not throw an exception when removing from empty chain
+    chain.remove(filter);
+    assertEquals(0, chain.getFilters().size());
+  }
+
+  @Test
+  public void testRemoveSingleFilter() {
+    AttributeFilterChain chain = new AttributeFilterChain();
+    AttributeFilter filter = AttributeFilters.getValue(ctx -> new DataValue(new Variant("A")));
+
+    chain.addLast(filter);
+    assertEquals(1, chain.getFilters().size());
+
+    chain.remove(filter);
+    assertEquals(0, chain.getFilters().size());
+  }
+
+  @Test
+  public void testRemoveFirstFilter() {
+    AttributeFilterChain chain = new AttributeFilterChain();
+    AttributeFilter filter1 = AttributeFilters.getValue(ctx -> new DataValue(new Variant("A")));
+    AttributeFilter filter2 = AttributeFilters.getValue(ctx -> new DataValue(new Variant("B")));
+    AttributeFilter filter3 = AttributeFilters.getValue(ctx -> new DataValue(new Variant("C")));
+
+    chain.addLast(filter1, filter2, filter3);
+    assertEquals(3, chain.getFilters().size());
+
+    chain.remove(filter1);
+    assertEquals(2, chain.getFilters().size());
+
+    // Verify the chain still works correctly after removal
+    DataValue value = (DataValue) chain.getAttribute(null, AttributeId.Value);
+    assertEquals("B", value.value().value());
+  }
+
+  @Test
+  public void testRemoveLastFilter() {
+    AttributeFilterChain chain = new AttributeFilterChain();
+    AttributeFilter filter1 = AttributeFilters.getValue(ctx -> new DataValue(new Variant("A")));
+    AttributeFilter filter2 = AttributeFilters.getValue(ctx -> new DataValue(new Variant("B")));
+    AttributeFilter filter3 = AttributeFilters.getValue(ctx -> new DataValue(new Variant("C")));
+
+    chain.addLast(filter1, filter2, filter3);
+    assertEquals(3, chain.getFilters().size());
+
+    chain.remove(filter3);
+    assertEquals(2, chain.getFilters().size());
+
+    // Verify the chain still works correctly after removal
+    DataValue value = (DataValue) chain.getAttribute(null, AttributeId.Value);
+    assertEquals("A", value.value().value());
+  }
+
+  @Test
+  public void testRemoveMiddleFilter() {
+    AttributeFilterChain chain = new AttributeFilterChain();
+    AttributeFilter filter1 = AttributeFilters.getValue(ctx -> new DataValue(new Variant("A")));
+    AttributeFilter filter2 = AttributeFilters.getValue(ctx -> new DataValue(new Variant("B")));
+    AttributeFilter filter3 = AttributeFilters.getValue(ctx -> new DataValue(new Variant("C")));
+
+    chain.addLast(filter1, filter2, filter3);
+    assertEquals(3, chain.getFilters().size());
+
+    chain.remove(filter2);
+    assertEquals(2, chain.getFilters().size());
+
+    // Verify the chain still works correctly after removal
+    DataValue value = (DataValue) chain.getAttribute(null, AttributeId.Value);
+    assertEquals("A", value.value().value());
+  }
+
+  @Test
+  public void testRemoveNonExistentFilter() {
+    AttributeFilterChain chain = new AttributeFilterChain();
+    AttributeFilter filter1 = AttributeFilters.getValue(ctx -> new DataValue(new Variant("A")));
+    AttributeFilter filter2 = AttributeFilters.getValue(ctx -> new DataValue(new Variant("B")));
+    AttributeFilter nonExistentFilter =
+        AttributeFilters.getValue(ctx -> new DataValue(new Variant("C")));
+
+    chain.addLast(filter1, filter2);
+    assertEquals(2, chain.getFilters().size());
+
+    // Should not throw an exception when removing non-existent filter
+    chain.remove(nonExistentFilter);
+    assertEquals(2, chain.getFilters().size());
+  }
+
+  @Test
+  public void testRemoveAndAddAgain() {
+    AttributeFilterChain chain = new AttributeFilterChain();
+    AttributeFilter filter1 = AttributeFilters.getValue(ctx -> new DataValue(new Variant("A")));
+    AttributeFilter filter2 = AttributeFilters.getValue(ctx -> new DataValue(new Variant("B")));
+
+    chain.addLast(filter1, filter2);
+    assertEquals(2, chain.getFilters().size());
+
+    chain.remove(filter1);
+    assertEquals(1, chain.getFilters().size());
+
+    chain.addFirst(filter1);
+    assertEquals(2, chain.getFilters().size());
+
+    // Verify the chain still works correctly
+    DataValue value = (DataValue) chain.getAttribute(null, AttributeId.Value);
+    assertEquals("A", value.value().value());
+  }
 }
