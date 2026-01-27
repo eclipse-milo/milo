@@ -11,6 +11,7 @@
 package org.eclipse.milo.opcua.sdk.server.nodes.filters;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -245,11 +246,6 @@ public class AttributeFilterChainTest {
     AttributeFilterChain chain = new AttributeFilterChain();
 
     // Should throw NullPointerException for consistency with addFirst/addLast
-    try {
-      chain.remove(null);
-      throw new AssertionError("Expected NullPointerException");
-    } catch (NullPointerException e) {
-      // Expected
-    }
+    assertThrows(NullPointerException.class, () -> chain.remove(null));
   }
 }
