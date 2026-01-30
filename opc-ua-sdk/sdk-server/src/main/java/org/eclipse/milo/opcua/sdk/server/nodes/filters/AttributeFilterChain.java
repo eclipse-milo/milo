@@ -273,6 +273,21 @@ public class AttributeFilterChain {
   }
 
   /**
+   * Remove {@code attributeFilter} from this filter chain.
+   *
+   * @param attributeFilter the {@link AttributeFilter} to remove.
+   * @return this {@link AttributeFilterChain}.
+   */
+  public synchronized AttributeFilterChain remove(AttributeFilter attributeFilter) {
+    requireNonNull(attributeFilter);
+    ConcurrentLinkedDeque<AttributeFilter> deque = filterDeque;
+    if (deque != null) {
+      deque.remove(attributeFilter);
+    }
+    return this;
+  }
+
+  /**
    * Get a List containing all the {@link AttributeFilter}s belonging to this chain.
    *
    * @return a List containing all the {@link AttributeFilter}s belonging to this chain.
