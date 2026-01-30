@@ -434,6 +434,7 @@
                 <instructions>
                   <Import-Package>
                     com.sun.management.*;resolution:=optional,
+                    sun.security.*;resolution:=optional,
                     !javax.annotation.*,
                     *
                   </Import-Package>
