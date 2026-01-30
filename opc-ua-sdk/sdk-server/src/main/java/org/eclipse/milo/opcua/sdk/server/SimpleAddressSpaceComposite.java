@@ -654,7 +654,7 @@ public abstract class SimpleAddressSpaceComposite implements AddressSpaceFragmen
 
   // endregion
 
-  /** EmptyAddressSpace is used ephemerally and should never be registered. */
+  /** EmptyAddressSpaceFragment is used ephemerally and should never be registered. */
   private static class EmptyAddressSpaceFragment extends ManagedAddressSpace
       implements AddressSpaceFragment {
 
