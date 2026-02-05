@@ -317,7 +317,7 @@ public abstract class SimpleAddressSpaceComposite implements AddressSpaceFragmen
     return groupMapCollate(
         readValueIds,
         readValueId ->
-            getAddressSpace(readValueId.getNodeId()).orElse(new EmptyAddressSpaceFragment(server)),
+            getAddressSpaceInternal(readValueId.getNodeId()),
         (AddressSpace asx) ->
             group -> {
               var ctx =
@@ -338,7 +338,7 @@ public abstract class SimpleAddressSpaceComposite implements AddressSpaceFragmen
     return groupMapCollate(
         writeValues,
         writeValue ->
-            getAddressSpace(writeValue.getNodeId()).orElse(new EmptyAddressSpaceFragment(server)),
+            getAddressSpaceInternal(writeValue.getNodeId()),
         (AddressSpace asx) ->
             group -> {
               var ctx =
