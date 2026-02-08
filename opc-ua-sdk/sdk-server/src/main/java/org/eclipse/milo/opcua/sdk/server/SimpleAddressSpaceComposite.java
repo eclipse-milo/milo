@@ -214,14 +214,14 @@ public abstract class SimpleAddressSpaceComposite implements AddressSpaceFragmen
         final var references = new LinkedHashSet<>(rl.references());
 
         // Gather additional references from all AddressSpaces except
-        // the first, which is the one we called browse on above.
+        // the "primary", which is the one we called browse on above.
 
         var browseContext = new BrowseContext(server, context.getSession().orElse(null));
 
-        AddressSpaceFragment first = getAddressSpaceInternal(nodeId);
+        AddressSpaceFragment primary = getAddressSpaceInternal(nodeId);
 
         for (AddressSpace asx : getAddressSpaces()) {
-          if (asx != first) {
+          if (asx != primary) {
             ReferenceList gatherResult = asx.gather(browseContext, view, nodeId);
 
             references.addAll(gatherResult.references());
