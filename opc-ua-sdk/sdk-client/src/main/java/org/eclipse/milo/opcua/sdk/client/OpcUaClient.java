@@ -659,6 +659,11 @@ public class OpcUaClient {
         () -> dynamicDataTypeManagerFactory.create(this, getNamespaceTable(), getDataTypeTree()));
   }
 
+  /** Reset the cached dynamic {@link DataTypeManager}. */
+  public void resetDynamicDataTypeManager() {
+    dynamicDataTypeManager.reset();
+  }
+
   /**
    * Get a "static" {@link EncodingContext} instance.
    *
@@ -711,6 +716,11 @@ public class OpcUaClient {
             }
           };
         });
+  }
+
+  /** Reset the cached dynamic {@link EncodingContext}. */
+  public void resetDynamicEncodingContext() {
+    dynamicEncodingContext.reset();
   }
 
   /**
@@ -892,6 +902,11 @@ public class OpcUaClient {
     }
   }
 
+  /** Reset the cached {@link DataTypeTree}. */
+  public void resetDataTypeTree() {
+    dataTypeTree.reset();
+  }
+
   /**
    * Read the {@link DataTypeTree} from the server and update the local copy.
    *
@@ -899,7 +914,7 @@ public class OpcUaClient {
    * @throws UaException if an error occurs while reading the DataTypes.
    */
   public DataTypeTree readDataTypeTree() throws UaException {
-    dataTypeTree.reset();
+    resetDataTypeTree();
 
     return getDataTypeTree();
   }
@@ -936,6 +951,11 @@ public class OpcUaClient {
     }
   }
 
+  /** Reset the cached {@link ObjectTypeTree}. */
+  public void resetObjectTypeTree() {
+    objectTypeTree.reset();
+  }
+
   /**
    * Read the {@link ObjectTypeTree} from the server and update the local copy.
    *
@@ -943,7 +963,7 @@ public class OpcUaClient {
    * @throws UaException if an error occurs while reading the ObjectTypes.
    */
   public ObjectTypeTree readObjectTypeTree() throws UaException {
-    objectTypeTree.reset();
+    resetObjectTypeTree();
 
     return getObjectTypeTree();
   }
@@ -981,6 +1001,11 @@ public class OpcUaClient {
     }
   }
 
+  /** Reset the cached {@link VariableTypeTree}. */
+  public void resetVariableTypeTree() {
+    variableTypeTree.reset();
+  }
+
   /**
    * Read the {@link VariableTypeTree} from the server and update the local copy.
    *
@@ -988,7 +1013,7 @@ public class OpcUaClient {
    * @throws UaException if an error occurs while reading the VariableTypes.
    */
   public VariableTypeTree readVariableTypeTree() throws UaException {
-    variableTypeTree.reset();
+    resetVariableTypeTree();
 
     return getVariableTypeTree();
   }
@@ -1023,6 +1048,11 @@ public class OpcUaClient {
     return operationLimits.getOrThrow(() -> OperationLimits.read(this));
   }
 
+  /** Reset the cached {@link OperationLimits}. */
+  public void resetOperationLimits() {
+    operationLimits.reset();
+  }
+
   /**
    * Read the server's OperationLimits and update the local copy.
    *
@@ -1030,7 +1060,7 @@ public class OpcUaClient {
    * @throws UaException if an error occurs reading the operation limits.
    */
   public OperationLimits readOperationLimits() throws UaException {
-    operationLimits.reset();
+    resetOperationLimits();
 
     return getOperationLimits();
   }
@@ -1099,7 +1129,7 @@ public class OpcUaClient {
   public void setDataTypeTreeFactory(DataTypeTreeFactory dataTypeTreeFactory) {
     this.dataTypeTreeFactory = dataTypeTreeFactory;
 
-    dataTypeTree.reset();
+    resetDataTypeTree();
   }
 
   /**
@@ -1125,8 +1155,8 @@ public class OpcUaClient {
 
     this.dynamicDataTypeManagerFactory = dynamicDataTypeManagerFactory;
 
-    dynamicDataTypeManager.reset();
-    dynamicEncodingContext.reset();
+    resetDynamicDataTypeManager();
+    resetDynamicEncodingContext();
   }
 
   // region Attribute Services
