@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -471,6 +471,18 @@ public class OpcUaClient {
                     logger.warn("SessionInitializer: NamespaceTable", ex);
                     return Unit.VALUE;
                   });
+        });
+
+    addSessionInitializer(
+        (client, session) -> {
+          // Reset before the Session is available so that the DataTypeTree and associated codecs
+          // are refreshed (eagerly or lazily, depending on configuration).
+
+          resetDataTypeTree();
+          resetDynamicDataTypeManager();
+          resetDynamicEncodingContext();
+
+          return CompletableFuture.completedFuture(Unit.VALUE);
         });
 
     faultNotificationQueue = new ExecutionQueue(transport.getConfig().getExecutor());
