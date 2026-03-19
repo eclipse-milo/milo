@@ -93,7 +93,8 @@
         <configuration>
           <instructions>
             <Export-Package>
-              org.eclipse.milo.shaded.com.google.common.*",
+              org.eclipse.milo.shaded.com.google.common.*,
+              org.eclipse.milo.shaded.com.google.common.collect,
               *
             </Export-Package>
             <Import-Package>
