@@ -214,8 +214,8 @@ Hello. After Hello/Ack, the standard server pipeline (`UascServerAsymmetricHandl
 | Server Transport | `transport/.../server/uasc/UascServerReverseHelloHandler.java` | Server handshake handler |
 | Server Transport | `transport/.../server/uasc/SecureChannelOpenedEvent.java` | Netty user event for FSM |
 | SDK Server | `sdk-server/.../server/ReverseConnectManager.java` | Orchestrator |
-| SDK Server | `sdk-server/.../server/ReverseConnectConfig.java` | Manager config interface |
-| SDK Server | `sdk-server/.../server/ReverseConnectConfigBuilder.java` | Manager config builder |
+| SDK Server | `transport/.../server/tcp/ReverseConnectConfig.java` | Manager config interface |
+| SDK Server | `transport/.../server/tcp/ReverseConnectConfigBuilder.java` | Manager config builder |
 | SDK Server | `sdk-server/.../server/ReverseConnectHandle.java` | Registration handle |
 | Examples | `milo-examples/client-examples/.../ReverseConnectExampleProsys.java` | Client example |
 | Tests | `integration-tests/.../client/ReverseConnectTest.java` | SDK integration tests |
