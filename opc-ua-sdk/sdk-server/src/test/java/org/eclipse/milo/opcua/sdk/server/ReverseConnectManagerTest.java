@@ -110,20 +110,27 @@ class ReverseConnectManagerTest {
   }
 
   @Test
-  void removeReverseConnectStopsAllSiblings() {
+  void removeReverseConnectStopsOnlyTargetHandle() {
     ServerApplicationContext appContext = Mockito.mock(ServerApplicationContext.class);
     manager.start(appContext, SERVER_URI);
 
     // Add two handles for the same client URL — creates two FSMs sharing
     // the same handlesByClientUrl entry, simulating the original + idle sibling.
     ReverseConnectHandle handle1 = manager.addReverseConnect(CLIENT_URL, ENDPOINT_URL);
-    manager.addReverseConnect(CLIENT_URL, ENDPOINT_URL);
+    ReverseConnectHandle handle2 = manager.addReverseConnect(CLIENT_URL, ENDPOINT_URL);
     assertEquals(2, manager.connectionCount());
     assertEquals(1, manager.handleGroupCount());
 
-    // Remove one handle — should stop both FSMs since removeReverseConnect
-    // tears down the entire handlesByClientUrl group for that client URL.
+    // Remove one handle — should stop only that handle's FSM, leaving the
+    // sibling intact since removeReverseConnect operates per-handle.
     manager.removeReverseConnect(handle1);
+
+    assertEquals(
+        1, manager.connectionCount(), "only the removed handle's connection should be gone");
+    assertEquals(1, manager.handleGroupCount(), "handle group should remain for surviving sibling");
+
+    // Remove the second handle — now everything should be cleaned up.
+    manager.removeReverseConnect(handle2);
 
     assertEquals(0, manager.connectionCount(), "all connections should be removed");
     assertEquals(0, manager.handleGroupCount(), "handlesByClientUrl should be empty");
