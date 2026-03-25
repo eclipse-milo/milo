@@ -21,7 +21,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import org.eclipse.milo.opcua.stack.core.Stack;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -368,12 +370,28 @@ public class DiscoveryClient {
 
     return discoveryClient
         .connectAsync()
+        .orTimeout(reverseConnectConfig.getConnectTimeout(), TimeUnit.MILLISECONDS)
         .thenCompose(
             c ->
                 c.getEndpoints(
                     "", new String[0], new String[] {Stack.TCP_UASC_UABINARY_TRANSPORT_URI}))
-        .whenComplete((e, ex) -> discoveryClient.disconnectAsync())
-        .thenApply(response -> Lists.ofNullable(response.getEndpoints()));
+        .thenApply(response -> Lists.ofNullable(response.getEndpoints()))
+        .handle(
+            (result, ex) -> {
+              CompletableFuture<List<EndpointDescription>> future = new CompletableFuture<>();
+              discoveryClient
+                  .disconnectAsync()
+                  .whenComplete(
+                      (v, dex) -> {
+                        if (ex != null) {
+                          future.completeExceptionally(ex);
+                        } else {
+                          future.complete(result);
+                        }
+                      });
+              return future;
+            })
+        .thenCompose(Function.identity());
   }
 
   /**
@@ -407,8 +425,24 @@ public class DiscoveryClient {
 
     return discoveryClient
         .connectAsync()
+        .orTimeout(reverseConnectConfig.getConnectTimeout(), TimeUnit.MILLISECONDS)
         .thenCompose(c -> c.findServers("", new String[0], new String[0]))
-        .whenComplete((e, ex) -> discoveryClient.disconnectAsync())
-        .thenApply(response -> Lists.ofNullable(response.getServers()));
+        .thenApply(response -> Lists.ofNullable(response.getServers()))
+        .handle(
+            (result, ex) -> {
+              CompletableFuture<List<ApplicationDescription>> future = new CompletableFuture<>();
+              discoveryClient
+                  .disconnectAsync()
+                  .whenComplete(
+                      (v, dex) -> {
+                        if (ex != null) {
+                          future.completeExceptionally(ex);
+                        } else {
+                          future.complete(result);
+                        }
+                      });
+              return future;
+            })
+        .thenCompose(Function.identity());
   }
 }

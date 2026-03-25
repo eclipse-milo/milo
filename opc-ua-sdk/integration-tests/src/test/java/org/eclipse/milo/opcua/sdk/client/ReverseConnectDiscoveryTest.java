@@ -11,12 +11,17 @@
 package org.eclipse.milo.opcua.sdk.client;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.eclipse.milo.opcua.sdk.server.EndpointConfig;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.ReverseConnectHandle;
@@ -163,6 +168,32 @@ class ReverseConnectDiscoveryTest {
       assertFalse(endpoints2.isEmpty());
     } finally {
       server.removeReverseConnect(handle2);
+    }
+  }
+
+  @Test
+  void getEndpointsTimesOutWhenNoServerConnects() throws Exception {
+    // Use a different port so there is no server-side reverse connect handle targeting it.
+    int timeoutPort = LISTEN_PORT + 1;
+
+    var config =
+        OpcTcpReverseConnectTransportConfig.newBuilder()
+            .setListenAddress(new InetSocketAddress("localhost", timeoutPort))
+            .setConnectTimeout(500)
+            .build();
+
+    // No server handle registered for this port — the connect will time out.
+    ExecutionException ee =
+        assertThrows(
+            ExecutionException.class,
+            () -> DiscoveryClient.getEndpoints(config).get(10, TimeUnit.SECONDS));
+
+    assertInstanceOf(TimeoutException.class, ee.getCause());
+
+    // Verify the listening port was released by rebinding it.
+    try (ServerSocket ss = new ServerSocket()) {
+      ss.setReuseAddress(true);
+      ss.bind(new InetSocketAddress("localhost", timeoutPort));
     }
   }
 

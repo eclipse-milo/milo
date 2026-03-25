@@ -37,6 +37,7 @@ public class OpcTcpReverseConnectTransportConfigBuilder {
   private InetSocketAddress listenAddress;
   private Set<String> allowedServerUris = new LinkedHashSet<>();
   private long reverseHelloTimeout = 30_000;
+  private long connectTimeout = 60_000;
   private UInteger acknowledgeTimeout = uint(5_000);
   private UInteger channelLifetime = uint(60 * 60 * 1000);
 
@@ -97,6 +98,18 @@ public class OpcTcpReverseConnectTransportConfigBuilder {
       long reverseHelloTimeout) {
 
     this.reverseHelloTimeout = reverseHelloTimeout;
+    return this;
+  }
+
+  /**
+   * Set the maximum time in milliseconds to wait for a server to connect inbound when used with
+   * one-shot discovery methods. Default: 60,000 ms.
+   *
+   * @param connectTimeout the connect timeout in milliseconds.
+   * @return this {@link OpcTcpReverseConnectTransportConfigBuilder}.
+   */
+  public OpcTcpReverseConnectTransportConfigBuilder setConnectTimeout(long connectTimeout) {
+    this.connectTimeout = connectTimeout;
     return this;
   }
 
@@ -232,6 +245,7 @@ public class OpcTcpReverseConnectTransportConfigBuilder {
         listenAddress,
         Set.copyOf(allowedServerUris),
         reverseHelloTimeout,
+        connectTimeout,
         acknowledgeTimeout,
         channelLifetime,
         executor,
@@ -248,6 +262,7 @@ public class OpcTcpReverseConnectTransportConfigBuilder {
     private final InetSocketAddress listenAddress;
     private final Set<String> allowedServerUris;
     private final long reverseHelloTimeout;
+    private final long connectTimeout;
     private final UInteger acknowledgeTimeout;
     private final UInteger channelLifetime;
     private final ExecutorService executor;
@@ -261,6 +276,7 @@ public class OpcTcpReverseConnectTransportConfigBuilder {
         InetSocketAddress listenAddress,
         Set<String> allowedServerUris,
         long reverseHelloTimeout,
+        long connectTimeout,
         UInteger acknowledgeTimeout,
         UInteger channelLifetime,
         ExecutorService executor,
@@ -273,6 +289,7 @@ public class OpcTcpReverseConnectTransportConfigBuilder {
       this.listenAddress = listenAddress;
       this.allowedServerUris = allowedServerUris;
       this.reverseHelloTimeout = reverseHelloTimeout;
+      this.connectTimeout = connectTimeout;
       this.acknowledgeTimeout = acknowledgeTimeout;
       this.channelLifetime = channelLifetime;
       this.executor = executor;
@@ -296,6 +313,11 @@ public class OpcTcpReverseConnectTransportConfigBuilder {
     @Override
     public long getReverseHelloTimeout() {
       return reverseHelloTimeout;
+    }
+
+    @Override
+    public long getConnectTimeout() {
+      return connectTimeout;
     }
 
     @Override

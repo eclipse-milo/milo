@@ -363,6 +363,7 @@ public class OpcUaClient {
 
     return discoveryClient
         .connectAsync()
+        .orTimeout(reverseConnectConfig.getConnectTimeout(), TimeUnit.MILLISECONDS)
         .thenCompose(
             dc ->
                 dc.getEndpoints(
