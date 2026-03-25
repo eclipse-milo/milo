@@ -44,11 +44,11 @@ public class ReverseHelloMessage {
     checkNotNull(serverUri, "serverUri must not be null");
     checkNotNull(endpointUrl, "endpointUrl must not be null");
     checkArgument(
-        serverUri.length() <= MAX_URI_LENGTH,
+        serverUri.getBytes(StandardCharsets.UTF_8).length <= MAX_URI_LENGTH,
         "serverUri length cannot be greater than %s bytes",
         MAX_URI_LENGTH);
     checkArgument(
-        endpointUrl.length() <= MAX_URI_LENGTH,
+        endpointUrl.getBytes(StandardCharsets.UTF_8).length <= MAX_URI_LENGTH,
         "endpointUrl length cannot be greater than %s bytes",
         MAX_URI_LENGTH);
 
