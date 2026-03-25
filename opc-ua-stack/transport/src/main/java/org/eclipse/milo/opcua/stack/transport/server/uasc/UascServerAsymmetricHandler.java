@@ -15,6 +15,7 @@ import static org.eclipse.milo.opcua.stack.core.util.NonceUtil.generateNonce;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.util.AttributeKey;
@@ -452,12 +453,23 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
         chunkComposite.writerIndex(chunkComposite.writerIndex() + chunk.readableBytes());
       }
 
-      ctx.writeAndFlush(chunkComposite, ctx.voidPromise());
+      ChannelFuture writeFuture = ctx.writeAndFlush(chunkComposite);
 
-      ctx.pipeline()
-          .fireUserEventTriggered(new SecureChannelOpenedEvent(secureChannel.getChannelId()));
-
-      logger.debug("Sent OpenSecureChannelResponse.");
+      writeFuture.addListener(
+          future -> {
+            if (future.isSuccess()) {
+              ctx.pipeline()
+                  .fireUserEventTriggered(
+                      new SecureChannelOpenedEvent(secureChannel.getChannelId()));
+              logger.debug("Sent OpenSecureChannelResponse.");
+            } else {
+              logger.error(
+                  "Error writing OpenSecureChannelResponse: {}",
+                  future.cause().getMessage(),
+                  future.cause());
+              ctx.close();
+            }
+          });
     } catch (MessageEncodeException e) {
       logger.error("Error encoding OpenSecureChannelResponse: {}", e.getMessage(), e);
       ctx.fireExceptionCaught(e);
