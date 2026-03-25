@@ -189,7 +189,7 @@ public class UascClientReverseHelloHandler extends ByteToMessageCodec<UaRequestM
 
     logger.debug("Received ReverseHello: {}", reverseHello);
 
-    String serverUri = reverseHello.getServerUri();
+    String serverUri = reverseHello.serverUri();
 
     if (!allowedServerUris.isEmpty() && !allowedServerUris.contains(serverUri)) {
       String message = String.format("ServerUri not allowed: %s", serverUri);
@@ -204,7 +204,7 @@ public class UascClientReverseHelloHandler extends ByteToMessageCodec<UaRequestM
       return;
     }
 
-    sendHello(ctx, reverseHello.getEndpointUrl());
+    sendHello(ctx, reverseHello.endpointUrl());
 
     state = State.AWAITING_ACK;
   }

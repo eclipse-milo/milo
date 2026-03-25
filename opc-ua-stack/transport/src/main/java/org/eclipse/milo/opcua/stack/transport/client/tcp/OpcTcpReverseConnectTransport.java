@@ -246,8 +246,8 @@ public class OpcTcpReverseConnectTransport extends AbstractUascClientTransport
 
       logger.debug(
           "Received ReverseHello: serverUri={}, endpointUrl={}",
-          rhe.getServerUri(),
-          rhe.getEndpointUrl());
+          rhe.serverUri(),
+          rhe.endpointUrl());
 
       channelFsm.fireEvent(
           new ReverseConnectChannelFsm.Event.ConnectionAccepted(ctx.channel(), rhe));

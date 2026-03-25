@@ -28,8 +28,8 @@ class ReverseHelloMessageTest {
     ByteBuf encoded = TcpMessageEncoder.encode(original);
     ReverseHelloMessage decoded = TcpMessageDecoder.decodeReverseHello(encoded);
 
-    assertEquals(original.getServerUri(), decoded.getServerUri());
-    assertEquals(original.getEndpointUrl(), decoded.getEndpointUrl());
+    assertEquals(original.serverUri(), decoded.serverUri());
+    assertEquals(original.endpointUrl(), decoded.endpointUrl());
     assertEquals(original, decoded);
 
     encoded.release();
@@ -43,8 +43,8 @@ class ReverseHelloMessageTest {
     ByteBuf encoded = TcpMessageEncoder.encode(message);
     ReverseHelloMessage decoded = TcpMessageDecoder.decodeReverseHello(encoded);
 
-    assertEquals(maxString, decoded.getServerUri());
-    assertEquals(maxString, decoded.getEndpointUrl());
+    assertEquals(maxString, decoded.serverUri());
+    assertEquals(maxString, decoded.endpointUrl());
 
     encoded.release();
   }
@@ -85,8 +85,8 @@ class ReverseHelloMessageTest {
     ByteBuf encoded = TcpMessageEncoder.encode(original);
     ReverseHelloMessage decoded = TcpMessageDecoder.decodeReverseHello(encoded);
 
-    assertEquals("", decoded.getServerUri());
-    assertEquals("", decoded.getEndpointUrl());
+    assertEquals("", decoded.serverUri());
+    assertEquals("", decoded.endpointUrl());
 
     encoded.release();
   }

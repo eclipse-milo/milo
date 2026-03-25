@@ -11,9 +11,8 @@
 package org.eclipse.milo.opcua.stack.core.channel.messages;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 
-import com.google.common.base.MoreObjects;
 import io.netty.buffer.ByteBuf;
 import java.nio.charset.StandardCharsets;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -25,24 +24,19 @@ import org.eclipse.milo.opcua.stack.core.UaException;
  * <p>A ReverseHello is sent by a server to a client over a TCP connection that the server
  * initiated. It carries the server's ApplicationUri and an endpoint URL so the client can identify
  * the server and begin the normal Hello/Acknowledge handshake on the same socket.
+ *
+ * @param serverUri the URI of the Server which is requesting a connection. The encoded value shall
+ *     be less than 4096 bytes.
+ * @param endpointUrl the URL of the Endpoint which the Client can use to access the Server. The
+ *     encoded value shall be less than 4096 bytes.
  */
-public class ReverseHelloMessage {
+public record ReverseHelloMessage(String serverUri, String endpointUrl) {
 
   static final int MAX_URI_LENGTH = 4096;
 
-  private final String serverUri;
-
-  private final String endpointUrl;
-
-  /**
-   * @param serverUri the URI of the Server which is requesting a connection. The encoded value
-   *     shall be less than 4096 bytes.
-   * @param endpointUrl the URL of the Endpoint which the Client can use to access the Server. The
-   *     encoded value shall be less than 4096 bytes.
-   */
-  public ReverseHelloMessage(String serverUri, String endpointUrl) {
-    checkNotNull(serverUri, "serverUri must not be null");
-    checkNotNull(endpointUrl, "endpointUrl must not be null");
+  public ReverseHelloMessage {
+    requireNonNull(serverUri, "serverUri must not be null");
+    requireNonNull(endpointUrl, "endpointUrl must not be null");
     checkArgument(
         serverUri.getBytes(StandardCharsets.UTF_8).length <= MAX_URI_LENGTH,
         "serverUri length cannot be greater than %s bytes",
@@ -51,48 +45,6 @@ public class ReverseHelloMessage {
         endpointUrl.getBytes(StandardCharsets.UTF_8).length <= MAX_URI_LENGTH,
         "endpointUrl length cannot be greater than %s bytes",
         MAX_URI_LENGTH);
-
-    this.serverUri = serverUri;
-    this.endpointUrl = endpointUrl;
-  }
-
-  /**
-   * @return the URI of the server which is requesting a connection.
-   */
-  public String getServerUri() {
-    return serverUri;
-  }
-
-  /**
-   * @return the URL of the endpoint which the client can use to access the server.
-   */
-  public String getEndpointUrl() {
-    return endpointUrl;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-
-    ReverseHelloMessage that = (ReverseHelloMessage) o;
-
-    return serverUri.equals(that.serverUri) && endpointUrl.equals(that.endpointUrl);
-  }
-
-  @Override
-  public int hashCode() {
-    int result = serverUri.hashCode();
-    result = 31 * result + endpointUrl.hashCode();
-    return result;
-  }
-
-  @Override
-  public String toString() {
-    return MoreObjects.toStringHelper(this)
-        .add("serverUri", serverUri)
-        .add("endpointUrl", endpointUrl)
-        .toString();
   }
 
   /**
@@ -102,8 +54,8 @@ public class ReverseHelloMessage {
    * @param buffer the buffer to write to.
    */
   public static void encode(ReverseHelloMessage message, ByteBuf buffer) {
-    encodeString(message.getServerUri(), buffer);
-    encodeString(message.getEndpointUrl(), buffer);
+    encodeString(message.serverUri(), buffer);
+    encodeString(message.endpointUrl(), buffer);
   }
 
   /**

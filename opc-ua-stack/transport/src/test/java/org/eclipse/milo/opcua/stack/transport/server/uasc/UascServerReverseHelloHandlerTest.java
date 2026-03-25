@@ -62,8 +62,8 @@ class UascServerReverseHelloHandlerTest {
     assertNotNull(outbound, "ReverseHello should be written on channelActive");
 
     ReverseHelloMessage rhe = TcpMessageDecoder.decodeReverseHello(outbound);
-    assertEquals(SERVER_URI, rhe.getServerUri());
-    assertEquals(ENDPOINT_URL, rhe.getEndpointUrl());
+    assertEquals(SERVER_URI, rhe.serverUri());
+    assertEquals(ENDPOINT_URL, rhe.endpointUrl());
 
     outbound.release();
     channel.close();
@@ -88,8 +88,8 @@ class UascServerReverseHelloHandlerTest {
     assertNotNull(outbound);
 
     ReverseHelloMessage rhe = TcpMessageDecoder.decodeReverseHello(outbound);
-    assertEquals(serverUri, rhe.getServerUri());
-    assertEquals(endpointUrl, rhe.getEndpointUrl());
+    assertEquals(serverUri, rhe.serverUri());
+    assertEquals(endpointUrl, rhe.endpointUrl());
 
     outbound.release();
     channel.close();
