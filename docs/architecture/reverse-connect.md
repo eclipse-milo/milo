@@ -290,7 +290,7 @@ stateDiagram-v2
 | State | Description |
 | --- | --- |
 | `NotConnected` | Listening, no server has connected. `Connect` events queue futures. |
-| `Handshaking` | RHE received. `UascClientReverseHelloHandler` installed on the channel. Hello/Ack/OPN in progress. `Disconnect` events are shelved. |
+| `Handshaking` | RHE received. `UascClientReverseHelloHandler` installed on the channel. Hello/Ack/OPN in progress. `Disconnect` events are shelved. Duplicate `ConnectionAccepted` events are rejected (channel closed). |
 | `Connected` | SecureChannel active. Pending `Connect`/`GetChannel` futures are completed with the channel. |
 | `Reconnecting` | Channel lost. Old state cleared. Waiting for server to reconnect. Pending futures are chained to a new future that will be completed on the next successful handshake. |
 

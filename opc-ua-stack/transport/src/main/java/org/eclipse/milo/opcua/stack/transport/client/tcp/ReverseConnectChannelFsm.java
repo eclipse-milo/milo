@@ -238,7 +238,8 @@ public class ReverseConnectChannelFsm {
     fb.when(State.Handshaking).on(Event.HandshakeFailure.class).transitionTo(State.Reconnecting);
     fb.when(State.Handshaking).on(Event.ChannelInactive.class).transitionTo(State.Reconnecting);
 
-    /* Internal transitions — shelve Disconnect, chain Connect/GetChannel */
+    /* Internal transitions — shelve Disconnect, chain Connect/GetChannel,
+     * reject duplicate inbound connections */
     fb.onInternalTransition(State.Handshaking)
         .via(Event.Disconnect.class)
         .execute(ctx -> ctx.shelveEvent(ctx.event()));
@@ -250,6 +251,21 @@ public class ReverseConnectChannelFsm {
     fb.onInternalTransition(State.Handshaking)
         .via(Event.GetChannel.class)
         .execute(ReverseConnectChannelFsm::chainGetChannelFuture);
+
+    /* Reject duplicate inbound connections while a handshake is already in progress.
+     * Without this, a ConnectionAccepted event from ensureIdleConnection would be
+     * dropped by the FSM, leaving the child channel orphaned (never closed). */
+    fb.onInternalTransition(State.Handshaking)
+        .via(Event.ConnectionAccepted.class)
+        .execute(
+            ctx -> {
+              var event = (Event.ConnectionAccepted) ctx.event();
+              Channel newChannel = event.channel();
+              LOGGER.debug(
+                  "Rejecting inbound connection from {} while handshaking",
+                  newChannel.remoteAddress());
+              newChannel.close();
+            });
 
     /* Entry action: start the handshake on the accepted channel */
     fb.onTransitionTo(State.Handshaking)
