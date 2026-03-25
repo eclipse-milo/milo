@@ -164,6 +164,10 @@ public class UascClientReverseHelloHandler extends ByteToMessageCodec<UaRequestM
         cause.getMessage(),
         cause);
 
+    if (timeout != null) {
+      timeout.cancel();
+      timeout = null;
+    }
     handshakeFuture.completeExceptionally(cause);
     ctx.close();
   }
