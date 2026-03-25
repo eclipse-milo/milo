@@ -290,6 +290,44 @@ class ReverseConnectChannelFsmTest {
     assertTrue(transitions.contains("Connected->Reconnecting"));
   }
 
+  @Test
+  void disconnectFromConnectedTransitionsToNotConnected() throws Exception {
+    var fsm = newFsm();
+    fsm.setApplicationContext(newApplicationContext());
+
+    var channel = new EmbeddedChannel();
+    reachConnected(fsm, channel);
+    assertEquals(State.Connected, fsm.getState());
+
+    var disconnectFuture = new CompletableFuture<Unit>();
+    fsm.fireEvent(new Event.Disconnect(disconnectFuture));
+    awaitState(fsm, State.NotConnected);
+
+    assertTrue(disconnectFuture.isDone());
+    assertEquals(Unit.VALUE, disconnectFuture.get(1, TimeUnit.SECONDS));
+    assertNull(fsm.getChannel());
+  }
+
+  @Test
+  void connectionAcceptedAfterDisconnectTransitionsToHandshaking() throws Exception {
+    var fsm = newFsm();
+    fsm.setApplicationContext(newApplicationContext());
+
+    var channel1 = new EmbeddedChannel();
+    reachConnected(fsm, channel1);
+
+    // Disconnect from Connected -> NotConnected
+    var disconnectFuture = new CompletableFuture<Unit>();
+    fsm.fireEvent(new Event.Disconnect(disconnectFuture));
+    awaitState(fsm, State.NotConnected);
+
+    // Server reconnects -> Handshaking
+    var channel2 = new EmbeddedChannel();
+    var rhe = new ReverseHelloMessage(SERVER_URI, ENDPOINT_URL);
+    fsm.fireEvent(new Event.ConnectionAccepted(channel2, rhe));
+    awaitState(fsm, State.Handshaking);
+  }
+
   // -- helpers --
 
   private ReverseConnectChannelFsm newFsm() {
@@ -341,6 +379,7 @@ class ReverseConnectChannelFsmTest {
     awaitState(fsm, expected, Duration.ofSeconds(5));
   }
 
+  @SuppressWarnings("BusyWait")
   private static void awaitState(ReverseConnectChannelFsm fsm, State expected, Duration timeout)
       throws Exception {
 

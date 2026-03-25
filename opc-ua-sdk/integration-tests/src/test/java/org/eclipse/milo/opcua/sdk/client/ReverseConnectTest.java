@@ -22,6 +22,8 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.eclipse.milo.opcua.sdk.server.EndpointConfig;
@@ -68,9 +70,9 @@ import org.junit.jupiter.api.TestMethodOrder;
 class ReverseConnectTest {
 
   /**
-   * Generous timeout for operations that include the full reverse-connect lifecycle: server connect
+   * Timeout for operations that include the full reverse-connect lifecycle: server connect
    * interval, ReverseHello handshake, OpenSecureChannel, CreateSession, ActivateSession, and
-   * session initializers.
+   * session initializers. 10 seconds is generous for localhost connections.
    */
   private static final long TIMEOUT_SECONDS = 30;
 
@@ -89,7 +91,8 @@ class ReverseConnectTest {
             .setMaxReconnectDelay(Duration.ofSeconds(2))
             .build();
 
-    OpcTcpServerTransportConfig transportConfig = OpcTcpServerTransportConfig.newBuilder().build();
+    OpcTcpServerTransportConfig transportConfig =
+        OpcTcpServerTransportConfig.newBuilder().setHelloDeadline(uint(5_000)).build();
 
     var manager = new ReverseConnectManager(rcConfig, transportConfig);
     server.setReverseConnectManager(manager);
@@ -107,6 +110,7 @@ class ReverseConnectTest {
     var transportConfig =
         OpcTcpReverseConnectTransportConfig.newBuilder()
             .setListenAddress(new InetSocketAddress("localhost", 0))
+            .setReverseHelloTimeout(5_000)
             .build();
 
     var transport = new OpcTcpReverseConnectTransport(transportConfig);
@@ -158,6 +162,7 @@ class ReverseConnectTest {
     var transportConfig =
         OpcTcpReverseConnectTransportConfig.newBuilder()
             .setListenAddress(new InetSocketAddress("localhost", 0))
+            .setReverseHelloTimeout(5_000)
             .build();
 
     var transport = new OpcTcpReverseConnectTransport(transportConfig);
@@ -229,6 +234,7 @@ class ReverseConnectTest {
     var transportConfig1 =
         OpcTcpReverseConnectTransportConfig.newBuilder()
             .setListenAddress(new InetSocketAddress("localhost", 0))
+            .setReverseHelloTimeout(5_000)
             .build();
     var transport1 = new OpcTcpReverseConnectTransport(transportConfig1);
     OpcUaClient client1 =
@@ -240,6 +246,7 @@ class ReverseConnectTest {
     var transportConfig2 =
         OpcTcpReverseConnectTransportConfig.newBuilder()
             .setListenAddress(new InetSocketAddress("localhost", 0))
+            .setReverseHelloTimeout(5_000)
             .build();
     var transport2 = new OpcTcpReverseConnectTransport(transportConfig2);
     OpcUaClient client2 =
@@ -306,6 +313,7 @@ class ReverseConnectTest {
     var transportConfig =
         OpcTcpReverseConnectTransportConfig.newBuilder()
             .setListenAddress(new InetSocketAddress("localhost", 0))
+            .setReverseHelloTimeout(5_000)
             .setAllowedServerUris(Set.of("urn:bogus:server:that:does:not:match"))
             .build();
 
@@ -332,7 +340,7 @@ class ReverseConnectTest {
       // The server's ApplicationUri won't match "urn:bogus:server:that:does:not:match",
       // so the client transport should reject every ReverseHello. The connect future
       // will never complete, so we expect a timeout.
-      assertThrows(TimeoutException.class, () -> connectFuture.get(5, TimeUnit.SECONDS));
+      assertThrows(TimeoutException.class, () -> connectFuture.get(2, TimeUnit.SECONDS));
     } finally {
       server.removeReverseConnect(handle);
       try {
@@ -340,6 +348,45 @@ class ReverseConnectTest {
       } catch (Exception ignored) {
         // may already be disconnected
       }
+    }
+  }
+
+  /**
+   * Verify that {@code OpcUaServer.shutdown()} completes without deadlock even when called from a
+   * single-threaded executor (simulating a Netty I/O or FSM executor thread). Before the fix, the
+   * blocking {@code .join()} in shutdown could deadlock when the reverse connect manager's FSM
+   * needed the same thread to complete its stop transition.
+   */
+  @Test
+  @Order(5)
+  void shutdownCompletesWithoutDeadlock() throws Exception {
+    // Use an independent server so we don't affect the shared instance.
+    TestServer testServer = TestServer.create();
+    OpcUaServer localServer = testServer.getServer();
+
+    ReverseConnectConfig rcConfig =
+        ReverseConnectConfig.newBuilder()
+            .setConnectInterval(Duration.ofMillis(500))
+            .setConnectTimeout(Duration.ofSeconds(5))
+            .build();
+
+    OpcTcpServerTransportConfig transportConfig = OpcTcpServerTransportConfig.newBuilder().build();
+
+    var manager = new ReverseConnectManager(rcConfig, transportConfig);
+    localServer.setReverseConnectManager(manager);
+    localServer.startup().get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+    // Submit shutdown() from a single-threaded executor to simulate calling
+    // it from an I/O thread. If shutdown() blocks (e.g. via .join()), it
+    // will deadlock or exceed the timeout.
+    ExecutorService singleThread = Executors.newSingleThreadExecutor();
+    try {
+      CompletableFuture<OpcUaServer> shutdownFuture =
+          CompletableFuture.supplyAsync(localServer::shutdown, singleThread).thenCompose(f -> f);
+
+      shutdownFuture.get(10, TimeUnit.SECONDS);
+    } finally {
+      singleThread.shutdownNow();
     }
   }
 
