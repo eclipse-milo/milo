@@ -120,8 +120,9 @@ public class ReverseHelloMessage {
   }
 
   private static void encodeString(String s, ByteBuf buffer) {
-    buffer.writeIntLE(s.length());
-    buffer.writeBytes(s.getBytes(StandardCharsets.UTF_8));
+    byte[] bs = s.getBytes(StandardCharsets.UTF_8);
+    buffer.writeIntLE(bs.length);
+    buffer.writeBytes(bs);
   }
 
   private static String decodeString(ByteBuf buffer, String fieldName) throws UaException {
