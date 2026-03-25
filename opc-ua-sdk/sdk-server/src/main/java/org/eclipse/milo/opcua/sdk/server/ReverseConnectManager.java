@@ -250,15 +250,14 @@ public class ReverseConnectManager {
         fsmsToStop.add(fsm);
       }
 
-      // Remove from secondary index and stop all remaining connections for this client
-      Set<ReverseConnectHandle> handles = handlesByClientUrl.remove(handle.getClientEndpointUrl());
+      // Remove from secondary index for this handle only; do not affect other registrations
+      Set<ReverseConnectHandle> handles = handlesByClientUrl.get(handle.getClientEndpointUrl());
       if (handles != null) {
         handles.remove(handle);
-        for (ReverseConnectHandle sibling : handles) {
-          Fsm<State, Event> siblingFsm = connections.remove(sibling);
-          if (siblingFsm != null) {
-            fsmsToStop.add(siblingFsm);
-          }
+
+        // Clean up the mapping if no handles remain for this client URL
+        if (handles.isEmpty()) {
+          handlesByClientUrl.remove(handle.getClientEndpointUrl(), handles);
         }
       }
     } finally {
