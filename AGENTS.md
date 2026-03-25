@@ -25,7 +25,8 @@ SDK for building OPC UA applications.
 | `mvn -q clean verify`   | Full build with tests and formatting check |
 | `mvn -q spotless:apply` | Fix code formatting issues                 |
 
-For running specific tests and module targeting, see `.claude/docs/testing.md`.
+Before running any tests, read `.claude/docs/testing.md` for module targeting flags and
+test patterns.
 
 ## Additional Resources
 
