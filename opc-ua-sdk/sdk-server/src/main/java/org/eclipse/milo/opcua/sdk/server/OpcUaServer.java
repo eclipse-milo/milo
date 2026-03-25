@@ -155,6 +155,8 @@ public class OpcUaServer extends AbstractServiceHandler {
 
   private final Map<TransportProfile, OpcServerTransport> transports = new ConcurrentHashMap<>();
 
+  private @Nullable ReverseConnectManager reverseConnectManager;
+
   private final EventBus eventBus = new EventBus("server");
   private final EventFactory eventFactory = new EventFactory(this);
   private final EventNotifier eventNotifier = new ServerEventNotifier();
@@ -270,6 +272,30 @@ public class OpcUaServer extends AbstractServiceHandler {
     accessController = new DefaultAccessController(this);
   }
 
+  /**
+   * Set the {@link ReverseConnectManager} for this server.
+   *
+   * <p>Must be called before {@link #startup()}.
+   *
+   * @param manager the {@link ReverseConnectManager} to use.
+   * @throws IllegalStateException if the server is already running.
+   */
+  public void setReverseConnectManager(ReverseConnectManager manager) {
+    if (!boundEndpoints.isEmpty()) {
+      throw new IllegalStateException("server is already started");
+    }
+    this.reverseConnectManager = manager;
+  }
+
+  /**
+   * Get the {@link ReverseConnectManager}, if one has been configured.
+   *
+   * @return the {@link ReverseConnectManager}, or {@code null} if none was set.
+   */
+  public @Nullable ReverseConnectManager getReverseConnectManager() {
+    return reverseConnectManager;
+  }
+
   public CompletableFuture<OpcUaServer> startup() {
     eventFactory.startup();
 
@@ -317,12 +343,20 @@ public class OpcUaServer extends AbstractServiceHandler {
     if (boundEndpoints.isEmpty()) {
       return CompletableFuture.failedFuture(
           new UaException(StatusCodes.Bad_ConfigurationError, "No endpoints bound"));
-    } else {
-      return CompletableFuture.completedFuture(this);
     }
+
+    if (reverseConnectManager != null) {
+      reverseConnectManager.start(applicationContext, config.getApplicationUri());
+    }
+
+    return CompletableFuture.completedFuture(this);
   }
 
   public CompletableFuture<OpcUaServer> shutdown() {
+    if (reverseConnectManager != null) {
+      reverseConnectManager.stop().join();
+    }
+
     transports
         .values()
         .forEach(
@@ -567,6 +601,47 @@ public class OpcUaServer extends AbstractServiceHandler {
    */
   public List<EndpointConfig> getBoundEndpoints() {
     return List.copyOf(boundEndpoints);
+  }
+
+  /**
+   * Register a client for Reverse Connect. The server endpoint URL sent in ReverseHello messages
+   * defaults to the server's primary (non-discovery) endpoint.
+   *
+   * @param clientEndpointUrl the client's listening address.
+   * @return a handle for removing this registration.
+   * @throws IllegalStateException if no {@link ReverseConnectManager} is configured.
+   */
+  public ReverseConnectHandle addReverseConnect(String clientEndpointUrl) {
+    if (reverseConnectManager == null) {
+      throw new IllegalStateException("No ReverseConnectManager configured");
+    }
+    return reverseConnectManager.addReverseConnect(clientEndpointUrl);
+  }
+
+  /**
+   * Register a client for Reverse Connect with an explicit server endpoint URL.
+   *
+   * @param clientEndpointUrl the client's listening address.
+   * @param endpointUrl the server endpoint URL for the ReverseHello.
+   * @return a handle for removing this registration.
+   * @throws IllegalStateException if no {@link ReverseConnectManager} is configured.
+   */
+  public ReverseConnectHandle addReverseConnect(String clientEndpointUrl, String endpointUrl) {
+    if (reverseConnectManager == null) {
+      throw new IllegalStateException("No ReverseConnectManager configured");
+    }
+    return reverseConnectManager.addReverseConnect(clientEndpointUrl, endpointUrl);
+  }
+
+  /**
+   * Remove a Reverse Connect registration.
+   *
+   * @param handle the handle returned by {@link #addReverseConnect}.
+   */
+  public void removeReverseConnect(ReverseConnectHandle handle) {
+    if (reverseConnectManager != null) {
+      reverseConnectManager.removeReverseConnect(handle);
+    }
   }
 
   /**

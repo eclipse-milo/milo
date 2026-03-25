@@ -12,8 +12,10 @@ package org.eclipse.milo.opcua.sdk.client;
 
 import static java.util.Objects.requireNonNullElse;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.SessionInitializer;
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
+import io.netty.channel.Channel;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
@@ -68,6 +70,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MonitoringMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
@@ -163,6 +166,8 @@ import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransport;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransport;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransportConfig;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransportConfigBuilder;
+import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpReverseConnectTransport;
+import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpReverseConnectTransportConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -307,6 +312,97 @@ public class OpcUaClient {
       Thread.currentThread().interrupt();
       throw new UaException(StatusCodes.Bad_UnexpectedError, e);
     }
+  }
+
+  /**
+   * Create an {@link OpcUaClient} that connects via OPC UA Reverse Connect.
+   *
+   * <p>This method starts a listening socket, waits for a server to connect and send a
+   * ReverseHello, performs endpoint discovery over a {@link MessageSecurityMode#None} channel,
+   * closes the discovery channel, and then returns a configured client. When the returned client's
+   * {@link #connect()} method is called, it waits for the server to reconnect and establishes the
+   * real session using the selected endpoint.
+   *
+   * <p>The listening socket remains open between the discovery pass and the real connection to
+   * avoid a race condition where the server reconnects before the client is listening again.
+   *
+   * <p>If the caller already has the server's certificate (e.g., pre-configured or CA-signed), use
+   * the constructor directly with an {@link OpcTcpReverseConnectTransport} to skip the discovery
+   * pass.
+   *
+   * @param reverseConnectConfig the Reverse Connect transport configuration.
+   * @param selectEndpoint a function that selects the {@link EndpointDescription} to connect to
+   *     from the list of endpoints discovered from the server.
+   * @param configureClient a Consumer that receives an {@link OpcUaClientConfigBuilder} that can be
+   *     used to configure the client.
+   * @return a {@link CompletableFuture} that completes with the configured client (not yet
+   *     connected — call {@link #connect()}).
+   */
+  public static CompletableFuture<OpcUaClient> createReverseConnect(
+      OpcTcpReverseConnectTransportConfig reverseConnectConfig,
+      Function<List<EndpointDescription>, Optional<EndpointDescription>> selectEndpoint,
+      Consumer<OpcUaClientConfigBuilder> configureClient) {
+
+    var transport = new OpcTcpReverseConnectTransport(reverseConnectConfig);
+
+    // Pass 1: Discovery with None security.
+    // The endpointUrl is empty because it comes from the server's ReverseHello.
+    EndpointDescription discoveryEndpoint =
+        new EndpointDescription(
+            "",
+            null,
+            null,
+            MessageSecurityMode.None,
+            SecurityPolicy.None.getUri(),
+            null,
+            Stack.TCP_UASC_UABINARY_TRANSPORT_URI,
+            ubyte(0));
+
+    var discoveryClient = new DiscoveryClient(discoveryEndpoint, transport);
+
+    return discoveryClient
+        .connectAsync()
+        .thenCompose(
+            dc ->
+                dc.getEndpoints(
+                    "", new String[0], new String[] {Stack.TCP_UASC_UABINARY_TRANSPORT_URI}))
+        .thenApply(response -> Lists.ofNullable(response.getEndpoints()))
+        .thenApply(
+            endpoints -> {
+              EndpointDescription endpoint =
+                  selectEndpoint
+                      .apply(endpoints)
+                      .orElseThrow(
+                          () ->
+                              new CompletionException(
+                                  new UaException(
+                                      StatusCodes.Bad_ConfigurationError, "no endpoint selected")));
+
+              // Close the discovery channel but keep the listening socket open.
+              // The FSM transitions to Reconnecting and will accept the server's
+              // next inbound connection with the real security settings.
+              Channel channel = transport.getChannelFsm().getChannel();
+              if (channel != null && channel.isActive()) {
+                channel.close();
+              }
+
+              // Pass 2: Build the real client with the selected endpoint.
+              // The same transport is reused so the listening socket stays open.
+              OpcUaClientConfigBuilder builder = OpcUaClientConfig.builder();
+              builder.setEndpoint(endpoint);
+              builder.setDiscoveryEndpoints(endpoints);
+              builder.setSessionEndpointValidationEnabled(false);
+              configureClient.accept(builder);
+
+              return new OpcUaClient(builder.build(), transport);
+            })
+        .whenComplete(
+            (result, ex) -> {
+              if (ex != null) {
+                // Clean up the listening socket on failure.
+                transport.disconnect();
+              }
+            });
   }
 
   private final Logger logger = LoggerFactory.getLogger(getClass());

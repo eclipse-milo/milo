@@ -12,7 +12,7 @@ package org.eclipse.milo.opcua.sdk.client.session;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_CHANNEL_FSM_TRANSITION_LISTENER;
+import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_CHANNEL_STATE_LISTENER;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_CLOSE_FUTURE;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_KEEP_ALIVE_FAILURE_COUNT;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_KEEP_ALIVE_SCHEDULED_FUTURE;
@@ -90,6 +90,7 @@ import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
 import org.eclipse.milo.opcua.stack.core.util.SignatureUtil;
 import org.eclipse.milo.opcua.stack.core.util.Unit;
+import org.eclipse.milo.opcua.stack.transport.client.ChannelStateObservable;
 import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransport;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransport;
 import org.slf4j.Logger;
@@ -631,34 +632,22 @@ public class SessionFsmFactory {
 
               OpcClientTransport transport = client.getTransport();
 
-              if (transport instanceof OpcTcpClientTransport) {
-                ChannelFsm channelFsm = ((OpcTcpClientTransport) transport).getChannelFsm();
+              if (transport instanceof ChannelStateObservable observable) {
+                ChannelStateObservable.TransitionListener listener =
+                    connected -> {
+                      if (!connected) {
+                        try (MDCCloseable ignored =
+                            MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
 
-                ChannelFsm.TransitionListener listener =
-                    new ChannelFsm.TransitionListener() {
-                      @Override
-                      public void onStateTransition(
-                          com.digitalpetri.netty.fsm.State from,
-                          com.digitalpetri.netty.fsm.State to,
-                          com.digitalpetri.netty.fsm.Event via) {
-
-                        if (from == com.digitalpetri.netty.fsm.State.Connected
-                            && to != com.digitalpetri.netty.fsm.State.Connected) {
-
-                          try (MDCCloseable ignored =
-                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
-
-                            LOGGER.debug(
-                                "ChannelFsm transition from={} to={} via={}", from, to, via);
-                          }
-
-                          ctx.fireEvent(new Event.ConnectionLost());
+                          LOGGER.debug("Channel state change: disconnected");
                         }
+
+                        ctx.fireEvent(new Event.ConnectionLost());
                       }
                     };
 
-                channelFsm.addTransitionListener(listener);
-                KEY_CHANNEL_FSM_TRANSITION_LISTENER.set(ctx, listener);
+                observable.addTransitionListener(listener);
+                KEY_CHANNEL_STATE_LISTENER.set(ctx, listener);
               }
 
               client
@@ -684,13 +673,13 @@ public class SessionFsmFactory {
                 scheduledFuture.cancel(false);
               }
 
-              ChannelFsm.TransitionListener listener =
-                  KEY_CHANNEL_FSM_TRANSITION_LISTENER.remove(ctx);
+              ChannelStateObservable.TransitionListener listener =
+                  KEY_CHANNEL_STATE_LISTENER.remove(ctx);
 
               if (listener != null) {
                 OpcClientTransport clientTransport = client.getTransport();
-                if (clientTransport instanceof OpcTcpClientTransport tcpClientTransport) {
-                  tcpClientTransport.getChannelFsm().removeTransitionListener(listener);
+                if (clientTransport instanceof ChannelStateObservable observable) {
+                  observable.removeTransitionListener(listener);
                 }
               }
             });

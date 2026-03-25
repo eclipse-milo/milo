@@ -50,6 +50,8 @@ import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransport;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransport;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransportConfig;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransportConfigBuilder;
+import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpReverseConnectTransport;
+import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpReverseConnectTransportConfig;
 
 public class DiscoveryClient {
 
@@ -327,5 +329,86 @@ public class DiscoveryClient {
         .thenCompose(c -> c.getEndpoints(endpointUrl, new String[0], new String[] {profileUri}))
         .whenComplete((e, ex) -> discoveryClient.disconnectAsync())
         .thenApply(response -> Lists.ofNullable(response.getEndpoints()));
+  }
+
+  /**
+   * Query the GetEndpoints service at a server discovered via Reverse Connect.
+   *
+   * <p>This method creates a listening socket, waits for a server to connect and send a
+   * ReverseHello, calls GetEndpoints over a {@link MessageSecurityMode#None} channel, and then
+   * fully disconnects (closing the listening socket).
+   *
+   * <p>Use this for "discover once, persist, connect later" workflows where the endpoint
+   * information (including the server certificate) is saved and reused across application restarts.
+   * For workflows that discover and connect in one step, use {@link
+   * OpcUaClient#createReverseConnect} instead.
+   *
+   * @param reverseConnectConfig the Reverse Connect transport configuration, including the listen
+   *     address.
+   * @return a List of {@link EndpointDescription}s returned by the GetEndpoints service.
+   * @see OpcUaClient#createReverseConnect
+   */
+  public static CompletableFuture<List<EndpointDescription>> getEndpoints(
+      OpcTcpReverseConnectTransportConfig reverseConnectConfig) {
+
+    var transport = new OpcTcpReverseConnectTransport(reverseConnectConfig);
+
+    EndpointDescription endpoint =
+        new EndpointDescription(
+            "",
+            null,
+            null,
+            MessageSecurityMode.None,
+            SecurityPolicy.None.getUri(),
+            null,
+            Stack.TCP_UASC_UABINARY_TRANSPORT_URI,
+            ubyte(0));
+
+    DiscoveryClient discoveryClient = new DiscoveryClient(endpoint, transport);
+
+    return discoveryClient
+        .connectAsync()
+        .thenCompose(
+            c ->
+                c.getEndpoints(
+                    "", new String[0], new String[] {Stack.TCP_UASC_UABINARY_TRANSPORT_URI}))
+        .whenComplete((e, ex) -> discoveryClient.disconnectAsync())
+        .thenApply(response -> Lists.ofNullable(response.getEndpoints()));
+  }
+
+  /**
+   * Query the FindServers service at a server discovered via Reverse Connect.
+   *
+   * <p>This method creates a listening socket, waits for a server to connect and send a
+   * ReverseHello, calls FindServers over a {@link MessageSecurityMode#None} channel, and then fully
+   * disconnects (closing the listening socket).
+   *
+   * @param reverseConnectConfig the Reverse Connect transport configuration, including the listen
+   *     address.
+   * @return a List of {@link ApplicationDescription}s returned by the FindServers service.
+   */
+  public static CompletableFuture<List<ApplicationDescription>> findServers(
+      OpcTcpReverseConnectTransportConfig reverseConnectConfig) {
+
+    var transport = new OpcTcpReverseConnectTransport(reverseConnectConfig);
+
+    EndpointDescription endpoint =
+        new EndpointDescription(
+            "",
+            null,
+            null,
+            MessageSecurityMode.None,
+            SecurityPolicy.None.getUri(),
+            null,
+            Stack.TCP_UASC_UABINARY_TRANSPORT_URI,
+            ubyte(0));
+
+    DiscoveryClient discoveryClient = new DiscoveryClient(endpoint, transport);
+
+    return discoveryClient
+        .connectAsync()
+        .thenCompose(c -> c.findServers("", new String[0], new String[0]))
+        .whenComplete((e, ex) -> discoveryClient.disconnectAsync())
+        .thenApply(response -> Lists.ofNullable(response.getServers()));
   }
 }
