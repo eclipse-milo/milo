@@ -11,6 +11,7 @@
 package org.eclipse.milo.opcua.stack.core.channel.messages;
 
 import io.netty.buffer.ByteBuf;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 
 public class TcpMessageDecoder {
@@ -20,7 +21,11 @@ public class TcpMessageDecoder {
     char chunkType = (char) buffer.readByte();
     buffer.skipBytes(4); // length
 
-    assert (messageType == MessageType.Hello && chunkType == 'F');
+    if (messageType != MessageType.Hello || chunkType != 'F') {
+      throw new UaException(
+          StatusCodes.Bad_TcpMessageTypeInvalid,
+          "unexpected MessageType/chunkType: " + messageType + "/" + chunkType);
+    }
 
     return HelloMessage.decode(buffer);
   }
@@ -30,7 +35,11 @@ public class TcpMessageDecoder {
     char chunkType = (char) buffer.readByte();
     buffer.skipBytes(4); // length
 
-    assert (messageType == MessageType.Acknowledge && chunkType == 'F');
+    if (messageType != MessageType.Acknowledge || chunkType != 'F') {
+      throw new UaException(
+          StatusCodes.Bad_TcpMessageTypeInvalid,
+          "unexpected MessageType/chunkType: " + messageType + "/" + chunkType);
+    }
 
     return AcknowledgeMessage.decode(buffer);
   }
@@ -40,7 +49,11 @@ public class TcpMessageDecoder {
     char chunkType = (char) buffer.readByte();
     buffer.skipBytes(4); // length
 
-    assert (messageType == MessageType.Error && chunkType == 'F');
+    if (messageType != MessageType.Error || chunkType != 'F') {
+      throw new UaException(
+          StatusCodes.Bad_TcpMessageTypeInvalid,
+          "unexpected MessageType/chunkType: " + messageType + "/" + chunkType);
+    }
 
     return ErrorMessage.decode(buffer);
   }
@@ -50,7 +63,11 @@ public class TcpMessageDecoder {
     char chunkType = (char) buffer.readByte();
     buffer.skipBytes(4); // length
 
-    assert (messageType == MessageType.ReverseHello && chunkType == 'F');
+    if (messageType != MessageType.ReverseHello || chunkType != 'F') {
+      throw new UaException(
+          StatusCodes.Bad_TcpMessageTypeInvalid,
+          "unexpected MessageType/chunkType: " + messageType + "/" + chunkType);
+    }
 
     return ReverseHelloMessage.decode(buffer);
   }
