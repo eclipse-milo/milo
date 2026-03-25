@@ -151,6 +151,80 @@ class ReverseConnectManagerTest {
         countAfterStop, manager.connectionCount(), "no new FSMs should be created after stop");
   }
 
+  @Test
+  void addReverseConnectDuringStartDoesNotOrphan() throws Exception {
+    // Verifies that an addReverseConnect call racing with start() does not
+    // orphan the registration. The synchronized(pendingRegistrations) block
+    // in both methods ensures mutual exclusion.
+    var addDone = new CountDownLatch(1);
+    var startDone = new CountDownLatch(1);
+
+    ServerApplicationContext appContext = Mockito.mock(ServerApplicationContext.class);
+
+    Thread addThread =
+        new Thread(
+            () -> {
+              manager.addReverseConnect(CLIENT_URL, ENDPOINT_URL);
+              addDone.countDown();
+            });
+
+    Thread startThread =
+        new Thread(
+            () -> {
+              manager.start(appContext, SERVER_URI);
+              startDone.countDown();
+            });
+
+    addThread.start();
+    startThread.start();
+
+    assertTrue(addDone.await(5, TimeUnit.SECONDS));
+    assertTrue(startDone.await(5, TimeUnit.SECONDS));
+
+    // The registration must appear in the connections map regardless of
+    // which thread ran first.
+    assertEquals(1, manager.connectionCount(), "registration should not be orphaned");
+  }
+
+  @Test
+  void removeReverseConnectBeforeStartCleansPendingRegistration() {
+    // Add a registration before start, then remove it. When start() runs,
+    // the registration should already be gone from pendingRegistrations.
+    ReverseConnectHandle handle = manager.addReverseConnect(CLIENT_URL, ENDPOINT_URL);
+
+    manager.removeReverseConnect(handle);
+
+    ServerApplicationContext appContext = Mockito.mock(ServerApplicationContext.class);
+    manager.start(appContext, SERVER_URI);
+
+    assertEquals(0, manager.connectionCount(), "removed registration should not be materialized");
+  }
+
+  @Test
+  void restartRebuildsDeadFsms() throws Exception {
+    ServerApplicationContext appContext = Mockito.mock(ServerApplicationContext.class);
+    manager.start(appContext, SERVER_URI);
+
+    // Add a registration — creates and starts one FSM
+    manager.addReverseConnect(CLIENT_URL, ENDPOINT_URL);
+    assertEquals(1, manager.connectionCount());
+
+    // Drain the connect future from the first start cycle
+    assertNotNull(stubTransport.pollConnectFuture());
+
+    // Stop the manager — FSMs transition to Disconnected (terminal)
+    manager.stop();
+
+    // Restart — should rebuild the dead FSMs with fresh ones
+    manager.start(appContext, SERVER_URI);
+
+    assertEquals(
+        1, manager.connectionCount(), "connection count should be preserved after restart");
+
+    // The rebuilt FSM should fire a new connect, proving it is alive
+    assertNotNull(stubTransport.pollConnectFuture());
+  }
+
   /** A stub transport that captures connect calls and lets tests control returned futures. */
   static class StubTransport extends OpcTcpReverseConnectServerTransport {
 
