@@ -34,3 +34,6 @@ CLAUDE.local.md
 
 # External src and other files
 external/
+
+# Claude project MCP configuration
+.mcp.json
