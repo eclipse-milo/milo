@@ -34,6 +34,13 @@ public class TcpMessageEncoder {
         MessageType.Error, (b) -> ErrorMessage.encode(errorMessage, b), Unpooled.buffer());
   }
 
+  public static ByteBuf encode(ReverseHelloMessage reverseHelloMessage) throws UaException {
+    return encode(
+        MessageType.ReverseHello,
+        b -> ReverseHelloMessage.encode(reverseHelloMessage, b),
+        Unpooled.buffer());
+  }
+
   /**
    * Encode a simple UA TCP message.
    *

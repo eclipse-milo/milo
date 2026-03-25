@@ -44,4 +44,14 @@ public class TcpMessageDecoder {
 
     return ErrorMessage.decode(buffer);
   }
+
+  public static ReverseHelloMessage decodeReverseHello(ByteBuf buffer) throws UaException {
+    MessageType messageType = MessageType.fromMediumInt(buffer.readMediumLE());
+    char chunkType = (char) buffer.readByte();
+    buffer.skipBytes(4); // length
+
+    assert (messageType == MessageType.ReverseHello && chunkType == 'F');
+
+    return ReverseHelloMessage.decode(buffer);
+  }
 }

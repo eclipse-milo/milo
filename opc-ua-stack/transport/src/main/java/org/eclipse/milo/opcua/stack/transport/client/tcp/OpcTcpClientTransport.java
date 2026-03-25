@@ -37,6 +37,7 @@ import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -48,6 +49,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.RequestHeader;
 import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.eclipse.milo.opcua.stack.core.util.Unit;
 import org.eclipse.milo.opcua.stack.transport.client.AbstractUascClientTransport;
+import org.eclipse.milo.opcua.stack.transport.client.ChannelStateObservable;
 import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.ClientSecureChannel;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.InboundUascResponseHandler.DelegatingUascResponseHandler;
@@ -56,7 +58,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-public class OpcTcpClientTransport extends AbstractUascClientTransport {
+public class OpcTcpClientTransport extends AbstractUascClientTransport
+    implements ChannelStateObservable {
 
   private static final FsmContext.Key<ClientApplicationContext> KEY_CLIENT_APPLICATION =
       new FsmContext.Key<>("clientApplication", ClientApplicationContext.class);
@@ -70,6 +73,9 @@ public class OpcTcpClientTransport extends AbstractUascClientTransport {
   private final ChannelFsm channelFsm;
 
   private final OpcTcpClientTransportConfig config;
+
+  private final CopyOnWriteArrayList<ChannelStateObservable.TransitionListener> stateListeners =
+      new CopyOnWriteArrayList<>();
 
   public OpcTcpClientTransport(OpcTcpClientTransportConfig config) {
     super(config);
@@ -94,6 +100,17 @@ public class OpcTcpClientTransport extends AbstractUascClientTransport {
     var factory = new ChannelFsmFactory(fsmConfig);
 
     channelFsm = factory.newChannelFsm();
+
+    channelFsm.addTransitionListener(
+        (from, to, via) -> {
+          if (from == com.digitalpetri.netty.fsm.State.Connected
+              && to != com.digitalpetri.netty.fsm.State.Connected) {
+            stateListeners.forEach(l -> l.onConnectionStateChange(false));
+          } else if (from != com.digitalpetri.netty.fsm.State.Connected
+              && to == com.digitalpetri.netty.fsm.State.Connected) {
+            stateListeners.forEach(l -> l.onConnectionStateChange(true));
+          }
+        });
   }
 
   @Override
@@ -120,6 +137,16 @@ public class OpcTcpClientTransport extends AbstractUascClientTransport {
 
   public ChannelFsm getChannelFsm() {
     return channelFsm;
+  }
+
+  @Override
+  public void addTransitionListener(ChannelStateObservable.TransitionListener listener) {
+    stateListeners.add(listener);
+  }
+
+  @Override
+  public void removeTransitionListener(ChannelStateObservable.TransitionListener listener) {
+    stateListeners.remove(listener);
   }
 
   private class ClientChannelActions implements ChannelActions {

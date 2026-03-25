@@ -454,6 +454,9 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
 
       ctx.writeAndFlush(chunkComposite, ctx.voidPromise());
 
+      ctx.pipeline()
+          .fireUserEventTriggered(new SecureChannelOpenedEvent(secureChannel.getChannelId()));
+
       logger.debug("Sent OpenSecureChannelResponse.");
     } catch (MessageEncodeException e) {
       logger.error("Error encoding OpenSecureChannelResponse: {}", e.getMessage(), e);
