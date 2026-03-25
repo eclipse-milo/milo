@@ -226,6 +226,8 @@ Hello. After Hello/Ack, the standard server pipeline (`UascServerAsymmetricHandl
 | Tests | `transport/.../server/tcp/OpcTcpReverseConnectServerTransportTest.java` | Server transport unit test |
 | Tests | `transport/.../server/tcp/ReverseConnectConnectionFsmTest.java` | Server FSM unit test |
 | Tests | `transport/.../server/uasc/UascServerReverseHelloHandlerTest.java` | Server handler unit test |
+| Tests | `sdk-server/.../server/ReverseConnectManagerTest.java` | Manager unit test |
+| Tests | `integration-tests/.../client/ReverseConnectDiscoveryTest.java` | Discovery integration test |
 
 ### 3.2 Base Paths
 
@@ -296,7 +298,7 @@ stateDiagram-v2
 
 | Key | Type | Purpose |
 | --- | --- | --- |
-| `KEY_CF` | `CompletableFuture<Channel>` | Pending connect future; chained across reconnections |
+| `KEY_CF` | `ConnectFuture` | Pending connect future (wraps `CompletableFuture<Channel>`); chained across reconnections |
 | `KEY_CHANNEL` | `Channel` | Current active Netty channel |
 | `KEY_SECURE_CHANNEL` | `ClientSecureChannel` | Current secure channel |
 | `KEY_APPLICATION` | `ClientApplicationContext` | Stored before connect |
@@ -331,12 +333,11 @@ stateDiagram-v2
 Messages written during handshake are buffered and flushed after
 `UascClientMessageHandler` is installed.
 
-**RHE replay detail:** The `ReverseHelloDecoder` on the child channel already consumed
+**RHE dispatch detail:** The `ReverseHelloDecoder` on the child channel already consumed
 and decoded the raw RHE bytes.
-The FSM’s `Handshaking` entry action re-encodes the `ReverseHelloMessage` via
-`TcpMessageEncoder.encode()` and fires it into the pipeline with
-`channel.pipeline().fireChannelRead()` so that `UascClientReverseHelloHandler` receives
-the complete wire-format message it expects.
+The FSM’s `Handshaking` entry action passes the decoded `ReverseHelloMessage` directly
+to `handler.onReverseHello(ctx, rhe)` rather than re-encoding to bytes and dispatching
+through the pipeline, which avoids issues with `ByteToMessageCodec` pipeline dispatch.
 
 ### 4.4 `ChannelStateObservable` Interface
 
@@ -456,9 +457,11 @@ server.addReverseConnect("opc.tcp://client:48060")
 
 // Shutdown:
 OpcUaServer.shutdown()
-  |-- calls manager.stop().join()
-        |-- fires Stop on all FSMs, waits for completion
   |-- unbinds normal endpoints
+  |-- calls manager.stop() (non-blocking)
+        |-- fires Stop on all FSMs
+  |-- tears down namespaces and subscriptions
+  |-- returns future that completes when manager has stopped
 ```
 
 **Idle socket invariant enforcement:**
@@ -486,7 +489,8 @@ public CompletableFuture<Channel> connect(
     ServerApplicationContext applicationContext,
     InetSocketAddress clientAddress,
     String serverUri,
-    String endpointUrl)
+    String endpointUrl,
+    long connectTimeoutMs)
 ```
 
 Creates a Netty `Bootstrap`, installs `UascServerReverseHelloHandler`, and calls
@@ -691,6 +695,7 @@ mvn -q verify -pl opc-ua-sdk/integration-tests -Dtest=ReverseConnectTest
 | `reverseConnectReconnection` | After forced channel closure, session re-establishes automatically via `SessionActivityListener`. |
 | `multipleClientsConnectIndependently` | Two clients on different ports maintain independent sessions with the same server. |
 | `reverseConnectServerUriRejection` | Client with `allowedServerUris` rejects non-matching server; connection times out. |
+| `shutdownCompletesWithoutDeadlock` | Verifies server shutdown completes cleanly without deadlocking the FSM executor. |
 
 **Test setup patterns:**
 
@@ -725,13 +730,19 @@ mvn -q verify -pl opc-ua-stack/transport -Dtest=ReverseConnectConnectionFsmTest
 
 # Server handshake handler
 mvn -q verify -pl opc-ua-stack/transport -Dtest=UascServerReverseHelloHandlerTest
+
+# ReverseConnectManager orchestration
+mvn -q verify -pl opc-ua-sdk/sdk-server -Dtest=ReverseConnectManagerTest
 ```
 
-The transport-level integration test (client listening + server connecting within a
-single JVM):
+The transport-level and discovery integration tests (client listening + server
+connecting within a single JVM):
 
 ```bash
 mvn -q verify -pl opc-ua-sdk/integration-tests -Dtest=OpcTcpReverseConnectTransportTest
+
+# DiscoveryClient reverse connect methods (getEndpoints, findServers)
+mvn -q verify -pl opc-ua-sdk/integration-tests -Dtest=ReverseConnectDiscoveryTest
 ```
 
 ### 8.3 Writing New Tests
