@@ -93,6 +93,8 @@ import org.eclipse.milo.opcua.stack.core.util.Unit;
 import org.eclipse.milo.opcua.stack.transport.client.ChannelStateObservable;
 import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransport;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransport;
+import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpReverseConnectTransport;
+import org.eclipse.milo.opcua.stack.transport.client.tcp.ReverseConnectChannelFsm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -785,15 +787,7 @@ public class SessionFsmFactory {
                             // This is useful if the server has gone offline in an "unclean"
                             // manner to avoid having to wait for the underlying TCP stack's keep
                             // alive to kick in.
-                            OpcClientTransport transport = client.getTransport();
-                            if (transport instanceof OpcTcpClientTransport) {
-                              ChannelFsm channelFsm =
-                                  ((OpcTcpClientTransport) transport).getChannelFsm();
-                              Channel channel = channelFsm.getChannel().getNow(null);
-                              if (channel != null) {
-                                channel.close();
-                              }
-                            }
+                            closeTransportChannel(client.getTransport());
                           } else {
                             try (MDCCloseable ignored =
                                 MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
@@ -1592,6 +1586,31 @@ public class SessionFsmFactory {
         .getTransport()
         .sendRequestMessage(keepAliveRequest)
         .thenApply(ReadResponse.class::cast);
+  }
+
+  /**
+   * Close the underlying Netty channel of the given transport to force a reconnect.
+   *
+   * <p>This handles both forward-connect ({@link OpcTcpClientTransport}) and reverse-connect
+   * ({@link OpcTcpReverseConnectTransport}) transports.
+   *
+   * @param transport the client transport whose channel should be closed.
+   */
+  static void closeTransportChannel(OpcClientTransport transport) {
+    if (transport instanceof OpcTcpClientTransport) {
+      ChannelFsm channelFsm = ((OpcTcpClientTransport) transport).getChannelFsm();
+      Channel channel = channelFsm.getChannel().getNow(null);
+      if (channel != null) {
+        channel.close();
+      }
+    } else if (transport instanceof OpcTcpReverseConnectTransport) {
+      ReverseConnectChannelFsm channelFsm =
+          ((OpcTcpReverseConnectTransport) transport).getChannelFsm();
+      Channel channel = channelFsm.getChannel();
+      if (channel != null) {
+        channel.close();
+      }
+    }
   }
 
   private static ReadRequest createKeepAliveRequest(OpcUaClient client, OpcUaSession session) {
