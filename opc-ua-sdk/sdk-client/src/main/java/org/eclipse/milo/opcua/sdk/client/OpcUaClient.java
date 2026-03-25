@@ -647,7 +647,6 @@ public class OpcUaClient {
   public CompletableFuture<OpcUaClient> disconnectAsync() {
     return sessionFsm
         .closeSession()
-        .orTimeout(2, TimeUnit.SECONDS)
         .exceptionally(ex -> Unit.VALUE)
         .thenCompose(u -> transport.disconnect().thenApply(c -> OpcUaClient.this))
         .exceptionally(ex -> OpcUaClient.this);
