@@ -212,6 +212,12 @@ public class ReverseConnectChannelFsm {
         .via(Event.Disconnect.class)
         .execute(
             ctx -> {
+              ConnectFuture cf = KEY_CF.remove(ctx);
+              if (cf != null && !cf.future.isDone()) {
+                cf.future.completeExceptionally(
+                    new UaException(StatusCodes.Bad_ConnectionClosed, "disconnected"));
+              }
+
               var disconnect = (Event.Disconnect) ctx.event();
               disconnect.future().complete(Unit.VALUE);
             });

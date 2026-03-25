@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.stack.transport.client.tcp;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -24,6 +25,7 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.eclipse.milo.opcua.sdk.server.EndpointConfig;
@@ -217,6 +219,82 @@ class OpcTcpReverseConnectTransportTest {
     } finally {
       server.removeReverseConnect(handle);
       transport.disconnect().get(5, TimeUnit.SECONDS);
+    }
+  }
+
+  @Test
+  void connectReturnsFailedFutureOnBindFailure() throws Exception {
+    // transport1 binds to a random port
+    var transportConfig1 =
+        OpcTcpReverseConnectTransportConfig.newBuilder()
+            .setListenAddress(new InetSocketAddress("localhost", 0))
+            .build();
+    var transport1 = new OpcTcpReverseConnectTransport(transportConfig1);
+    var clientCtx = newClientApplicationContext();
+
+    transport1.connect(clientCtx);
+    int listenPort = getListenPort(transport1);
+
+    try {
+      // transport2 tries to bind to the same port — should fail
+      var transportConfig2 =
+          OpcTcpReverseConnectTransportConfig.newBuilder()
+              .setListenAddress(new InetSocketAddress("localhost", listenPort))
+              .build();
+      var transport2 = new OpcTcpReverseConnectTransport(transportConfig2);
+
+      CompletableFuture<Unit> future2 = transport2.connect(clientCtx);
+
+      assertTrue(future2.isCompletedExceptionally(), "future should be completed exceptionally");
+      assertThrows(ExecutionException.class, () -> future2.get(1, TimeUnit.SECONDS));
+    } finally {
+      transport1.disconnect().get(5, TimeUnit.SECONDS);
+    }
+  }
+
+  @Test
+  void startListeningRecoveryAfterBindFailure() throws Exception {
+    // transport1 binds to a random port
+    var transportConfig1 =
+        OpcTcpReverseConnectTransportConfig.newBuilder()
+            .setListenAddress(new InetSocketAddress("localhost", 0))
+            .build();
+    var transport1 = new OpcTcpReverseConnectTransport(transportConfig1);
+    var clientCtx = newClientApplicationContext();
+
+    transport1.connect(clientCtx);
+    int listenPort = getListenPort(transport1);
+
+    // transport2 tries the same port — bind fails
+    var transportConfig2 =
+        OpcTcpReverseConnectTransportConfig.newBuilder()
+            .setListenAddress(new InetSocketAddress("localhost", listenPort))
+            .build();
+    var transport2 = new OpcTcpReverseConnectTransport(transportConfig2);
+
+    CompletableFuture<Unit> failedFuture = transport2.connect(clientCtx);
+    assertTrue(failedFuture.isCompletedExceptionally());
+
+    // Release the port
+    transport1.disconnect().get(5, TimeUnit.SECONDS);
+
+    // transport2 should recover — serverBootstrap was reset, so bind succeeds
+    CompletableFuture<Unit> retryFuture = transport2.connect(clientCtx);
+
+    // The future should not be immediately failed (bind succeeded)
+    assertFalse(retryFuture.isCompletedExceptionally(), "retry should not fail immediately");
+
+    // Have the server connect inbound to verify the transport is functional
+    ReverseConnectHandle handle =
+        server.addReverseConnect("opc.tcp://localhost:" + listenPort, getServerEndpointUrl());
+
+    try {
+      retryFuture.get(10, TimeUnit.SECONDS);
+      assertNotNull(transport2.getChannelFsm().getChannel());
+      assertTrue(transport2.getChannelFsm().getChannel().isActive());
+    } finally {
+      server.removeReverseConnect(handle);
+      transport2.disconnect().get(5, TimeUnit.SECONDS);
     }
   }
 

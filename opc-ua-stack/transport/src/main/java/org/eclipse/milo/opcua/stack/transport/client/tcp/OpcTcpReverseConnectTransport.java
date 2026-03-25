@@ -101,7 +101,11 @@ public class OpcTcpReverseConnectTransport extends AbstractUascClientTransport
   public CompletableFuture<Unit> connect(ClientApplicationContext applicationContext) {
     channelFsm.setApplicationContext(applicationContext);
 
-    startListening();
+    try {
+      startListening();
+    } catch (Exception e) {
+      return CompletableFuture.failedFuture(e);
+    }
 
     var connect = new ReverseConnectChannelFsm.Event.Connect(new CompletableFuture<>());
     channelFsm.fireEvent(connect);
@@ -182,7 +186,14 @@ public class OpcTcpReverseConnectTransport extends AbstractUascClientTransport
 
     config.getServerBootstrapCustomizer().accept(serverBootstrap);
 
-    serverChannel = serverBootstrap.bind(config.getListenAddress()).syncUninterruptibly().channel();
+    try {
+      serverChannel =
+          serverBootstrap.bind(config.getListenAddress()).syncUninterruptibly().channel();
+    } catch (Exception e) {
+      serverBootstrap = null;
+      serverChannel = null;
+      throw e;
+    }
 
     logger.info("Listening for reverse connections on {}", config.getListenAddress());
   }

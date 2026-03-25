@@ -29,6 +29,7 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -326,6 +327,54 @@ class ReverseConnectChannelFsmTest {
     var rhe = new ReverseHelloMessage(SERVER_URI, ENDPOINT_URL);
     fsm.fireEvent(new Event.ConnectionAccepted(channel2, rhe));
     awaitState(fsm, State.Handshaking);
+  }
+
+  @Test
+  void disconnectFromNotConnectedFailsPendingConnectFuture() throws Exception {
+    var fsm = newFsm();
+    fsm.setApplicationContext(newApplicationContext());
+
+    assertEquals(State.NotConnected, fsm.getState());
+
+    // Connect stores a future chained to KEY_CF
+    var connectFuture = new CompletableFuture<Channel>();
+    fsm.fireEvent(new Event.Connect(connectFuture));
+    Thread.sleep(100);
+    assertFalse(connectFuture.isDone());
+
+    // Disconnect while still in NotConnected should fail the connect future
+    var disconnectFuture = new CompletableFuture<Unit>();
+    fsm.fireEvent(new Event.Disconnect(disconnectFuture));
+    Thread.sleep(100);
+
+    assertTrue(disconnectFuture.isDone());
+    assertEquals(Unit.VALUE, disconnectFuture.get(1, TimeUnit.SECONDS));
+
+    assertTrue(connectFuture.isDone());
+    assertTrue(connectFuture.isCompletedExceptionally());
+    try {
+      connectFuture.get(1, TimeUnit.SECONDS);
+      fail("Expected UaException");
+    } catch (ExecutionException e) {
+      assertTrue(e.getCause() instanceof UaException);
+    }
+  }
+
+  @Test
+  void disconnectFromNotConnectedWithNoConnectFuture() throws Exception {
+    var fsm = newFsm();
+    fsm.setApplicationContext(newApplicationContext());
+
+    assertEquals(State.NotConnected, fsm.getState());
+
+    // Disconnect without a prior Connect — should complete normally
+    var disconnectFuture = new CompletableFuture<Unit>();
+    fsm.fireEvent(new Event.Disconnect(disconnectFuture));
+    Thread.sleep(100);
+
+    assertTrue(disconnectFuture.isDone());
+    assertEquals(Unit.VALUE, disconnectFuture.get(1, TimeUnit.SECONDS));
+    assertEquals(State.NotConnected, fsm.getState());
   }
 
   // -- helpers --
