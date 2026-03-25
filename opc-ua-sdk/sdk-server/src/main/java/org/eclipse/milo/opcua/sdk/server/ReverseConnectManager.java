@@ -17,6 +17,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.locks.ReentrantLock;
 import org.eclipse.milo.opcua.stack.core.Stack;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
@@ -34,6 +35,8 @@ import org.jspecify.annotations.Nullable;
  * targets.
  */
 public class ReverseConnectManager {
+
+  private final ReentrantLock lock = new ReentrantLock();
 
   private final ConcurrentHashMap<ReverseConnectHandle, Fsm<State, Event>> connections =
       new ConcurrentHashMap<>();
@@ -64,9 +67,18 @@ public class ReverseConnectManager {
   public ReverseConnectManager(
       ReverseConnectConfig config, OpcTcpServerTransportConfig transportConfig) {
 
+    this(config, transportConfig, new OpcTcpReverseConnectServerTransport(transportConfig));
+  }
+
+  /** Package-private constructor for testing with a stub transport. */
+  ReverseConnectManager(
+      ReverseConnectConfig config,
+      OpcTcpServerTransportConfig transportConfig,
+      OpcTcpReverseConnectServerTransport transport) {
+
     this.config = config;
     this.transportConfig = transportConfig;
-    this.transport = new OpcTcpReverseConnectServerTransport(transportConfig);
+    this.transport = transport;
   }
 
   /**
@@ -88,22 +100,31 @@ public class ReverseConnectManager {
       pendingRegistrations.clear();
     }
 
-    for (PendingRegistration reg : pending) {
-      String resolvedEndpointUrl =
-          reg.endpointUrl != null ? reg.endpointUrl : resolvePrimaryEndpointUrl();
+    List<Fsm<State, Event>> fsmsToStart;
 
-      // Update the handle with the resolved endpoint URL so callers
-      // see the real value instead of the placeholder empty string.
-      reg.handle.setEndpointUrl(resolvedEndpointUrl);
+    lock.lock();
+    try {
+      for (PendingRegistration reg : pending) {
+        String resolvedEndpointUrl =
+            reg.endpointUrl != null ? reg.endpointUrl : resolvePrimaryEndpointUrl();
 
-      Fsm<State, Event> fsm = createFsm(reg.clientEndpointUrl, resolvedEndpointUrl);
-      connections.put(reg.handle, fsm);
-      handlesByClientUrl
-          .computeIfAbsent(reg.clientEndpointUrl, k -> new CopyOnWriteArraySet<>())
-          .add(reg.handle);
+        // Update the handle with the resolved endpoint URL so callers
+        // see the real value instead of the placeholder empty string.
+        reg.handle.setEndpointUrl(resolvedEndpointUrl);
+
+        Fsm<State, Event> fsm = createFsm(reg.clientEndpointUrl, resolvedEndpointUrl);
+        connections.put(reg.handle, fsm);
+        handlesByClientUrl
+            .computeIfAbsent(reg.clientEndpointUrl, k -> new CopyOnWriteArraySet<>())
+            .add(reg.handle);
+      }
+
+      fsmsToStart = List.copyOf(connections.values());
+    } finally {
+      lock.unlock();
     }
 
-    connections.values().forEach(fsm -> fsm.fireEvent(new Event.Start()));
+    fsmsToStart.forEach(fsm -> fsm.fireEvent(new Event.Start()));
   }
 
   /**
@@ -114,8 +135,17 @@ public class ReverseConnectManager {
   CompletableFuture<Void> stop() {
     running = false;
 
+    List<Fsm<State, Event>> fsmsToStop;
+
+    lock.lock();
+    try {
+      fsmsToStop = List.copyOf(connections.values());
+    } finally {
+      lock.unlock();
+    }
+
     List<CompletableFuture<Void>> stopFutures =
-        connections.values().stream()
+        fsmsToStop.stream()
             .map(
                 fsm -> {
                   var stop = new Event.Stop(new CompletableFuture<>());
@@ -168,10 +198,15 @@ public class ReverseConnectManager {
 
     Fsm<State, Event> fsm = createFsm(clientEndpointUrl, resolvedEndpointUrl);
 
-    connections.put(handle, fsm);
-    handlesByClientUrl
-        .computeIfAbsent(clientEndpointUrl, k -> new CopyOnWriteArraySet<>())
-        .add(handle);
+    lock.lock();
+    try {
+      connections.put(handle, fsm);
+      handlesByClientUrl
+          .computeIfAbsent(clientEndpointUrl, k -> new CopyOnWriteArraySet<>())
+          .add(handle);
+    } finally {
+      lock.unlock();
+    }
 
     fsm.fireEvent(new Event.Start());
 
@@ -185,23 +220,34 @@ public class ReverseConnectManager {
    * @param handle the handle returned by {@link #addReverseConnect}.
    */
   public void removeReverseConnect(ReverseConnectHandle handle) {
-    Fsm<State, Event> fsm = connections.remove(handle);
+    List<Fsm<State, Event>> fsmsToStop = new ArrayList<>();
 
-    if (fsm != null) {
-      var stop = new Event.Stop(new CompletableFuture<>());
-      fsm.fireEvent(stop);
-    }
+    lock.lock();
+    try {
+      Fsm<State, Event> fsm = connections.remove(handle);
+      if (fsm != null) {
+        fsmsToStop.add(fsm);
+      }
 
-    // Remove from secondary index and stop all remaining connections for this client
-    Set<ReverseConnectHandle> handles = handlesByClientUrl.remove(handle.getClientEndpointUrl());
-    if (handles != null) {
-      handles.remove(handle);
-      for (ReverseConnectHandle sibling : handles) {
-        Fsm<State, Event> siblingFsm = connections.remove(sibling);
-        if (siblingFsm != null) {
-          siblingFsm.fireEvent(new Event.Stop(new CompletableFuture<>()));
+      // Remove from secondary index and stop all remaining connections for this client
+      Set<ReverseConnectHandle> handles = handlesByClientUrl.remove(handle.getClientEndpointUrl());
+      if (handles != null) {
+        handles.remove(handle);
+        for (ReverseConnectHandle sibling : handles) {
+          Fsm<State, Event> siblingFsm = connections.remove(sibling);
+          if (siblingFsm != null) {
+            fsmsToStop.add(siblingFsm);
+          }
         }
       }
+    } finally {
+      lock.unlock();
+    }
+
+    // Fire stop events outside the lock to avoid holding the lock during
+    // FSM processing, which could deadlock with ensureIdleConnection.
+    for (Fsm<State, Event> fsm : fsmsToStop) {
+      fsm.fireEvent(new Event.Stop(new CompletableFuture<>()));
     }
   }
 
@@ -212,33 +258,64 @@ public class ReverseConnectManager {
    * @param clientEndpointUrl the client's listening address.
    * @param endpointUrl the server endpoint URL for the ReverseHello.
    */
-  private void ensureIdleConnection(String clientEndpointUrl, String endpointUrl) {
-    Set<ReverseConnectHandle> handles = handlesByClientUrl.get(clientEndpointUrl);
-    if (handles == null) {
-      return;
+  void ensureIdleConnection(String clientEndpointUrl, String endpointUrl) {
+    // Snapshot the FSM list under the lock, then check states outside the lock.
+    // This avoids a lock-ordering deadlock: FSM transition actions run under the
+    // FSM write lock and may call this method, while getState() acquires the FSM
+    // read lock — holding both ReverseConnectManager.lock and an FSM lock in
+    // opposite orders would deadlock.
+    List<Fsm<State, Event>> snapshot;
+
+    lock.lock();
+    try {
+      Set<ReverseConnectHandle> handles = handlesByClientUrl.get(clientEndpointUrl);
+      if (handles == null) {
+        return;
+      }
+      snapshot = handles.stream().map(connections::get).filter(fsm -> fsm != null).toList();
+    } finally {
+      lock.unlock();
     }
 
+    // Check states without holding the lock. getState() acquires the FSM read lock.
     boolean hasIdleConnection =
-        handles.stream()
-            .map(connections::get)
+        snapshot.stream()
             .anyMatch(
                 fsm -> {
-                  if (fsm == null) {
-                    return false;
-                  }
                   State state = fsm.getState();
                   return state != State.Active && state != State.Disconnected;
                 });
 
-    if (!hasIdleConnection && running) {
-      var idleHandle = new ReverseConnectHandle(clientEndpointUrl, endpointUrl);
-      Fsm<State, Event> idleFsm = createFsm(clientEndpointUrl, endpointUrl);
+    if (!hasIdleConnection) {
+      Fsm<State, Event> idleFsm = null;
 
-      connections.put(idleHandle, idleFsm);
-      handles.add(idleHandle);
+      lock.lock();
+      try {
+        Set<ReverseConnectHandle> handles = handlesByClientUrl.get(clientEndpointUrl);
+        if (handles != null && running) {
+          var idleHandle = new ReverseConnectHandle(clientEndpointUrl, endpointUrl);
+          idleFsm = createFsm(clientEndpointUrl, endpointUrl);
+          connections.put(idleHandle, idleFsm);
+          handles.add(idleHandle);
+        }
+      } finally {
+        lock.unlock();
+      }
 
-      idleFsm.fireEvent(new Event.Start());
+      if (idleFsm != null) {
+        idleFsm.fireEvent(new Event.Start());
+      }
     }
+  }
+
+  /** Package-private for testing. */
+  int connectionCount() {
+    return connections.size();
+  }
+
+  /** Package-private for testing. */
+  int handleGroupCount() {
+    return handlesByClientUrl.size();
   }
 
   private Fsm<State, Event> createFsm(String clientEndpointUrl, String resolvedEndpointUrl) {

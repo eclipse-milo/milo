@@ -15,7 +15,6 @@ import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.SessionInitia
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
-import io.netty.channel.Channel;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
@@ -29,6 +28,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -168,6 +168,7 @@ import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransportCo
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransportConfigBuilder;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpReverseConnectTransport;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpReverseConnectTransportConfig;
+import org.eclipse.milo.opcua.stack.transport.client.tcp.ReverseConnectChannelFsm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -379,12 +380,12 @@ public class OpcUaClient {
                                       StatusCodes.Bad_ConfigurationError, "no endpoint selected")));
 
               // Close the discovery channel but keep the listening socket open.
-              // The FSM transitions to Reconnecting and will accept the server's
-              // next inbound connection with the real security settings.
-              Channel channel = transport.getChannelFsm().getChannel();
-              if (channel != null && channel.isActive()) {
-                channel.close();
-              }
+              // The FSM transitions to NotConnected via Disconnect, then on to
+              // Handshaking when the server's next inbound connection arrives
+              // with the real security settings.
+              var disconnect =
+                  new ReverseConnectChannelFsm.Event.Disconnect(new CompletableFuture<>());
+              transport.getChannelFsm().fireEvent(disconnect);
 
               // Pass 2: Build the real client with the selected endpoint.
               // The same transport is reused so the listening socket stays open.
@@ -645,6 +646,7 @@ public class OpcUaClient {
   public CompletableFuture<OpcUaClient> disconnectAsync() {
     return sessionFsm
         .closeSession()
+        .orTimeout(2, TimeUnit.SECONDS)
         .exceptionally(ex -> Unit.VALUE)
         .thenCompose(u -> transport.disconnect().thenApply(c -> OpcUaClient.this))
         .exceptionally(ex -> OpcUaClient.this);

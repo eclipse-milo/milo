@@ -353,10 +353,8 @@ public class OpcUaServer extends AbstractServiceHandler {
   }
 
   public CompletableFuture<OpcUaServer> shutdown() {
-    if (reverseConnectManager != null) {
-      reverseConnectManager.stop().join();
-    }
-
+    // 1. Unbind transports first (mirrors startup order: transports bind before
+    //    reverse connect manager starts, so shutdown unbinds before stopping it).
     transports
         .values()
         .forEach(
@@ -369,6 +367,14 @@ public class OpcUaServer extends AbstractServiceHandler {
             });
     transports.clear();
 
+    // 2. Stop reverse connect manager (non-blocking to avoid deadlock when
+    //    shutdown() is called from an I/O or FSM executor thread).
+    CompletableFuture<Void> rcStopped =
+        reverseConnectManager != null
+            ? reverseConnectManager.stop()
+            : CompletableFuture.completedFuture(null);
+
+    // 3. Tear down namespaces and subscriptions.
     serverNamespace.shutdown();
     opcUaNamespace.shutdown();
 
@@ -376,7 +382,8 @@ public class OpcUaServer extends AbstractServiceHandler {
 
     subscriptions.values().forEach(Subscription::deleteSubscription);
 
-    return CompletableFuture.completedFuture(this);
+    // 4. Return a future that completes when the manager has stopped.
+    return rcStopped.thenApply(v -> this);
   }
 
   public OpcUaServerConfig getConfig() {

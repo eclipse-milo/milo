@@ -15,7 +15,6 @@ import com.digitalpetri.fsm.FsmContext;
 import com.digitalpetri.fsm.dsl.ActionContext;
 import com.digitalpetri.fsm.dsl.FsmBuilder;
 import com.digitalpetri.fsm.dsl.TransitionAction;
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -25,7 +24,6 @@ import java.util.function.Supplier;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.channel.messages.ReverseHelloMessage;
-import org.eclipse.milo.opcua.stack.core.channel.messages.TcpMessageEncoder;
 import org.eclipse.milo.opcua.stack.core.util.Unit;
 import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.ClientSecureChannel;
@@ -45,8 +43,8 @@ public class ReverseConnectChannelFsm {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ReverseConnectChannelFsm.class);
 
-  static final FsmContext.Key<CompletableFuture> KEY_CF =
-      new FsmContext.Key<>("connectFuture", CompletableFuture.class);
+  static final FsmContext.Key<ConnectFuture> KEY_CF =
+      new FsmContext.Key<>("connectFuture", ConnectFuture.class);
 
   static final FsmContext.Key<Channel> KEY_CHANNEL = new FsmContext.Key<>("channel", Channel.class);
 
@@ -64,7 +62,7 @@ public class ReverseConnectChannelFsm {
     Handshaking,
     /** SecureChannel active, ready for service requests. */
     Connected,
-    /** Connection lost, waiting for server to re-connect. */
+    /** Connection lost, waiting for the server to re-connect. */
     Reconnecting
   }
 
@@ -262,34 +260,41 @@ public class ReverseConnectChannelFsm {
 
               var handshakeFuture = new CompletableFuture<ClientSecureChannel>();
 
-              // Install the response handler first, then the reverse hello handler.
-              channel.pipeline().addLast(new DelegatingUascResponseHandler(responseHandler));
+              // This entry action runs on the FSM executor, not on the channel's
+              // event loop. Pipeline operations must execute on the event loop so
+              // that handlerAdded callbacks run synchronously.
+              //
+              // The ReverseHello was already decoded by the ReverseHelloDecoder.
+              // Pass it directly to the handler instead of re-encoding to bytes
+              // and dispatching through the pipeline, which avoids issues with
+              // ByteToMessageCodec pipeline dispatch.
+              channel
+                  .eventLoop()
+                  .execute(
+                      () -> {
+                        channel
+                            .pipeline()
+                            .addLast(new DelegatingUascResponseHandler(responseHandler));
 
-              var handler =
-                  new UascClientReverseHelloHandler(
-                      config,
-                      application,
-                      requestIdSupplier,
-                      handshakeFuture,
-                      config.getAllowedServerUris(),
-                      config.getReverseHelloTimeout());
+                        var handler =
+                            new UascClientReverseHelloHandler(
+                                config,
+                                application,
+                                requestIdSupplier,
+                                handshakeFuture,
+                                config.getAllowedServerUris(),
+                                config.getReverseHelloTimeout());
 
-              channel.pipeline().addLast(handler);
+                        channel.pipeline().addLast(handler);
 
-              // Re-fire the already-decoded RHE message into the pipeline so the
-              // handler can process it. The ReverseHelloDecoder (installed by the
-              // transport on the child channel) already consumed the raw bytes and
-              // decoded the RHE; we re-encode it here so the handler receives the
-              // complete wire-format message it expects.
-              try {
-                ByteBuf rheBuf = TcpMessageEncoder.encode(rhe);
-                channel.pipeline().fireChannelRead(rheBuf);
-              } catch (UaException e) {
-                LOGGER.error("Failed to re-encode ReverseHello for pipeline replay", e);
-                handshakeFuture.completeExceptionally(e);
-                channel.close();
-                return;
-              }
+                        try {
+                          handler.onReverseHello(channel.pipeline().context(handler), rhe);
+                        } catch (Exception e) {
+                          LOGGER.error("Failed to process ReverseHello in handler", e);
+                          handshakeFuture.completeExceptionally(e);
+                          channel.close();
+                        }
+                      });
 
               handshakeFuture.whenComplete(
                   (sc, ex) -> {
@@ -354,10 +359,9 @@ public class ReverseConnectChannelFsm {
               KEY_CHANNEL.set(ctx, sc.getChannel());
               KEY_SECURE_CHANNEL.set(ctx, sc);
 
-              @SuppressWarnings("unchecked")
-              CompletableFuture<Channel> cf = KEY_CF.remove(ctx);
-              if (cf != null && !cf.isDone()) {
-                cf.complete(sc.getChannel());
+              ConnectFuture cf = KEY_CF.remove(ctx);
+              if (cf != null && !cf.future.isDone()) {
+                cf.future.complete(sc.getChannel());
               }
 
               ctx.processShelvedEvents();
@@ -387,14 +391,13 @@ public class ReverseConnectChannelFsm {
               KEY_CHANNEL.remove(ctx);
               KEY_SECURE_CHANNEL.remove(ctx);
 
-              @SuppressWarnings("unchecked")
-              CompletableFuture<Channel> oldCf = KEY_CF.remove(ctx);
-              var newCf = new CompletableFuture<Channel>();
-              if (oldCf != null && !oldCf.isDone()) {
-                newCf.whenComplete(
+              ConnectFuture oldCf = KEY_CF.remove(ctx);
+              var newCf = new ConnectFuture();
+              if (oldCf != null && !oldCf.future.isDone()) {
+                newCf.future.whenComplete(
                     (ch, ex) -> {
-                      if (ex != null) oldCf.completeExceptionally(ex);
-                      else oldCf.complete(ch);
+                      if (ex != null) oldCf.future.completeExceptionally(ex);
+                      else oldCf.future.complete(ch);
                     });
               }
               KEY_CF.set(ctx, newCf);
@@ -419,10 +422,9 @@ public class ReverseConnectChannelFsm {
               }
               KEY_SECURE_CHANNEL.remove(ctx);
 
-              @SuppressWarnings("unchecked")
-              CompletableFuture<Channel> cf = KEY_CF.remove(ctx);
-              if (cf != null && !cf.isDone()) {
-                cf.completeExceptionally(
+              ConnectFuture cf = KEY_CF.remove(ctx);
+              if (cf != null && !cf.future.isDone()) {
+                cf.future.completeExceptionally(
                     new UaException(StatusCodes.Bad_ConnectionClosed, "disconnected"));
               }
 
@@ -451,21 +453,25 @@ public class ReverseConnectChannelFsm {
     chainFuture(ctx, get.future());
   }
 
+  static class ConnectFuture {
+
+    final CompletableFuture<Channel> future = new CompletableFuture<>();
+  }
+
   private static void chainFuture(
       ActionContext<State, Event> ctx, CompletableFuture<Channel> callerFuture) {
 
-    @SuppressWarnings("unchecked")
-    CompletableFuture<Channel> existingCf = KEY_CF.get(ctx);
-    if (existingCf != null && !existingCf.isDone()) {
-      existingCf.whenComplete(
+    ConnectFuture existingCf = KEY_CF.get(ctx);
+    if (existingCf != null && !existingCf.future.isDone()) {
+      existingCf.future.whenComplete(
           (ch, ex) -> {
             if (ex != null) callerFuture.completeExceptionally(ex);
             else callerFuture.complete(ch);
           });
     } else {
-      var cf = new CompletableFuture<Channel>();
+      var cf = new ConnectFuture();
       KEY_CF.set(ctx, cf);
-      cf.whenComplete(
+      cf.future.whenComplete(
           (ch, ex) -> {
             if (ex != null) callerFuture.completeExceptionally(ex);
             else callerFuture.complete(ch);

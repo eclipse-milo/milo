@@ -128,7 +128,11 @@ public class UascClientReverseHelloHandler extends ByteToMessageCodec<UaRequestM
         switch (state) {
           case AWAITING_RHE -> {
             switch (messageType) {
-              case ReverseHello -> onReverseHello(ctx, buffer.readSlice(messageLength));
+              case ReverseHello -> {
+                ReverseHelloMessage rhe =
+                    TcpMessageDecoder.decodeReverseHello(buffer.readSlice(messageLength));
+                onReverseHello(ctx, rhe);
+              }
               case Error -> onError(ctx, buffer.readSlice(messageLength));
               default -> ctx.fireChannelRead(buffer.readRetainedSlice(messageLength));
             }
@@ -164,13 +168,24 @@ public class UascClientReverseHelloHandler extends ByteToMessageCodec<UaRequestM
     ctx.close();
   }
 
-  private void onReverseHello(ChannelHandlerContext ctx, ByteBuf buffer) throws Exception {
+  /**
+   * Process a pre-decoded {@link ReverseHelloMessage}. Called by the FSM when the ReverseHello was
+   * already decoded by the {@code ReverseHelloDecoder} on the accepted channel, avoiding the need
+   * to re-encode and re-decode the message through the pipeline.
+   *
+   * <p>Must be called on the channel's event loop after this handler has been added to the
+   * pipeline.
+   *
+   * @param ctx this handler's {@link ChannelHandlerContext}.
+   * @param reverseHello the decoded ReverseHello message.
+   * @throws Exception if sending the Hello message fails.
+   */
+  public void onReverseHello(ChannelHandlerContext ctx, ReverseHelloMessage reverseHello)
+      throws Exception {
 
     if (timeout != null) {
       timeout.cancel();
     }
-
-    ReverseHelloMessage reverseHello = TcpMessageDecoder.decodeReverseHello(buffer);
 
     logger.debug("Received ReverseHello: {}", reverseHello);
 
