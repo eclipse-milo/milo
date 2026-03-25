@@ -350,6 +350,8 @@ public class ReverseConnectConnectionFsm {
                 sf.cancel(false);
               }
 
+              KEY_RETRY_DELAY_MS.remove(ctx);
+
               ctx.processShelvedEvents();
             });
 

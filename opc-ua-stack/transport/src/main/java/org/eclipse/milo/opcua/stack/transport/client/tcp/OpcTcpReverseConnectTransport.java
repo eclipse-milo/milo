@@ -195,13 +195,13 @@ public class OpcTcpReverseConnectTransport extends AbstractUascClientTransport
       throw e;
     }
 
-    logger.info("Listening for reverse connections on {}", config.getListenAddress());
+    logger.info("Listening for reverse connections on {}", serverChannel.localAddress());
   }
 
   private synchronized void stopListening() {
     if (serverChannel != null && serverChannel.isOpen()) {
       serverChannel.close().syncUninterruptibly();
-      logger.info("Stopped listening on {}", config.getListenAddress());
+      logger.info("Stopped listening on {}", serverChannel.localAddress());
     }
     serverBootstrap = null;
     serverChannel = null;
