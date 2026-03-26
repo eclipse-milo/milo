@@ -39,6 +39,7 @@ public class WiresharkKeyLogWriter implements SecurityKeysListener, Closeable {
   private static final HexFormat HEX = HexFormat.of().withUpperCase();
 
   private final BufferedWriter writer;
+  private boolean closed = false;
 
   /**
    * Create a new writer that appends to {@code keyLogFile}.
@@ -59,6 +60,9 @@ public class WiresharkKeyLogWriter implements SecurityKeysListener, Closeable {
 
   @Override
   public synchronized void onSecurityKeysCreated(SecurityKeyset keyset) {
+    if (closed) {
+      return;
+    }
     try {
       String suffix = keyset.channelId() + "_" + keyset.tokenId();
 
@@ -92,7 +96,10 @@ public class WiresharkKeyLogWriter implements SecurityKeysListener, Closeable {
    * @throws IOException if an I/O error occurs.
    */
   @Override
-  public void close() throws IOException {
-    writer.close();
+  public synchronized void close() throws IOException {
+    if (!closed) {
+      closed = true;
+      writer.close();
+    }
   }
 }
