@@ -123,7 +123,9 @@ public interface OpcUaServerConfig {
    *
    * @return an {@link Optional} containing the {@link SecurityKeysListener}, if configured.
    */
-  Optional<SecurityKeysListener> getSecurityKeysListener();
+  default Optional<SecurityKeysListener> getSecurityKeysListener() {
+    return Optional.empty();
+  }
 
   /**
    * @return the {@link ExecutorService} for this server.
