@@ -28,10 +28,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.eclipse.milo.opcua.sdk.server.EndpointConfig;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig;
+import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfigBuilder;
 import org.eclipse.milo.opcua.sdk.server.identity.AnonymousIdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.CompositeValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.UsernameIdentityValidator;
@@ -60,7 +62,9 @@ import org.slf4j.LoggerFactory;
 
 public class ExampleServer {
 
-  private static final int TCP_BIND_PORT = 12686;
+  private static final int DEFAULT_TCP_BIND_PORT = 12686;
+
+  private final int tcpBindPort;
 
   static {
     // Required for SecurityPolicy.Aes256_Sha256_RsaPss
@@ -90,6 +94,23 @@ public class ExampleServer {
   private final ExampleNamespace exampleNamespace;
 
   public ExampleServer() throws Exception {
+    this(DEFAULT_TCP_BIND_PORT, builder -> {});
+  }
+
+  public ExampleServer(Consumer<OpcUaServerConfigBuilder> configCustomizer) throws Exception {
+    this(DEFAULT_TCP_BIND_PORT, configCustomizer);
+  }
+
+  /**
+   * Creates an ExampleServer with a custom TCP bind port and additional configuration applied to
+   * the {@link OpcUaServerConfigBuilder} before the config is built.
+   *
+   * @param tcpBindPort the TCP port to bind the server on.
+   * @param configCustomizer a consumer that can modify the server config builder.
+   */
+  public ExampleServer(int tcpBindPort, Consumer<OpcUaServerConfigBuilder> configCustomizer)
+      throws Exception {
+    this.tcpBindPort = tcpBindPort;
     Path securityTempDir = Paths.get(System.getProperty("java.io.tmpdir"), "server", "security");
     Files.createDirectories(securityTempDir);
     if (!Files.exists(securityTempDir)) {
@@ -164,7 +185,7 @@ public class ExampleServer {
 
     Set<EndpointConfig> endpointConfigurations = createEndpointConfigs(certificate);
 
-    OpcUaServerConfig serverConfig =
+    var serverConfigBuilder =
         OpcUaServerConfig.builder()
             .setApplicationUri(applicationUri)
             .setApplicationName(LocalizedText.english("Eclipse Milo OPC UA Example Server"))
@@ -181,8 +202,11 @@ public class ExampleServer {
             .setIdentityValidator(
                 new CompositeValidator(
                     AnonymousIdentityValidator.INSTANCE, identityValidator, x509IdentityValidator))
-            .setProductUri("urn:eclipse:milo:example-server")
-            .build();
+            .setProductUri("urn:eclipse:milo:example-server");
+
+    configCustomizer.accept(serverConfigBuilder);
+
+    OpcUaServerConfig serverConfig = serverConfigBuilder.build();
 
     server =
         new OpcUaServer(
@@ -263,10 +287,10 @@ public class ExampleServer {
     return endpointConfigs;
   }
 
-  private static EndpointConfig buildTcpEndpoint(EndpointConfig.Builder base) {
+  private EndpointConfig buildTcpEndpoint(EndpointConfig.Builder base) {
     return base.copy()
         .setTransportProfile(TransportProfile.TCP_UASC_UABINARY)
-        .setBindPort(TCP_BIND_PORT)
+        .setBindPort(tcpBindPort)
         .build();
   }
 
