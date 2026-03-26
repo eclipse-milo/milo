@@ -24,6 +24,7 @@ import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.structured.BuildInfo;
+import org.jspecify.annotations.Nullable;
 
 public class OpcUaServerConfigBuilder {
 
@@ -48,7 +49,7 @@ public class OpcUaServerConfigBuilder {
 
   private RoleMapper roleMapper;
 
-  private SecurityKeysListener securityKeysListener;
+  private @Nullable SecurityKeysListener securityKeysListener;
 
   private ExecutorService executor;
   private ScheduledExecutorService scheduledExecutor;
@@ -104,7 +105,7 @@ public class OpcUaServerConfigBuilder {
   }
 
   public OpcUaServerConfigBuilder setSecurityKeysListener(
-      SecurityKeysListener securityKeysListener) {
+      @Nullable SecurityKeysListener securityKeysListener) {
     this.securityKeysListener = securityKeysListener;
     return this;
   }
@@ -155,7 +156,7 @@ public class OpcUaServerConfigBuilder {
     private final OpcUaServerConfigLimits limits;
     private final CertificateManager certificateManager;
     private final RoleMapper roleMapper;
-    private final SecurityKeysListener securityKeysListener;
+    private final @Nullable SecurityKeysListener securityKeysListener;
     private final ExecutorService executor;
     private final ScheduledExecutorService scheduledExecutorService;
 
@@ -170,7 +171,7 @@ public class OpcUaServerConfigBuilder {
         OpcUaServerConfigLimits limits,
         CertificateManager certificateManager,
         RoleMapper roleMapper,
-        SecurityKeysListener securityKeysListener,
+        @Nullable SecurityKeysListener securityKeysListener,
         ExecutorService executor,
         ScheduledExecutorService scheduledExecutorService) {
 

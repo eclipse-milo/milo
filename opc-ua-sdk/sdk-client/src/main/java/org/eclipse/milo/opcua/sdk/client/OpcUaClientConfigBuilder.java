@@ -25,6 +25,7 @@ import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
+import org.jspecify.annotations.Nullable;
 
 public class OpcUaClientConfigBuilder {
 
@@ -58,7 +59,7 @@ public class OpcUaClientConfigBuilder {
 
   private boolean sessionEndpointValidationEnabled = false;
 
-  private SecurityKeysListener securityKeysListener;
+  private @Nullable SecurityKeysListener securityKeysListener;
 
   public OpcUaClientConfigBuilder setApplicationName(LocalizedText applicationName) {
     this.applicationName = applicationName;
@@ -171,7 +172,7 @@ public class OpcUaClientConfigBuilder {
   }
 
   public OpcUaClientConfigBuilder setSecurityKeysListener(
-      SecurityKeysListener securityKeysListener) {
+      @Nullable SecurityKeysListener securityKeysListener) {
     this.securityKeysListener = securityKeysListener;
     return this;
   }
@@ -232,7 +233,7 @@ public class OpcUaClientConfigBuilder {
     private final UInteger keepAliveInterval;
     private final UInteger keepAliveTimeout;
     private final boolean sessionEndpointValidationEnabled;
-    private final SecurityKeysListener securityKeysListener;
+    private final @Nullable SecurityKeysListener securityKeysListener;
 
     OpcUaClientConfigImpl(
         EndpointDescription endpoint,
@@ -256,7 +257,7 @@ public class OpcUaClientConfigBuilder {
         UInteger keepAliveInterval,
         UInteger keepAliveTimeout,
         boolean sessionEndpointValidationEnabled,
-        SecurityKeysListener securityKeysListener) {
+        @Nullable SecurityKeysListener securityKeysListener) {
 
       this.endpoint = endpoint;
       this.discoveryEndpoints = discoveryEndpoints;
