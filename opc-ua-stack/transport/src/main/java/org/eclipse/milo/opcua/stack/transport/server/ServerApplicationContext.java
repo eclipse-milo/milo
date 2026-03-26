@@ -12,11 +12,13 @@ package org.eclipse.milo.opcua.stack.transport.server;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.milo.opcua.stack.core.channel.SecurityKeysListener;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
 import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
+import org.jspecify.annotations.Nullable;
 
 public interface ServerApplicationContext {
 
@@ -64,4 +66,16 @@ public interface ServerApplicationContext {
    */
   CompletableFuture<UaResponseMessageType> handleServiceRequest(
       ServiceRequestContext context, UaRequestMessageType requestMessage);
+
+  /**
+   * Get the {@link SecurityKeysListener}, if configured.
+   *
+   * <p>When non-null, the listener is invoked after symmetric keys are derived during an
+   * OpenSecureChannel handshake.
+   *
+   * @return the {@link SecurityKeysListener}, or {@code null} if key logging is not enabled.
+   */
+  default @Nullable SecurityKeysListener getSecurityKeysListener() {
+    return null;
+  }
 }

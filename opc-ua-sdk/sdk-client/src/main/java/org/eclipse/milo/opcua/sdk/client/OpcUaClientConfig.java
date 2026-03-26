@@ -19,6 +19,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.eclipse.milo.opcua.sdk.client.identity.IdentityProvider;
 import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
+import org.eclipse.milo.opcua.stack.core.channel.SecurityKeysListener;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -164,6 +165,14 @@ public interface OpcUaClientConfig {
   boolean isSessionEndpointValidationEnabled();
 
   /**
+   * Get the {@link SecurityKeysListener} to be notified when symmetric security keys are derived
+   * during OpenSecureChannel handshakes.
+   *
+   * @return an {@link Optional} containing the {@link SecurityKeysListener}, if configured.
+   */
+  Optional<SecurityKeysListener> getSecurityKeysListener();
+
+  /**
    * @return a new {@link OpcUaClientConfigBuilder}.
    */
   static OpcUaClientConfigBuilder builder() {
@@ -200,6 +209,7 @@ public interface OpcUaClientConfig {
     builder.setKeepAliveTimeout(config.getKeepAliveTimeout());
     builder.setSessionLocaleIds(config.getSessionLocaleIds());
     builder.setSessionEndpointValidationEnabled(config.isSessionEndpointValidationEnabled());
+    config.getSecurityKeysListener().ifPresent(builder::setSecurityKeysListener);
 
     return builder;
   }

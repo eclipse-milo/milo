@@ -21,6 +21,7 @@ import org.eclipse.milo.opcua.sdk.server.identity.IdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.UsernameIdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.X509IdentityValidator;
 import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
+import org.eclipse.milo.opcua.stack.core.channel.SecurityKeysListener;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
@@ -117,6 +118,14 @@ public interface OpcUaServerConfig {
   Optional<RoleMapper> getRoleMapper();
 
   /**
+   * Get the {@link SecurityKeysListener} to be notified when symmetric security keys are derived
+   * during OpenSecureChannel handshakes.
+   *
+   * @return an {@link Optional} containing the {@link SecurityKeysListener}, if configured.
+   */
+  Optional<SecurityKeysListener> getSecurityKeysListener();
+
+  /**
    * @return the {@link ExecutorService} for this server.
    */
   ExecutorService getExecutor();
@@ -155,6 +164,7 @@ public interface OpcUaServerConfig {
     builder.setCertificateManager(config.getCertificateManager());
     builder.setExecutor(config.getExecutor());
     builder.setScheduledExecutor(config.getScheduledExecutorService());
+    config.getSecurityKeysListener().ifPresent(builder::setSecurityKeysListener);
 
     return builder;
   }

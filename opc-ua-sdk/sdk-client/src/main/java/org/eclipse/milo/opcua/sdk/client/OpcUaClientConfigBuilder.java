@@ -20,6 +20,7 @@ import java.util.function.Supplier;
 import org.eclipse.milo.opcua.sdk.client.identity.AnonymousProvider;
 import org.eclipse.milo.opcua.sdk.client.identity.IdentityProvider;
 import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
+import org.eclipse.milo.opcua.stack.core.channel.SecurityKeysListener;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -56,6 +57,8 @@ public class OpcUaClientConfigBuilder {
   private UInteger keepAliveTimeout = uint(5000);
 
   private boolean sessionEndpointValidationEnabled = false;
+
+  private SecurityKeysListener securityKeysListener;
 
   public OpcUaClientConfigBuilder setApplicationName(LocalizedText applicationName) {
     this.applicationName = applicationName;
@@ -167,6 +170,12 @@ public class OpcUaClientConfigBuilder {
     return this;
   }
 
+  public OpcUaClientConfigBuilder setSecurityKeysListener(
+      SecurityKeysListener securityKeysListener) {
+    this.securityKeysListener = securityKeysListener;
+    return this;
+  }
+
   public OpcUaClientConfig build() {
     if (sessionName == null) {
       sessionName =
@@ -195,7 +204,8 @@ public class OpcUaClientConfigBuilder {
         keepAliveFailuresAllowed,
         keepAliveInterval,
         keepAliveTimeout,
-        sessionEndpointValidationEnabled);
+        sessionEndpointValidationEnabled,
+        securityKeysListener);
   }
 
   static class OpcUaClientConfigImpl implements OpcUaClientConfig {
@@ -222,6 +232,7 @@ public class OpcUaClientConfigBuilder {
     private final UInteger keepAliveInterval;
     private final UInteger keepAliveTimeout;
     private final boolean sessionEndpointValidationEnabled;
+    private final SecurityKeysListener securityKeysListener;
 
     OpcUaClientConfigImpl(
         EndpointDescription endpoint,
@@ -244,7 +255,8 @@ public class OpcUaClientConfigBuilder {
         UInteger keepAliveFailuresAllowed,
         UInteger keepAliveInterval,
         UInteger keepAliveTimeout,
-        boolean sessionEndpointValidationEnabled) {
+        boolean sessionEndpointValidationEnabled,
+        SecurityKeysListener securityKeysListener) {
 
       this.endpoint = endpoint;
       this.discoveryEndpoints = discoveryEndpoints;
@@ -267,6 +279,7 @@ public class OpcUaClientConfigBuilder {
       this.keepAliveInterval = keepAliveInterval;
       this.keepAliveTimeout = keepAliveTimeout;
       this.sessionEndpointValidationEnabled = sessionEndpointValidationEnabled;
+      this.securityKeysListener = securityKeysListener;
     }
 
     @Override
@@ -372,6 +385,11 @@ public class OpcUaClientConfigBuilder {
     @Override
     public boolean isSessionEndpointValidationEnabled() {
       return sessionEndpointValidationEnabled;
+    }
+
+    @Override
+    public Optional<SecurityKeysListener> getSecurityKeysListener() {
+      return Optional.ofNullable(securityKeysListener);
     }
   }
 }

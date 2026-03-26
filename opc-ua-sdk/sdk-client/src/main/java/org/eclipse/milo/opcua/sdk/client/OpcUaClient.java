@@ -49,6 +49,7 @@ import org.eclipse.milo.opcua.sdk.core.typetree.ObjectTypeTree;
 import org.eclipse.milo.opcua.sdk.core.typetree.VariableTypeTree;
 import org.eclipse.milo.opcua.stack.core.*;
 import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
+import org.eclipse.milo.opcua.stack.core.channel.SecurityKeysListener;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingManager;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingManager;
@@ -163,6 +164,7 @@ import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransport;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransport;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransportConfig;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransportConfigBuilder;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -422,6 +424,11 @@ public class OpcUaClient {
           @Override
           public UInteger getRequestTimeout() {
             return config.getRequestTimeout();
+          }
+
+          @Override
+          public @Nullable SecurityKeysListener getSecurityKeysListener() {
+            return config.getSecurityKeysListener().orElse(null);
           }
         };
 

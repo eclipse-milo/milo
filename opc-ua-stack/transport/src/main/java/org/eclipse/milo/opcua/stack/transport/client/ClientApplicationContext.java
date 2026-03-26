@@ -13,10 +13,12 @@ package org.eclipse.milo.opcua.stack.transport.client;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.util.Optional;
+import org.eclipse.milo.opcua.stack.core.channel.SecurityKeysListener;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
+import org.jspecify.annotations.Nullable;
 
 public interface ClientApplicationContext {
 
@@ -74,4 +76,16 @@ public interface ClientApplicationContext {
    * @return the client request timeout to use when opening or renewing a secure channel.
    */
   UInteger getRequestTimeout();
+
+  /**
+   * Get the {@link SecurityKeysListener}, if configured.
+   *
+   * <p>When non-null, the listener is invoked after symmetric keys are derived during an
+   * OpenSecureChannel handshake.
+   *
+   * @return the {@link SecurityKeysListener}, or {@code null} if key logging is not enabled.
+   */
+  default @Nullable SecurityKeysListener getSecurityKeysListener() {
+    return null;
+  }
 }

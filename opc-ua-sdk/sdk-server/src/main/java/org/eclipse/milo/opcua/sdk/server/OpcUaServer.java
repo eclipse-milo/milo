@@ -64,6 +64,7 @@ import org.eclipse.milo.opcua.stack.core.Stack;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
+import org.eclipse.milo.opcua.stack.core.channel.SecurityKeysListener;
 import org.eclipse.milo.opcua.stack.core.channel.messages.ErrorMessage;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingManager;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
@@ -601,6 +602,11 @@ public class OpcUaServer extends AbstractServiceHandler {
     @Override
     public Long getNextSecureChannelId() {
       return secureChannelIds.getAndIncrement();
+    }
+
+    @Override
+    public @Nullable SecurityKeysListener getSecurityKeysListener() {
+      return config.getSecurityKeysListener().orElse(null);
     }
 
     @Override

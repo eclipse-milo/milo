@@ -19,6 +19,7 @@ import org.eclipse.milo.opcua.sdk.server.identity.AnonymousIdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.IdentityValidator;
 import org.eclipse.milo.opcua.stack.core.Stack;
 import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
+import org.eclipse.milo.opcua.stack.core.channel.SecurityKeysListener;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
@@ -46,6 +47,8 @@ public class OpcUaServerConfigBuilder {
   private CertificateManager certificateManager;
 
   private RoleMapper roleMapper;
+
+  private SecurityKeysListener securityKeysListener;
 
   private ExecutorService executor;
   private ScheduledExecutorService scheduledExecutor;
@@ -100,6 +103,12 @@ public class OpcUaServerConfigBuilder {
     return this;
   }
 
+  public OpcUaServerConfigBuilder setSecurityKeysListener(
+      SecurityKeysListener securityKeysListener) {
+    this.securityKeysListener = securityKeysListener;
+    return this;
+  }
+
   public OpcUaServerConfigBuilder setExecutor(ExecutorService executor) {
     this.executor = executor;
     return this;
@@ -129,6 +138,7 @@ public class OpcUaServerConfigBuilder {
         limits,
         certificateManager,
         roleMapper,
+        securityKeysListener,
         executor,
         scheduledExecutor);
   }
@@ -145,6 +155,7 @@ public class OpcUaServerConfigBuilder {
     private final OpcUaServerConfigLimits limits;
     private final CertificateManager certificateManager;
     private final RoleMapper roleMapper;
+    private final SecurityKeysListener securityKeysListener;
     private final ExecutorService executor;
     private final ScheduledExecutorService scheduledExecutorService;
 
@@ -159,6 +170,7 @@ public class OpcUaServerConfigBuilder {
         OpcUaServerConfigLimits limits,
         CertificateManager certificateManager,
         RoleMapper roleMapper,
+        SecurityKeysListener securityKeysListener,
         ExecutorService executor,
         ScheduledExecutorService scheduledExecutorService) {
 
@@ -172,6 +184,7 @@ public class OpcUaServerConfigBuilder {
       this.limits = limits;
       this.certificateManager = certificateManager;
       this.roleMapper = roleMapper;
+      this.securityKeysListener = securityKeysListener;
       this.executor = executor;
       this.scheduledExecutorService = scheduledExecutorService;
     }
@@ -224,6 +237,11 @@ public class OpcUaServerConfigBuilder {
     @Override
     public Optional<RoleMapper> getRoleMapper() {
       return Optional.ofNullable(roleMapper);
+    }
+
+    @Override
+    public Optional<SecurityKeysListener> getSecurityKeysListener() {
+      return Optional.ofNullable(securityKeysListener);
     }
 
     @Override
