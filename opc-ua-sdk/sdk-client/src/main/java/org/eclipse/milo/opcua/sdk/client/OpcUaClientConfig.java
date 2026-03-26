@@ -170,7 +170,9 @@ public interface OpcUaClientConfig {
    *
    * @return an {@link Optional} containing the {@link SecurityKeysListener}, if configured.
    */
-  Optional<SecurityKeysListener> getSecurityKeysListener();
+  default Optional<SecurityKeysListener> getSecurityKeysListener() {
+    return Optional.empty();
+  }
 
   /**
    * @return a new {@link OpcUaClientConfigBuilder}.
