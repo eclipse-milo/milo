@@ -17,6 +17,7 @@ import com.digitalpetri.fsm.dsl.FsmBuilder;
 import com.digitalpetri.fsm.dsl.TransitionAction;
 import io.netty.channel.Channel;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
@@ -28,6 +29,7 @@ import org.eclipse.milo.opcua.stack.core.util.Unit;
 import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.ClientSecureChannel;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.InboundUascResponseHandler.DelegatingUascResponseHandler;
+import org.eclipse.milo.opcua.stack.transport.client.uasc.UascClientConfig;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.UascClientReverseHelloHandler;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.UascResponseHandler;
 import org.slf4j.Logger;
@@ -153,16 +155,27 @@ public class ReverseConnectChannelFsm {
   }
 
   /**
+   * Configuration parameters needed by the FSM for handshake setup. Decouples the FSM factory from
+   * a specific transport config type so that both transport variants can construct FSM instances.
+   *
+   * @param uascConfig the UASC client config (acknowledge timeout, channel lifetime, wheel timer).
+   * @param allowedServerUris the set of allowed server URIs for the ReverseHello handler.
+   * @param reverseHelloTimeout the timeout in ms for the ReverseHello handshake.
+   */
+  public record ChannelFsmConfig(
+      UascClientConfig uascConfig, Set<String> allowedServerUris, long reverseHelloTimeout) {}
+
+  /**
    * Create a new {@link ReverseConnectChannelFsm}.
    *
-   * @param config the Reverse Connect transport config.
+   * @param config the FSM configuration parameters.
    * @param responseHandler the response handler for delegating UASC responses.
    * @param requestIdSupplier supplier for UASC request IDs.
    * @param executor the executor for FSM event processing.
    * @return a new FSM in the {@link State#NotConnected} state.
    */
-  static ReverseConnectChannelFsm create(
-      OpcTcpReverseConnectTransportConfig config,
+  public static ReverseConnectChannelFsm create(
+      ChannelFsmConfig config,
       UascResponseHandler responseHandler,
       Supplier<Long> requestIdSupplier,
       Executor executor) {
@@ -229,7 +242,7 @@ public class ReverseConnectChannelFsm {
 
   private static void configureHandshakingState(
       FsmBuilder<State, Event> fb,
-      OpcTcpReverseConnectTransportConfig config,
+      ChannelFsmConfig config,
       UascResponseHandler responseHandler,
       Supplier<Long> requestIdSupplier) {
 
@@ -300,12 +313,12 @@ public class ReverseConnectChannelFsm {
 
                         var handler =
                             new UascClientReverseHelloHandler(
-                                config,
+                                config.uascConfig(),
                                 application,
                                 requestIdSupplier,
                                 handshakeFuture,
-                                config.getAllowedServerUris(),
-                                config.getReverseHelloTimeout());
+                                config.allowedServerUris(),
+                                config.reverseHelloTimeout());
 
                         channel.pipeline().addLast(handler);
 

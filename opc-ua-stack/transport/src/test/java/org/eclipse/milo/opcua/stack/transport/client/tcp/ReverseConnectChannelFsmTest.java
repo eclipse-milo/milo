@@ -14,6 +14,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -22,7 +23,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.HashedWheelTimer;
-import java.net.InetSocketAddress;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
@@ -356,7 +356,7 @@ class ReverseConnectChannelFsmTest {
       connectFuture.get(1, TimeUnit.SECONDS);
       fail("Expected UaException");
     } catch (ExecutionException e) {
-      assertTrue(e.getCause() instanceof UaException);
+      assertInstanceOf(UaException.class, e.getCause());
     }
   }
 
@@ -380,14 +380,19 @@ class ReverseConnectChannelFsmTest {
   // -- helpers --
 
   private ReverseConnectChannelFsm newFsm() {
-    var config =
-        OpcTcpReverseConnectTransportConfig.newBuilder()
-            .setListenAddress(new InetSocketAddress("localhost", 0))
+    var transportConfig =
+        OpcTcpMultiplexedReverseConnectTransportConfig.newBuilder()
             .setWheelTimer(wheelTimer)
             .setExecutor(executor)
             .setScheduledExecutor(scheduledExecutor)
             .setEventLoop(eventLoop)
             .build();
+
+    var fsmConfig =
+        new ReverseConnectChannelFsm.ChannelFsmConfig(
+            transportConfig,
+            transportConfig.getAllowedServerUris(),
+            transportConfig.getReverseHelloTimeout());
 
     UascResponseHandler responseHandler =
         new UascResponseHandler() {
@@ -408,7 +413,7 @@ class ReverseConnectChannelFsmTest {
         };
 
     return ReverseConnectChannelFsm.create(
-        config, responseHandler, requestId::getAndIncrement, executor);
+        fsmConfig, responseHandler, requestId::getAndIncrement, executor);
   }
 
   private void reachConnected(ReverseConnectChannelFsm fsm, EmbeddedChannel channel)

@@ -70,9 +70,14 @@ public class OpcTcpReverseConnectTransport extends AbstractUascClientTransport
     super(config);
 
     this.config = config;
+
+    var fsmConfig =
+        new ReverseConnectChannelFsm.ChannelFsmConfig(
+            config, config.getAllowedServerUris(), config.getReverseHelloTimeout());
+
     this.channelFsm =
         ReverseConnectChannelFsm.create(
-            config, this, requestId::getAndIncrement, config.getExecutor());
+            fsmConfig, this, requestId::getAndIncrement, config.getExecutor());
 
     channelFsm.addTransitionListener(
         (from, to) -> {
