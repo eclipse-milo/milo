@@ -291,7 +291,13 @@ public class ReverseConnectChannelFsm {
               ReverseHelloMessage rhe = event.reverseHello();
               ClientApplicationContext application = KEY_APPLICATION.get(ctx);
 
-              KEY_CHANNEL.set(ctx, channel);
+              // Don't set KEY_CHANNEL here — the raw TCP channel doesn't have
+              // the UASC message handler pipeline yet. Setting it here allows
+              // getChannel() to return a partially initialized channel via its
+              // fast path, causing write failures and retry storms that widen
+              // the window for secure-channel-id races during reconnection.
+              // KEY_CHANNEL is set in the Connected entry action after the
+              // handshake completes and the pipeline is fully initialized.
 
               var handshakeFuture = new CompletableFuture<ClientSecureChannel>();
 

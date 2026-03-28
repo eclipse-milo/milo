@@ -24,7 +24,6 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.eclipse.milo.opcua.sdk.server.EndpointConfig;
@@ -93,19 +92,12 @@ public final class TestServer {
   public record TestIdentityCertificate(X509Certificate certificate, KeyPair keyPair) {}
 
   public static TestServer create() throws Exception {
-    int port = new Random().nextInt(65535 - 10000) + 10000;
-
-    try {
-      ServerSocket ss = new ServerSocket();
-      InetSocketAddress isa = new InetSocketAddress(InetAddress.getLocalHost(), port);
-      ss.bind(isa);
-      ss.close();
-
-      return create(port);
-    } catch (Throwable t) {
-      t.printStackTrace(System.err);
-      return create();
+    int port;
+    try (ServerSocket ss = new ServerSocket()) {
+      ss.bind(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0));
+      port = ss.getLocalPort();
     }
+    return create(port);
   }
 
   public static TestServer create(int port) throws Exception {
