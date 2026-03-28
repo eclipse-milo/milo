@@ -2,8 +2,9 @@
 
 Milo can export the symmetric encryption keys derived during OPC UA SecureChannel
 handshakes in a format that Wireshark 4.4+ understands, enabling offline decryption of
-encrypted OPC UA traffic. The feature is disabled by default and must be explicitly
-enabled by configuring a `SecurityKeysListener` on the client or server.
+encrypted OPC UA traffic.
+The feature is disabled by default and must be explicitly enabled by configuring a
+`SecurityKeysListener` on the client or server.
 
 * * *
 
@@ -24,27 +25,29 @@ Debugging encrypted OPC UA traffic normally requires running with
 Wireshark 4.4 introduced support for decrypting OPC UA Secure Conversation messages when
 given the ephemeral symmetric keys from the `OpenSecureChannel` handshake.
 
-This feature adds a listener-based callback that fires after every key derivation, plus a
-built-in file writer (`WiresharkKeyLogWriter`) that produces key log files Wireshark can
-consume directly. The listener is generic — applications can implement
-`SecurityKeysListener` to route keys anywhere (logging framework, remote service, etc.),
-but the common case is writing to a file and loading it into Wireshark via
-**Edit > Preferences > Protocols > OPC UA > Key log file**.
+This feature adds a listener-based callback that fires after every key derivation, plus
+a built-in file writer (`WiresharkKeyLogWriter`) that produces key log files Wireshark
+can consume directly.
+The listener is generic — applications can implement `SecurityKeysListener` to route
+keys anywhere (logging framework, remote service, etc.), but the common case is writing
+to a file and loading it into Wireshark via **Edit > Preferences > Protocols > OPC UA >
+Key log file**.
 
-Both the client and server SDK support the feature. Each side sees its own key derivation
-event, so a key log file from either the client or the server is sufficient for
-Wireshark to decrypt traffic in both directions.
+Both the client and server SDK support the feature.
+Each side sees its own key derivation event, so a key log file from either the client or
+the server is sufficient for Wireshark to decrypt traffic in both directions.
 
 * * *
 
 ## How It Works
 
-Key derivation happens at two points in the codebase — one client-side, one server-side —
-both immediately after `ChannelSecurity.generateKeyPair()` returns. When a
-`SecurityKeysListener` is configured, the transport handler constructs a `SecurityKeyset`
-value object from the derived key material and invokes the listener synchronously on the
-Netty event loop thread. If no listener is configured, the code path is a no-op. If the
-security policy is `None`, no keys are derived and the listener is never invoked.
+Key derivation happens at two points in the codebase — one client-side, one server-side
+— both immediately after `ChannelSecurity.generateKeyPair()` returns.
+When a `SecurityKeysListener` is configured, the transport handler constructs a
+`SecurityKeyset` value object from the derived key material and invokes the listener
+synchronously on the Netty event loop thread.
+If no listener is configured, the code path is a no-op.
+If the security policy is `None`, no keys are derived and the listener is never invoked.
 
 ```mermaid
 sequenceDiagram
@@ -64,14 +67,16 @@ sequenceDiagram
 ```
 
 Channel renewals produce new keysets with the same channel ID but a new token ID. Each
-renewal triggers another listener invocation, and `WiresharkKeyLogWriter` appends the new
-entry to the same file. Wireshark matches entries by `(channelId, tokenId)` so both
-initial and renewed keys are used for the appropriate message ranges.
+renewal triggers another listener invocation, and `WiresharkKeyLogWriter` appends the
+new entry to the same file.
+Wireshark matches entries by `(channelId, tokenId)` so both initial and renewed keys are
+used for the appropriate message ranges.
 
 ### Key Log File Format
 
-Each keyset produces six lines. The suffix `<channelId>_<tokenId>` identifies the
-SecureChannel and security token the keys belong to:
+Each keyset produces six lines.
+The suffix `<channelId>_<tokenId>` identifies the SecureChannel and security token the
+keys belong to:
 
 ```
 client_iv_<channelId>_<tokenId>: <HEX>
@@ -148,8 +153,8 @@ writer.close();
 4. Set **Key log file** to the path of the key log file.
 5. Encrypted OPC UA messages are now decrypted in the packet list.
 
-A key log file from either the client or the server is sufficient — both contain the same
-symmetric key material for both directions.
+A key log file from either the client or the server is sufficient — both contain the
+same symmetric key material for both directions.
 
 ### Custom Listener
 
@@ -170,8 +175,8 @@ OpcUaClientConfig config = OpcUaClientConfig.builder()
     .build();
 ```
 
-The interface is a single-method interface and is lambda-compatible. Implementations must
-be thread-safe — multiple channels may derive keys concurrently.
+The interface is a single-method interface and is lambda-compatible.
+Implementations must be thread-safe — multiple channels may derive keys concurrently.
 
 * * *
 
@@ -180,28 +185,32 @@ be thread-safe — multiple channels may derive keys concurrently.
 ### Signing keys are excluded from the keyset
 
 `SecurityKeyset` carries encryption keys, IVs, and the signature size, but not the
-signing keys themselves. Wireshark does not need signing keys for decryption — it only
-needs the signature length to know how many trailing bytes to strip before decrypting.
+signing keys themselves.
+Wireshark does not need signing keys for decryption — it only needs the signature length
+to know how many trailing bytes to strip before decrypting.
 Omitting signing keys limits the exposure if a key log file is accidentally leaked or
 left on disk.
 
 ### Listener is invoked synchronously on the event loop
 
 The listener callback runs synchronously on the Netty event loop thread, immediately
-after key derivation and before the first encrypted message is sent. This guarantees the
-key log entry is written before any traffic that uses those keys, which is important
-because Wireshark needs the keys to decrypt the corresponding messages. The built-in
-`WiresharkKeyLogWriter` uses a buffered file append that completes in microseconds, so
-event loop latency is negligible. If a custom listener performs slow I/O, it should
-dispatch to a separate executor internally.
+after key derivation and before the first encrypted message is sent.
+This guarantees the key log entry is written before any traffic that uses those keys,
+which is important because Wireshark needs the keys to decrypt the corresponding
+messages.
+The built-in `WiresharkKeyLogWriter` uses a buffered file append that completes
+in microseconds, so event loop latency is negligible.
+If a custom listener performs slow I/O, it should dispatch to a separate executor
+internally.
 
 ### SecurityKeyset uses defensive copying for byte arrays
 
 The `SecurityKeyset` record clones all `byte[]` fields in both the compact constructor
-and the accessor methods. This ensures the keyset is truly immutable — callers cannot
-corrupt it by modifying the original arrays or the returned copies. The cost is minimal
-since key arrays are small (16-32 bytes) and key derivation happens infrequently (once
-per channel lifetime, plus renewals).
+and the accessor methods.
+This ensures the keyset is truly immutable — callers cannot corrupt it by modifying the
+original arrays or the returned copies.
+The cost is minimal since key arrays are small (16-32 bytes) and key derivation happens
+infrequently (once per channel lifetime, plus renewals).
 
 * * *
 
@@ -223,8 +232,8 @@ Key test scenarios:
   large channel ID, confirming field names, hex formatting, and decimal signature size.
 - **Append mode** — writes two keysets (same channel, different tokens) and verifies 12
   lines with correct token ID ordering.
-- **Thread safety** — 20 concurrent threads each write a keyset and the test verifies
-  no interleaved lines (every 6-line group has the correct field order).
+- **Thread safety** — 20 concurrent threads each write a keyset and the test verifies no
+  interleaved lines (every 6-line group has the correct field order).
 - **Defensive copy on construction** — mutates the original `byte[]` arrays after
   constructing a `SecurityKeyset` and verifies the record retains the original values.
 - **Defensive copy on accessor return** — mutates the arrays returned by accessors and
