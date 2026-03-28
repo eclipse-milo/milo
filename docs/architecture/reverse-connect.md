@@ -75,13 +75,13 @@ The client validates the `ServerUri` against a whitelist (if configured) and use
 | Concept | Owner | Purpose |
 | --- | --- | --- |
 | **Client Endpoint URL** (`opc.tcp://client:port`) | Client | TCP address the client listens on; configured in the server |
-| **ServerUri** (in RHE) | Server | Server's `ApplicationUri`; used for identity/whitelist filtering |
-| **EndpointUrl** (in RHE) | Server | Server's OPC UA endpoint URL; echoed by client in Hello |
+| **ServerUri** (in RHE) | Server | Server’s `ApplicationUri`; used for identity/whitelist filtering |
+| **EndpointUrl** (in RHE) | Server | Server’s OPC UA endpoint URL; echoed by client in Hello |
 
 ### 1.4 Idle Socket Invariant
 
-The spec requires: *"Servers shall maintain at least one open socket without an active
-Session with each Client it is configured to connect to."*
+The spec requires: *“Servers shall maintain at least one open socket without an active
+Session with each Client it is configured to connect to.”*
 
 When a connection becomes active (SecureChannel opened), the server must immediately
 open a new idle connection.
@@ -132,7 +132,7 @@ Unlike `createReverseConnect()`, the listening socket is not kept open.
 
 ## 2. Architecture Overview
 
-The implementation spans three layers matching Milo's existing architecture.
+The implementation spans three layers matching Milo’s existing architecture.
 Both sides share the protocol layer (`ReverseHelloMessage`, `MessageType.RHE`,
 `TcpMessageEncoder`, `TcpMessageDecoder` in `stack-core`).
 
@@ -146,8 +146,9 @@ Milo provides two client-side transport models for Reverse Connect:
 | **Multiplexed** | `OpcTcpMultiplexedReverseConnectTransport` | Shared via `MultiplexedReverseConnectListener` | Multiple servers on one port; on-demand client creation |
 
 Both models reuse the same `ReverseConnectChannelFsm` for channel lifecycle management
-and `UascClientReverseHelloHandler` for the handshake. The FSM is parameterized via a
-`ChannelFsmConfig` record that decouples it from the specific transport type.
+and `UascClientReverseHelloHandler` for the handshake.
+The FSM is parameterized via a `ChannelFsmConfig` record that decouples it from the
+specific transport type.
 
 ### 2.2 1-1 Client Architecture
 
@@ -202,10 +203,12 @@ flowchart TD
 ```
 
 The `MultiplexedReverseConnectListener` (SDK layer) owns a single `ServerBootstrap` and
-decodes ReverseHello messages. It dispatches each accepted channel to the correct
-per-server `OpcTcpMultiplexedReverseConnectTransport` (transport layer) via the
-`ChannelConsumerRegistry` interface. For unknown servers, an optional `EndpointResolver`
-can perform on-demand endpoint discovery and client creation.
+decodes ReverseHello messages.
+It dispatches each accepted channel to the correct per-server
+`OpcTcpMultiplexedReverseConnectTransport` (transport layer) via the
+`ChannelConsumerRegistry` interface.
+For unknown servers, an optional `EndpointResolver` can perform on-demand endpoint
+discovery and client creation.
 
 ### 2.4 Server Architecture
 
@@ -241,7 +244,7 @@ OpenSecureChannel, producing a `ClientSecureChannel` identical to forward connec
 **Multiplexed client:** The `MultiplexedReverseConnectListener` owns the
 `ServerBootstrap`. Its `ReverseHelloDecoder` decodes the RHE and calls `dispatch()`,
 which looks up the `ServerUri` in the consumer registry and fires `ConnectionAccepted`
-into the matching transport's FSM. If no consumer is registered and an
+into the matching transport’s FSM. If no consumer is registered and an
 `EndpointResolver` is configured, the listener performs endpoint resolution (1-shot or
 2-shot) and creates a new transport on demand.
 
@@ -387,7 +390,8 @@ Each accepted child channel gets a `ReverseHelloDecoder` — a minimal
 ### 4.2 Client Channel FSM: `ReverseConnectChannelFsm`
 
 Built on `strict-machine` (`com.digitalpetri.fsm`). Manages the lifecycle of a single
-reverse-connected channel. Shared by both the 1-1 and multiplexed transports.
+reverse-connected channel.
+Shared by both the 1-1 and multiplexed transports.
 
 **Parameterization:**
 
@@ -459,8 +463,8 @@ stateDiagram-v2
 **Duplicate connection rejection:**
 
 If a `ConnectionAccepted` event arrives while the FSM is in `Handshaking` or
-`Connected`, an internal transition closes the new channel immediately. This prevents
-orphaned connections when the server reconnects faster than expected.
+`Connected`, an internal transition closes the new channel immediately.
+This prevents orphaned connections when the server reconnects faster than expected.
 
 **State observation:**
 
@@ -473,11 +477,12 @@ public interface TransitionListener {
 ```
 
 Both transport classes register a listener that translates FSM transitions into
-`ChannelStateObservable.onConnectionStateChange(boolean)` callbacks for the `SessionFsm`.
+`ChannelStateObservable.onConnectionStateChange(boolean)` callbacks for the
+`SessionFsm`.
 
 ### 4.3 Handshake Handler: `UascClientReverseHelloHandler`
 
-Installed on accepted child channels by the FSM's `Handshaking` entry action.
+Installed on accepted child channels by the FSM’s `Handshaking` entry action.
 Structurally similar to `UascClientAcknowledgeHandler` but with an extra step: process
 the RHE before sending Hello.
 
@@ -507,9 +512,28 @@ Messages written during handshake are buffered and flushed after
 
 **RHE dispatch detail:** The `ReverseHelloDecoder` on the child channel already consumed
 and decoded the raw RHE bytes.
-The FSM's `Handshaking` entry action passes the decoded `ReverseHelloMessage` directly
+The FSM’s `Handshaking` entry action passes the decoded `ReverseHelloMessage` directly
 to `handler.onReverseHello(ctx, rhe)` rather than re-encoding to bytes and dispatching
 through the pipeline, which avoids issues with `ByteToMessageCodec` pipeline dispatch.
+
+**ReverseHello timeout guard:**
+
+The handler uses an `AtomicBoolean timeoutStarted` to ensure the ReverseHello timeout is
+started exactly once, from whichever of `channelActive()` or `handlerAdded()` fires
+first:
+
+```java
+if (reverseHelloTimeoutMs > 0 && timeoutStarted.compareAndSet(false, true)) {
+    timeout = startReverseHelloTimeout(ctx);
+}
+```
+
+This dual-path start is necessary because when the handler is installed on a channel
+that is already active (the multiplexed listener path), `channelActive()` will not fire
+— only `handlerAdded()` runs.
+The `reverseHelloTimeoutMs > 0` guard prevents scheduling a racy 0ms wheel-timer task
+when the RHE has already been pre-decoded (e.g., in `InboundChannelTransport` during
+2-shot discovery, which passes `timeout=0`).
 
 ### 4.4 `ChannelStateObservable` Interface
 
@@ -527,9 +551,8 @@ public interface ChannelStateObservable {
 }
 ```
 
-Implemented by `OpcTcpClientTransport` (forward),
-`OpcTcpReverseConnectTransport` (1-1 reverse), and
-`OpcTcpMultiplexedReverseConnectTransport` (multiplexed reverse).
+Implemented by `OpcTcpClientTransport` (forward), `OpcTcpReverseConnectTransport` (1-1
+reverse), and `OpcTcpMultiplexedReverseConnectTransport` (multiplexed reverse).
 The `SessionFsm` checks for `instanceof ChannelStateObservable` rather than casting to a
 concrete transport type.
 
@@ -561,7 +584,7 @@ The factory performs two-pass discovery automatically: it opens a `SecurityMode.
 SecureChannel on the first accepted connection to call `GetEndpoints`, tears down the
 channel (but keeps the listening socket open), then returns an `OpcUaClient` wired to
 the same transport. The caller then calls `connect()` to establish the real session on
-the server's next inbound connection.
+the server’s next inbound connection.
 
 **Standalone discovery (for persist-and-reuse workflows):**
 
@@ -612,8 +635,8 @@ The implementation is split across two layers to avoid a compile-time dependency
 | SDK (`sdk-client`) | `MultiplexedReverseConnectListener` | Owns the `ServerBootstrap`; decodes RHE; dispatches channels; on-demand client creation |
 | Transport | `OpcTcpMultiplexedReverseConnectTransport` | Per-server transport; wraps a `ReverseConnectChannelFsm`; implements `OpcClientTransport` |
 
-The two layers are decoupled through the `ChannelConsumerRegistry` interface
-(transport layer), which `MultiplexedReverseConnectListener` implements.
+The two layers are decoupled through the `ChannelConsumerRegistry` interface (transport
+layer), which `MultiplexedReverseConnectListener` implements.
 
 ### 5.2 Listener: `MultiplexedReverseConnectListener`
 
@@ -655,10 +678,12 @@ stop()  [synchronized first half]
 
 The listener implements `ChannelConsumerRegistry`:
 
-- **`register(serverUri, consumer)`:** `consumers.computeIfAbsent(serverUri, ...)
-  .add(consumer)`. Called by each transport's `connect()` method.
+- **`register(serverUri, consumer)`:**
+  `consumers.computeIfAbsent(serverUri, ...) .add(consumer)`. Called by each transport’s
+  `connect()` method.
 - **`deregister(serverUri, consumer)`:** Removes the consumer by identity; removes the
-  map entry if the list becomes empty. Called by each transport's `disconnect()`.
+  map entry if the list becomes empty.
+  Called by each transport’s `disconnect()`.
 
 #### Dispatch Algorithm
 
@@ -689,8 +714,8 @@ served first.
 
 ### 5.3 Per-Server Transport: `OpcTcpMultiplexedReverseConnectTransport`
 
-Extends `AbstractUascClientTransport` and implements `ChannelStateObservable`.
-Each instance is associated with one `ServerUri` and wraps a single
+Extends `AbstractUascClientTransport` and implements `ChannelStateObservable`. Each
+instance is associated with one `ServerUri` and wraps a single
 `ReverseConnectChannelFsm`.
 
 **Key difference from `OpcTcpReverseConnectTransport`:** Does not own a
@@ -722,7 +747,8 @@ connect(applicationContext)
 
 **`offerChannel(channel, rhe)`:** Stores a `PendingChannel` in the `AtomicReference`.
 Registers a `closeFuture` listener that atomically clears the reference if the channel
-dies before `connect()` is called. This is the entry point for the 1-shot path.
+dies before `connect()` is called.
+This is the entry point for the 1-shot path.
 
 ### 5.4 `ChannelConsumerRegistry` Interface
 
@@ -737,9 +763,9 @@ public interface ChannelConsumerRegistry {
 }
 ```
 
-Lives in the transport module. `MultiplexedReverseConnectListener` (SDK module)
-implements it. This inverted dependency prevents the transport module from depending on
-the SDK module.
+Lives in the transport module.
+`MultiplexedReverseConnectListener` (SDK module) implements it.
+This inverted dependency prevents the transport module from depending on the SDK module.
 
 ### 5.5 Endpoint Resolution
 
@@ -820,8 +846,9 @@ immediately fires `Event.ConnectionAccepted`, driving the FSM from `NotConnected
 
 **Edge case — channel dies before `connect()`:** If the offered channel closes before
 the application calls `connect()`, the `closeFuture` listener atomically clears the
-`pendingChannel` reference. `connect()` then finds no pending channel and the FSM waits
-in `NotConnected` for the server to reconnect (same as the 2-shot path from that point).
+`pendingChannel` reference.
+`connect()` then finds no pending channel and the FSM waits in `NotConnected` for the
+server to reconnect (same as the 2-shot path from that point).
 
 #### 2-Shot Flow (Live Discovery)
 
@@ -873,14 +900,14 @@ sequenceDiagram
 **Total server connections required: 2**
 
 The server reconnects automatically per the idle socket invariant (Section 1.4). The
-time between connection 1 closing and connection 2 arriving depends on the server's
+time between connection 1 closing and connection 2 arriving depends on the server’s
 `connectInterval` and backoff configuration.
 
 ### 5.7 `InboundChannelTransport`
 
-A short-lived transport used exclusively during 2-shot discovery. Wraps an
-already-accepted inbound channel and drives the Hello/Ack/OpenSecureChannel sequence on
-it so that a `DiscoveryClient` can call `GetEndpoints`.
+A short-lived transport used exclusively during 2-shot discovery.
+Wraps an already-accepted inbound channel and drives the Hello/Ack/OpenSecureChannel
+sequence on it so that a `DiscoveryClient` can call `GetEndpoints`.
 
 Extends `AbstractUascClientTransport`.
 
@@ -927,10 +954,13 @@ var listenerConfig = MultiplexedReverseConnectListenerConfig.newBuilder()
 var listener = new MultiplexedReverseConnectListener(listenerConfig);
 listener.start();
 
-// Create a per-server transport and client
+// Create a per-server transport and client (explicit config)
 var transport = listener.createTransport("urn:example:server", transportConfig);
 var client = new OpcUaClient(clientConfig, transport);
 client.connect().get();
+
+// Alternative: derive transport config from the listener's own config
+var transport2 = listener.createTransport("urn:example:server2");
 ```
 
 **On-demand client creation (1-shot, cached endpoint):**
@@ -1040,7 +1070,7 @@ anonymous FSM is created and started.
 
 Registrations added before `start()` are stored as `PendingRegistration` records.
 During `start()`, any registration with a `null` endpoint URL is resolved to the
-server's primary endpoint URL (first non-discovery endpoint).
+server’s primary endpoint URL (first non-discovery endpoint).
 
 ### 6.2 Transport: `OpcTcpReverseConnectServerTransport`
 
@@ -1159,11 +1189,11 @@ server.removeReverseConnect(h1);
 server.shutdown().get();
 ```
 
-`addReverseConnect(clientEndpointUrl)` resolves the endpoint URL from the server's
+`addReverseConnect(clientEndpointUrl)` resolves the endpoint URL from the server’s
 primary endpoint. `addReverseConnect(clientEndpointUrl, endpointUrl)` allows an explicit
 override.
 
-`removeReverseConnect(handle)` stops only the handle's own FSM and removes it from the
+`removeReverseConnect(handle)` stops only the handle’s own FSM and removes it from the
 secondary index. Other registrations for the same client URL are not affected.
 
 * * *
@@ -1201,7 +1231,7 @@ The `SessionFsm` is unaware of this distinction — it only observes the
 
 For the multiplexed transport, the transport remains registered in the
 `ChannelConsumerRegistry` during reconnection, so the next inbound connection from the
-same `ServerUri` is dispatched to the same transport's FSM.
+same `ServerUri` is dispatched to the same transport’s FSM.
 
 ### 7.3 Service Request Routing
 
@@ -1211,6 +1241,32 @@ transport types delegates to the FSM. If the FSM is in `Connected` state, the cu
 channel is returned immediately.
 Otherwise, a `GetChannel` event is fired and the returned future completes when a
 channel becomes available.
+
+### 7.4 Keep-Alive Channel Close
+
+When keep-alive detects a dead session, `SessionFsmFactory.closeTransportChannel()`
+force-closes the underlying TCP channel.
+The method dispatches on the concrete transport type to reach the channel:
+
+| Transport Type | Channel Access |
+| --- | --- |
+| `OpcTcpClientTransport` (forward) | `getChannelFsm().getChannel().getNow(null)` via `ChannelFsm` |
+| `OpcTcpReverseConnectTransport` (1-1 reverse) | `getChannelFsm().getChannel()` via `ReverseConnectChannelFsm` |
+| `OpcTcpMultiplexedReverseConnectTransport` (multiplexed reverse) | `getChannelFsm().getChannel()` via `ReverseConnectChannelFsm` |
+
+Force-closing the TCP channel triggers the following cascade:
+
+1. Client `ReverseConnectChannelFsm` receives `ChannelInactive`, transitions to
+   `Reconnecting`
+2. Server `ReverseConnectConnectionFsm` receives `ChannelInactive`, transitions to
+   `ConnectWait` (retry with backoff)
+3. Server’s `onActiveCallback` fires on the next successful connection, calling
+   `ensureIdleConnection()` to maintain the idle socket invariant
+
+The forward-connect path uses `ChannelFsm.getChannel()` which returns a
+`CompletableFuture<Channel>` (resolved via `getNow(null)`), while both reverse-connect
+paths use `ReverseConnectChannelFsm.getChannel()` which returns a bare
+`@Nullable Channel`.
 
 * * *
 
@@ -1243,7 +1299,7 @@ channel becomes available.
 | `maxPendingConnections` | `int` | 16 | Cap on concurrent in-flight `EndpointResolver` calls. |
 | `reverseHelloTimeout` | `long` (ms) | 5,000 | Timeout for receiving a ReverseHello after TCP accept. |
 | `serverBootstrapCustomizer` | `Consumer<ServerBootstrap>` | no-op | Applied once during `start()`. |
-| `channelPipelineCustomizer` | `Consumer<ChannelPipeline>` | no-op | Applied to each accepted child channel's pipeline. |
+| `channelPipelineCustomizer` | `Consumer<ChannelPipeline>` | no-op | Applied to each accepted child channel’s pipeline. |
 | `endpointResolver` | `@Nullable EndpointResolver` | `null` | Resolver for unknown servers. `null` disables on-demand creation. |
 | `clientCustomizer` | `@Nullable ClientCustomizer` | `null` | Callback for configuring on-demand client builders. |
 | `clientListener` | `@Nullable ClientListener` | `null` | Callback notified when an on-demand client is created. |
@@ -1261,8 +1317,8 @@ channel becomes available.
 | `channelLifetime` | `UInteger` (ms) | 3,600,000 | Inherited. SecureChannel lifetime. |
 
 Note: The per-transport `reverseHelloTimeout` is distinct from the listener-level
-`reverseHelloTimeout`. The listener timeout gates raw TCP -> RHE decode; the per-transport
-timeout gates the handshake within `UascClientReverseHelloHandler`.
+`reverseHelloTimeout`. The listener timeout gates raw TCP -> RHE decode; the
+per-transport timeout gates the handshake within `UascClientReverseHelloHandler`.
 
 ### 8.4 Server Reverse Connect Config
 
@@ -1303,7 +1359,7 @@ mvn -q verify -pl opc-ua-sdk/integration-tests -Dtest=ReverseConnectTest
 - Uses accelerated timings (`connectInterval=500ms`, `rejectBackoff=500ms`,
   `maxReconnectDelay=2s`) to speed up retry cycles.
 - Clients bind to `localhost:0` (OS-assigned port) and read the actual port via
-  reflection on the transport's `serverChannel` field.
+  reflection on the transport’s `serverChannel` field.
 - Server registration via `server.addReverseConnect(url, endpointUrl)` happens **after**
   the client starts listening.
 - 30-second timeout on all futures to accommodate the full lifecycle.
@@ -1399,7 +1455,8 @@ mvn -q verify -pl opc-ua-sdk/integration-tests -Dtest=ReverseConnectDiscoveryTes
 
 1. Create `MultiplexedReverseConnectListenerConfig` with `localhost:0`
 2. Create and `start()` a `MultiplexedReverseConnectListener`
-3. Create per-server transports via `listener.createTransport(serverUri, config)`
+3. Create per-server transports via `listener.createTransport(serverUri, config)` or
+   `listener.createTransport(serverUri)` (derives config from listener)
 4. Wrap each transport in an `OpcUaClient`
 5. Call `client.connectAsync()` first (registers in the dispatch table)
 6. Use `listener.getLocalAddress()` to discover the bound port
@@ -1459,44 +1516,47 @@ Reverse Connect targets are operational configuration that may change at runtime
 `OpcUaClient.createReverseConnect()` performs endpoint discovery on the first accepted
 connection, tears down the channel (keeping the listener socket open), then returns a
 client wired to the same transport.
-The server reconnects per the idle socket invariant, and the caller's subsequent
+The server reconnects per the idle socket invariant, and the caller’s subsequent
 `connect()` establishes the real session.
 This mirrors how `OpcUaClient.create(String endpointUrl)` works for forward connect.
 
 ### FSM Decoupled via ChannelFsmConfig
 
 `ReverseConnectChannelFsm` was factored to accept a `ChannelFsmConfig` record and a
-`UascResponseHandler` rather than a specific transport config type. This allows the same
-FSM implementation to be shared by both the 1-1 transport (which owns its own
-`ServerBootstrap`) and the multiplexed transport (which receives channels from a shared
-listener). The two callsites construct the `ChannelFsmConfig` from their respective
-config types, both of which implement `UascClientConfig`.
+`UascResponseHandler` rather than a specific transport config type.
+This allows the same FSM implementation to be shared by both the 1-1 transport (which
+owns its own `ServerBootstrap`) and the multiplexed transport (which receives channels
+from a shared listener).
+The two callsites construct the `ChannelFsmConfig` from their respective config types,
+both of which implement `UascClientConfig`.
 
 ### Two-Layer Multiplexed Architecture
 
-The multiplexed implementation is split between `MultiplexedReverseConnectListener`
-(SDK layer) and `OpcTcpMultiplexedReverseConnectTransport` (transport layer) to preserve
-the existing module dependency direction: `sdk-client` depends on `transport`, not the
-other way around. The `ChannelConsumerRegistry` interface in the transport module acts
-as the inversion point — the listener implements it, the transports call it.
+The multiplexed implementation is split between `MultiplexedReverseConnectListener` (SDK
+layer) and `OpcTcpMultiplexedReverseConnectTransport` (transport layer) to preserve the
+existing module dependency direction: `sdk-client` depends on `transport`, not the other
+way around. The `ChannelConsumerRegistry` interface in the transport module acts as the
+inversion point — the listener implements it, the transports call it.
 
 ### 1-Shot Channel Reuse via offerChannel
 
 When the `EndpointResolver` returns without calling `discovery.getEndpoints()`, the
-inbound channel has not been consumed. Rather than closing it and waiting for the server
-to reconnect, the listener pre-loads it into the transport via `offerChannel()`. This
-saves one full connection round-trip (often 5-30 seconds depending on server retry
-interval). The `AtomicReference<PendingChannel>` with a `closeFuture` guard handles the
-race where the channel dies before `connect()` is called.
+inbound channel has not been consumed.
+Rather than closing it and waiting for the server to reconnect, the listener pre-loads
+it into the transport via `offerChannel()`. This saves one full connection round-trip
+(often 5-30 seconds depending on server retry interval).
+The `AtomicReference<PendingChannel>` with a `closeFuture` guard handles the race where
+the channel dies before `connect()` is called.
 
 ### EndpointResolver as Strategy Interface
 
 Endpoint resolution is a `@FunctionalInterface` rather than a fixed algorithm because
 the optimal strategy depends on the deployment:
 - **1-shot (`cached`):** Suitable when endpoints are known in advance, configured
-  statically, or previously persisted. Saves one connection round-trip.
-- **2-shot (`discover`):** Necessary for first-time connections to unknown servers
-  where security policies must be discovered dynamically.
+  statically, or previously persisted.
+  Saves one connection round-trip.
+- **2-shot (`discover`):** Necessary for first-time connections to unknown servers where
+  security policies must be discovered dynamically.
 - **Custom:** Applications can implement any mix — e.g., cache lookup with discovery
   fallback.
 
@@ -1505,9 +1565,9 @@ resolver so that each invocation gets a fresh, connection-scoped discovery handl
 
 ### Separate Listener and Per-Transport Timeouts
 
-The listener's `reverseHelloTimeout` (default 5s) gates the initial RHE decode — how
-long a raw TCP connection can sit idle before sending a ReverseHello. The per-transport
-`reverseHelloTimeout` (default 30s) gates the full handshake within
+The listener’s `reverseHelloTimeout` (default 5s) gates the initial RHE decode — how
+long a raw TCP connection can sit idle before sending a ReverseHello.
+The per-transport `reverseHelloTimeout` (default 30s) gates the full handshake within
 `UascClientReverseHelloHandler`. These are separate because the listener sees all
 inbound connections (including potentially malicious ones) and should reject slow
 connections quickly, while the per-transport handshake involves real cryptographic
