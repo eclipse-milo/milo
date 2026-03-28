@@ -122,7 +122,7 @@ class InboundChannelTransportTest {
   }
 
   @Test
-  void channelInactiveDuringHandshakeCompletesConnectExceptionally() throws Exception {
+  void channelInactiveDuringHandshakeCompletesConnectExceptionally() {
     var channel = new EmbeddedChannel();
     var rhe = new ReverseHelloMessage(SERVER_URI, ENDPOINT_URL);
     OpcTcpMultiplexedReverseConnectTransportConfig config = newTransportConfig();

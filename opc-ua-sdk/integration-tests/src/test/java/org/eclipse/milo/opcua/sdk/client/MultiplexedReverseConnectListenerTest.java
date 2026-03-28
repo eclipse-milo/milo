@@ -455,7 +455,7 @@ class MultiplexedReverseConnectListenerTest {
         EndpointResolver.discover(
             (serverUri, endpoints) ->
                 endpoints.stream()
-                    .filter(e -> e.getSecurityPolicyUri().equals(SecurityPolicy.None.getUri()))
+                    .filter(e -> SecurityPolicy.None.getUri().equals(e.getSecurityPolicyUri()))
                     .findFirst()
                     .orElseThrow());
 

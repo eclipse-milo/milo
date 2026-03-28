@@ -82,8 +82,7 @@ class ReverseConnectConnectionFsmTest {
     awaitState(fsm, State.Active);
 
     // Verify backoff was reset
-    Long retryDelay =
-        fsm.getFromContext(ctx -> ReverseConnectConnectionFsm.KEY_RETRY_DELAY_MS.get(ctx));
+    Long retryDelay = fsm.getFromContext(ReverseConnectConnectionFsm.KEY_RETRY_DELAY_MS::get);
     assertNull(retryDelay);
 
     // Active -> ConnectWait (channel closed)
@@ -106,8 +105,7 @@ class ReverseConnectConnectionFsmTest {
     f1.completeExceptionally(new Exception("connection refused"));
     awaitState(fsm, State.ConnectWait);
 
-    Long delay1 =
-        fsm.getFromContext(ctx -> ReverseConnectConnectionFsm.KEY_RETRY_DELAY_MS.get(ctx));
+    Long delay1 = fsm.getFromContext(ReverseConnectConnectionFsm.KEY_RETRY_DELAY_MS::get);
     assertNotNull(delay1);
 
     // Wait for retry -> Connecting
@@ -119,8 +117,7 @@ class ReverseConnectConnectionFsmTest {
     f2.completeExceptionally(new Exception("connection refused"));
     awaitState(fsm, State.ConnectWait);
 
-    Long delay2 =
-        fsm.getFromContext(ctx -> ReverseConnectConnectionFsm.KEY_RETRY_DELAY_MS.get(ctx));
+    Long delay2 = fsm.getFromContext(ReverseConnectConnectionFsm.KEY_RETRY_DELAY_MS::get);
     assertNotNull(delay2);
 
     // Verify exponential backoff: delay2 should be double delay1
@@ -148,7 +145,7 @@ class ReverseConnectConnectionFsmTest {
     fsm.fireEvent(new Event.ClientRejected(0x80000000L));
     awaitState(fsm, State.ConnectWait);
 
-    Long delay = fsm.getFromContext(ctx -> ReverseConnectConnectionFsm.KEY_RETRY_DELAY_MS.get(ctx));
+    Long delay = fsm.getFromContext(ReverseConnectConnectionFsm.KEY_RETRY_DELAY_MS::get);
     assertNotNull(delay);
     // The next delay should be based on REJECT_BACKOFF.toMillis() (doubled by backoff logic)
     // The entry action uses the reject backoff as the base, then doubles it for next
@@ -184,8 +181,7 @@ class ReverseConnectConnectionFsmTest {
     awaitState(fsm, State.Active);
 
     // Backoff should be reset
-    Long retryDelay =
-        fsm.getFromContext(ctx -> ReverseConnectConnectionFsm.KEY_RETRY_DELAY_MS.get(ctx));
+    Long retryDelay = fsm.getFromContext(ReverseConnectConnectionFsm.KEY_RETRY_DELAY_MS::get);
     assertNull(retryDelay);
 
     // Go back to ConnectWait
@@ -193,8 +189,7 @@ class ReverseConnectConnectionFsmTest {
     awaitState(fsm, State.ConnectWait);
 
     // Next delay should be back to initial interval (doubled for next)
-    Long newDelay =
-        fsm.getFromContext(ctx -> ReverseConnectConnectionFsm.KEY_RETRY_DELAY_MS.get(ctx));
+    Long newDelay = fsm.getFromContext(ReverseConnectConnectionFsm.KEY_RETRY_DELAY_MS::get);
     assertNotNull(newDelay);
     long expectedNextDelay =
         Math.min(CONNECT_INTERVAL.toMillis() * 2, MAX_RECONNECT_DELAY.toMillis());
@@ -273,7 +268,7 @@ class ReverseConnectConnectionFsmTest {
 
     // Verify retry future exists
     ScheduledFuture<?> retryFuture =
-        fsm.getFromContext(ctx -> ReverseConnectConnectionFsm.KEY_RETRY_FUTURE.get(ctx));
+        fsm.getFromContext(ReverseConnectConnectionFsm.KEY_RETRY_FUTURE::get);
     assertNotNull(retryFuture);
 
     // Stop in ConnectWait
@@ -317,7 +312,7 @@ class ReverseConnectConnectionFsmTest {
 
     // Verify retry timer is scheduled
     ScheduledFuture<?> retryFuture =
-        fsm.getFromContext(ctx -> ReverseConnectConnectionFsm.KEY_RETRY_FUTURE.get(ctx));
+        fsm.getFromContext(ReverseConnectConnectionFsm.KEY_RETRY_FUTURE::get);
     assertNotNull(retryFuture);
   }
 
@@ -358,16 +353,14 @@ class ReverseConnectConnectionFsmTest {
     awaitState(fsm, State.Disconnected);
 
     // Verify context keys are cleaned up
-    Channel ctxChannel =
-        fsm.getFromContext(ctx -> ReverseConnectConnectionFsm.KEY_CHANNEL.get(ctx));
+    Channel ctxChannel = fsm.getFromContext(ReverseConnectConnectionFsm.KEY_CHANNEL::get);
     assertNull(ctxChannel);
 
     ScheduledFuture<?> retryFuture =
-        fsm.getFromContext(ctx -> ReverseConnectConnectionFsm.KEY_RETRY_FUTURE.get(ctx));
+        fsm.getFromContext(ReverseConnectConnectionFsm.KEY_RETRY_FUTURE::get);
     assertNull(retryFuture);
 
-    Long retryDelay =
-        fsm.getFromContext(ctx -> ReverseConnectConnectionFsm.KEY_RETRY_DELAY_MS.get(ctx));
+    Long retryDelay = fsm.getFromContext(ReverseConnectConnectionFsm.KEY_RETRY_DELAY_MS::get);
     assertNull(retryDelay);
   }
 

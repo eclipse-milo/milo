@@ -11,6 +11,7 @@
 package org.eclipse.milo.opcua.stack.transport.client.tcp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -54,7 +55,7 @@ class EndpointResolverTest {
 
     assertTrue(future.isDone());
     assertEquals(endpoint, future.get());
-    assertTrue(!discoveryCalled.get(), "Discovery should not be called for cached resolver");
+    assertFalse(discoveryCalled.get(), "Discovery should not be called for cached resolver");
   }
 
   @Test

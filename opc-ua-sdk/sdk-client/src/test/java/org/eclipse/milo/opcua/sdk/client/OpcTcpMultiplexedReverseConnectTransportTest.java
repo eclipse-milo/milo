@@ -105,7 +105,7 @@ class OpcTcpMultiplexedReverseConnectTransportTest {
     var transitionFuture = new CompletableFuture<State>();
     transport.getChannelFsm().addTransitionListener((from, to) -> transitionFuture.complete(to));
 
-    try (Socket socket = connectAndSendRhe(SERVER_URI, ENDPOINT_URL)) {
+    try (Socket ignored = connectAndSendRhe(SERVER_URI, ENDPOINT_URL)) {
       State state = transitionFuture.get(5, TimeUnit.SECONDS);
       assertEquals(State.Handshaking, state);
     }
@@ -180,7 +180,7 @@ class OpcTcpMultiplexedReverseConnectTransportTest {
     var transitionFuture = new CompletableFuture<State>();
     transport.getChannelFsm().addTransitionListener((from, to) -> transitionFuture.complete(to));
 
-    try (Socket socket = connectAndSendRhe(SERVER_URI, ENDPOINT_URL)) {
+    try (Socket ignored = connectAndSendRhe(SERVER_URI, ENDPOINT_URL)) {
       State state = transitionFuture.get(5, TimeUnit.SECONDS);
       assertEquals(State.Handshaking, state);
     }

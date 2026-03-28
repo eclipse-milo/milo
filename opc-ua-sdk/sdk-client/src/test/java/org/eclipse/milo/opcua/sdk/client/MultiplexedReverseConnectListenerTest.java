@@ -109,7 +109,7 @@ class MultiplexedReverseConnectListenerTest {
 
     listener.register(SERVER_URI, new ChannelConsumer(fsm, null));
 
-    try (var socket = connectAndSendRhe(SERVER_URI, ENDPOINT_URL)) {
+    try (var ignored = connectAndSendRhe(SERVER_URI)) {
       // Wait for the FSM to transition to Handshaking, proving dispatch worked
       transitioned.get(5, TimeUnit.SECONDS);
       assertEquals(State.Handshaking, fsm.getState());
@@ -121,7 +121,7 @@ class MultiplexedReverseConnectListenerTest {
     listener = createAndStart(defaultConfigBuilder().setRateLimitingEnabled(false).build());
 
     // No consumers registered, no resolver configured
-    try (var socket = connectAndSendRhe(SERVER_URI, ENDPOINT_URL)) {
+    try (var socket = connectAndSendRhe(SERVER_URI)) {
       socket.setSoTimeout(5000);
       // The server should close the channel — read returns -1
       assertEquals(-1, socket.getInputStream().read());
@@ -165,7 +165,7 @@ class MultiplexedReverseConnectListenerTest {
           }
         });
 
-    try (var socket = connectAndSendRhe(SERVER_URI, ENDPOINT_URL)) {
+    try (var ignored = connectAndSendRhe(SERVER_URI)) {
       fsm2Transitioned.get(5, TimeUnit.SECONDS);
       assertEquals(State.Handshaking, fsm2.getState());
     }
@@ -224,7 +224,7 @@ class MultiplexedReverseConnectListenerTest {
     listener.deregister(SERVER_URI, consumer);
 
     // After deregister, no consumers are registered. RHE should cause channel close.
-    try (var socket = connectAndSendRhe(SERVER_URI, ENDPOINT_URL)) {
+    try (var socket = connectAndSendRhe(SERVER_URI)) {
       socket.setSoTimeout(5000);
       assertEquals(-1, socket.getInputStream().read());
     }
@@ -294,7 +294,7 @@ class MultiplexedReverseConnectListenerTest {
                 .setEndpointResolver(resolver)
                 .build());
 
-    try (var socket = connectAndSendRhe(SERVER_URI, ENDPOINT_URL)) {
+    try (var ignored = connectAndSendRhe(SERVER_URI)) {
       String[] args = resolverArgs.get(5, TimeUnit.SECONDS);
       assertEquals(SERVER_URI, args[0]);
       assertEquals(ENDPOINT_URL, args[1]);
@@ -315,13 +315,13 @@ class MultiplexedReverseConnectListenerTest {
                 .build());
 
     // First RHE occupies the single pending slot
-    var socket1 = connectAndSendRhe(SERVER_URI, ENDPOINT_URL);
+    var socket1 = connectAndSendRhe(SERVER_URI);
 
     // Give the listener time to process the first RHE and increment pending
     Thread.sleep(200);
 
     // Second RHE should be rejected because pending limit is reached
-    try (var socket2 = connectAndSendRhe("urn:test:server2", ENDPOINT_URL)) {
+    try (var socket2 = connectAndSendRhe("urn:test:server2")) {
       socket2.setSoTimeout(5000);
       assertEquals(-1, socket2.getInputStream().read());
     }
@@ -345,7 +345,7 @@ class MultiplexedReverseConnectListenerTest {
                 .setEndpointResolver(resolver)
                 .build());
 
-    try (var socket = connectAndSendRhe(SERVER_URI, ENDPOINT_URL)) {
+    try (var socket = connectAndSendRhe(SERVER_URI)) {
       socket.setSoTimeout(5000);
       assertEquals(-1, socket.getInputStream().read());
     }
@@ -378,12 +378,12 @@ class MultiplexedReverseConnectListenerTest {
                 .setClientListener(clientListener)
                 .build());
 
-    try (var socket = connectAndSendRhe(SERVER_URI, ENDPOINT_URL)) {
+    try (var ignored = connectAndSendRhe(SERVER_URI)) {
       var transport = transportFuture.get(5, TimeUnit.SECONDS);
 
       // The FSM should reach Handshaking using the original channel,
       // proving the channel was offered and consumed without closing.
-      awaitFsmState(transport, State.Handshaking);
+      awaitHandshakingState(transport);
     }
   }
 
@@ -410,7 +410,7 @@ class MultiplexedReverseConnectListenerTest {
                 .setClientListener(clientListener)
                 .build());
 
-    var socket = connectAndSendRhe(SERVER_URI, ENDPOINT_URL);
+    var socket = connectAndSendRhe(SERVER_URI);
     var transport = transportFuture.get(5, TimeUnit.SECONDS);
 
     // Close the socket before calling connect(). The Netty channel
@@ -487,28 +487,28 @@ class MultiplexedReverseConnectListenerTest {
         fsmConfig, handler, new AtomicLong()::getAndIncrement, Executors.newSingleThreadExecutor());
   }
 
-  private Socket connectAndSendRhe(String serverUri, String endpointUrl) throws Exception {
+  private Socket connectAndSendRhe(String serverUri) throws Exception {
     Socket socket = new Socket("localhost", getPort());
     socket.setSoTimeout(5000);
-    socket.getOutputStream().write(encodeReverseHello(serverUri, endpointUrl));
+    socket.getOutputStream().write(encodeReverseHello(serverUri, ENDPOINT_URL));
     socket.getOutputStream().flush();
     return socket;
   }
 
   @SuppressWarnings("BusyWait")
-  private static void awaitFsmState(
-      OpcTcpMultiplexedReverseConnectTransport transport, State expected) throws Exception {
+  private static void awaitHandshakingState(OpcTcpMultiplexedReverseConnectTransport transport)
+      throws Exception {
 
     long deadline = System.nanoTime() + Duration.ofSeconds(5).toNanos();
     while (System.nanoTime() < deadline) {
-      if (transport.getChannelFsm().getState() == expected) {
+      if (transport.getChannelFsm().getState() == State.Handshaking) {
         return;
       }
       Thread.sleep(50);
     }
     fail(
         "Timed out waiting for state "
-            + expected
+            + State.Handshaking
             + ", current: "
             + transport.getChannelFsm().getState());
   }

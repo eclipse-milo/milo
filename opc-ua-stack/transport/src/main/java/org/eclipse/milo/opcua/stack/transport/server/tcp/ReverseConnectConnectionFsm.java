@@ -20,6 +20,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import java.net.InetSocketAddress;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -39,6 +40,7 @@ public class ReverseConnectConnectionFsm {
 
   static final FsmContext.Key<Channel> KEY_CHANNEL = new FsmContext.Key<>("channel", Channel.class);
 
+  @SuppressWarnings("rawtypes")
   static final FsmContext.Key<ScheduledFuture> KEY_RETRY_FUTURE =
       new FsmContext.Key<>("retryFuture", ScheduledFuture.class);
 
@@ -192,7 +194,7 @@ public class ReverseConnectConnectionFsm {
             ctx -> {
               String host = EndpointUtil.getHost(clientEndpointUrl);
               int port = EndpointUtil.getPort(clientEndpointUrl);
-              var clientAddress = new InetSocketAddress(host, port);
+              var clientAddress = new InetSocketAddress(Objects.requireNonNull(host), port);
 
               transport
                   .connect(

@@ -996,29 +996,28 @@ public class SessionFsmFactory {
         .from(State.ReactivatingWait)
         .via(Event.ReactivatingWaitExpired.class)
         .execute(
-            ctx -> {
-              reactivateSession(ctx, client)
-                  .whenComplete(
-                      (session, ex) -> {
-                        if (session != null) {
-                          try (MDCCloseable ignored =
-                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+            ctx ->
+                reactivateSession(ctx, client)
+                    .whenComplete(
+                        (session, ex) -> {
+                          if (session != null) {
+                            try (MDCCloseable ignored =
+                                MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
 
-                            LOGGER.debug("Session reactivated: {}", session);
+                              LOGGER.debug("Session reactivated: {}", session);
+                            }
+
+                            ctx.fireEvent(new Event.ReactivateSessionSuccess(session));
+                          } else {
+                            try (MDCCloseable ignored =
+                                MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+
+                              LOGGER.debug("Reactivation failed: {}", ex.getMessage(), ex);
+                            }
+
+                            ctx.fireEvent(new Event.ReactivateSessionFailure(ex));
                           }
-
-                          ctx.fireEvent(new Event.ReactivateSessionSuccess(session));
-                        } else {
-                          try (MDCCloseable ignored =
-                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
-
-                            LOGGER.debug("Reactivation failed: {}", ex.getMessage(), ex);
-                          }
-
-                          ctx.fireEvent(new Event.ReactivateSessionFailure(ex));
-                        }
-                      });
-            });
+                        }));
 
     /* Internal Transition Actions */
 

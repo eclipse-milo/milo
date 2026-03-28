@@ -376,7 +376,6 @@ public class MultiplexedReverseConnectListener implements ChannelConsumerRegistr
    * for a previously unknown server. Creates a {@link OpcTcpMultiplexedReverseConnectTransport} and
    * notifies the configured {@link ClientListener}.
    */
-  @SuppressWarnings("rawtypes")
   private void onEndpointResolved(
       Channel channel,
       ReverseHelloMessage rhe,

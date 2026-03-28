@@ -121,6 +121,7 @@ public class SessionFsm {
 
   static final FsmContext.Key<Long> KEY_WAIT_TIME = new FsmContext.Key<>("delay", Long.class);
 
+  @SuppressWarnings("rawtypes")
   static final FsmContext.Key<ScheduledFuture> KEY_WAIT_FUTURE =
       new FsmContext.Key<>("delayFuture", ScheduledFuture.class);
 
@@ -136,6 +137,7 @@ public class SessionFsm {
   static final FsmContext.Key<Long> KEY_KEEP_ALIVE_FAILURE_COUNT =
       new FsmContext.Key<>("keepAliveFailureCount", Long.class);
 
+  @SuppressWarnings("rawtypes")
   static final FsmContext.Key<ScheduledFuture> KEY_KEEP_ALIVE_SCHEDULED_FUTURE =
       new FsmContext.Key<>("keepAliveScheduledFuture", ScheduledFuture.class);
 

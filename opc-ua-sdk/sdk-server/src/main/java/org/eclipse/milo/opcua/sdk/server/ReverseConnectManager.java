@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.sdk.server;
 import com.digitalpetri.fsm.Fsm;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -301,7 +302,7 @@ public class ReverseConnectManager {
       if (handles == null) {
         return;
       }
-      snapshot = handles.stream().map(connections::get).filter(fsm -> fsm != null).toList();
+      snapshot = handles.stream().map(connections::get).filter(Objects::nonNull).toList();
     } finally {
       lock.unlock();
     }
