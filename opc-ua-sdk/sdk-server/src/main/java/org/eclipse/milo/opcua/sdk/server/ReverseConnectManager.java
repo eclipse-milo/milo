@@ -250,12 +250,21 @@ public class ReverseConnectManager {
         fsmsToStop.add(fsm);
       }
 
-      // Remove from secondary index for this handle only; do not affect other registrations
       Set<ReverseConnectHandle> handles = handlesByClientUrl.get(handle.getClientEndpointUrl());
       if (handles != null) {
         handles.remove(handle);
 
-        // Clean up the mapping if no handles remain for this client URL
+        // Stop auto-spawned idle siblings for this client URL.
+        List<ReverseConnectHandle> autoSpawned =
+            handles.stream().filter(h -> h.autoSpawned).toList();
+        for (ReverseConnectHandle sibling : autoSpawned) {
+          handles.remove(sibling);
+          Fsm<State, Event> siblingFsm = connections.remove(sibling);
+          if (siblingFsm != null) {
+            fsmsToStop.add(siblingFsm);
+          }
+        }
+
         if (handles.isEmpty()) {
           handlesByClientUrl.remove(handle.getClientEndpointUrl(), handles);
         }
@@ -313,7 +322,7 @@ public class ReverseConnectManager {
       try {
         Set<ReverseConnectHandle> handles = handlesByClientUrl.get(clientEndpointUrl);
         if (handles != null && running) {
-          var idleHandle = new ReverseConnectHandle(clientEndpointUrl, endpointUrl);
+          var idleHandle = new ReverseConnectHandle(clientEndpointUrl, endpointUrl, true);
           idleFsm = createFsm(clientEndpointUrl, endpointUrl);
           connections.put(idleHandle, idleFsm);
           handles.add(idleHandle);
