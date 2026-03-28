@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -64,6 +64,7 @@ import org.eclipse.milo.opcua.stack.core.Stack;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
+import org.eclipse.milo.opcua.stack.core.channel.SecurityKeysListener;
 import org.eclipse.milo.opcua.stack.core.channel.messages.ErrorMessage;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingManager;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
@@ -683,6 +684,11 @@ public class OpcUaServer extends AbstractServiceHandler {
     @Override
     public Long getNextSecureChannelId() {
       return secureChannelIds.getAndIncrement();
+    }
+
+    @Override
+    public @Nullable SecurityKeysListener getSecurityKeysListener() {
+      return config.getSecurityKeysListener().orElse(null);
     }
 
     @Override

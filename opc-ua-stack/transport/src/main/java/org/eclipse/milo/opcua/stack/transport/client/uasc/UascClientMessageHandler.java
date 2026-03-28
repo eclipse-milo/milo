@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -42,6 +42,8 @@ import org.eclipse.milo.opcua.stack.core.channel.ChunkEncoder.EncodedMessage;
 import org.eclipse.milo.opcua.stack.core.channel.MessageAbortException;
 import org.eclipse.milo.opcua.stack.core.channel.MessageDecodeException;
 import org.eclipse.milo.opcua.stack.core.channel.MessageEncodeException;
+import org.eclipse.milo.opcua.stack.core.channel.SecurityKeysListener;
+import org.eclipse.milo.opcua.stack.core.channel.SecurityKeyset;
 import org.eclipse.milo.opcua.stack.core.channel.headers.AsymmetricSecurityHeader;
 import org.eclipse.milo.opcua.stack.core.channel.messages.ErrorMessage;
 import org.eclipse.milo.opcua.stack.core.channel.messages.MessageType;
@@ -474,6 +476,21 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
     ChannelSecurityToken oldToken = oldSecrets != null ? oldSecrets.getCurrentToken() : null;
 
     secureChannel.setChannelSecurity(new ChannelSecurity(newKeys, newToken, oldKeys, oldToken));
+
+    SecurityKeysListener listener = application.getSecurityKeysListener();
+
+    if (listener != null && newKeys != null) {
+      var keyset =
+          new SecurityKeyset(
+              secureChannel.getChannelId(),
+              newToken.getTokenId().longValue(),
+              newKeys.getClientKeys().getEncryptionKey(),
+              newKeys.getClientKeys().getInitializationVector(),
+              newKeys.getServerKeys().getEncryptionKey(),
+              newKeys.getServerKeys().getInitializationVector(),
+              secureChannel.getSymmetricSignatureSize());
+      listener.onSecurityKeysCreated(keyset);
+    }
 
     DateTime createdAt = response.getSecurityToken().getCreatedAt();
     long revisedLifetime = response.getSecurityToken().getRevisedLifetime().longValue();

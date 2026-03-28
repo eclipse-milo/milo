@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -27,6 +27,7 @@ import org.eclipse.milo.opcua.stack.core.security.FileBasedTrustListManager;
 import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
 import org.eclipse.milo.opcua.stack.core.security.TrustListManager;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +58,8 @@ public class ClientExampleRunner {
     this.serverRequired = serverRequired;
 
     if (serverRequired) {
-      exampleServer = new ExampleServer();
+      int port = EndpointUtil.getPort(clientExample.getEndpointUrl());
+      exampleServer = new ExampleServer(port, clientExample::configureServer);
       exampleServer.startup().get();
     }
   }
@@ -86,15 +88,17 @@ public class ClientExampleRunner {
         clientExample.getEndpointUrl(),
         endpoints -> endpoints.stream().filter(clientExample.endpointFilter()).findFirst(),
         transportConfigBuilder -> {},
-        clientConfigBuilder ->
-            clientConfigBuilder
-                .setApplicationName(LocalizedText.english("eclipse milo opc-ua client"))
-                .setApplicationUri("urn:eclipse:milo:examples:client")
-                .setKeyPair(loader.getClientKeyPair())
-                .setCertificate(loader.getClientCertificate())
-                .setCertificateChain(loader.getClientCertificateChain())
-                .setCertificateValidator(certificateValidator)
-                .setIdentityProvider(clientExample.getIdentityProvider()));
+        clientConfigBuilder -> {
+          clientConfigBuilder
+              .setApplicationName(LocalizedText.english("eclipse milo opc-ua client"))
+              .setApplicationUri("urn:eclipse:milo:examples:client")
+              .setKeyPair(loader.getClientKeyPair())
+              .setCertificate(loader.getClientCertificate())
+              .setCertificateChain(loader.getClientCertificateChain())
+              .setCertificateValidator(certificateValidator)
+              .setIdentityProvider(clientExample.getIdentityProvider());
+          clientExample.configureClient(clientConfigBuilder);
+        });
   }
 
   public void run() {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -51,6 +51,7 @@ import org.eclipse.milo.opcua.sdk.core.typetree.ObjectTypeTree;
 import org.eclipse.milo.opcua.sdk.core.typetree.VariableTypeTree;
 import org.eclipse.milo.opcua.stack.core.*;
 import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
+import org.eclipse.milo.opcua.stack.core.channel.SecurityKeysListener;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingManager;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingManager;
@@ -169,6 +170,7 @@ import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransportCo
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpReverseConnectTransport;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpReverseConnectTransportConfig;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.ReverseConnectChannelFsm;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -521,6 +523,11 @@ public class OpcUaClient {
           public UInteger getRequestTimeout() {
             return config.getRequestTimeout();
           }
+
+          @Override
+          public @Nullable SecurityKeysListener getSecurityKeysListener() {
+            return config.getSecurityKeysListener().orElse(null);
+          }
         };
 
     sessionFsm = SessionFsmFactory.newSessionFsm(this);
@@ -569,6 +576,18 @@ public class OpcUaClient {
                     logger.warn("SessionInitializer: NamespaceTable", ex);
                     return Unit.VALUE;
                   });
+        });
+
+    addSessionInitializer(
+        (client, session) -> {
+          // Reset before the Session is available so that the DataTypeTree and associated codecs
+          // are refreshed (eagerly or lazily, depending on configuration).
+
+          resetDataTypeTree();
+          resetDynamicDataTypeManager();
+          resetDynamicEncodingContext();
+
+          return CompletableFuture.completedFuture(Unit.VALUE);
         });
 
     faultNotificationQueue = new ExecutionQueue(transport.getConfig().getExecutor());
