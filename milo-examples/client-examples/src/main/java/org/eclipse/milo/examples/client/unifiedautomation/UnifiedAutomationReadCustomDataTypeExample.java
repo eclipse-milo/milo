@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package org.eclipse.milo.examples.client;
+package org.eclipse.milo.examples.client.unifiedautomation;
 
 import static java.util.Objects.requireNonNull;
 
@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.milo.examples.client.ClientExample;
+import org.eclipse.milo.examples.client.ClientExampleRunner;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.core.types.DynamicEnumType;
 import org.eclipse.milo.opcua.sdk.core.types.DynamicOptionSetType;
@@ -36,10 +38,10 @@ import org.slf4j.LoggerFactory;
  * <p>Requires the Unified Automation CPP Demo server be running and the endpoint URL be pointing to
  * it.
  */
-public class UnifiedAutomationReadCustomDataTypeExample1 implements ClientExample {
+public class UnifiedAutomationReadCustomDataTypeExample implements ClientExample {
 
   public static void main(String[] args) throws Exception {
-    var example = new UnifiedAutomationReadCustomDataTypeExample1();
+    var example = new UnifiedAutomationReadCustomDataTypeExample();
 
     new ClientExampleRunner(example, false).run();
   }

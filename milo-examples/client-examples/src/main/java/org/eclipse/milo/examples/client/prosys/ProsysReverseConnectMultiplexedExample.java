@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package org.eclipse.milo.examples.client;
+package org.eclipse.milo.examples.client.prosys;
 
 import static java.util.Objects.requireNonNull;
 
@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.eclipse.milo.examples.client.ClientExampleRunner;
+import org.eclipse.milo.examples.client.KeyStoreLoader;
 import org.eclipse.milo.opcua.sdk.client.ClientListener;
 import org.eclipse.milo.opcua.sdk.client.MultiplexedReverseConnectListener;
 import org.eclipse.milo.opcua.sdk.client.MultiplexedReverseConnectListenerConfig;
@@ -40,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * Example demonstrating <b>multiplexed</b> OPC UA Reverse Connect with the Prosys OPC UA Simulation
  * Server.
  *
- * <p>Unlike the 1-1 {@link ReverseConnectExampleProsys}, this example uses a {@link
+ * <p>Unlike the 1-1 {@link ProsysReverseConnectExample}, this example uses a {@link
  * MultiplexedReverseConnectListener} — a shared listener that can accept inbound connections from
  * multiple servers on a single port and create clients on demand.
  *
@@ -63,9 +65,9 @@ import org.slf4j.LoggerFactory;
  * <p>This example uses {@link SecurityPolicy#None} for simplicity. For secured connections, see
  * {@link KeyStoreLoader} and the certificate setup in {@link ClientExampleRunner}.
  *
- * @see ReverseConnectExampleProsys for the simpler 1-1 reverse connect approach
+ * @see ProsysReverseConnectExample for the simpler 1-1 reverse connect approach
  */
-public class MultiplexedReverseConnectExampleProsys {
+public class ProsysReverseConnectMultiplexedExample {
 
   /**
    * The address this client listens on for inbound server connections. Configure the Prosys server
@@ -74,7 +76,7 @@ public class MultiplexedReverseConnectExampleProsys {
   private static final InetSocketAddress LISTEN_ADDRESS = new InetSocketAddress("localhost", 48060);
 
   private static final Logger logger =
-      LoggerFactory.getLogger(MultiplexedReverseConnectExampleProsys.class);
+      LoggerFactory.getLogger(ProsysReverseConnectMultiplexedExample.class);
 
   static {
     Security.addProvider(new BouncyCastleProvider());

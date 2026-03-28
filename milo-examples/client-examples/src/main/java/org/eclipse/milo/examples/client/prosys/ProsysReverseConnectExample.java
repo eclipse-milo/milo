@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package org.eclipse.milo.examples.client;
+package org.eclipse.milo.examples.client.prosys;
 
 import static java.util.Objects.requireNonNull;
 
@@ -17,6 +17,8 @@ import java.security.Security;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.eclipse.milo.examples.client.ClientExampleRunner;
+import org.eclipse.milo.examples.client.KeyStoreLoader;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.Stack;
@@ -51,7 +53,7 @@ import org.slf4j.LoggerFactory;
  * <p>This example uses {@link SecurityPolicy#None} for simplicity. For secured connections, see
  * {@link KeyStoreLoader} and the certificate setup in {@link ClientExampleRunner}.
  */
-public class ReverseConnectExampleProsys {
+public class ProsysReverseConnectExample {
 
   /**
    * The address this client listens on for inbound server connections. Configure the Prosys server
@@ -59,7 +61,7 @@ public class ReverseConnectExampleProsys {
    */
   private static final InetSocketAddress LISTEN_ADDRESS = new InetSocketAddress("localhost", 48060);
 
-  private static final Logger logger = LoggerFactory.getLogger(ReverseConnectExampleProsys.class);
+  private static final Logger logger = LoggerFactory.getLogger(ProsysReverseConnectExample.class);
 
   static {
     Security.addProvider(new BouncyCastleProvider());
