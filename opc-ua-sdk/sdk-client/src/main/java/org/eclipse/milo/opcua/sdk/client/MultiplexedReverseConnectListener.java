@@ -384,7 +384,7 @@ public class MultiplexedReverseConnectListener implements ChannelConsumerRegistr
 
     String serverUri = rhe.serverUri();
 
-    logger.info("Resolved endpoint for ServerUri={}: {}", serverUri, endpoint.getEndpointUrl());
+    logger.debug("Resolved endpoint for ServerUri={}: {}", serverUri, endpoint.getEndpointUrl());
 
     OpcTcpMultiplexedReverseConnectTransport transport = createTransport(serverUri);
 

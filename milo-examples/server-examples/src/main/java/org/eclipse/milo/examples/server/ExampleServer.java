@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.Security;
 import java.security.cert.X509Certificate;
 import java.util.LinkedHashSet;
@@ -56,8 +57,10 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.structured.BuildInfo;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
+import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransport;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransportConfig;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 
 public class ExampleServer {
@@ -73,7 +76,7 @@ public class ExampleServer {
     try {
       NonceUtil.blockUntilSecureRandomSeeded(10, TimeUnit.SECONDS);
     } catch (ExecutionException | InterruptedException | TimeoutException e) {
-      e.printStackTrace();
+      e.printStackTrace(System.err);
       System.exit(-1);
     }
   }
@@ -101,17 +104,28 @@ public class ExampleServer {
     this(DEFAULT_TCP_BIND_PORT, configCustomizer);
   }
 
+  public ExampleServer(int tcpBindPort, Consumer<OpcUaServerConfigBuilder> configCustomizer)
+      throws Exception {
+    this(tcpBindPort, configCustomizer, null);
+  }
+
   /**
-   * Creates an ExampleServer with a custom TCP bind port and additional configuration applied to
-   * the {@link OpcUaServerConfigBuilder} before the config is built.
+   * Creates an ExampleServer.
    *
    * @param tcpBindPort the TCP port to bind the server on.
    * @param configCustomizer a consumer that can modify the server config builder.
+   * @param applicationUri if non-null, the server uses this URI and generates a self-signed
+   *     certificate with it in the SAN. If null, the URI is extracted from the certificate loaded
+   *     by {@link KeyStoreLoader}.
    */
-  public ExampleServer(int tcpBindPort, Consumer<OpcUaServerConfigBuilder> configCustomizer)
+  public ExampleServer(
+      int tcpBindPort,
+      Consumer<OpcUaServerConfigBuilder> configCustomizer,
+      @Nullable String applicationUri)
       throws Exception {
     this.tcpBindPort = tcpBindPort;
-    Path securityTempDir = Paths.get(System.getProperty("java.io.tmpdir"), "server", "security");
+    Path securityTempDir =
+        Paths.get(System.getProperty("java.io.tmpdir"), "server-" + tcpBindPort, "security");
     Files.createDirectories(securityTempDir);
     if (!Files.exists(securityTempDir)) {
       throw new Exception("unable to create security temp dir: " + securityTempDir);
@@ -122,7 +136,42 @@ public class ExampleServer {
     LoggerFactory.getLogger(getClass()).info("security dir: {}", securityTempDir.toAbsolutePath());
     LoggerFactory.getLogger(getClass()).info("security pki dir: {}", pkiDir.getAbsolutePath());
 
-    KeyStoreLoader loader = new KeyStoreLoader().load(securityTempDir);
+    KeyPair keyPair;
+    X509Certificate certificate;
+    X509Certificate[] certificateChain;
+    String resolvedApplicationUri;
+
+    if (applicationUri != null) {
+      // Generate a self-signed certificate with the provided URI in the SAN.
+      KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
+      kpg.initialize(2048);
+      keyPair = kpg.generateKeyPair();
+
+      certificate =
+          new SelfSignedCertificateBuilder(keyPair)
+              .setCommonName("Eclipse Milo Example Server")
+              .setOrganization("Eclipse")
+              .setOrganizationalUnit("Milo")
+              .setApplicationUri(applicationUri)
+              .addDnsName("localhost")
+              .addIpAddress("127.0.0.1")
+              .build();
+      certificateChain = new X509Certificate[] {certificate};
+      resolvedApplicationUri = applicationUri;
+    } else {
+      // Load identity from the keystore (existing behavior).
+      KeyStoreLoader loader = new KeyStoreLoader().load(securityTempDir);
+      keyPair = loader.getServerKeyPair();
+      certificate = loader.getServerCertificate();
+      certificateChain = loader.getServerCertificateChain();
+      resolvedApplicationUri =
+          CertificateUtil.getSanUri(certificate)
+              .orElseThrow(
+                  () ->
+                      new UaRuntimeException(
+                          StatusCodes.Bad_ConfigurationError,
+                          "certificate is missing the application URI"));
+    }
 
     var certificateStore =
         KeyStoreCertificateStore.createAndInitialize(
@@ -140,12 +189,12 @@ public class ExampleServer {
         new RsaSha256CertificateFactory() {
           @Override
           protected KeyPair createRsaSha256KeyPair() {
-            return loader.getServerKeyPair();
+            return keyPair;
           }
 
           @Override
-          protected X509Certificate[] createRsaSha256CertificateChain(KeyPair keyPair) {
-            return loader.getServerCertificateChain();
+          protected X509Certificate[] createRsaSha256CertificateChain(KeyPair kp) {
+            return certificateChain;
           }
         };
 
@@ -172,22 +221,11 @@ public class ExampleServer {
 
     var x509IdentityValidator = new X509IdentityValidator(c -> true);
 
-    X509Certificate certificate = loader.getServerCertificate();
-
-    // The configured application URI must match the one in the certificate(s)
-    String applicationUri =
-        CertificateUtil.getSanUri(certificate)
-            .orElseThrow(
-                () ->
-                    new UaRuntimeException(
-                        StatusCodes.Bad_ConfigurationError,
-                        "certificate is missing the application URI"));
-
     Set<EndpointConfig> endpointConfigurations = createEndpointConfigs(certificate);
 
     var serverConfigBuilder =
         OpcUaServerConfig.builder()
-            .setApplicationUri(applicationUri)
+            .setApplicationUri(resolvedApplicationUri)
             .setApplicationName(LocalizedText.english("Eclipse Milo OPC UA Example Server"))
             .setEndpoints(endpointConfigurations)
             .setBuildInfo(
