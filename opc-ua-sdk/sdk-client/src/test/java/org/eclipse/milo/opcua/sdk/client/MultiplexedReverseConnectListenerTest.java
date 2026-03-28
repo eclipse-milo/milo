@@ -17,7 +17,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import io.netty.channel.ChannelPipeline;
 import io.netty.channel.embedded.EmbeddedChannel;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -233,19 +232,24 @@ class MultiplexedReverseConnectListenerTest {
 
   @Test
   void rateLimitingHandlerInstalled() throws Exception {
-    var pipelineFuture = new CompletableFuture<ChannelPipeline>();
+    // Capture whether the handler is present inside the customizer callback,
+    // which runs during initChannel() — before fireChannelRegistered()
+    // propagates and AbstractRemoteAddressFilter removes itself from the
+    // pipeline.
+    var handlerPresent = new CompletableFuture<Boolean>();
 
     listener =
         createAndStart(
             defaultConfigBuilder()
                 .setRateLimitingEnabled(true)
-                .setChannelPipelineCustomizer(pipelineFuture::complete)
+                .setChannelPipelineCustomizer(
+                    pipeline ->
+                        handlerPresent.complete(pipeline.get(RateLimitingHandler.class) != null))
                 .build());
 
     // Connect a raw socket to trigger the child channel pipeline initialization
-    try (var socket = new Socket("localhost", getPort())) {
-      ChannelPipeline pipeline = pipelineFuture.get(5, TimeUnit.SECONDS);
-      assertNotNull(pipeline.get(RateLimitingHandler.class));
+    try (var ignored = new Socket("localhost", getPort())) {
+      assertTrue(handlerPresent.get(5, TimeUnit.SECONDS));
     }
   }
 
