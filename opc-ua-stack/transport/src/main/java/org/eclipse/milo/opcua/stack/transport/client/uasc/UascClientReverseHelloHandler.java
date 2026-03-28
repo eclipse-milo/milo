@@ -98,7 +98,7 @@ public class UascClientReverseHelloHandler extends ByteToMessageCodec<UaRequestM
 
   @Override
   public void channelActive(ChannelHandlerContext ctx) throws Exception {
-    if (timeoutStarted.compareAndSet(false, true)) {
+    if (reverseHelloTimeoutMs > 0 && timeoutStarted.compareAndSet(false, true)) {
       timeout = startReverseHelloTimeout(ctx);
     }
     super.channelActive(ctx);
@@ -106,7 +106,9 @@ public class UascClientReverseHelloHandler extends ByteToMessageCodec<UaRequestM
 
   @Override
   public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
-    if (ctx.channel().isActive() && timeoutStarted.compareAndSet(false, true)) {
+    if (reverseHelloTimeoutMs > 0
+        && ctx.channel().isActive()
+        && timeoutStarted.compareAndSet(false, true)) {
       timeout = startReverseHelloTimeout(ctx);
     }
     super.handlerAdded(ctx);
