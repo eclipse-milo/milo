@@ -309,12 +309,17 @@ public class NodeFactory {
           } else if (node instanceof UaObjectNode objectNode) {
             ObjectTypeNode objectTypeNode = objectNode.getTypeDefinitionNode();
 
-            instantiationCallback.onObjectAdded(parentNode, objectNode, objectTypeNode.getNodeId());
+            if (objectTypeNode != null) {
+              instantiationCallback.onObjectAdded(
+                  parentNode, objectNode, objectTypeNode.getNodeId());
+            }
           } else if (node instanceof UaVariableNode variableNode) {
             VariableTypeNode variableTypeNode = variableNode.getTypeDefinitionNode();
 
-            instantiationCallback.onVariableAdded(
-                parentNode, variableNode, variableTypeNode.getNodeId());
+            if (variableTypeNode != null) {
+              instantiationCallback.onVariableAdded(
+                  parentNode, variableNode, variableTypeNode.getNodeId());
+            }
           }
         });
   }
