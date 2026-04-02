@@ -323,10 +323,18 @@ public class ReverseConnectManager {
       try {
         Set<ReverseConnectHandle> handles = handlesByClientUrl.get(clientEndpointUrl);
         if (handles != null && running) {
-          var idleHandle = new ReverseConnectHandle(clientEndpointUrl, endpointUrl, true);
-          idleFsm = createFsm(clientEndpointUrl, endpointUrl);
-          connections.put(idleHandle, idleFsm);
-          handles.add(idleHandle);
+          // If the handle set grew since our snapshot, another thread already
+          // spawned an idle FSM (which starts in Idle, a non-Active/non-
+          // Disconnected state). Skip to avoid duplicates. We compare set
+          // sizes rather than calling getState() to preserve the lock-ordering
+          // invariant: getState() acquires the FSM read lock and must not be
+          // called while holding Manager.lock.
+          if (handles.size() == snapshot.size()) {
+            var idleHandle = new ReverseConnectHandle(clientEndpointUrl, endpointUrl, true);
+            idleFsm = createFsm(clientEndpointUrl, endpointUrl);
+            connections.put(idleHandle, idleFsm);
+            handles.add(idleHandle);
+          }
         }
       } finally {
         lock.unlock();
