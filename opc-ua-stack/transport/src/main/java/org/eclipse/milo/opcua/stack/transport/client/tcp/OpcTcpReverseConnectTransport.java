@@ -128,13 +128,10 @@ public class OpcTcpReverseConnectTransport extends AbstractUascClientTransport
     var disconnect = new ReverseConnectChannelFsm.Event.Disconnect(new CompletableFuture<>());
     channelFsm.fireEvent(disconnect);
 
-    return disconnect
-        .future()
-        .thenApply(
-            v -> {
-              stopListening();
-              return Unit.VALUE;
-            });
+    // Use thenCompose with an async close to avoid blocking the FSM
+    // executor thread with syncUninterruptibly(), which could deadlock
+    // if the executor is the Netty event loop.
+    return disconnect.future().thenCompose(v -> stopListeningAsync());
   }
 
   @Override
@@ -203,13 +200,26 @@ public class OpcTcpReverseConnectTransport extends AbstractUascClientTransport
     logger.info("Listening for reverse connections on {}", serverChannel.localAddress());
   }
 
-  private synchronized void stopListening() {
+  private synchronized CompletableFuture<Unit> stopListeningAsync() {
     if (serverChannel != null && serverChannel.isOpen()) {
-      serverChannel.close().syncUninterruptibly();
-      logger.info("Stopped listening on {}", serverChannel.localAddress());
+      var addr = serverChannel.localAddress();
+      Channel ch = serverChannel;
+      serverBootstrap = null;
+      serverChannel = null;
+
+      var future = new CompletableFuture<Unit>();
+      ch.close()
+          .addListener(
+              f -> {
+                logger.info("Stopped listening on {}", addr);
+                future.complete(Unit.VALUE);
+              });
+      return future;
+    } else {
+      serverBootstrap = null;
+      serverChannel = null;
+      return CompletableFuture.completedFuture(Unit.VALUE);
     }
-    serverBootstrap = null;
-    serverChannel = null;
   }
 
   /**
