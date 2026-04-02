@@ -280,9 +280,15 @@ public class ReverseConnectChannelFsm {
               newChannel.close();
             });
 
-    /* Entry action: start the handshake on the accepted channel */
+    /* Entry action: start the handshake on the accepted channel.
+     * Exclude Handshaking as a source state: the internal transition
+     * that rejects duplicate ConnectionAccepted events causes a
+     * Handshaking→Handshaking self-transition. Using fromAny() would
+     * re-run this entry action on the rejected channel, replacing the
+     * close listener and causing the rejected channel's close to kill
+     * the real handshake. */
     fb.onTransitionTo(State.Handshaking)
-        .fromAny()
+        .from(s -> s != State.Handshaking)
         .via(Event.ConnectionAccepted.class)
         .execute(
             ctx -> {
@@ -422,6 +428,21 @@ public class ReverseConnectChannelFsm {
     fb.onInternalTransition(State.Reconnecting)
         .via(Event.GetChannel.class)
         .execute(ReverseConnectChannelFsm::chainGetChannelFuture);
+
+    /* Discard stale HandshakeSuccess that lost the race with ChannelInactive.
+     * The underlying channel is already closed so close the SecureChannel's
+     * channel defensively to release any resources. */
+    fb.onInternalTransition(State.Reconnecting)
+        .via(Event.HandshakeSuccess.class)
+        .execute(
+            ctx -> {
+              var event = (Event.HandshakeSuccess) ctx.event();
+              Channel ch = event.secureChannel().getChannel();
+              if (ch != null && ch.isActive()) {
+                ch.close();
+              }
+              LOGGER.debug("Discarding stale HandshakeSuccess while Reconnecting");
+            });
 
     /* Entry action: clear old channel state, chain existing waiters */
     fb.onTransitionTo(State.Reconnecting)
