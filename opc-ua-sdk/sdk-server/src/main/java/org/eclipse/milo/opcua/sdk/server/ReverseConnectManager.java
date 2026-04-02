@@ -365,7 +365,10 @@ public class ReverseConnectManager {
         config,
         transportConfig.getExecutor(),
         Stack.sharedScheduledExecutor(),
-        () -> ensureIdleConnection(clientEndpointUrl, resolvedEndpointUrl));
+        () ->
+            transportConfig
+                .getExecutor()
+                .execute(() -> ensureIdleConnection(clientEndpointUrl, resolvedEndpointUrl)));
   }
 
   private String resolvePrimaryEndpointUrl() {
