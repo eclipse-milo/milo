@@ -53,7 +53,7 @@ public class ReverseConnectExample {
 
   public static void main(String[] args) throws Exception {
     // 1. Create and configure the server with a ReverseConnectManager.
-    var exampleServer = new ExampleServer();
+    var exampleServer = new ExampleServer(12686, builder -> {}, "urn:eclipse:milo:examples:server");
 
     var rcConfig =
         ReverseConnectConfig.newBuilder().setConnectInterval(Duration.ofSeconds(2)).build();
