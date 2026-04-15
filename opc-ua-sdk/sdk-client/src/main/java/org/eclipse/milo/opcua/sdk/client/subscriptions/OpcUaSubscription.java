@@ -856,10 +856,10 @@ public class OpcUaSubscription {
    * the server.
    *
    * <p>Returns {@code true} when no MonitoredItems that require server-side deletion are pending
-   * deletion and every item in the subscription has
-   * {@link OpcUaMonitoredItem.SyncState#SYNCHRONIZED}. Items pending deletion while still in
-   * {@link OpcUaMonitoredItem.SyncState#INITIAL} are ignored because they were never created on
-   * the server.
+   * deletion and every item in the subscription has {@link
+   * OpcUaMonitoredItem.SyncState#SYNCHRONIZED}. Items pending deletion while still in {@link
+   * OpcUaMonitoredItem.SyncState#INITIAL} are ignored because they were never created on the
+   * server.
    *
    * @return {@code true} if all MonitoredItems are synchronized.
    */
