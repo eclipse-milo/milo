@@ -138,7 +138,9 @@ public class MultiplexedReverseConnectListener implements ChannelConsumerRegistr
                   @Override
                   protected void initChannel(SocketChannel ch) {
                     int maxConnections = config.getMaxConnections();
-                    if (maxConnections > 0 && activeConnections.get() >= maxConnections) {
+                    int newCount = activeConnections.incrementAndGet();
+                    if (maxConnections > 0 && newCount > maxConnections) {
+                      activeConnections.decrementAndGet();
                       logger.debug(
                           "Max connections ({}) reached, closing {}",
                           maxConnections,
@@ -147,7 +149,6 @@ public class MultiplexedReverseConnectListener implements ChannelConsumerRegistr
                       return;
                     }
 
-                    activeConnections.incrementAndGet();
                     childChannels.add(ch);
                     ch.closeFuture().addListener(f -> activeConnections.decrementAndGet());
 
