@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.stack.transport.client.tcp;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -19,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
@@ -219,6 +221,59 @@ class OpcTcpReverseConnectTransportTest {
     } finally {
       server.removeReverseConnect(handle);
       transport.disconnect().get(5, TimeUnit.SECONDS);
+    }
+  }
+
+  @Test
+  void reverseHelloTimeoutClosesIdleAcceptedSocket() throws Exception {
+    var transportConfig =
+        OpcTcpReverseConnectTransportConfig.newBuilder()
+            .setListenAddress(new InetSocketAddress("localhost", 0))
+            .setReverseHelloTimeout(200)
+            .build();
+
+    var transport = new OpcTcpReverseConnectTransport(transportConfig);
+    transport.connect(newClientApplicationContext());
+
+    int listenPort = getListenPort(transport);
+
+    try (var socket = new Socket("localhost", listenPort)) {
+      socket.setSoTimeout(5_000);
+      assertEquals(-1, socket.getInputStream().read());
+    } finally {
+      transport.disconnect().get(5, TimeUnit.SECONDS);
+    }
+  }
+
+  @Test
+  void disconnectClosesTrackedAcceptedSockets() throws Exception {
+    var transportConfig =
+        OpcTcpReverseConnectTransportConfig.newBuilder()
+            .setListenAddress(new InetSocketAddress("localhost", 0))
+            .build();
+
+    var transport = new OpcTcpReverseConnectTransport(transportConfig);
+    transport.connect(newClientApplicationContext());
+
+    int listenPort = getListenPort(transport);
+
+    try {
+      try (var socket = new Socket("localhost", listenPort)) {
+        socket.setSoTimeout(5_000);
+
+        // Give the listener time to accept and register the child channel before shutdown.
+        Thread.sleep(100);
+
+        transport.disconnect().get(5, TimeUnit.SECONDS);
+
+        assertEquals(-1, socket.getInputStream().read());
+      }
+    } finally {
+      try {
+        transport.disconnect().get(5, TimeUnit.SECONDS);
+      } catch (Exception ignored) {
+        // don't mask the original failure
+      }
     }
   }
 

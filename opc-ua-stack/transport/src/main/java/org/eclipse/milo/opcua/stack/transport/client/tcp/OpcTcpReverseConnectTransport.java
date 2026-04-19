@@ -15,14 +15,22 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.ByteToMessageDecoder;
+import io.netty.handler.timeout.IdleState;
+import io.netty.handler.timeout.IdleStateEvent;
+import io.netty.handler.timeout.IdleStateHandler;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.channel.ExceptionHandler;
@@ -52,8 +60,12 @@ public class OpcTcpReverseConnectTransport extends AbstractUascClientTransport
    */
   private static final int MAX_REVERSE_HELLO_MESSAGE_SIZE = 8 + 4 + 4096 + 4 + 4096;
 
+  private static final String REVERSE_HELLO_IDLE_HANDLER_NAME = "reverseHelloIdleHandler";
+  private static final String REVERSE_HELLO_TIMEOUT_HANDLER_NAME = "reverseHelloTimeoutHandler";
+
   private final OpcTcpReverseConnectTransportConfig config;
   private final ReverseConnectChannelFsm channelFsm;
+  private final Set<Channel> childChannels = ConcurrentHashMap.newKeySet();
 
   private final CopyOnWriteArrayList<ChannelStateObservable.TransitionListener> stateListeners =
       new CopyOnWriteArrayList<>();
@@ -118,20 +130,32 @@ public class OpcTcpReverseConnectTransport extends AbstractUascClientTransport
   }
 
   /**
-   * Disconnect the current SecureChannel and stop listening for inbound connections.
+   * Disconnect the current SecureChannel, stop listening for inbound connections, and close any
+   * accepted child sockets that have not yet reached the connected state.
    *
-   * @return a future that completes when the disconnect is finished and the listening socket is
-   *     closed.
+   * @return a future that completes when the disconnect is finished, the listening socket is
+   *     closed, and accepted child sockets have been cleaned up.
    */
   @Override
   public CompletableFuture<Unit> disconnect() {
     var disconnect = new ReverseConnectChannelFsm.Event.Disconnect(new CompletableFuture<>());
     channelFsm.fireEvent(disconnect);
 
-    // Use thenCompose with an async close to avoid blocking the FSM
-    // executor thread with syncUninterruptibly(), which could deadlock
-    // if the executor is the Netty event loop.
-    return disconnect.future().thenCompose(v -> stopListeningAsync());
+    // Always stop the listener, even if the FSM disconnect path fails unexpectedly.
+    // The stop path closes the listening socket and all tracked child channels.
+    return disconnect
+        .future()
+        .handle((v, ex) -> ex)
+        .thenCompose(
+            disconnectFailure ->
+                stopListeningAsync()
+                    .thenApply(
+                        v -> {
+                          if (disconnectFailure != null) {
+                            throw new CompletionException(disconnectFailure);
+                          }
+                          return v;
+                        }));
   }
 
   @Override
@@ -180,6 +204,21 @@ public class OpcTcpReverseConnectTransport extends AbstractUascClientTransport
                 new ChannelInitializer<SocketChannel>() {
                   @Override
                   protected void initChannel(SocketChannel ch) {
+                    trackChildChannel(ch);
+
+                    long reverseHelloTimeout = config.getReverseHelloTimeout();
+                    if (reverseHelloTimeout > 0) {
+                      ch.pipeline()
+                          .addLast(
+                              REVERSE_HELLO_IDLE_HANDLER_NAME,
+                              new IdleStateHandler(
+                                  reverseHelloTimeout, 0, 0, TimeUnit.MILLISECONDS));
+                      ch.pipeline()
+                          .addLast(
+                              REVERSE_HELLO_TIMEOUT_HANDLER_NAME,
+                              new ReverseHelloTimeoutHandler(reverseHelloTimeout));
+                    }
+
                     ch.pipeline().addLast(new ReverseHelloDecoder());
 
                     config.getChannelPipelineCustomizer().accept(ch.pipeline());
@@ -201,34 +240,62 @@ public class OpcTcpReverseConnectTransport extends AbstractUascClientTransport
   }
 
   private synchronized CompletableFuture<Unit> stopListeningAsync() {
-    if (serverChannel != null && serverChannel.isOpen()) {
-      var addr = serverChannel.localAddress();
-      Channel ch = serverChannel;
-      serverBootstrap = null;
-      serverChannel = null;
+    Channel listenerChannel = serverChannel;
+    Object listenAddress = listenerChannel != null ? listenerChannel.localAddress() : null;
 
-      var future = new CompletableFuture<Unit>();
-      ch.close()
-          .addListener(
-              f -> {
-                logger.info("Stopped listening on {}", addr);
-                future.complete(Unit.VALUE);
-              });
-      return future;
-    } else {
-      serverBootstrap = null;
-      serverChannel = null;
+    serverBootstrap = null;
+    serverChannel = null;
+
+    return closeChannelAsync(listenerChannel)
+        .thenCompose(
+            v -> {
+              if (listenAddress != null) {
+                logger.info("Stopped listening on {}", listenAddress);
+              }
+              return closeChildChannelsAsync();
+            });
+  }
+
+  private void trackChildChannel(Channel channel) {
+    childChannels.add(channel);
+    channel.closeFuture().addListener(f -> childChannels.remove(channel));
+  }
+
+  private CompletableFuture<Void> closeChannelAsync(Channel channel) {
+    if (channel == null) {
+      return CompletableFuture.completedFuture(null);
+    }
+
+    if (!channel.isOpen()) {
+      childChannels.remove(channel);
+      return CompletableFuture.completedFuture(null);
+    }
+
+    var future = new CompletableFuture<Void>();
+    channel.close().addListener(f -> future.complete(null));
+    return future;
+  }
+
+  private CompletableFuture<Unit> closeChildChannelsAsync() {
+    Channel[] trackedChannels = childChannels.toArray(Channel[]::new);
+    if (trackedChannels.length == 0) {
       return CompletableFuture.completedFuture(Unit.VALUE);
     }
+
+    var closeFutures = new CompletableFuture<?>[trackedChannels.length];
+    for (int i = 0; i < trackedChannels.length; i++) {
+      closeFutures[i] = closeChannelAsync(trackedChannels[i]);
+    }
+
+    return CompletableFuture.allOf(closeFutures).thenApply(v -> Unit.VALUE);
   }
 
   /**
-   * A minimal decoder installed on each accepted child channel. Its sole job is to read the first
-   * message, verify it is a ReverseHello, decode it, and notify the FSM via a {@link
-   * ReverseConnectChannelFsm.Event.ConnectionAccepted} event.
+   * A decoder installed on each accepted child channel that requires the first complete OPC UA TCP
+   * message to be a {@code ReverseHello}.
    *
-   * <p>After successfully decoding the ReverseHello, this handler removes itself from the pipeline.
-   * The FSM's handshake entry action then installs the full {@code UascClientReverseHelloHandler}.
+   * <p>After a {@code ReverseHello} is decoded, this handler removes itself so the channel can
+   * continue through the normal reverse-connect handshake.
    */
   private class ReverseHelloDecoder extends ByteToMessageDecoder implements HeaderDecoder {
 
@@ -268,6 +335,7 @@ public class OpcTcpReverseConnectTransport extends AbstractUascClientTransport
 
       ReverseHelloMessage rhe = TcpMessageDecoder.decodeReverseHello(messageBuffer);
 
+      removeReverseHelloTimeoutHandlers(ctx);
       ctx.pipeline().remove(this);
 
       logger.debug(
@@ -283,6 +351,41 @@ public class OpcTcpReverseConnectTransport extends AbstractUascClientTransport
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
       logger.error("Exception in ReverseHelloDecoder", cause);
       ExceptionHandler.sendErrorMessage(ctx, cause);
+    }
+  }
+
+  /** Closes accepted child channels that stay idle before sending a {@code ReverseHello}. */
+  private class ReverseHelloTimeoutHandler extends ChannelInboundHandlerAdapter {
+
+    private final long reverseHelloTimeout;
+
+    private ReverseHelloTimeoutHandler(long reverseHelloTimeout) {
+      this.reverseHelloTimeout = reverseHelloTimeout;
+    }
+
+    @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+      if (evt instanceof IdleStateEvent idleStateEvent
+          && idleStateEvent.state() == IdleState.READER_IDLE) {
+
+        logger.debug(
+            "ReverseHello timeout ({}ms) elapsed, closing {}",
+            reverseHelloTimeout,
+            ctx.channel().remoteAddress());
+
+        ctx.close();
+      } else {
+        super.userEventTriggered(ctx, evt);
+      }
+    }
+  }
+
+  private void removeReverseHelloTimeoutHandlers(ChannelHandlerContext ctx) {
+    if (ctx.pipeline().context(REVERSE_HELLO_TIMEOUT_HANDLER_NAME) != null) {
+      ctx.pipeline().remove(REVERSE_HELLO_TIMEOUT_HANDLER_NAME);
+    }
+    if (ctx.pipeline().context(REVERSE_HELLO_IDLE_HANDLER_NAME) != null) {
+      ctx.pipeline().remove(REVERSE_HELLO_IDLE_HANDLER_NAME);
     }
   }
 }
