@@ -11,9 +11,11 @@
 package org.eclipse.milo.opcua.sdk.client;
 
 import com.google.common.base.MoreObjects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.SignedSoftwareCertificate;
 import org.jspecify.annotations.NonNull;
@@ -22,6 +24,7 @@ import org.jspecify.annotations.Nullable;
 public class OpcUaSession extends ConcurrentHashMap<String, Object> implements UaSession {
 
   private volatile ByteString serverNonce = ByteString.NULL_VALUE;
+  private volatile @Nullable StatusCode lastActivateSessionServiceResult;
 
   private final NodeId authToken;
   private final NodeId sessionId;
@@ -89,8 +92,18 @@ public class OpcUaSession extends ConcurrentHashMap<String, Object> implements U
     return serverNonce;
   }
 
+  @Override
+  public Optional<StatusCode> getLastActivateSessionServiceResult() {
+    return Optional.ofNullable(lastActivateSessionServiceResult);
+  }
+
   public void setServerNonce(ByteString serverNonce) {
     this.serverNonce = serverNonce;
+  }
+
+  public void setLastActivateSessionServiceResult(
+      @Nullable StatusCode lastActivateSessionServiceResult) {
+    this.lastActivateSessionServiceResult = lastActivateSessionServiceResult;
   }
 
   @Nullable

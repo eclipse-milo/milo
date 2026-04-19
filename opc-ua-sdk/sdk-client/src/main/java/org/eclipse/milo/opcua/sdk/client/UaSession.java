@@ -10,8 +10,10 @@
 
 package org.eclipse.milo.opcua.sdk.client;
 
+import java.util.Optional;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.SignedSoftwareCertificate;
 import org.jspecify.annotations.NonNull;
@@ -69,6 +71,16 @@ public interface UaSession {
    * @return the server {@link SignedSoftwareCertificate}s.
    */
   SignedSoftwareCertificate[] getServerSoftwareCertificates();
+
+  /**
+   * Get the service result from the most recent successful ActivateSession response, including
+   * reactivation.
+   *
+   * @return the most recent successful ActivateSession service result, if available.
+   */
+  default Optional<StatusCode> getLastActivateSessionServiceResult() {
+    return Optional.empty();
+  }
 
   /**
    * Returns the attribute bound to {@code name} in this session, or <code>null</code> if no

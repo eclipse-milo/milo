@@ -1362,6 +1362,8 @@ public class SessionFsmFactory {
                         csr.getServerCertificate(),
                         csr.getServerSoftwareCertificates());
 
+                session.setLastActivateSessionServiceResult(
+                    asr.getResponseHeader().getServiceResult());
                 session.setServerNonce(asrNonce);
 
                 return completedFuture(session);
@@ -1409,6 +1411,8 @@ public class SessionFsmFactory {
           .thenApply(ActivateSessionResponse.class::cast)
           .thenCompose(
               asr -> {
+                session.setLastActivateSessionServiceResult(
+                    asr.getResponseHeader().getServiceResult());
                 session.setServerNonce(asr.getServerNonce());
 
                 return completedFuture(session);
