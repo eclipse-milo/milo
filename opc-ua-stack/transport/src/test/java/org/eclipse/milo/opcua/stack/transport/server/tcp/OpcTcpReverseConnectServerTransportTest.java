@@ -23,6 +23,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.util.ReferenceCountUtil;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -85,7 +86,7 @@ class OpcTcpReverseConnectServerTransportTest {
                             new ChannelInboundHandlerAdapter() {
                               @Override
                               public void channelRead(ChannelHandlerContext ctx, Object msg) {
-                                // discard
+                                ReferenceCountUtil.release(msg);
                               }
                             });
                   }
