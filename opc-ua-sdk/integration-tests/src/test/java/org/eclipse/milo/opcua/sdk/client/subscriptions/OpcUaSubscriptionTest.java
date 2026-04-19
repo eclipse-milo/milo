@@ -423,6 +423,110 @@ public class OpcUaSubscriptionTest extends AbstractClientServerTest {
   }
 
   @Test
+  void syncStateNotAffectedByMonitoredItems() throws UaException {
+    var subscription = new OpcUaSubscription(client);
+
+    try {
+      // Add item before create — syncState stays INITIAL
+      var item = OpcUaMonitoredItem.newDataItem(NodeIds.Server_ServerStatus_CurrentTime);
+      subscription.addMonitoredItem(item);
+      assertEquals(SyncState.INITIAL, subscription.getSyncState());
+
+      subscription.create();
+      assertEquals(SyncState.SYNCHRONIZED, subscription.getSyncState());
+
+      // Add another item — syncState stays SYNCHRONIZED
+      var item2 = OpcUaMonitoredItem.newDataItem(NodeIds.Server_ServerStatus_State);
+      subscription.addMonitoredItem(item2);
+      assertEquals(SyncState.SYNCHRONIZED, subscription.getSyncState());
+
+      // Remove an item — syncState stays SYNCHRONIZED
+      subscription.removeMonitoredItem(item2);
+      assertEquals(SyncState.SYNCHRONIZED, subscription.getSyncState());
+    } finally {
+      subscription.delete();
+    }
+  }
+
+  @Test
+  void createWithItemsSetsSynchronized() throws UaException {
+    var subscription = new OpcUaSubscription(client);
+
+    try {
+      subscription.addMonitoredItem(
+          OpcUaMonitoredItem.newDataItem(NodeIds.Server_ServerStatus_CurrentTime));
+      subscription.create();
+      assertEquals(SyncState.SYNCHRONIZED, subscription.getSyncState());
+    } finally {
+      subscription.delete();
+    }
+  }
+
+  @Test
+  void isMonitoredItemsSynchronized() throws UaException {
+    var subscription = new OpcUaSubscription(client);
+
+    try {
+      // Empty subscription — vacuously true
+      subscription.create();
+      assertTrue(subscription.isMonitoredItemsSynchronized());
+
+      // Add an item — item is INITIAL, not yet synced
+      var item = OpcUaMonitoredItem.newDataItem(NodeIds.Server_ServerStatus_CurrentTime);
+      subscription.addMonitoredItem(item);
+      assertFalse(subscription.isMonitoredItemsSynchronized());
+
+      // Synchronize — item becomes SYNCHRONIZED
+      subscription.synchronizeMonitoredItems();
+      assertTrue(subscription.isMonitoredItemsSynchronized());
+
+      // Remove the item — pending deletion, not synced
+      subscription.removeMonitoredItem(item);
+      assertFalse(subscription.isMonitoredItemsSynchronized());
+
+      // Synchronize deletion
+      subscription.synchronizeMonitoredItems();
+      assertTrue(subscription.isMonitoredItemsSynchronized());
+    } finally {
+      subscription.delete();
+    }
+  }
+
+  @Test
+  void isFullySynchronized() throws UaException {
+    var subscription = new OpcUaSubscription(client);
+
+    try {
+      // INITIAL — not fully synchronized
+      assertFalse(subscription.isFullySynchronized());
+
+      subscription.create();
+
+      // SYNCHRONIZED, no items — fully synchronized
+      assertTrue(subscription.isFullySynchronized());
+
+      // Add item — subscription SYNCHRONIZED but item INITIAL
+      var item = OpcUaMonitoredItem.newDataItem(NodeIds.Server_ServerStatus_CurrentTime);
+      subscription.addMonitoredItem(item);
+      assertFalse(subscription.isFullySynchronized());
+
+      // Synchronize items — now fully synchronized
+      subscription.synchronizeMonitoredItems();
+      assertTrue(subscription.isFullySynchronized());
+
+      // Change a subscription parameter — subscription UNSYNCHRONIZED
+      subscription.setPublishingInterval(5000.0);
+      assertFalse(subscription.isFullySynchronized());
+
+      // Modify subscription — back to fully synchronized
+      subscription.modify();
+      assertTrue(subscription.isFullySynchronized());
+    } finally {
+      subscription.delete();
+    }
+  }
+
+  @Test
   void createSubscriptionAgainAfterDeleting() throws Exception {
     var subscription = new OpcUaSubscription(client);
     subscription.create();

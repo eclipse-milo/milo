@@ -143,11 +143,7 @@ public class OpcUaSubscription {
               true,
               priority);
 
-      if (monitoredItems.isEmpty()) {
-        syncState = SyncState.SYNCHRONIZED;
-      } else {
-        syncState = SyncState.UNSYNCHRONIZED;
-      }
+      syncState = SyncState.SYNCHRONIZED;
 
       serverState =
           new ServerState(
@@ -335,10 +331,6 @@ public class OpcUaSubscription {
       item.setClientHandle(clientHandle);
 
       monitoredItems.put(clientHandle, item);
-
-      if (syncState != SyncState.INITIAL) {
-        syncState = SyncState.UNSYNCHRONIZED;
-      }
     }
   }
 
@@ -369,10 +361,6 @@ public class OpcUaSubscription {
 
     if (removedItem != null) {
       itemsToDelete.add(removedItem);
-
-      if (syncState != SyncState.INITIAL) {
-        syncState = SyncState.UNSYNCHRONIZED;
-      }
     }
   }
 
@@ -861,6 +849,38 @@ public class OpcUaSubscription {
    */
   public SyncState getSyncState() {
     return syncState;
+  }
+
+  /**
+   * Check if all {@link OpcUaMonitoredItem}s belonging to this subscription are synchronized with
+   * the server.
+   *
+   * <p>Returns {@code true} when no MonitoredItems that require server-side deletion are pending
+   * deletion and every item in the subscription has {@link
+   * OpcUaMonitoredItem.SyncState#SYNCHRONIZED}. Items pending deletion while still in {@link
+   * OpcUaMonitoredItem.SyncState#INITIAL} are ignored because they were never created on the
+   * server.
+   *
+   * @return {@code true} if all MonitoredItems are synchronized.
+   */
+  public boolean isMonitoredItemsSynchronized() {
+    return itemsToDelete.stream()
+            .noneMatch(item -> item.getSyncState() != OpcUaMonitoredItem.SyncState.INITIAL)
+        && monitoredItems.values().stream()
+            .allMatch(item -> item.getSyncState() == OpcUaMonitoredItem.SyncState.SYNCHRONIZED);
+  }
+
+  /**
+   * Check if this subscription and all its {@link OpcUaMonitoredItem}s are synchronized with the
+   * server.
+   *
+   * <p>Equivalent to checking that {@link #getSyncState()} is {@link SyncState#SYNCHRONIZED} and
+   * {@link #isMonitoredItemsSynchronized()} is {@code true}.
+   *
+   * @return {@code true} if the subscription settings and all MonitoredItems are synchronized.
+   */
+  public boolean isFullySynchronized() {
+    return syncState == SyncState.SYNCHRONIZED && isMonitoredItemsSynchronized();
   }
 
   /**
