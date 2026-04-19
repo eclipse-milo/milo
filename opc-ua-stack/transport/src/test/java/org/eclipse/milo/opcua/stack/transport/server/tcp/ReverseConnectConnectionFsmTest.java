@@ -11,6 +11,7 @@
 package org.eclipse.milo.opcua.stack.transport.server.tcp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -27,6 +28,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.ReverseConnectConnectionFsm.Event;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.ReverseConnectConnectionFsm.State;
@@ -197,7 +200,9 @@ class ReverseConnectConnectionFsmTest {
   }
 
   @Test
-  void stopDuringConnecting() throws Exception {
+  // A late TCP success after shutdown starts must be closed immediately so the
+  // manager's stop future means the connection is fully quiesced.
+  void stopDuringConnectingWithSuccessClosesChannelAndDoesNotReconnect() throws Exception {
     Fsm<State, Event> fsm = newFsm();
 
     fsm.fireEvent(new Event.Start());
@@ -205,19 +210,23 @@ class ReverseConnectConnectionFsmTest {
 
     // Stop while connecting — gets shelved
     var stopFuture = new CompletableFuture<Void>();
-    fsm.fireEvent(new Event.Stop(stopFuture));
+    fsm.fireEventBlocking(new Event.Stop(stopFuture));
 
     // Complete connect — transitions to RheSent, shelved Stop replayed
     CompletableFuture<Channel> connectFuture = stubTransport.pollConnectFuture();
-    connectFuture.complete(new EmbeddedChannel());
+    var channel = new EmbeddedChannel();
+    connectFuture.complete(channel);
 
-    // Should reach Disconnected because shelved Stop is replayed in RheSent
     awaitState(fsm, State.Disconnected);
     assertTrue(stopFuture.isDone());
+    assertTrue(channel.closeFuture().await(5, TimeUnit.SECONDS));
+    assertFalse(channel.isOpen());
+    stubTransport.assertConnectAttemptCount(1, Duration.ofMillis(CONNECT_INTERVAL.toMillis() * 2));
   }
 
   @Test
-  void stopDuringConnectingWithFailure() throws Exception {
+  // A late TCP failure after shutdown starts must not arm the retry loop.
+  void stopDuringConnectingWithFailureDoesNotScheduleReconnect() throws Exception {
     Fsm<State, Event> fsm = newFsm();
 
     fsm.fireEvent(new Event.Start());
@@ -225,15 +234,20 @@ class ReverseConnectConnectionFsmTest {
 
     // Stop while connecting — gets shelved
     var stopFuture = new CompletableFuture<Void>();
-    fsm.fireEvent(new Event.Stop(stopFuture));
+    fsm.fireEventBlocking(new Event.Stop(stopFuture));
 
     // Fail connect — transitions to ConnectWait, shelved Stop replayed
     CompletableFuture<Channel> connectFuture = stubTransport.pollConnectFuture();
     connectFuture.completeExceptionally(new Exception("refused"));
 
-    // Should reach Disconnected
     awaitState(fsm, State.Disconnected);
     assertTrue(stopFuture.isDone());
+
+    ScheduledFuture<?> retryFuture =
+        fsm.getFromContext(ReverseConnectConnectionFsm.KEY_RETRY_FUTURE::get);
+    assertNull(retryFuture);
+
+    stubTransport.assertConnectAttemptCount(1, Duration.ofMillis(CONNECT_INTERVAL.toMillis() * 2));
   }
 
   @Test
@@ -421,6 +435,7 @@ class ReverseConnectConnectionFsmTest {
 
     private final ConcurrentLinkedQueue<CompletableFuture<Channel>> connectFutures =
         new ConcurrentLinkedQueue<>();
+    private final AtomicInteger connectCalls = new AtomicInteger();
 
     StubTransport() {
       super(null);
@@ -435,6 +450,7 @@ class ReverseConnectConnectionFsmTest {
         long connectTimeoutMs) {
 
       var future = new CompletableFuture<Channel>();
+      connectCalls.incrementAndGet();
       connectFutures.offer(future);
       return future;
     }
@@ -450,6 +466,19 @@ class ReverseConnectConnectionFsmTest {
       }
       fail("Timed out waiting for connect() to be called");
       return null; // unreachable
+    }
+
+    void assertConnectAttemptCount(int expected, Duration timeout) throws Exception {
+      long deadline = System.nanoTime() + timeout.toNanos();
+      while (System.nanoTime() < deadline) {
+        int actual = connectCalls.get();
+        if (actual > expected) {
+          fail("connect() should not be called more than " + expected + " time(s)");
+        }
+        Thread.sleep(10);
+      }
+
+      assertEquals(expected, connectCalls.get());
     }
   }
 }

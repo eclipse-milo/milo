@@ -47,6 +47,9 @@ public class ReverseConnectConnectionFsm {
   static final FsmContext.Key<Long> KEY_RETRY_DELAY_MS =
       new FsmContext.Key<>("retryDelayMs", Long.class);
 
+  private static final FsmContext.Key<Boolean> KEY_STOP_REQUESTED_WHILE_CONNECTING =
+      new FsmContext.Key<>("stopRequestedWhileConnecting", Boolean.class);
+
   private ReverseConnectConnectionFsm() {}
 
   /** States for the Reverse Connect connection FSM. */
@@ -184,11 +187,17 @@ public class ReverseConnectConnectionFsm {
     /* Internal Transition Actions - shelve Stop events */
     fb.onInternalTransition(State.Connecting)
         .via(Event.Stop.class)
-        .execute(ctx -> ctx.shelveEvent(ctx.event()));
+        .execute(
+            ctx -> {
+              KEY_STOP_REQUESTED_WHILE_CONNECTING.set(ctx, true);
+              ctx.shelveEvent(ctx.event());
+            });
 
     /* External Transition Actions */
+    // Exclude self-transitions so shelved Stop handling in Connecting
+    // does not re-enter the outbound connect action.
     fb.onTransitionTo(State.Connecting)
-        .fromAny()
+        .from(state -> state != State.Connecting)
         .viaAny()
         .execute(
             ctx -> {
@@ -240,6 +249,11 @@ public class ReverseConnectConnectionFsm {
         .viaAny()
         .execute(
             ctx -> {
+              if (isStopRequestedWhileConnecting(ctx)) {
+                ctx.processShelvedEvents();
+                return;
+              }
+
               long delayMs =
                   Optional.ofNullable(KEY_RETRY_DELAY_MS.get(ctx)).orElse(connectIntervalMs);
 
@@ -288,6 +302,11 @@ public class ReverseConnectConnectionFsm {
             ctx -> {
               Channel channel = ((Event.ConnectSuccess) ctx.event()).channel();
               KEY_CHANNEL.set(ctx, channel);
+
+              if (isStopRequestedWhileConnecting(ctx)) {
+                ctx.processShelvedEvents();
+                return;
+              }
 
               // Reset backoff on successful connect
               KEY_RETRY_DELAY_MS.remove(ctx);
@@ -353,6 +372,7 @@ public class ReverseConnectConnectionFsm {
               }
 
               KEY_RETRY_DELAY_MS.remove(ctx);
+              KEY_STOP_REQUESTED_WHILE_CONNECTING.remove(ctx);
 
               ctx.processShelvedEvents();
             });
@@ -377,5 +397,9 @@ public class ReverseConnectConnectionFsm {
               var stop = (Event.Stop) ctx.event();
               stop.future().complete(null);
             });
+  }
+
+  private static boolean isStopRequestedWhileConnecting(FsmContext<State, Event> ctx) {
+    return Boolean.TRUE.equals(KEY_STOP_REQUESTED_WHILE_CONNECTING.get(ctx));
   }
 }
