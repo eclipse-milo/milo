@@ -347,10 +347,12 @@ public class OpcUaServer extends AbstractServiceHandler {
     }
 
     if (reverseConnectManager != null) {
-      reverseConnectManager.start(applicationContext, config.getApplicationUri());
+      return reverseConnectManager
+          .start(applicationContext, config.getApplicationUri())
+          .thenApply(v -> this);
+    } else {
+      return CompletableFuture.completedFuture(this);
     }
-
-    return CompletableFuture.completedFuture(this);
   }
 
   public CompletableFuture<OpcUaServer> shutdown() {

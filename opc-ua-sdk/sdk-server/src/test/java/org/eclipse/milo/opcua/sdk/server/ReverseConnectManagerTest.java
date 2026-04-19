@@ -10,10 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.server;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.digitalpetri.fsm.Fsm;
 import com.digitalpetri.fsm.FsmContext;
@@ -49,6 +46,7 @@ import org.mockito.Mockito;
 class ReverseConnectManagerTest {
 
   private static final String CLIENT_URL = "opc.tcp://client-host:48060";
+  private static final String SECOND_CLIENT_URL = "opc.tcp://second-client-host:48061";
   private static final String ENDPOINT_URL = "opc.tcp://server-host:4840";
   private static final String SERVER_URI = "urn:test:server";
 
@@ -83,13 +81,13 @@ class ReverseConnectManagerTest {
   @Test
   void removeReverseConnectDoesNotLeakConcurrentIdleFsm() throws Exception {
     ServerApplicationContext appContext = Mockito.mock(ServerApplicationContext.class);
-    manager.start(appContext, SERVER_URI);
+    startManager(appContext);
 
     // Add a handle — this creates and starts one FSM
     ReverseConnectHandle handle = manager.addReverseConnect(CLIENT_URL, ENDPOINT_URL);
 
     // Wait for the FSM's connect() call to appear
-    assertNotNull(stubTransport.pollConnectFuture());
+    CompletableFuture<Channel> connectFuture = stubTransport.pollConnectFuture();
 
     // Use a latch to synchronize concurrent operations
     var removeDone = new CountDownLatch(1);
@@ -120,12 +118,16 @@ class ReverseConnectManagerTest {
     // and did nothing, or it ran first and the removal cleaned up everything.
     // In either case, handlesByClientUrl should be empty.
     assertEquals(0, manager.handleGroupCount(), "handlesByClientUrl should be empty after removal");
+
+    connectFuture.completeExceptionally(new RuntimeException("test cleanup"));
+    stopManager();
   }
 
   @Test
-  void ensureIdleConnectionSkipsDuplicateSpawnWhenReplacementAppearsAfterSnapshot() {
+  void ensureIdleConnectionSkipsDuplicateSpawnWhenReplacementAppearsAfterSnapshot()
+      throws Exception {
     ServerApplicationContext appContext = Mockito.mock(ServerApplicationContext.class);
-    manager.start(appContext, SERVER_URI);
+    startManager(appContext);
 
     ReentrantLock managerLock = getManagerLock();
     Map<ReverseConnectHandle, Fsm<State, Event>> connections = getConnections();
@@ -175,14 +177,16 @@ class ReverseConnectManagerTest {
   }
 
   @Test
-  void removeReverseConnectStopsOnlyTargetHandle() {
+  void removeReverseConnectStopsOnlyTargetHandle() throws Exception {
     ServerApplicationContext appContext = Mockito.mock(ServerApplicationContext.class);
-    manager.start(appContext, SERVER_URI);
+    startManager(appContext);
 
     // Add two handles for the same client URL — creates two FSMs sharing
     // the same handlesByClientUrl entry, simulating the original + idle sibling.
     ReverseConnectHandle handle1 = manager.addReverseConnect(CLIENT_URL, ENDPOINT_URL);
     ReverseConnectHandle handle2 = manager.addReverseConnect(CLIENT_URL, ENDPOINT_URL);
+    CompletableFuture<Channel> connectFuture1 = stubTransport.pollConnectFuture();
+    CompletableFuture<Channel> connectFuture2 = stubTransport.pollConnectFuture();
     assertEquals(2, manager.connectionCount());
     assertEquals(1, manager.handleGroupCount());
 
@@ -199,24 +203,29 @@ class ReverseConnectManagerTest {
 
     assertEquals(0, manager.connectionCount(), "all connections should be removed");
     assertEquals(0, manager.handleGroupCount(), "handlesByClientUrl should be empty");
+
+    connectFuture1.completeExceptionally(new RuntimeException("test cleanup"));
+    connectFuture2.completeExceptionally(new RuntimeException("test cleanup"));
+    stopManager();
   }
 
   @Test
-  void ensureIdleConnectionNoOpAfterStop() {
+  void ensureIdleConnectionNoOpAfterStop() throws Exception {
     ServerApplicationContext appContext = Mockito.mock(ServerApplicationContext.class);
-    manager.start(appContext, SERVER_URI);
+    startManager(appContext);
 
     // Add a handle so the handlesByClientUrl entry exists
     ReverseConnectHandle handle = manager.addReverseConnect(CLIENT_URL, ENDPOINT_URL);
+    CompletableFuture<Channel> connectFuture = stubTransport.pollConnectFuture();
     assertNotNull(handle);
     assertEquals(1, manager.connectionCount());
 
     // Stop the manager
-    manager.stop();
+    stopManager(connectFuture);
 
     int countAfterStop = manager.connectionCount();
 
-    // ensureIdleConnection should be a no-op because running == false
+    // ensureIdleConnection should be a no-op because the manager is no longer running.
     manager.ensureIdleConnection(CLIENT_URL, ENDPOINT_URL);
 
     assertEquals(
@@ -228,7 +237,7 @@ class ReverseConnectManagerTest {
   @Test
   void addReverseConnectDoesNotPublishFsmAfterStopWinsLifecycleLock() throws Exception {
     ServerApplicationContext appContext = Mockito.mock(ServerApplicationContext.class);
-    manager.start(appContext, SERVER_URI);
+    startManager(appContext);
 
     ReentrantLock managerLock = getManagerLock();
     AtomicReference<ReverseConnectHandle> handleRef = new AtomicReference<>();
@@ -260,8 +269,8 @@ class ReverseConnectManagerTest {
   @Test
   void addReverseConnectDuringStartDoesNotOrphan() throws Exception {
     // Verifies that an addReverseConnect call racing with start() does not
-    // orphan the registration. The synchronized(pendingRegistrations) block
-    // in both methods ensures mutual exclusion.
+    // orphan the registration. start() and addReverseConnect() serialize all
+    // manager state under the same lifecycle lock.
     var addDone = new CountDownLatch(1);
     var startDone = new CountDownLatch(1);
 
@@ -277,7 +286,7 @@ class ReverseConnectManagerTest {
     Thread startThread =
         new Thread(
             () -> {
-              manager.start(appContext, SERVER_URI);
+              manager.start(appContext, SERVER_URI).join();
               startDone.countDown();
             });
 
@@ -290,10 +299,12 @@ class ReverseConnectManagerTest {
     // The registration must appear in the connections map regardless of
     // which thread ran first.
     assertEquals(1, manager.connectionCount(), "registration should not be orphaned");
+
+    stopManager(stubTransport.pollConnectFuture());
   }
 
   @Test
-  void removeReverseConnectBeforeStartCleansPendingRegistration() {
+  void removeReverseConnectBeforeStartCleansPendingRegistration() throws Exception {
     // Add a registration before start, then remove it. When start() runs,
     // the registration should already be gone from pendingRegistrations.
     ReverseConnectHandle handle = manager.addReverseConnect(CLIENT_URL, ENDPOINT_URL);
@@ -301,34 +312,167 @@ class ReverseConnectManagerTest {
     manager.removeReverseConnect(handle);
 
     ServerApplicationContext appContext = Mockito.mock(ServerApplicationContext.class);
-    manager.start(appContext, SERVER_URI);
+    startManager(appContext);
 
     assertEquals(0, manager.connectionCount(), "removed registration should not be materialized");
+    stopManager();
   }
 
   @Test
   void restartRebuildsDeadFsms() throws Exception {
     ServerApplicationContext appContext = Mockito.mock(ServerApplicationContext.class);
-    manager.start(appContext, SERVER_URI);
+    startManager(appContext);
 
     // Add a registration — creates and starts one FSM
     manager.addReverseConnect(CLIENT_URL, ENDPOINT_URL);
     assertEquals(1, manager.connectionCount());
 
     // Drain the connect future from the first start cycle
-    assertNotNull(stubTransport.pollConnectFuture());
+    CompletableFuture<Channel> connectFuture = stubTransport.pollConnectFuture();
 
     // Stop the manager — FSMs transition to Disconnected (terminal)
-    manager.stop();
+    CompletableFuture<Void> stopFuture = manager.stop();
+    connectFuture.completeExceptionally(new RuntimeException("test stop"));
+    stopFuture.get(5, TimeUnit.SECONDS);
 
     // Restart — should rebuild the dead FSMs with fresh ones
-    manager.start(appContext, SERVER_URI);
+    startManager(appContext);
 
     assertEquals(
         1, manager.connectionCount(), "connection count should be preserved after restart");
 
     // The rebuilt FSM should fire a new connect, proving it is alive
-    assertNotNull(stubTransport.pollConnectFuture());
+    stopManager(stubTransport.pollConnectFuture());
+  }
+
+  @Test
+  void startDoesNothingWhenManagerIsAlreadyRunning() throws Exception {
+    ServerApplicationContext appContext = Mockito.mock(ServerApplicationContext.class);
+    startManager(appContext);
+
+    manager.addReverseConnect(CLIENT_URL, ENDPOINT_URL);
+    CompletableFuture<Channel> connectFuture = stubTransport.pollConnectFuture();
+
+    manager.start(appContext, SERVER_URI).get(5, TimeUnit.SECONDS);
+
+    assertEquals(1, manager.connectionCount(), "repeated start() should leave connections alone");
+    assertEquals(1, manager.handleGroupCount(), "repeated start() should not duplicate handles");
+    stubTransport.assertNoConnectAttempt();
+
+    CompletableFuture<Void> stopFuture = manager.stop();
+    connectFuture.completeExceptionally(new RuntimeException("test stop"));
+    stopFuture.get(5, TimeUnit.SECONDS);
+  }
+
+  @Test
+  void stopReturnsSameFutureWhileStopIsInProgress() throws Exception {
+    ServerApplicationContext appContext = Mockito.mock(ServerApplicationContext.class);
+    startManager(appContext);
+
+    manager.addReverseConnect(CLIENT_URL, ENDPOINT_URL);
+    CompletableFuture<Channel> connectFuture = stubTransport.pollConnectFuture();
+
+    CompletableFuture<Void> stopFuture1 = manager.stop();
+    CompletableFuture<Void> stopFuture2 = manager.stop();
+
+    assertSame(stopFuture1, stopFuture2, "repeated stop() should share the same future");
+
+    connectFuture.completeExceptionally(new RuntimeException("test stop"));
+    stopFuture1.get(5, TimeUnit.SECONDS);
+  }
+
+  @Test
+  // Once stop() wins, a late connect result from the published FSM must not
+  // schedule another outbound connect before shutdown completes.
+  void stopDoesNotReconnectAfterInFlightConnectSettles() throws Exception {
+    ServerApplicationContext appContext = Mockito.mock(ServerApplicationContext.class);
+    startManager(appContext);
+
+    manager.addReverseConnect(CLIENT_URL, ENDPOINT_URL);
+    CompletableFuture<Channel> connectFuture = stubTransport.pollConnectFuture();
+
+    CompletableFuture<Void> stopFuture = manager.stop();
+    connectFuture.completeExceptionally(new RuntimeException("test stop"));
+
+    stopFuture.get(5, TimeUnit.SECONDS);
+    stubTransport.assertNoConnectAttempt(Duration.ofMillis(500));
+  }
+
+  @Test
+  // Registrations added while shutdown is still in progress must stay pending
+  // until the next start() so stop() can finish against a stable FSM set.
+  void addReverseConnectDefersRegistrationWhileStopIsInProgress() throws Exception {
+    ServerApplicationContext appContext = Mockito.mock(ServerApplicationContext.class);
+    startManager(appContext);
+
+    manager.addReverseConnect(CLIENT_URL, ENDPOINT_URL);
+    CompletableFuture<Channel> connectFuture = stubTransport.pollConnectFuture();
+
+    CompletableFuture<Void> stopFuture = manager.stop();
+    ReverseConnectHandle pendingHandle = manager.addReverseConnect(SECOND_CLIENT_URL, ENDPOINT_URL);
+
+    assertNotNull(pendingHandle);
+    assertEquals(1, manager.connectionCount(), "new registrations should stay pending");
+    stubTransport.assertNoConnectAttempt();
+
+    connectFuture.completeExceptionally(new RuntimeException("test stop"));
+    stopFuture.get(5, TimeUnit.SECONDS);
+
+    startManager(appContext);
+
+    assertEquals(
+        2, manager.connectionCount(), "pending registration should materialize on restart");
+    CompletableFuture<Channel> restartedConnectFuture1 = stubTransport.pollConnectFuture();
+    CompletableFuture<Channel> restartedConnectFuture2 = stubTransport.pollConnectFuture();
+
+    stopManager(restartedConnectFuture1, restartedConnectFuture2);
+  }
+
+  @Test
+  void startQueuesRestartWhileStopIsInProgress() throws Exception {
+    ServerApplicationContext appContext = Mockito.mock(ServerApplicationContext.class);
+    startManager(appContext);
+
+    manager.addReverseConnect(CLIENT_URL, ENDPOINT_URL);
+    CompletableFuture<Channel> connectFuture = stubTransport.pollConnectFuture();
+
+    CompletableFuture<Void> stopFuture = manager.stop();
+    CompletableFuture<Void> queuedStart = manager.start(appContext, SERVER_URI);
+
+    assertFalse(queuedStart.isDone(), "queued start should wait for the in-flight stop");
+    stubTransport.assertNoConnectAttempt();
+
+    connectFuture.completeExceptionally(new RuntimeException("test stop"));
+    stopFuture.get(5, TimeUnit.SECONDS);
+    queuedStart.get(5, TimeUnit.SECONDS);
+
+    assertEquals(1, manager.connectionCount(), "restart should rebuild published registrations");
+    stopManager(stubTransport.pollConnectFuture());
+  }
+
+  @Test
+  void startCoalescesQueuedRestartWhileStopIsInProgress() throws Exception {
+    ServerApplicationContext appContext = Mockito.mock(ServerApplicationContext.class);
+    startManager(appContext);
+
+    manager.addReverseConnect(CLIENT_URL, ENDPOINT_URL);
+    CompletableFuture<Channel> connectFuture = stubTransport.pollConnectFuture();
+
+    CompletableFuture<Void> stopFuture = manager.stop();
+    CompletableFuture<Void> queuedStart1 = manager.start(appContext, SERVER_URI);
+    CompletableFuture<Void> queuedStart2 = manager.start(appContext, SERVER_URI);
+
+    assertSame(queuedStart1, queuedStart2, "repeated starts should share one queued restart");
+    assertFalse(queuedStart1.isDone(), "queued restart should not complete before stop finishes");
+
+    connectFuture.completeExceptionally(new RuntimeException("test stop"));
+    stopFuture.get(5, TimeUnit.SECONDS);
+    queuedStart1.get(5, TimeUnit.SECONDS);
+
+    CompletableFuture<Channel> restartedConnectFuture = stubTransport.pollConnectFuture();
+    stubTransport.assertNoConnectAttempt(Duration.ofMillis(500));
+
+    stopManager(restartedConnectFuture);
   }
 
   /** A stub transport that captures connect calls and lets tests control returned futures. */
@@ -363,11 +507,29 @@ class ReverseConnectManagerTest {
     }
 
     void assertNoConnectAttempt() throws Exception {
-      CompletableFuture<Channel> f = connectFutures.poll(250, TimeUnit.MILLISECONDS);
+      assertNoConnectAttempt(Duration.ofMillis(250));
+    }
+
+    void assertNoConnectAttempt(Duration timeout) throws Exception {
+      CompletableFuture<Channel> f = connectFutures.poll(timeout.toMillis(), TimeUnit.MILLISECONDS);
       if (f != null) {
         fail("connect() should not be called");
       }
     }
+  }
+
+  private void startManager(ServerApplicationContext appContext) throws Exception {
+    manager.start(appContext, SERVER_URI).get(5, TimeUnit.SECONDS);
+  }
+
+  private void stopManager(CompletableFuture<?>... connectFutures) throws Exception {
+    CompletableFuture<Void> stopFuture = manager.stop();
+
+    for (CompletableFuture<?> connectFuture : connectFutures) {
+      connectFuture.completeExceptionally(new RuntimeException("test stop"));
+    }
+
+    stopFuture.get(5, TimeUnit.SECONDS);
   }
 
   @SuppressWarnings("unchecked")
@@ -414,18 +576,10 @@ class ReverseConnectManagerTest {
     fail("Timed out waiting for thread to block on ReverseConnectManager.lock");
   }
 
-  private static final class StubFsm implements Fsm<State, Event> {
-
-    private final State state;
-    private final Runnable onGetState;
+  private record StubFsm(State state, Runnable onGetState) implements Fsm<State, Event> {
 
     private StubFsm(State state) {
       this(state, () -> {});
-    }
-
-    private StubFsm(State state, Runnable onGetState) {
-      this.state = state;
-      this.onGetState = onGetState;
     }
 
     @Override
