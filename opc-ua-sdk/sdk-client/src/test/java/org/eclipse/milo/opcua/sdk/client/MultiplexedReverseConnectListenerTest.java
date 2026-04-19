@@ -351,6 +351,27 @@ class MultiplexedReverseConnectListenerTest {
     }
   }
 
+  // A resolved endpoint without a ClientListener must not leave the reverse-connected
+  // channel parked in an unconsumed transport.
+  @Test
+  void resolverSuccessWithoutClientListenerClosesChannel() throws Exception {
+    EndpointResolver resolver =
+        (serverUri, endpointUrl, discovery) ->
+            CompletableFuture.completedFuture(createEndpoint(endpointUrl));
+
+    listener =
+        createAndStart(
+            defaultConfigBuilder()
+                .setRateLimitingEnabled(false)
+                .setEndpointResolver(resolver)
+                .build());
+
+    try (var socket = connectAndSendRhe(SERVER_URI)) {
+      socket.setSoTimeout(5000);
+      assertEquals(-1, socket.getInputStream().read());
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // 1-shot channel reuse tests (Phase 2 — channel buffering integration)
   // ---------------------------------------------------------------------------

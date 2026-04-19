@@ -386,14 +386,15 @@ public class MultiplexedReverseConnectListener implements ChannelConsumerRegistr
 
     logger.debug("Resolved endpoint for ServerUri={}: {}", serverUri, endpoint.getEndpointUrl());
 
-    OpcTcpMultiplexedReverseConnectTransport transport = createTransport(serverUri);
-
-    if (!channelConsumed) {
-      transport.offerChannel(channel, rhe);
-    }
-
     ClientListener clientListener = config.getClientListener();
+
     if (clientListener != null) {
+      OpcTcpMultiplexedReverseConnectTransport transport = createTransport(serverUri);
+
+      if (!channelConsumed) {
+        transport.offerChannel(channel, rhe);
+      }
+
       OpcUaClientConfigBuilder builder = OpcUaClientConfig.builder();
       builder.setEndpoint(endpoint);
       builder.setSessionEndpointValidationEnabled(false);
@@ -405,6 +406,13 @@ public class MultiplexedReverseConnectListener implements ChannelConsumerRegistr
 
       OpcUaClient client = new OpcUaClient(builder.build(), transport);
       clientListener.onClientCreated(client);
+    } else {
+      logger.debug(
+          "No ClientListener configured for resolved ServerUri={}, closing channel {}",
+          serverUri,
+          channel.remoteAddress());
+
+      channel.close();
     }
   }
 
