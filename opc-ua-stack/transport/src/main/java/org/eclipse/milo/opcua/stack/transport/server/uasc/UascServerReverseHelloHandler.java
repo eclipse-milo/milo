@@ -16,6 +16,8 @@ import org.eclipse.milo.opcua.stack.core.channel.messages.ReverseHelloMessage;
 import org.eclipse.milo.opcua.stack.core.channel.messages.TcpMessageEncoder;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Netty channel handler for server-initiated Reverse Connect channels.
@@ -28,6 +30,8 @@ import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
  * connection.
  */
 public class UascServerReverseHelloHandler extends UascServerHelloHandler {
+
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private final String serverUri;
   private final String endpointUrl;
@@ -55,7 +59,25 @@ public class UascServerReverseHelloHandler extends UascServerHelloHandler {
   public void channelActive(ChannelHandlerContext ctx) throws Exception {
     var rhe = new ReverseHelloMessage(serverUri, endpointUrl);
     ByteBuf rheBuffer = TcpMessageEncoder.encode(rhe);
-    ctx.writeAndFlush(rheBuffer);
+    ctx.writeAndFlush(rheBuffer)
+        .addListener(
+            future -> {
+              if (!future.isSuccess()) {
+                Throwable cause =
+                    future.cause() != null
+                        ? future.cause()
+                        : new IllegalStateException("ReverseHello write failed");
+
+                logger.error(
+                    "[remote={}] Error writing ReverseHello: {}",
+                    ctx.channel().remoteAddress(),
+                    cause.getMessage(),
+                    cause);
+
+                ctx.close();
+                ctx.fireExceptionCaught(cause);
+              }
+            });
 
     // Start the Hello deadline timer (inherited behavior).
     // super.channelActive() schedules the "no Hello received" deadline.

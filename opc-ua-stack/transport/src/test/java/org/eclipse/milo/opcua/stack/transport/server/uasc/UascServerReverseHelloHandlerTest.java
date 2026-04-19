@@ -16,15 +16,23 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelOutboundHandlerAdapter;
+import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.util.ReferenceCountUtil;
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.milo.opcua.stack.core.channel.messages.HelloMessage;
 import org.eclipse.milo.opcua.stack.core.channel.messages.ReverseHelloMessage;
 import org.eclipse.milo.opcua.stack.core.channel.messages.TcpMessageDecoder;
@@ -200,6 +208,37 @@ class UascServerReverseHelloHandlerTest {
 
     // Channel should be closed after deadline fires without receiving Hello
     assertFalse(channel.isOpen(), "Channel should be closed after Hello deadline");
+  }
+
+  @Test
+  void reverseHelloWriteFailureClosesChannelAndPropagatesException() {
+    var writeFailure = new IOException("simulated ReverseHello write failure");
+    var propagatedException = new AtomicReference<Throwable>();
+
+    var channel =
+        new EmbeddedChannel(
+            new ChannelOutboundHandlerAdapter() {
+              @Override
+              public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
+                ReferenceCountUtil.release(msg);
+                promise.setFailure(writeFailure);
+              }
+            },
+            newHandler(),
+            new ChannelInboundHandlerAdapter() {
+              @Override
+              public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+                propagatedException.set(cause);
+              }
+            });
+
+    assertFalse(channel.isOpen(), "Channel should close immediately when ReverseHello write fails");
+    assertSame(
+        writeFailure,
+        propagatedException.get(),
+        "ReverseHello write failure should be propagated immediately");
+
+    channel.finishAndReleaseAll();
   }
 
   private static UascServerReverseHelloHandler newHandler() {
