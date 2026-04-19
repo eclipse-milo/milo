@@ -31,6 +31,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -222,6 +223,40 @@ class ReverseConnectManagerTest {
         countAfterStop, manager.connectionCount(), "no new FSMs should be created after stop");
   }
 
+  // If a late add publishes after stop() has already won the lifecycle lock,
+  // shutdown can complete while a new outbound reverse connection starts.
+  @Test
+  void addReverseConnectDoesNotPublishFsmAfterStopWinsLifecycleLock() throws Exception {
+    ServerApplicationContext appContext = Mockito.mock(ServerApplicationContext.class);
+    manager.start(appContext, SERVER_URI);
+
+    ReentrantLock managerLock = getManagerLock();
+    AtomicReference<ReverseConnectHandle> handleRef = new AtomicReference<>();
+    Thread addThread =
+        new Thread(() -> handleRef.set(manager.addReverseConnect(CLIENT_URL, ENDPOINT_URL)));
+
+    managerLock.lock();
+    try {
+      addThread.start();
+      awaitThreadBlockedOnManagerLock(addThread);
+
+      manager.stop().get(5, TimeUnit.SECONDS);
+    } finally {
+      managerLock.unlock();
+    }
+
+    addThread.join(TimeUnit.SECONDS.toMillis(5));
+
+    assertEquals(
+        Thread.State.TERMINATED,
+        addThread.getState(),
+        "add thread should finish after the lifecycle lock releases");
+    assertNotNull(handleRef.get(), "addReverseConnect should still return a handle");
+    assertEquals(0, manager.connectionCount(), "stop should prevent late FSM publication");
+    assertEquals(0, manager.handleGroupCount(), "stop should prevent late handle publication");
+    stubTransport.assertNoConnectAttempt();
+  }
+
   @Test
   void addReverseConnectDuringStartDoesNotOrphan() throws Exception {
     // Verifies that an addReverseConnect call racing with start() does not
@@ -326,6 +361,13 @@ class ReverseConnectManagerTest {
       }
       return fail("Timed out waiting for connect() to be called");
     }
+
+    void assertNoConnectAttempt() throws Exception {
+      CompletableFuture<Channel> f = connectFutures.poll(250, TimeUnit.MILLISECONDS);
+      if (f != null) {
+        fail("connect() should not be called");
+      }
+    }
   }
 
   @SuppressWarnings("unchecked")
@@ -351,6 +393,25 @@ class ReverseConnectManagerTest {
     } catch (ReflectiveOperationException e) {
       throw new AssertionError(e);
     }
+  }
+
+  private void awaitThreadBlockedOnManagerLock(Thread thread) throws Exception {
+    long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+
+    while (System.nanoTime() < deadlineNanos) {
+      Thread.State state = thread.getState();
+
+      if (state == Thread.State.WAITING || state == Thread.State.BLOCKED) {
+        return;
+      }
+      if (state == Thread.State.TERMINATED) {
+        fail("Thread terminated before blocking on ReverseConnectManager.lock");
+      }
+
+      Thread.sleep(10);
+    }
+
+    fail("Timed out waiting for thread to block on ReverseConnectManager.lock");
   }
 
   private static final class StubFsm implements Fsm<State, Event> {

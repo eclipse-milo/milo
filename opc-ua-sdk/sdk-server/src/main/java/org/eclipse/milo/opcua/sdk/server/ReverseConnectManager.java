@@ -218,6 +218,12 @@ public class ReverseConnectManager {
 
     lock.lock();
     try {
+      // stop() can flip running false after we leave pendingRegistrations but
+      // before this FSM is published. Discard the unstarted FSM in that case.
+      if (!running) {
+        return handle;
+      }
+
       connections.put(handle, fsm);
       handlesByClientUrl
           .computeIfAbsent(clientEndpointUrl, k -> new CopyOnWriteArraySet<>())
