@@ -15,19 +15,31 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import com.digitalpetri.fsm.Fsm;
+import com.digitalpetri.fsm.FsmContext;
 import io.netty.channel.Channel;
+import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
 import java.time.Duration;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpReverseConnectServerTransport;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransportConfig;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.ReverseConnectConfig;
+import org.eclipse.milo.opcua.stack.transport.server.tcp.ReverseConnectConnectionFsm.Event;
+import org.eclipse.milo.opcua.stack.transport.server.tcp.ReverseConnectConnectionFsm.State;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -107,6 +119,58 @@ class ReverseConnectManagerTest {
     // and did nothing, or it ran first and the removal cleaned up everything.
     // In either case, handlesByClientUrl should be empty.
     assertEquals(0, manager.handleGroupCount(), "handlesByClientUrl should be empty after removal");
+  }
+
+  @Test
+  void ensureIdleConnectionSkipsDuplicateSpawnWhenReplacementAppearsAfterSnapshot() {
+    ServerApplicationContext appContext = Mockito.mock(ServerApplicationContext.class);
+    manager.start(appContext, SERVER_URI);
+
+    ReentrantLock managerLock = getManagerLock();
+    Map<ReverseConnectHandle, Fsm<State, Event>> connections = getConnections();
+    Map<String, Set<ReverseConnectHandle>> handlesByClientUrl = getHandlesByClientUrl();
+
+    ReverseConnectHandle handle1 = new ReverseConnectHandle(CLIENT_URL, ENDPOINT_URL);
+    ReverseConnectHandle handle2 = new ReverseConnectHandle(CLIENT_URL, ENDPOINT_URL);
+    ReverseConnectHandle replacementHandle =
+        new ReverseConnectHandle(CLIENT_URL, ENDPOINT_URL, true);
+
+    Set<ReverseConnectHandle> handles = new CopyOnWriteArraySet<>();
+    handles.add(handle1);
+    handles.add(handle2);
+    handlesByClientUrl.put(CLIENT_URL, handles);
+
+    AtomicBoolean swapped = new AtomicBoolean();
+    Fsm<State, Event> replacementFsm = new StubFsm(State.Idle);
+
+    connections.put(handle1, new StubFsm(State.Active));
+    connections.put(
+        handle2,
+        new StubFsm(
+            State.Active,
+            () -> {
+              if (swapped.compareAndSet(false, true)) {
+                managerLock.lock();
+                try {
+                  handles.remove(handle1);
+                  connections.remove(handle1);
+                  handles.add(replacementHandle);
+                  connections.put(replacementHandle, replacementFsm);
+                } finally {
+                  managerLock.unlock();
+                }
+              }
+            }));
+
+    // If a remove/add race only compares set size, the manager can create a
+    // second idle FSM even though another thread already added the replacement.
+    manager.ensureIdleConnection(CLIENT_URL, ENDPOINT_URL);
+
+    assertEquals(2, manager.connectionCount(), "the replacement handle should prevent duplicates");
+    assertEquals(
+        1,
+        handles.stream().filter(handle -> handle.autoSpawned).count(),
+        "only one auto-spawned handle should remain");
   }
 
   @Test
@@ -262,5 +326,73 @@ class ReverseConnectManagerTest {
       }
       return fail("Timed out waiting for connect() to be called");
     }
+  }
+
+  @SuppressWarnings("unchecked")
+  private Map<ReverseConnectHandle, Fsm<State, Event>> getConnections() {
+    return (Map<ReverseConnectHandle, Fsm<State, Event>>) getField("connections");
+  }
+
+  @SuppressWarnings("unchecked")
+  private Map<String, Set<ReverseConnectHandle>> getHandlesByClientUrl() {
+    return (Map<String, Set<ReverseConnectHandle>>) getField("handlesByClientUrl");
+  }
+
+  private ReentrantLock getManagerLock() {
+    return (ReentrantLock) getField("lock");
+  }
+
+  private Object getField(String name) {
+    try {
+      Field field = ReverseConnectManager.class.getDeclaredField(name);
+      field.setAccessible(true);
+
+      return field.get(manager);
+    } catch (ReflectiveOperationException e) {
+      throw new AssertionError(e);
+    }
+  }
+
+  private static final class StubFsm implements Fsm<State, Event> {
+
+    private final State state;
+    private final Runnable onGetState;
+
+    private StubFsm(State state) {
+      this(state, () -> {});
+    }
+
+    private StubFsm(State state, Runnable onGetState) {
+      this.state = state;
+      this.onGetState = onGetState;
+    }
+
+    @Override
+    public State getState() {
+      onGetState.run();
+
+      return state;
+    }
+
+    @Override
+    public void fireEvent(Event event) {}
+
+    @Override
+    public void fireEvent(Event event, Consumer<State> stateConsumer) {
+      stateConsumer.accept(state);
+    }
+
+    @Override
+    public State fireEventBlocking(Event event) {
+      return state;
+    }
+
+    @Override
+    public <T> T getFromContext(Function<FsmContext<State, Event>, T> get) {
+      return null;
+    }
+
+    @Override
+    public void withContext(Consumer<FsmContext<State, Event>> contextConsumer) {}
   }
 }

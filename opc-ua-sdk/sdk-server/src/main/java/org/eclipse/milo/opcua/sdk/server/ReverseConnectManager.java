@@ -295,6 +295,7 @@ public class ReverseConnectManager {
     // read lock — holding both ReverseConnectManager.lock and an FSM lock in
     // opposite orders would deadlock.
     List<Fsm<State, Event>> snapshot;
+    Set<ReverseConnectHandle> snapshotHandles;
 
     lock.lock();
     try {
@@ -302,6 +303,7 @@ public class ReverseConnectManager {
       if (handles == null) {
         return;
       }
+      snapshotHandles = Set.copyOf(handles);
       snapshot = handles.stream().map(connections::get).filter(Objects::nonNull).toList();
     } finally {
       lock.unlock();
@@ -323,13 +325,15 @@ public class ReverseConnectManager {
       try {
         Set<ReverseConnectHandle> handles = handlesByClientUrl.get(clientEndpointUrl);
         if (handles != null && running) {
-          // If the handle set grew since our snapshot, another thread already
-          // spawned an idle FSM (which starts in Idle, a non-Active/non-
-          // Disconnected state). Skip to avoid duplicates. We compare set
-          // sizes rather than calling getState() to preserve the lock-ordering
-          // invariant: getState() acquires the FSM read lock and must not be
-          // called while holding Manager.lock.
-          if (handles.size() == snapshot.size()) {
+          // If any new handle appeared since our snapshot, another thread
+          // already registered a replacement connection for this client URL.
+          // Compare handle identity rather than set size so concurrent
+          // remove/add races do not produce duplicate idle FSMs, while still
+          // keeping getState() outside Manager.lock.
+          boolean replacementHandleAdded =
+              handles.stream().anyMatch(handle -> !snapshotHandles.contains(handle));
+
+          if (!replacementHandleAdded) {
             var idleHandle = new ReverseConnectHandle(clientEndpointUrl, endpointUrl, true);
             idleFsm = createFsm(clientEndpointUrl, endpointUrl);
             connections.put(idleHandle, idleFsm);
