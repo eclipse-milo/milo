@@ -197,30 +197,7 @@ public class SubscriptionManager {
     server.getDiagnosticsSummary().getCumulatedSubscriptionCount().increment();
     server.getInternalEventBus().post(new SubscriptionCreatedEvent(subscription));
 
-    subscription.setStateListener(
-        (s, ps, cs) -> {
-          if (cs == State.Closing) {
-            subscriptions.remove(s.getId());
-            server.getSubscriptions().remove(s.getId());
-            server.getInternalEventBus().post(new SubscriptionDeletedEvent(s));
-
-            /*
-             * Notify AddressSpaces the items for this subscription are deleted.
-             */
-
-            Map<UInteger, BaseMonitoredItem<?>> monitoredItems = s.getMonitoredItems();
-
-            byMonitoredItemType(
-                monitoredItems.values(),
-                dataItems -> server.getAddressSpaceManager().onDataItemsDeleted(dataItems),
-                eventItems -> server.getAddressSpaceManager().onEventItemsDeleted(eventItems));
-
-            monitoredItemCount.getAndUpdate(count -> count - monitoredItems.size());
-            server.getMonitoredItemCount().getAndUpdate(count -> count - monitoredItems.size());
-
-            monitoredItems.clear();
-          }
-        });
+    setClosingStateListener(subscription);
 
     subscription.startPublishingTimer();
 
@@ -1532,9 +1509,9 @@ public class SubscriptionManager {
 
     while (iterator.hasNext()) {
       Subscription s = iterator.next();
-      s.setStateListener(null);
 
       if (deleteSubscriptions) {
+        s.setStateListener(null);
         server.getSubscriptions().remove(s.getId());
         server.getInternalEventBus().post(new SubscriptionDeletedEvent(s));
 
@@ -1576,30 +1553,7 @@ public class SubscriptionManager {
     subscriptions.put(subscription.getId(), subscription);
     server.getInternalEventBus().post(new SubscriptionCreatedEvent(subscription));
 
-    subscription.setStateListener(
-        (s, ps, cs) -> {
-          if (cs == State.Closing) {
-            subscriptions.remove(s.getId());
-            server.getSubscriptions().remove(s.getId());
-            server.getInternalEventBus().post(new SubscriptionDeletedEvent(s));
-
-            /*
-             * Notify AddressSpaces the items for this subscription are deleted.
-             */
-
-            Map<UInteger, BaseMonitoredItem<?>> monitoredItems = s.getMonitoredItems();
-
-            byMonitoredItemType(
-                monitoredItems.values(),
-                dataItems -> server.getAddressSpaceManager().onDataItemsDeleted(dataItems),
-                eventItems -> server.getAddressSpaceManager().onEventItemsDeleted(eventItems));
-
-            monitoredItemCount.getAndUpdate(count -> count - monitoredItems.size());
-            server.getMonitoredItemCount().getAndUpdate(count -> count - monitoredItems.size());
-
-            monitoredItems.clear();
-          }
-        });
+    setClosingStateListener(subscription);
   }
 
   /**
@@ -1640,6 +1594,33 @@ public class SubscriptionManager {
    */
   private static UInteger nextSubscriptionId() {
     return uint(SUBSCRIPTION_IDS.incrementAndGet());
+  }
+
+  private void setClosingStateListener(Subscription subscription) {
+    subscription.setStateListener(
+        (s, ps, cs) -> {
+          if (cs == State.Closing) {
+            subscriptions.remove(s.getId());
+            server.getSubscriptions().remove(s.getId());
+            server.getInternalEventBus().post(new SubscriptionDeletedEvent(s));
+
+            /*
+             * Notify AddressSpaces the items for this subscription are deleted.
+             */
+
+            Map<UInteger, BaseMonitoredItem<?>> monitoredItems = s.getMonitoredItems();
+
+            byMonitoredItemType(
+                monitoredItems.values(),
+                dataItems -> server.getAddressSpaceManager().onDataItemsDeleted(dataItems),
+                eventItems -> server.getAddressSpaceManager().onEventItemsDeleted(eventItems));
+
+            monitoredItemCount.getAndUpdate(count -> count - monitoredItems.size());
+            server.getMonitoredItemCount().getAndUpdate(count -> count - monitoredItems.size());
+
+            monitoredItems.clear();
+          }
+        });
   }
 
   /**
