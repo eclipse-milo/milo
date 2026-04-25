@@ -16,11 +16,19 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelOutboundHandlerAdapter;
+import io.netty.channel.ChannelPipelineException;
+import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.HashedWheelTimer;
+import io.netty.util.ReferenceCountUtil;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.util.Optional;
@@ -29,6 +37,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.channel.messages.ErrorMessage;
@@ -41,6 +50,7 @@ import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
+import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -61,6 +71,186 @@ class UascClientReverseHelloHandlerTest {
   @AfterEach
   void tearDown() {
     wheelTimer.stop();
+  }
+
+  @Test
+  void helperInstallsPipelineAndHandsOffPreDecodedReverseHello() throws Exception {
+    UascClientReverseConnectHandshake helper = new UascClientReverseConnectHandshake();
+    var channel = new EmbeddedChannel();
+
+    CompletableFuture<ClientSecureChannel> handshakeFuture =
+        helper.start(
+            channel,
+            new ReverseHelloMessage(SERVER_URI, ENDPOINT_URL),
+            newConfig(wheelTimer),
+            newApplicationContext(),
+            newResponseHandler(),
+            requestId::getAndIncrement,
+            Set.of(SERVER_URI),
+            30_000);
+
+    channel.runPendingTasks();
+
+    assertNotNull(
+        channel.pipeline().get(InboundUascResponseHandler.DelegatingUascResponseHandler.class));
+    assertNotNull(channel.pipeline().get(UascClientReverseHelloHandler.class));
+
+    ByteBuf helloBuffer = channel.readOutbound();
+    assertNotNull(helloBuffer, "Hello should be sent from the pre-decoded ReverseHello");
+
+    HelloMessage hello = TcpMessageDecoder.decodeHello(helloBuffer);
+    assertEquals(ENDPOINT_URL, hello.getEndpointUrl());
+    helloBuffer.release();
+
+    assertFalse(handshakeFuture.isDone());
+
+    channel.close();
+  }
+
+  @Test
+  void helperFailsAndClosesWhenPipelineInstallFails() {
+    var alreadyInstalled = new ChannelInboundHandlerAdapter();
+    UascClientReverseConnectHandshake helper =
+        new UascClientReverseConnectHandshake() {
+          @Override
+          ChannelHandler newResponseHandler(UascResponseHandler responseHandler) {
+            return alreadyInstalled;
+          }
+        };
+
+    var channel = new EmbeddedChannel(alreadyInstalled);
+
+    CompletableFuture<ClientSecureChannel> handshakeFuture =
+        helper.start(
+            channel,
+            new ReverseHelloMessage(SERVER_URI, ENDPOINT_URL),
+            newConfig(wheelTimer),
+            newApplicationContext(),
+            newResponseHandler(),
+            requestId::getAndIncrement,
+            Set.of(SERVER_URI),
+            30_000);
+
+    channel.runPendingTasks();
+
+    ExecutionException exception =
+        assertThrows(ExecutionException.class, () -> handshakeFuture.get(1, TimeUnit.SECONDS));
+    assertNotNull(findCause(exception.getCause(), ChannelPipelineException.class));
+    assertFalse(channel.isOpen());
+  }
+
+  @Test
+  void helperClosesWhenSetupFailsAfterFutureCompletion() {
+    UascClientReverseConnectHandshake helper =
+        new UascClientReverseConnectHandshake() {
+          @Override
+          UascClientReverseHelloHandler newReverseHelloHandler(
+              UascClientConfig config,
+              ClientApplicationContext application,
+              Supplier<Long> requestIdSupplier,
+              CompletableFuture<ClientSecureChannel> handshakeFuture,
+              Set<String> allowedServerUris,
+              long reverseHelloTimeoutMs) {
+
+            return new UascClientReverseHelloHandler(
+                config,
+                application,
+                requestIdSupplier,
+                handshakeFuture,
+                allowedServerUris,
+                reverseHelloTimeoutMs) {
+              @Override
+              public void onReverseHello(
+                  ChannelHandlerContext ctx, ReverseHelloMessage reverseHello) {
+
+                handshakeFuture.completeExceptionally(
+                    new UaException(StatusCodes.Bad_TcpEndpointUrlInvalid, "rejected"));
+                throw new IllegalStateException("error write failed");
+              }
+            };
+          }
+        };
+
+    var channel = new EmbeddedChannel();
+
+    CompletableFuture<ClientSecureChannel> handshakeFuture =
+        helper.start(
+            channel,
+            new ReverseHelloMessage("urn:unknown:server", ENDPOINT_URL),
+            newConfig(wheelTimer),
+            newApplicationContext(),
+            newResponseHandler(),
+            requestId::getAndIncrement,
+            Set.of(SERVER_URI),
+            30_000);
+
+    channel.runPendingTasks();
+
+    ExecutionException exception =
+        assertThrows(ExecutionException.class, () -> handshakeFuture.get(1, TimeUnit.SECONDS));
+    assertInstanceOf(UaException.class, exception.getCause());
+    assertFalse(channel.isOpen());
+  }
+
+  @Test
+  void helperFailsForDisallowedServerUri() throws Exception {
+    UascClientReverseConnectHandshake helper = new UascClientReverseConnectHandshake();
+    var channel = new EmbeddedChannel();
+
+    CompletableFuture<ClientSecureChannel> handshakeFuture =
+        helper.start(
+            channel,
+            new ReverseHelloMessage("urn:unknown:server", ENDPOINT_URL),
+            newConfig(wheelTimer),
+            newApplicationContext(),
+            newResponseHandler(),
+            requestId::getAndIncrement,
+            Set.of(SERVER_URI),
+            30_000);
+
+    channel.runPendingTasks();
+
+    ByteBuf errorBuffer = channel.readOutbound();
+    assertNotNull(errorBuffer, "Error message should be sent for unknown ServerUri");
+
+    ErrorMessage error = TcpMessageDecoder.decodeError(errorBuffer);
+    assertEquals(new StatusCode(StatusCodes.Bad_TcpEndpointUrlInvalid), error.getError());
+    errorBuffer.release();
+
+    ExecutionException exception =
+        assertThrows(ExecutionException.class, () -> handshakeFuture.get(1, TimeUnit.SECONDS));
+    UaException uaException = assertInstanceOf(UaException.class, exception.getCause());
+    assertEquals(StatusCodes.Bad_TcpEndpointUrlInvalid, uaException.getStatusCode().value());
+
+    channel.close();
+  }
+
+  @Test
+  void disallowedServerUriClosesAfterErrorWriteCompletes() throws Exception {
+    var handshakeFuture = new CompletableFuture<ClientSecureChannel>();
+
+    var handler =
+        new UascClientReverseHelloHandler(
+            newConfig(wheelTimer),
+            newApplicationContext(),
+            requestId::getAndIncrement,
+            handshakeFuture,
+            Set.of(SERVER_URI),
+            30_000);
+    var delayingOutbound = new DelayingOutboundHandler();
+    var channel = new EmbeddedChannel(delayingOutbound, handler);
+
+    var rhe = new ReverseHelloMessage("urn:unknown:server", ENDPOINT_URL);
+    ByteBuf rheBuffer = TcpMessageEncoder.encode(rhe);
+    channel.writeInbound(rheBuffer);
+
+    assertNotNull(delayingOutbound.message());
+    assertTrue(channel.isOpen(), "Channel should remain open until the Error write completes");
+
+    delayingOutbound.succeedWrite();
+    channel.runPendingTasks();
+
+    assertFalse(channel.isOpen());
   }
 
   @Test
@@ -297,6 +487,59 @@ class UascClientReverseHelloHandlerTest {
         return wheelTimer;
       }
     };
+  }
+
+  private static UascResponseHandler newResponseHandler() {
+    return new UascResponseHandler() {
+      @Override
+      public void handleResponse(long requestId, UaResponseMessageType responseMessage) {}
+
+      @Override
+      public void handleSendFailure(long requestId, UaException exception) {}
+
+      @Override
+      public void handleReceiveFailure(long requestId, UaException exception) {}
+
+      @Override
+      public void handleChannelError(UaException exception) {}
+
+      @Override
+      public void handleChannelInactive() {}
+    };
+  }
+
+  private static <T extends Throwable> T findCause(Throwable throwable, Class<T> causeType) {
+    Throwable cause = throwable;
+    while (cause != null) {
+      if (causeType.isInstance(cause)) {
+        return causeType.cast(cause);
+      }
+
+      cause = cause.getCause();
+    }
+
+    return null;
+  }
+
+  private static final class DelayingOutboundHandler extends ChannelOutboundHandlerAdapter {
+
+    private Object message;
+    private ChannelPromise promise;
+
+    @Override
+    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
+      this.message = msg;
+      this.promise = promise;
+    }
+
+    Object message() {
+      return message;
+    }
+
+    void succeedWrite() {
+      ReferenceCountUtil.release(message);
+      promise.setSuccess();
+    }
   }
 
   private static ClientApplicationContext newApplicationContext() {

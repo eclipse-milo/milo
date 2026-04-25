@@ -28,9 +28,8 @@ import org.eclipse.milo.opcua.stack.core.channel.messages.ReverseHelloMessage;
 import org.eclipse.milo.opcua.stack.core.util.Unit;
 import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.ClientSecureChannel;
-import org.eclipse.milo.opcua.stack.transport.client.uasc.InboundUascResponseHandler.DelegatingUascResponseHandler;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.UascClientConfig;
-import org.eclipse.milo.opcua.stack.transport.client.uasc.UascClientReverseHelloHandler;
+import org.eclipse.milo.opcua.stack.transport.client.uasc.UascClientReverseConnectHandshake;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.UascResponseHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -305,43 +304,25 @@ public class ReverseConnectChannelFsm {
               // KEY_CHANNEL is set in the Connected entry action after the
               // handshake completes and the pipeline is fully initialized.
 
-              var handshakeFuture = new CompletableFuture<ClientSecureChannel>();
-
               // This entry action runs on the FSM executor, not on the channel's
-              // event loop. Pipeline operations must execute on the event loop so
-              // that handlerAdded callbacks run synchronously.
+              // event loop. The handshake helper schedules pipeline operations
+              // on the event loop so handlerAdded callbacks run synchronously.
               //
               // The ReverseHello was already decoded by the ReverseHelloDecoder.
               // Pass it directly to the handler instead of re-encoding to bytes
               // and dispatching through the pipeline, which avoids issues with
               // ByteToMessageCodec pipeline dispatch.
-              channel
-                  .eventLoop()
-                  .execute(
-                      () -> {
-                        channel
-                            .pipeline()
-                            .addLast(new DelegatingUascResponseHandler(responseHandler));
-
-                        var handler =
-                            new UascClientReverseHelloHandler(
-                                config.uascConfig(),
-                                application,
-                                requestIdSupplier,
-                                handshakeFuture,
-                                config.allowedServerUris(),
-                                config.reverseHelloTimeout());
-
-                        channel.pipeline().addLast(handler);
-
-                        try {
-                          handler.onReverseHello(channel.pipeline().context(handler), rhe);
-                        } catch (Exception e) {
-                          LOGGER.error("Failed to process ReverseHello in handler", e);
-                          handshakeFuture.completeExceptionally(e);
-                          channel.close();
-                        }
-                      });
+              CompletableFuture<ClientSecureChannel> handshakeFuture =
+                  new UascClientReverseConnectHandshake()
+                      .start(
+                          channel,
+                          rhe,
+                          config.uascConfig(),
+                          application,
+                          responseHandler,
+                          requestIdSupplier,
+                          config.allowedServerUris(),
+                          config.reverseHelloTimeout());
 
               handshakeFuture.whenComplete(
                   (sc, ex) -> {

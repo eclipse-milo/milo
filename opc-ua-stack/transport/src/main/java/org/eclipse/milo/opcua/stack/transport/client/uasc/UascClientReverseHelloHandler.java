@@ -206,7 +206,6 @@ public class UascClientReverseHelloHandler extends ByteToMessageCodec<UaRequestM
       ExceptionHandler.sendErrorMessage(
           ctx, new UaException(StatusCodes.Bad_TcpEndpointUrlInvalid, message));
 
-      ctx.close();
       return;
     }
 
