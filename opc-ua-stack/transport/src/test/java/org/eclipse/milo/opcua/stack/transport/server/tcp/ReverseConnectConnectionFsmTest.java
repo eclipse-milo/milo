@@ -30,6 +30,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.ReverseConnectConnectionFsm.Event;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.ReverseConnectConnectionFsm.State;
@@ -94,6 +95,21 @@ class ReverseConnectConnectionFsmTest {
 
     // ConnectWait -> Connecting (retry timer fires)
     awaitState(fsm, State.Connecting, Duration.ofSeconds(5));
+  }
+
+  @Test
+  void fastSecureChannelOpenedOutcomeIsReplayedAfterConnectSuccess() throws Exception {
+    stubTransport.completeWithSecureChannelOpenBeforeReturning();
+    Fsm<State, Event> fsm = newFsm();
+
+    fsm.fireEvent(new Event.Start());
+
+    awaitState(fsm, State.Active);
+
+    var stopFuture = new CompletableFuture<Void>();
+    fsm.fireEvent(new Event.Stop(stopFuture));
+    awaitState(fsm, State.Disconnected);
+    assertTrue(stopFuture.isDone());
   }
 
   @Test
@@ -436,6 +452,7 @@ class ReverseConnectConnectionFsmTest {
     private final ConcurrentLinkedQueue<CompletableFuture<Channel>> connectFutures =
         new ConcurrentLinkedQueue<>();
     private final AtomicInteger connectCalls = new AtomicInteger();
+    private volatile boolean completeWithSecureChannelOpenBeforeReturning = false;
 
     StubTransport() {
       super(null);
@@ -453,6 +470,45 @@ class ReverseConnectConnectionFsmTest {
       connectCalls.incrementAndGet();
       connectFutures.offer(future);
       return future;
+    }
+
+    @Override
+    protected ReverseConnectAttempt connectAttempt(
+        ServerApplicationContext applicationContext,
+        InetSocketAddress clientAddress,
+        String serverUri,
+        String endpointUrl,
+        long connectTimeoutMs,
+        Consumer<ReverseConnectAttempt.Outcome> outcomeConsumer) {
+
+      var attempt = new ReverseConnectAttempt(outcomeConsumer);
+      connectCalls.incrementAndGet();
+
+      if (completeWithSecureChannelOpenBeforeReturning) {
+        var channel = new EmbeddedChannel();
+        attempt.channelInitialized(channel);
+        attempt.secureChannelOpened(1L);
+        attempt.tcpConnectSucceeded(channel);
+        return attempt;
+      }
+
+      var future = new CompletableFuture<Channel>();
+      connectFutures.offer(future);
+      future.whenComplete(
+          (channel, ex) -> {
+            if (ex != null) {
+              attempt.tcpConnectFailed(ex);
+            } else {
+              attempt.channelInitialized(channel);
+              attempt.tcpConnectSucceeded(channel);
+            }
+          });
+
+      return attempt;
+    }
+
+    void completeWithSecureChannelOpenBeforeReturning() {
+      completeWithSecureChannelOpenBeforeReturning = true;
     }
 
     CompletableFuture<Channel> pollConnectFuture() throws Exception {

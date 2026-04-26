@@ -35,6 +35,7 @@ import java.util.function.Function;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpReverseConnectServerTransport;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransportConfig;
+import org.eclipse.milo.opcua.stack.transport.server.tcp.ReverseConnectAttempt;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.ReverseConnectConfig;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.ReverseConnectConnectionFsm.Event;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.ReverseConnectConnectionFsm.State;
@@ -486,16 +487,28 @@ class ReverseConnectManagerTest {
     }
 
     @Override
-    public CompletableFuture<Channel> connect(
+    protected ReverseConnectAttempt connectAttempt(
         ServerApplicationContext applicationContext,
         InetSocketAddress clientAddress,
         String serverUri,
         String endpointUrl,
-        long connectTimeoutMs) {
+        long connectTimeoutMs,
+        Consumer<ReverseConnectAttempt.Outcome> outcomeConsumer) {
 
+      var attempt = new ReverseConnectAttempt(outcomeConsumer);
       var future = new CompletableFuture<Channel>();
       connectFutures.offer(future);
-      return future;
+      future.whenComplete(
+          (channel, ex) -> {
+            if (ex != null) {
+              attempt.tcpConnectFailed(ex);
+            } else {
+              attempt.channelInitialized(channel);
+              attempt.tcpConnectSucceeded(channel);
+            }
+          });
+
+      return attempt;
     }
 
     CompletableFuture<Channel> pollConnectFuture() throws Exception {

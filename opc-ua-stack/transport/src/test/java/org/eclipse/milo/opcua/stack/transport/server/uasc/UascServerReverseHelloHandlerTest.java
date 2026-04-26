@@ -33,6 +33,9 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.channel.messages.ErrorMessage;
 import org.eclipse.milo.opcua.stack.core.channel.messages.HelloMessage;
 import org.eclipse.milo.opcua.stack.core.channel.messages.ReverseHelloMessage;
 import org.eclipse.milo.opcua.stack.core.channel.messages.TcpMessageDecoder;
@@ -214,6 +217,7 @@ class UascServerReverseHelloHandlerTest {
   void reverseHelloWriteFailureClosesChannelAndPropagatesException() {
     var writeFailure = new IOException("simulated ReverseHello write failure");
     var propagatedException = new AtomicReference<Throwable>();
+    var reportedWriteFailure = new AtomicReference<Throwable>();
 
     var channel =
         new EmbeddedChannel(
@@ -224,7 +228,7 @@ class UascServerReverseHelloHandlerTest {
                 promise.setFailure(writeFailure);
               }
             },
-            newHandler(),
+            newHandler(reportedWriteFailure::set, errorMessage -> {}),
             new ChannelInboundHandlerAdapter() {
               @Override
               public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
@@ -237,17 +241,53 @@ class UascServerReverseHelloHandlerTest {
         writeFailure,
         propagatedException.get(),
         "ReverseHello write failure should be propagated immediately");
+    assertSame(
+        writeFailure,
+        reportedWriteFailure.get(),
+        "ReverseHello write failure should be reported to the attempt bridge");
+
+    channel.finishAndReleaseAll();
+  }
+
+  @Test
+  void inboundErrorDuringReverseHandshakeReportsClientRejection() throws Exception {
+    var rejected = new AtomicReference<ErrorMessage>();
+
+    var handler = newHandler(failure -> {}, rejected::set);
+    var channel = new EmbeddedChannel(handler);
+
+    ByteBuf rheBuffer = channel.readOutbound();
+    assertNotNull(rheBuffer);
+    rheBuffer.release();
+
+    var error = new ErrorMessage(StatusCodes.Bad_ServerNotConnected, "client rejected");
+    channel.writeInbound(TcpMessageEncoder.encode(error));
+
+    ErrorMessage reported = rejected.get();
+    assertNotNull(reported, "client rejection should be reported to the attempt bridge");
+    assertEquals(StatusCodes.Bad_ServerNotConnected, reported.getError().value());
+    assertEquals("client rejected", reported.getReason());
+    assertFalse(channel.isOpen(), "channel should close after inbound Error rejection");
 
     channel.finishAndReleaseAll();
   }
 
   private static UascServerReverseHelloHandler newHandler() {
+    return newHandler(failure -> {}, errorMessage -> {});
+  }
+
+  private static UascServerReverseHelloHandler newHandler(
+      Consumer<Throwable> reverseHelloWriteFailureListener,
+      Consumer<ErrorMessage> clientRejectedListener) {
+
     return new UascServerReverseHelloHandler(
         newConfig(),
         newApplicationContext(ENDPOINT_URL),
         TransportProfile.TCP_UASC_UABINARY,
         SERVER_URI,
-        ENDPOINT_URL);
+        ENDPOINT_URL,
+        reverseHelloWriteFailureListener,
+        clientRejectedListener);
   }
 
   private static UascServerConfig newConfig() {

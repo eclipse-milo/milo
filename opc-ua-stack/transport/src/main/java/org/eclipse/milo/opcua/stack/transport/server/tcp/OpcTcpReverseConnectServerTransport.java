@@ -20,6 +20,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import java.net.InetSocketAddress;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.server.uasc.UascServerReverseHelloHandler;
@@ -57,7 +58,25 @@ public class OpcTcpReverseConnectServerTransport {
       String endpointUrl,
       long connectTimeoutMs) {
 
-    var future = new CompletableFuture<Channel>();
+    return connectAttempt(
+            applicationContext,
+            clientAddress,
+            serverUri,
+            endpointUrl,
+            connectTimeoutMs,
+            outcome -> {})
+        .connectedFuture();
+  }
+
+  protected ReverseConnectAttempt connectAttempt(
+      ServerApplicationContext applicationContext,
+      InetSocketAddress clientAddress,
+      String serverUri,
+      String endpointUrl,
+      long connectTimeoutMs,
+      Consumer<ReverseConnectAttempt.Outcome> outcomeConsumer) {
+
+    var attempt = new ReverseConnectAttempt(outcomeConsumer);
 
     var bootstrap = new Bootstrap();
     bootstrap
@@ -70,14 +89,19 @@ public class OpcTcpReverseConnectServerTransport {
             new ChannelInitializer<SocketChannel>() {
               @Override
               protected void initChannel(SocketChannel ch) {
+                attempt.channelInitialized(ch);
+
                 ch.pipeline()
+                    .addLast(new ReverseConnectAttempt.Observer(attempt))
                     .addLast(
                         new UascServerReverseHelloHandler(
                             config,
                             applicationContext,
                             TransportProfile.TCP_UASC_UABINARY,
                             serverUri,
-                            endpointUrl));
+                            endpointUrl,
+                            attempt::reverseHelloWriteFailed,
+                            attempt::clientRejected));
               }
             });
 
@@ -86,12 +110,12 @@ public class OpcTcpReverseConnectServerTransport {
         .addListener(
             (ChannelFuture cf) -> {
               if (cf.isSuccess()) {
-                future.complete(cf.channel());
+                attempt.tcpConnectSucceeded(cf.channel());
               } else {
-                future.completeExceptionally(cf.cause());
+                attempt.tcpConnectFailed(cf.cause());
               }
             });
 
-    return future;
+    return attempt;
   }
 }

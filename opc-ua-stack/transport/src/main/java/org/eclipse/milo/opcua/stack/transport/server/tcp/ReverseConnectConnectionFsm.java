@@ -16,8 +16,6 @@ import com.digitalpetri.fsm.dsl.ActionContext;
 import com.digitalpetri.fsm.dsl.FsmBuilder;
 import com.digitalpetri.fsm.dsl.TransitionAction;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.Objects;
@@ -29,7 +27,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
-import org.eclipse.milo.opcua.stack.transport.server.uasc.SecureChannelOpenedEvent;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -183,6 +180,8 @@ public class ReverseConnectConnectionFsm {
     /* Transitions */
     fb.when(State.Connecting).on(Event.ConnectSuccess.class).transitionTo(State.RheSent);
     fb.when(State.Connecting).on(Event.ConnectFailure.class).transitionTo(State.ConnectWait);
+    fb.when(State.Connecting).on(Event.ClientRejected.class).transitionTo(State.ConnectWait);
+    fb.when(State.Connecting).on(Event.ChannelInactive.class).transitionTo(State.ConnectWait);
 
     /* Internal Transition Actions - shelve Stop events */
     fb.onInternalTransition(State.Connecting)
@@ -192,6 +191,13 @@ public class ReverseConnectConnectionFsm {
               KEY_STOP_REQUESTED_WHILE_CONNECTING.set(ctx, true);
               ctx.shelveEvent(ctx.event());
             });
+
+    // The attempt observer is installed before TCP connect completion is
+    // delivered to this FSM, so a fast secure-open event can arrive while
+    // Connecting. Replay it after ConnectSuccess stores the channel.
+    fb.onInternalTransition(State.Connecting)
+        .via(Event.SecureChannelOpened.class)
+        .execute(ctx -> ctx.shelveEvent(ctx.event()));
 
     /* External Transition Actions */
     // Exclude self-transitions so shelved Stop handling in Connecting
@@ -205,17 +211,18 @@ public class ReverseConnectConnectionFsm {
               int port = EndpointUtil.getPort(clientEndpointUrl);
               var clientAddress = new InetSocketAddress(Objects.requireNonNull(host), port);
 
-              transport
-                  .connect(
-                      applicationContext, clientAddress, serverUri, endpointUrl, connectTimeoutMs)
-                  .whenComplete(
-                      (channel, ex) -> {
-                        if (ex != null) {
-                          ctx.fireEvent(new Event.ConnectFailure(ex));
-                        } else {
-                          ctx.fireEvent(new Event.ConnectSuccess(channel));
-                        }
-                      });
+              ReverseConnectAttempt attempt =
+                  transport.connectAttempt(
+                      applicationContext,
+                      clientAddress,
+                      serverUri,
+                      endpointUrl,
+                      connectTimeoutMs,
+                      outcome -> fireAttemptOutcome(ctx, outcome));
+
+              attempt
+                  .connectedFuture()
+                  .thenAccept(channel -> ctx.fireEvent(new Event.ConnectSuccess(channel)));
             });
   }
 
@@ -280,21 +287,40 @@ public class ReverseConnectConnectionFsm {
       FsmBuilder<State, Event> fb, long rejectBackoffMs) {
 
     fb.onTransitionTo(State.ConnectWait)
-        .from(State.RheSent)
+        .from(state -> state == State.Connecting || state == State.RheSent)
         .via(Event.ClientRejected.class)
         .executeFirst(ctx -> KEY_RETRY_DELAY_MS.set(ctx, rejectBackoffMs));
+  }
+
+  private static void fireAttemptOutcome(
+      ActionContext<State, Event> ctx, ReverseConnectAttempt.Outcome outcome) {
+
+    if (outcome instanceof ReverseConnectAttempt.TcpConnectFailure failure) {
+      ctx.fireEvent(new Event.ConnectFailure(failure.cause()));
+    } else if (outcome instanceof ReverseConnectAttempt.ReverseHelloWriteFailure failure) {
+      ctx.fireEvent(new Event.ConnectFailure(failure.cause()));
+    } else if (outcome instanceof ReverseConnectAttempt.ClientRejected rejection) {
+      ctx.fireEvent(new Event.ClientRejected(rejection.errorMessage().getError().value()));
+    } else if (outcome instanceof ReverseConnectAttempt.SecureChannelOpened) {
+      ctx.fireEvent(new Event.SecureChannelOpened());
+    } else if (outcome instanceof ReverseConnectAttempt.CloseBeforeSecureChannel
+        || outcome instanceof ReverseConnectAttempt.CloseAfterSecureChannel) {
+
+      ctx.fireEvent(new Event.ChannelInactive());
+    }
   }
 
   private static void configureRheSentState(FsmBuilder<State, Event> fb) {
     /* Transitions */
     fb.when(State.RheSent).on(Event.SecureChannelOpened.class).transitionTo(State.Active);
+    fb.when(State.RheSent).on(Event.ConnectFailure.class).transitionTo(State.ConnectWait);
     fb.when(State.RheSent).on(Event.ClientRejected.class).transitionTo(State.ConnectWait);
     fb.when(State.RheSent).on(Event.ChannelInactive.class).transitionTo(State.ConnectWait);
     fb.when(State.RheSent).on(Event.Stop.class).transitionTo(State.Disconnected);
 
     /* External Transition Actions */
 
-    // Entering RheSent: store channel, reset backoff, monitor channel
+    // Entering RheSent: store channel and reset backoff
     fb.onTransitionTo(State.RheSent)
         .from(State.Connecting)
         .via(Event.ConnectSuccess.class)
@@ -310,23 +336,6 @@ public class ReverseConnectConnectionFsm {
 
               // Reset backoff on successful connect
               KEY_RETRY_DELAY_MS.remove(ctx);
-
-              // Monitor for channel close
-              channel.closeFuture().addListener(f -> ctx.fireEvent(new Event.ChannelInactive()));
-
-              // Monitor for SecureChannel open via Netty user event
-              channel
-                  .pipeline()
-                  .addLast(
-                      new ChannelInboundHandlerAdapter() {
-                        @Override
-                        public void userEventTriggered(ChannelHandlerContext chCtx, Object evt) {
-                          if (evt instanceof SecureChannelOpenedEvent) {
-                            ctx.fireEvent(new Event.SecureChannelOpened());
-                          }
-                          chCtx.fireUserEventTriggered(evt);
-                        }
-                      });
 
               // Drain shelved events so any Stop shelved during Connecting
               // is replayed now that the channel is available for cleanup.
