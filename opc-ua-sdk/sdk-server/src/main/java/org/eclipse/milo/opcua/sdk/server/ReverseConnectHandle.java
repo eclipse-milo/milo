@@ -19,16 +19,10 @@ public class ReverseConnectHandle {
 
   private final String clientEndpointUrl;
   private volatile String endpointUrl;
-  final boolean autoSpawned;
 
   ReverseConnectHandle(String clientEndpointUrl, String endpointUrl) {
-    this(clientEndpointUrl, endpointUrl, false);
-  }
-
-  ReverseConnectHandle(String clientEndpointUrl, String endpointUrl, boolean autoSpawned) {
     this.clientEndpointUrl = clientEndpointUrl;
     this.endpointUrl = endpointUrl;
-    this.autoSpawned = autoSpawned;
   }
 
   void setEndpointUrl(String endpointUrl) {

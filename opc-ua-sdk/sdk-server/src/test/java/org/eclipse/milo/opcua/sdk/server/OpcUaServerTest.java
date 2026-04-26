@@ -54,6 +54,29 @@ class OpcUaServerTest {
     server.shutdown().get(5, TimeUnit.SECONDS);
   }
 
+  @Test
+  void shutdownWaitsForReverseConnectManagerStop() throws Exception {
+    CompletableFuture<Void> reverseConnectStopped = new CompletableFuture<>();
+    ControlledReverseConnectManager reverseConnectManager =
+        new ControlledReverseConnectManager(
+            CompletableFuture.completedFuture(null), reverseConnectStopped);
+
+    OpcServerTransport transport = Mockito.mock(OpcServerTransport.class);
+    OpcServerTransportFactory transportFactory = transportProfile -> transport;
+
+    OpcUaServer server = new OpcUaServer(serverConfig(), transportFactory);
+    server.setReverseConnectManager(reverseConnectManager);
+    server.startup().get(5, TimeUnit.SECONDS);
+
+    CompletableFuture<OpcUaServer> shutdownFuture = server.shutdown();
+
+    assertFalse(shutdownFuture.isDone(), "shutdown should wait for reverse-connect stop");
+
+    reverseConnectStopped.complete(null);
+
+    assertSame(server, shutdownFuture.get(5, TimeUnit.SECONDS));
+  }
+
   private static OpcUaServerConfig serverConfig() {
     EndpointConfig endpoint =
         EndpointConfig.newBuilder()
@@ -72,9 +95,15 @@ class OpcUaServerTest {
   private static final class ControlledReverseConnectManager extends ReverseConnectManager {
 
     private final CompletableFuture<Void> startFuture;
+    private final CompletableFuture<Void> stopFuture;
     private volatile String startedServerUri;
 
     ControlledReverseConnectManager(CompletableFuture<Void> startFuture) {
+      this(startFuture, CompletableFuture.completedFuture(null));
+    }
+
+    ControlledReverseConnectManager(
+        CompletableFuture<Void> startFuture, CompletableFuture<Void> stopFuture) {
       super(
           ReverseConnectConfig.newBuilder()
               .setConnectInterval(Duration.ofMillis(100))
@@ -85,6 +114,7 @@ class OpcUaServerTest {
           OpcTcpServerTransportConfig.newBuilder().build());
 
       this.startFuture = startFuture;
+      this.stopFuture = stopFuture;
     }
 
     @Override
@@ -95,7 +125,7 @@ class OpcUaServerTest {
 
     @Override
     CompletableFuture<Void> stop() {
-      return CompletableFuture.completedFuture(null);
+      return stopFuture;
     }
   }
 }

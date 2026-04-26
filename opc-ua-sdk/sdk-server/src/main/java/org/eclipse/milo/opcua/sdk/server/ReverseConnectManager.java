@@ -10,15 +10,13 @@
 
 package org.eclipse.milo.opcua.sdk.server;
 
-import com.digitalpetri.fsm.Fsm;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.locks.ReentrantLock;
 import org.eclipse.milo.opcua.stack.core.Stack;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
@@ -26,20 +24,17 @@ import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpReverseConnectServerTransport;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransportConfig;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.ReverseConnectConfig;
-import org.eclipse.milo.opcua.stack.transport.server.tcp.ReverseConnectConnectionFsm;
-import org.eclipse.milo.opcua.stack.transport.server.tcp.ReverseConnectConnectionFsm.Event;
-import org.eclipse.milo.opcua.stack.transport.server.tcp.ReverseConnectConnectionFsm.State;
+import org.eclipse.milo.opcua.stack.transport.server.tcp.ReverseConnectTarget;
 import org.jspecify.annotations.Nullable;
 
 /**
- * SDK-level orchestrator for OPC UA Reverse Connect. Manages per-client connection FSMs, enforces
- * the idle socket invariant, and exposes the public API for adding/removing Reverse Connect
- * targets.
+ * SDK-level registry and lifecycle facade for server-side OPC UA Reverse Connect targets.
+ *
+ * <p>The manager owns target registrations and server start/stop coordination. Target-level retry
+ * timers, per-attempt state, and idle-socket policy are owned by stack transport targets.
  */
 public class ReverseConnectManager {
 
-  // Owns all mutable manager state: lifecycle, pending registrations,
-  // published FSMs, and restart/shutdown coordination.
   private final ReentrantLock lock = new ReentrantLock();
 
   private enum RunState {
@@ -48,15 +43,9 @@ public class ReverseConnectManager {
     STOPPING
   }
 
-  private final Map<ReverseConnectHandle, Fsm<State, Event>> connections = new HashMap<>();
+  private final Map<ReverseConnectHandle, TargetRegistration> registrations = new LinkedHashMap<>();
 
-  private final Map<String, Set<ReverseConnectHandle>> handlesByClientUrl = new HashMap<>();
-
-  /**
-   * Pending registrations added before {@link #start} is called. Each entry is a (handle,
-   * clientEndpointUrl, resolvedEndpointUrl) triple whose FSM will be created during start.
-   */
-  private final List<PendingRegistration> pendingRegistrations = new ArrayList<>();
+  private final Map<ReverseConnectHandle, ManagedTarget> targets = new LinkedHashMap<>();
 
   private final ReverseConnectConfig config;
   private final OpcTcpServerTransportConfig transportConfig;
@@ -71,7 +60,7 @@ public class ReverseConnectManager {
   /**
    * Create a new {@link ReverseConnectManager}.
    *
-   * @param config the Reverse Connect configuration (timeouts, backoff, etc.).
+   * @param config the Reverse Connect configuration.
    * @param transportConfig the transport configuration for outbound connections.
    */
   public ReverseConnectManager(
@@ -96,44 +85,45 @@ public class ReverseConnectManager {
    *
    * @param applicationContext the server application context.
    * @param serverUri the server's ApplicationUri.
-   * @return a future that completes when this start request has been published. If a stop is
-   *     already in progress, the request is queued and the returned future completes after the
-   *     queued restart has been published.
+   * @return a future that completes when target owners have accepted the start request. If a stop
+   *     is already in progress, compatible repeated starts share one queued restart; incompatible
+   *     starts fail without replacing the queued restart.
    */
   CompletableFuture<Void> start(ServerApplicationContext applicationContext, String serverUri) {
-    List<Fsm<State, Event>> fsmsToStart;
+    List<ManagedTarget> targetsToStart;
 
     lock.lock();
     try {
       if (runState == RunState.RUNNING) {
-        return CompletableFuture.completedFuture(null);
+        if (isCurrentStartLocked(applicationContext, serverUri)) {
+          return CompletableFuture.completedFuture(null);
+        } else {
+          return CompletableFuture.failedFuture(
+              new IllegalStateException(
+                  "ReverseConnectManager is already running with different start arguments"));
+        }
       }
       if (runState == RunState.STOPPING) {
-        return queuePendingStartLocked(applicationContext, serverUri).future();
+        return queuePendingStartLocked(applicationContext, serverUri);
       }
 
-      fsmsToStart = prepareStartLocked(applicationContext, serverUri);
+      targetsToStart = prepareStartLocked(applicationContext, serverUri);
     } catch (Throwable t) {
       return CompletableFuture.failedFuture(t);
     } finally {
       lock.unlock();
     }
 
-    try {
-      fireStartEvents(fsmsToStart);
-      return CompletableFuture.completedFuture(null);
-    } catch (Throwable t) {
-      return CompletableFuture.failedFuture(t);
-    }
+    return finishStart(targetsToStart, applicationContext, serverUri);
   }
 
   /**
    * Stop the Reverse Connect manager. Called by {@code OpcUaServer.shutdown()}.
    *
-   * @return a future that completes when all connections are stopped.
+   * @return a future that completes when all target owners have stopped.
    */
   CompletableFuture<Void> stop() {
-    List<Fsm<State, Event>> fsmsToStop;
+    List<ManagedTarget> targetsToStop;
     CompletableFuture<Void> stopCompletion;
 
     lock.lock();
@@ -143,76 +133,17 @@ public class ReverseConnectManager {
       }
 
       runState = RunState.STOPPING;
-      fsmsToStop = List.copyOf(connections.values());
+      targetsToStop = List.copyOf(targets.values());
+      targetsToStop.forEach(ManagedTarget::markStopped);
+      targets.clear();
+
       stopCompletion = new CompletableFuture<>();
       stopFuture = stopCompletion;
     } finally {
       lock.unlock();
     }
 
-    List<CompletableFuture<Void>> stopFutures =
-        fsmsToStop.stream()
-            .map(
-                fsm -> {
-                  var stop = new Event.Stop(new CompletableFuture<>());
-                  fsm.fireEvent(stop);
-                  return stop.future();
-                })
-            .toList();
-
-    CompletableFuture.allOf(stopFutures.toArray(CompletableFuture[]::new))
-        .whenComplete(
-            (v, ex) -> {
-              PendingStart queuedStart = null;
-              List<Fsm<State, Event>> fsmsToStart = List.of();
-              Throwable startFailure = null;
-
-              lock.lock();
-              try {
-                runState = RunState.STOPPED;
-                applicationContext = null;
-                serverUri = null;
-
-                if (ex == null) {
-                  stopCompletion.complete(null);
-
-                  if (pendingStart != null) {
-                    queuedStart = pendingStart;
-                    pendingStart = null;
-
-                    try {
-                      fsmsToStart =
-                          prepareStartLocked(
-                              queuedStart.applicationContext(), queuedStart.serverUri());
-                    } catch (Throwable t) {
-                      startFailure = t;
-                    }
-                  }
-                } else {
-                  stopCompletion.completeExceptionally(ex);
-
-                  if (pendingStart != null) {
-                    pendingStart.future().completeExceptionally(ex);
-                    pendingStart = null;
-                  }
-                }
-              } finally {
-                lock.unlock();
-              }
-
-              if (queuedStart != null) {
-                if (startFailure != null) {
-                  queuedStart.future().completeExceptionally(startFailure);
-                } else {
-                  try {
-                    fireStartEvents(fsmsToStart);
-                    queuedStart.future().complete(null);
-                  } catch (Throwable t) {
-                    queuedStart.future().completeExceptionally(t);
-                  }
-                }
-              }
-            });
+    stopTargets(targetsToStop).whenComplete((v, ex) -> finishStop(stopCompletion, ex));
 
     return stopCompletion;
   }
@@ -221,7 +152,7 @@ public class ReverseConnectManager {
    * Register a client for Reverse Connect. The server endpoint URL sent in ReverseHello messages
    * defaults to the server's primary (non-discovery) endpoint.
    *
-   * @param clientEndpointUrl the client's listening address (e.g. "opc.tcp://client-host:48060").
+   * @param clientEndpointUrl the client's listening address.
    * @return a handle for removing this registration.
    */
   public ReverseConnectHandle addReverseConnect(String clientEndpointUrl) {
@@ -239,160 +170,66 @@ public class ReverseConnectManager {
   public ReverseConnectHandle addReverseConnect(
       String clientEndpointUrl, @Nullable String endpointUrl) {
     ReverseConnectHandle handle;
-    Fsm<State, Event> fsmToStart;
+    @Nullable ManagedTarget targetToStart = null;
 
     lock.lock();
     try {
-      if (runState != RunState.RUNNING) {
+      if (runState == RunState.RUNNING) {
+        ServerApplicationContext ctx = requireApplicationContextLocked();
+        String uri = requireServerUriLocked();
+        String resolvedEndpointUrl = resolveEndpointUrl(ctx, endpointUrl);
+
+        handle = new ReverseConnectHandle(clientEndpointUrl, resolvedEndpointUrl);
+        var registration = new TargetRegistration(handle, clientEndpointUrl, endpointUrl);
+        targetToStart = createTarget(registration, resolvedEndpointUrl, ctx, uri);
+
+        registrations.put(handle, registration);
+        targets.put(handle, targetToStart);
+      } else {
         handle =
             new ReverseConnectHandle(clientEndpointUrl, endpointUrl != null ? endpointUrl : "");
-        pendingRegistrations.add(new PendingRegistration(handle, clientEndpointUrl, endpointUrl));
-        return handle;
+        registrations.put(handle, new TargetRegistration(handle, clientEndpointUrl, endpointUrl));
       }
-
-      ServerApplicationContext ctx = requireApplicationContextLocked();
-      String uri = requireServerUriLocked();
-      String resolvedEndpointUrl =
-          endpointUrl != null ? endpointUrl : resolvePrimaryEndpointUrl(ctx);
-
-      handle = new ReverseConnectHandle(clientEndpointUrl, resolvedEndpointUrl);
-      fsmToStart = createFsm(clientEndpointUrl, resolvedEndpointUrl, ctx, uri);
-
-      connections.put(handle, fsmToStart);
-      handlesByClientUrl.computeIfAbsent(clientEndpointUrl, k -> new HashSet<>()).add(handle);
     } finally {
       lock.unlock();
     }
 
-    fsmToStart.fireEvent(new Event.Start());
+    if (targetToStart != null) {
+      targetToStart.start();
+    }
 
     return handle;
   }
 
   /**
-   * Remove a Reverse Connect registration. Also stops any auto-spawned idle sibling connections for
-   * the same client.
+   * Remove a Reverse Connect registration.
    *
    * @param handle the handle returned by {@link #addReverseConnect}.
    */
   public void removeReverseConnect(ReverseConnectHandle handle) {
-    List<Fsm<State, Event>> fsmsToStop = new ArrayList<>();
-
-    lock.lock();
-    try {
-      pendingRegistrations.removeIf(reg -> reg.handle() == handle);
-
-      Fsm<State, Event> fsm = connections.remove(handle);
-      if (fsm != null) {
-        fsmsToStop.add(fsm);
-      }
-
-      Set<ReverseConnectHandle> handles = handlesByClientUrl.get(handle.getClientEndpointUrl());
-      if (handles != null) {
-        handles.remove(handle);
-
-        // Stop auto-spawned idle siblings for this client URL.
-        List<ReverseConnectHandle> autoSpawned =
-            handles.stream().filter(h -> h.autoSpawned).toList();
-        for (ReverseConnectHandle sibling : autoSpawned) {
-          handles.remove(sibling);
-          Fsm<State, Event> siblingFsm = connections.remove(sibling);
-          if (siblingFsm != null) {
-            fsmsToStop.add(siblingFsm);
-          }
-        }
-
-        if (handles.isEmpty()) {
-          handlesByClientUrl.remove(handle.getClientEndpointUrl(), handles);
-        }
-      }
-    } finally {
-      lock.unlock();
-    }
-
-    // Fire stop events outside the lock to avoid holding the lock during
-    // FSM processing, which could deadlock with ensureIdleConnection.
-    for (Fsm<State, Event> fsm : fsmsToStop) {
-      fsm.fireEvent(new Event.Stop(new CompletableFuture<>()));
-    }
+    removeReverseConnectAsync(handle);
   }
 
-  /**
-   * Ensure there is at least one idle (non-Active, non-Disconnected) connection to the given
-   * client. If there is none, spawn a new FSM. This enforces the OPC UA idle socket invariant.
-   *
-   * @param clientEndpointUrl the client's listening address.
-   * @param endpointUrl the server endpoint URL for the ReverseHello.
-   */
-  void ensureIdleConnection(String clientEndpointUrl, String endpointUrl) {
-    // Snapshot the FSM list under the lock, then check states outside the lock.
-    // This avoids a lock-ordering deadlock: FSM transition actions run under the
-    // FSM write lock and may call this method, while getState() acquires the FSM
-    // read lock — holding both ReverseConnectManager.lock and an FSM lock in
-    // opposite orders would deadlock.
-    List<Fsm<State, Event>> snapshot;
-    Set<ReverseConnectHandle> snapshotHandles;
+  /** Package-private for tests that need to observe deterministic target shutdown. */
+  CompletableFuture<Void> removeReverseConnectAsync(ReverseConnectHandle handle) {
+    @Nullable ManagedTarget targetToRemove;
 
     lock.lock();
     try {
-      if (runState != RunState.RUNNING) {
-        return;
-      }
+      registrations.remove(handle);
+      targetToRemove = targets.remove(handle);
 
-      Set<ReverseConnectHandle> handles = handlesByClientUrl.get(clientEndpointUrl);
-      if (handles == null) {
-        return;
+      if (targetToRemove != null) {
+        targetToRemove.markStopped();
       }
-      snapshotHandles = Set.copyOf(handles);
-      snapshot = handles.stream().map(connections::get).filter(Objects::nonNull).toList();
     } finally {
       lock.unlock();
     }
 
-    // Check states without holding the lock. getState() acquires the FSM read lock.
-    boolean hasIdleConnection =
-        snapshot.stream()
-            .anyMatch(
-                fsm -> {
-                  State state = fsm.getState();
-                  return state != State.Active && state != State.Disconnected;
-                });
-
-    if (!hasIdleConnection) {
-      Fsm<State, Event> idleFsm = null;
-
-      lock.lock();
-      try {
-        if (runState != RunState.RUNNING) {
-          return;
-        }
-
-        Set<ReverseConnectHandle> handles = handlesByClientUrl.get(clientEndpointUrl);
-        if (handles != null) {
-          // If any new handle appeared since our snapshot, another thread
-          // already registered a replacement connection for this client URL.
-          // Compare handle identity rather than set size so concurrent
-          // remove/add races do not produce duplicate idle FSMs, while still
-          // keeping getState() outside Manager.lock.
-          boolean replacementHandleAdded =
-              handles.stream().anyMatch(handle -> !snapshotHandles.contains(handle));
-
-          if (!replacementHandleAdded) {
-            ServerApplicationContext ctx = requireApplicationContextLocked();
-            String uri = requireServerUriLocked();
-            var idleHandle = new ReverseConnectHandle(clientEndpointUrl, endpointUrl, true);
-            idleFsm = createFsm(clientEndpointUrl, endpointUrl, ctx, uri);
-            connections.put(idleHandle, idleFsm);
-            handles.add(idleHandle);
-          }
-        }
-      } finally {
-        lock.unlock();
-      }
-
-      if (idleFsm != null) {
-        idleFsm.fireEvent(new Event.Start());
-      }
+    if (targetToRemove != null) {
+      return targetToRemove.remove();
+    } else {
+      return CompletableFuture.completedFuture(null);
     }
   }
 
@@ -400,7 +237,17 @@ public class ReverseConnectManager {
   int connectionCount() {
     lock.lock();
     try {
-      return connections.size();
+      return targets.size();
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  /** Package-private for testing. */
+  int registrationCount() {
+    lock.lock();
+    try {
+      return registrations.size();
     } finally {
       lock.unlock();
     }
@@ -410,30 +257,165 @@ public class ReverseConnectManager {
   int handleGroupCount() {
     lock.lock();
     try {
-      return handlesByClientUrl.size();
+      return (int)
+          registrations.values().stream()
+              .map(TargetRegistration::clientEndpointUrl)
+              .distinct()
+              .count();
     } finally {
       lock.unlock();
     }
   }
 
-  private Fsm<State, Event> createFsm(
-      String clientEndpointUrl,
+  private void finishStop(CompletableFuture<Void> stopCompletion, @Nullable Throwable failure) {
+    @Nullable PendingStart queuedStart = null;
+    List<ManagedTarget> targetsToStart = List.of();
+    @Nullable Throwable startFailure = null;
+
+    lock.lock();
+    try {
+      runState = RunState.STOPPED;
+      applicationContext = null;
+      serverUri = null;
+
+      if (failure == null) {
+        stopCompletion.complete(null);
+
+        if (pendingStart != null) {
+          queuedStart = pendingStart;
+          pendingStart = null;
+
+          try {
+            targetsToStart =
+                prepareStartLocked(queuedStart.applicationContext(), queuedStart.serverUri());
+          } catch (Throwable t) {
+            startFailure = t;
+          }
+        }
+      } else {
+        stopCompletion.completeExceptionally(unwrap(failure));
+
+        if (pendingStart != null) {
+          pendingStart.future().completeExceptionally(unwrap(failure));
+          pendingStart = null;
+        }
+      }
+    } finally {
+      lock.unlock();
+    }
+
+    if (queuedStart != null) {
+      if (startFailure != null) {
+        queuedStart.future().completeExceptionally(startFailure);
+      } else {
+        PendingStart start = queuedStart;
+        finishStart(targetsToStart, start.applicationContext(), start.serverUri())
+            .whenComplete(
+                (v, ex) -> {
+                  if (ex != null) {
+                    start.future().completeExceptionally(unwrap(ex));
+                  } else {
+                    start.future().complete(null);
+                  }
+                });
+      }
+    }
+  }
+
+  private List<ManagedTarget> prepareStartLocked(
+      ServerApplicationContext applicationContext, String serverUri) {
+
+    var materializedTargets = new ArrayList<MaterializedTarget>();
+
+    for (TargetRegistration registration : registrations.values()) {
+      String resolvedEndpointUrl =
+          resolveEndpointUrl(applicationContext, registration.requestedEndpointUrl());
+      ManagedTarget target =
+          createTarget(registration, resolvedEndpointUrl, applicationContext, serverUri);
+
+      materializedTargets.add(new MaterializedTarget(registration, resolvedEndpointUrl, target));
+    }
+
+    this.applicationContext = applicationContext;
+    this.serverUri = serverUri;
+    runState = RunState.RUNNING;
+    targets.clear();
+
+    for (MaterializedTarget materializedTarget : materializedTargets) {
+      TargetRegistration registration = materializedTarget.registration();
+      registration.handle().setEndpointUrl(materializedTarget.resolvedEndpointUrl());
+      targets.put(registration.handle(), materializedTarget.target());
+    }
+
+    return materializedTargets.stream().map(MaterializedTarget::target).toList();
+  }
+
+  private ManagedTarget createTarget(
+      TargetRegistration registration,
       String resolvedEndpointUrl,
       ServerApplicationContext applicationContext,
       String serverUri) {
-    return ReverseConnectConnectionFsm.newFsm(
-        clientEndpointUrl,
-        resolvedEndpointUrl,
-        serverUri,
-        transport,
-        applicationContext,
-        config,
-        transportConfig.getExecutor(),
-        Stack.sharedScheduledExecutor(),
-        () ->
-            transportConfig
-                .getExecutor()
-                .execute(() -> ensureIdleConnection(clientEndpointUrl, resolvedEndpointUrl)));
+
+    ReverseConnectTarget target =
+        transport.createTarget(
+            registration.clientEndpointUrl(),
+            resolvedEndpointUrl,
+            serverUri,
+            applicationContext,
+            config,
+            transportConfig.getExecutor(),
+            Stack.sharedScheduledExecutor());
+
+    return new ManagedTarget(target);
+  }
+
+  private CompletableFuture<Void> startTargets(List<ManagedTarget> targetsToStart) {
+    List<CompletableFuture<Void>> startFutures =
+        targetsToStart.stream().map(ManagedTarget::start).toList();
+
+    return CompletableFuture.allOf(startFutures.toArray(CompletableFuture[]::new));
+  }
+
+  private CompletableFuture<Void> finishStart(
+      List<ManagedTarget> targetsToStart,
+      ServerApplicationContext applicationContext,
+      String serverUri) {
+
+    return startTargets(targetsToStart)
+        .thenCompose(v -> completeStartIfCurrent(applicationContext, serverUri));
+  }
+
+  private CompletableFuture<Void> completeStartIfCurrent(
+      ServerApplicationContext applicationContext, String serverUri) {
+
+    lock.lock();
+    try {
+      if (runState == RunState.RUNNING && isCurrentStartLocked(applicationContext, serverUri)) {
+        return CompletableFuture.completedFuture(null);
+      }
+
+      return CompletableFuture.failedFuture(
+          new IllegalStateException("ReverseConnectManager start was superseded by stop"));
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  private CompletableFuture<Void> stopTargets(List<ManagedTarget> targetsToStop) {
+    List<CompletableFuture<Void>> stopFutures =
+        targetsToStop.stream().map(ManagedTarget::stop).toList();
+
+    return CompletableFuture.allOf(stopFutures.toArray(CompletableFuture[]::new));
+  }
+
+  private String resolveEndpointUrl(
+      ServerApplicationContext applicationContext, @Nullable String endpointUrl) {
+
+    if (endpointUrl != null) {
+      return endpointUrl;
+    }
+
+    return resolvePrimaryEndpointUrl(applicationContext);
   }
 
   private String resolvePrimaryEndpointUrl(ServerApplicationContext applicationContext) {
@@ -460,80 +442,87 @@ public class ReverseConnectManager {
     return serverUri;
   }
 
-  private PendingStart queuePendingStartLocked(
+  private boolean isCurrentStartLocked(
+      ServerApplicationContext applicationContext, String serverUri) {
+
+    return this.applicationContext == applicationContext
+        && Objects.equals(this.serverUri, serverUri);
+  }
+
+  private CompletableFuture<Void> queuePendingStartLocked(
       ServerApplicationContext applicationContext, String serverUri) {
 
     if (pendingStart == null) {
       pendingStart = new PendingStart(applicationContext, serverUri, new CompletableFuture<>());
+      return pendingStart.future();
     }
 
-    return pendingStart;
+    if (pendingStart.applicationContext() == applicationContext
+        && Objects.equals(pendingStart.serverUri(), serverUri)) {
+      return pendingStart.future();
+    }
+
+    return CompletableFuture.failedFuture(
+        new IllegalStateException(
+            "ReverseConnectManager stop already has an incompatible queued start"));
   }
 
-  private List<Fsm<State, Event>> prepareStartLocked(
-      ServerApplicationContext applicationContext, String serverUri) {
-
-    List<PendingRegistration> pending = List.copyOf(pendingRegistrations);
-    Set<ReverseConnectHandle> staleHandles = Set.copyOf(connections.keySet());
-    List<Fsm<State, Event>> fsmsToStart = new ArrayList<>(staleHandles.size() + pending.size());
-
-    Map<ReverseConnectHandle, Fsm<State, Event>> rebuiltFsms = new HashMap<>();
-    List<MaterializedRegistration> materializedPendingRegistrations = new ArrayList<>();
-
-    for (ReverseConnectHandle handle : staleHandles) {
-      Fsm<State, Event> newFsm =
-          createFsm(
-              handle.getClientEndpointUrl(),
-              handle.getEndpointUrl(),
-              applicationContext,
-              serverUri);
-      rebuiltFsms.put(handle, newFsm);
-      fsmsToStart.add(newFsm);
+  private static Throwable unwrap(Throwable failure) {
+    if (failure instanceof CompletionException && failure.getCause() != null) {
+      return failure.getCause();
     }
 
-    for (PendingRegistration reg : pending) {
-      String resolvedEndpointUrl =
-          reg.endpointUrl != null ? reg.endpointUrl : resolvePrimaryEndpointUrl(applicationContext);
-
-      // Update the handle with the resolved endpoint URL so callers
-      // see the real value instead of the placeholder empty string.
-      reg.handle.setEndpointUrl(resolvedEndpointUrl);
-
-      Fsm<State, Event> fsm =
-          createFsm(reg.clientEndpointUrl, resolvedEndpointUrl, applicationContext, serverUri);
-      materializedPendingRegistrations.add(
-          new MaterializedRegistration(reg.handle, reg.clientEndpointUrl, fsm));
-      fsmsToStart.add(fsm);
-    }
-
-    this.applicationContext = applicationContext;
-    this.serverUri = serverUri;
-    runState = RunState.RUNNING;
-    pendingRegistrations.clear();
-    connections.putAll(rebuiltFsms);
-
-    for (MaterializedRegistration registration : materializedPendingRegistrations) {
-      connections.put(registration.handle, registration.fsm);
-      handlesByClientUrl
-          .computeIfAbsent(registration.clientEndpointUrl, k -> new HashSet<>())
-          .add(registration.handle);
-    }
-
-    return fsmsToStart;
+    return failure;
   }
 
-  private void fireStartEvents(List<Fsm<State, Event>> fsmsToStart) {
-    fsmsToStart.forEach(fsm -> fsm.fireEvent(new Event.Start()));
+  private static final class ManagedTarget {
+
+    private final ReverseConnectTarget target;
+    private boolean stopped;
+
+    private ManagedTarget(ReverseConnectTarget target) {
+      this.target = Objects.requireNonNull(target);
+    }
+
+    private void markStopped() {
+      synchronized (this) {
+        stopped = true;
+      }
+    }
+
+    private CompletableFuture<Void> start() {
+      synchronized (this) {
+        if (stopped) {
+          return CompletableFuture.completedFuture(null);
+        }
+
+        return target.start();
+      }
+    }
+
+    private CompletableFuture<Void> stop() {
+      markStopped();
+
+      return target.stop();
+    }
+
+    private CompletableFuture<Void> remove() {
+      markStopped();
+
+      return target.remove();
+    }
   }
 
-  private record PendingRegistration(
-      ReverseConnectHandle handle, String clientEndpointUrl, @Nullable String endpointUrl) {}
+  private record TargetRegistration(
+      ReverseConnectHandle handle,
+      String clientEndpointUrl,
+      @Nullable String requestedEndpointUrl) {}
+
+  private record MaterializedTarget(
+      TargetRegistration registration, String resolvedEndpointUrl, ManagedTarget target) {}
 
   private record PendingStart(
       ServerApplicationContext applicationContext,
       String serverUri,
       CompletableFuture<Void> future) {}
-
-  private record MaterializedRegistration(
-      ReverseConnectHandle handle, String clientEndpointUrl, Fsm<State, Event> fsm) {}
 }
