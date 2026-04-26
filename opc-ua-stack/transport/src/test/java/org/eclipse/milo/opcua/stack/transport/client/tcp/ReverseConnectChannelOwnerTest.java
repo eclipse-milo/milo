@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import io.netty.channel.Channel;
@@ -127,6 +128,24 @@ class ReverseConnectChannelOwnerTest {
   }
 
   @Test
+  void duplicateConnectsShareOneLifecycleAndKeepFirstContext() throws Exception {
+    ClientApplicationContext firstApplication = newApplicationContext();
+    ClientApplicationContext duplicateApplication = newApplicationContext();
+
+    CompletableFuture<Channel> firstConnect = owner.connect(firstApplication);
+    CompletableFuture<Channel> duplicateConnect = owner.connect(duplicateApplication);
+
+    var channel = new EmbeddedChannel();
+    owner.accepted(channel, reverseHello());
+    handshakeStarter.succeed(channel);
+
+    assertSame(channel, firstConnect.get(1, TimeUnit.SECONDS));
+    assertSame(channel, duplicateConnect.get(1, TimeUnit.SECONDS));
+    assertEquals(1, handshakeStarter.starts());
+    assertSame(firstApplication, handshakeStarter.applications().get(0));
+  }
+
+  @Test
   void disconnectDuringWaitFailsWaiterAndResetsOwner() throws Exception {
     CompletableFuture<Channel> connectFuture = owner.connect(newApplicationContext());
 
@@ -150,6 +169,26 @@ class ReverseConnectChannelOwnerTest {
   }
 
   @Test
+  void listenerStopFromConnectedClosesChannelAndRejectsFutureWaiters() throws Exception {
+    CompletableFuture<Channel> connectFuture = owner.connect(newApplicationContext());
+
+    var channel = new EmbeddedChannel();
+    owner.accepted(channel, reverseHello());
+    handshakeStarter.succeed(channel);
+
+    assertSame(channel, connectFuture.get(1, TimeUnit.SECONDS));
+
+    CompletableFuture<Unit> listenerStoppedFuture =
+        owner.listenerStopped(new UaException(StatusCodes.Bad_Shutdown, "listener stopped"));
+
+    assertEquals(Unit.VALUE, listenerStoppedFuture.get(1, TimeUnit.SECONDS));
+    assertFalse(channel.isOpen());
+    assertEquals(ReverseConnectChannelOwner.State.Stopped, owner.getState());
+    assertUaStatus(StatusCodes.Bad_Shutdown, owner.connect(newApplicationContext()));
+    assertUaStatus(StatusCodes.Bad_Shutdown, owner.getChannel());
+  }
+
+  @Test
   void connectWaiterTimesOutWithoutAcceptedChannel() {
     CompletableFuture<Channel> connectFuture = owner.connect(newApplicationContext());
 
@@ -167,6 +206,42 @@ class ReverseConnectChannelOwnerTest {
 
     assertUaStatus(StatusCodes.Bad_Timeout, getChannelFuture);
     assertEquals(ReverseConnectChannelOwner.State.Idle, owner.getState());
+  }
+
+  @Test
+  void acceptedBeforeContextStartsHandshakeWhenConnectArrivesBeforeTimeout() throws Exception {
+    var channel = new EmbeddedChannel();
+
+    owner.accepted(channel, reverseHello());
+
+    CompletableFuture<Channel> connectFuture = owner.connect(newApplicationContext());
+    scheduler.runNext();
+
+    assertEquals(1, handshakeStarter.starts());
+    assertFalse(connectFuture.isDone());
+
+    handshakeStarter.succeed(channel);
+    scheduler.runAll();
+
+    assertSame(channel, connectFuture.get(1, TimeUnit.SECONDS));
+    assertSame(channel, owner.getActiveChannel());
+  }
+
+  @Test
+  void duplicateAcceptedBeforeContextIsClosedAndOriginalIsKept() throws Exception {
+    var channel = new EmbeddedChannel();
+    var duplicate = new EmbeddedChannel();
+
+    owner.accepted(channel, reverseHello());
+    owner.accepted(duplicate, reverseHello());
+
+    assertFalse(duplicate.isOpen());
+
+    CompletableFuture<Channel> connectFuture = owner.connect(newApplicationContext());
+    handshakeStarter.succeed(channel);
+
+    assertEquals(1, handshakeStarter.starts());
+    assertSame(channel, connectFuture.get(1, TimeUnit.SECONDS));
   }
 
   @Test
@@ -202,6 +277,27 @@ class ReverseConnectChannelOwnerTest {
   }
 
   @Test
+  void stalePendingAcceptTimeoutFromPreviousLifecycleCannotCloseCurrentPendingChannel()
+      throws Exception {
+
+    var firstChannel = new EmbeddedChannel();
+    owner.accepted(firstChannel, reverseHello());
+
+    assertEquals(Unit.VALUE, owner.disconnect().get(1, TimeUnit.SECONDS));
+
+    var secondChannel = new EmbeddedChannel();
+    owner.accepted(secondChannel, reverseHello());
+    owner.fireEvent(new ReverseConnectChannelOwner.Event.PendingAcceptTimedOut(0L, secondChannel));
+
+    assertTrue(secondChannel.isOpen());
+
+    CompletableFuture<Channel> secondConnect = owner.connect(newApplicationContext());
+    handshakeStarter.succeed(secondChannel);
+
+    assertSame(secondChannel, secondConnect.get(1, TimeUnit.SECONDS));
+  }
+
+  @Test
   void channelInactiveDuringHandshakeFailsWaiterAndIgnoresLateHandshakeSuccess() throws Exception {
 
     CompletableFuture<Channel> firstConnect = owner.connect(newApplicationContext());
@@ -219,6 +315,27 @@ class ReverseConnectChannelOwnerTest {
     handshakeStarter.succeed(secondChannel);
 
     assertSame(secondChannel, secondConnect.get(1, TimeUnit.SECONDS));
+  }
+
+  @Test
+  void channelInactiveAfterHandshakeSuccessClearsActiveChannelAndBoundsNextWaiter()
+      throws Exception {
+
+    CompletableFuture<Channel> connectFuture = owner.connect(newApplicationContext());
+    var channel = new EmbeddedChannel();
+    owner.accepted(channel, reverseHello());
+    handshakeStarter.succeed(channel);
+
+    assertSame(channel, connectFuture.get(1, TimeUnit.SECONDS));
+
+    channel.close();
+
+    assertEquals(ReverseConnectChannelOwner.State.Armed, owner.getState());
+
+    CompletableFuture<Channel> getChannelFuture = owner.getChannel();
+    scheduler.runAll();
+
+    assertUaStatus(StatusCodes.Bad_Timeout, getChannelFuture);
   }
 
   @Test
@@ -437,6 +554,12 @@ class ReverseConnectChannelOwnerTest {
 
       if (!task.cancelled) {
         task.command.run();
+      }
+    }
+
+    void runAll() {
+      while (!tasks.isEmpty()) {
+        runNext();
       }
     }
 
