@@ -25,6 +25,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -50,7 +51,6 @@ import org.eclipse.milo.opcua.stack.transport.client.tcp.EndpointResolver;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.InboundChannelTransport;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpMultiplexedReverseConnectTransport;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpMultiplexedReverseConnectTransportConfig;
-import org.eclipse.milo.opcua.stack.transport.client.tcp.ReverseConnectChannelFsm;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.RateLimitingHandler;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -87,6 +87,8 @@ public class MultiplexedReverseConnectListener implements ChannelConsumerRegistr
 
   private volatile ServerBootstrap serverBootstrap;
   private volatile Channel serverChannel;
+  private boolean stopped;
+  private @Nullable CompletableFuture<Void> stopFuture;
 
   /**
    * Create a new {@link MultiplexedReverseConnectListener}.
@@ -120,9 +122,14 @@ public class MultiplexedReverseConnectListener implements ChannelConsumerRegistr
   /**
    * Start the listener. Binds the {@link ServerBootstrap} to the configured listen address.
    *
-   * <p>This method is idempotent; calling it when the listener is already started has no effect.
+   * <p>This method is idempotent while the listener is already started. A stopped listener cannot
+   * be restarted; create a new listener instance instead.
    */
   public synchronized void start() {
+    if (stopped) {
+      throw new IllegalStateException("MultiplexedReverseConnectListener cannot be restarted");
+    }
+
     if (serverBootstrap != null) {
       return;
     }
@@ -177,32 +184,63 @@ public class MultiplexedReverseConnectListener implements ChannelConsumerRegistr
   }
 
   /**
-   * Stop the listener. Unbinds the listen address, closes all child channels, and clears the
-   * dispatch table.
+   * Stop the listener. Unbinds the listen address, notifies registered consumers, closes all child
+   * channels, and clears the dispatch table.
    *
-   * @return a future that completes when all child channels have been closed.
+   * @return a future that completes when listener stop notification and listener/child channel
+   *     closes are complete.
    */
   public CompletableFuture<Void> stop() {
+    CompletableFuture<Void> future;
+
     synchronized (this) {
-      if (serverChannel != null && serverChannel.isOpen()) {
-        var addr = serverChannel.localAddress();
-        serverChannel.close().syncUninterruptibly();
-        logger.info("Stopped listening on {}", addr);
+      if (stopFuture != null) {
+        return stopFuture;
       }
+
+      stopped = true;
+
+      Channel listenerChannel = serverChannel;
+      Object listenAddress = listenerChannel != null ? listenerChannel.localAddress() : null;
+      UaException stopCause = newStopCause();
+
+      List<ChannelConsumer> registeredConsumers = snapshotConsumers();
+      CompletableFuture<Void> notificationFuture =
+          notifyConsumersStopped(registeredConsumers, stopCause);
+      consumers.clear();
+
       serverBootstrap = null;
       serverChannel = null;
+
+      CompletableFuture<Void> listenerCloseFuture =
+          closeChannelAsync(listenerChannel)
+              .whenComplete(
+                  (v, ex) -> {
+                    if (ex == null && listenAddress != null) {
+                      logger.info("Stopped listening on {}", listenAddress);
+                    }
+                  });
+      CompletableFuture<Void> childCloseFuture = closeChildChannelsAsync();
+
+      future = CompletableFuture.allOf(notificationFuture, listenerCloseFuture, childCloseFuture);
+      stopFuture = future;
     }
 
-    consumers.clear();
-
-    CompletableFuture<Void> future = new CompletableFuture<>();
-    childChannels.close().addListener(f -> future.complete(null));
     return future;
   }
 
   @Override
-  public void register(String serverUri, ChannelConsumer consumer) {
-    consumers.computeIfAbsent(serverUri, k -> new CopyOnWriteArrayList<>()).add(consumer);
+  public synchronized void register(String serverUri, ChannelConsumer consumer) {
+    if (stopped) {
+      consumer.listenerStopped(newStopCause());
+      return;
+    }
+
+    CopyOnWriteArrayList<ChannelConsumer> list =
+        consumers.computeIfAbsent(serverUri, k -> new CopyOnWriteArrayList<>());
+    if (!list.contains(consumer)) {
+      list.add(consumer);
+    }
   }
 
   /**
@@ -240,10 +278,10 @@ public class MultiplexedReverseConnectListener implements ChannelConsumerRegistr
   }
 
   @Override
-  public void deregister(String serverUri, ChannelConsumer consumer) {
+  public synchronized void deregister(String serverUri, ChannelConsumer consumer) {
     CopyOnWriteArrayList<ChannelConsumer> list = consumers.get(serverUri);
     if (list != null) {
-      list.remove(consumer);
+      list.removeIf(consumer::equals);
       if (list.isEmpty()) {
         consumers.remove(serverUri, list);
       }
@@ -253,31 +291,52 @@ public class MultiplexedReverseConnectListener implements ChannelConsumerRegistr
   private void dispatch(Channel channel, ReverseHelloMessage rhe) {
     String serverUri = rhe.serverUri();
 
-    CopyOnWriteArrayList<ChannelConsumer> list = consumers.get(serverUri);
+    boolean tryResolver;
 
-    if (list != null && !list.isEmpty()) {
-      // Find first consumer whose FSM is in a connection-needing state
-      for (ChannelConsumer consumer : list) {
-        ReverseConnectChannelFsm.State state = consumer.channelFsm().getState();
-        if (state == ReverseConnectChannelFsm.State.NotConnected
-            || state == ReverseConnectChannelFsm.State.Reconnecting) {
-          consumer
-              .channelFsm()
-              .fireEvent(new ReverseConnectChannelFsm.Event.ConnectionAccepted(channel, rhe));
-          return;
-        }
+    synchronized (this) {
+      if (stopped) {
+        channel.close();
+        return;
       }
 
-      // All consumers are Connected or Handshaking — hand to first consumer.
-      // Its FSM will close the duplicate via its existing internal transition.
-      list.get(0)
-          .channelFsm()
-          .fireEvent(new ReverseConnectChannelFsm.Event.ConnectionAccepted(channel, rhe));
-      return;
+      CopyOnWriteArrayList<ChannelConsumer> list = consumers.get(serverUri);
+
+      if (list != null && !list.isEmpty()) {
+        ChannelConsumer duplicateConsumer = null;
+
+        // Find first consumer whose FSM is in a connection-needing state.
+        for (ChannelConsumer consumer : list) {
+          if (consumer.needsChannel()) {
+            consumer.accept(channel, rhe);
+            return;
+          }
+
+          if (duplicateConsumer == null && consumer.acceptsDuplicateChannel()) {
+            duplicateConsumer = consumer;
+          }
+        }
+
+        if (duplicateConsumer != null) {
+          // All consumers are Connected or Handshaking. Hand to the first
+          // available consumer; its FSM closes the duplicate through its
+          // existing internal transition.
+          duplicateConsumer.accept(channel, rhe);
+          return;
+        }
+
+        logger.debug(
+            "All consumers for ServerUri={} are stopped, closing channel {}",
+            serverUri,
+            channel.remoteAddress());
+        channel.close();
+        return;
+      }
+
+      tryResolver = config.getEndpointResolver() != null;
     }
 
     // No registered consumer — try EndpointResolver or close
-    if (config.getEndpointResolver() != null) {
+    if (tryResolver) {
       dispatchToResolver(channel, rhe);
     } else {
       logger.debug(
@@ -286,6 +345,69 @@ public class MultiplexedReverseConnectListener implements ChannelConsumerRegistr
           channel.remoteAddress());
       channel.close();
     }
+  }
+
+  private List<ChannelConsumer> snapshotConsumers() {
+    var snapshot = new ArrayList<ChannelConsumer>();
+    for (CopyOnWriteArrayList<ChannelConsumer> list : consumers.values()) {
+      for (ChannelConsumer consumer : list) {
+        if (!snapshot.contains(consumer)) {
+          snapshot.add(consumer);
+        }
+      }
+    }
+    return snapshot;
+  }
+
+  private static UaException newStopCause() {
+    return new UaException(
+        StatusCodes.Bad_Shutdown, "multiplexed reverse connect listener stopped");
+  }
+
+  private CompletableFuture<Void> notifyConsumersStopped(
+      List<ChannelConsumer> registeredConsumers, Throwable cause) {
+
+    if (registeredConsumers.isEmpty()) {
+      return CompletableFuture.completedFuture(null);
+    }
+
+    var futures = new CompletableFuture<?>[registeredConsumers.size()];
+    for (int i = 0; i < registeredConsumers.size(); i++) {
+      try {
+        futures[i] = registeredConsumers.get(i).listenerStopped(cause);
+      } catch (RuntimeException e) {
+        futures[i] = CompletableFuture.failedFuture(e);
+      }
+    }
+
+    return CompletableFuture.allOf(futures);
+  }
+
+  private CompletableFuture<Void> closeChildChannelsAsync() {
+    return toCompletableFuture(childChannels.close());
+  }
+
+  private CompletableFuture<Void> closeChannelAsync(@Nullable Channel channel) {
+    if (channel == null || !channel.isOpen()) {
+      return CompletableFuture.completedFuture(null);
+    }
+
+    return toCompletableFuture(channel.close());
+  }
+
+  private static CompletableFuture<Void> toCompletableFuture(
+      io.netty.util.concurrent.Future<?> nettyFuture) {
+
+    var future = new CompletableFuture<Void>();
+    nettyFuture.addListener(
+        f -> {
+          if (f.isSuccess()) {
+            future.complete(null);
+          } else {
+            future.completeExceptionally(f.cause());
+          }
+        });
+    return future;
   }
 
   /**
@@ -491,9 +613,7 @@ public class MultiplexedReverseConnectListener implements ChannelConsumerRegistr
         return;
       }
 
-      if (timeoutFuture != null) {
-        timeoutFuture.cancel(false);
-      }
+      cancelReverseHelloTimeout();
 
       ByteBuf messageBuffer = in.readSlice(messageLength);
 
@@ -510,9 +630,26 @@ public class MultiplexedReverseConnectListener implements ChannelConsumerRegistr
     }
 
     @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+      cancelReverseHelloTimeout();
+      super.channelInactive(ctx);
+    }
+
+    @Override
+    protected void handlerRemoved0(ChannelHandlerContext ctx) throws Exception {
+      cancelReverseHelloTimeout();
+    }
+
+    @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
       logger.error("Exception in ReverseHelloDecoder", cause);
       ExceptionHandler.sendErrorMessage(ctx, cause);
+    }
+
+    private void cancelReverseHelloTimeout() {
+      if (timeoutFuture != null) {
+        timeoutFuture.cancel(false);
+      }
     }
   }
 }

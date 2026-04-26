@@ -55,6 +55,9 @@ public class ReverseConnectChannelFsm {
   static final FsmContext.Key<ClientApplicationContext> KEY_APPLICATION =
       new FsmContext.Key<>("application", ClientApplicationContext.class);
 
+  static final FsmContext.Key<Throwable> KEY_STOP_CAUSE =
+      new FsmContext.Key<>("stopCause", Throwable.class);
+
   /** States for the Reverse Connect channel FSM. */
   public enum State {
     /** Listening, no server has connected yet. */
@@ -64,7 +67,9 @@ public class ReverseConnectChannelFsm {
     /** SecureChannel active, ready for service requests. */
     Connected,
     /** Connection lost, waiting for the server to re-connect. */
-    Reconnecting
+    Reconnecting,
+    /** Listener stopped; no future channels can arrive. */
+    Stopped
   }
 
   /** Events for the Reverse Connect channel FSM. */
@@ -75,6 +80,9 @@ public class ReverseConnectChannelFsm {
 
     /** External: request disconnect. Carries a future completed when disconnected. */
     record Disconnect(CompletableFuture<Unit> future) implements Event {}
+
+    /** External: listener stopped. Carries a future completed when stopped. */
+    record ListenerStopped(Throwable cause, CompletableFuture<Unit> future) implements Event {}
 
     /** External: get the current channel. Carries a future completed with the channel. */
     record GetChannel(CompletableFuture<Channel> future) implements Event {}
@@ -188,6 +196,7 @@ public class ReverseConnectChannelFsm {
     configureConnectedState(fb);
     configureReconnectingState(fb);
     configureNotConnectedEntryViaDisconnect(fb);
+    configureStoppedState(fb);
 
     fb.addTransitionAction(
         new TransitionAction<>() {
@@ -214,6 +223,7 @@ public class ReverseConnectChannelFsm {
   private static void configureNotConnectedState(FsmBuilder<State, Event> fb) {
     /* Transitions */
     fb.when(State.NotConnected).on(Event.ConnectionAccepted.class).transitionTo(State.Handshaking);
+    fb.when(State.NotConnected).on(Event.ListenerStopped.class).transitionTo(State.Stopped);
 
     /* Internal transitions */
     fb.onInternalTransition(State.NotConnected)
@@ -249,6 +259,7 @@ public class ReverseConnectChannelFsm {
     fb.when(State.Handshaking).on(Event.HandshakeSuccess.class).transitionTo(State.Connected);
     fb.when(State.Handshaking).on(Event.HandshakeFailure.class).transitionTo(State.Reconnecting);
     fb.when(State.Handshaking).on(Event.ChannelInactive.class).transitionTo(State.Reconnecting);
+    fb.when(State.Handshaking).on(Event.ListenerStopped.class).transitionTo(State.Stopped);
 
     /* Internal transitions — shelve Disconnect, chain Connect/GetChannel,
      * reject duplicate inbound connections */
@@ -343,6 +354,7 @@ public class ReverseConnectChannelFsm {
     /* Transitions */
     fb.when(State.Connected).on(Event.ChannelInactive.class).transitionTo(State.Reconnecting);
     fb.when(State.Connected).on(Event.Disconnect.class).transitionTo(State.NotConnected);
+    fb.when(State.Connected).on(Event.ListenerStopped.class).transitionTo(State.Stopped);
 
     /* Internal transitions — complete Connect/GetChannel immediately */
     fb.onInternalTransition(State.Connected)
@@ -400,6 +412,7 @@ public class ReverseConnectChannelFsm {
     /* Transitions */
     fb.when(State.Reconnecting).on(Event.ConnectionAccepted.class).transitionTo(State.Handshaking);
     fb.when(State.Reconnecting).on(Event.Disconnect.class).transitionTo(State.NotConnected);
+    fb.when(State.Reconnecting).on(Event.ListenerStopped.class).transitionTo(State.Stopped);
 
     /* Internal transitions — chain Connect/GetChannel to KEY_CF */
     fb.onInternalTransition(State.Reconnecting)
@@ -478,9 +491,104 @@ public class ReverseConnectChannelFsm {
             });
   }
 
+  private static void configureStoppedState(FsmBuilder<State, Event> fb) {
+    fb.onTransitionTo(State.Stopped)
+        .fromAny()
+        .via(Event.ListenerStopped.class)
+        .execute(
+            ctx -> {
+              var stopped = (Event.ListenerStopped) ctx.event();
+              Throwable cause =
+                  stopped.cause() != null
+                      ? stopped.cause()
+                      : new UaException(StatusCodes.Bad_Shutdown, "listener stopped");
+
+              KEY_STOP_CAUSE.set(ctx, cause);
+
+              Channel ch = KEY_CHANNEL.remove(ctx);
+              if (ch != null && ch.isActive()) {
+                ch.close();
+              }
+              KEY_SECURE_CHANNEL.remove(ctx);
+
+              ConnectFuture cf = KEY_CF.remove(ctx);
+              if (cf != null && !cf.future.isDone()) {
+                cf.future.completeExceptionally(cause);
+              }
+
+              ctx.processShelvedEvents();
+
+              stopped.future().complete(Unit.VALUE);
+            });
+
+    fb.onInternalTransition(State.Stopped)
+        .via(Event.Connect.class)
+        .execute(
+            ctx -> {
+              var connect = (Event.Connect) ctx.event();
+              connect.future().completeExceptionally(stopCause(ctx));
+            });
+
+    fb.onInternalTransition(State.Stopped)
+        .via(Event.GetChannel.class)
+        .execute(
+            ctx -> {
+              var get = (Event.GetChannel) ctx.event();
+              get.future().completeExceptionally(stopCause(ctx));
+            });
+
+    fb.onInternalTransition(State.Stopped)
+        .via(Event.Disconnect.class)
+        .execute(
+            ctx -> {
+              var disconnect = (Event.Disconnect) ctx.event();
+              disconnect.future().complete(Unit.VALUE);
+            });
+
+    fb.onInternalTransition(State.Stopped)
+        .via(Event.ListenerStopped.class)
+        .execute(
+            ctx -> {
+              var stopped = (Event.ListenerStopped) ctx.event();
+              stopped.future().complete(Unit.VALUE);
+            });
+
+    fb.onInternalTransition(State.Stopped)
+        .via(Event.ConnectionAccepted.class)
+        .execute(
+            ctx -> {
+              var event = (Event.ConnectionAccepted) ctx.event();
+              event.channel().close();
+            });
+
+    fb.onInternalTransition(State.Stopped)
+        .via(Event.HandshakeSuccess.class)
+        .execute(
+            ctx -> {
+              var event = (Event.HandshakeSuccess) ctx.event();
+              Channel ch = event.secureChannel().getChannel();
+              if (ch != null && ch.isActive()) {
+                ch.close();
+              }
+            });
+
+    fb.onInternalTransition(State.Stopped).via(Event.HandshakeFailure.class).execute(ctx -> {});
+
+    fb.onInternalTransition(State.Stopped).via(Event.ChannelInactive.class).execute(ctx -> {});
+  }
+
   // ---------------------------------------------------------------------------
   // Shared helpers
   // ---------------------------------------------------------------------------
+
+  private static Throwable stopCause(ActionContext<State, Event> ctx) {
+    Throwable cause = KEY_STOP_CAUSE.get(ctx);
+    if (cause != null) {
+      return cause;
+    }
+
+    return new UaException(StatusCodes.Bad_Shutdown, "listener stopped");
+  }
 
   /**
    * Chain a {@link Event.Connect} or {@link Event.GetChannel} future to the existing {@code

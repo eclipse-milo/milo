@@ -13,11 +13,15 @@ package org.eclipse.milo.opcua.sdk.client;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.embedded.EmbeddedChannel;
+import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -27,11 +31,15 @@ import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.channel.messages.ReverseHelloMessage;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
@@ -254,7 +262,7 @@ class MultiplexedReverseConnectListenerTest {
   }
 
   @Test
-  void stopClosesAllChildChannels() throws Exception {
+  void stopWhileChildChannelsExistClosesThemBeforeCompleting() throws Exception {
     listener = createAndStart(defaultConfigBuilder().setRateLimitingEnabled(false).build());
 
     var socket = new Socket("localhost", getPort());
@@ -271,6 +279,94 @@ class MultiplexedReverseConnectListenerTest {
     // The socket should report EOF
     assertEquals(-1, socket.getInputStream().read());
     socket.close();
+  }
+
+  @Test
+  void stopWhileRegisteredConsumersExistNotifiesWithBadShutdown() throws Exception {
+    listener = createAndStart(defaultConfigBuilder().setRateLimitingEnabled(false).build());
+
+    ReverseConnectChannelFsm fsm = createTestFsm();
+    listener.register(SERVER_URI, new ChannelConsumer(fsm, null));
+
+    var connect = new ReverseConnectChannelFsm.Event.Connect(new CompletableFuture<>());
+    fsm.fireEvent(connect);
+
+    listener.stop().get(5, TimeUnit.SECONDS);
+
+    assertUaStatus(StatusCodes.Bad_Shutdown, connect.future());
+    assertEquals(State.Stopped, fsm.getState());
+
+    var get = new ReverseConnectChannelFsm.Event.GetChannel(new CompletableFuture<>());
+    fsm.fireEvent(get);
+    assertUaStatus(StatusCodes.Bad_Shutdown, get.future());
+  }
+
+  @Test
+  void duplicateRegistrationIsIdempotentForSameConsumer() throws Exception {
+    listener = createAndStart(defaultConfigBuilder().setRateLimitingEnabled(false).build());
+
+    ReverseConnectChannelFsm fsm = createTestFsm();
+    var consumer = new ChannelConsumer(fsm, null);
+
+    listener.register(SERVER_URI, consumer);
+    listener.register(SERVER_URI, consumer);
+
+    assertEquals(1, registeredConsumerCount(listener, SERVER_URI));
+
+    listener.deregister(SERVER_URI, consumer);
+
+    assertEquals(0, registeredConsumerCount(listener, SERVER_URI));
+  }
+
+  @Test
+  void stoppedListenerCannotBeRestarted() throws Exception {
+    listener = createAndStart(defaultConfigBuilder().setRateLimitingEnabled(false).build());
+
+    listener.stop().get(5, TimeUnit.SECONDS);
+
+    assertThrows(IllegalStateException.class, listener::start);
+  }
+
+  @Test
+  void reverseHelloTimeoutCancelledWhenDecoderIsRemoved() throws Exception {
+    var decoder = new CompletableFuture<Object>();
+
+    listener =
+        createAndStart(
+            defaultConfigBuilder()
+                .setRateLimitingEnabled(false)
+                .setReverseHelloTimeout(30_000)
+                .setChannelPipelineCustomizer(
+                    pipeline -> captureReverseHelloDecoder(pipeline, decoder))
+                .build());
+
+    try (var socket = connectAndSendRhe(SERVER_URI)) {
+      socket.setSoTimeout(5000);
+      assertEquals(-1, socket.getInputStream().read());
+    }
+
+    awaitReverseHelloTimeoutCancelled(decoder.get(5, TimeUnit.SECONDS));
+  }
+
+  @Test
+  void reverseHelloTimeoutCancelledWhenChannelBecomesInactive() throws Exception {
+    var decoder = new CompletableFuture<Object>();
+
+    listener =
+        createAndStart(
+            defaultConfigBuilder()
+                .setRateLimitingEnabled(false)
+                .setReverseHelloTimeout(30_000)
+                .setChannelPipelineCustomizer(
+                    pipeline -> captureReverseHelloDecoder(pipeline, decoder))
+                .build());
+
+    var socket = new Socket("localhost", getPort());
+    Object reverseHelloDecoder = decoder.get(5, TimeUnit.SECONDS);
+
+    socket.close();
+
+    awaitReverseHelloTimeoutCancelled(reverseHelloDecoder);
   }
 
   // ---------------------------------------------------------------------------
@@ -470,6 +566,49 @@ class MultiplexedReverseConnectListenerTest {
     return listener;
   }
 
+  private static int registeredConsumerCount(
+      MultiplexedReverseConnectListener listener, String serverUri) throws Exception {
+
+    Field consumersField = MultiplexedReverseConnectListener.class.getDeclaredField("consumers");
+    consumersField.setAccessible(true);
+
+    Map<?, ?> consumers = (Map<?, ?>) consumersField.get(listener);
+    Object registeredConsumers = consumers.get(serverUri);
+    if (registeredConsumers instanceof java.util.List<?> list) {
+      return list.size();
+    }
+
+    return 0;
+  }
+
+  private static void awaitReverseHelloTimeoutCancelled(Object decoder) throws Exception {
+    long deadline = System.nanoTime() + Duration.ofSeconds(5).toNanos();
+    while (System.nanoTime() < deadline) {
+      ScheduledFuture<?> timeoutFuture = reverseHelloTimeoutFuture(decoder);
+      if (timeoutFuture != null && timeoutFuture.isCancelled()) {
+        return;
+      }
+      Thread.sleep(10);
+    }
+
+    fail("Timed out waiting for ReverseHello timeout future cancellation");
+  }
+
+  private static void captureReverseHelloDecoder(
+      ChannelPipeline pipeline, CompletableFuture<Object> decoder) {
+
+    pipeline.toMap().values().stream()
+        .filter(handler -> handler.getClass().getSimpleName().equals("ReverseHelloDecoder"))
+        .findFirst()
+        .ifPresent(decoder::complete);
+  }
+
+  private static ScheduledFuture<?> reverseHelloTimeoutFuture(Object decoder) throws Exception {
+    Field timeoutFutureField = decoder.getClass().getDeclaredField("timeoutFuture");
+    timeoutFutureField.setAccessible(true);
+    return (ScheduledFuture<?>) timeoutFutureField.get(decoder);
+  }
+
   private int getPort() {
     InetSocketAddress addr = listener.getLocalAddress();
     assertNotNull(addr);
@@ -600,5 +739,17 @@ class MultiplexedReverseConnectListenerTest {
     buf.put(urlBytes);
 
     return buf.array();
+  }
+
+  private static void assertUaStatus(long expectedStatus, CompletableFuture<?> future) {
+    try {
+      future.get(1, TimeUnit.SECONDS);
+      fail("Expected UaException");
+    } catch (ExecutionException e) {
+      UaException uaException = assertInstanceOf(UaException.class, e.getCause());
+      assertEquals(expectedStatus, uaException.getStatusCode().value());
+    } catch (Exception e) {
+      fail("Expected UaException", e);
+    }
   }
 }
