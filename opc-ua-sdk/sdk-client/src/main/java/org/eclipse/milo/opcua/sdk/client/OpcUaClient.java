@@ -346,6 +346,7 @@ public class OpcUaClient {
       Consumer<OpcUaClientConfigBuilder> configureClient) {
 
     var transport = new OpcTcpReverseConnectTransport(reverseConnectConfig);
+    long connectTimeout = Math.max(1L, reverseConnectConfig.getConnectTimeout());
 
     // Pass 1: Discovery with None security.
     // The endpointUrl is empty because it comes from the server's ReverseHello.
@@ -362,47 +363,101 @@ public class OpcUaClient {
 
     var discoveryClient = new DiscoveryClient(discoveryEndpoint, transport);
 
+    return discoverReverseConnectEndpoints(discoveryClient, transport, connectTimeout)
+        .thenCompose(
+            endpoints ->
+                createReverseConnectClient(
+                    transport, connectTimeout, endpoints, selectEndpoint, configureClient));
+  }
+
+  static CompletableFuture<List<EndpointDescription>> discoverReverseConnectEndpoints(
+      DiscoveryClient discoveryClient, OpcClientTransport transport, long connectTimeout) {
+
     return discoveryClient
         .connectAsync()
-        .orTimeout(reverseConnectConfig.getConnectTimeout(), TimeUnit.MILLISECONDS)
         .thenCompose(
             dc ->
                 dc.getEndpoints(
                     "", new String[0], new String[] {Stack.TCP_UASC_UABINARY_TRANSPORT_URI}))
         .thenApply(response -> Lists.ofNullable(response.getEndpoints()))
-        .thenCompose(
-            endpoints -> {
-              EndpointDescription endpoint =
-                  selectEndpoint
-                      .apply(endpoints)
-                      .orElseThrow(
-                          () ->
-                              new CompletionException(
-                                  new UaException(
-                                      StatusCodes.Bad_ConfigurationError, "no endpoint selected")));
-
-              return transport
-                  .disconnectChannel()
-                  .thenApply(
-                      u -> {
-                        // Pass 2: Build the real client with the selected endpoint.
-                        // The same transport is reused so the listening socket stays open.
-                        OpcUaClientConfigBuilder builder = OpcUaClientConfig.builder();
-                        builder.setEndpoint(endpoint);
-                        builder.setDiscoveryEndpoints(endpoints);
-                        builder.setSessionEndpointValidationEnabled(false);
-                        configureClient.accept(builder);
-
-                        return new OpcUaClient(builder.build(), transport);
-                      });
-            })
-        .whenComplete(
-            (result, ex) -> {
+        .orTimeout(connectTimeout, TimeUnit.MILLISECONDS)
+        .<CompletableFuture<List<EndpointDescription>>>handle(
+            (endpoints, ex) -> {
               if (ex != null) {
-                // Clean up the listening socket on failure.
-                transport.disconnect();
+                return disconnectTransport(transport, connectTimeout, ex);
               }
+
+              return CompletableFuture.completedFuture(endpoints);
+            })
+        .thenCompose(future -> future);
+  }
+
+  private static CompletableFuture<OpcUaClient> createReverseConnectClient(
+      OpcTcpReverseConnectTransport transport,
+      long connectTimeout,
+      List<EndpointDescription> endpoints,
+      Function<List<EndpointDescription>, Optional<EndpointDescription>> selectEndpoint,
+      Consumer<OpcUaClientConfigBuilder> configureClient) {
+
+    EndpointDescription endpoint;
+    try {
+      endpoint =
+          selectEndpoint
+              .apply(endpoints)
+              .orElseThrow(
+                  () ->
+                      new CompletionException(
+                          new UaException(
+                              StatusCodes.Bad_ConfigurationError, "no endpoint selected")));
+    } catch (Throwable t) {
+      return disconnectTransport(transport, connectTimeout, t);
+    }
+
+    return transport
+        .disconnectChannel()
+        .orTimeout(connectTimeout, TimeUnit.MILLISECONDS)
+        .<CompletableFuture<OpcUaClient>>handle(
+            (u, ex) -> {
+              if (ex != null) {
+                return disconnectTransport(transport, connectTimeout, ex);
+              }
+
+              try {
+                // Pass 2: Build the real client with the selected endpoint.
+                // The same transport is reused so the listening socket stays open.
+                OpcUaClientConfigBuilder builder = OpcUaClientConfig.builder();
+                builder.setEndpoint(endpoint);
+                builder.setDiscoveryEndpoints(endpoints);
+                builder.setSessionEndpointValidationEnabled(false);
+                configureClient.accept(builder);
+
+                return CompletableFuture.completedFuture(
+                    new OpcUaClient(builder.build(), transport));
+              } catch (Throwable t) {
+                return disconnectTransport(transport, connectTimeout, t);
+              }
+            })
+        .thenCompose(future -> future);
+  }
+
+  private static <T> CompletableFuture<T> disconnectTransport(
+      OpcClientTransport transport, long connectTimeout, Throwable failure) {
+
+    CompletableFuture<T> future = new CompletableFuture<>();
+
+    transport
+        .disconnect()
+        .orTimeout(connectTimeout, TimeUnit.MILLISECONDS)
+        .whenComplete(
+            (u, disconnectFailure) -> {
+              if (disconnectFailure != null && disconnectFailure != failure) {
+                failure.addSuppressed(disconnectFailure);
+              }
+
+              future.completeExceptionally(failure);
             });
+
+    return future;
   }
 
   private final Logger logger = LoggerFactory.getLogger(getClass());

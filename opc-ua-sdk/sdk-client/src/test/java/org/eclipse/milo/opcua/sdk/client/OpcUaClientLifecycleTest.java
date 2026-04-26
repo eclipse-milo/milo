@@ -14,6 +14,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -27,6 +28,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -112,6 +114,24 @@ class OpcUaClientLifecycleTest {
     CompletableFuture<OpcUaClient> disconnectFuture = client.disconnectAsync();
 
     assertSame(client, disconnectFuture.get(5, TimeUnit.SECONDS));
+    assertTrue(transport.disconnectCalled());
+  }
+
+  @Test
+  void reverseConnectDiscoveryTimeoutCleansUpWhenGetEndpointsDoesNotComplete() throws Exception {
+    var transport =
+        new FakeTransport(transportConfig, CompletableFuture.completedFuture(Unit.VALUE));
+    var discoveryClient = new DiscoveryClient(endpoint(), transport);
+
+    var future = OpcUaClient.discoverReverseConnectEndpoints(discoveryClient, transport, 50);
+
+    assertTrue(transport.awaitRequest());
+
+    ExecutionException ex =
+        assertThrows(ExecutionException.class, () -> future.get(5, TimeUnit.SECONDS));
+
+    assertInstanceOf(TimeoutException.class, ex.getCause());
+    assertEquals(1, transport.requestCount());
     assertTrue(transport.disconnectCalled());
   }
 
