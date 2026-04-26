@@ -14,31 +14,31 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.embedded.EmbeddedChannel;
 import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.channel.messages.ReverseHelloMessage;
@@ -47,19 +47,16 @@ import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
-import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
+import org.eclipse.milo.opcua.stack.core.util.Unit;
 import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.ChannelConsumerRegistry.ChannelConsumer;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.EndpointResolver;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpMultiplexedReverseConnectTransport;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpMultiplexedReverseConnectTransportConfig;
-import org.eclipse.milo.opcua.stack.transport.client.tcp.ReverseConnectChannelFsm;
-import org.eclipse.milo.opcua.stack.transport.client.tcp.ReverseConnectChannelFsm.State;
-import org.eclipse.milo.opcua.stack.transport.client.uasc.UascResponseHandler;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.RateLimitingHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -105,22 +102,12 @@ class MultiplexedReverseConnectListenerTest {
   void validRheDispatchesToRegisteredConsumer() throws Exception {
     listener = createAndStart(defaultConfigBuilder().setRateLimitingEnabled(false).build());
 
-    ReverseConnectChannelFsm fsm = createTestFsm();
+    var consumer = new TestConsumer();
+    listener.register(SERVER_URI, consumer);
 
-    var transitioned = new CompletableFuture<Void>();
-    fsm.addTransitionListener(
-        (from, to) -> {
-          if (from == State.NotConnected && to == State.Handshaking) {
-            transitioned.complete(null);
-          }
-        });
-
-    listener.register(SERVER_URI, new ChannelConsumer(fsm, null));
-
-    try (var ignored = connectAndSendRhe(SERVER_URI)) {
-      // Wait for the FSM to transition to Handshaking, proving dispatch worked
-      transitioned.get(5, TimeUnit.SECONDS);
-      assertEquals(State.Handshaking, fsm.getState());
+    try (Socket ignored = connectAndSendRhe(SERVER_URI)) {
+      AcceptedChannel accepted = consumer.accepted.get(5, TimeUnit.SECONDS);
+      assertEquals(SERVER_URI, accepted.reverseHello().serverUri());
     }
   }
 
@@ -129,7 +116,7 @@ class MultiplexedReverseConnectListenerTest {
     listener = createAndStart(defaultConfigBuilder().setRateLimitingEnabled(false).build());
 
     // No consumers registered, no resolver configured
-    try (var socket = connectAndSendRhe(SERVER_URI)) {
+    try (Socket socket = connectAndSendRhe(SERVER_URI)) {
       socket.setSoTimeout(5000);
       // The server should close the channel — read returns -1
       assertEquals(-1, socket.getInputStream().read());
@@ -140,45 +127,16 @@ class MultiplexedReverseConnectListenerTest {
   void duplicateServerUriDispatchesToNeedingConsumer() throws Exception {
     listener = createAndStart(defaultConfigBuilder().setRateLimitingEnabled(false).build());
 
-    ReverseConnectChannelFsm fsm1 = createTestFsm();
-    ReverseConnectChannelFsm fsm2 = createTestFsm();
+    var notNeedingConsumer = new TestConsumer(false, true);
+    var needingConsumer = new TestConsumer(true, true);
 
-    // Drive fsm1 into Handshaking via a direct ConnectionAccepted event
-    // using an EmbeddedChannel. The embedded channel's event loop defers
-    // execution, so fsm1 stays in Handshaking without progressing.
-    var fsm1Handshaking = new CompletableFuture<Void>();
-    fsm1.addTransitionListener(
-        (from, to) -> {
-          if (to == State.Handshaking) {
-            fsm1Handshaking.complete(null);
-          }
-        });
+    listener.register(SERVER_URI, notNeedingConsumer);
+    listener.register(SERVER_URI, needingConsumer);
 
-    var embedded = new EmbeddedChannel();
-    var rhe = new ReverseHelloMessage(SERVER_URI, ENDPOINT_URL);
-    fsm1.fireEvent(new ReverseConnectChannelFsm.Event.ConnectionAccepted(embedded, rhe));
-    fsm1Handshaking.get(5, TimeUnit.SECONDS);
-    assertEquals(State.Handshaking, fsm1.getState());
-
-    // Register both consumers — fsm1 is Handshaking, fsm2 is NotConnected
-    listener.register(SERVER_URI, new ChannelConsumer(fsm1, null));
-    listener.register(SERVER_URI, new ChannelConsumer(fsm2, null));
-
-    // fsm2 should receive the dispatch (first in NotConnected/Reconnecting)
-    var fsm2Transitioned = new CompletableFuture<Void>();
-    fsm2.addTransitionListener(
-        (from, to) -> {
-          if (from == State.NotConnected && to == State.Handshaking) {
-            fsm2Transitioned.complete(null);
-          }
-        });
-
-    try (var ignored = connectAndSendRhe(SERVER_URI)) {
-      fsm2Transitioned.get(5, TimeUnit.SECONDS);
-      assertEquals(State.Handshaking, fsm2.getState());
+    try (Socket ignored = connectAndSendRhe(SERVER_URI)) {
+      AcceptedChannel accepted = needingConsumer.accepted.get(5, TimeUnit.SECONDS);
+      assertEquals(SERVER_URI, accepted.reverseHello().serverUri());
     }
-
-    embedded.close();
   }
 
   @Test
@@ -225,14 +183,13 @@ class MultiplexedReverseConnectListenerTest {
   void deregisterRemovesConsumer() throws Exception {
     listener = createAndStart(defaultConfigBuilder().setRateLimitingEnabled(false).build());
 
-    ReverseConnectChannelFsm fsm = createTestFsm();
-    var consumer = new ChannelConsumer(fsm, null);
+    var consumer = new TestConsumer();
 
     listener.register(SERVER_URI, consumer);
     listener.deregister(SERVER_URI, consumer);
 
     // After deregister, no consumers are registered. RHE should cause channel close.
-    try (var socket = connectAndSendRhe(SERVER_URI)) {
+    try (Socket socket = connectAndSendRhe(SERVER_URI)) {
       socket.setSoTimeout(5000);
       assertEquals(-1, socket.getInputStream().read());
     }
@@ -285,28 +242,20 @@ class MultiplexedReverseConnectListenerTest {
   void stopWhileRegisteredConsumersExistNotifiesWithBadShutdown() throws Exception {
     listener = createAndStart(defaultConfigBuilder().setRateLimitingEnabled(false).build());
 
-    ReverseConnectChannelFsm fsm = createTestFsm();
-    listener.register(SERVER_URI, new ChannelConsumer(fsm, null));
-
-    var connect = new ReverseConnectChannelFsm.Event.Connect(new CompletableFuture<>());
-    fsm.fireEvent(connect);
+    var consumer = new TestConsumer();
+    listener.register(SERVER_URI, consumer);
 
     listener.stop().get(5, TimeUnit.SECONDS);
 
-    assertUaStatus(StatusCodes.Bad_Shutdown, connect.future());
-    assertEquals(State.Stopped, fsm.getState());
-
-    var get = new ReverseConnectChannelFsm.Event.GetChannel(new CompletableFuture<>());
-    fsm.fireEvent(get);
-    assertUaStatus(StatusCodes.Bad_Shutdown, get.future());
+    UaException stopCause = assertInstanceOf(UaException.class, consumer.stopCause.get());
+    assertEquals(StatusCodes.Bad_Shutdown, stopCause.getStatusCode().value());
   }
 
   @Test
   void duplicateRegistrationIsIdempotentForSameConsumer() throws Exception {
     listener = createAndStart(defaultConfigBuilder().setRateLimitingEnabled(false).build());
 
-    ReverseConnectChannelFsm fsm = createTestFsm();
-    var consumer = new ChannelConsumer(fsm, null);
+    var consumer = new TestConsumer();
 
     listener.register(SERVER_URI, consumer);
     listener.register(SERVER_URI, consumer);
@@ -340,7 +289,7 @@ class MultiplexedReverseConnectListenerTest {
                     pipeline -> captureReverseHelloDecoder(pipeline, decoder))
                 .build());
 
-    try (var socket = connectAndSendRhe(SERVER_URI)) {
+    try (Socket socket = connectAndSendRhe(SERVER_URI)) {
       socket.setSoTimeout(5000);
       assertEquals(-1, socket.getInputStream().read());
     }
@@ -390,7 +339,7 @@ class MultiplexedReverseConnectListenerTest {
                 .setEndpointResolver(resolver)
                 .build());
 
-    try (var ignored = connectAndSendRhe(SERVER_URI)) {
+    try (Socket ignored = connectAndSendRhe(SERVER_URI)) {
       String[] args = resolverArgs.get(5, TimeUnit.SECONDS);
       assertEquals(SERVER_URI, args[0]);
       assertEquals(ENDPOINT_URL, args[1]);
@@ -411,13 +360,13 @@ class MultiplexedReverseConnectListenerTest {
                 .build());
 
     // First RHE occupies the single pending slot
-    var socket1 = connectAndSendRhe(SERVER_URI);
+    Socket socket1 = connectAndSendRhe(SERVER_URI);
 
     // Give the listener time to process the first RHE and increment pending
     Thread.sleep(200);
 
     // Second RHE should be rejected because pending limit is reached
-    try (var socket2 = connectAndSendRhe("urn:test:server2")) {
+    try (Socket socket2 = connectAndSendRhe("urn:test:server2")) {
       socket2.setSoTimeout(5000);
       assertEquals(-1, socket2.getInputStream().read());
     }
@@ -441,7 +390,7 @@ class MultiplexedReverseConnectListenerTest {
                 .setEndpointResolver(resolver)
                 .build());
 
-    try (var socket = connectAndSendRhe(SERVER_URI)) {
+    try (Socket socket = connectAndSendRhe(SERVER_URI)) {
       socket.setSoTimeout(5000);
       assertEquals(-1, socket.getInputStream().read());
     }
@@ -462,7 +411,7 @@ class MultiplexedReverseConnectListenerTest {
                 .setEndpointResolver(resolver)
                 .build());
 
-    try (var socket = connectAndSendRhe(SERVER_URI)) {
+    try (Socket socket = connectAndSendRhe(SERVER_URI)) {
       socket.setSoTimeout(5000);
       assertEquals(-1, socket.getInputStream().read());
     }
@@ -495,12 +444,11 @@ class MultiplexedReverseConnectListenerTest {
                 .setClientListener(clientListener)
                 .build());
 
-    try (var ignored = connectAndSendRhe(SERVER_URI)) {
-      var transport = transportFuture.get(5, TimeUnit.SECONDS);
+    try (Socket socket = connectAndSendRhe(SERVER_URI)) {
+      OpcTcpMultiplexedReverseConnectTransport transport = transportFuture.get(5, TimeUnit.SECONDS);
 
-      // The FSM should reach Handshaking using the original channel,
-      // proving the channel was offered and consumed without closing.
-      awaitHandshakingState(transport);
+      assertNotNull(transport);
+      assertSocketRemainsOpen(socket);
     }
   }
 
@@ -527,19 +475,19 @@ class MultiplexedReverseConnectListenerTest {
                 .setClientListener(clientListener)
                 .build());
 
-    var socket = connectAndSendRhe(SERVER_URI);
-    var transport = transportFuture.get(5, TimeUnit.SECONDS);
+    Socket socket = connectAndSendRhe(SERVER_URI);
+    OpcTcpMultiplexedReverseConnectTransport transport = transportFuture.get(5, TimeUnit.SECONDS);
 
-    // Close the socket before calling connect(). The Netty channel
-    // close listener should clear the pending channel buffer.
+    // Close the socket before calling connect(). The owner should withdraw the pending accepted
+    // channel instead of trying to handshake a dead socket.
     socket.close();
     Thread.sleep(200);
 
     // connect() should fall back to the normal path (wait for reconnect).
-    transport.connect(newApplicationContext());
+    CompletableFuture<Unit> connectFuture = transport.connect(newApplicationContext());
     Thread.sleep(200);
 
-    assertEquals(State.NotConnected, transport.getChannelFsm().getState());
+    assertTrue(!connectFuture.isDone(), "connect should wait for a replacement channel");
   }
 
   // ---------------------------------------------------------------------------
@@ -574,7 +522,7 @@ class MultiplexedReverseConnectListenerTest {
 
     Map<?, ?> consumers = (Map<?, ?>) consumersField.get(listener);
     Object registeredConsumers = consumers.get(serverUri);
-    if (registeredConsumers instanceof java.util.List<?> list) {
+    if (registeredConsumers instanceof List<?> list) {
       return list.size();
     }
 
@@ -615,38 +563,6 @@ class MultiplexedReverseConnectListenerTest {
     return addr.getPort();
   }
 
-  private ReverseConnectChannelFsm createTestFsm() {
-    OpcTcpMultiplexedReverseConnectTransportConfig transportConfig =
-        OpcTcpMultiplexedReverseConnectTransportConfig.newBuilder().build();
-
-    var fsmConfig =
-        new ReverseConnectChannelFsm.ChannelFsmConfig(
-            transportConfig,
-            transportConfig.getAllowedServerUris(),
-            transportConfig.getReverseHelloTimeout());
-
-    UascResponseHandler handler =
-        new UascResponseHandler() {
-          @Override
-          public void handleResponse(long requestId, UaResponseMessageType responseMessage) {}
-
-          @Override
-          public void handleSendFailure(long requestId, UaException exception) {}
-
-          @Override
-          public void handleReceiveFailure(long requestId, UaException exception) {}
-
-          @Override
-          public void handleChannelError(UaException exception) {}
-
-          @Override
-          public void handleChannelInactive() {}
-        };
-
-    return ReverseConnectChannelFsm.create(
-        fsmConfig, handler, new AtomicLong()::getAndIncrement, Executors.newSingleThreadExecutor());
-  }
-
   private Socket connectAndSendRhe(String serverUri) throws Exception {
     Socket socket = new Socket("localhost", getPort());
     socket.setSoTimeout(5000);
@@ -655,22 +571,15 @@ class MultiplexedReverseConnectListenerTest {
     return socket;
   }
 
-  @SuppressWarnings("BusyWait")
-  private static void awaitHandshakingState(OpcTcpMultiplexedReverseConnectTransport transport)
-      throws Exception {
-
-    long deadline = System.nanoTime() + Duration.ofSeconds(5).toNanos();
-    while (System.nanoTime() < deadline) {
-      if (transport.getChannelFsm().getState() == State.Handshaking) {
-        return;
-      }
-      Thread.sleep(50);
+  private static void assertSocketRemainsOpen(Socket socket) throws Exception {
+    socket.setSoTimeout(200);
+    try {
+      assertNotEquals(-1, socket.getInputStream().read());
+    } catch (SocketTimeoutException ignored) {
+      // A timeout means the channel stayed open without sending data.
+    } finally {
+      socket.setSoTimeout(5000);
     }
-    fail(
-        "Timed out waiting for state "
-            + State.Handshaking
-            + ", current: "
-            + transport.getChannelFsm().getState());
   }
 
   private static ClientApplicationContext newApplicationContext() {
@@ -741,15 +650,43 @@ class MultiplexedReverseConnectListenerTest {
     return buf.array();
   }
 
-  private static void assertUaStatus(long expectedStatus, CompletableFuture<?> future) {
-    try {
-      future.get(1, TimeUnit.SECONDS);
-      fail("Expected UaException");
-    } catch (ExecutionException e) {
-      UaException uaException = assertInstanceOf(UaException.class, e.getCause());
-      assertEquals(expectedStatus, uaException.getStatusCode().value());
-    } catch (Exception e) {
-      fail("Expected UaException", e);
+  private record AcceptedChannel(Channel channel, ReverseHelloMessage reverseHello) {}
+
+  private static final class TestConsumer implements ChannelConsumer {
+
+    private final boolean needsChannel;
+    private final boolean acceptsDuplicateChannel;
+    private final CompletableFuture<AcceptedChannel> accepted = new CompletableFuture<>();
+    private final CompletableFuture<Throwable> stopCause = new CompletableFuture<>();
+
+    TestConsumer() {
+      this(true, true);
+    }
+
+    TestConsumer(boolean needsChannel, boolean acceptsDuplicateChannel) {
+      this.needsChannel = needsChannel;
+      this.acceptsDuplicateChannel = acceptsDuplicateChannel;
+    }
+
+    @Override
+    public boolean needsChannel() {
+      return needsChannel;
+    }
+
+    @Override
+    public boolean acceptsDuplicateChannel() {
+      return acceptsDuplicateChannel;
+    }
+
+    @Override
+    public void accept(Channel channel, ReverseHelloMessage reverseHello) {
+      accepted.complete(new AcceptedChannel(channel, reverseHello));
+    }
+
+    @Override
+    public CompletableFuture<Unit> listenerStopped(Throwable cause) {
+      stopCause.complete(cause);
+      return CompletableFuture.completedFuture(Unit.VALUE);
     }
   }
 }

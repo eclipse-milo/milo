@@ -11,13 +11,14 @@
 package org.eclipse.milo.opcua.stack.transport.client.tcp;
 
 import java.util.Set;
+import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransport;
 import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransportConfig;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.UascClientConfig;
 
 /**
  * Configuration for a {@link OpcTcpMultiplexedReverseConnectTransport} — an {@link
- * org.eclipse.milo.opcua.stack.transport.client.OpcClientTransport} that receives its channels from
- * a shared {@code MultiplexedReverseConnectListener} instead of owning a {@code ServerBootstrap}.
+ * OpcClientTransport} that receives its channels from a shared {@code
+ * MultiplexedReverseConnectListener} instead of owning a {@code ServerBootstrap}.
  *
  * @see OpcTcpMultiplexedReverseConnectTransportConfigBuilder
  */
@@ -42,6 +43,14 @@ public interface OpcTcpMultiplexedReverseConnectTransportConfig
    * @return the reverse hello timeout in milliseconds.
    */
   long getReverseHelloTimeout();
+
+  /**
+   * Get the maximum time in milliseconds to wait for a reverse-connected channel or pending
+   * accepted channel before failing the current lifecycle. Default: 60,000 ms.
+   *
+   * @return the connect timeout in milliseconds.
+   */
+  long getConnectTimeout();
 
   /**
    * Create a new {@link OpcTcpMultiplexedReverseConnectTransportConfigBuilder}.

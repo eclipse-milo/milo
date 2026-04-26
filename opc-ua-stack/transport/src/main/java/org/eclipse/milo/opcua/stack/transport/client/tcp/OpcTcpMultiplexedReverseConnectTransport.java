@@ -12,21 +12,24 @@ package org.eclipse.milo.opcua.stack.transport.client.tcp;
 
 import io.netty.channel.Channel;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.channel.messages.ReverseHelloMessage;
 import org.eclipse.milo.opcua.stack.core.util.Unit;
 import org.eclipse.milo.opcua.stack.transport.client.AbstractUascClientTransport;
 import org.eclipse.milo.opcua.stack.transport.client.ChannelStateObservable;
 import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
+import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransport;
 
 /**
- * An {@link org.eclipse.milo.opcua.stack.transport.client.OpcClientTransport} that receives its
- * channels from a shared {@link ChannelConsumerRegistry} instead of owning a {@code
- * ServerBootstrap}.
+ * An {@link OpcClientTransport} that receives its channels from a shared {@link
+ * ChannelConsumerRegistry} instead of owning a {@code ServerBootstrap}.
  *
  * <p>Each instance manages a single reverse-connected channel via a {@link
- * ReverseConnectChannelFsm}. The transport registers itself with the registry on {@link
+ * ReverseConnectChannelOwner}. The transport registers itself with the registry on {@link
  * #connect(ClientApplicationContext)} and deregisters on {@link #disconnect()}.
  */
 public class OpcTcpMultiplexedReverseConnectTransport extends AbstractUascClientTransport
@@ -35,15 +38,19 @@ public class OpcTcpMultiplexedReverseConnectTransport extends AbstractUascClient
   private final String serverUri;
   private final OpcTcpMultiplexedReverseConnectTransportConfig config;
   private final ChannelConsumerRegistry registry;
-  private final ReverseConnectChannelFsm channelFsm;
+  private final ReverseConnectChannelOwner channelOwner;
   private final ChannelConsumerRegistry.ChannelConsumer channelConsumer;
 
   private final CopyOnWriteArrayList<ChannelStateObservable.TransitionListener> stateListeners =
       new CopyOnWriteArrayList<>();
 
-  record PendingChannel(Channel channel, ReverseHelloMessage reverseHello) {}
+  // Registration and owner state are intentionally separate: duplicate connect() calls should
+  // share the owner lifecycle without adding duplicate listener entries.
+  private final AtomicBoolean registered = new AtomicBoolean(false);
 
-  private final AtomicReference<PendingChannel> pendingChannel = new AtomicReference<>();
+  // The listener may still hold a reference to this sink briefly after stop or deregistration.
+  // Keep a fast local gate so late dispatches close their channel instead of reaching the owner.
+  private final AtomicBoolean acceptingChannels = new AtomicBoolean(false);
 
   /**
    * Create a new {@link OpcTcpMultiplexedReverseConnectTransport}.
@@ -57,32 +64,74 @@ public class OpcTcpMultiplexedReverseConnectTransport extends AbstractUascClient
       OpcTcpMultiplexedReverseConnectTransportConfig config,
       ChannelConsumerRegistry registry) {
 
+    this(serverUri, config, registry, null);
+  }
+
+  OpcTcpMultiplexedReverseConnectTransport(
+      String serverUri,
+      OpcTcpMultiplexedReverseConnectTransportConfig config,
+      ChannelConsumerRegistry registry,
+      ReverseConnectChannelOwner.HandshakeStarter handshakeStarter) {
+
     super(config);
 
     this.serverUri = serverUri;
     this.config = config;
     this.registry = registry;
 
-    var fsmConfig =
-        new ReverseConnectChannelFsm.ChannelFsmConfig(
-            config, config.getAllowedServerUris(), config.getReverseHelloTimeout());
-
-    this.channelFsm =
-        ReverseConnectChannelFsm.create(
-            fsmConfig, this, requestId::getAndIncrement, config.getExecutor());
-
-    this.channelConsumer = new ChannelConsumerRegistry.ChannelConsumer(channelFsm, this);
-
-    channelFsm.addTransitionListener(
-        (from, to) -> {
-          if (from == ReverseConnectChannelFsm.State.Connected
-              && to != ReverseConnectChannelFsm.State.Connected) {
-            stateListeners.forEach(l -> l.onConnectionStateChange(false));
-          } else if (from != ReverseConnectChannelFsm.State.Connected
-              && to == ReverseConnectChannelFsm.State.Connected) {
-            stateListeners.forEach(l -> l.onConnectionStateChange(true));
+    this.channelOwner = newChannelOwner(config, handshakeStarter);
+    this.channelConsumer =
+        new ChannelConsumerRegistry.ChannelConsumer() {
+          @Override
+          public boolean needsChannel() {
+            return OpcTcpMultiplexedReverseConnectTransport.this.needsChannel();
           }
-        });
+
+          @Override
+          public boolean acceptsDuplicateChannel() {
+            return OpcTcpMultiplexedReverseConnectTransport.this.acceptsDuplicateChannel();
+          }
+
+          @Override
+          public void accept(Channel channel, ReverseHelloMessage reverseHello) {
+            OpcTcpMultiplexedReverseConnectTransport.this.accept(channel, reverseHello);
+          }
+
+          @Override
+          public CompletableFuture<Unit> listenerStopped(Throwable cause) {
+            return OpcTcpMultiplexedReverseConnectTransport.this.listenerStopped(cause);
+          }
+        };
+
+    channelOwner.addTransitionListener(this::onOwnerTransition);
+  }
+
+  private ReverseConnectChannelOwner newChannelOwner(
+      OpcTcpMultiplexedReverseConnectTransportConfig config,
+      ReverseConnectChannelOwner.HandshakeStarter handshakeStarter) {
+
+    var ownerConfig =
+        new ReverseConnectChannelOwner.ChannelOwnerConfig(
+            config,
+            config.getAllowedServerUris(),
+            config.getReverseHelloTimeout(),
+            config.getConnectTimeout());
+
+    ReverseConnectChannelOwner.Scheduler scheduler =
+        ReverseConnectChannelOwner.Scheduler.fromScheduledExecutor(config.getScheduledExecutor());
+
+    if (handshakeStarter == null) {
+      return new ReverseConnectChannelOwner(
+          ownerConfig, this, requestId::getAndIncrement, config.getExecutor(), scheduler);
+    }
+
+    return new ReverseConnectChannelOwner(
+        ownerConfig,
+        this,
+        requestId::getAndIncrement,
+        config.getExecutor(),
+        scheduler,
+        handshakeStarter);
   }
 
   @Override
@@ -100,75 +149,92 @@ public class OpcTcpMultiplexedReverseConnectTransport extends AbstractUascClient
   }
 
   /**
-   * Get the {@link ReverseConnectChannelFsm} used by this transport.
-   *
-   * @return the {@link ReverseConnectChannelFsm}.
-   */
-  public ReverseConnectChannelFsm getChannelFsm() {
-    return channelFsm;
-  }
-
-  /**
    * Offer a channel for reuse when {@link #connect} is called.
    *
-   * <p>If the channel becomes inactive before {@code connect()} consumes it, the offer is
-   * automatically withdrawn.
+   * <p>If {@code connect()} has not installed the real client context yet, the channel owner
+   * buffers at most one offered channel until the configured connect timeout. Duplicate, stale, or
+   * stopped-lifecycle offers are closed by the owner.
    *
    * @param channel the accepted channel.
    * @param reverseHello the ReverseHello message received on the channel.
    */
   public void offerChannel(Channel channel, ReverseHelloMessage reverseHello) {
-    var pending = new PendingChannel(channel, reverseHello);
-    pendingChannel.set(pending);
+    if (!channel.isActive()) {
+      close(channel);
+      return;
+    }
 
-    channel.closeFuture().addListener(f -> pendingChannel.compareAndSet(pending, null));
+    channelOwner.accepted(channel, reverseHello);
   }
 
   @Override
   public CompletableFuture<Unit> connect(ClientApplicationContext applicationContext) {
-    channelFsm.setApplicationContext(applicationContext);
+    acceptingChannels.set(true);
 
-    registry.register(serverUri, channelConsumer);
+    // Queue context installation before registering with the listener. If a server dial-in wins
+    // the executor race, the owner still serializes the accepted channel behind this connect event.
+    CompletableFuture<Channel> connectFuture = channelOwner.connect(applicationContext);
 
-    var connect = new ReverseConnectChannelFsm.Event.Connect(new CompletableFuture<>());
-    channelFsm.fireEvent(connect);
-
-    // If a channel was offered before connect() was called (1-shot path),
-    // consume it and fire ConnectionAccepted immediately.
-    PendingChannel pending = pendingChannel.getAndSet(null);
-    if (pending != null && pending.channel().isActive()) {
-      channelFsm.fireEvent(
-          new ReverseConnectChannelFsm.Event.ConnectionAccepted(
-              pending.channel(), pending.reverseHello()));
+    try {
+      register();
+    } catch (Throwable t) {
+      acceptingChannels.set(false);
+      channelOwner.disconnect();
+      return CompletableFuture.failedFuture(t);
     }
 
-    return connect.future().thenApply(ch -> Unit.VALUE);
+    return connectFuture.thenApply(ch -> Unit.VALUE);
   }
 
   @Override
   public CompletableFuture<Unit> disconnect() {
-    var disconnect = new ReverseConnectChannelFsm.Event.Disconnect(new CompletableFuture<>());
-    channelFsm.fireEvent(disconnect);
+    acceptingChannels.set(false);
 
-    return disconnect
-        .future()
-        .thenApply(
-            v -> {
-              registry.deregister(serverUri, channelConsumer);
-              return Unit.VALUE;
+    return channelOwner
+        .disconnect()
+        .handle((v, ex) -> unwrap(ex))
+        .thenCompose(
+            disconnectFailure -> {
+              Throwable deregisterFailure = null;
+              try {
+                deregister();
+              } catch (Throwable t) {
+                deregisterFailure = t;
+              }
+
+              Throwable failure = combine(disconnectFailure, deregisterFailure);
+              if (failure != null) {
+                return CompletableFuture.failedFuture(failure);
+              }
+
+              return CompletableFuture.completedFuture(Unit.VALUE);
             });
   }
 
   @Override
   protected CompletableFuture<Channel> getChannel() {
-    Channel ch = channelFsm.getChannel();
-    if (ch != null && ch.isActive()) {
-      return CompletableFuture.completedFuture(ch);
+    Channel activeChannel = channelOwner.getActiveChannel();
+    if (activeChannel != null && activeChannel.isActive()) {
+      return CompletableFuture.completedFuture(activeChannel);
     }
 
-    var get = new ReverseConnectChannelFsm.Event.GetChannel(new CompletableFuture<>());
-    channelFsm.fireEvent(get);
-    return get.future();
+    if (!acceptingChannels.get()
+        && channelOwner.getState() != ReverseConnectChannelOwner.State.Stopped) {
+      return CompletableFuture.failedFuture(
+          new UaException(
+              StatusCodes.Bad_Shutdown, "multiplexed reverse connect transport is not active"));
+    }
+
+    return channelOwner.getChannel();
+  }
+
+  /**
+   * Get the active reverse-connected child channel, if one is currently connected.
+   *
+   * @return the active child channel, or {@code null}.
+   */
+  public Channel getActiveChannel() {
+    return channelOwner.getActiveChannel();
   }
 
   @Override
@@ -179,5 +245,111 @@ public class OpcTcpMultiplexedReverseConnectTransport extends AbstractUascClient
   @Override
   public void removeTransitionListener(TransitionListener listener) {
     stateListeners.remove(listener);
+  }
+
+  private void register() {
+    if (registered.compareAndSet(false, true)) {
+      try {
+        registry.register(serverUri, channelConsumer);
+      } catch (Throwable t) {
+        registered.set(false);
+        throw t;
+      }
+    }
+  }
+
+  private void deregister() {
+    if (registered.compareAndSet(true, false)) {
+      registry.deregister(serverUri, channelConsumer);
+    }
+  }
+
+  private boolean needsChannel() {
+    if (!acceptingChannels.get()) {
+      return false;
+    }
+
+    ReverseConnectChannelOwner.State state = channelOwner.getState();
+
+    return state == ReverseConnectChannelOwner.State.Idle
+        || state == ReverseConnectChannelOwner.State.Armed
+        || (state == ReverseConnectChannelOwner.State.Connected && !hasActiveChannel());
+  }
+
+  private boolean acceptsDuplicateChannel() {
+    if (!acceptingChannels.get()) {
+      return false;
+    }
+
+    ReverseConnectChannelOwner.State state = channelOwner.getState();
+
+    return state != ReverseConnectChannelOwner.State.Disconnecting
+        && state != ReverseConnectChannelOwner.State.Stopped;
+  }
+
+  private void accept(Channel channel, ReverseHelloMessage reverseHello) {
+    if (!acceptingChannels.get()) {
+      close(channel);
+      return;
+    }
+
+    // Duplicate, displaced, or already-stopped channels are closed by the owner. Keeping that
+    // policy centralized is what prevents stale listener dispatch from starting handshakes.
+    channelOwner.accepted(channel, reverseHello);
+  }
+
+  private CompletableFuture<Unit> listenerStopped(Throwable cause) {
+    acceptingChannels.set(false);
+    registered.set(false);
+
+    return channelOwner.listenerStopped(cause);
+  }
+
+  private void onOwnerTransition(
+      ReverseConnectChannelOwner.State from, ReverseConnectChannelOwner.State to) {
+
+    if (from == ReverseConnectChannelOwner.State.Connected
+        && to != ReverseConnectChannelOwner.State.Connected) {
+      notifyStateListeners(false);
+    } else if (from != ReverseConnectChannelOwner.State.Connected
+        && to == ReverseConnectChannelOwner.State.Connected) {
+      notifyStateListeners(true);
+    }
+  }
+
+  private void notifyStateListeners(boolean connected) {
+    config
+        .getExecutor()
+        .execute(() -> stateListeners.forEach(l -> l.onConnectionStateChange(connected)));
+  }
+
+  private boolean hasActiveChannel() {
+    Channel activeChannel = channelOwner.getActiveChannel();
+
+    return activeChannel != null && activeChannel.isActive();
+  }
+
+  private static void close(Channel channel) {
+    channel.close();
+  }
+
+  private static Throwable combine(Throwable primary, Throwable secondary) {
+    if (primary == null) {
+      return secondary;
+    }
+
+    if (secondary != null) {
+      primary.addSuppressed(secondary);
+    }
+
+    return primary;
+  }
+
+  private static Throwable unwrap(Throwable failure) {
+    if (failure instanceof CompletionException && failure.getCause() != null) {
+      return failure.getCause();
+    }
+
+    return failure;
   }
 }

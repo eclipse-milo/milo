@@ -95,7 +95,6 @@ import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransport;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransport;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpMultiplexedReverseConnectTransport;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpReverseConnectTransport;
-import org.eclipse.milo.opcua.stack.transport.client.tcp.ReverseConnectChannelFsm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -1598,21 +1597,19 @@ public class SessionFsmFactory {
    * @param transport the client transport whose channel should be closed.
    */
   static void closeTransportChannel(OpcClientTransport transport) {
-    if (transport instanceof OpcTcpClientTransport) {
-      ChannelFsm channelFsm = ((OpcTcpClientTransport) transport).getChannelFsm();
+    if (transport instanceof OpcTcpClientTransport tcpTransport) {
+      ChannelFsm channelFsm = tcpTransport.getChannelFsm();
       Channel channel = channelFsm.getChannel().getNow(null);
       if (channel != null) {
         channel.close();
       }
-    } else if (transport instanceof OpcTcpReverseConnectTransport) {
-      Channel channel = ((OpcTcpReverseConnectTransport) transport).getActiveChannel();
+    } else if (transport instanceof OpcTcpReverseConnectTransport reverseConnectTransport) {
+      Channel channel = reverseConnectTransport.getActiveChannel();
       if (channel != null) {
         channel.close();
       }
-    } else if (transport instanceof OpcTcpMultiplexedReverseConnectTransport) {
-      ReverseConnectChannelFsm channelFsm =
-          ((OpcTcpMultiplexedReverseConnectTransport) transport).getChannelFsm();
-      Channel channel = channelFsm.getChannel();
+    } else if (transport instanceof OpcTcpMultiplexedReverseConnectTransport multiplexedTransport) {
+      Channel channel = multiplexedTransport.getActiveChannel();
       if (channel != null) {
         channel.close();
       }

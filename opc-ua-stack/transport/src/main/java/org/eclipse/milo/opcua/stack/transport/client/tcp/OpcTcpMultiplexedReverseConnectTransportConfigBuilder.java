@@ -33,6 +33,7 @@ public class OpcTcpMultiplexedReverseConnectTransportConfigBuilder {
 
   private Set<String> allowedServerUris = new LinkedHashSet<>();
   private long reverseHelloTimeout = 30_000;
+  private long connectTimeout = 60_000;
   private UInteger acknowledgeTimeout = uint(5_000);
   private UInteger channelLifetime = uint(60 * 60 * 1000);
 
@@ -78,6 +79,19 @@ public class OpcTcpMultiplexedReverseConnectTransportConfigBuilder {
   public OpcTcpMultiplexedReverseConnectTransportConfigBuilder setReverseHelloTimeout(
       long reverseHelloTimeout) {
     this.reverseHelloTimeout = reverseHelloTimeout;
+    return this;
+  }
+
+  /**
+   * Set the maximum time in milliseconds to wait for a reverse-connected channel or pending
+   * accepted channel. Default: 60,000 ms.
+   *
+   * @param connectTimeout the connect timeout in milliseconds.
+   * @return this {@link OpcTcpMultiplexedReverseConnectTransportConfigBuilder}.
+   */
+  public OpcTcpMultiplexedReverseConnectTransportConfigBuilder setConnectTimeout(
+      long connectTimeout) {
+    this.connectTimeout = connectTimeout;
     return this;
   }
 
@@ -194,6 +208,7 @@ public class OpcTcpMultiplexedReverseConnectTransportConfigBuilder {
     return new OpcTcpMultiplexedReverseConnectTransportConfigImpl(
         Set.copyOf(allowedServerUris),
         reverseHelloTimeout,
+        connectTimeout,
         acknowledgeTimeout,
         channelLifetime,
         executor,
@@ -206,6 +221,7 @@ public class OpcTcpMultiplexedReverseConnectTransportConfigBuilder {
   record OpcTcpMultiplexedReverseConnectTransportConfigImpl(
       Set<String> allowedServerUris,
       long reverseHelloTimeout,
+      long connectTimeout,
       UInteger acknowledgeTimeout,
       UInteger channelLifetime,
       ExecutorService executor,
@@ -223,6 +239,11 @@ public class OpcTcpMultiplexedReverseConnectTransportConfigBuilder {
     @Override
     public long getReverseHelloTimeout() {
       return reverseHelloTimeout;
+    }
+
+    @Override
+    public long getConnectTimeout() {
+      return connectTimeout;
     }
 
     @Override

@@ -14,6 +14,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import io.netty.channel.Channel;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.security.KeyPair;
@@ -328,7 +329,9 @@ class MultiplexedReverseConnectListenerTest {
             });
 
         // Force-close the underlying channel to simulate connection loss.
-        transport.getChannelFsm().getChannel().close().sync();
+        Channel activeChannel = transport.getActiveChannel();
+        assertNotNull(activeChannel);
+        activeChannel.close().sync();
 
         // Wait for the server to reconnect and re-establish the session.
         sessionReactivated.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
