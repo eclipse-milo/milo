@@ -339,6 +339,49 @@ class ReverseConnectChannelOwnerTest {
   }
 
   @Test
+  void connectAfterActiveChannelBecomesInactiveAcceptsReplacementChannel() throws Exception {
+    CompletableFuture<Channel> firstConnect = owner.connect(newApplicationContext());
+    var firstChannel = new TestChannel();
+    owner.accepted(firstChannel, reverseHello());
+    handshakeStarter.succeed(firstChannel);
+
+    assertSame(firstChannel, firstConnect.get(1, TimeUnit.SECONDS));
+
+    firstChannel.setActive(false);
+
+    CompletableFuture<Channel> secondConnect = owner.connect(newApplicationContext());
+    var secondChannel = new TestChannel();
+    owner.accepted(secondChannel, reverseHello());
+    handshakeStarter.succeed(secondChannel);
+
+    assertSame(secondChannel, secondConnect.get(1, TimeUnit.SECONDS));
+    assertSame(secondChannel, owner.getActiveChannel());
+    assertEquals(2, handshakeStarter.starts());
+  }
+
+  @Test
+  void acceptedAfterActiveChannelBecomesInactiveIsKeptForNextConnect() throws Exception {
+    CompletableFuture<Channel> firstConnect = owner.connect(newApplicationContext());
+    var firstChannel = new TestChannel();
+    owner.accepted(firstChannel, reverseHello());
+    handshakeStarter.succeed(firstChannel);
+
+    assertSame(firstChannel, firstConnect.get(1, TimeUnit.SECONDS));
+
+    firstChannel.setActive(false);
+
+    var secondChannel = new TestChannel();
+    owner.accepted(secondChannel, reverseHello());
+
+    CompletableFuture<Channel> secondConnect = owner.connect(newApplicationContext());
+    handshakeStarter.succeed(secondChannel);
+
+    assertSame(secondChannel, secondConnect.get(1, TimeUnit.SECONDS));
+    assertSame(secondChannel, owner.getActiveChannel());
+    assertEquals(2, handshakeStarter.starts());
+  }
+
+  @Test
   void staleHandshakeAndCloseCallbacksFromPreviousLifecycleAreIgnored() throws Exception {
     CompletableFuture<Channel> firstConnect = owner.connect(newApplicationContext());
     var firstChannel = new EmbeddedChannel();
@@ -532,6 +575,20 @@ class ReverseConnectChannelOwnerTest {
       }
 
       return future;
+    }
+  }
+
+  private static final class TestChannel extends EmbeddedChannel {
+
+    private boolean active = true;
+
+    @Override
+    public boolean isActive() {
+      return active && super.isActive();
+    }
+
+    void setActive(boolean active) {
+      this.active = active;
     }
   }
 

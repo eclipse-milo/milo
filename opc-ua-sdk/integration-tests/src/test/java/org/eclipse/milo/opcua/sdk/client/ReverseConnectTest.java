@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.sdk.client;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -22,16 +24,18 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import org.eclipse.milo.opcua.sdk.server.EndpointConfig;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.ReverseConnectHandle;
 import org.eclipse.milo.opcua.sdk.server.ReverseConnectManager;
 import org.eclipse.milo.opcua.sdk.test.TestServer;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
@@ -202,7 +206,9 @@ class ReverseConnectTest {
           });
 
       // Force-close the underlying channel to simulate connection loss
-      transport.getChannelFsm().getChannel().close().sync();
+      Channel channel = transport.getActiveChannel();
+      assertNotNull(channel);
+      channel.close().sync();
 
       // Wait for the session to be fully re-established on the new channel.
       // This includes: server reconnects, new handshake, ActivateSession,
@@ -338,9 +344,12 @@ class ReverseConnectTest {
 
     try {
       // The server's ApplicationUri won't match "urn:bogus:server:that:does:not:match",
-      // so the client transport should reject every ReverseHello. The connect future
-      // will never complete, so we expect a timeout.
-      assertThrows(TimeoutException.class, () -> connectFuture.get(2, TimeUnit.SECONDS));
+      // so the client transport should reject the ReverseHello and fail the connect waiter.
+      ExecutionException ex =
+          assertThrows(
+              ExecutionException.class, () -> connectFuture.get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+      UaException uaException = assertInstanceOf(UaException.class, ex.getCause());
+      assertEquals(StatusCodes.Bad_TcpEndpointUrlInvalid, uaException.getStatusCode().value());
     } finally {
       server.removeReverseConnect(handle);
       try {

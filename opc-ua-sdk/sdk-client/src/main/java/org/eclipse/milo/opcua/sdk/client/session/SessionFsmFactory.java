@@ -1605,9 +1605,7 @@ public class SessionFsmFactory {
         channel.close();
       }
     } else if (transport instanceof OpcTcpReverseConnectTransport) {
-      ReverseConnectChannelFsm channelFsm =
-          ((OpcTcpReverseConnectTransport) transport).getChannelFsm();
-      Channel channel = channelFsm.getChannel();
+      Channel channel = ((OpcTcpReverseConnectTransport) transport).getActiveChannel();
       if (channel != null) {
         channel.close();
       }

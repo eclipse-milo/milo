@@ -20,7 +20,6 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransport;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransport;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpReverseConnectTransport;
-import org.eclipse.milo.opcua.stack.transport.client.tcp.ReverseConnectChannelFsm;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -45,11 +44,9 @@ class SessionFsmKeepAliveChannelCloseTest {
   @DisplayName("closeTransportChannel closes channel for OpcTcpReverseConnectTransport")
   void closeTransportChannel_reverseConnect() {
     var transport = mock(OpcTcpReverseConnectTransport.class);
-    var channelFsm = mock(ReverseConnectChannelFsm.class);
     var channel = mock(Channel.class);
 
-    when(transport.getChannelFsm()).thenReturn(channelFsm);
-    when(channelFsm.getChannel()).thenReturn(channel);
+    when(transport.getActiveChannel()).thenReturn(channel);
 
     SessionFsmFactory.closeTransportChannel(transport);
 
@@ -73,10 +70,8 @@ class SessionFsmKeepAliveChannelCloseTest {
   @DisplayName("closeTransportChannel does not throw when reverse connect channel is null")
   void closeTransportChannel_reverseConnect_nullChannel() {
     var transport = mock(OpcTcpReverseConnectTransport.class);
-    var channelFsm = mock(ReverseConnectChannelFsm.class);
 
-    when(transport.getChannelFsm()).thenReturn(channelFsm);
-    when(channelFsm.getChannel()).thenReturn(null);
+    when(transport.getActiveChannel()).thenReturn(null);
 
     // should not throw
     SessionFsmFactory.closeTransportChannel(transport);

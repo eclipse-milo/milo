@@ -169,7 +169,6 @@ import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransportCo
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransportConfigBuilder;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpReverseConnectTransport;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpReverseConnectTransportConfig;
-import org.eclipse.milo.opcua.stack.transport.client.tcp.ReverseConnectChannelFsm;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -371,7 +370,7 @@ public class OpcUaClient {
                 dc.getEndpoints(
                     "", new String[0], new String[] {Stack.TCP_UASC_UABINARY_TRANSPORT_URI}))
         .thenApply(response -> Lists.ofNullable(response.getEndpoints()))
-        .thenApply(
+        .thenCompose(
             endpoints -> {
               EndpointDescription endpoint =
                   selectEndpoint
@@ -382,23 +381,20 @@ public class OpcUaClient {
                                   new UaException(
                                       StatusCodes.Bad_ConfigurationError, "no endpoint selected")));
 
-              // Close the discovery channel but keep the listening socket open.
-              // The FSM transitions to NotConnected via Disconnect, then on to
-              // Handshaking when the server's next inbound connection arrives
-              // with the real security settings.
-              var disconnect =
-                  new ReverseConnectChannelFsm.Event.Disconnect(new CompletableFuture<>());
-              transport.getChannelFsm().fireEvent(disconnect);
+              return transport
+                  .disconnectChannel()
+                  .thenApply(
+                      u -> {
+                        // Pass 2: Build the real client with the selected endpoint.
+                        // The same transport is reused so the listening socket stays open.
+                        OpcUaClientConfigBuilder builder = OpcUaClientConfig.builder();
+                        builder.setEndpoint(endpoint);
+                        builder.setDiscoveryEndpoints(endpoints);
+                        builder.setSessionEndpointValidationEnabled(false);
+                        configureClient.accept(builder);
 
-              // Pass 2: Build the real client with the selected endpoint.
-              // The same transport is reused so the listening socket stays open.
-              OpcUaClientConfigBuilder builder = OpcUaClientConfig.builder();
-              builder.setEndpoint(endpoint);
-              builder.setDiscoveryEndpoints(endpoints);
-              builder.setSessionEndpointValidationEnabled(false);
-              configureClient.accept(builder);
-
-              return new OpcUaClient(builder.build(), transport);
+                        return new OpcUaClient(builder.build(), transport);
+                      });
             })
         .whenComplete(
             (result, ex) -> {
@@ -602,9 +598,10 @@ public class OpcUaClient {
   /**
    * Connect the underlying transport and open a session.
    *
-   * <p>Regardless of the success or failure of the initial connect operation, the client is now in
-   * a state where it will strive to remain connected and keep a session open, automatically
-   * reconnecting as necessary, and creating or transferring sessions as necessary.
+   * <p>If the transport connects successfully, the client is in a state where it will strive to
+   * remain connected and keep a session open, automatically reconnecting as necessary, and creating
+   * or transferring sessions as necessary. If the transport connect fails, the session open is not
+   * attempted and the failure is propagated.
    *
    * @return this {@link OpcUaClient}
    * @throws UaException if an error occurs.
@@ -623,9 +620,10 @@ public class OpcUaClient {
   /**
    * Connect the underlying transport and open a session.
    *
-   * <p>Regardless of the success or failure of the initial connect operation, the client is now in
-   * a state where it will strive to remain connected and keep a session open, automatically
-   * reconnecting as necessary, and creating or transferring sessions as necessary.
+   * <p>If the transport connects successfully, the client is in a state where it will strive to
+   * remain connected and keep a session open, automatically reconnecting as necessary, and creating
+   * or transferring sessions as necessary. If the transport connect fails, the session open is not
+   * attempted and the failure is propagated.
    *
    * @return a {@link CompletableFuture} that completes successfully with this {@link OpcUaClient},
    *     or completes exceptionally if an error occurs.
@@ -633,8 +631,7 @@ public class OpcUaClient {
   public CompletableFuture<OpcUaClient> connectAsync() {
     return transport
         .connect(applicationContext)
-        .handle((u, ex) -> sessionFsm.openSession())
-        .thenCompose(Function.identity())
+        .thenCompose(u -> sessionFsm.openSession())
         .thenApply(s -> OpcUaClient.this);
   }
 
@@ -664,8 +661,11 @@ public class OpcUaClient {
    *     disconnecting the transport are swallowed.
    */
   public CompletableFuture<OpcUaClient> disconnectAsync() {
+    long closeSessionTimeout = Math.max(1L, config.getRequestTimeout().longValue());
+
     return sessionFsm
         .closeSession()
+        .orTimeout(closeSessionTimeout, TimeUnit.MILLISECONDS)
         .exceptionally(ex -> Unit.VALUE)
         .thenCompose(u -> transport.disconnect().thenApply(c -> OpcUaClient.this))
         .exceptionally(ex -> OpcUaClient.this);

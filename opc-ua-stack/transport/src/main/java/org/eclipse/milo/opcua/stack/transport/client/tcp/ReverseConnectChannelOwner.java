@@ -19,6 +19,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -244,6 +245,19 @@ final class ReverseConnectChannelOwner {
     void cancel();
   }
 
+  /** Observes lifecycle state changes after the owner applies a transition. */
+  @FunctionalInterface
+  interface TransitionListener {
+
+    /**
+     * Invoked after the owner changes lifecycle state.
+     *
+     * @param from the previous lifecycle state.
+     * @param to the new lifecycle state.
+     */
+    void onTransition(State from, State to);
+  }
+
   /**
    * Accepted channel waiting for context installation or handshake completion.
    *
@@ -274,6 +288,7 @@ final class ReverseConnectChannelOwner {
   private final HandshakeStarter handshakeStarter;
   private final ArrayDeque<Event> mailbox = new ArrayDeque<>();
   private final List<ChannelWaiter> channelWaiters = new ArrayList<>();
+  private final List<TransitionListener> transitionListeners = new CopyOnWriteArrayList<>();
 
   private boolean draining;
   private long generation;
@@ -370,6 +385,14 @@ final class ReverseConnectChannelOwner {
     return activeChannel;
   }
 
+  void addTransitionListener(TransitionListener listener) {
+    transitionListeners.add(listener);
+  }
+
+  void removeTransitionListener(TransitionListener listener) {
+    transitionListeners.remove(listener);
+  }
+
   private static HandshakeStarter defaultHandshakeStarter() {
     var handshake = new UascClientReverseConnectHandshake();
 
@@ -436,10 +459,12 @@ final class ReverseConnectChannelOwner {
       return;
     }
 
-    if (state == State.Connected) {
+    if (state == State.Connected && hasActiveChannel()) {
       event.future().complete(activeChannel);
       return;
     }
+
+    clearInactiveConnectedChannel();
 
     if (application == null) {
       application = Objects.requireNonNull(event.application(), "application");
@@ -450,15 +475,17 @@ final class ReverseConnectChannelOwner {
     if (pendingAccepted != null) {
       startHandshake(pendingAccepted);
     } else if (state == State.Idle) {
-      state = State.Armed;
+      transitionTo(State.Armed);
     }
   }
 
   private void handleGetChannel(Event.GetChannel event) {
-    if (state == State.Connected) {
+    if (state == State.Connected && hasActiveChannel()) {
       event.future().complete(activeChannel);
       return;
     }
+
+    clearInactiveConnectedChannel();
 
     if (state == State.Stopped) {
       event.future().completeExceptionally(shutdown("listener stopped"));
@@ -478,6 +505,8 @@ final class ReverseConnectChannelOwner {
       close(event.channel());
       return;
     }
+
+    clearInactiveConnectedChannel();
 
     if (state == State.Handshaking || state == State.Connected || pendingAccepted != null) {
       close(event.channel());
@@ -515,7 +544,7 @@ final class ReverseConnectChannelOwner {
       activeChannel = event.channel();
     }
 
-    state = State.Connected;
+    transitionTo(State.Connected);
 
     completeChannelWaiters(activeChannel);
   }
@@ -535,7 +564,7 @@ final class ReverseConnectChannelOwner {
         event.failure() != null ? event.failure() : connectionClosed("reverse connect failed");
 
     handshaking = null;
-    state = application != null ? State.Armed : State.Idle;
+    transitionTo(application != null ? State.Armed : State.Idle);
 
     failChannelWaiters(failure);
     close(event.channel());
@@ -554,7 +583,7 @@ final class ReverseConnectChannelOwner {
 
     if (handshaking != null && handshaking.channel == event.channel()) {
       handshaking = null;
-      state = application != null ? State.Armed : State.Idle;
+      transitionTo(application != null ? State.Armed : State.Idle);
       failChannelWaiters(connectionClosed("channel closed during reverse connect handshake"));
       return;
     }
@@ -562,7 +591,7 @@ final class ReverseConnectChannelOwner {
     if (activeChannel == event.channel()) {
       activeChannel = null;
       activeSecureChannel = null;
-      state = application != null ? State.Armed : State.Idle;
+      transitionTo(application != null ? State.Armed : State.Idle);
     }
   }
 
@@ -575,7 +604,7 @@ final class ReverseConnectChannelOwner {
     var channelsToClose = clearOwnedState(connectionClosed("disconnected"));
     long disconnectGeneration = ++generation;
 
-    state = State.Disconnecting;
+    transitionTo(State.Disconnecting);
 
     closeAll(channelsToClose)
         .whenComplete(
@@ -585,7 +614,7 @@ final class ReverseConnectChannelOwner {
 
   private void handleDisconnectClosed(Event.DisconnectClosed event) {
     if (event.generation() == generation && state == State.Disconnecting) {
-      state = State.Idle;
+      transitionTo(State.Idle);
     }
 
     if (event.failure() != null) {
@@ -600,7 +629,7 @@ final class ReverseConnectChannelOwner {
     var channelsToClose = clearOwnedState(failure);
 
     generation++;
-    state = State.Stopped;
+    transitionTo(State.Stopped);
 
     closeAll(channelsToClose)
         .whenComplete(
@@ -674,7 +703,7 @@ final class ReverseConnectChannelOwner {
 
     pendingAccepted = null;
     handshaking = accepted;
-    state = State.Handshaking;
+    transitionTo(State.Handshaking);
 
     CompletableFuture<ClientSecureChannel> handshakeFuture;
 
@@ -820,6 +849,36 @@ final class ReverseConnectChannelOwner {
     }
 
     return failure;
+  }
+
+  private void transitionTo(State newState) {
+    State oldState = state;
+    if (oldState == newState) {
+      return;
+    }
+
+    state = newState;
+
+    transitionListeners.forEach(
+        listener -> {
+          try {
+            listener.onTransition(oldState, newState);
+          } catch (Throwable t) {
+            LOGGER.warn("Reverse Connect channel owner transition listener failed", t);
+          }
+        });
+  }
+
+  private boolean hasActiveChannel() {
+    return activeChannel != null && activeChannel.isActive();
+  }
+
+  private void clearInactiveConnectedChannel() {
+    if (state == State.Connected && !hasActiveChannel()) {
+      activeChannel = null;
+      activeSecureChannel = null;
+      transitionTo(application != null ? State.Armed : State.Idle);
+    }
   }
 
   private static UaException connectionClosed(String message) {
