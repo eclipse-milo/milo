@@ -10,8 +10,6 @@
 
 package org.eclipse.milo.opcua.sdk.client;
 
-import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
-
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -32,9 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.eclipse.milo.opcua.stack.core.Stack;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.channel.ExceptionHandler;
@@ -42,13 +38,7 @@ import org.eclipse.milo.opcua.stack.core.channel.headers.HeaderDecoder;
 import org.eclipse.milo.opcua.stack.core.channel.messages.MessageType;
 import org.eclipse.milo.opcua.stack.core.channel.messages.ReverseHelloMessage;
 import org.eclipse.milo.opcua.stack.core.channel.messages.TcpMessageDecoder;
-import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
-import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
-import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
-import org.eclipse.milo.opcua.stack.core.util.Lists;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.ChannelConsumerRegistry;
-import org.eclipse.milo.opcua.stack.transport.client.tcp.EndpointResolver;
-import org.eclipse.milo.opcua.stack.transport.client.tcp.InboundChannelTransport;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpMultiplexedReverseConnectTransport;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpMultiplexedReverseConnectTransportConfig;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.RateLimitingHandler;
@@ -82,8 +72,8 @@ public class MultiplexedReverseConnectListener implements ChannelConsumerRegistr
       new ConcurrentHashMap<>();
 
   private final AtomicInteger activeConnections = new AtomicInteger(0);
-  private final AtomicInteger pendingConnections = new AtomicInteger(0);
   private final ChannelGroup childChannels;
+  private final @Nullable MultiplexedReverseConnectClientController clientController;
 
   private volatile ServerBootstrap serverBootstrap;
   private volatile Channel serverChannel;
@@ -98,6 +88,10 @@ public class MultiplexedReverseConnectListener implements ChannelConsumerRegistr
   public MultiplexedReverseConnectListener(MultiplexedReverseConnectListenerConfig config) {
     this.config = config;
     this.childChannels = new DefaultChannelGroup(config.getTransportConfig().getEventLoop().next());
+    this.clientController =
+        config.getEndpointResolver() != null
+            ? new MultiplexedReverseConnectClientController(config, this::createTransport)
+            : null;
   }
 
   /**
@@ -221,8 +215,14 @@ public class MultiplexedReverseConnectListener implements ChannelConsumerRegistr
                     }
                   });
       CompletableFuture<Void> childCloseFuture = closeChildChannelsAsync();
+      CompletableFuture<Void> controllerStopFuture =
+          clientController != null
+              ? clientController.stop(stopCause)
+              : CompletableFuture.completedFuture(null);
 
-      future = CompletableFuture.allOf(notificationFuture, listenerCloseFuture, childCloseFuture);
+      future =
+          CompletableFuture.allOf(
+              notificationFuture, controllerStopFuture, listenerCloseFuture, childCloseFuture);
       stopFuture = future;
     }
 
@@ -291,7 +291,7 @@ public class MultiplexedReverseConnectListener implements ChannelConsumerRegistr
   private void dispatch(Channel channel, ReverseHelloMessage rhe) {
     String serverUri = rhe.serverUri();
 
-    boolean tryResolver;
+    @Nullable MultiplexedReverseConnectClientController controller;
 
     synchronized (this) {
       if (stopped) {
@@ -332,12 +332,12 @@ public class MultiplexedReverseConnectListener implements ChannelConsumerRegistr
         return;
       }
 
-      tryResolver = config.getEndpointResolver() != null;
+      controller = clientController;
     }
 
-    // No registered consumer — try EndpointResolver or close
-    if (tryResolver) {
-      dispatchToResolver(channel, rhe);
+    // No registered consumer — delegate unknown-server handling or close.
+    if (controller != null) {
+      controller.dispatch(channel, rhe);
     } else {
       logger.debug(
           "No consumer registered for ServerUri={}, closing channel {}",
@@ -408,144 +408,6 @@ public class MultiplexedReverseConnectListener implements ChannelConsumerRegistr
           }
         });
     return future;
-  }
-
-  /**
-   * Dispatch an unmatched connection to the configured {@link EndpointResolver}. Enforces the
-   * {@code maxPendingConnections} backpressure limit before invoking the resolver.
-   */
-  private void dispatchToResolver(Channel channel, ReverseHelloMessage rhe) {
-    int pending = pendingConnections.incrementAndGet();
-    if (pending > config.getMaxPendingConnections()) {
-      pendingConnections.decrementAndGet();
-      logger.debug(
-          "maxPendingConnections ({}) exceeded, closing channel from {}",
-          config.getMaxPendingConnections(),
-          channel.remoteAddress());
-      channel.close();
-      return;
-    }
-
-    EndpointResolver resolver = config.getEndpointResolver();
-    assert resolver != null;
-
-    // Create a Discovery capability backed by the inbound channel.
-    // The flag is set synchronously when getEndpoints() is called,
-    // before any async work begins.
-    var channelConsumed = new AtomicBoolean(false);
-
-    EndpointResolver.Discovery discovery =
-        () -> {
-          channelConsumed.set(true);
-
-          OpcTcpMultiplexedReverseConnectTransportConfig transportConfig =
-              createDiscoveryTransportConfig();
-          var transport = new InboundChannelTransport(transportConfig, channel, rhe);
-
-          var endpoint =
-              new EndpointDescription(
-                  rhe.endpointUrl(),
-                  null,
-                  null,
-                  MessageSecurityMode.None,
-                  SecurityPolicy.None.getUri(),
-                  null,
-                  Stack.TCP_UASC_UABINARY_TRANSPORT_URI,
-                  ubyte(0));
-
-          var discoveryClient = new DiscoveryClient(endpoint, transport);
-
-          return discoveryClient
-              .connectAsync()
-              .thenCompose(
-                  u ->
-                      discoveryClient.getEndpoints(rhe.endpointUrl(), new String[0], new String[0]))
-              .thenApply(response -> Lists.ofNullable(response.getEndpoints()))
-              .whenComplete((endpoints, ex) -> discoveryClient.disconnectAsync())
-              .orTimeout(60, TimeUnit.SECONDS);
-        };
-
-    CompletableFuture<EndpointDescription> resolveFuture;
-    try {
-      resolveFuture = resolver.resolve(rhe.serverUri(), rhe.endpointUrl(), discovery);
-    } catch (Exception ex) {
-      pendingConnections.decrementAndGet();
-      logger.warn("EndpointResolver threw for ServerUri={}", rhe.serverUri(), ex);
-      channel.close();
-      return;
-    }
-
-    resolveFuture.whenComplete(
-        (endpoint, ex) -> {
-          pendingConnections.decrementAndGet();
-
-          if (ex != null) {
-            logger.warn("EndpointResolver failed for ServerUri={}", rhe.serverUri(), ex);
-            channel.close();
-            return;
-          }
-
-          try {
-            onEndpointResolved(channel, rhe, endpoint, channelConsumed.get());
-          } catch (Exception e) {
-            logger.error("Error handling resolved endpoint for ServerUri={}", rhe.serverUri(), e);
-            channel.close();
-          }
-        });
-  }
-
-  /**
-   * Called when the {@link EndpointResolver} successfully resolves an {@link EndpointDescription}
-   * for a previously unknown server. Creates a {@link OpcTcpMultiplexedReverseConnectTransport} and
-   * notifies the configured {@link ClientListener}.
-   */
-  private void onEndpointResolved(
-      Channel channel,
-      ReverseHelloMessage rhe,
-      EndpointDescription endpoint,
-      boolean channelConsumed) {
-
-    String serverUri = rhe.serverUri();
-
-    logger.debug("Resolved endpoint for ServerUri={}: {}", serverUri, endpoint.getEndpointUrl());
-
-    ClientListener clientListener = config.getClientListener();
-
-    if (clientListener != null) {
-      OpcTcpMultiplexedReverseConnectTransport transport = createTransport(serverUri);
-
-      if (!channelConsumed) {
-        transport.offerChannel(channel, rhe);
-      }
-
-      OpcUaClientConfigBuilder builder = OpcUaClientConfig.builder();
-      builder.setEndpoint(endpoint);
-      builder.setSessionEndpointValidationEnabled(false);
-
-      ClientCustomizer clientCustomizer = config.getClientCustomizer();
-      if (clientCustomizer != null) {
-        clientCustomizer.configure(serverUri, builder);
-      }
-
-      OpcUaClient client = new OpcUaClient(builder.build(), transport);
-      clientListener.onClientCreated(client);
-    } else {
-      logger.debug(
-          "No ClientListener configured for resolved ServerUri={}, closing channel {}",
-          serverUri,
-          channel.remoteAddress());
-
-      channel.close();
-    }
-  }
-
-  private OpcTcpMultiplexedReverseConnectTransportConfig createDiscoveryTransportConfig() {
-    return OpcTcpMultiplexedReverseConnectTransportConfig.newBuilder()
-        .setExecutor(config.getTransportConfig().getExecutor())
-        .setScheduledExecutor(config.getTransportConfig().getScheduledExecutor())
-        .setEventLoop(config.getTransportConfig().getEventLoop())
-        .setWheelTimer(config.getTransportConfig().getWheelTimer())
-        .build();
   }
 
   /**

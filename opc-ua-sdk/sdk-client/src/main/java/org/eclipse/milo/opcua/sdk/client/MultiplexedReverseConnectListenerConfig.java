@@ -62,6 +62,14 @@ public interface MultiplexedReverseConnectListenerConfig {
   int getMaxPendingConnections();
 
   /**
+   * Get the timeout in milliseconds for resolving an unknown server endpoint. The timeout applies
+   * to both cached resolver futures and discovery-backed resolver futures.
+   *
+   * @return the timeout in milliseconds.
+   */
+  long getResolverTimeout();
+
+  /**
    * Get the timeout in milliseconds for receiving a ReverseHello message after accepting a TCP
    * connection.
    *
@@ -86,7 +94,8 @@ public interface MultiplexedReverseConnectListenerConfig {
 
   /**
    * Get the {@link EndpointResolver} for resolving endpoints for unknown servers. If {@code null},
-   * connections from unregistered servers are closed.
+   * connections from unregistered servers are closed. Resolver invocation and completion handling
+   * run on the configured transport executor.
    *
    * @return the endpoint resolver, or {@code null} if on-demand client creation is not enabled.
    */
@@ -94,15 +103,17 @@ public interface MultiplexedReverseConnectListenerConfig {
 
   /**
    * Get the {@link ClientCustomizer} for configuring on-demand clients. When set, the customizer is
-   * called with the {@code OpcUaClientConfigBuilder} before the client is created, allowing the
-   * application to set properties such as application name and URI.
+   * called on the configured transport executor with the {@code OpcUaClientConfigBuilder} before
+   * the client is created, allowing the application to set properties such as application name and
+   * URI.
    *
    * @return the client customizer, or {@code null}.
    */
   @Nullable ClientCustomizer getClientCustomizer();
 
   /**
-   * Get the {@link ClientListener} notified when on-demand clients are created.
+   * Get the {@link ClientListener} notified on the configured transport executor when on-demand
+   * clients are created.
    *
    * @return the client listener, or {@code null}.
    */

@@ -31,6 +31,7 @@ public class MultiplexedReverseConnectListenerConfigBuilder {
   private boolean rateLimitingEnabled = true;
   private int maxConnections = 0;
   private int maxPendingConnections = 16;
+  private long resolverTimeout = 60_000;
   private long reverseHelloTimeout = 5_000;
   private Consumer<ServerBootstrap> serverBootstrapCustomizer = b -> {};
   private Consumer<ChannelPipeline> channelPipelineCustomizer = p -> {};
@@ -102,6 +103,22 @@ public class MultiplexedReverseConnectListenerConfigBuilder {
   }
 
   /**
+   * Set the timeout in milliseconds for resolving an unknown server endpoint. Default: {@code
+   * 60000} ms.
+   *
+   * @param resolverTimeout the timeout in milliseconds.
+   * @return this {@link MultiplexedReverseConnectListenerConfigBuilder}.
+   */
+  public MultiplexedReverseConnectListenerConfigBuilder setResolverTimeout(long resolverTimeout) {
+    if (resolverTimeout <= 0) {
+      throw new IllegalArgumentException("resolverTimeout must be greater than 0");
+    }
+
+    this.resolverTimeout = resolverTimeout;
+    return this;
+  }
+
+  /**
    * Set the timeout in milliseconds for receiving a ReverseHello message after accepting a TCP
    * connection. Default: {@code 5000} ms.
    *
@@ -145,9 +162,10 @@ public class MultiplexedReverseConnectListenerConfigBuilder {
   }
 
   /**
-   * Set the {@link EndpointResolver} for resolving endpoints for unknown servers. When set, a
-   * {@link ClientListener} should also be set to receive on-demand clients. A {@link
-   * ClientCustomizer} may optionally be set to configure each client before it is created.
+   * Set the {@link EndpointResolver} for resolving endpoints for unknown servers. Resolver
+   * invocation and completion handling run on the configured transport executor. When set, a {@link
+   * ClientListener} should also be set to receive on-demand clients. A {@link ClientCustomizer} may
+   * optionally be set to configure each client before it is created.
    *
    * @param endpointResolver the endpoint resolver.
    * @return this {@link MultiplexedReverseConnectListenerConfigBuilder}.
@@ -161,8 +179,9 @@ public class MultiplexedReverseConnectListenerConfigBuilder {
 
   /**
    * Set the {@link ClientCustomizer} for configuring on-demand clients. When set, the customizer is
-   * called with the {@code OpcUaClientConfigBuilder} before the client is created, allowing the
-   * application to set properties such as application name and URI.
+   * called on the configured transport executor with the {@code OpcUaClientConfigBuilder} before
+   * the client is created, allowing the application to set properties such as application name and
+   * URI.
    *
    * @param clientCustomizer the client customizer.
    * @return this {@link MultiplexedReverseConnectListenerConfigBuilder}.
@@ -175,7 +194,8 @@ public class MultiplexedReverseConnectListenerConfigBuilder {
   }
 
   /**
-   * Set the {@link ClientListener} notified when on-demand clients are created.
+   * Set the {@link ClientListener} notified on the configured transport executor when on-demand
+   * clients are created.
    *
    * @param clientListener the client listener.
    * @return this {@link MultiplexedReverseConnectListenerConfigBuilder}.
@@ -203,6 +223,7 @@ public class MultiplexedReverseConnectListenerConfigBuilder {
         rateLimitingEnabled,
         maxConnections,
         maxPendingConnections,
+        resolverTimeout,
         reverseHelloTimeout,
         serverBootstrapCustomizer,
         channelPipelineCustomizer,
@@ -217,6 +238,7 @@ public class MultiplexedReverseConnectListenerConfigBuilder {
       boolean rateLimitingEnabled,
       int maxConnections,
       int maxPendingConnections,
+      long resolverTimeout,
       long reverseHelloTimeout,
       Consumer<ServerBootstrap> serverBootstrapCustomizer,
       Consumer<ChannelPipeline> channelPipelineCustomizer,
@@ -248,6 +270,11 @@ public class MultiplexedReverseConnectListenerConfigBuilder {
     @Override
     public int getMaxPendingConnections() {
       return maxPendingConnections;
+    }
+
+    @Override
+    public long getResolverTimeout() {
+      return resolverTimeout;
     }
 
     @Override

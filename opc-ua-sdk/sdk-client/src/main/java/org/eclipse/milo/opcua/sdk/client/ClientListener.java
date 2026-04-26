@@ -11,14 +11,15 @@
 package org.eclipse.milo.opcua.sdk.client;
 
 /**
- * A callback notified when an on-demand client is created by a {@code
- * MultiplexedReverseConnectListener} for a server that connected via ReverseHello.
+ * A callback notified when an on-demand client is created for a {@code
+ * MultiplexedReverseConnectListener} after an unknown server connects via ReverseHello.
  */
 @FunctionalInterface
 public interface ClientListener {
 
   /**
-   * Called when a new client has been created for a server that connected via ReverseHello.
+   * Called on the listener's configured transport executor when a new client has been created for a
+   * server that connected via ReverseHello.
    *
    * @param client the newly created client.
    */

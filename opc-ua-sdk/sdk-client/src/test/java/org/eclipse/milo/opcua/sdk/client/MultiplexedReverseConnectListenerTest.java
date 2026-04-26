@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.sdk.client;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -22,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.embedded.EmbeddedChannel;
 import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -37,8 +39,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.channel.messages.ReverseHelloMessage;
@@ -53,6 +60,7 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.util.Unit;
 import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
+import org.eclipse.milo.opcua.stack.transport.client.tcp.ChannelConsumerRegistry;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.ChannelConsumerRegistry.ChannelConsumer;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.EndpointResolver;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpMultiplexedReverseConnectTransport;
@@ -319,7 +327,7 @@ class MultiplexedReverseConnectListenerTest {
   }
 
   // ---------------------------------------------------------------------------
-  // EndpointResolver tests (Phase 5)
+  // EndpointResolver tests
   // ---------------------------------------------------------------------------
 
   @Test
@@ -376,8 +384,11 @@ class MultiplexedReverseConnectListenerTest {
 
   @Test
   void resolverFailureClosesChannel() throws Exception {
+    var resolverCalls = new AtomicInteger();
+
     EndpointResolver resolver =
         (serverUri, endpointUrl, discovery) -> {
+          resolverCalls.incrementAndGet();
           CompletableFuture<EndpointDescription> f = new CompletableFuture<>();
           f.completeExceptionally(new RuntimeException("resolver failed"));
           return f;
@@ -387,12 +398,158 @@ class MultiplexedReverseConnectListenerTest {
         createAndStart(
             defaultConfigBuilder()
                 .setRateLimitingEnabled(false)
+                .setMaxPendingConnections(1)
                 .setEndpointResolver(resolver)
                 .build());
 
     try (Socket socket = connectAndSendRhe(SERVER_URI)) {
       socket.setSoTimeout(5000);
       assertEquals(-1, socket.getInputStream().read());
+    }
+
+    try (Socket socket = connectAndSendRhe("urn:test:server2")) {
+      socket.setSoTimeout(5000);
+      assertEquals(-1, socket.getInputStream().read());
+    }
+
+    assertEquals(2, resolverCalls.get());
+  }
+
+  @Test
+  void resolverTimeoutClosesChannelAndReleasesPendingSlot() throws Exception {
+    var resolverCalls = new AtomicInteger();
+
+    EndpointResolver resolver =
+        (serverUri, endpointUrl, discovery) -> {
+          resolverCalls.incrementAndGet();
+          return new CompletableFuture<>();
+        };
+
+    listener =
+        createAndStart(
+            defaultConfigBuilder()
+                .setRateLimitingEnabled(false)
+                .setMaxPendingConnections(1)
+                .setResolverTimeout(200)
+                .setEndpointResolver(resolver)
+                .build());
+
+    try (Socket socket = connectAndSendRhe(SERVER_URI)) {
+      socket.setSoTimeout(5000);
+      assertEquals(-1, socket.getInputStream().read());
+    }
+
+    try (Socket socket = connectAndSendRhe("urn:test:server2")) {
+      socket.setSoTimeout(5000);
+      assertEquals(-1, socket.getInputStream().read());
+    }
+
+    assertEquals(2, resolverCalls.get());
+  }
+
+  @Test
+  void resolverTimeoutClosesChannelWhileResolverExecutorIsBlocked() throws Exception {
+    ExecutorService executor =
+        Executors.newSingleThreadExecutor(namedThreadFactory("resolver-worker"));
+    ScheduledExecutorService scheduledExecutor =
+        Executors.newSingleThreadScheduledExecutor(namedThreadFactory("resolver-timer"));
+
+    var resolverStarted = new CompletableFuture<Void>();
+    var releaseResolver = new CompletableFuture<Void>();
+
+    EndpointResolver resolver =
+        (serverUri, endpointUrl, discovery) -> {
+          resolverStarted.complete(null);
+          try {
+            releaseResolver.get(5, TimeUnit.SECONDS);
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+          return new CompletableFuture<>();
+        };
+
+    OpcTcpMultiplexedReverseConnectTransportConfig transportConfig =
+        OpcTcpMultiplexedReverseConnectTransportConfig.newBuilder()
+            .setExecutor(executor)
+            .setScheduledExecutor(scheduledExecutor)
+            .build();
+
+    try {
+      listener =
+          createAndStart(
+              defaultConfigBuilder(transportConfig)
+                  .setRateLimitingEnabled(false)
+                  .setResolverTimeout(200)
+                  .setEndpointResolver(resolver)
+                  .build());
+
+      try (Socket socket = connectAndSendRhe(SERVER_URI)) {
+        resolverStarted.get(5, TimeUnit.SECONDS);
+        socket.setSoTimeout(5000);
+        assertEquals(-1, socket.getInputStream().read());
+      }
+    } finally {
+      releaseResolver.complete(null);
+      if (listener != null) {
+        listener.stop().get(5, TimeUnit.SECONDS);
+        listener = null;
+      }
+      executor.shutdownNow();
+      scheduledExecutor.shutdownNow();
+    }
+  }
+
+  @Test
+  void resolverCustomizerAndListenerRunOnConfiguredExecutor() throws Exception {
+    ExecutorService executor =
+        Executors.newSingleThreadExecutor(namedThreadFactory("resolver-worker"));
+    ScheduledExecutorService scheduledExecutor =
+        Executors.newSingleThreadScheduledExecutor(namedThreadFactory("resolver-timer"));
+
+    var resolverThread = new CompletableFuture<String>();
+    var customizerThread = new CompletableFuture<String>();
+    var listenerThread = new CompletableFuture<String>();
+
+    EndpointResolver resolver =
+        (serverUri, endpointUrl, discovery) -> {
+          resolverThread.complete(Thread.currentThread().getName());
+          return CompletableFuture.completedFuture(createEndpoint(endpointUrl));
+        };
+
+    ClientCustomizer customizer =
+        (serverUri, builder) -> customizerThread.complete(Thread.currentThread().getName());
+
+    ClientListener clientListener =
+        client -> listenerThread.complete(Thread.currentThread().getName());
+
+    OpcTcpMultiplexedReverseConnectTransportConfig transportConfig =
+        OpcTcpMultiplexedReverseConnectTransportConfig.newBuilder()
+            .setExecutor(executor)
+            .setScheduledExecutor(scheduledExecutor)
+            .build();
+
+    try {
+      listener =
+          createAndStart(
+              defaultConfigBuilder(transportConfig)
+                  .setRateLimitingEnabled(false)
+                  .setEndpointResolver(resolver)
+                  .setClientCustomizer(customizer)
+                  .setClientListener(clientListener)
+                  .build());
+
+      try (Socket ignored = connectAndSendRhe(SERVER_URI)) {
+        assertTrue(resolverThread.get(5, TimeUnit.SECONDS).startsWith("resolver-worker-"));
+        assertTrue(customizerThread.get(5, TimeUnit.SECONDS).startsWith("resolver-worker-"));
+        assertTrue(listenerThread.get(5, TimeUnit.SECONDS).startsWith("resolver-worker-"));
+      }
+    } finally {
+      if (listener != null) {
+        listener.stop().get(5, TimeUnit.SECONDS);
+        listener = null;
+      }
+      executor.shutdownNow();
+      scheduledExecutor.shutdownNow();
     }
   }
 
@@ -490,6 +647,184 @@ class MultiplexedReverseConnectListenerTest {
     assertTrue(!connectFuture.isDone(), "connect should wait for a replacement channel");
   }
 
+  @Test
+  void oneShotChannelReuseDoesNotStartHandshakeBeforeConnect() throws Exception {
+    var transportFuture = new CompletableFuture<OpcTcpMultiplexedReverseConnectTransport>();
+
+    EndpointResolver resolver =
+        (serverUri, endpointUrl, discovery) ->
+            CompletableFuture.completedFuture(createEndpoint(endpointUrl));
+
+    ClientListener clientListener =
+        client -> {
+          var transport = (OpcTcpMultiplexedReverseConnectTransport) client.getTransport();
+          transportFuture.complete(transport);
+        };
+
+    listener =
+        createAndStart(
+            defaultConfigBuilder()
+                .setRateLimitingEnabled(false)
+                .setEndpointResolver(resolver)
+                .setClientListener(clientListener)
+                .build());
+
+    try (Socket socket = connectAndSendRhe(SERVER_URI)) {
+      OpcTcpMultiplexedReverseConnectTransport transport = transportFuture.get(5, TimeUnit.SECONDS);
+
+      assertNotNull(transport);
+      assertNoHandshakeData(socket);
+    }
+  }
+
+  @Test
+  void twoShotDiscoveryWaitsForDisconnectBeforeClientCreation() throws Exception {
+    ExecutorService executor =
+        Executors.newSingleThreadExecutor(namedThreadFactory("resolver-worker"));
+    ScheduledExecutorService scheduledExecutor =
+        Executors.newSingleThreadScheduledExecutor(namedThreadFactory("resolver-timer"));
+
+    EndpointDescription endpoint = createEndpoint(ENDPOINT_URL);
+    var disconnectFuture = new CompletableFuture<Void>();
+    var clientCreated = new CompletableFuture<OpcUaClient>();
+
+    EndpointResolver resolver =
+        EndpointResolver.discover((serverUri, endpoints) -> endpoints.get(0));
+
+    var discoveryClient = new TestDiscoveryClientHandle(List.of(endpoint), disconnectFuture);
+
+    MultiplexedReverseConnectClientController controller =
+        newClientController(executor, scheduledExecutor, resolver, clientCreated, discoveryClient);
+
+    try {
+      controller.dispatch(new EmbeddedChannel(), new ReverseHelloMessage(SERVER_URI, ENDPOINT_URL));
+
+      discoveryClient.disconnectStarted.get(5, TimeUnit.SECONDS);
+      assertFalse(clientCreated.isDone());
+
+      disconnectFuture.complete(null);
+
+      assertNotNull(clientCreated.get(5, TimeUnit.SECONDS));
+    } finally {
+      controller.stop(new UaException(StatusCodes.Bad_Shutdown)).get(5, TimeUnit.SECONDS);
+      executor.shutdownNow();
+      scheduledExecutor.shutdownNow();
+    }
+  }
+
+  @Test
+  void twoShotDiscoveryDisconnectFailureClosesConsumedChannel() throws Exception {
+    ExecutorService executor =
+        Executors.newSingleThreadExecutor(namedThreadFactory("resolver-worker"));
+    ScheduledExecutorService scheduledExecutor =
+        Executors.newSingleThreadScheduledExecutor(namedThreadFactory("resolver-timer"));
+
+    EndpointDescription endpoint = createEndpoint(ENDPOINT_URL);
+    RuntimeException disconnectFailure = new RuntimeException("disconnect failed");
+    var clientCreated = new CompletableFuture<OpcUaClient>();
+
+    EndpointResolver resolver =
+        EndpointResolver.discover((serverUri, endpoints) -> endpoints.get(0));
+
+    var discoveryClient =
+        new TestDiscoveryClientHandle(
+            List.of(endpoint), CompletableFuture.failedFuture(disconnectFailure));
+
+    MultiplexedReverseConnectClientController controller =
+        newClientController(executor, scheduledExecutor, resolver, clientCreated, discoveryClient);
+
+    var channel = new EmbeddedChannel();
+    var channelClosed = new CompletableFuture<Void>();
+    channel
+        .closeFuture()
+        .addListener(
+            f -> {
+              if (f.isSuccess()) {
+                channelClosed.complete(null);
+              } else {
+                channelClosed.completeExceptionally(f.cause());
+              }
+            });
+
+    try {
+      controller.dispatch(channel, new ReverseHelloMessage(SERVER_URI, ENDPOINT_URL));
+
+      channelClosed.get(5, TimeUnit.SECONDS);
+      assertFalse(channel.isOpen());
+      assertFalse(clientCreated.isDone());
+    } finally {
+      controller.stop(new UaException(StatusCodes.Bad_Shutdown)).get(5, TimeUnit.SECONDS);
+      executor.shutdownNow();
+      scheduledExecutor.shutdownNow();
+    }
+  }
+
+  @Test
+  void stopWaitsForInFlightClientCreation() throws Exception {
+    ExecutorService executor =
+        Executors.newSingleThreadExecutor(namedThreadFactory("resolver-worker"));
+    ScheduledExecutorService scheduledExecutor =
+        Executors.newSingleThreadScheduledExecutor(namedThreadFactory("resolver-timer"));
+
+    EndpointDescription endpoint = createEndpoint(ENDPOINT_URL);
+    var customizerStarted = new CompletableFuture<Void>();
+    var releaseCustomizer = new CompletableFuture<Void>();
+    var clientCreated = new CompletableFuture<OpcUaClient>();
+
+    OpcTcpMultiplexedReverseConnectTransportConfig transportConfig =
+        OpcTcpMultiplexedReverseConnectTransportConfig.newBuilder()
+            .setExecutor(executor)
+            .setScheduledExecutor(scheduledExecutor)
+            .build();
+
+    ClientCustomizer customizer =
+        (serverUri, builder) -> {
+          customizerStarted.complete(null);
+          try {
+            releaseCustomizer.get(5, TimeUnit.SECONDS);
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        };
+
+    MultiplexedReverseConnectListenerConfig config =
+        MultiplexedReverseConnectListenerConfig.newBuilder()
+            .setListenAddress(new InetSocketAddress("localhost", 0))
+            .setTransportConfig(transportConfig)
+            .setRateLimitingEnabled(false)
+            .setEndpointResolver(EndpointResolver.cached(endpoint))
+            .setClientCustomizer(customizer)
+            .setClientListener(clientCreated::complete)
+            .build();
+
+    ChannelConsumerRegistry registry = noopRegistry();
+    var controller =
+        new MultiplexedReverseConnectClientController(
+            config,
+            serverUri ->
+                new OpcTcpMultiplexedReverseConnectTransport(serverUri, transportConfig, registry));
+
+    try {
+      controller.dispatch(new EmbeddedChannel(), new ReverseHelloMessage(SERVER_URI, ENDPOINT_URL));
+
+      customizerStarted.get(5, TimeUnit.SECONDS);
+      CompletableFuture<Void> stopFuture =
+          controller.stop(new UaException(StatusCodes.Bad_Shutdown));
+
+      assertFalse(stopFuture.isDone());
+
+      releaseCustomizer.complete(null);
+
+      stopFuture.get(5, TimeUnit.SECONDS);
+      assertNotNull(clientCreated.get(5, TimeUnit.SECONDS));
+    } finally {
+      releaseCustomizer.complete(null);
+      controller.stop(new UaException(StatusCodes.Bad_Shutdown)).get(5, TimeUnit.SECONDS);
+      executor.shutdownNow();
+      scheduledExecutor.shutdownNow();
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
@@ -502,9 +837,61 @@ class MultiplexedReverseConnectListenerTest {
     OpcTcpMultiplexedReverseConnectTransportConfig transportConfig =
         OpcTcpMultiplexedReverseConnectTransportConfig.newBuilder().build();
 
+    return defaultConfigBuilder(transportConfig);
+  }
+
+  private MultiplexedReverseConnectListenerConfigBuilder defaultConfigBuilder(
+      OpcTcpMultiplexedReverseConnectTransportConfig transportConfig) {
+
     return MultiplexedReverseConnectListenerConfig.newBuilder()
         .setListenAddress(new InetSocketAddress("localhost", 0))
         .setTransportConfig(transportConfig);
+  }
+
+  private static MultiplexedReverseConnectClientController newClientController(
+      ExecutorService executor,
+      ScheduledExecutorService scheduledExecutor,
+      EndpointResolver resolver,
+      CompletableFuture<OpcUaClient> clientCreated,
+      TestDiscoveryClientHandle discoveryClient) {
+
+    OpcTcpMultiplexedReverseConnectTransportConfig transportConfig =
+        OpcTcpMultiplexedReverseConnectTransportConfig.newBuilder()
+            .setExecutor(executor)
+            .setScheduledExecutor(scheduledExecutor)
+            .build();
+
+    MultiplexedReverseConnectListenerConfig config =
+        MultiplexedReverseConnectListenerConfig.newBuilder()
+            .setListenAddress(new InetSocketAddress("localhost", 0))
+            .setTransportConfig(transportConfig)
+            .setRateLimitingEnabled(false)
+            .setEndpointResolver(resolver)
+            .setClientListener(clientCreated::complete)
+            .build();
+
+    ChannelConsumerRegistry registry = noopRegistry();
+
+    return new MultiplexedReverseConnectClientController(
+        config,
+        serverUri ->
+            new OpcTcpMultiplexedReverseConnectTransport(serverUri, transportConfig, registry),
+        (endpoint, discoveryTransportConfig, channel, reverseHello) -> discoveryClient);
+  }
+
+  private static ChannelConsumerRegistry noopRegistry() {
+    return new ChannelConsumerRegistry() {
+      @Override
+      public void register(String serverUri, ChannelConsumer consumer) {}
+
+      @Override
+      public void deregister(String serverUri, ChannelConsumer consumer) {}
+    };
+  }
+
+  private static ThreadFactory namedThreadFactory(String prefix) {
+    var counter = new AtomicInteger();
+    return r -> new Thread(r, prefix + "-" + counter.incrementAndGet());
   }
 
   private MultiplexedReverseConnectListener createAndStart(
@@ -582,6 +969,18 @@ class MultiplexedReverseConnectListenerTest {
     }
   }
 
+  private static void assertNoHandshakeData(Socket socket) throws Exception {
+    socket.setSoTimeout(200);
+    try {
+      int b = socket.getInputStream().read();
+      fail("expected no handshake data before connect(), read byte " + b);
+    } catch (SocketTimeoutException ignored) {
+      // A timeout means the channel stayed open without starting the client handshake.
+    } finally {
+      socket.setSoTimeout(5000);
+    }
+  }
+
   private static ClientApplicationContext newApplicationContext() {
     return new ClientApplicationContext() {
       @Override
@@ -651,6 +1050,37 @@ class MultiplexedReverseConnectListenerTest {
   }
 
   private record AcceptedChannel(Channel channel, ReverseHelloMessage reverseHello) {}
+
+  private static final class TestDiscoveryClientHandle
+      implements MultiplexedReverseConnectClientController.DiscoveryClientHandle {
+
+    private final List<EndpointDescription> endpoints;
+    private final CompletableFuture<Void> disconnectFuture;
+    private final CompletableFuture<Void> disconnectStarted = new CompletableFuture<>();
+
+    private TestDiscoveryClientHandle(
+        List<EndpointDescription> endpoints, CompletableFuture<Void> disconnectFuture) {
+
+      this.endpoints = endpoints;
+      this.disconnectFuture = disconnectFuture;
+    }
+
+    @Override
+    public CompletableFuture<Void> connectAsync() {
+      return CompletableFuture.completedFuture(null);
+    }
+
+    @Override
+    public CompletableFuture<List<EndpointDescription>> getEndpoints(String endpointUrl) {
+      return CompletableFuture.completedFuture(endpoints);
+    }
+
+    @Override
+    public CompletableFuture<Void> disconnectAsync() {
+      disconnectStarted.complete(null);
+      return disconnectFuture;
+    }
+  }
 
   private static final class TestConsumer implements ChannelConsumer {
 

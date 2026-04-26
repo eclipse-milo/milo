@@ -101,8 +101,20 @@ public class InboundChannelTransport extends AbstractUascClientTransport {
 
   @Override
   public CompletableFuture<Unit> disconnect() {
-    channel.close();
-    return CompletableFuture.completedFuture(Unit.VALUE);
+    var future = new CompletableFuture<Unit>();
+
+    channel
+        .close()
+        .addListener(
+            f -> {
+              if (f.isSuccess()) {
+                future.complete(Unit.VALUE);
+              } else {
+                future.completeExceptionally(f.cause());
+              }
+            });
+
+    return future;
   }
 
   @Override
