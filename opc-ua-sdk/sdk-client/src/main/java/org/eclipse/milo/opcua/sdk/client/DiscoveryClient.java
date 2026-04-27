@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -378,18 +379,7 @@ public class DiscoveryClient {
         .thenApply(response -> Lists.ofNullable(response.getEndpoints()))
         .handle(
             (result, ex) -> {
-              CompletableFuture<List<EndpointDescription>> future = new CompletableFuture<>();
-              discoveryClient
-                  .disconnectAsync()
-                  .whenComplete(
-                      (v, dex) -> {
-                        if (ex != null) {
-                          future.completeExceptionally(ex);
-                        } else {
-                          future.complete(result);
-                        }
-                      });
-              return future;
+              return disconnectAfterReverseDiscovery(discoveryClient, result, ex);
             })
         .thenCompose(Function.identity());
   }
@@ -430,19 +420,50 @@ public class DiscoveryClient {
         .thenApply(response -> Lists.ofNullable(response.getServers()))
         .handle(
             (result, ex) -> {
-              CompletableFuture<List<ApplicationDescription>> future = new CompletableFuture<>();
-              discoveryClient
-                  .disconnectAsync()
-                  .whenComplete(
-                      (v, dex) -> {
-                        if (ex != null) {
-                          future.completeExceptionally(ex);
-                        } else {
-                          future.complete(result);
-                        }
-                      });
-              return future;
+              return disconnectAfterReverseDiscovery(discoveryClient, result, ex);
             })
         .thenCompose(Function.identity());
+  }
+
+  static <T> CompletableFuture<T> disconnectAfterReverseDiscovery(
+      DiscoveryClient discoveryClient, T result, Throwable discoveryFailure) {
+
+    CompletableFuture<DiscoveryClient> disconnectFuture;
+    try {
+      disconnectFuture = discoveryClient.disconnectAsync();
+    } catch (Throwable t) {
+      disconnectFuture = CompletableFuture.failedFuture(t);
+    }
+
+    return disconnectFuture.handle(
+        (ignored, disconnectFailure) -> {
+          Throwable failure = combine(unwrap(discoveryFailure), unwrap(disconnectFailure));
+
+          if (failure != null) {
+            throw new CompletionException(failure);
+          }
+
+          return result;
+        });
+  }
+
+  private static Throwable combine(Throwable primary, Throwable secondary) {
+    if (primary == null) {
+      return secondary;
+    }
+
+    if (secondary != null && secondary != primary) {
+      primary.addSuppressed(secondary);
+    }
+
+    return primary;
+  }
+
+  private static Throwable unwrap(Throwable failure) {
+    if (failure instanceof CompletionException && failure.getCause() != null) {
+      return failure.getCause();
+    }
+
+    return failure;
   }
 }

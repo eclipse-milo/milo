@@ -320,6 +320,24 @@ class ReverseConnectChannelOwnerTest {
   }
 
   @Test
+  void disallowedAcceptedBeforeContextDoesNotOccupyPendingSlot() throws Exception {
+    var disallowedChannel = new EmbeddedChannel();
+
+    owner.accepted(disallowedChannel, reverseHello("urn:unknown:server"));
+
+    assertFalse(disallowedChannel.isOpen());
+
+    var allowedChannel = new EmbeddedChannel();
+    owner.accepted(allowedChannel, reverseHello());
+
+    CompletableFuture<Channel> connectFuture = owner.connect(newApplicationContext());
+    handshakeStarter.succeed(allowedChannel);
+
+    assertEquals(1, handshakeStarter.starts());
+    assertSame(allowedChannel, connectFuture.get(1, TimeUnit.SECONDS));
+  }
+
+  @Test
   void acceptedBeforeContextTimesOutWithoutStartingHandshake() {
     var channel = new EmbeddedChannel();
 
@@ -535,7 +553,11 @@ class ReverseConnectChannelOwnerTest {
   }
 
   private static ReverseHelloMessage reverseHello() {
-    return new ReverseHelloMessage(SERVER_URI, ENDPOINT_URL);
+    return reverseHello(SERVER_URI);
+  }
+
+  private static ReverseHelloMessage reverseHello(String serverUri) {
+    return new ReverseHelloMessage(serverUri, ENDPOINT_URL);
   }
 
   private static ClientApplicationContext newApplicationContext() {

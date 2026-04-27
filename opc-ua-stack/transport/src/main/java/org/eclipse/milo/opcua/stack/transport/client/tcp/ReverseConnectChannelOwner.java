@@ -511,6 +511,11 @@ final class ReverseConnectChannelOwner {
 
     clearInactiveConnectedChannel();
 
+    if (application == null && !isAllowedServerUri(event.reverseHello().serverUri())) {
+      close(event.channel());
+      return;
+    }
+
     if (state == State.Handshaking || state == State.Connected || pendingAccepted != null) {
       close(event.channel());
       return;
@@ -907,6 +912,10 @@ final class ReverseConnectChannelOwner {
     }
 
     return failure;
+  }
+
+  private boolean isAllowedServerUri(String serverUri) {
+    return config.allowedServerUris().isEmpty() || config.allowedServerUris().contains(serverUri);
   }
 
   private void transitionTo(State newState) {

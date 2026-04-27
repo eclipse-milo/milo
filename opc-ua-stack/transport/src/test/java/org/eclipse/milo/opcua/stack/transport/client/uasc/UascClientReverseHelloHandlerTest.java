@@ -54,9 +54,12 @@ import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
+import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
 import org.junit.jupiter.api.AfterEach;
@@ -290,6 +293,77 @@ class UascClientReverseHelloHandlerTest {
   }
 
   @Test
+  void selectedEndpointRejectsMismatchedServerUri() throws Exception {
+    var handshakeFuture = new CompletableFuture<ClientSecureChannel>();
+
+    var handler =
+        new UascClientReverseHelloHandler(
+            newConfig(wheelTimer),
+            newApplicationContext(ENDPOINT_URL, serverDescription(SERVER_URI)),
+            requestId::getAndIncrement,
+            handshakeFuture,
+            Set.of(),
+            30_000);
+
+    var channel = new EmbeddedChannel(handler);
+
+    ByteBuf rheBuffer =
+        TcpMessageEncoder.encode(new ReverseHelloMessage("urn:unknown:server", ENDPOINT_URL));
+    channel.writeInbound(rheBuffer);
+    channel.runPendingTasks();
+
+    ByteBuf errorBuffer = channel.readOutbound();
+    assertNotNull(errorBuffer, "Error message should be sent for mismatched ServerUri");
+
+    ErrorMessage error = TcpMessageDecoder.decodeError(errorBuffer);
+    assertEquals(new StatusCode(StatusCodes.Bad_TcpEndpointUrlInvalid), error.getError());
+    errorBuffer.release();
+
+    ExecutionException exception =
+        assertThrows(ExecutionException.class, () -> handshakeFuture.get(1, TimeUnit.SECONDS));
+    UaException uaException = assertInstanceOf(UaException.class, exception.getCause());
+    assertEquals(StatusCodes.Bad_TcpEndpointUrlInvalid, uaException.getStatusCode().value());
+
+    channel.close();
+  }
+
+  @Test
+  void selectedEndpointRejectsMismatchedEndpointUrl() throws Exception {
+    var handshakeFuture = new CompletableFuture<ClientSecureChannel>();
+
+    var handler =
+        new UascClientReverseHelloHandler(
+            newConfig(wheelTimer),
+            newApplicationContext(ENDPOINT_URL, serverDescription(SERVER_URI)),
+            requestId::getAndIncrement,
+            handshakeFuture,
+            Set.of(),
+            30_000);
+
+    var channel = new EmbeddedChannel(handler);
+
+    String reverseHelloEndpointUrl = "opc.tcp://localhost:4841";
+    ByteBuf rheBuffer =
+        TcpMessageEncoder.encode(new ReverseHelloMessage(SERVER_URI, reverseHelloEndpointUrl));
+    channel.writeInbound(rheBuffer);
+    channel.runPendingTasks();
+
+    ByteBuf errorBuffer = channel.readOutbound();
+    assertNotNull(errorBuffer, "Error message should be sent for mismatched EndpointUrl");
+
+    ErrorMessage error = TcpMessageDecoder.decodeError(errorBuffer);
+    assertEquals(new StatusCode(StatusCodes.Bad_TcpEndpointUrlInvalid), error.getError());
+    errorBuffer.release();
+
+    ExecutionException exception =
+        assertThrows(ExecutionException.class, () -> handshakeFuture.get(1, TimeUnit.SECONDS));
+    UaException uaException = assertInstanceOf(UaException.class, exception.getCause());
+    assertEquals(StatusCodes.Bad_TcpEndpointUrlInvalid, uaException.getStatusCode().value());
+
+    channel.close();
+  }
+
+  @Test
   void happyPathRheSendsHello() throws Exception {
     var handshakeFuture = new CompletableFuture<ClientSecureChannel>();
 
@@ -336,7 +410,7 @@ class UascClientReverseHelloHandlerTest {
     var handler =
         new UascClientReverseHelloHandler(
             newConfig(wheelTimer),
-            newApplicationContext(),
+            newApplicationContext(""),
             requestId::getAndIncrement,
             handshakeFuture,
             Set.of(),
@@ -610,12 +684,22 @@ class UascClientReverseHelloHandlerTest {
   }
 
   private static ClientApplicationContext newApplicationContext() {
+    return newApplicationContext(ENDPOINT_URL);
+  }
+
+  private static ClientApplicationContext newApplicationContext(String endpointUrl) {
+    return newApplicationContext(endpointUrl, null);
+  }
+
+  private static ClientApplicationContext newApplicationContext(
+      String endpointUrl, ApplicationDescription server) {
+
     return new ClientApplicationContext() {
       @Override
       public EndpointDescription getEndpoint() {
         return new EndpointDescription(
-            ENDPOINT_URL,
-            null,
+            endpointUrl,
+            server,
             ByteString.NULL_VALUE,
             MessageSecurityMode.None,
             SecurityPolicy.None.getUri(),
@@ -654,5 +738,16 @@ class UascClientReverseHelloHandlerTest {
         return uint(5_000);
       }
     };
+  }
+
+  private static ApplicationDescription serverDescription(String serverUri) {
+    return new ApplicationDescription(
+        serverUri,
+        "urn:eclipse:milo:test-product",
+        LocalizedText.english("test server"),
+        ApplicationType.Server,
+        null,
+        null,
+        new String[0]);
   }
 }
