@@ -129,11 +129,9 @@ final class ReverseConnectChannelOwner {
      * Reports completion of channel closes started by a disconnect request.
      *
      * @param generation the lifecycle generation closed by the disconnect.
-     * @param future the caller's disconnect future.
      * @param failure the close failure, or {@code null} if cleanup succeeded.
      */
-    record DisconnectClosed(long generation, CompletableFuture<Unit> future, Throwable failure)
-        implements Event {}
+    record DisconnectClosed(long generation, Throwable failure) implements Event {}
 
     /**
      * Reports that no more accepted channels will arrive from the listener.
@@ -277,8 +275,10 @@ final class ReverseConnectChannelOwner {
    *
    * @param future the caller future.
    * @param timeout the timeout for the waiter.
+   * @param connectWaiter {@code true} when this waiter belongs to a public connect lifecycle.
    */
-  private record ChannelWaiter(CompletableFuture<Channel> future, Cancellable timeout) {}
+  private record ChannelWaiter(
+      CompletableFuture<Channel> future, Cancellable timeout, boolean connectWaiter) {}
 
   private final ChannelOwnerConfig config;
   private final UascResponseHandler responseHandler;
@@ -288,16 +288,19 @@ final class ReverseConnectChannelOwner {
   private final HandshakeStarter handshakeStarter;
   private final ArrayDeque<Event> mailbox = new ArrayDeque<>();
   private final List<ChannelWaiter> channelWaiters = new ArrayList<>();
+  private final List<CompletableFuture<Unit>> disconnectWaiters = new ArrayList<>();
+  private final List<CompletableFuture<Unit>> listenerStoppedWaiters = new ArrayList<>();
   private final List<TransitionListener> transitionListeners = new CopyOnWriteArrayList<>();
 
   private boolean draining;
+  private boolean cleanupInProgress;
   private long generation;
   private volatile State state = State.Idle;
 
   private ClientApplicationContext application;
   private AcceptedChannel pendingAccepted;
   private AcceptedChannel handshaking;
-  private Channel activeChannel;
+  private volatile Channel activeChannel;
   private ClientSecureChannel activeSecureChannel;
 
   ReverseConnectChannelOwner(
@@ -470,7 +473,7 @@ final class ReverseConnectChannelOwner {
       application = Objects.requireNonNull(event.application(), "application");
     }
 
-    addChannelWaiter(event.future());
+    addChannelWaiter(event.future(), true);
 
     if (pendingAccepted != null) {
       startHandshake(pendingAccepted);
@@ -497,7 +500,7 @@ final class ReverseConnectChannelOwner {
       return;
     }
 
-    addChannelWaiter(event.future());
+    addChannelWaiter(event.future(), false);
   }
 
   private void handleAccepted(Event.Accepted event) {
@@ -597,49 +600,79 @@ final class ReverseConnectChannelOwner {
 
   private void handleDisconnect(Event.Disconnect event) {
     if (state == State.Stopped) {
-      event.future().complete(Unit.VALUE);
+      if (cleanupInProgress) {
+        disconnectWaiters.add(event.future());
+      } else {
+        event.future().complete(Unit.VALUE);
+      }
+      return;
+    }
+
+    if (state == State.Disconnecting) {
+      disconnectWaiters.add(event.future());
       return;
     }
 
     var channelsToClose = clearOwnedState(connectionClosed("disconnected"));
     long disconnectGeneration = ++generation;
 
+    disconnectWaiters.add(event.future());
+    cleanupInProgress = true;
     transitionTo(State.Disconnecting);
 
     closeAll(channelsToClose)
         .whenComplete(
-            (ignored, ex) ->
-                fireEvent(new Event.DisconnectClosed(disconnectGeneration, event.future(), ex)));
+            (ignored, ex) -> fireEvent(new Event.DisconnectClosed(disconnectGeneration, ex)));
   }
 
   private void handleDisconnectClosed(Event.DisconnectClosed event) {
-    if (event.generation() == generation && state == State.Disconnecting) {
+    if (event.generation() != generation || !cleanupInProgress) {
+      return;
+    }
+
+    cleanupInProgress = false;
+
+    if (state == State.Disconnecting) {
       transitionTo(State.Idle);
     }
 
-    if (event.failure() != null) {
-      event.future().completeExceptionally(unwrap(event.failure()));
-    } else {
-      event.future().complete(Unit.VALUE);
+    Throwable failure = event.failure() != null ? unwrap(event.failure()) : null;
+
+    if (failure != null && disconnectWaiters.isEmpty() && listenerStoppedWaiters.isEmpty()) {
+      LOGGER.warn("Reverse Connect channel cleanup failed", failure);
     }
+
+    completeUnitWaiters(disconnectWaiters, failure);
+    completeUnitWaiters(listenerStoppedWaiters, failure);
   }
 
   private void handleListenerStopped(Event.ListenerStopped event) {
+    if (state == State.Stopped) {
+      if (cleanupInProgress) {
+        listenerStoppedWaiters.add(event.future());
+      } else {
+        event.future().complete(Unit.VALUE);
+      }
+      return;
+    }
+
+    if (state == State.Disconnecting) {
+      listenerStoppedWaiters.add(event.future());
+      transitionTo(State.Stopped);
+      return;
+    }
+
     var failure = event.cause() != null ? event.cause() : shutdown("listener stopped");
     var channelsToClose = clearOwnedState(failure);
+    long listenerStopGeneration = ++generation;
 
-    generation++;
+    listenerStoppedWaiters.add(event.future());
+    cleanupInProgress = true;
     transitionTo(State.Stopped);
 
     closeAll(channelsToClose)
         .whenComplete(
-            (ignored, ex) -> {
-              if (ex != null) {
-                event.future().completeExceptionally(unwrap(ex));
-              } else {
-                event.future().complete(Unit.VALUE);
-              }
-            });
+            (ignored, ex) -> fireEvent(new Event.DisconnectClosed(listenerStopGeneration, ex)));
   }
 
   private void handlePendingAcceptTimedOut(Event.PendingAcceptTimedOut event) {
@@ -673,13 +706,25 @@ final class ReverseConnectChannelOwner {
       return;
     }
 
-    channelWaiters.remove(timedOutWaiter);
-    timedOutWaiter.timeout().cancel();
-    timedOutWaiter
-        .future()
-        .completeExceptionally(
-            new UaException(
-                StatusCodes.Bad_Timeout, "timed out waiting for reverse connect channel"));
+    var timeout =
+        new UaException(StatusCodes.Bad_Timeout, "timed out waiting for reverse connect channel");
+
+    if (!timedOutWaiter.connectWaiter()) {
+      channelWaiters.remove(timedOutWaiter);
+      timedOutWaiter.timeout().cancel();
+      timedOutWaiter.future().completeExceptionally(timeout);
+      return;
+    }
+
+    var channelsToClose = clearOwnedState(timeout);
+    long timeoutGeneration = ++generation;
+
+    cleanupInProgress = true;
+    transitionTo(State.Disconnecting);
+
+    closeAll(channelsToClose)
+        .whenComplete(
+            (ignored, ex) -> fireEvent(new Event.DisconnectClosed(timeoutGeneration, ex)));
   }
 
   private AcceptedChannel newAcceptedChannel(Channel channel, ReverseHelloMessage reverseHello) {
@@ -779,14 +824,14 @@ final class ReverseConnectChannelOwner {
     }
   }
 
-  private void addChannelWaiter(CompletableFuture<Channel> future) {
+  private void addChannelWaiter(CompletableFuture<Channel> future, boolean connectWaiter) {
     var timeout =
         scheduler.schedule(
             () -> fireEvent(new Event.ChannelWaiterTimedOut(future)),
             config.connectTimeout(),
             TimeUnit.MILLISECONDS);
 
-    channelWaiters.add(new ChannelWaiter(future, timeout));
+    channelWaiters.add(new ChannelWaiter(future, timeout, connectWaiter));
   }
 
   private void completeChannelWaiters(Channel channel) {
@@ -809,6 +854,19 @@ final class ReverseConnectChannelOwner {
           waiter.timeout().cancel();
           waiter.future().completeExceptionally(failure);
         });
+  }
+
+  private void completeUnitWaiters(List<CompletableFuture<Unit>> waiters, Throwable failure) {
+    var futures = List.copyOf(waiters);
+    waiters.clear();
+
+    for (CompletableFuture<Unit> future : futures) {
+      if (failure != null) {
+        future.completeExceptionally(failure);
+      } else {
+        future.complete(Unit.VALUE);
+      }
+    }
   }
 
   private CompletableFuture<Void> closeAll(List<Channel> channels) {

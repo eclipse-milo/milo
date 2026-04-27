@@ -126,6 +126,19 @@ class OpcTcpReverseConnectTransportTest {
   }
 
   @Test
+  void connectTimeoutStopsListener() throws Exception {
+    var transport = newTransport(new TestHandshakeStarter());
+
+    CompletableFuture<Unit> connectFuture = transport.connect(newApplicationContext());
+    Channel listenerChannel = transport.getListenerChannel();
+
+    assertNotNull(listenerChannel);
+
+    assertUaStatus(StatusCodes.Bad_Timeout, connectFuture);
+    assertFalse(listenerChannel.isOpen());
+  }
+
+  @Test
   void disconnectWhileConnectedClosesActiveChannelAndNotifiesStateListeners() throws Exception {
     var handshakeStarter = new TestHandshakeStarter();
     var transport = newTransport(handshakeStarter);

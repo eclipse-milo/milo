@@ -185,7 +185,7 @@ public class OpcTcpMultiplexedReverseConnectTransport extends AbstractUascClient
       return CompletableFuture.failedFuture(t);
     }
 
-    return connectFuture.thenApply(ch -> Unit.VALUE);
+    return connectFuture.handle((channel, ex) -> unwrap(ex)).thenCompose(this::completeConnect);
   }
 
   @Override
@@ -269,6 +269,35 @@ public class OpcTcpMultiplexedReverseConnectTransport extends AbstractUascClient
     if (registered.compareAndSet(true, false)) {
       registry.deregister(serverUri, channelConsumer);
     }
+  }
+
+  private CompletableFuture<Unit> completeConnect(Throwable connectFailure) {
+    if (connectFailure == null) {
+      return CompletableFuture.completedFuture(Unit.VALUE);
+    }
+
+    acceptingChannels.set(false);
+
+    Throwable deregisterFailure = null;
+    try {
+      deregister();
+    } catch (Throwable t) {
+      deregisterFailure = t;
+    }
+
+    Throwable failure = combine(connectFailure, deregisterFailure);
+
+    return channelOwner
+        .disconnect()
+        .handle(
+            (v, disconnectFailure) -> {
+              Throwable combined = combine(failure, unwrap(disconnectFailure));
+              if (combined != null) {
+                throw completionException(combined);
+              }
+
+              return Unit.VALUE;
+            });
   }
 
   private boolean needsChannel() {
@@ -358,5 +387,13 @@ public class OpcTcpMultiplexedReverseConnectTransport extends AbstractUascClient
     }
 
     return failure;
+  }
+
+  private static CompletionException completionException(Throwable failure) {
+    if (failure instanceof CompletionException completionException) {
+      return completionException;
+    }
+
+    return new CompletionException(failure);
   }
 }

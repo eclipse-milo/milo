@@ -20,8 +20,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelMetadata;
+import io.netty.channel.DefaultChannelId;
+import io.netty.channel.DefaultChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.HashedWheelTimer;
+import io.netty.util.concurrent.GlobalEventExecutor;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.util.ArrayDeque;
@@ -157,6 +164,61 @@ class ReverseConnectChannelOwnerTest {
   }
 
   @Test
+  void overlappingDisconnectsWaitForTheSameClose() throws Exception {
+    CompletableFuture<Channel> connectFuture = owner.connect(newApplicationContext());
+    var controlledChannel = new ControlledCloseChannel();
+    Channel channel = controlledChannel.channel();
+    owner.accepted(channel, reverseHello());
+    handshakeStarter.succeed(channel);
+
+    assertSame(channel, connectFuture.get(1, TimeUnit.SECONDS));
+
+    CompletableFuture<Unit> firstDisconnect = owner.disconnect();
+    CompletableFuture<Unit> secondDisconnect = owner.disconnect();
+
+    assertFalse(firstDisconnect.isDone());
+    assertFalse(secondDisconnect.isDone());
+    assertEquals(ReverseConnectChannelOwner.State.Disconnecting, owner.getState());
+
+    var replacement = new EmbeddedChannel();
+    owner.accepted(replacement, reverseHello());
+
+    assertFalse(replacement.isOpen());
+    assertEquals(ReverseConnectChannelOwner.State.Disconnecting, owner.getState());
+
+    controlledChannel.completeClose();
+
+    assertEquals(Unit.VALUE, firstDisconnect.get(1, TimeUnit.SECONDS));
+    assertEquals(Unit.VALUE, secondDisconnect.get(1, TimeUnit.SECONDS));
+    assertEquals(ReverseConnectChannelOwner.State.Idle, owner.getState());
+  }
+
+  @Test
+  void listenerStopDuringDisconnectWaitsForActiveClose() throws Exception {
+    CompletableFuture<Channel> connectFuture = owner.connect(newApplicationContext());
+    var controlledChannel = new ControlledCloseChannel();
+    Channel channel = controlledChannel.channel();
+    owner.accepted(channel, reverseHello());
+    handshakeStarter.succeed(channel);
+
+    assertSame(channel, connectFuture.get(1, TimeUnit.SECONDS));
+
+    CompletableFuture<Unit> disconnectFuture = owner.disconnect();
+    CompletableFuture<Unit> listenerStoppedFuture =
+        owner.listenerStopped(new UaException(StatusCodes.Bad_Shutdown, "listener stopped"));
+
+    assertFalse(disconnectFuture.isDone());
+    assertFalse(listenerStoppedFuture.isDone());
+    assertEquals(ReverseConnectChannelOwner.State.Stopped, owner.getState());
+
+    controlledChannel.completeClose();
+
+    assertEquals(Unit.VALUE, disconnectFuture.get(1, TimeUnit.SECONDS));
+    assertEquals(Unit.VALUE, listenerStoppedFuture.get(1, TimeUnit.SECONDS));
+    assertEquals(ReverseConnectChannelOwner.State.Stopped, owner.getState());
+  }
+
+  @Test
   void listenerStopDuringWaitFailsWaiterAndStopsOwner() throws Exception {
     CompletableFuture<Channel> connectFuture = owner.connect(newApplicationContext());
 
@@ -195,7 +257,20 @@ class ReverseConnectChannelOwnerTest {
     scheduler.runNext();
 
     assertUaStatus(StatusCodes.Bad_Timeout, connectFuture);
-    assertEquals(ReverseConnectChannelOwner.State.Armed, owner.getState());
+    assertEquals(ReverseConnectChannelOwner.State.Idle, owner.getState());
+  }
+
+  @Test
+  void connectTimeoutClosesHandshakingChannelAndClearsLifecycle() {
+    CompletableFuture<Channel> connectFuture = owner.connect(newApplicationContext());
+    var channel = new EmbeddedChannel();
+    owner.accepted(channel, reverseHello());
+
+    scheduler.runNext();
+
+    assertUaStatus(StatusCodes.Bad_Timeout, connectFuture);
+    assertFalse(channel.isOpen());
+    assertEquals(ReverseConnectChannelOwner.State.Idle, owner.getState());
   }
 
   @Test
@@ -589,6 +664,118 @@ class ReverseConnectChannelOwnerTest {
 
     void setActive(boolean active) {
       this.active = active;
+    }
+  }
+
+  private static final class ControlledCloseChannel {
+
+    private static final ChannelMetadata METADATA = new ChannelMetadata(false);
+
+    private final Channel channel;
+    private DefaultChannelPromise closePromise;
+    private boolean open = true;
+    private boolean closeRequested;
+
+    private ControlledCloseChannel() {
+      var handler = new ChannelInvocationHandler();
+      channel =
+          (Channel)
+              Proxy.newProxyInstance(
+                  Channel.class.getClassLoader(), new Class<?>[] {Channel.class}, handler);
+      closePromise = new DefaultChannelPromise(channel, GlobalEventExecutor.INSTANCE);
+      handler.initialize(channel, closePromise);
+    }
+
+    private Channel channel() {
+      return channel;
+    }
+
+    void completeClose() {
+      if (!closeRequested) {
+        fail("close was not requested");
+      }
+
+      open = false;
+      closePromise.setSuccess();
+    }
+
+    private final class ChannelInvocationHandler implements InvocationHandler {
+
+      private final DefaultChannelId channelId = DefaultChannelId.newInstance();
+
+      private Channel channel;
+      private DefaultChannelPromise closePromise;
+
+      private void initialize(Channel channel, DefaultChannelPromise closePromise) {
+        this.channel = channel;
+        this.closePromise = closePromise;
+      }
+
+      @Override
+      public Object invoke(Object proxy, Method method, Object[] args) {
+        if (method.getName().equals("close")) {
+          closeRequested = true;
+          return closePromise;
+        }
+
+        return switch (method.getName()) {
+          case "closeFuture" -> closePromise;
+          case "isOpen", "isActive" -> open;
+          case "id" -> channelId;
+          case "metadata" -> METADATA;
+          case "newPromise", "voidPromise" ->
+              new DefaultChannelPromise(channel, GlobalEventExecutor.INSTANCE);
+          case "newSucceededFuture" -> succeededFuture();
+          case "newFailedFuture" -> failedFuture((Throwable) args[0]);
+          case "compareTo" ->
+              Integer.compare(System.identityHashCode(proxy), System.identityHashCode(args[0]));
+          case "equals" -> proxy == args[0];
+          case "hashCode" -> System.identityHashCode(proxy);
+          case "toString" -> "ControlledCloseChannel";
+          default -> defaultValue(method.getReturnType());
+        };
+      }
+
+      private DefaultChannelPromise succeededFuture() {
+        var promise = new DefaultChannelPromise(channel, GlobalEventExecutor.INSTANCE);
+        promise.setSuccess();
+        return promise;
+      }
+
+      private DefaultChannelPromise failedFuture(Throwable failure) {
+        var promise = new DefaultChannelPromise(channel, GlobalEventExecutor.INSTANCE);
+        promise.setFailure(failure);
+        return promise;
+      }
+
+      private Object defaultValue(Class<?> returnType) {
+        if (returnType == Boolean.TYPE) {
+          return false;
+        }
+        if (returnType == Byte.TYPE) {
+          return (byte) 0;
+        }
+        if (returnType == Short.TYPE) {
+          return (short) 0;
+        }
+        if (returnType == Integer.TYPE) {
+          return 0;
+        }
+        if (returnType == Long.TYPE) {
+          return 0L;
+        }
+        if (returnType == Float.TYPE) {
+          return 0.0f;
+        }
+        if (returnType == Double.TYPE) {
+          return 0.0d;
+        }
+        if (returnType == Character.TYPE) {
+          return '\0';
+        }
+
+        return null;
+      }
     }
   }
 

@@ -122,9 +122,12 @@ public class OpcTcpReverseConnectTransport extends AbstractUascClientTransport
       return CompletableFuture.failedFuture(e);
     }
 
-    return listening
-        .thenCompose(ch -> channelOwner.connect(applicationContext))
-        .thenApply(ch -> Unit.VALUE);
+    return listening.thenCompose(
+        ch ->
+            channelOwner
+                .connect(applicationContext)
+                .handle((channel, ex) -> unwrap(ex))
+                .thenCompose(this::completeConnect));
   }
 
   /**
@@ -243,6 +246,28 @@ public class OpcTcpReverseConnectTransport extends AbstractUascClientTransport
     serverChannel = null;
 
     return listener.stop();
+  }
+
+  private CompletableFuture<Unit> completeConnect(Throwable connectFailure) {
+    if (connectFailure == null) {
+      return CompletableFuture.completedFuture(Unit.VALUE);
+    }
+
+    return channelOwner
+        .disconnect()
+        .handle((v, disconnectFailure) -> combine(connectFailure, unwrap(disconnectFailure)))
+        .thenCompose(
+            failure ->
+                stopListeningAsync()
+                    .handle(
+                        (v, stopFailure) -> {
+                          Throwable combined = combine(failure, unwrap(stopFailure));
+                          if (combined != null) {
+                            throw completionException(combined);
+                          }
+
+                          return Unit.VALUE;
+                        }));
   }
 
   private void onOwnerTransition(

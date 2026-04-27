@@ -103,13 +103,16 @@ class OpcTcpMultiplexedReverseConnectTransportTest {
   }
 
   @Test
-  void disconnectAfterFailedOwnerFutureDeregisters() throws Exception {
+  void connectTimeoutDeregisters() throws Exception {
     var registry = new RecordingRegistry();
     TestTransport transport = newTestTransport(registry, 50);
 
     CompletableFuture<Unit> connectFuture = transport.connect(newApplicationContext());
 
     assertUaStatus(StatusCodes.Bad_Timeout, connectFuture);
+
+    assertEquals(1, registry.deregisterCalls.get());
+    assertNull(registry.consumer);
 
     assertEquals(Unit.VALUE, transport.disconnect().get(5, TimeUnit.SECONDS));
     assertEquals(1, registry.deregisterCalls.get());
