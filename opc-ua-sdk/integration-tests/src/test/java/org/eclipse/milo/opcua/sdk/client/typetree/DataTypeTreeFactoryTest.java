@@ -13,10 +13,13 @@ package org.eclipse.milo.opcua.sdk.client.typetree;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
 import org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
+import org.eclipse.milo.opcua.stack.core.types.DataTypeManager;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
@@ -60,6 +63,23 @@ public class DataTypeTreeFactoryTest extends AbstractClientServerTest {
 
     assertNotSame(tree1, tree2);
     assertInstanceOf(LazyClientDataTypeTree.class, tree2);
+  }
+
+  @Test
+  void setDataTypeTreeFactoryResetsDynamicCaches() throws Exception {
+    client.setDataTypeTreeFactory(DataTypeTreeFactory.eager());
+
+    DataTypeManager dataTypeManager1 = client.getDynamicDataTypeManager();
+    EncodingContext encodingContext1 = client.getDynamicEncodingContext();
+
+    client.setDataTypeTreeFactory(DataTypeTreeFactory.lazy());
+
+    DataTypeManager dataTypeManager2 = client.getDynamicDataTypeManager();
+    EncodingContext encodingContext2 = client.getDynamicEncodingContext();
+
+    assertNotSame(dataTypeManager1, dataTypeManager2);
+    assertNotSame(encodingContext1, encodingContext2);
+    assertSame(dataTypeManager2, encodingContext2.getDataTypeManager());
   }
 
   @Test

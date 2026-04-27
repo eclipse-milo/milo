@@ -1290,8 +1290,8 @@ public class OpcUaClient {
    * resolves types on demand. This can be more efficient when only a subset of types is needed or
    * when the server doesn't support recursive forward browsing of the DataType hierarchy.
    *
-   * <p>This resets the client's cached {@link DataTypeTree}. It will be built or rebuilt the next
-   * time it is accessed.
+   * <p>This resets the client's cached {@link DataTypeTree}, dynamic {@link DataTypeManager}, and
+   * dynamic {@link EncodingContext}. They will be built or rebuilt the next time they are accessed.
    *
    * @param dataTypeTreeFactory the {@link DataTypeTreeFactory} to set.
    * @see #getDataTypeTree()
@@ -1302,6 +1302,8 @@ public class OpcUaClient {
     this.dataTypeTreeFactory = dataTypeTreeFactory;
 
     resetDataTypeTree();
+    resetDynamicDataTypeManager();
+    resetDynamicEncodingContext();
   }
 
   /**
