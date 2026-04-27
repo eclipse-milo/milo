@@ -19,7 +19,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.locks.ReentrantLock;
 import org.eclipse.milo.opcua.stack.core.Stack;
+import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
+import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpReverseConnectServerTransport;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransportConfig;
@@ -152,8 +154,10 @@ public class ReverseConnectManager {
    * Register a client for Reverse Connect. The server endpoint URL sent in ReverseHello messages
    * defaults to the server's primary (non-discovery) endpoint.
    *
-   * @param clientEndpointUrl the client's listening address.
+   * @param clientEndpointUrl the client's OPC TCP listening address.
    * @return a handle for removing this registration.
+   * @throws IllegalArgumentException if {@code clientEndpointUrl} does not use the {@code opc.tcp}
+   *     scheme.
    */
   public ReverseConnectHandle addReverseConnect(String clientEndpointUrl) {
     return addReverseConnect(clientEndpointUrl, null);
@@ -162,13 +166,17 @@ public class ReverseConnectManager {
   /**
    * Register a client for Reverse Connect with an explicit server endpoint URL.
    *
-   * @param clientEndpointUrl the client's listening address.
+   * @param clientEndpointUrl the client's OPC TCP listening address.
    * @param endpointUrl the server endpoint URL to include in the ReverseHello. If {@code null},
    *     defaults to the server's primary endpoint.
    * @return a handle for removing this registration.
+   * @throws IllegalArgumentException if {@code clientEndpointUrl} does not use the {@code opc.tcp}
+   *     scheme.
    */
   public ReverseConnectHandle addReverseConnect(
       String clientEndpointUrl, @Nullable String endpointUrl) {
+    requireOpcTcpClientEndpointUrl(clientEndpointUrl);
+
     ReverseConnectHandle handle;
     @Nullable ManagedTarget targetToStart = null;
 
@@ -420,10 +428,24 @@ public class ReverseConnectManager {
 
   private String resolvePrimaryEndpointUrl(ServerApplicationContext applicationContext) {
     return applicationContext.getEndpointDescriptions().stream()
+        .filter(
+            endpoint ->
+                Objects.equals(
+                    endpoint.getTransportProfileUri(), TransportProfile.TCP_UASC_UABINARY.getUri()))
         .map(EndpointDescription::getEndpointUrl)
         .filter(url -> url != null && !url.endsWith("/discovery"))
         .findFirst()
-        .orElseThrow(() -> new IllegalStateException("No non-discovery endpoints configured"));
+        .orElseThrow(
+            () -> new IllegalStateException("No non-discovery TCP UASC endpoints configured"));
+  }
+
+  private static void requireOpcTcpClientEndpointUrl(String clientEndpointUrl) {
+    String scheme = EndpointUtil.getScheme(clientEndpointUrl);
+
+    if (!Objects.equals(scheme, TransportProfile.TCP_UASC_UABINARY.getScheme())) {
+      throw new IllegalArgumentException(
+          "Reverse Connect client endpoint URL must use opc.tcp scheme: " + clientEndpointUrl);
+    }
   }
 
   private ServerApplicationContext requireApplicationContextLocked() {

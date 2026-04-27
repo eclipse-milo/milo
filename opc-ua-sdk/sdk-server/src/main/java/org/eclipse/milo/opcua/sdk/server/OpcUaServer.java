@@ -675,8 +675,10 @@ public class OpcUaServer extends AbstractServiceHandler {
    * Register a client for Reverse Connect. The server endpoint URL sent in ReverseHello messages
    * defaults to the server's primary (non-discovery) endpoint.
    *
-   * @param clientEndpointUrl the client's listening address.
+   * @param clientEndpointUrl the client's OPC TCP listening address.
    * @return a handle for removing this registration.
+   * @throws IllegalArgumentException if {@code clientEndpointUrl} does not use the {@code opc.tcp}
+   *     scheme.
    * @throws IllegalStateException if no {@link ReverseConnectManager} is configured.
    */
   public ReverseConnectHandle addReverseConnect(String clientEndpointUrl) {
@@ -690,9 +692,11 @@ public class OpcUaServer extends AbstractServiceHandler {
   /**
    * Register a client for Reverse Connect with an explicit server endpoint URL.
    *
-   * @param clientEndpointUrl the client's listening address.
+   * @param clientEndpointUrl the client's OPC TCP listening address.
    * @param endpointUrl the server endpoint URL for the ReverseHello.
    * @return a handle for removing this registration.
+   * @throws IllegalArgumentException if {@code clientEndpointUrl} does not use the {@code opc.tcp}
+   *     scheme.
    * @throws IllegalStateException if no {@link ReverseConnectManager} is configured.
    */
   public ReverseConnectHandle addReverseConnect(String clientEndpointUrl, String endpointUrl) {

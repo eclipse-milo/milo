@@ -25,6 +25,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
 import org.jspecify.annotations.Nullable;
@@ -162,6 +163,12 @@ final class ReverseConnectTargetOwner {
     this.config = Objects.requireNonNull(config, "config");
     this.executor = Objects.requireNonNull(executor, "executor");
     this.scheduler = Objects.requireNonNull(scheduler, "scheduler");
+
+    String scheme = EndpointUtil.getScheme(clientEndpointUrl);
+    if (!Objects.equals(scheme, TransportProfile.TCP_UASC_UABINARY.getScheme())) {
+      throw new IllegalArgumentException(
+          "Reverse Connect client endpoint URL must use opc.tcp scheme: " + clientEndpointUrl);
+    }
 
     String host = Objects.requireNonNull(EndpointUtil.getHost(clientEndpointUrl), "host");
     int port = EndpointUtil.getPort(clientEndpointUrl);

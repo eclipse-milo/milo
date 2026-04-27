@@ -32,6 +32,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
+import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpReverseConnectServerTransport;
@@ -99,6 +100,55 @@ class ReverseConnectManagerTest {
     CompletableFuture<Void> stopFuture = manager.stop();
     attempt.failTcpConnect();
     stopFuture.get(5, TimeUnit.SECONDS);
+  }
+
+  @Test
+  void defaultEndpointSkipsNonTcpEndpoints() throws Exception {
+    String nonTcpEndpointUrl = "opc.wss://server-host:443";
+    ServerApplicationContext appContext =
+        appContext(
+            endpointDescription(nonTcpEndpointUrl, TransportProfile.WSS_UASC_UABINARY),
+            endpointDescription(ENDPOINT_URL, TransportProfile.TCP_UASC_UABINARY));
+
+    startManager(appContext);
+
+    ReverseConnectHandle handle = manager.addReverseConnect(CLIENT_URL);
+    StartedAttempt attempt = stubTransport.pollAttempt();
+
+    assertEquals(ENDPOINT_URL, handle.getEndpointUrl());
+    assertEquals(ENDPOINT_URL, attempt.endpointUrl());
+
+    CompletableFuture<Void> stopFuture = manager.stop();
+    attempt.failTcpConnect();
+    stopFuture.get(5, TimeUnit.SECONDS);
+  }
+
+  @Test
+  void defaultEndpointRequiresTcpUascEndpoint() throws Exception {
+    manager.addReverseConnect(CLIENT_URL);
+
+    ServerApplicationContext appContext =
+        appContext(
+            endpointDescription("opc.wss://server-host:443", TransportProfile.WSS_UASC_UABINARY));
+
+    CompletableFuture<Void> startFuture = manager.start(appContext, SERVER_URI);
+    ExecutionException exception =
+        assertThrows(ExecutionException.class, () -> startFuture.get(5, TimeUnit.SECONDS));
+
+    assertInstanceOf(IllegalStateException.class, exception.getCause());
+    assertEquals(
+        "No non-discovery TCP UASC endpoints configured", exception.getCause().getMessage());
+  }
+
+  @Test
+  void rejectsNonTcpClientEndpointUrl() {
+    IllegalArgumentException exception =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> manager.addReverseConnect("opc.wss://client-host:48060"));
+
+    assertTrue(exception.getMessage().contains("opc.tcp"));
+    assertEquals(0, manager.registrationCount());
   }
 
   @Test
@@ -343,13 +393,24 @@ class ReverseConnectManagerTest {
   }
 
   private ServerApplicationContext appContext() {
-    EndpointDescription endpoint = Mockito.mock(EndpointDescription.class);
-    Mockito.when(endpoint.getEndpointUrl()).thenReturn(ENDPOINT_URL);
+    return appContext(endpointDescription(ENDPOINT_URL, TransportProfile.TCP_UASC_UABINARY));
+  }
+
+  private ServerApplicationContext appContext(EndpointDescription... endpoints) {
+    List<EndpointDescription> endpointDescriptions = List.of(endpoints);
 
     ServerApplicationContext appContext = Mockito.mock(ServerApplicationContext.class);
-    Mockito.when(appContext.getEndpointDescriptions()).thenReturn(List.of(endpoint));
+    Mockito.when(appContext.getEndpointDescriptions()).thenReturn(endpointDescriptions);
 
     return appContext;
+  }
+
+  private EndpointDescription endpointDescription(String endpointUrl, TransportProfile profile) {
+    EndpointDescription endpoint = Mockito.mock(EndpointDescription.class);
+    Mockito.when(endpoint.getEndpointUrl()).thenReturn(endpointUrl);
+    Mockito.when(endpoint.getTransportProfileUri()).thenReturn(profile.getUri());
+
+    return endpoint;
   }
 
   private List<?> prepareStartLocked(ServerApplicationContext appContext) throws Exception {

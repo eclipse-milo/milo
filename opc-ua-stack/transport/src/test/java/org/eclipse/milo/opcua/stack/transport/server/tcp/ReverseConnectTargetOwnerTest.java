@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.stack.transport.server.tcp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -58,6 +59,15 @@ class ReverseConnectTargetOwnerTest {
     assertEquals(ReverseConnectTargetOwner.State.Running, owner.getState());
     assertTrue(owner.hasIdleAttempt());
     assertEquals(1, transport.attemptCount());
+  }
+
+  @Test
+  void rejectsNonTcpClientEndpointUrl() {
+    IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> newOwner("opc.wss://localhost:48060"));
+
+    assertTrue(exception.getMessage().contains("opc.tcp"));
+    assertEquals(0, transport.attemptCount());
   }
 
   @Test
@@ -198,6 +208,10 @@ class ReverseConnectTargetOwnerTest {
   }
 
   private ReverseConnectTargetOwner newOwner() {
+    return newOwner(CLIENT_ENDPOINT_URL);
+  }
+
+  private ReverseConnectTargetOwner newOwner(String clientEndpointUrl) {
     ReverseConnectConfig config =
         ReverseConnectConfig.newBuilder()
             .setConnectInterval(CONNECT_INTERVAL)
@@ -207,7 +221,7 @@ class ReverseConnectTargetOwnerTest {
             .build();
 
     return new ReverseConnectTargetOwner(
-        CLIENT_ENDPOINT_URL,
+        clientEndpointUrl,
         ENDPOINT_URL,
         SERVER_URI,
         transport,
