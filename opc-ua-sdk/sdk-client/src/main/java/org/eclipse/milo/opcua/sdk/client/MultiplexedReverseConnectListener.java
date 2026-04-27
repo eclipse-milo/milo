@@ -128,7 +128,7 @@ public class MultiplexedReverseConnectListener implements ChannelConsumerRegistr
       return;
     }
 
-    serverBootstrap =
+    ServerBootstrap bootstrap =
         new ServerBootstrap()
             .channel(NioServerSocketChannel.class)
             .group(config.getTransportConfig().getEventLoop())
@@ -163,11 +163,11 @@ public class MultiplexedReverseConnectListener implements ChannelConsumerRegistr
                   }
                 });
 
-    config.getServerBootstrapCustomizer().accept(serverBootstrap);
+    config.getServerBootstrapCustomizer().accept(bootstrap);
 
     try {
-      serverChannel =
-          serverBootstrap.bind(config.getListenAddress()).syncUninterruptibly().channel();
+      serverChannel = bootstrap.bind(config.getListenAddress()).syncUninterruptibly().channel();
+      serverBootstrap = bootstrap;
     } catch (Exception e) {
       serverBootstrap = null;
       serverChannel = null;
@@ -295,7 +295,8 @@ public class MultiplexedReverseConnectListener implements ChannelConsumerRegistr
 
     synchronized (this) {
       if (stopped) {
-        channel.close();
+        ReverseConnectRejection.sendErrorAndClose(
+            channel, StatusCodes.Bad_Shutdown, "multiplexed reverse connect listener stopped");
         return;
       }
 
@@ -306,8 +307,7 @@ public class MultiplexedReverseConnectListener implements ChannelConsumerRegistr
 
         // Find first consumer whose FSM is in a connection-needing state.
         for (ChannelConsumer consumer : list) {
-          if (consumer.needsChannel()) {
-            consumer.accept(channel, rhe);
+          if (consumer.tryAccept(channel, rhe)) {
             return;
           }
 
@@ -328,7 +328,10 @@ public class MultiplexedReverseConnectListener implements ChannelConsumerRegistr
             "All consumers for ServerUri={} are stopped, closing channel {}",
             serverUri,
             channel.remoteAddress());
-        channel.close();
+        ReverseConnectRejection.sendErrorAndClose(
+            channel,
+            StatusCodes.Bad_ConnectionRejected,
+            "all consumers for ServerUri=" + serverUri + " are stopped");
         return;
       }
 
@@ -343,7 +346,10 @@ public class MultiplexedReverseConnectListener implements ChannelConsumerRegistr
           "No consumer registered for ServerUri={}, closing channel {}",
           serverUri,
           channel.remoteAddress());
-      channel.close();
+      ReverseConnectRejection.sendErrorAndClose(
+          channel,
+          StatusCodes.Bad_ServerUriInvalid,
+          "no consumer registered for ServerUri=" + serverUri);
     }
   }
 

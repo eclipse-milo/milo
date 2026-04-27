@@ -28,6 +28,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import org.eclipse.milo.opcua.stack.core.Stack;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.channel.messages.ReverseHelloMessage;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
@@ -93,7 +95,11 @@ final class MultiplexedReverseConnectClientController {
     try {
       synchronized (pendingLock) {
         if (stopped.get()) {
-          closeChannel(channel, reverseHello, "unknown connection received after listener stop");
+          closeChannel(
+              channel,
+              reverseHello,
+              StatusCodes.Bad_Shutdown,
+              "unknown connection received after listener stop");
           return;
         }
 
@@ -108,7 +114,11 @@ final class MultiplexedReverseConnectClientController {
                 config.getMaxPendingConnections(),
                 channel.remoteAddress());
 
-            closeChannel(channel, reverseHello, "max pending connections exceeded");
+            closeChannel(
+                channel,
+                reverseHello,
+                StatusCodes.Bad_TcpNotEnoughResources,
+                "max pending connections exceeded");
             return;
           }
 
@@ -131,7 +141,7 @@ final class MultiplexedReverseConnectClientController {
       if (connectionQueued) {
         fail(connection, t);
       } else {
-        closeChannel(channel, reverseHello, t.getMessage());
+        closeChannel(channel, reverseHello, StatusCodes.Bad_ConnectionRejected, t.getMessage());
       }
     }
   }
@@ -184,13 +194,15 @@ final class MultiplexedReverseConnectClientController {
     }
 
     if (stopped.get()) {
-      fail(connection, new IllegalStateException("listener stopped"));
+      fail(connection, new UaException(StatusCodes.Bad_Shutdown, "listener stopped"));
       return;
     }
 
     EndpointResolver resolver = config.getEndpointResolver();
     if (resolver == null) {
-      fail(connection, new IllegalStateException("EndpointResolver is not configured"));
+      fail(
+          connection,
+          new UaException(StatusCodes.Bad_ServerUriInvalid, "EndpointResolver is not configured"));
       return;
     }
 
@@ -346,7 +358,10 @@ final class MultiplexedReverseConnectClientController {
 
       if (!channelConsumed) {
         closeChannel(
-                connection.channel, connection.reverseHello, "resolved without client listener")
+                connection.channel,
+                connection.reverseHello,
+                StatusCodes.Bad_ConnectionRejected,
+                "resolved without client listener")
             .whenComplete((ignored, failure) -> finish(connection, failure));
       } else {
         finish(connection, null);
@@ -393,7 +408,11 @@ final class MultiplexedReverseConnectClientController {
             cleanupClientAfterListenerFailure(serverUri, client, connection, channelConsumed);
       } else if (!channelConsumed) {
         cleanupFuture =
-            closeChannel(connection.channel, connection.reverseHello, "client creation failed");
+            closeChannel(
+                connection.channel,
+                connection.reverseHello,
+                StatusCodes.Bad_ConnectionRejected,
+                "client creation failed");
       } else {
         cleanupFuture = CompletableFuture.completedFuture(null);
       }
@@ -412,7 +431,11 @@ final class MultiplexedReverseConnectClientController {
       resolverFuture.cancel(false);
     }
 
-    closeChannel(connection.channel, connection.reverseHello, failure.getMessage())
+    closeChannel(
+            connection.channel,
+            connection.reverseHello,
+            statusCodeForFailure(failure),
+            reasonForFailure(failure))
         .whenComplete((ignored, closeFailure) -> finish(connection, closeFailure));
 
     return connection.terminalFuture;
@@ -444,7 +467,10 @@ final class MultiplexedReverseConnectClientController {
   private CompletableFuture<Void> cleanupResolvedAfterStop(PendingConnection connection) {
     if (!connection.channelConsumed.get()) {
       return closeChannel(
-          connection.channel, connection.reverseHello, "resolved after listener stop");
+          connection.channel,
+          connection.reverseHello,
+          StatusCodes.Bad_Shutdown,
+          "resolved after listener stop");
     }
 
     return CompletableFuture.completedFuture(null);
@@ -461,7 +487,11 @@ final class MultiplexedReverseConnectClientController {
           "Failed to clean up on-demand client for ServerUri={}", serverUri, cleanupFailure);
 
       if (!channelConsumed) {
-        return closeChannel(connection.channel, connection.reverseHello, "client listener failed");
+        return closeChannel(
+            connection.channel,
+            connection.reverseHello,
+            StatusCodes.Bad_ConnectionRejected,
+            "client listener failed");
       }
 
       return CompletableFuture.completedFuture(null);
@@ -484,7 +514,10 @@ final class MultiplexedReverseConnectClientController {
             ignored -> {
               if (!channelConsumed && connection.channel.isOpen()) {
                 return closeChannel(
-                    connection.channel, connection.reverseHello, "client listener failed");
+                    connection.channel,
+                    connection.reverseHello,
+                    StatusCodes.Bad_ConnectionRejected,
+                    "client listener failed");
               }
 
               return CompletableFuture.completedFuture(null);
@@ -539,7 +572,7 @@ final class MultiplexedReverseConnectClientController {
   }
 
   private CompletableFuture<Void> closeChannel(
-      Channel channel, ReverseHelloMessage reverseHello, @Nullable String reason) {
+      Channel channel, ReverseHelloMessage reverseHello, long statusCode, @Nullable String reason) {
 
     if (reason != null) {
       logger.debug(
@@ -553,22 +586,27 @@ final class MultiplexedReverseConnectClientController {
       return CompletableFuture.completedFuture(null);
     }
 
-    var future = new CompletableFuture<Void>();
-    channel
-        .close()
-        .addListener(
-            f -> {
-              if (f.isSuccess()) {
-                future.complete(null);
-              } else {
-                logger.warn(
-                    "Failed to close unmatched reverse connection for ServerUri={}",
-                    reverseHello.serverUri(),
-                    f.cause());
-                future.completeExceptionally(f.cause());
-              }
-            });
-    return future;
+    return ReverseConnectRejection.sendErrorAndClose(channel, statusCode, reason);
+  }
+
+  private static long statusCodeForFailure(Throwable failure) {
+    Throwable cause = unwrap(failure);
+
+    if (cause instanceof UaException uaException) {
+      return uaException.getStatusCode().value();
+    }
+
+    if (cause instanceof TimeoutException) {
+      return StatusCodes.Bad_Timeout;
+    }
+
+    return StatusCodes.Bad_ConnectionRejected;
+  }
+
+  private static @Nullable String reasonForFailure(Throwable failure) {
+    Throwable cause = unwrap(failure);
+
+    return cause != null ? cause.getMessage() : null;
   }
 
   private static DiscoveryClientHandle newDiscoveryClient(
@@ -698,7 +736,8 @@ final class MultiplexedReverseConnectClientController {
 
     private synchronized void offer(Channel channel, ReverseHelloMessage reverseHello) {
       if (!active) {
-        channel.close();
+        ReverseConnectRejection.sendErrorAndClose(
+            channel, StatusCodes.Bad_ConnectionRejected, "pending handoff is no longer active");
         return;
       }
 

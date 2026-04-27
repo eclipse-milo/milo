@@ -40,6 +40,27 @@ public interface ChannelConsumerRegistry {
     boolean acceptsDuplicateChannel();
 
     /**
+     * Try to reserve and accept a decoded reverse-connected channel for this consumer.
+     *
+     * <p>The default implementation preserves the legacy {@link #needsChannel()} / {@link #accept}
+     * behavior. Consumers that update their channel-needing state asynchronously should override
+     * this method to reserve the next channel synchronously before returning {@code true}.
+     *
+     * @param channel the accepted channel.
+     * @param reverseHello the decoded {@code ReverseHello}.
+     * @return {@code true} if the channel was accepted by this consumer.
+     */
+    default boolean tryAccept(Channel channel, ReverseHelloMessage reverseHello) {
+      if (!needsChannel()) {
+        return false;
+      }
+
+      accept(channel, reverseHello);
+
+      return true;
+    }
+
+    /**
      * Offer a decoded reverse-connected channel to this consumer.
      *
      * @param channel the accepted channel.

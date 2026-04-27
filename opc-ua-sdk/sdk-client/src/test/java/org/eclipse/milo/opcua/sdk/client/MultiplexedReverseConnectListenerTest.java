@@ -19,11 +19,14 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -48,11 +51,14 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.milo.opcua.stack.core.Stack;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.channel.messages.ErrorMessage;
 import org.eclipse.milo.opcua.stack.core.channel.messages.ReverseHelloMessage;
+import org.eclipse.milo.opcua.stack.core.channel.messages.TcpMessageDecoder;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
@@ -111,6 +117,32 @@ class MultiplexedReverseConnectListenerTest {
   }
 
   @Test
+  void startCanRetryAfterServerBootstrapCustomizerThrows() throws Exception {
+    var attempts = new AtomicInteger();
+
+    listener =
+        new MultiplexedReverseConnectListener(
+            defaultConfigBuilder()
+                .setRateLimitingEnabled(false)
+                .setServerBootstrapCustomizer(
+                    bootstrap -> {
+                      if (attempts.incrementAndGet() == 1) {
+                        throw new RuntimeException("customizer failed");
+                      }
+                    })
+                .build());
+
+    assertThrows(RuntimeException.class, listener::start);
+    assertEquals(1, attempts.get());
+    assertNull(listener.getLocalAddress());
+
+    listener.start();
+
+    assertEquals(2, attempts.get());
+    assertNotNull(listener.getLocalAddress());
+  }
+
+  @Test
   void validRheDispatchesToRegisteredConsumer() throws Exception {
     listener = createAndStart(defaultConfigBuilder().setRateLimitingEnabled(false).build());
 
@@ -129,9 +161,7 @@ class MultiplexedReverseConnectListenerTest {
 
     // No consumers registered, no resolver configured
     try (Socket socket = connectAndSendRhe(SERVER_URI)) {
-      socket.setSoTimeout(5000);
-      // The server should close the channel — read returns -1
-      assertEquals(-1, socket.getInputStream().read());
+      assertRejectedWithStatus(socket, StatusCodes.Bad_ServerUriInvalid);
     }
   }
 
@@ -148,6 +178,39 @@ class MultiplexedReverseConnectListenerTest {
     try (Socket ignored = connectAndSendRhe(SERVER_URI)) {
       AcceptedChannel accepted = needingConsumer.accepted.get(5, TimeUnit.SECONDS);
       assertEquals(SERVER_URI, accepted.reverseHello().serverUri());
+    }
+  }
+
+  @Test
+  void sameServerUriBurstDispatchesToDifferentReservedConsumers() throws Exception {
+    listener = createAndStart(defaultConfigBuilder().setRateLimitingEnabled(false).build());
+
+    var firstConsumer = new ReservingTestConsumer();
+    var secondConsumer = new ReservingTestConsumer();
+
+    listener.register(SERVER_URI, firstConsumer);
+    listener.register(SERVER_URI, secondConsumer);
+
+    try (Socket ignored1 = connectAndSendRhe(SERVER_URI);
+        Socket ignored2 = connectAndSendRhe(SERVER_URI)) {
+
+      assertEquals(
+          SERVER_URI, firstConsumer.accepted.get(5, TimeUnit.SECONDS).reverseHello().serverUri());
+      assertEquals(
+          SERVER_URI, secondConsumer.accepted.get(5, TimeUnit.SECONDS).reverseHello().serverUri());
+    }
+  }
+
+  @Test
+  void allStoppedConsumersRejectWithError() throws Exception {
+    listener = createAndStart(defaultConfigBuilder().setRateLimitingEnabled(false).build());
+
+    var stoppedConsumer = new TestConsumer(false, false);
+
+    listener.register(SERVER_URI, stoppedConsumer);
+
+    try (Socket socket = connectAndSendRhe(SERVER_URI)) {
+      assertRejectedWithStatus(socket, StatusCodes.Bad_ConnectionRejected);
     }
   }
 
@@ -202,8 +265,7 @@ class MultiplexedReverseConnectListenerTest {
 
     // After deregister, no consumers are registered. RHE should cause channel close.
     try (Socket socket = connectAndSendRhe(SERVER_URI)) {
-      socket.setSoTimeout(5000);
-      assertEquals(-1, socket.getInputStream().read());
+      assertRejectedWithStatus(socket, StatusCodes.Bad_ServerUriInvalid);
     }
   }
 
@@ -302,8 +364,7 @@ class MultiplexedReverseConnectListenerTest {
                 .build());
 
     try (Socket socket = connectAndSendRhe(SERVER_URI)) {
-      socket.setSoTimeout(5000);
-      assertEquals(-1, socket.getInputStream().read());
+      assertRejectedWithStatus(socket, StatusCodes.Bad_ServerUriInvalid);
     }
 
     awaitReverseHelloTimeoutCancelled(decoder.get(5, TimeUnit.SECONDS));
@@ -379,8 +440,7 @@ class MultiplexedReverseConnectListenerTest {
 
     // Second RHE should be rejected because pending limit is reached
     try (Socket socket2 = connectAndSendRhe("urn:test:server2")) {
-      socket2.setSoTimeout(5000);
-      assertEquals(-1, socket2.getInputStream().read());
+      assertRejectedWithStatus(socket2, StatusCodes.Bad_TcpNotEnoughResources);
     }
 
     socket1.close();
@@ -407,13 +467,11 @@ class MultiplexedReverseConnectListenerTest {
                 .build());
 
     try (Socket socket = connectAndSendRhe(SERVER_URI)) {
-      socket.setSoTimeout(5000);
-      assertEquals(-1, socket.getInputStream().read());
+      assertRejectedWithStatus(socket, StatusCodes.Bad_ConnectionRejected);
     }
 
     try (Socket socket = connectAndSendRhe("urn:test:server2")) {
-      socket.setSoTimeout(5000);
-      assertEquals(-1, socket.getInputStream().read());
+      assertRejectedWithStatus(socket, StatusCodes.Bad_ConnectionRejected);
     }
 
     assertEquals(2, resolverCalls.get());
@@ -439,13 +497,11 @@ class MultiplexedReverseConnectListenerTest {
                 .build());
 
     try (Socket socket = connectAndSendRhe(SERVER_URI)) {
-      socket.setSoTimeout(5000);
-      assertEquals(-1, socket.getInputStream().read());
+      assertRejectedWithStatus(socket, StatusCodes.Bad_Timeout);
     }
 
     try (Socket socket = connectAndSendRhe("urn:test:server2")) {
-      socket.setSoTimeout(5000);
-      assertEquals(-1, socket.getInputStream().read());
+      assertRejectedWithStatus(socket, StatusCodes.Bad_Timeout);
     }
 
     assertEquals(2, resolverCalls.get());
@@ -489,8 +545,7 @@ class MultiplexedReverseConnectListenerTest {
 
       try (Socket socket = connectAndSendRhe(SERVER_URI)) {
         resolverStarted.get(5, TimeUnit.SECONDS);
-        socket.setSoTimeout(5000);
-        assertEquals(-1, socket.getInputStream().read());
+        assertRejectedWithStatus(socket, StatusCodes.Bad_Timeout);
       }
     } finally {
       releaseResolver.complete(null);
@@ -573,8 +628,7 @@ class MultiplexedReverseConnectListenerTest {
                 .build());
 
     try (Socket socket = connectAndSendRhe(SERVER_URI)) {
-      socket.setSoTimeout(5000);
-      assertEquals(-1, socket.getInputStream().read());
+      assertRejectedWithStatus(socket, StatusCodes.Bad_ConnectionRejected);
     }
   }
 
@@ -1271,6 +1325,36 @@ class MultiplexedReverseConnectListenerTest {
     }
   }
 
+  private static void assertRejectedWithStatus(Socket socket, long statusCode) throws Exception {
+    socket.setSoTimeout(5000);
+
+    ErrorMessage error = readError(socket);
+
+    assertEquals(statusCode, error.getError().value());
+    assertEquals(-1, socket.getInputStream().read());
+  }
+
+  private static ErrorMessage readError(Socket socket) throws Exception {
+    byte[] header = socket.getInputStream().readNBytes(8);
+    assertEquals(8, header.length);
+
+    ByteBuffer headerBuffer = ByteBuffer.wrap(header).order(ByteOrder.LITTLE_ENDIAN);
+    int messageLength = headerBuffer.getInt(4);
+
+    byte[] body = socket.getInputStream().readNBytes(messageLength - 8);
+    assertEquals(messageLength - 8, body.length);
+
+    ByteBuf messageBuffer = Unpooled.buffer(messageLength);
+    messageBuffer.writeBytes(header);
+    messageBuffer.writeBytes(body);
+
+    try {
+      return TcpMessageDecoder.decodeError(messageBuffer);
+    } finally {
+      messageBuffer.release();
+    }
+  }
+
   private static ClientApplicationContext newApplicationContext() {
     return new ClientApplicationContext() {
       @Override
@@ -1441,6 +1525,43 @@ class MultiplexedReverseConnectListenerTest {
     @Override
     public CompletableFuture<Unit> listenerStopped(Throwable cause) {
       stopCause.complete(cause);
+      return CompletableFuture.completedFuture(Unit.VALUE);
+    }
+  }
+
+  private static final class ReservingTestConsumer implements ChannelConsumer {
+
+    private final AtomicBoolean reserved = new AtomicBoolean(false);
+    private final CompletableFuture<AcceptedChannel> accepted = new CompletableFuture<>();
+
+    @Override
+    public boolean needsChannel() {
+      return !reserved.get();
+    }
+
+    @Override
+    public boolean acceptsDuplicateChannel() {
+      return false;
+    }
+
+    @Override
+    public boolean tryAccept(Channel channel, ReverseHelloMessage reverseHello) {
+      if (!reserved.compareAndSet(false, true)) {
+        return false;
+      }
+
+      accept(channel, reverseHello);
+
+      return true;
+    }
+
+    @Override
+    public void accept(Channel channel, ReverseHelloMessage reverseHello) {
+      accepted.complete(new AcceptedChannel(channel, reverseHello));
+    }
+
+    @Override
+    public CompletableFuture<Unit> listenerStopped(Throwable cause) {
       return CompletableFuture.completedFuture(Unit.VALUE);
     }
   }

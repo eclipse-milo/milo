@@ -53,6 +53,7 @@ public class OpcTcpMultiplexedReverseConnectTransport extends AbstractUascClient
   // The listener may still hold a reference to this sink briefly after stop or deregistration.
   // Keep a fast local gate so late dispatches close their channel instead of reaching the owner.
   private final AtomicBoolean acceptingChannels = new AtomicBoolean(false);
+  private final AtomicBoolean channelReserved = new AtomicBoolean(false);
 
   /**
    * Create a new {@link OpcTcpMultiplexedReverseConnectTransport}.
@@ -92,6 +93,11 @@ public class OpcTcpMultiplexedReverseConnectTransport extends AbstractUascClient
           @Override
           public boolean acceptsDuplicateChannel() {
             return OpcTcpMultiplexedReverseConnectTransport.this.acceptsDuplicateChannel();
+          }
+
+          @Override
+          public boolean tryAccept(Channel channel, ReverseHelloMessage reverseHello) {
+            return OpcTcpMultiplexedReverseConnectTransport.this.tryAccept(channel, reverseHello);
           }
 
           @Override
@@ -191,6 +197,7 @@ public class OpcTcpMultiplexedReverseConnectTransport extends AbstractUascClient
   @Override
   public CompletableFuture<Unit> disconnect() {
     acceptingChannels.set(false);
+    channelReserved.set(false);
 
     return channelOwner
         .disconnect()
@@ -277,6 +284,7 @@ public class OpcTcpMultiplexedReverseConnectTransport extends AbstractUascClient
     }
 
     acceptingChannels.set(false);
+    channelReserved.set(false);
 
     Throwable deregisterFailure = null;
     try {
@@ -301,6 +309,10 @@ public class OpcTcpMultiplexedReverseConnectTransport extends AbstractUascClient
   }
 
   private boolean needsChannel() {
+    return !channelReserved.get() && ownerNeedsChannel();
+  }
+
+  private boolean ownerNeedsChannel() {
     if (!acceptingChannels.get()) {
       return false;
     }
@@ -323,6 +335,31 @@ public class OpcTcpMultiplexedReverseConnectTransport extends AbstractUascClient
         && state != ReverseConnectChannelOwner.State.Stopped;
   }
 
+  private boolean tryAccept(Channel channel, ReverseHelloMessage reverseHello) {
+    if (!channel.isActive() || !matchesServerUri(reverseHello)) {
+      close(channel);
+      return true;
+    }
+
+    if (!ownerNeedsChannel() || !channelReserved.compareAndSet(false, true)) {
+      return false;
+    }
+
+    if (!ownerNeedsChannel()) {
+      channelReserved.set(false);
+      return false;
+    }
+
+    try {
+      channelOwner.accepted(channel, reverseHello);
+    } catch (Throwable t) {
+      channelReserved.set(false);
+      throw t;
+    }
+
+    return true;
+  }
+
   private void accept(Channel channel, ReverseHelloMessage reverseHello) {
     if (!acceptingChannels.get() || !matchesServerUri(reverseHello)) {
       close(channel);
@@ -336,6 +373,7 @@ public class OpcTcpMultiplexedReverseConnectTransport extends AbstractUascClient
 
   private CompletableFuture<Unit> listenerStopped(Throwable cause) {
     acceptingChannels.set(false);
+    channelReserved.set(false);
     registered.set(false);
 
     return channelOwner.listenerStopped(cause);
@@ -343,6 +381,12 @@ public class OpcTcpMultiplexedReverseConnectTransport extends AbstractUascClient
 
   private void onOwnerTransition(
       ReverseConnectChannelOwner.State from, ReverseConnectChannelOwner.State to) {
+
+    if (to == ReverseConnectChannelOwner.State.Handshaking
+        || to == ReverseConnectChannelOwner.State.Disconnecting
+        || to == ReverseConnectChannelOwner.State.Stopped) {
+      channelReserved.set(false);
+    }
 
     if (from == ReverseConnectChannelOwner.State.Connected
         && to != ReverseConnectChannelOwner.State.Connected) {
