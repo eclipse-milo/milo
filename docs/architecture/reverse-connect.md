@@ -316,7 +316,7 @@ try {
 }
 ```
 
-The factory returns a configured but unconnected client. The application still calls
+The factory returns a configured but unconnected client. The application calls
 `connect()` or `connectAsync()` to establish the real Session.
 
 * * *
@@ -375,7 +375,7 @@ by `maxPendingConnections` and `resolverTimeout`.
 If `EndpointResolver.cached(...)` or a custom resolver returns an endpoint without
 calling `Discovery.getEndpoints()`, the original accepted channel is preserved. The
 controller creates a transport, calls `transport.offerChannel(channel, reverseHello)`,
-creates the client, and notifies `ClientListener`. The owner still waits for the real
+creates the client, and notifies `ClientListener`. The owner waits for the real
 `OpcUaClient.connectAsync()` call before starting the handshake.
 
 #### 2-Shot Live Discovery
@@ -459,7 +459,7 @@ connect/get-channel waiters fail with timeout.
 
 ### 6.3 Discovery Security Scope
 
-Current reverse-connect discovery paths use unsecured discovery:
+Reverse-connect discovery paths use unsecured discovery:
 
 - `OpcUaClient.createReverseConnect()` builds the discovery endpoint with
   `MessageSecurityMode.None` and `SecurityPolicy.None`.
@@ -468,7 +468,7 @@ Current reverse-connect discovery paths use unsecured discovery:
 - Multiplexed 2-shot discovery in `MultiplexedReverseConnectClientController` also uses
   an unsecured discovery endpoint.
 
-Secured reverse-connect discovery is intentionally deferred as `Claude-26`. It is a
+Secured reverse-connect discovery is not implemented by these discovery flows. It is a
 separate feature from the lifecycle architecture described here.
 
 * * *
@@ -666,7 +666,7 @@ mvn -q -pl opc-ua-sdk/sdk-server -am test \
     -Dsurefire.failIfNoSpecifiedTests=false
 ```
 
-Project closeout verification remains:
+General verification commands:
 
 ```bash
 mvn -q spotless:apply
@@ -679,7 +679,7 @@ mvn -q clean compile
 
 ### Serialized owners, asynchronous I/O
 
-Reverse Connect still uses Netty asynchronously. The serialized owner pattern only
+Reverse Connect uses Netty asynchronously. The serialized owner pattern
 centralizes lifecycle decisions: which channel is current, when a handshake may start,
 how futures complete, when retry timers fire, and how shutdown closes resources.
 
@@ -693,7 +693,7 @@ unsecured discovery context from leaking into the real pass-2 session.
 
 `OpcUaClient.createReverseConnect()` performs the reverse-connect discovery setup and
 returns an unconnected client, matching forward-connect factory semantics. The caller
-still owns the real session `connect()` call.
+owns the real session `connect()` call.
 
 ### Listener dispatch is not client lifecycle
 
@@ -708,8 +708,7 @@ The server idle-socket invariant is target-level policy, so it belongs in
 `ReverseConnectTargetOwner`. The SDK manager only keeps registrations durable and
 coordinates server lifecycle.
 
-### Secured reverse-connect discovery is deferred
+### Reverse-connect discovery uses unsecured channels
 
-The implemented reverse-connect discovery flows use `SecurityPolicy.None`. Secured
-reverse-connect discovery remains deferred under `Claude-26` and should be designed as a
-separate feature.
+The reverse-connect discovery flows use `SecurityPolicy.None`. Secured reverse-connect
+discovery is a separate feature from the lifecycle architecture described here.
