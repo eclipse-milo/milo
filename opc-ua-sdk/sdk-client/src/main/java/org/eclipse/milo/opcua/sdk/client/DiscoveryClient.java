@@ -249,8 +249,12 @@ public class DiscoveryClient {
     return discoveryClient
         .connectAsync()
         .thenCompose(c -> c.findServers(endpointUrl, new String[0], new String[0]))
-        .whenComplete((e, ex) -> discoveryClient.disconnectAsync())
-        .thenApply(response -> Lists.ofNullable(response.getServers()));
+        .thenApply(response -> Lists.ofNullable(response.getServers()))
+        .handle(
+            (result, ex) -> {
+              return disconnectAfterDiscovery(discoveryClient, result, ex);
+            })
+        .thenCompose(Function.identity());
   }
 
   /**
@@ -330,8 +334,12 @@ public class DiscoveryClient {
     return discoveryClient
         .connectAsync()
         .thenCompose(c -> c.getEndpoints(endpointUrl, new String[0], new String[] {profileUri}))
-        .whenComplete((e, ex) -> discoveryClient.disconnectAsync())
-        .thenApply(response -> Lists.ofNullable(response.getEndpoints()));
+        .thenApply(response -> Lists.ofNullable(response.getEndpoints()))
+        .handle(
+            (result, ex) -> {
+              return disconnectAfterDiscovery(discoveryClient, result, ex);
+            })
+        .thenCompose(Function.identity());
   }
 
   /**
@@ -368,15 +376,22 @@ public class DiscoveryClient {
             ubyte(0));
 
     DiscoveryClient discoveryClient = new DiscoveryClient(endpoint, transport);
+    long connectTimeout = Math.max(1L, reverseConnectConfig.getConnectTimeout());
+
+    return getReverseConnectEndpoints(discoveryClient, connectTimeout);
+  }
+
+  static CompletableFuture<List<EndpointDescription>> getReverseConnectEndpoints(
+      DiscoveryClient discoveryClient, long connectTimeout) {
 
     return discoveryClient
         .connectAsync()
-        .orTimeout(reverseConnectConfig.getConnectTimeout(), TimeUnit.MILLISECONDS)
         .thenCompose(
             c ->
                 c.getEndpoints(
                     "", new String[0], new String[] {Stack.TCP_UASC_UABINARY_TRANSPORT_URI}))
         .thenApply(response -> Lists.ofNullable(response.getEndpoints()))
+        .orTimeout(connectTimeout, TimeUnit.MILLISECONDS)
         .handle(
             (result, ex) -> {
               return disconnectAfterReverseDiscovery(discoveryClient, result, ex);
@@ -412,12 +427,19 @@ public class DiscoveryClient {
             ubyte(0));
 
     DiscoveryClient discoveryClient = new DiscoveryClient(endpoint, transport);
+    long connectTimeout = Math.max(1L, reverseConnectConfig.getConnectTimeout());
+
+    return findReverseConnectServers(discoveryClient, connectTimeout);
+  }
+
+  static CompletableFuture<List<ApplicationDescription>> findReverseConnectServers(
+      DiscoveryClient discoveryClient, long connectTimeout) {
 
     return discoveryClient
         .connectAsync()
-        .orTimeout(reverseConnectConfig.getConnectTimeout(), TimeUnit.MILLISECONDS)
         .thenCompose(c -> c.findServers("", new String[0], new String[0]))
         .thenApply(response -> Lists.ofNullable(response.getServers()))
+        .orTimeout(connectTimeout, TimeUnit.MILLISECONDS)
         .handle(
             (result, ex) -> {
               return disconnectAfterReverseDiscovery(discoveryClient, result, ex);
@@ -426,6 +448,12 @@ public class DiscoveryClient {
   }
 
   static <T> CompletableFuture<T> disconnectAfterReverseDiscovery(
+      DiscoveryClient discoveryClient, T result, Throwable discoveryFailure) {
+
+    return disconnectAfterDiscovery(discoveryClient, result, discoveryFailure);
+  }
+
+  static <T> CompletableFuture<T> disconnectAfterDiscovery(
       DiscoveryClient discoveryClient, T result, Throwable discoveryFailure) {
 
     CompletableFuture<DiscoveryClient> disconnectFuture;

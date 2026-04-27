@@ -12,13 +12,18 @@ package org.eclipse.milo.opcua.sdk.client;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.milo.opcua.stack.core.Stack;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -27,6 +32,7 @@ import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
 import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.GetEndpointsResponse;
 import org.eclipse.milo.opcua.stack.core.util.Unit;
 import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransport;
@@ -38,7 +44,8 @@ class DiscoveryClientTest {
   @Test
   void reverseDiscoverySuccessFailsWhenDisconnectFails() {
     var cleanupFailure = new UaException(StatusCodes.Bad_Shutdown, "cleanup failed");
-    var discoveryClient = new DisconnectOnlyDiscoveryClient(cleanupFailure);
+    var discoveryClient =
+        new DisconnectOnlyDiscoveryClient(CompletableFuture.failedFuture(cleanupFailure));
 
     CompletableFuture<List<String>> future =
         DiscoveryClient.disconnectAfterReverseDiscovery(discoveryClient, List.of("endpoint"), null);
@@ -52,7 +59,8 @@ class DiscoveryClientTest {
   void reverseDiscoveryFailureSuppressesDisconnectFailure() {
     var discoveryFailure = new UaException(StatusCodes.Bad_Timeout, "discovery failed");
     var cleanupFailure = new UaException(StatusCodes.Bad_Shutdown, "cleanup failed");
-    var discoveryClient = new DisconnectOnlyDiscoveryClient(cleanupFailure);
+    var discoveryClient =
+        new DisconnectOnlyDiscoveryClient(CompletableFuture.failedFuture(cleanupFailure));
 
     CompletableFuture<List<String>> future =
         DiscoveryClient.disconnectAfterReverseDiscovery(discoveryClient, null, discoveryFailure);
@@ -62,6 +70,35 @@ class DiscoveryClientTest {
     assertSame(discoveryFailure, ex.getCause());
     assertEquals(1, ex.getCause().getSuppressed().length);
     assertSame(cleanupFailure, ex.getCause().getSuppressed()[0]);
+  }
+
+  @Test
+  void discoverySuccessWaitsForDisconnect() throws Exception {
+    CompletableFuture<DiscoveryClient> disconnectFuture = new CompletableFuture<>();
+    var discoveryClient = new DisconnectOnlyDiscoveryClient(disconnectFuture);
+
+    CompletableFuture<List<String>> future =
+        DiscoveryClient.disconnectAfterDiscovery(discoveryClient, List.of("endpoint"), null);
+
+    assertFalse(future.isDone());
+
+    disconnectFuture.complete(discoveryClient);
+
+    assertEquals(List.of("endpoint"), future.get(1, TimeUnit.SECONDS));
+  }
+
+  @Test
+  void reverseConnectGetEndpointsTimeoutIncludesServiceRequest() {
+    var discoveryClient = new ScriptedDiscoveryClient();
+
+    CompletableFuture<List<EndpointDescription>> future =
+        DiscoveryClient.getReverseConnectEndpoints(discoveryClient, 50);
+
+    ExecutionException ex =
+        assertThrows(ExecutionException.class, () -> future.get(1, TimeUnit.SECONDS));
+
+    assertInstanceOf(TimeoutException.class, ex.getCause());
+    assertTrue(discoveryClient.disconnectCalled());
   }
 
   private static EndpointDescription endpoint() {
@@ -78,17 +115,51 @@ class DiscoveryClientTest {
 
   private static final class DisconnectOnlyDiscoveryClient extends DiscoveryClient {
 
-    private final Throwable cleanupFailure;
+    private final CompletableFuture<DiscoveryClient> disconnectFuture;
 
-    private DisconnectOnlyDiscoveryClient(Throwable cleanupFailure) {
+    private DisconnectOnlyDiscoveryClient(CompletableFuture<DiscoveryClient> disconnectFuture) {
       super(endpoint(), new NoopTransport());
 
-      this.cleanupFailure = cleanupFailure;
+      this.disconnectFuture = disconnectFuture;
     }
 
     @Override
     public CompletableFuture<DiscoveryClient> disconnectAsync() {
-      return CompletableFuture.failedFuture(cleanupFailure);
+      return disconnectFuture;
+    }
+  }
+
+  private static final class ScriptedDiscoveryClient extends DiscoveryClient {
+
+    private final CompletableFuture<GetEndpointsResponse> getEndpointsFuture =
+        new CompletableFuture<>();
+    private final AtomicBoolean disconnectCalled = new AtomicBoolean();
+
+    private ScriptedDiscoveryClient() {
+      super(endpoint(), new NoopTransport());
+    }
+
+    @Override
+    public CompletableFuture<DiscoveryClient> connectAsync() {
+      return CompletableFuture.completedFuture(this);
+    }
+
+    @Override
+    public CompletableFuture<GetEndpointsResponse> getEndpoints(
+        String endpointUrl, String[] localeIds, String[] profileUris) {
+
+      return getEndpointsFuture;
+    }
+
+    @Override
+    public CompletableFuture<DiscoveryClient> disconnectAsync() {
+      disconnectCalled.set(true);
+
+      return CompletableFuture.completedFuture(this);
+    }
+
+    private boolean disconnectCalled() {
+      return disconnectCalled.get();
     }
   }
 
