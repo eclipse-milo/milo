@@ -187,14 +187,16 @@ stateDiagram-v2
     Handshaking --> Connected : handshake succeeds
     Handshaking --> Armed : handshake fails
     Connected --> Armed : channel inactive
+    Idle --> Disconnecting : disconnect
     Connected --> Disconnecting : disconnect
-    Armed --> Disconnecting : disconnect
-    Handshaking --> Disconnecting : disconnect
+    Armed --> Disconnecting : disconnect / connect timeout
+    Handshaking --> Disconnecting : disconnect / connect timeout
     Disconnecting --> Idle : owned channels closed
     Idle --> Stopped : listener stopped
     Armed --> Stopped : listener stopped
     Handshaking --> Stopped : listener stopped
     Connected --> Stopped : listener stopped
+    Disconnecting --> Stopped : listener stopped
 ```
 
 | State | Meaning |
@@ -203,8 +205,8 @@ stateDiagram-v2
 | `Armed` | The real `ClientApplicationContext` is installed and the owner is waiting for a channel. |
 | `Handshaking` | One accepted channel is running `ReverseHello`/`Hello`/`Acknowledge`/OpenSecureChannel. |
 | `Connected` | A `ClientSecureChannel` is active and service requests can use the channel. |
-| `Disconnecting` | Normal disconnect is closing owned channels and will return the owner to `Idle`. |
-| `Stopped` | Terminal state after the owning listener has stopped. Future waits fail with shutdown. |
+| `Disconnecting` | Cleanup is closing owned channels. Normal disconnect or connect-timeout cleanup returns to `Idle`; listener stop during cleanup moves to `Stopped`. |
+| `Stopped` | Terminal state after the owning listener has stopped. Pending waits fail with the stop cause; later waits fail with `Bad_Shutdown`. |
 
 ### 3.2 Owner Rules
 
@@ -217,8 +219,8 @@ stateDiagram-v2
 - Normal `disconnect()` clears application context, pending/handshaking/active
   channels, active secure channel, and waiters, then advances the generation so late
   callbacks from an earlier lifecycle cannot satisfy the next one.
-- `listenerStopped()` is terminal: it closes owned channels, fails pending/future
-  waiters with shutdown, and moves to `Stopped`.
+- `listenerStopped()` is terminal: it closes owned channels, fails current channel
+  waiters with the stop cause (`Bad_Shutdown` by default), and moves to `Stopped`.
 - State listeners are notified through the configured executor by the transport
   adapters.
 
@@ -351,7 +353,9 @@ sequenceDiagram
 transport-module interface that keeps `opc-ua-stack/transport` independent from
 `opc-ua-sdk`. Registrations are explicit and idempotent for the same transport identity.
 Stopping the listener notifies unique registered consumers with `Bad_Shutdown`, clears
-the registry, closes the listener channel, and closes tracked child channels.
+the registry, closes the listener channel, closes tracked child channels, and asks the
+on-demand controller, if configured, to fail pending unknown-server resolutions and
+cancel pending handoffs.
 
 `OpcTcpMultiplexedReverseConnectTransport` is a thin adapter around
 `ReverseConnectChannelOwner`. It registers on `connect()`, deregisters on all
@@ -367,15 +371,19 @@ controller owns resolver invocation, resolver timeout, optional discovery, clien
 configuration, `OpcUaClient` creation, and `ClientListener` notification.
 
 Resolver and client callbacks run on the configured transport executor, not on a Netty
-event loop or while the listener registry lock is held. Unmatched channels are bounded
-by `maxPendingConnections` and `resolverTimeout`.
+event loop or while the listener registry lock is held. Unknown-server channels that
+are still waiting for endpoint resolution are bounded by `maxPendingConnections` and
+`resolverTimeout`; once a resolved on-demand transport exists, replacement channels for
+that `ServerUri` are handed to the pending transport instead of starting another
+resolver flow.
 
 #### 1-Shot Cached Endpoint
 
 If `EndpointResolver.cached(...)` or a custom resolver returns an endpoint without
 calling `Discovery.getEndpoints()`, the original accepted channel is preserved. The
-controller creates a transport, calls `transport.offerChannel(channel, reverseHello)`,
-creates the client, and notifies `ClientListener`. The owner waits for the real
+controller creates the transport and client, registers a pending handoff for that
+`ServerUri`, offers the original channel with `transport.offerChannel(channel,
+reverseHello)`, and notifies `ClientListener`. The owner waits for the real
 `OpcUaClient.connectAsync()` call before starting the handshake.
 
 #### 2-Shot Live Discovery
@@ -383,8 +391,11 @@ creates the client, and notifies `ClientListener`. The owner waits for the real
 If the resolver calls `Discovery.getEndpoints()`, the controller consumes the accepted
 channel through `InboundChannelTransport` and `DiscoveryClient`, performs
 `GetEndpoints`, waits for discovery disconnect, and then creates a real per-server
-transport without offering the consumed channel. The server reconnects for the session,
-and the listener dispatches that second connection to the registered transport.
+transport without offering the consumed channel. The controller still registers a
+pending handoff for that `ServerUri`: if the server reconnects before
+`OpcUaClient.connectAsync()` registers the transport with the listener, the replacement
+channel is offered to the pending transport and buffered there; otherwise the listener
+dispatches the replacement connection through the normal registered-consumer path.
 
 ### 5.3 Multiplexed API Example
 
@@ -454,8 +465,9 @@ the returned future completes exceptionally.
 The server may reconnect for pass 2 before the application has called
 `client.connectAsync()` on the returned client. The owner handles this by buffering one
 accepted channel until `connectTimeout`. If the real context arrives in time, the owner
-starts the handshake with the correct context. If not, the channel is closed and later
-connect/get-channel waiters fail with timeout.
+starts the handshake with the correct context. If not, the buffered channel is closed;
+later connect/get-channel callers start their own bounded wait for a replacement
+channel.
 
 ### 6.3 Discovery Security Scope
 
@@ -570,8 +582,8 @@ executor, so session reactivation does not run inline inside transport owner mut
 
 Keep-alive channel close uses `CurrentChannelProvider`. `OpcTcpClientTransport`,
 `OpcTcpReverseConnectTransport`, and `OpcTcpMultiplexedReverseConnectTransport` expose
-the current Netty channel through this common seam, and `SessionFsmFactory` uses that
-interface for keep-alive channel closure.
+the current Netty channel through this common interface, and `SessionFsmFactory` uses
+it for keep-alive channel closure.
 
 For reverse connect, reconnect is passive on the client side. The client waits for the
 server's replacement idle attempt to dial in, the owner handshakes that accepted
@@ -595,7 +607,7 @@ channel, and `SessionFsm` reactivates through its normal reconnect states.
 | `acknowledgeTimeout` | `UInteger` ms | 5000 | Inherited Hello/Acknowledge timeout. |
 | `channelLifetime` | `UInteger` ms | 3600000 | Requested SecureChannel lifetime. |
 | `serverBootstrapCustomizer` | `Consumer<ServerBootstrap>` | no-op | Customizes the listening bootstrap. |
-| `channelPipelineCustomizer` | `Consumer<ChannelPipeline>` | no-op | Customizes accepted child pipelines before RHE decode. |
+| `channelPipelineCustomizer` | `Consumer<ChannelPipeline>` | no-op | Customizes accepted child pipelines after the listener installs the RHE decoder. |
 
 ### 9.2 Multiplexed Listener
 
@@ -609,7 +621,7 @@ channel, and `SessionFsm` reactivates through its normal reconnect states.
 | `resolverTimeout` | `long` ms | `60000` | Timeout for unknown-server endpoint resolution. |
 | `reverseHelloTimeout` | `long` ms | `5000` | Timeout for raw accepted TCP connection to provide RHE. |
 | `serverBootstrapCustomizer` | `Consumer<ServerBootstrap>` | no-op | Customizes the shared listener bootstrap. |
-| `channelPipelineCustomizer` | `Consumer<ChannelPipeline>` | no-op | Customizes accepted child pipelines. |
+| `channelPipelineCustomizer` | `Consumer<ChannelPipeline>` | no-op | Customizes accepted child pipelines after listener handlers are installed. |
 | `endpointResolver` | `EndpointResolver` | `null` | Enables on-demand clients for unknown servers. |
 | `clientCustomizer` | `ClientCustomizer` | `null` | Configures on-demand client builders. |
 | `clientListener` | `ClientListener` | `null` | Receives on-demand clients. |
@@ -619,7 +631,7 @@ channel, and `SessionFsm` reactivates through its normal reconnect states.
 | Property | Type | Default | Description |
 | --- | --- | --- | --- |
 | `allowedServerUris` | `Set<String>` | empty | Accepted `ServerUri` values for this transport. |
-| `reverseHelloTimeout` | `long` ms | 30000 | Per-client reverse handshake timeout. |
+| `reverseHelloTimeout` | `long` ms | 30000 | Value passed to the transport owner/handshake starter. The default multiplexed handshake receives a pre-decoded RHE; raw RHE decode is bounded by the listener-level timeout. |
 | `connectTimeout` | `long` ms | 60000 | Bounds owner channel waiters and pending accepted channels. |
 | `acknowledgeTimeout` | `UInteger` ms | 5000 | Inherited Hello/Acknowledge timeout. |
 | `channelLifetime` | `UInteger` ms | 3600000 | Requested SecureChannel lifetime. |

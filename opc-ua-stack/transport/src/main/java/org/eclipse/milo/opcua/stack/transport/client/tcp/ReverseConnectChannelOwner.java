@@ -301,7 +301,6 @@ final class ReverseConnectChannelOwner {
   private AcceptedChannel pendingAccepted;
   private AcceptedChannel handshaking;
   private volatile Channel activeChannel;
-  private ClientSecureChannel activeSecureChannel;
 
   ReverseConnectChannelOwner(
       ChannelOwnerConfig config,
@@ -388,12 +387,16 @@ final class ReverseConnectChannelOwner {
     return activeChannel;
   }
 
+  /**
+   * Add a transport-internal listener to be notified after owner lifecycle state transitions.
+   *
+   * <p>Listeners registered with the owner are expected to share the owner's lifetime.
+   * Caller-facing listener removal is handled by the owning transport.
+   *
+   * @param listener the listener to add.
+   */
   void addTransitionListener(TransitionListener listener) {
     transitionListeners.add(listener);
-  }
-
-  void removeTransitionListener(TransitionListener listener) {
-    transitionListeners.remove(listener);
   }
 
   private static HandshakeStarter defaultHandshakeStarter() {
@@ -545,7 +548,6 @@ final class ReverseConnectChannelOwner {
     }
 
     handshaking = null;
-    activeSecureChannel = event.secureChannel();
     activeChannel = event.secureChannel().getChannel();
 
     if (activeChannel == null) {
@@ -598,7 +600,6 @@ final class ReverseConnectChannelOwner {
 
     if (activeChannel == event.channel()) {
       activeChannel = null;
-      activeSecureChannel = null;
       transitionTo(application != null ? State.Armed : State.Idle);
     }
   }
@@ -815,7 +816,6 @@ final class ReverseConnectChannelOwner {
       activeChannel = null;
     }
 
-    activeSecureChannel = null;
     application = null;
 
     failChannelWaiters(waiterFailure);
@@ -943,7 +943,6 @@ final class ReverseConnectChannelOwner {
   private void clearInactiveConnectedChannel() {
     if (state == State.Connected && !hasActiveChannel()) {
       activeChannel = null;
-      activeSecureChannel = null;
       transitionTo(application != null ? State.Armed : State.Idle);
     }
   }
