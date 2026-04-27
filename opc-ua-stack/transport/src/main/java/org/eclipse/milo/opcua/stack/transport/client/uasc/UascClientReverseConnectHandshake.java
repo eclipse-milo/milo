@@ -144,7 +144,8 @@ public class UascClientReverseConnectHandshake {
               requestIdSupplier,
               handshakeFuture,
               allowedServerUris,
-              reverseHelloTimeoutMs);
+              // The listener has already decoded ReverseHello; only the Ack timeout is needed.
+              0);
 
       channel.pipeline().addLast(handler);
 

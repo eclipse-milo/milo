@@ -290,21 +290,17 @@ public class UascClientReverseHelloHandler extends ByteToMessageCodec<UaRequestM
             Ints.saturatedCast(remoteSendBufferSize),
             Ints.saturatedCast(remoteMaxChunkCount));
 
-    ctx.executor()
-        .execute(
-            () -> {
-              var messageHandler =
-                  new UascClientMessageHandler(
-                      config,
-                      application,
-                      requestIdSupplier,
-                      handshakeFuture,
-                      awaitingHandshake,
-                      channelParameters);
+    var messageHandler =
+        new UascClientMessageHandler(
+            config,
+            application,
+            requestIdSupplier,
+            handshakeFuture,
+            awaitingHandshake,
+            channelParameters);
 
-              ctx.pipeline().addFirst(messageHandler);
-              ctx.pipeline().remove(UascClientReverseHelloHandler.this);
-            });
+    ctx.pipeline().addFirst(messageHandler);
+    ctx.pipeline().remove(UascClientReverseHelloHandler.this);
   }
 
   private void onError(ChannelHandlerContext ctx, ByteBuf buffer) {

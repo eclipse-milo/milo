@@ -14,8 +14,11 @@ package org.eclipse.milo.opcua.sdk.server;
  * An opaque handle representing a Reverse Connect registration. Returned by {@link
  * ReverseConnectManager#addReverseConnect} and used to remove the registration via {@link
  * ReverseConnectManager#removeReverseConnect}.
+ *
+ * <p>Handle identity is significant: callers must pass the same instance returned by {@code
+ * addReverseConnect(...)} back to {@code removeReverseConnect(...)}.
  */
-public class ReverseConnectHandle {
+public final class ReverseConnectHandle {
 
   private final String clientEndpointUrl;
   private volatile String endpointUrl;

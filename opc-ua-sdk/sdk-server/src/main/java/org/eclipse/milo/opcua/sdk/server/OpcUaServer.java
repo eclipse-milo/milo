@@ -342,16 +342,76 @@ public class OpcUaServer extends AbstractServiceHandler {
             });
 
     if (boundEndpoints.isEmpty()) {
-      return CompletableFuture.failedFuture(
-          new UaException(StatusCodes.Bad_ConfigurationError, "No endpoints bound"));
+      var failure = new UaException(StatusCodes.Bad_ConfigurationError, "No endpoints bound");
+      rollbackStartup(failure);
+      return CompletableFuture.failedFuture(failure);
     }
 
     ReverseConnectManager manager = reverseConnectManager;
     if (manager != null) {
-      return manager.start(applicationContext, config.getApplicationUri()).thenApply(v -> this);
+      return manager
+          .start(applicationContext, config.getApplicationUri())
+          .thenApply(v -> this)
+          .exceptionallyCompose(
+              ex -> {
+                Throwable failure = unwrapCompletion(ex);
+                return rollbackStartupAfterManagerFailure(manager, failure);
+              });
     } else {
       return CompletableFuture.completedFuture(this);
     }
+  }
+
+  private CompletableFuture<OpcUaServer> rollbackStartupAfterManagerFailure(
+      ReverseConnectManager manager, Throwable cause) {
+
+    rollbackStartup(cause);
+
+    var future = new CompletableFuture<OpcUaServer>();
+    manager
+        .stop()
+        .whenComplete(
+            (v, stopEx) -> {
+              if (stopEx != null) {
+                cause.addSuppressed(unwrapCompletion(stopEx));
+              }
+
+              future.completeExceptionally(cause);
+            });
+
+    return future;
+  }
+
+  private void rollbackStartup(Throwable cause) {
+    transports
+        .values()
+        .forEach(
+            transport -> {
+              try {
+                transport.unbind();
+              } catch (Exception e) {
+                cause.addSuppressed(e);
+                logger.warn("Error unbinding transport after startup failure", e);
+              }
+            });
+    transports.clear();
+    boundEndpoints.clear();
+
+    try {
+      eventFactory.shutdown();
+    } catch (IllegalStateException e) {
+      cause.addSuppressed(e);
+      logger.warn("Error shutting down event factory after startup failure", e);
+    }
+  }
+
+  private static Throwable unwrapCompletion(Throwable failure) {
+    if ((failure instanceof CompletionException || failure instanceof ExecutionException)
+        && failure.getCause() != null) {
+      return failure.getCause();
+    }
+
+    return failure;
   }
 
   public CompletableFuture<OpcUaServer> shutdown() {

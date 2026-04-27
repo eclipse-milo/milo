@@ -23,6 +23,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
 import org.eclipse.milo.opcua.stack.core.Stack;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransportConfig;
 
 /**
  * Builder for {@link OpcTcpMultiplexedReverseConnectTransportConfig}.
@@ -172,11 +173,13 @@ public class OpcTcpMultiplexedReverseConnectTransportConfigBuilder {
   }
 
   /**
-   * Set a {@link Consumer} that will be given a chance to customize the {@link ChannelPipeline}
-   * used by this transport.
+   * Set a {@link Consumer} reserved for {@link OpcClientTransportConfig} parity.
    *
-   * @param channelPipelineCustomizer a {@link Consumer} for customizing the {@link
-   *     ChannelPipeline}.
+   * <p>The shared {@code MultiplexedReverseConnectListener} owns accepted-channel pipeline
+   * customization. Configure the listener's channel pipeline customizer to affect multiplexed
+   * reverse-connect child channels.
+   *
+   * @param channelPipelineCustomizer a reserved {@link Consumer}.
    * @return this {@link OpcTcpMultiplexedReverseConnectTransportConfigBuilder}.
    */
   public OpcTcpMultiplexedReverseConnectTransportConfigBuilder setChannelPipelineCustomizer(

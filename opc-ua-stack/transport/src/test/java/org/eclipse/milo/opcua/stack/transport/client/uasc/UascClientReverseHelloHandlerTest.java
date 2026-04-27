@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -40,6 +41,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.channel.messages.AcknowledgeMessage;
 import org.eclipse.milo.opcua.stack.core.channel.messages.ErrorMessage;
 import org.eclipse.milo.opcua.stack.core.channel.messages.HelloMessage;
 import org.eclipse.milo.opcua.stack.core.channel.messages.ReverseHelloMessage;
@@ -105,6 +107,40 @@ class UascClientReverseHelloHandlerTest {
     assertFalse(handshakeFuture.isDone());
 
     channel.close();
+  }
+
+  @Test
+  void helperDoesNotStartReverseHelloTimeoutForPreDecodedReverseHello() throws Exception {
+    var shortTimer = new HashedWheelTimer(1, TimeUnit.MILLISECONDS);
+    try {
+      UascClientReverseConnectHandshake helper = new UascClientReverseConnectHandshake();
+      var channel = new EmbeddedChannel();
+
+      CompletableFuture<ClientSecureChannel> handshakeFuture =
+          helper.start(
+              channel,
+              new ReverseHelloMessage(SERVER_URI, ENDPOINT_URL),
+              newConfig(shortTimer),
+              newApplicationContext(),
+              newResponseHandler(),
+              requestId::getAndIncrement,
+              Set.of(SERVER_URI),
+              1);
+
+      channel.runPendingTasks();
+
+      ByteBuf helloBuffer = channel.readOutbound();
+      assertNotNull(helloBuffer);
+      helloBuffer.release();
+
+      Thread.sleep(100);
+
+      assertFalse(handshakeFuture.isCompletedExceptionally());
+
+      channel.close();
+    } finally {
+      shortTimer.stop();
+    }
   }
 
   @Test
@@ -321,6 +357,37 @@ class UascClientReverseHelloHandlerTest {
     assertEquals(rheEndpointUrl, hello.getEndpointUrl());
 
     helloBuffer.release();
+    channel.close();
+  }
+
+  @Test
+  void acknowledgeInstallsMessageHandlerSynchronously() throws Exception {
+    var handshakeFuture = new CompletableFuture<ClientSecureChannel>();
+
+    var handler =
+        new UascClientReverseHelloHandler(
+            newConfig(wheelTimer),
+            newApplicationContext(),
+            requestId::getAndIncrement,
+            handshakeFuture,
+            Set.of(SERVER_URI),
+            30_000);
+
+    var channel = new EmbeddedChannel(handler);
+
+    ByteBuf rheBuffer = TcpMessageEncoder.encode(new ReverseHelloMessage(SERVER_URI, ENDPOINT_URL));
+    channel.writeInbound(rheBuffer);
+
+    ByteBuf helloBuffer = channel.readOutbound();
+    assertNotNull(helloBuffer);
+    helloBuffer.release();
+
+    ByteBuf ackBuffer = TcpMessageEncoder.encode(new AcknowledgeMessage(0, 8192, 8192, 0, 0));
+    channel.writeInbound(ackBuffer);
+
+    assertNotNull(channel.pipeline().get(UascClientMessageHandler.class));
+    assertNull(channel.pipeline().get(UascClientReverseHelloHandler.class));
+
     channel.close();
   }
 

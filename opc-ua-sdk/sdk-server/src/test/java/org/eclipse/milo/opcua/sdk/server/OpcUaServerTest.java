@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.transport.server.OpcServerTransport;
@@ -77,6 +78,28 @@ class OpcUaServerTest {
     assertSame(server, shutdownFuture.get(5, TimeUnit.SECONDS));
   }
 
+  @Test
+  void startupFailureFromReverseConnectManagerUnbindsTransport() throws Exception {
+    RuntimeException startupFailure = new RuntimeException("reverse connect start failed");
+    ControlledReverseConnectManager reverseConnectManager =
+        new ControlledReverseConnectManager(CompletableFuture.failedFuture(startupFailure));
+
+    OpcServerTransport transport = Mockito.mock(OpcServerTransport.class);
+    OpcServerTransportFactory transportFactory = transportProfile -> transport;
+
+    OpcUaServer server = new OpcUaServer(serverConfig(), transportFactory);
+    server.setReverseConnectManager(reverseConnectManager);
+
+    ExecutionException ex =
+        assertThrows(ExecutionException.class, () -> server.startup().get(5, TimeUnit.SECONDS));
+
+    assertSame(startupFailure, ex.getCause());
+    assertTrue(server.getBoundEndpoints().isEmpty());
+    assertTrue(reverseConnectManager.stopCalled);
+    Mockito.verify(transport).bind(Mockito.any(), Mockito.any());
+    Mockito.verify(transport).unbind();
+  }
+
   private static OpcUaServerConfig serverConfig() {
     EndpointConfig endpoint =
         EndpointConfig.newBuilder()
@@ -97,6 +120,7 @@ class OpcUaServerTest {
     private final CompletableFuture<Void> startFuture;
     private final CompletableFuture<Void> stopFuture;
     private volatile String startedServerUri;
+    private volatile boolean stopCalled;
 
     ControlledReverseConnectManager(CompletableFuture<Void> startFuture) {
       this(startFuture, CompletableFuture.completedFuture(null));
@@ -125,6 +149,7 @@ class OpcUaServerTest {
 
     @Override
     CompletableFuture<Void> stop() {
+      stopCalled = true;
       return stopFuture;
     }
   }
