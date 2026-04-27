@@ -152,6 +152,26 @@ class OpcTcpMultiplexedReverseConnectTransportTest {
   }
 
   @Test
+  void offerChannelRejectsMismatchedServerUri() throws Exception {
+    var registry = new RecordingRegistry();
+    TestTransport transport = newTestTransport(registry, 5_000);
+    var channel = new EmbeddedChannel();
+
+    transport.offerChannel(
+        channel, new ReverseHelloMessage("urn:eclipse:milo:other", ENDPOINT_URL));
+
+    awaitClosed(channel);
+
+    CompletableFuture<Unit> connectFuture = transport.connect(newApplicationContext());
+    channel.runPendingTasks();
+
+    assertNull(channel.readOutbound());
+    assertFalse(connectFuture.isDone(), "mismatched offered channel must not start a handshake");
+
+    assertEquals(Unit.VALUE, transport.disconnect().get(5, TimeUnit.SECONDS));
+  }
+
+  @Test
   void pendingChannelIsConsumedAfterContextInstall() throws Exception {
     var registry = new RecordingRegistry();
     TestTransport transport = newTestTransport(registry, 5_000);

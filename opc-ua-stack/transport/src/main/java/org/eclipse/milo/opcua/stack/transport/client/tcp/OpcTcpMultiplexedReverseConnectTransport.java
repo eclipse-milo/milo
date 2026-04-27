@@ -161,7 +161,7 @@ public class OpcTcpMultiplexedReverseConnectTransport extends AbstractUascClient
    * @param reverseHello the ReverseHello message received on the channel.
    */
   public void offerChannel(Channel channel, ReverseHelloMessage reverseHello) {
-    if (!channel.isActive()) {
+    if (!channel.isActive() || !matchesServerUri(reverseHello)) {
       close(channel);
       return;
     }
@@ -324,7 +324,7 @@ public class OpcTcpMultiplexedReverseConnectTransport extends AbstractUascClient
   }
 
   private void accept(Channel channel, ReverseHelloMessage reverseHello) {
-    if (!acceptingChannels.get()) {
+    if (!acceptingChannels.get() || !matchesServerUri(reverseHello)) {
       close(channel);
       return;
     }
@@ -363,6 +363,10 @@ public class OpcTcpMultiplexedReverseConnectTransport extends AbstractUascClient
     Channel activeChannel = channelOwner.getActiveChannel();
 
     return activeChannel != null && activeChannel.isActive();
+  }
+
+  private boolean matchesServerUri(ReverseHelloMessage reverseHello) {
+    return serverUri.equals(reverseHello.serverUri());
   }
 
   private static void close(Channel channel) {

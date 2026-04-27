@@ -368,11 +368,11 @@ final class MultiplexedReverseConnectClientController {
       }
 
       transport = transportFactory.apply(serverUri);
-      client = new OpcUaClient(builder.build(), transport);
+      client = new OnDemandOpcUaClient(builder.build(), transport, serverUri);
 
-      if (channelConsumed) {
-        registerPendingHandoff(serverUri, transport);
-      } else {
+      registerPendingHandoff(serverUri, transport);
+
+      if (!channelConsumed) {
         // offerChannel is the transport-owner boundary; the owner will not start a handshake until
         // the real ClientApplicationContext is installed by OpcUaClient.connectAsync().
         transport.offerChannel(connection.channel, connection.reverseHello);
@@ -503,12 +503,6 @@ final class MultiplexedReverseConnectClientController {
           }
         });
 
-    handoff.timeoutFuture =
-        scheduledExecutor.schedule(
-            () -> expirePendingHandoff(handoff),
-            pendingHandoffTimeout(transport),
-            TimeUnit.MILLISECONDS);
-
     PendingTransportHandoff previous;
     synchronized (pendingLock) {
       if (stopped.get()) {
@@ -521,16 +515,6 @@ final class MultiplexedReverseConnectClientController {
 
     if (previous != null) {
       previous.cancel();
-    }
-  }
-
-  private long pendingHandoffTimeout(OpcTcpMultiplexedReverseConnectTransport transport) {
-    return Math.max(1L, transport.getConfig().getConnectTimeout());
-  }
-
-  private void expirePendingHandoff(PendingTransportHandoff handoff) {
-    if (pendingHandoffs.remove(handoff.serverUri, handoff)) {
-      logger.debug("Pending transport handoff expired for ServerUri={}", handoff.serverUri);
     }
   }
 
@@ -613,6 +597,41 @@ final class MultiplexedReverseConnectClientController {
     return endpoints != null ? List.copyOf(endpoints) : List.of();
   }
 
+  private final class OnDemandOpcUaClient extends OpcUaClient {
+
+    private final String serverUri;
+    private final OpcTcpMultiplexedReverseConnectTransport transport;
+
+    private OnDemandOpcUaClient(
+        OpcUaClientConfig config,
+        OpcTcpMultiplexedReverseConnectTransport transport,
+        String serverUri) {
+
+      super(config, transport);
+
+      this.serverUri = serverUri;
+      this.transport = transport;
+    }
+
+    @Override
+    public CompletableFuture<OpcUaClient> connectAsync() {
+      return super.connectAsync()
+          .whenComplete(
+              (client, failure) -> {
+                if (failure == null) {
+                  removePendingHandoff(serverUri, transport);
+                }
+              });
+    }
+
+    @Override
+    public CompletableFuture<OpcUaClient> disconnectAsync() {
+      removePendingHandoff(serverUri, transport);
+
+      return super.disconnectAsync();
+    }
+  }
+
   @FunctionalInterface
   interface DiscoveryClientFactory {
 
@@ -668,7 +687,7 @@ final class MultiplexedReverseConnectClientController {
 
     private final String serverUri;
     private final OpcTcpMultiplexedReverseConnectTransport transport;
-    private volatile @Nullable ScheduledFuture<?> timeoutFuture;
+    private boolean active = true;
 
     private PendingTransportHandoff(
         String serverUri, OpcTcpMultiplexedReverseConnectTransport transport) {
@@ -677,15 +696,17 @@ final class MultiplexedReverseConnectClientController {
       this.transport = transport;
     }
 
-    private void offer(Channel channel, ReverseHelloMessage reverseHello) {
+    private synchronized void offer(Channel channel, ReverseHelloMessage reverseHello) {
+      if (!active) {
+        channel.close();
+        return;
+      }
+
       transport.offerChannel(channel, reverseHello);
     }
 
-    private void cancel() {
-      ScheduledFuture<?> future = timeoutFuture;
-      if (future != null) {
-        future.cancel(false);
-      }
+    private synchronized void cancel() {
+      active = false;
     }
   }
 

@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -808,7 +809,7 @@ class MultiplexedReverseConnectListenerTest {
   }
 
   @Test
-  void twoShotReconnectBeforeClientConnectUsesPendingHandoff() throws Exception {
+  void twoShotReconnectAfterClientCallbackDelayUsesPendingHandoff() throws Exception {
     ExecutorService executor =
         Executors.newSingleThreadExecutor(namedThreadFactory("resolver-worker"));
     ScheduledExecutorService scheduledExecutor =
@@ -832,6 +833,7 @@ class MultiplexedReverseConnectListenerTest {
         OpcTcpMultiplexedReverseConnectTransportConfig.newBuilder()
             .setExecutor(executor)
             .setScheduledExecutor(scheduledExecutor)
+            .setConnectTimeout(50)
             .build();
 
     MultiplexedReverseConnectListenerConfig config =
@@ -855,6 +857,9 @@ class MultiplexedReverseConnectListenerTest {
       controller.dispatch(new EmbeddedChannel(), new ReverseHelloMessage(SERVER_URI, ENDPOINT_URL));
 
       assertNotNull(clientCreated.get(5, TimeUnit.SECONDS));
+      // Slow application callbacks must not have to call connectAsync() within the
+      // transport connect timeout to retain ownership of the on-demand client.
+      Thread.sleep(150);
 
       EmbeddedChannel reconnectChannel = new EmbeddedChannel();
       controller.dispatch(reconnectChannel, new ReverseHelloMessage(SERVER_URI, ENDPOINT_URL));
@@ -863,6 +868,80 @@ class MultiplexedReverseConnectListenerTest {
       assertSame(reconnectChannel, accepted.channel());
       assertEquals(SERVER_URI, accepted.reverseHello().serverUri());
       assertEquals(1, resolverCalls.get());
+    } finally {
+      controller.stop(new UaException(StatusCodes.Bad_Shutdown)).get(5, TimeUnit.SECONDS);
+      executor.shutdownNow();
+      scheduledExecutor.shutdownNow();
+    }
+  }
+
+  @Test
+  void twoShotOnDemandClientDisconnectRemovesPendingHandoff() throws Exception {
+    ExecutorService executor =
+        Executors.newSingleThreadExecutor(namedThreadFactory("resolver-worker"));
+    ScheduledExecutorService scheduledExecutor =
+        Executors.newSingleThreadScheduledExecutor(namedThreadFactory("resolver-timer"));
+
+    EndpointDescription endpoint = createEndpoint(ENDPOINT_URL);
+    CompletableFuture<AcceptedChannel> offeredChannel = new CompletableFuture<>();
+    AtomicInteger resolverCalls = new AtomicInteger();
+    AtomicInteger clientCount = new AtomicInteger();
+    CompletableFuture<OpcUaClient> firstClient = new CompletableFuture<>();
+    CompletableFuture<OpcUaClient> secondClient = new CompletableFuture<>();
+
+    EndpointResolver resolver =
+        (serverUri, endpointUrl, discovery) -> {
+          resolverCalls.incrementAndGet();
+          return discovery.getEndpoints().thenApply(endpoints -> endpoints.get(0));
+        };
+
+    TestDiscoveryClientHandle discoveryClient =
+        new TestDiscoveryClientHandle(List.of(endpoint), CompletableFuture.completedFuture(null));
+
+    OpcTcpMultiplexedReverseConnectTransportConfig transportConfig =
+        OpcTcpMultiplexedReverseConnectTransportConfig.newBuilder()
+            .setExecutor(executor)
+            .setScheduledExecutor(scheduledExecutor)
+            .build();
+
+    ClientListener clientListener =
+        client -> {
+          if (clientCount.incrementAndGet() == 1) {
+            firstClient.complete(client);
+          } else {
+            secondClient.complete(client);
+          }
+        };
+
+    MultiplexedReverseConnectListenerConfig config =
+        MultiplexedReverseConnectListenerConfig.newBuilder()
+            .setListenAddress(new InetSocketAddress("localhost", 0))
+            .setTransportConfig(transportConfig)
+            .setRateLimitingEnabled(false)
+            .setEndpointResolver(resolver)
+            .setClientListener(clientListener)
+            .build();
+
+    MultiplexedReverseConnectClientController controller =
+        new MultiplexedReverseConnectClientController(
+            config,
+            serverUri ->
+                new CapturingTransport(serverUri, transportConfig, noopRegistry(), offeredChannel),
+            (discoveryEndpoint, discoveryTransportConfig, channel, reverseHello) ->
+                discoveryClient);
+
+    try {
+      controller.dispatch(new EmbeddedChannel(), new ReverseHelloMessage(SERVER_URI, ENDPOINT_URL));
+
+      OpcUaClient client = firstClient.get(5, TimeUnit.SECONDS);
+      client.disconnectAsync().get(5, TimeUnit.SECONDS);
+
+      controller.dispatch(new EmbeddedChannel(), new ReverseHelloMessage(SERVER_URI, ENDPOINT_URL));
+
+      OpcUaClient replacementClient = secondClient.get(5, TimeUnit.SECONDS);
+      assertNotSame(client, replacementClient);
+      assertFalse(offeredChannel.isDone());
+      assertEquals(2, resolverCalls.get());
     } finally {
       controller.stop(new UaException(StatusCodes.Bad_Shutdown)).get(5, TimeUnit.SECONDS);
       executor.shutdownNow();
