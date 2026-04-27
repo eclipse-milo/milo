@@ -63,8 +63,8 @@ public final class ReverseConnectAttempt {
    * Get the TCP connection future for this attempt.
    *
    * <p>The future completes with the channel after TCP connect succeeds. It completes exceptionally
-   * if TCP connect fails, the ReverseHello write fails, the client rejects the reverse handshake, or
-   * the channel closes before TCP connect success is reported.
+   * if TCP connect fails, the ReverseHello write fails, the client rejects the reverse handshake,
+   * or the channel closes before TCP connect success is reported.
    *
    * @return the future completed when the outbound TCP connection succeeds.
    */
@@ -103,8 +103,8 @@ public final class ReverseConnectAttempt {
   /**
    * Report that the outbound TCP connect completed successfully.
    *
-   * <p>If a SecureChannel opened before the TCP connect callback arrived, this method also publishes
-   * the buffered {@link SecureChannelOpened} outcome.
+   * <p>If a SecureChannel opened before the TCP connect callback arrived, this method also
+   * publishes the buffered {@link SecureChannelOpened} outcome.
    *
    * @param channel the connected channel.
    */
@@ -178,8 +178,8 @@ public final class ReverseConnectAttempt {
   /**
    * Report that the reverse-connected channel opened a SecureChannel.
    *
-   * <p>This publishes a non-terminal {@link SecureChannelOpened} outcome. If TCP connect success has
-   * not yet been reported, the outcome is buffered until {@link #tcpConnectSucceeded(Channel)}
+   * <p>This publishes a non-terminal {@link SecureChannelOpened} outcome. If TCP connect success
+   * has not yet been reported, the outcome is buffered until {@link #tcpConnectSucceeded(Channel)}
    * arrives so callers see a connected channel before the secure-channel-open observation.
    *
    * @param secureChannelId the server-assigned SecureChannel id.
