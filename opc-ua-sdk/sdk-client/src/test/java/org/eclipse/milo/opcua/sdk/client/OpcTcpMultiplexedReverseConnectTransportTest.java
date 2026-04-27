@@ -225,8 +225,7 @@ class OpcTcpMultiplexedReverseConnectTransportTest {
       Thread.sleep(10);
     }
 
-    fail("Timed out waiting for outbound Hello");
-    return null;
+    return fail("Timed out waiting for outbound Hello");
   }
 
   private static void awaitClosed(Channel channel) throws Exception {

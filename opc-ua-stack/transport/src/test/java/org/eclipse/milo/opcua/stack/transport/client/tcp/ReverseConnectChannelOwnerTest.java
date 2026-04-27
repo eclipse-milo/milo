@@ -523,7 +523,7 @@ class ReverseConnectChannelOwnerTest {
 
     var config =
         new ReverseConnectChannelOwner.ChannelOwnerConfig(
-            newUascConfig(), Set.of(SERVER_URI), 5_000L, 1_000L);
+            newUascConfig(), Set.of(SERVER_URI), 1_000L);
 
     return new ReverseConnectChannelOwner(
         config,
@@ -654,8 +654,7 @@ class ReverseConnectChannelOwnerTest {
         ClientApplicationContext application,
         UascResponseHandler responseHandler,
         java.util.function.Supplier<Long> requestIdSupplier,
-        Set<String> allowedServerUris,
-        long reverseHelloTimeoutMs) {
+        Set<String> allowedServerUris) {
 
       var future = new CompletableFuture<ClientSecureChannel>();
 

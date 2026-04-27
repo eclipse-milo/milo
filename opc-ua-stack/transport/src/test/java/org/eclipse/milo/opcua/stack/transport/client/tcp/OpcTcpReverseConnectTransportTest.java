@@ -302,8 +302,7 @@ class OpcTcpReverseConnectTransportTest {
         ClientApplicationContext application,
         UascResponseHandler responseHandler,
         java.util.function.Supplier<Long> requestIdSupplier,
-        Set<String> allowedServerUris,
-        long reverseHelloTimeoutMs) {
+        Set<String> allowedServerUris) {
 
       var future = new CompletableFuture<ClientSecureChannel>();
       handshakes.add(new Handshake(channel, future));

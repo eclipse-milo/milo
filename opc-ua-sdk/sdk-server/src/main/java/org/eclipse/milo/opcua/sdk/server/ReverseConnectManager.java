@@ -178,7 +178,7 @@ public class ReverseConnectManager {
     requireOpcTcpClientEndpointUrl(clientEndpointUrl);
 
     ReverseConnectHandle handle;
-    @Nullable ManagedTarget targetToStart = null;
+    ManagedTarget targetToStart = null;
 
     lock.lock();
     try {
@@ -220,7 +220,7 @@ public class ReverseConnectManager {
 
   /** Package-private for tests that need to observe deterministic target shutdown. */
   CompletableFuture<Void> removeReverseConnectAsync(ReverseConnectHandle handle) {
-    @Nullable ManagedTarget targetToRemove;
+    ManagedTarget targetToRemove;
 
     lock.lock();
     try {
@@ -276,9 +276,9 @@ public class ReverseConnectManager {
   }
 
   private void finishStop(CompletableFuture<Void> stopCompletion, @Nullable Throwable failure) {
-    @Nullable PendingStart queuedStart = null;
+    PendingStart queuedStart = null;
     List<ManagedTarget> targetsToStart = List.of();
-    @Nullable Throwable startFailure = null;
+    Throwable startFailure = null;
     Throwable stopFailure = failure != null ? unwrap(failure) : null;
 
     lock.lock();

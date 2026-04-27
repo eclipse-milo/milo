@@ -145,9 +145,6 @@ public class UnifiedAutomationReadCustomDataTypeExample implements ClientExample
   private static StatusCode writeValue(OpcUaClient client, NodeId nodeId, UaStructuredType value)
       throws Exception {
 
-    NodeId binaryEncodingId =
-        value.getBinaryEncodingId().toNodeIdOrThrow(client.getNamespaceTable());
-
     ExtensionObject xo = ExtensionObject.encode(client.getDynamicEncodingContext(), value);
 
     return client

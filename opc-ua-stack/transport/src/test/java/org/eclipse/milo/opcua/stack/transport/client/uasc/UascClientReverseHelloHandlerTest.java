@@ -91,8 +91,7 @@ class UascClientReverseHelloHandlerTest {
             newApplicationContext(),
             newResponseHandler(),
             requestId::getAndIncrement,
-            Set.of(SERVER_URI),
-            30_000);
+            Set.of(SERVER_URI));
 
     channel.runPendingTasks();
 
@@ -127,8 +126,7 @@ class UascClientReverseHelloHandlerTest {
               newApplicationContext(),
               newResponseHandler(),
               requestId::getAndIncrement,
-              Set.of(SERVER_URI),
-              1);
+              Set.of(SERVER_URI));
 
       channel.runPendingTasks();
 
@@ -167,8 +165,7 @@ class UascClientReverseHelloHandlerTest {
             newApplicationContext(),
             newResponseHandler(),
             requestId::getAndIncrement,
-            Set.of(SERVER_URI),
-            30_000);
+            Set.of(SERVER_URI));
 
     channel.runPendingTasks();
 
@@ -188,16 +185,10 @@ class UascClientReverseHelloHandlerTest {
               ClientApplicationContext application,
               Supplier<Long> requestIdSupplier,
               CompletableFuture<ClientSecureChannel> handshakeFuture,
-              Set<String> allowedServerUris,
-              long reverseHelloTimeoutMs) {
+              Set<String> allowedServerUris) {
 
             return new UascClientReverseHelloHandler(
-                config,
-                application,
-                requestIdSupplier,
-                handshakeFuture,
-                allowedServerUris,
-                reverseHelloTimeoutMs) {
+                config, application, requestIdSupplier, handshakeFuture, allowedServerUris, 0) {
               @Override
               public void onReverseHello(
                   ChannelHandlerContext ctx, ReverseHelloMessage reverseHello) {
@@ -220,8 +211,7 @@ class UascClientReverseHelloHandlerTest {
             newApplicationContext(),
             newResponseHandler(),
             requestId::getAndIncrement,
-            Set.of(SERVER_URI),
-            30_000);
+            Set.of(SERVER_URI));
 
     channel.runPendingTasks();
 
@@ -244,8 +234,7 @@ class UascClientReverseHelloHandlerTest {
             newApplicationContext(),
             newResponseHandler(),
             requestId::getAndIncrement,
-            Set.of(SERVER_URI),
-            30_000);
+            Set.of(SERVER_URI));
 
     channel.runPendingTasks();
 

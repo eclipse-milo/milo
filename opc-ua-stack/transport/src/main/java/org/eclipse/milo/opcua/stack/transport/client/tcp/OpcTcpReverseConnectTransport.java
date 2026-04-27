@@ -80,10 +80,7 @@ public class OpcTcpReverseConnectTransport extends AbstractUascClientTransport
 
     var ownerConfig =
         new ReverseConnectChannelOwner.ChannelOwnerConfig(
-            config,
-            config.getAllowedServerUris(),
-            config.getReverseHelloTimeout(),
-            config.getConnectTimeout());
+            config, config.getAllowedServerUris(), config.getConnectTimeout());
 
     var scheduler =
         ReverseConnectChannelOwner.Scheduler.fromScheduledExecutor(config.getScheduledExecutor());

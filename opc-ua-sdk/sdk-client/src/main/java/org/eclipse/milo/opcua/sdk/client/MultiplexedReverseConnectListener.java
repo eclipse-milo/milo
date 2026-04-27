@@ -291,7 +291,7 @@ public class MultiplexedReverseConnectListener implements ChannelConsumerRegistr
   private void dispatch(Channel channel, ReverseHelloMessage rhe) {
     String serverUri = rhe.serverUri();
 
-    @Nullable MultiplexedReverseConnectClientController controller;
+    MultiplexedReverseConnectClientController controller;
 
     synchronized (this) {
       if (stopped) {

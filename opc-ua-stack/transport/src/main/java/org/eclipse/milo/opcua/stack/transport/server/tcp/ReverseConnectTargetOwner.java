@@ -274,7 +274,7 @@ final class ReverseConnectTargetOwner {
     }
 
     if (state == State.Stopping || state == State.Stopped) {
-      event.future().completeExceptionally(shutdown("reverse connect target is stopped"));
+      event.future().completeExceptionally(shutdown());
       return;
     }
 
@@ -670,7 +670,7 @@ final class ReverseConnectTargetOwner {
     return failure;
   }
 
-  private static UaException shutdown(String message) {
-    return new UaException(StatusCodes.Bad_Shutdown, message);
+  private static UaException shutdown() {
+    return new UaException(StatusCodes.Bad_Shutdown, "reverse connect target is stopped");
   }
 }

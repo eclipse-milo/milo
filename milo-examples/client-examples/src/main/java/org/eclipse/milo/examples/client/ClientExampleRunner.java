@@ -165,7 +165,8 @@ public class ClientExampleRunner {
               Thread.sleep(1000);
               System.exit(0);
             } catch (InterruptedException e) {
-              e.printStackTrace();
+              Thread.currentThread().interrupt();
+              logger.error("Interrupted during shutdown", e);
             }
           });
 
@@ -185,14 +186,15 @@ public class ClientExampleRunner {
         Thread.sleep(1000);
         System.exit(0);
       } catch (InterruptedException e) {
-        e.printStackTrace();
+        Thread.currentThread().interrupt();
+        logger.error("Interrupted during shutdown", e);
       }
     }
 
     try {
       Thread.sleep(999_999_999);
     } catch (InterruptedException e) {
-      e.printStackTrace();
+      Thread.currentThread().interrupt();
     }
   }
 }

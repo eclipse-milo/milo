@@ -119,7 +119,7 @@ public class NodeFactory {
 
     AddressSpaceManager addressSpaceManager = context.getServer().getAddressSpaceManager();
 
-    if (!addressSpaceManager.getManagedNode(typeDefinitionId).isPresent()) {
+    if (addressSpaceManager.getManagedNode(typeDefinitionId).isEmpty()) {
       throw new UaException(
           StatusCodes.Bad_NodeIdUnknown, "unknown type definition: " + typeDefinitionId);
     }

@@ -38,7 +38,6 @@ public class UascClientReverseConnectHandshake {
    * @param responseHandler the handler for normal UASC responses.
    * @param requestIdSupplier supplier for UASC request IDs.
    * @param allowedServerUris the allowed reverse-connect server URIs.
-   * @param reverseHelloTimeoutMs timeout for receiving ReverseHello messages.
    * @return a future completed when the SecureChannel is ready or the channel fails/closes.
    */
   public CompletableFuture<ClientSecureChannel> start(
@@ -48,8 +47,7 @@ public class UascClientReverseConnectHandshake {
       ClientApplicationContext application,
       UascResponseHandler responseHandler,
       Supplier<Long> requestIdSupplier,
-      Set<String> allowedServerUris,
-      long reverseHelloTimeoutMs) {
+      Set<String> allowedServerUris) {
 
     CompletableFuture<ClientSecureChannel> handshakeFuture = new CompletableFuture<>();
 
@@ -83,7 +81,6 @@ public class UascClientReverseConnectHandshake {
                       responseHandler,
                       requestIdSupplier,
                       allowedServerUris,
-                      reverseHelloTimeoutMs,
                       handshakeFuture));
     } catch (Throwable t) {
       failHandshake(channel, handshakeFuture, t);
@@ -101,16 +98,11 @@ public class UascClientReverseConnectHandshake {
       ClientApplicationContext application,
       Supplier<Long> requestIdSupplier,
       CompletableFuture<ClientSecureChannel> handshakeFuture,
-      Set<String> allowedServerUris,
-      long reverseHelloTimeoutMs) {
+      Set<String> allowedServerUris) {
 
+    // The listener has already decoded ReverseHello; only the Ack timeout is needed.
     return new UascClientReverseHelloHandler(
-        config,
-        application,
-        requestIdSupplier,
-        handshakeFuture,
-        allowedServerUris,
-        reverseHelloTimeoutMs);
+        config, application, requestIdSupplier, handshakeFuture, allowedServerUris, 0);
   }
 
   private void installPipeline(
@@ -121,7 +113,6 @@ public class UascClientReverseConnectHandshake {
       UascResponseHandler responseHandler,
       Supplier<Long> requestIdSupplier,
       Set<String> allowedServerUris,
-      long reverseHelloTimeoutMs,
       CompletableFuture<ClientSecureChannel> handshakeFuture) {
 
     if (!channel.isActive()) {
@@ -139,13 +130,7 @@ public class UascClientReverseConnectHandshake {
 
       UascClientReverseHelloHandler handler =
           newReverseHelloHandler(
-              config,
-              application,
-              requestIdSupplier,
-              handshakeFuture,
-              allowedServerUris,
-              // The listener has already decoded ReverseHello; only the Ack timeout is needed.
-              0);
+              config, application, requestIdSupplier, handshakeFuture, allowedServerUris);
 
       channel.pipeline().addLast(handler);
 

@@ -162,14 +162,10 @@ final class ReverseConnectChannelOwner {
    *
    * @param uascConfig the UASC client configuration used for handshakes.
    * @param allowedServerUris the accepted ReverseHello server URIs, or empty to accept all.
-   * @param reverseHelloTimeout the ReverseHello handshake timeout in milliseconds.
    * @param connectTimeout the timeout for pending accepts and channel waiters in milliseconds.
    */
   record ChannelOwnerConfig(
-      UascClientConfig uascConfig,
-      Set<String> allowedServerUris,
-      long reverseHelloTimeout,
-      long connectTimeout) {
+      UascClientConfig uascConfig, Set<String> allowedServerUris, long connectTimeout) {
 
     ChannelOwnerConfig {
       Objects.requireNonNull(uascConfig, "uascConfig");
@@ -192,7 +188,6 @@ final class ReverseConnectChannelOwner {
      * @param responseHandler the handler for normal UASC responses.
      * @param requestIdSupplier the supplier for UASC request IDs.
      * @param allowedServerUris the accepted ReverseHello server URIs.
-     * @param reverseHelloTimeoutMs the ReverseHello handshake timeout in milliseconds.
      * @return the future completed when the secure channel is ready.
      */
     CompletableFuture<ClientSecureChannel> start(
@@ -202,8 +197,7 @@ final class ReverseConnectChannelOwner {
         ClientApplicationContext application,
         UascResponseHandler responseHandler,
         Supplier<Long> requestIdSupplier,
-        Set<String> allowedServerUris,
-        long reverseHelloTimeoutMs);
+        Set<String> allowedServerUris);
   }
 
   /** Schedules owner timeout events. */
@@ -456,7 +450,7 @@ final class ReverseConnectChannelOwner {
 
   private void handleConnect(Event.Connect event) {
     if (state == State.Stopped) {
-      event.future().completeExceptionally(shutdown("listener stopped"));
+      event.future().completeExceptionally(shutdown());
       return;
     }
 
@@ -494,7 +488,7 @@ final class ReverseConnectChannelOwner {
     clearInactiveConnectedChannel();
 
     if (state == State.Stopped) {
-      event.future().completeExceptionally(shutdown("listener stopped"));
+      event.future().completeExceptionally(shutdown());
       return;
     }
 
@@ -668,7 +662,7 @@ final class ReverseConnectChannelOwner {
       return;
     }
 
-    var failure = event.cause() != null ? event.cause() : shutdown("listener stopped");
+    var failure = event.cause() != null ? event.cause() : shutdown();
     var channelsToClose = clearOwnedState(failure);
     long listenerStopGeneration = ++generation;
 
@@ -767,8 +761,7 @@ final class ReverseConnectChannelOwner {
               application,
               responseHandler,
               requestIdSupplier,
-              config.allowedServerUris(),
-              config.reverseHelloTimeout());
+              config.allowedServerUris());
 
       if (handshakeFuture == null) {
         handshakeFuture =
@@ -951,7 +944,7 @@ final class ReverseConnectChannelOwner {
     return new UaException(StatusCodes.Bad_ConnectionClosed, message);
   }
 
-  private static UaException shutdown(String message) {
-    return new UaException(StatusCodes.Bad_Shutdown, message);
+  private static UaException shutdown() {
+    return new UaException(StatusCodes.Bad_Shutdown, "listener stopped");
   }
 }

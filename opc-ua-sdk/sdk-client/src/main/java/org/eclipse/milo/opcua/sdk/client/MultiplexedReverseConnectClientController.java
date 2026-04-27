@@ -334,7 +334,7 @@ final class MultiplexedReverseConnectClientController {
   }
 
   private void resolved(PendingConnection connection, EndpointDescription endpoint) {
-    if (!beginTerminal(connection)) {
+    if (!connection.beginTerminal()) {
       return;
     }
 
@@ -422,7 +422,7 @@ final class MultiplexedReverseConnectClientController {
   }
 
   private CompletableFuture<Void> fail(PendingConnection connection, Throwable failure) {
-    if (!beginTerminal(connection)) {
+    if (!connection.beginTerminal()) {
       return connection.terminalFuture;
     }
 
@@ -439,10 +439,6 @@ final class MultiplexedReverseConnectClientController {
         .whenComplete((ignored, closeFailure) -> finish(connection, closeFailure));
 
     return connection.terminalFuture;
-  }
-
-  private boolean beginTerminal(PendingConnection connection) {
-    return connection.beginTerminal();
   }
 
   private void finish(PendingConnection connection, @Nullable Throwable failure) {
@@ -527,7 +523,7 @@ final class MultiplexedReverseConnectClientController {
   private void registerPendingHandoff(
       String serverUri, OpcTcpMultiplexedReverseConnectTransport transport) {
 
-    var handoff = new PendingTransportHandoff(serverUri, transport);
+    var handoff = new PendingTransportHandoff(transport);
 
     transport.addTransitionListener(
         connected -> {
@@ -723,14 +719,10 @@ final class MultiplexedReverseConnectClientController {
 
   private static final class PendingTransportHandoff {
 
-    private final String serverUri;
     private final OpcTcpMultiplexedReverseConnectTransport transport;
     private boolean active = true;
 
-    private PendingTransportHandoff(
-        String serverUri, OpcTcpMultiplexedReverseConnectTransport transport) {
-
-      this.serverUri = serverUri;
+    private PendingTransportHandoff(OpcTcpMultiplexedReverseConnectTransport transport) {
       this.transport = transport;
     }
 
