@@ -21,6 +21,8 @@ import org.eclipse.milo.opcua.stack.core.util.Unit;
 import org.eclipse.milo.opcua.stack.transport.client.AbstractUascClientTransport;
 import org.eclipse.milo.opcua.stack.transport.client.ChannelStateObservable;
 import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
+import org.eclipse.milo.opcua.stack.transport.client.CurrentChannelProvider;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A client transport that listens for inbound server connections using the OPC UA Reverse Connect
@@ -31,7 +33,7 @@ import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
  * exchange, the protocol continues identically to normal connect.
  */
 public class OpcTcpReverseConnectTransport extends AbstractUascClientTransport
-    implements ChannelStateObservable {
+    implements ChannelStateObservable, CurrentChannelProvider {
 
   private final OpcTcpReverseConnectTransportConfig config;
   private final ReverseConnectChannelOwner channelOwner;
@@ -180,7 +182,12 @@ public class OpcTcpReverseConnectTransport extends AbstractUascClientTransport
    *
    * @return the active child channel, or {@code null}.
    */
-  public Channel getActiveChannel() {
+  public @Nullable Channel getActiveChannel() {
+    return getCurrentChannel();
+  }
+
+  @Override
+  public @Nullable Channel getCurrentChannel() {
     return channelOwner.getActiveChannel();
   }
 

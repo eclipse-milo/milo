@@ -22,7 +22,9 @@ import org.eclipse.milo.opcua.stack.core.util.Unit;
 import org.eclipse.milo.opcua.stack.transport.client.AbstractUascClientTransport;
 import org.eclipse.milo.opcua.stack.transport.client.ChannelStateObservable;
 import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
+import org.eclipse.milo.opcua.stack.transport.client.CurrentChannelProvider;
 import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransport;
+import org.jspecify.annotations.Nullable;
 
 /**
  * An {@link OpcClientTransport} that receives its channels from a shared {@link
@@ -33,7 +35,7 @@ import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransport;
  * #connect(ClientApplicationContext)} and deregisters on {@link #disconnect()}.
  */
 public class OpcTcpMultiplexedReverseConnectTransport extends AbstractUascClientTransport
-    implements ChannelStateObservable {
+    implements ChannelStateObservable, CurrentChannelProvider {
 
   private final String serverUri;
   private final OpcTcpMultiplexedReverseConnectTransportConfig config;
@@ -233,7 +235,12 @@ public class OpcTcpMultiplexedReverseConnectTransport extends AbstractUascClient
    *
    * @return the active child channel, or {@code null}.
    */
-  public Channel getActiveChannel() {
+  public @Nullable Channel getActiveChannel() {
+    return getCurrentChannel();
+  }
+
+  @Override
+  public @Nullable Channel getCurrentChannel() {
     return channelOwner.getActiveChannel();
   }
 

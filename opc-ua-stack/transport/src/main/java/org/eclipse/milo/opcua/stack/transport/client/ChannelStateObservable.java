@@ -14,9 +14,8 @@ package org.eclipse.milo.opcua.stack.transport.client;
  * Interface for transport implementations that can notify observers when the underlying channel
  * state changes.
  *
- * <p>Both {@code OpcTcpClientTransport} (forward connect) and {@code OpcTcpReverseConnectTransport}
- * (Reverse Connect) implement this interface, allowing {@code SessionFsm} to observe connection
- * state without depending on a specific transport type.
+ * <p>Forward-connect and Reverse Connect transports implement this interface, allowing {@code
+ * SessionFsm} to observe connection state without depending on a specific transport type.
  */
 public interface ChannelStateObservable {
 
