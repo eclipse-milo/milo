@@ -363,7 +363,7 @@ final class ReverseConnectTargetOwner {
     } else if (outcome instanceof ReverseConnectAttempt.CloseBeforeSecureChannel close) {
       handleIdleAttemptEnded(context, close.channel(), RetryKind.Reconnect);
     } else if (outcome instanceof ReverseConnectAttempt.CloseAfterSecureChannel close) {
-      handleActiveAttemptClosed(context, close.channel());
+      handleCloseAfterSecureChannel(context, close.channel());
     }
   }
 
@@ -439,6 +439,16 @@ final class ReverseConnectTargetOwner {
       scheduleRetry(rejectBackoffMs());
     } else {
       scheduleRetry(nextReconnectDelay());
+    }
+  }
+
+  private void handleCloseAfterSecureChannel(AttemptContext context, Channel channel) {
+    // A secure-open event can be buffered inside the attempt until TCP connect completion.
+    // If the channel closes first, the owner has not promoted the idle attempt to active.
+    if (idleAttempt == context) {
+      handleIdleAttemptEnded(context, channel, RetryKind.Reconnect);
+    } else {
+      handleActiveAttemptClosed(context, channel);
     }
   }
 

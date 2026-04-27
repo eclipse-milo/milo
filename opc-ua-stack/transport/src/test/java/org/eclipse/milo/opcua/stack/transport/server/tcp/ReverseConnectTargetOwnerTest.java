@@ -150,6 +150,27 @@ class ReverseConnectTargetOwnerTest {
   }
 
   @Test
+  void pendingSecureChannelCloseBeforeTcpConnectClearsIdleAttemptAndRetries() throws Exception {
+    owner.start().get(1, TimeUnit.SECONDS);
+
+    StartedAttempt attempt = transport.attempt(0);
+    var channel = new EmbeddedChannel();
+    attempt.initialize(channel);
+    attempt.openSecureChannel();
+    attempt.closeChannel();
+    attempt.succeedTcpConnect(channel);
+
+    assertFalse(owner.hasIdleAttempt());
+    assertEquals(CONNECT_INTERVAL.toMillis(), scheduler.nextDelayMs());
+    assertFalse(channel.isOpen());
+
+    scheduler.runNext();
+
+    assertTrue(owner.hasIdleAttempt());
+    assertEquals(2, transport.attemptCount());
+  }
+
+  @Test
   void stopDuringConnectClosesLateIdleAttemptAndDoesNotRetry() throws Exception {
     owner.start().get(1, TimeUnit.SECONDS);
     StartedAttempt attempt = transport.attempt(0);
@@ -312,7 +333,15 @@ class ReverseConnectTargetOwnerTest {
     }
 
     void connect(Channel channel) {
+      initialize(channel);
+      succeedTcpConnect(channel);
+    }
+
+    void initialize(Channel channel) {
       attempt.channelInitialized(channel);
+    }
+
+    void succeedTcpConnect(Channel channel) {
       attempt.tcpConnectSucceeded(channel);
     }
 
@@ -325,6 +354,10 @@ class ReverseConnectTargetOwnerTest {
     }
 
     void closeBeforeSecureChannel() {
+      closeChannel();
+    }
+
+    void closeChannel() {
       attempt.channelInactive();
     }
 
