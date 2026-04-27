@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -419,7 +420,7 @@ class ReverseConnectTest {
                         this::configureCreateReverseConnectClient)
                     .get(10, TimeUnit.SECONDS));
 
-    assertInstanceOf(TimeoutException.class, ex.getCause());
+    assertReverseConnectTimeout(ex.getCause());
     assertPortAvailable(clientPort);
   }
 
@@ -430,6 +431,7 @@ class ReverseConnectTest {
         OpcTcpReverseConnectTransportConfig.newBuilder()
             .setListenAddress(new InetSocketAddress("localhost", 0))
             .setReverseHelloTimeout(5_000)
+            .setConnectTimeout(750)
             .setAllowedServerUris(Set.of("urn:bogus:server:that:does:not:match"))
             .build();
 
@@ -453,13 +455,12 @@ class ReverseConnectTest {
         server.addReverseConnect("opc.tcp://localhost:" + clientPort, getServerEndpointUrl());
 
     try {
-      // The server's ApplicationUri won't match "urn:bogus:server:that:does:not:match",
-      // so the client transport should reject the ReverseHello and fail the connect waiter.
+      // The server's ApplicationUri won't match the allowed set, so the transport ignores the
+      // ReverseHello and the connect waiter times out waiting for an allowed server.
       ExecutionException ex =
           assertThrows(
               ExecutionException.class, () -> connectFuture.get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
-      UaException uaException = assertInstanceOf(UaException.class, ex.getCause());
-      assertEquals(StatusCodes.Bad_TcpEndpointUrlInvalid, uaException.getStatusCode().value());
+      assertReverseConnectTimeout(ex.getCause());
     } finally {
       server.removeReverseConnect(handle);
       try {
@@ -512,6 +513,24 @@ class ReverseConnectTest {
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
+
+  private void assertReverseConnectTimeout(Throwable cause) {
+    Throwable failure = unwrap(cause);
+    if (failure instanceof TimeoutException) {
+      return;
+    }
+
+    UaException uaException = assertInstanceOf(UaException.class, failure);
+    assertEquals(StatusCodes.Bad_Timeout, uaException.getStatusCode().value());
+  }
+
+  private Throwable unwrap(Throwable cause) {
+    if (cause instanceof CompletionException && cause.getCause() != null) {
+      return cause.getCause();
+    }
+
+    return cause;
+  }
 
   private OpcUaClient createReverseConnectClient(
       String appName, String appUri, OpcTcpReverseConnectTransport transport) {
@@ -604,7 +623,13 @@ class ReverseConnectTest {
 
     var serverDescription =
         new ApplicationDescription(
-            endpointUrl, null, LocalizedText.NULL_VALUE, ApplicationType.Server, null, null, null);
+            server.getConfig().getApplicationUri(),
+            null,
+            LocalizedText.NULL_VALUE,
+            ApplicationType.Server,
+            null,
+            null,
+            null);
 
     return new EndpointDescription(
         endpointUrl,

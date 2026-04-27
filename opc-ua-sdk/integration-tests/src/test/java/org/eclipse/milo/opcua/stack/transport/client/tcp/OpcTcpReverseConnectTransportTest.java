@@ -123,10 +123,11 @@ class OpcTcpReverseConnectTransportTest {
   }
 
   @Test
-  void serverUriRejection() throws Exception {
+  void serverUriRejectionTimesOutWaitingForAllowedServer() throws Exception {
     var transportConfig =
         OpcTcpReverseConnectTransportConfig.newBuilder()
             .setListenAddress(new InetSocketAddress("localhost", 0))
+            .setConnectTimeout(750)
             .setAllowedServerUris(Set.of("urn:bogus:server:that:does:not:match"))
             .build();
 
@@ -142,12 +143,12 @@ class OpcTcpReverseConnectTransportTest {
         server.addReverseConnect("opc.tcp://localhost:" + listenPort, getServerEndpointUrl());
 
     try {
-      // The server's ApplicationUri won't match the allowed set, so the client
-      // transport should reject the ReverseHello and fail the connect waiter.
+      // The server's ApplicationUri won't match the allowed set, so the transport ignores the
+      // ReverseHello and the connect waiter times out waiting for an allowed server.
       ExecutionException ex =
           assertThrows(ExecutionException.class, () -> connectFuture.get(10, TimeUnit.SECONDS));
       UaException uaException = assertInstanceOf(UaException.class, ex.getCause());
-      assertEquals(StatusCodes.Bad_TcpEndpointUrlInvalid, uaException.getStatusCode().value());
+      assertEquals(StatusCodes.Bad_Timeout, uaException.getStatusCode().value());
     } finally {
       server.removeReverseConnect(handle);
       try {

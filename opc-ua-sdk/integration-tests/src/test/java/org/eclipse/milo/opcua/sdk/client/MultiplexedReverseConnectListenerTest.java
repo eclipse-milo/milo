@@ -564,7 +564,13 @@ class MultiplexedReverseConnectListenerTest {
 
     var serverDescription =
         new ApplicationDescription(
-            endpointUrl, null, LocalizedText.NULL_VALUE, ApplicationType.Server, null, null, null);
+            srv.getConfig().getApplicationUri(),
+            null,
+            LocalizedText.NULL_VALUE,
+            ApplicationType.Server,
+            null,
+            null,
+            null);
 
     return new EndpointDescription(
         endpointUrl,
