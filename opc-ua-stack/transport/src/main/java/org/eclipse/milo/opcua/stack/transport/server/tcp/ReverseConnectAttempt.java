@@ -24,10 +24,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Internal bridge for one server-initiated Reverse Connect attempt.
+ * Observes one server-initiated Reverse Connect attempt.
  *
- * <p>The attempt owns only observation of the outbound connection lifecycle. Retry policy and
- * target-level idle-socket policy belong to the caller.
+ * <p>{@link OpcTcpReverseConnectServerTransport} creates an attempt for each outbound TCP dial and
+ * wires its observer into the Netty pipeline. The attempt publishes connection and handshake
+ * observations through the supplied outcome consumer while leaving retry policy and idle-socket
+ * ownership to the caller.
+ *
+ * <p>{@link SecureChannelOpened} is an informational outcome that may be followed later by a close
+ * outcome for the same channel. All other outcomes are terminal for the attempt, and only the first
+ * terminal outcome is reported.
  */
 public final class ReverseConnectAttempt {
 
@@ -44,18 +50,48 @@ public final class ReverseConnectAttempt {
   private boolean terminalOutcomeReported = false;
   private @Nullable SecureChannelOpened pendingSecureChannelOpened = null;
 
+  /**
+   * Create a new attempt observer.
+   *
+   * @param outcomeConsumer the consumer notified when attempt outcomes are observed.
+   */
   public ReverseConnectAttempt(Consumer<Outcome> outcomeConsumer) {
     this.outcomeConsumer = Objects.requireNonNull(outcomeConsumer);
   }
 
+  /**
+   * Get the TCP connection future for this attempt.
+   *
+   * <p>The future completes with the channel after TCP connect succeeds. It completes exceptionally
+   * if TCP connect fails, the ReverseHello write fails, the client rejects the reverse handshake, or
+   * the channel closes before TCP connect success is reported.
+   *
+   * @return the future completed when the outbound TCP connection succeeds.
+   */
   public CompletableFuture<Channel> connectedFuture() {
     return connectedFuture;
   }
 
+  /**
+   * Get the terminal outcome future for this attempt.
+   *
+   * <p>This future completes with the first terminal outcome. A {@link SecureChannelOpened} outcome
+   * is not terminal and is delivered only to the outcome consumer.
+   *
+   * @return the future completed with the first terminal attempt outcome.
+   */
   public CompletableFuture<Outcome> terminalOutcomeFuture() {
     return terminalOutcomeFuture;
   }
 
+  /**
+   * Record the channel associated with this attempt.
+   *
+   * <p>This is normally called when the observer is added to the Netty pipeline. Later lifecycle
+   * callbacks use the recorded channel when publishing outcomes.
+   *
+   * @param channel the channel opened for this attempt.
+   */
   public void channelInitialized(Channel channel) {
     synchronized (lock) {
       if (this.channel == null) {
@@ -64,6 +100,14 @@ public final class ReverseConnectAttempt {
     }
   }
 
+  /**
+   * Report that the outbound TCP connect completed successfully.
+   *
+   * <p>If a SecureChannel opened before the TCP connect callback arrived, this method also publishes
+   * the buffered {@link SecureChannelOpened} outcome.
+   *
+   * @param channel the connected channel.
+   */
   public void tcpConnectSucceeded(Channel channel) {
     SecureChannelOpened pendingOutcome;
 
@@ -88,6 +132,11 @@ public final class ReverseConnectAttempt {
     }
   }
 
+  /**
+   * Report that the outbound TCP connect failed.
+   *
+   * @param cause the connect failure, or {@code null} to use a generic failure.
+   */
   public void tcpConnectFailed(Throwable cause) {
     Throwable failure = cause != null ? cause : new IllegalStateException("TCP connect failed");
     var outcome = new TcpConnectFailure(failure);
@@ -97,6 +146,11 @@ public final class ReverseConnectAttempt {
     }
   }
 
+  /**
+   * Report that the ReverseHello write failed after TCP connect.
+   *
+   * @param cause the write failure, or {@code null} to use a generic failure.
+   */
   public void reverseHelloWriteFailed(Throwable cause) {
     Throwable failure =
         cause != null ? cause : new IllegalStateException("ReverseHello write failed");
@@ -107,6 +161,11 @@ public final class ReverseConnectAttempt {
     }
   }
 
+  /**
+   * Report that the client rejected the reverse handshake with an OPC UA Error message.
+   *
+   * @param errorMessage the error message received from the client.
+   */
   public void clientRejected(ErrorMessage errorMessage) {
     var outcome = new ClientRejected(requireChannel(), errorMessage);
 
@@ -116,6 +175,15 @@ public final class ReverseConnectAttempt {
     }
   }
 
+  /**
+   * Report that the reverse-connected channel opened a SecureChannel.
+   *
+   * <p>This publishes a non-terminal {@link SecureChannelOpened} outcome. If TCP connect success has
+   * not yet been reported, the outcome is buffered until {@link #tcpConnectSucceeded(Channel)}
+   * arrives so callers see a connected channel before the secure-channel-open observation.
+   *
+   * @param secureChannelId the server-assigned SecureChannel id.
+   */
   public void secureChannelOpened(long secureChannelId) {
     SecureChannelOpened outcomeToEmit = null;
 
@@ -139,6 +207,13 @@ public final class ReverseConnectAttempt {
     }
   }
 
+  /**
+   * Report that the attempt channel became inactive.
+   *
+   * <p>If no terminal outcome has already been reported, this publishes either {@link
+   * CloseBeforeSecureChannel} or {@link CloseAfterSecureChannel} depending on whether a
+   * SecureChannel had opened.
+   */
   public void channelInactive() {
     Outcome outcome;
 
@@ -188,6 +263,7 @@ public final class ReverseConnectAttempt {
     }
   }
 
+  /** Observation published by a Reverse Connect attempt. */
   public sealed interface Outcome
       permits TcpConnectFailure,
           ReverseHelloWriteFailure,
@@ -196,16 +272,49 @@ public final class ReverseConnectAttempt {
           CloseBeforeSecureChannel,
           CloseAfterSecureChannel {}
 
+  /**
+   * Terminal outcome reported when the outbound TCP connect fails.
+   *
+   * @param cause the connect failure.
+   */
   public record TcpConnectFailure(Throwable cause) implements Outcome {}
 
+  /**
+   * Terminal outcome reported when the server cannot write ReverseHello.
+   *
+   * @param channel the connected channel.
+   * @param cause the write failure.
+   */
   public record ReverseHelloWriteFailure(Channel channel, Throwable cause) implements Outcome {}
 
+  /**
+   * Terminal outcome reported when the client sends an OPC UA Error during the reverse handshake.
+   *
+   * @param channel the connected channel.
+   * @param errorMessage the error message received from the client.
+   */
   public record ClientRejected(Channel channel, ErrorMessage errorMessage) implements Outcome {}
 
+  /**
+   * Non-terminal outcome reported when the reverse-connected channel opens a SecureChannel.
+   *
+   * @param channel the connected channel.
+   * @param secureChannelId the server-assigned SecureChannel id.
+   */
   public record SecureChannelOpened(Channel channel, long secureChannelId) implements Outcome {}
 
+  /**
+   * Terminal outcome reported when the channel closes before a SecureChannel opens.
+   *
+   * @param channel the connected channel.
+   */
   public record CloseBeforeSecureChannel(Channel channel) implements Outcome {}
 
+  /**
+   * Terminal outcome reported when the channel closes after a SecureChannel opens.
+   *
+   * @param channel the connected channel.
+   */
   public record CloseAfterSecureChannel(Channel channel) implements Outcome {}
 
   static final class Observer extends ChannelInboundHandlerAdapter {

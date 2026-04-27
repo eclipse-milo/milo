@@ -305,7 +305,7 @@ public class MultiplexedReverseConnectListener implements ChannelConsumerRegistr
       if (list != null && !list.isEmpty()) {
         ChannelConsumer duplicateConsumer = null;
 
-        // Find first consumer whose FSM is in a connection-needing state.
+        // Find the first consumer that can reserve this channel synchronously.
         for (ChannelConsumer consumer : list) {
           if (consumer.tryAccept(channel, rhe)) {
             return;
@@ -318,8 +318,8 @@ public class MultiplexedReverseConnectListener implements ChannelConsumerRegistr
 
         if (duplicateConsumer != null) {
           // All consumers are Connected or Handshaking. Hand to the first
-          // available consumer; its FSM closes the duplicate through its
-          // existing internal transition.
+          // available consumer; its channel owner closes the duplicate through
+          // its existing internal transition.
           duplicateConsumer.accept(channel, rhe);
           return;
         }

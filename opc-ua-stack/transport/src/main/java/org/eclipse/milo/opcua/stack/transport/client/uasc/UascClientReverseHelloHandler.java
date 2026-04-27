@@ -177,8 +177,8 @@ public class UascClientReverseHelloHandler extends ByteToMessageCodec<UaRequestM
   }
 
   /**
-   * Process a pre-decoded {@link ReverseHelloMessage}. Called by the FSM when the ReverseHello was
-   * already decoded by the {@code ReverseHelloDecoder} on the accepted channel, avoiding the need
+   * Process a pre-decoded {@link ReverseHelloMessage}. Called by the reverse-connect handshake
+   * helper when the listener already decoded the message on the accepted channel, avoiding the need
    * to re-encode and re-decode the message through the pipeline.
    *
    * <p>Must be called on the channel's event loop after this handler has been added to the
