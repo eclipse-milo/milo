@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.transport.server.OpcServerTransport;
@@ -54,6 +55,51 @@ class OpcUaServerTest {
     server.shutdown().get(5, TimeUnit.SECONDS);
   }
 
+  @Test
+  void shutdownWaitsForReverseConnectManagerStop() throws Exception {
+    CompletableFuture<Void> reverseConnectStopped = new CompletableFuture<>();
+    ControlledReverseConnectManager reverseConnectManager =
+        new ControlledReverseConnectManager(
+            CompletableFuture.completedFuture(null), reverseConnectStopped);
+
+    OpcServerTransport transport = Mockito.mock(OpcServerTransport.class);
+    OpcServerTransportFactory transportFactory = transportProfile -> transport;
+
+    OpcUaServer server = new OpcUaServer(serverConfig(), transportFactory);
+    server.setReverseConnectManager(reverseConnectManager);
+    server.startup().get(5, TimeUnit.SECONDS);
+
+    CompletableFuture<OpcUaServer> shutdownFuture = server.shutdown();
+
+    assertFalse(shutdownFuture.isDone(), "shutdown should wait for reverse-connect stop");
+
+    reverseConnectStopped.complete(null);
+
+    assertSame(server, shutdownFuture.get(5, TimeUnit.SECONDS));
+  }
+
+  @Test
+  void startupFailureFromReverseConnectManagerUnbindsTransport() throws Exception {
+    RuntimeException startupFailure = new RuntimeException("reverse connect start failed");
+    ControlledReverseConnectManager reverseConnectManager =
+        new ControlledReverseConnectManager(CompletableFuture.failedFuture(startupFailure));
+
+    OpcServerTransport transport = Mockito.mock(OpcServerTransport.class);
+    OpcServerTransportFactory transportFactory = transportProfile -> transport;
+
+    OpcUaServer server = new OpcUaServer(serverConfig(), transportFactory);
+    server.setReverseConnectManager(reverseConnectManager);
+
+    ExecutionException ex =
+        assertThrows(ExecutionException.class, () -> server.startup().get(5, TimeUnit.SECONDS));
+
+    assertSame(startupFailure, ex.getCause());
+    assertTrue(server.getBoundEndpoints().isEmpty());
+    assertTrue(reverseConnectManager.stopCalled);
+    Mockito.verify(transport).bind(Mockito.any(), Mockito.any());
+    Mockito.verify(transport).unbind();
+  }
+
   private static OpcUaServerConfig serverConfig() {
     EndpointConfig endpoint =
         EndpointConfig.newBuilder()
@@ -72,9 +118,16 @@ class OpcUaServerTest {
   private static final class ControlledReverseConnectManager extends ReverseConnectManager {
 
     private final CompletableFuture<Void> startFuture;
+    private final CompletableFuture<Void> stopFuture;
     private volatile String startedServerUri;
+    private volatile boolean stopCalled;
 
     ControlledReverseConnectManager(CompletableFuture<Void> startFuture) {
+      this(startFuture, CompletableFuture.completedFuture(null));
+    }
+
+    ControlledReverseConnectManager(
+        CompletableFuture<Void> startFuture, CompletableFuture<Void> stopFuture) {
       super(
           ReverseConnectConfig.newBuilder()
               .setConnectInterval(Duration.ofMillis(100))
@@ -85,6 +138,7 @@ class OpcUaServerTest {
           OpcTcpServerTransportConfig.newBuilder().build());
 
       this.startFuture = startFuture;
+      this.stopFuture = stopFuture;
     }
 
     @Override
@@ -95,7 +149,8 @@ class OpcUaServerTest {
 
     @Override
     CompletableFuture<Void> stop() {
-      return CompletableFuture.completedFuture(null);
+      stopCalled = true;
+      return stopFuture;
     }
   }
 }

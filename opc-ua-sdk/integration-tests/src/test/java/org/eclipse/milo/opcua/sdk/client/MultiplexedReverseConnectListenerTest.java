@@ -14,6 +14,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import io.netty.channel.Channel;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.security.KeyPair;
@@ -328,7 +329,9 @@ class MultiplexedReverseConnectListenerTest {
             });
 
         // Force-close the underlying channel to simulate connection loss.
-        transport.getChannelFsm().getChannel().close().sync();
+        Channel activeChannel = transport.getActiveChannel();
+        assertNotNull(activeChannel);
+        activeChannel.close().sync();
 
         // Wait for the server to reconnect and re-establish the session.
         sessionReactivated.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
@@ -359,10 +362,11 @@ class MultiplexedReverseConnectListenerTest {
    * Verify on-demand client creation via the {@link
    * MultiplexedReverseConnectListenerConfig#getEndpointResolver()} path. A server dials into the
    * listener with no pre-registered transport. The resolver returns a cached endpoint (1-shot), the
-   * listener creates a transport and builds an {@link OpcUaClient} using the resolved endpoint and
-   * the {@link MultiplexedReverseConnectListenerConfig#getClientCustomizer()}, then notifies the
-   * application via {@link ClientListener}. The application calls {@code connectAsync()}, and the
-   * server's next connection dispatches to the newly registered transport.
+   * SDK on-demand client controller creates a transport and builds an {@link OpcUaClient} using the
+   * resolved endpoint and the {@link
+   * MultiplexedReverseConnectListenerConfig#getClientCustomizer()}, then notifies the application
+   * via {@link ClientListener}. The application calls {@code connectAsync()}, and the server's next
+   * connection dispatches to the newly registered transport.
    */
   @Test
   @Order(4)
@@ -409,7 +413,7 @@ class MultiplexedReverseConnectListenerTest {
 
       try {
         // Wait for the on-demand client to be created and connected.
-        // Flow: server dials in → resolver → listener builds OpcUaClient →
+        // Flow: server dials in → resolver → controller builds OpcUaClient →
         // ClientListener calls connectAsync() → server reconnects → session up.
         OpcUaClient client = clientReady.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
@@ -470,7 +474,8 @@ class MultiplexedReverseConnectListenerTest {
                     builder
                         .setApplicationName(LocalizedText.english("2-shot discovery test client"))
                         .setApplicationUri("urn:eclipse:milo:test:2-shot-discovery-client")
-                        .setRequestTimeout(uint(30_000)))
+                        .setRequestTimeout(uint(30_000))
+                        .setSessionEndpointValidationEnabled(true))
             .setClientListener(
                 client ->
                     client
@@ -499,7 +504,7 @@ class MultiplexedReverseConnectListenerTest {
       try {
         // Wait for the on-demand client to be created and connected.
         // Flow: server dials in → resolver calls discovery.getEndpoints() →
-        // channel consumed → server reconnects → listener builds OpcUaClient →
+        // discovery channel cleaned up → controller builds OpcUaClient →
         // ClientListener calls connectAsync() → session up.
         OpcUaClient client = clientReady.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
@@ -559,7 +564,13 @@ class MultiplexedReverseConnectListenerTest {
 
     var serverDescription =
         new ApplicationDescription(
-            endpointUrl, null, LocalizedText.NULL_VALUE, ApplicationType.Server, null, null, null);
+            srv.getConfig().getApplicationUri(),
+            null,
+            LocalizedText.NULL_VALUE,
+            ApplicationType.Server,
+            null,
+            null,
+            null);
 
     return new EndpointDescription(
         endpointUrl,

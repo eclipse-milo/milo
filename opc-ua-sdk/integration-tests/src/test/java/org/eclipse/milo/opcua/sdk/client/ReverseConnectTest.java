@@ -12,26 +12,35 @@ package org.eclipse.milo.opcua.sdk.client;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.netty.channel.Channel;
 import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.milo.opcua.sdk.server.EndpointConfig;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.ReverseConnectHandle;
 import org.eclipse.milo.opcua.sdk.server.ReverseConnectManager;
 import org.eclipse.milo.opcua.sdk.test.TestServer;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
@@ -63,7 +72,8 @@ import org.junit.jupiter.api.TestMethodOrder;
  * ReverseConnectManager}. No stubs or mocks are used.
  *
  * <p>Tests are ordered so that the URI rejection test (which produces a burst of rejected
- * connections) runs last, preventing its connection churn from slowing other tests.
+ * connections) runs after the normal connection scenarios, preventing its connection churn from
+ * slowing them down.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -202,7 +212,9 @@ class ReverseConnectTest {
           });
 
       // Force-close the underlying channel to simulate connection loss
-      transport.getChannelFsm().getChannel().close().sync();
+      Channel channel = transport.getActiveChannel();
+      assertNotNull(channel);
+      channel.close().sync();
 
       // Wait for the session to be fully re-established on the new channel.
       // This includes: server reconnects, new handshake, ActivateSession,
@@ -309,11 +321,117 @@ class ReverseConnectTest {
 
   @Test
   @Order(4)
+  void createReverseConnectBuffersEarlyPass2UntilConnect() throws Exception {
+    int clientPort = getAvailablePort();
+
+    var transportConfig =
+        OpcTcpReverseConnectTransportConfig.newBuilder()
+            .setListenAddress(new InetSocketAddress("localhost", clientPort))
+            .setReverseHelloTimeout(5_000)
+            .setConnectTimeout(5_000)
+            .build();
+
+    CompletableFuture<OpcUaClient> clientFuture =
+        OpcUaClient.createReverseConnect(
+            transportConfig,
+            this::selectNoneSecuritySessionEndpoint,
+            this::configureCreateReverseConnectClient);
+
+    ReverseConnectHandle handle =
+        server.addReverseConnect("opc.tcp://localhost:" + clientPort, getServerEndpointUrl());
+
+    OpcUaClient client = null;
+    try {
+      client = clientFuture.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+      // Give the server retry loop time to deliver pass 2 before the real client context exists.
+      Thread.sleep(1_200);
+
+      client.connectAsync().get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+      assertNotNull(client.getSessionAsync().get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+    } finally {
+      server.removeReverseConnect(handle);
+      disconnectQuietly(client);
+    }
+  }
+
+  @Test
+  @Order(5)
+  void createReverseConnectTimesOutWhenPass2DoesNotReconnect() throws Exception {
+    int clientPort = getAvailablePort();
+    var handleRef = new AtomicReference<ReverseConnectHandle>();
+
+    var transportConfig =
+        OpcTcpReverseConnectTransportConfig.newBuilder()
+            .setListenAddress(new InetSocketAddress("localhost", clientPort))
+            .setReverseHelloTimeout(5_000)
+            .setConnectTimeout(750)
+            .build();
+
+    handleRef.set(
+        server.addReverseConnect("opc.tcp://localhost:" + clientPort, getServerEndpointUrl()));
+
+    OpcUaClient client = null;
+    try {
+      client =
+          OpcUaClient.createReverseConnect(
+                  transportConfig,
+                  endpoints -> {
+                    removeReverseConnect(handleRef);
+                    return selectNoneSecuritySessionEndpoint(endpoints);
+                  },
+                  this::configureCreateReverseConnectClient)
+              .get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+      OpcUaClient unconnectedClient = client;
+      ExecutionException ex =
+          assertThrows(
+              ExecutionException.class,
+              () -> unconnectedClient.connectAsync().get(10, TimeUnit.SECONDS));
+
+      UaException uaException = assertInstanceOf(UaException.class, ex.getCause());
+      assertEquals(StatusCodes.Bad_Timeout, uaException.getStatusCode().value());
+    } finally {
+      removeReverseConnect(handleRef);
+      disconnectQuietly(client);
+    }
+  }
+
+  @Test
+  @Order(6)
+  void createReverseConnectCleansUpListenerWhenDiscoveryTimesOut() throws Exception {
+    int clientPort = getAvailablePort();
+
+    var transportConfig =
+        OpcTcpReverseConnectTransportConfig.newBuilder()
+            .setListenAddress(new InetSocketAddress("localhost", clientPort))
+            .setReverseHelloTimeout(5_000)
+            .setConnectTimeout(500)
+            .build();
+
+    ExecutionException ex =
+        assertThrows(
+            ExecutionException.class,
+            () ->
+                OpcUaClient.createReverseConnect(
+                        transportConfig,
+                        this::selectNoneSecuritySessionEndpoint,
+                        this::configureCreateReverseConnectClient)
+                    .get(10, TimeUnit.SECONDS));
+
+    assertReverseConnectTimeout(ex.getCause());
+    assertPortAvailable(clientPort);
+  }
+
+  @Test
+  @Order(7)
   void reverseConnectServerUriRejection() throws Exception {
     var transportConfig =
         OpcTcpReverseConnectTransportConfig.newBuilder()
             .setListenAddress(new InetSocketAddress("localhost", 0))
             .setReverseHelloTimeout(5_000)
+            .setConnectTimeout(750)
             .setAllowedServerUris(Set.of("urn:bogus:server:that:does:not:match"))
             .build();
 
@@ -337,10 +455,12 @@ class ReverseConnectTest {
         server.addReverseConnect("opc.tcp://localhost:" + clientPort, getServerEndpointUrl());
 
     try {
-      // The server's ApplicationUri won't match "urn:bogus:server:that:does:not:match",
-      // so the client transport should reject every ReverseHello. The connect future
-      // will never complete, so we expect a timeout.
-      assertThrows(TimeoutException.class, () -> connectFuture.get(2, TimeUnit.SECONDS));
+      // The server's ApplicationUri won't match the allowed set, so the transport ignores the
+      // ReverseHello and the connect waiter times out waiting for an allowed server.
+      ExecutionException ex =
+          assertThrows(
+              ExecutionException.class, () -> connectFuture.get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+      assertReverseConnectTimeout(ex.getCause());
     } finally {
       server.removeReverseConnect(handle);
       try {
@@ -358,7 +478,7 @@ class ReverseConnectTest {
    * needed the same thread to complete its stop transition.
    */
   @Test
-  @Order(5)
+  @Order(8)
   void shutdownCompletesWithoutDeadlock() throws Exception {
     // Use an independent server so we don't affect the shared instance.
     TestServer testServer = TestServer.create();
@@ -394,6 +514,24 @@ class ReverseConnectTest {
   // Helpers
   // ---------------------------------------------------------------------------
 
+  private void assertReverseConnectTimeout(Throwable cause) {
+    Throwable failure = unwrap(cause);
+    if (failure instanceof TimeoutException) {
+      return;
+    }
+
+    UaException uaException = assertInstanceOf(UaException.class, failure);
+    assertEquals(StatusCodes.Bad_Timeout, uaException.getStatusCode().value());
+  }
+
+  private Throwable unwrap(Throwable cause) {
+    if (cause instanceof CompletionException && cause.getCause() != null) {
+      return cause.getCause();
+    }
+
+    return cause;
+  }
+
   private OpcUaClient createReverseConnectClient(
       String appName, String appUri, OpcTcpReverseConnectTransport transport) {
 
@@ -406,6 +544,55 @@ class ReverseConnectTest {
             .build();
 
     return new OpcUaClient(clientConfig, transport);
+  }
+
+  private void configureCreateReverseConnectClient(OpcUaClientConfigBuilder builder) {
+    builder
+        .setApplicationName(LocalizedText.english("reverse connect factory test client"))
+        .setApplicationUri("urn:eclipse:milo:test:reverse-connect-factory-client")
+        .setRequestTimeout(uint(30_000));
+  }
+
+  private Optional<EndpointDescription> selectNoneSecuritySessionEndpoint(
+      List<EndpointDescription> endpoints) {
+
+    return endpoints.stream()
+        .filter(e -> SecurityPolicy.None.getUri().equals(e.getSecurityPolicyUri()))
+        .filter(e -> e.getEndpointUrl() != null && !e.getEndpointUrl().endsWith("/discovery"))
+        .findFirst();
+  }
+
+  private void removeReverseConnect(AtomicReference<ReverseConnectHandle> handleRef) {
+    ReverseConnectHandle handle = handleRef.getAndSet(null);
+    if (handle != null) {
+      server.removeReverseConnect(handle);
+    }
+  }
+
+  private void disconnectQuietly(OpcUaClient client) {
+    if (client == null) {
+      return;
+    }
+
+    try {
+      client.disconnectAsync().get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+    } catch (Exception ignored) {
+      // don't mask the original error
+    }
+  }
+
+  private int getAvailablePort() throws Exception {
+    try (ServerSocket socket = new ServerSocket()) {
+      socket.bind(new InetSocketAddress("localhost", 0));
+      return socket.getLocalPort();
+    }
+  }
+
+  private void assertPortAvailable(int port) throws Exception {
+    try (ServerSocket socket = new ServerSocket()) {
+      socket.setReuseAddress(true);
+      socket.bind(new InetSocketAddress("localhost", port));
+    }
   }
 
   /**
@@ -436,7 +623,13 @@ class ReverseConnectTest {
 
     var serverDescription =
         new ApplicationDescription(
-            endpointUrl, null, LocalizedText.NULL_VALUE, ApplicationType.Server, null, null, null);
+            server.getConfig().getApplicationUri(),
+            null,
+            LocalizedText.NULL_VALUE,
+            ApplicationType.Server,
+            null,
+            null,
+            null);
 
     return new EndpointDescription(
         endpointUrl,

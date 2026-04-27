@@ -20,6 +20,9 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import java.net.InetSocketAddress;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Consumer;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.server.uasc.UascServerReverseHelloHandler;
@@ -41,6 +44,39 @@ public class OpcTcpReverseConnectServerTransport {
   }
 
   /**
+   * Create a transport-owned Reverse Connect target lifecycle handle.
+   *
+   * @param clientEndpointUrl the client's listening endpoint URL.
+   * @param endpointUrl the server endpoint URL sent in ReverseHello messages.
+   * @param serverUri the server's ApplicationUri sent in ReverseHello messages.
+   * @param applicationContext the server application context.
+   * @param reverseConnectConfig the Reverse Connect timing configuration.
+   * @param executor the executor used to serialize target lifecycle events.
+   * @param scheduler the scheduler used for retry timers.
+   * @return a target handle that keeps retry and idle-socket policy inside the transport layer.
+   */
+  public ReverseConnectTarget createTarget(
+      String clientEndpointUrl,
+      String endpointUrl,
+      String serverUri,
+      ServerApplicationContext applicationContext,
+      ReverseConnectConfig reverseConnectConfig,
+      Executor executor,
+      ScheduledExecutorService scheduler) {
+
+    return new ReverseConnectTarget(
+        new ReverseConnectTargetOwner(
+            clientEndpointUrl,
+            endpointUrl,
+            serverUri,
+            this,
+            applicationContext,
+            reverseConnectConfig,
+            executor,
+            scheduler));
+  }
+
+  /**
    * Initiate a reverse connection to a client.
    *
    * @param applicationContext the server application context.
@@ -57,7 +93,25 @@ public class OpcTcpReverseConnectServerTransport {
       String endpointUrl,
       long connectTimeoutMs) {
 
-    var future = new CompletableFuture<Channel>();
+    return connectAttempt(
+            applicationContext,
+            clientAddress,
+            serverUri,
+            endpointUrl,
+            connectTimeoutMs,
+            outcome -> {})
+        .connectedFuture();
+  }
+
+  protected ReverseConnectAttempt connectAttempt(
+      ServerApplicationContext applicationContext,
+      InetSocketAddress clientAddress,
+      String serverUri,
+      String endpointUrl,
+      long connectTimeoutMs,
+      Consumer<ReverseConnectAttempt.Outcome> outcomeConsumer) {
+
+    var attempt = new ReverseConnectAttempt(outcomeConsumer);
 
     var bootstrap = new Bootstrap();
     bootstrap
@@ -70,14 +124,19 @@ public class OpcTcpReverseConnectServerTransport {
             new ChannelInitializer<SocketChannel>() {
               @Override
               protected void initChannel(SocketChannel ch) {
+                attempt.channelInitialized(ch);
+
                 ch.pipeline()
+                    .addLast(new ReverseConnectAttempt.Observer(attempt))
                     .addLast(
                         new UascServerReverseHelloHandler(
                             config,
                             applicationContext,
                             TransportProfile.TCP_UASC_UABINARY,
                             serverUri,
-                            endpointUrl));
+                            endpointUrl,
+                            attempt::reverseHelloWriteFailed,
+                            attempt::clientRejected));
               }
             });
 
@@ -86,12 +145,12 @@ public class OpcTcpReverseConnectServerTransport {
         .addListener(
             (ChannelFuture cf) -> {
               if (cf.isSuccess()) {
-                future.complete(cf.channel());
+                attempt.tcpConnectSucceeded(cf.channel());
               } else {
-                future.completeExceptionally(cf.cause());
+                attempt.tcpConnectFailed(cf.cause());
               }
             });
 
-    return future;
+    return attempt;
   }
 }

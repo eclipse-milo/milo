@@ -25,12 +25,10 @@ SDK for building OPC UA applications.
 | `mvn -q clean verify`   | Full build with tests and formatting check |
 | `mvn -q spotless:apply` | Fix code formatting issues                 |
 
-Before running any tests, read `.claude/docs/testing.md` for module targeting flags and
-test patterns.
-
 ## Additional Resources
 
-- Testing patterns: `.claude/docs/testing.md`
+- Running tests: `.claude/docs/running-tests.md` - **Read before running any tests**
+- Writing tests: `.claude/docs/writing-tests.md` - **Read before writing any tests**
 - Java conventions: `.claude/docs/java-coding-conventions.md`
 - Dependencies: `.claude/docs/dependencies.md`
 
@@ -43,6 +41,7 @@ Use these steps to verify any completed work. Implementation plans should includ
     - `mvn -q clean compile` - Compile (skip tests)
 
 2. **Request code review** from the `preflight` agent, which will:
+   - Read `.claude/docs/java-coding-conventions.md` before reviewing changes
     - Review changes for correctness, style, and adherence to project conventions
     - Report **APPROVED** or **CHANGES REQUESTED**
 

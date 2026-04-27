@@ -73,6 +73,8 @@ public class ProsysReverseConnectExample {
     try {
       logger.info("Waiting for Prosys server to reverse-connect to {}...", LISTEN_ADDRESS);
 
+      // createReverseConnect() has already performed discovery and returned an unconnected client.
+      // This call installs the real client context and waits for the server's session connection.
       client.connectAsync().get(30, TimeUnit.SECONDS);
 
       logger.info("Connected via Reverse Connect.");

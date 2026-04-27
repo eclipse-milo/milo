@@ -14,6 +14,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -29,12 +30,13 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import org.eclipse.milo.opcua.sdk.server.EndpointConfig;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.ReverseConnectHandle;
 import org.eclipse.milo.opcua.sdk.server.ReverseConnectManager;
 import org.eclipse.milo.opcua.sdk.test.TestServer;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
@@ -111,7 +113,7 @@ class OpcTcpReverseConnectTransportTest {
     try {
       connectFuture.get(10, TimeUnit.SECONDS);
 
-      io.netty.channel.Channel channel = transport.getChannelFsm().getChannel();
+      io.netty.channel.Channel channel = transport.getActiveChannel();
       assertNotNull(channel, "channel should be set after connect");
       assertTrue(channel.isActive(), "channel should be active after connect");
     } finally {
@@ -121,10 +123,11 @@ class OpcTcpReverseConnectTransportTest {
   }
 
   @Test
-  void serverUriRejection() throws Exception {
+  void serverUriRejectionTimesOutWaitingForAllowedServer() throws Exception {
     var transportConfig =
         OpcTcpReverseConnectTransportConfig.newBuilder()
             .setListenAddress(new InetSocketAddress("localhost", 0))
+            .setConnectTimeout(750)
             .setAllowedServerUris(Set.of("urn:bogus:server:that:does:not:match"))
             .build();
 
@@ -140,9 +143,12 @@ class OpcTcpReverseConnectTransportTest {
         server.addReverseConnect("opc.tcp://localhost:" + listenPort, getServerEndpointUrl());
 
     try {
-      // The server's ApplicationUri won't match the allowed set, so the client
-      // transport should reject every ReverseHello and the future should not complete.
-      assertThrows(TimeoutException.class, () -> connectFuture.get(3, TimeUnit.SECONDS));
+      // The server's ApplicationUri won't match the allowed set, so the transport ignores the
+      // ReverseHello and the connect waiter times out waiting for an allowed server.
+      ExecutionException ex =
+          assertThrows(ExecutionException.class, () -> connectFuture.get(10, TimeUnit.SECONDS));
+      UaException uaException = assertInstanceOf(UaException.class, ex.getCause());
+      assertEquals(StatusCodes.Bad_Timeout, uaException.getStatusCode().value());
     } finally {
       server.removeReverseConnect(handle);
       try {
@@ -175,7 +181,7 @@ class OpcTcpReverseConnectTransportTest {
     try {
       connectFuture.get(10, TimeUnit.SECONDS);
 
-      io.netty.channel.Channel channel = transport.getChannelFsm().getChannel();
+      io.netty.channel.Channel channel = transport.getActiveChannel();
       assertNotNull(channel);
       assertTrue(channel.isActive());
     } finally {
@@ -206,16 +212,13 @@ class OpcTcpReverseConnectTransportTest {
       connectFuture.get(10, TimeUnit.SECONDS);
 
       // Force-close the underlying channel
-      io.netty.channel.Channel channel = transport.getChannelFsm().getChannel();
+      io.netty.channel.Channel channel = transport.getActiveChannel();
       assertNotNull(channel);
       channel.close().sync();
 
-      // The server should reconnect and the transport FSM should re-establish a channel.
+      // The server should reconnect and the transport should re-establish a channel.
       // getChannel() returns a future that completes when a new channel is available.
-      var getChannel = new ReverseConnectChannelFsm.Event.GetChannel(new CompletableFuture<>());
-      transport.getChannelFsm().fireEvent(getChannel);
-
-      io.netty.channel.Channel newChannel = getChannel.future().get(15, TimeUnit.SECONDS);
+      io.netty.channel.Channel newChannel = transport.getChannel().get(15, TimeUnit.SECONDS);
       assertNotNull(newChannel, "new channel should be established after reconnect");
       assertTrue(newChannel.isActive(), "new channel should be active");
     } finally {
@@ -345,8 +348,8 @@ class OpcTcpReverseConnectTransportTest {
 
     try {
       retryFuture.get(10, TimeUnit.SECONDS);
-      assertNotNull(transport2.getChannelFsm().getChannel());
-      assertTrue(transport2.getChannelFsm().getChannel().isActive());
+      assertNotNull(transport2.getActiveChannel());
+      assertTrue(transport2.getActiveChannel().isActive());
     } finally {
       server.removeReverseConnect(handle);
       transport2.disconnect().get(5, TimeUnit.SECONDS);

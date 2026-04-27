@@ -11,14 +11,15 @@
 package org.eclipse.milo.opcua.sdk.client;
 
 /**
- * A callback for customizing the configuration of on-demand clients created by a {@code
+ * A callback for customizing the configuration of on-demand clients created for a {@code
  * MultiplexedReverseConnectListener} when an unknown server connects via ReverseHello.
  */
 @FunctionalInterface
 public interface ClientCustomizer {
 
   /**
-   * Configure the client config builder for a server that connected via ReverseHello.
+   * Configure the client config builder for a server that connected via ReverseHello. The callback
+   * is invoked on the listener's configured transport executor.
    *
    * @param serverUri the server's ApplicationUri from the ReverseHello.
    * @param builder the client config builder to configure.

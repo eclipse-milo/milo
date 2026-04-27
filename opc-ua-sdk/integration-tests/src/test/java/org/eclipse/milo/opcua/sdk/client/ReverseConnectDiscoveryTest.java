@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.client;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -19,6 +20,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -27,6 +29,8 @@ import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.ReverseConnectHandle;
 import org.eclipse.milo.opcua.sdk.server.ReverseConnectManager;
 import org.eclipse.milo.opcua.sdk.test.TestServer;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpReverseConnectTransportConfig;
@@ -42,18 +46,13 @@ import org.junit.jupiter.api.TestInstance;
  * {@link DiscoveryClient#getEndpoints(OpcTcpReverseConnectTransportConfig)} and {@link
  * DiscoveryClient#findServers(OpcTcpReverseConnectTransportConfig)}.
  *
- * <p>A fixed listen port is used because the static methods create and manage the transport
- * internally, so the test cannot extract an OS-assigned ephemeral port via reflection. The server's
- * retry loop (500ms interval) quickly finds the client once the listening socket opens.
+ * <p>The static methods create and manage the transport internally, so the tests reserve an
+ * available listen port before each call and pass that port to the server-side reverse-connect
+ * handle. The server's retry loop (500ms interval) quickly finds the client once the listening
+ * socket opens.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ReverseConnectDiscoveryTest {
-
-  /**
-   * Fixed listen port. The static {@link DiscoveryClient} methods manage the transport internally,
-   * so the test cannot read an OS-assigned ephemeral port. See class Javadoc.
-   */
-  private static final int LISTEN_PORT = 48070;
 
   private static final long TIMEOUT_SECONDS = 30;
 
@@ -86,13 +85,15 @@ class ReverseConnectDiscoveryTest {
 
   @Test
   void getEndpointsViaReverseConnect() throws Exception {
+    int listenPort = getAvailablePort();
+
     var config =
         OpcTcpReverseConnectTransportConfig.newBuilder()
-            .setListenAddress(new InetSocketAddress("localhost", LISTEN_PORT))
+            .setListenAddress(new InetSocketAddress("localhost", listenPort))
             .build();
 
     ReverseConnectHandle handle =
-        server.addReverseConnect("opc.tcp://localhost:" + LISTEN_PORT, getServerEndpointUrl());
+        server.addReverseConnect("opc.tcp://localhost:" + listenPort, getServerEndpointUrl());
 
     try {
       List<EndpointDescription> endpoints =
@@ -115,13 +116,15 @@ class ReverseConnectDiscoveryTest {
 
   @Test
   void findServersViaReverseConnect() throws Exception {
+    int listenPort = getAvailablePort();
+
     var config =
         OpcTcpReverseConnectTransportConfig.newBuilder()
-            .setListenAddress(new InetSocketAddress("localhost", LISTEN_PORT))
+            .setListenAddress(new InetSocketAddress("localhost", listenPort))
             .build();
 
     ReverseConnectHandle handle =
-        server.addReverseConnect("opc.tcp://localhost:" + LISTEN_PORT, getServerEndpointUrl());
+        server.addReverseConnect("opc.tcp://localhost:" + listenPort, getServerEndpointUrl());
 
     try {
       List<ApplicationDescription> servers =
@@ -140,14 +143,16 @@ class ReverseConnectDiscoveryTest {
 
   @Test
   void getEndpointsCleanup() throws Exception {
+    int listenPort = getAvailablePort();
+
     var config =
         OpcTcpReverseConnectTransportConfig.newBuilder()
-            .setListenAddress(new InetSocketAddress("localhost", LISTEN_PORT))
+            .setListenAddress(new InetSocketAddress("localhost", listenPort))
             .build();
 
     // First call
     ReverseConnectHandle handle1 =
-        server.addReverseConnect("opc.tcp://localhost:" + LISTEN_PORT, getServerEndpointUrl());
+        server.addReverseConnect("opc.tcp://localhost:" + listenPort, getServerEndpointUrl());
 
     try {
       List<EndpointDescription> endpoints1 =
@@ -160,7 +165,7 @@ class ReverseConnectDiscoveryTest {
     // Second call on the same port — would fail with a bind exception if the
     // first call did not properly release the listening socket.
     ReverseConnectHandle handle2 =
-        server.addReverseConnect("opc.tcp://localhost:" + LISTEN_PORT, getServerEndpointUrl());
+        server.addReverseConnect("opc.tcp://localhost:" + listenPort, getServerEndpointUrl());
 
     try {
       List<EndpointDescription> endpoints2 =
@@ -173,8 +178,7 @@ class ReverseConnectDiscoveryTest {
 
   @Test
   void getEndpointsTimesOutWhenNoServerConnects() throws Exception {
-    // Use a different port so there is no server-side reverse connect handle targeting it.
-    int timeoutPort = LISTEN_PORT + 1;
+    int timeoutPort = getAvailablePort();
 
     var config =
         OpcTcpReverseConnectTransportConfig.newBuilder()
@@ -188,13 +192,42 @@ class ReverseConnectDiscoveryTest {
             ExecutionException.class,
             () -> DiscoveryClient.getEndpoints(config).get(10, TimeUnit.SECONDS));
 
-    assertInstanceOf(TimeoutException.class, ee.getCause());
+    assertReverseConnectTimeout(ee.getCause());
 
     // Verify the listening port was released by rebinding it.
-    try (ServerSocket ss = new ServerSocket()) {
-      ss.setReuseAddress(true);
-      ss.bind(new InetSocketAddress("localhost", timeoutPort));
+    assertPortAvailable(timeoutPort);
+  }
+
+  private int getAvailablePort() throws Exception {
+    try (var socket = new ServerSocket()) {
+      socket.bind(new InetSocketAddress("localhost", 0));
+      return socket.getLocalPort();
     }
+  }
+
+  private void assertPortAvailable(int port) throws Exception {
+    try (var socket = new ServerSocket()) {
+      socket.setReuseAddress(true);
+      socket.bind(new InetSocketAddress("localhost", port));
+    }
+  }
+
+  private void assertReverseConnectTimeout(Throwable cause) {
+    Throwable failure = unwrap(cause);
+    if (failure instanceof TimeoutException) {
+      return;
+    }
+
+    UaException uaException = assertInstanceOf(UaException.class, failure);
+    assertEquals(StatusCodes.Bad_Timeout, uaException.getStatusCode().value());
+  }
+
+  private Throwable unwrap(Throwable cause) {
+    if (cause instanceof CompletionException && cause.getCause() != null) {
+      return cause.getCause();
+    }
+
+    return cause;
   }
 
   private String getServerEndpointUrl() {

@@ -38,6 +38,8 @@ import org.eclipse.milo.opcua.stack.core.channel.messages.TcpMessageDecoder;
 import org.eclipse.milo.opcua.stack.core.channel.messages.TcpMessageEncoder;
 import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -175,8 +177,8 @@ public class UascClientReverseHelloHandler extends ByteToMessageCodec<UaRequestM
   }
 
   /**
-   * Process a pre-decoded {@link ReverseHelloMessage}. Called by the FSM when the ReverseHello was
-   * already decoded by the {@code ReverseHelloDecoder} on the accepted channel, avoiding the need
+   * Process a pre-decoded {@link ReverseHelloMessage}. Called by the reverse-connect handshake
+   * helper when the listener already decoded the message on the accepted channel, avoiding the need
    * to re-encode and re-decode the message through the pipeline.
    *
    * <p>Must be called on the channel's event loop after this handler has been added to the
@@ -195,24 +197,59 @@ public class UascClientReverseHelloHandler extends ByteToMessageCodec<UaRequestM
 
     logger.debug("Received ReverseHello: {}", reverseHello);
 
-    String serverUri = reverseHello.serverUri();
+    UaException validationFailure = validateReverseHello(reverseHello);
 
-    if (!allowedServerUris.isEmpty() && !allowedServerUris.contains(serverUri)) {
-      String message = String.format("ServerUri not allowed: %s", serverUri);
-
-      handshakeFuture.completeExceptionally(
-          new UaException(StatusCodes.Bad_TcpEndpointUrlInvalid, message));
-
-      ExceptionHandler.sendErrorMessage(
-          ctx, new UaException(StatusCodes.Bad_TcpEndpointUrlInvalid, message));
-
-      ctx.close();
+    if (validationFailure != null) {
+      handshakeFuture.completeExceptionally(validationFailure);
+      ExceptionHandler.sendErrorMessage(ctx, validationFailure);
       return;
     }
 
     sendHello(ctx, reverseHello.endpointUrl());
 
     state = State.AWAITING_ACK;
+  }
+
+  private UaException validateReverseHello(ReverseHelloMessage reverseHello) {
+    String serverUri = reverseHello.serverUri();
+
+    if (!allowedServerUris.isEmpty() && !allowedServerUris.contains(serverUri)) {
+      return new UaException(
+          StatusCodes.Bad_TcpEndpointUrlInvalid,
+          String.format("ServerUri not allowed: %s", serverUri));
+    }
+
+    EndpointDescription selectedEndpoint = application.getEndpoint();
+
+    ApplicationDescription selectedServer = selectedEndpoint.getServer();
+    if (selectedServer != null) {
+      String selectedServerUri = selectedServer.getApplicationUri();
+
+      if (hasText(selectedServerUri) && !selectedServerUri.equals(serverUri)) {
+        return new UaException(
+            StatusCodes.Bad_TcpEndpointUrlInvalid,
+            String.format(
+                "ServerUri does not match selected endpoint: expected=%s actual=%s",
+                selectedServerUri, serverUri));
+      }
+    }
+
+    String selectedEndpointUrl = selectedEndpoint.getEndpointUrl();
+    String reverseHelloEndpointUrl = reverseHello.endpointUrl();
+
+    if (hasText(selectedEndpointUrl) && !selectedEndpointUrl.equals(reverseHelloEndpointUrl)) {
+      return new UaException(
+          StatusCodes.Bad_TcpEndpointUrlInvalid,
+          String.format(
+              "EndpointUrl does not match selected endpoint: expected=%s actual=%s",
+              selectedEndpointUrl, reverseHelloEndpointUrl));
+    }
+
+    return null;
+  }
+
+  private static boolean hasText(String value) {
+    return value != null && !value.isBlank();
   }
 
   private void sendHello(ChannelHandlerContext ctx, String endpointUrl) throws UaException {
@@ -291,21 +328,17 @@ public class UascClientReverseHelloHandler extends ByteToMessageCodec<UaRequestM
             Ints.saturatedCast(remoteSendBufferSize),
             Ints.saturatedCast(remoteMaxChunkCount));
 
-    ctx.executor()
-        .execute(
-            () -> {
-              var messageHandler =
-                  new UascClientMessageHandler(
-                      config,
-                      application,
-                      requestIdSupplier,
-                      handshakeFuture,
-                      awaitingHandshake,
-                      channelParameters);
+    var messageHandler =
+        new UascClientMessageHandler(
+            config,
+            application,
+            requestIdSupplier,
+            handshakeFuture,
+            awaitingHandshake,
+            channelParameters);
 
-              ctx.pipeline().addFirst(messageHandler);
-              ctx.pipeline().remove(UascClientReverseHelloHandler.this);
-            });
+    ctx.pipeline().addFirst(messageHandler);
+    ctx.pipeline().remove(UascClientReverseHelloHandler.this);
   }
 
   private void onError(ChannelHandlerContext ctx, ByteBuf buffer) {

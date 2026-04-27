@@ -20,7 +20,9 @@ import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
  *
  * <p>The resolver may return a known endpoint directly (1-shot) or call {@link
  * Discovery#getEndpoints()} to perform online discovery on the inbound channel (2-shot). Both paths
- * return a {@code CompletableFuture<EndpointDescription>}.
+ * return a {@code CompletableFuture<EndpointDescription>}. Callers may bound the returned future
+ * with their configured resolver timeout, so implementations should return promptly and perform
+ * slow work asynchronously.
  */
 public interface EndpointResolver {
 
@@ -29,7 +31,8 @@ public interface EndpointResolver {
    *
    * <p>The resolver may return a known endpoint directly (1-shot) or call {@link
    * Discovery#getEndpoints()} to perform online discovery on the inbound channel (2-shot). Both
-   * paths return a {@code CompletableFuture<EndpointDescription>}.
+   * paths return a {@code CompletableFuture<EndpointDescription>}. The caller may impose a timeout
+   * on the returned future.
    *
    * @param serverUri the server's ApplicationUri from the ReverseHello.
    * @param endpointUrl the server's EndpointUrl from the ReverseHello.
@@ -43,8 +46,8 @@ public interface EndpointResolver {
    * A capability for performing OPC UA GetEndpoints discovery on the inbound channel.
    *
    * <p>Calling {@link #getEndpoints()} drives the full Hello/Ack/OpenSecureChannel/ GetEndpoints
-   * sequence on the channel. After the call, the channel is consumed and will be closed — the
-   * server must reconnect for the actual session.
+   * sequence on the channel. After the call, the channel is consumed and will be closed before the
+   * future completes — the server must reconnect for the actual session.
    */
   @FunctionalInterface
   interface Discovery {

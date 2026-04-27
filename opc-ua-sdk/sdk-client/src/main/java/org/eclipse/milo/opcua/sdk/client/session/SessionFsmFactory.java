@@ -30,7 +30,6 @@ import com.digitalpetri.fsm.Fsm;
 import com.digitalpetri.fsm.FsmContext;
 import com.digitalpetri.fsm.dsl.ActionContext;
 import com.digitalpetri.fsm.dsl.FsmBuilder;
-import com.digitalpetri.netty.fsm.ChannelFsm;
 import com.google.common.collect.Streams;
 import com.google.common.primitives.Bytes;
 import io.netty.channel.Channel;
@@ -91,11 +90,8 @@ import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
 import org.eclipse.milo.opcua.stack.core.util.SignatureUtil;
 import org.eclipse.milo.opcua.stack.core.util.Unit;
 import org.eclipse.milo.opcua.stack.transport.client.ChannelStateObservable;
+import org.eclipse.milo.opcua.stack.transport.client.CurrentChannelProvider;
 import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransport;
-import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransport;
-import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpMultiplexedReverseConnectTransport;
-import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpReverseConnectTransport;
-import org.eclipse.milo.opcua.stack.transport.client.tcp.ReverseConnectChannelFsm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -639,13 +635,21 @@ public class SessionFsmFactory {
                 ChannelStateObservable.TransitionListener listener =
                     connected -> {
                       if (!connected) {
-                        try (MDCCloseable ignored =
-                            MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+                        client
+                            .getTransport()
+                            .getConfig()
+                            .getExecutor()
+                            .execute(
+                                () -> {
+                                  try (MDCCloseable ignored =
+                                      MDC.putCloseable(
+                                          "instance-id", ctx.getUserContext().toString())) {
 
-                          LOGGER.debug("Channel state change: disconnected");
-                        }
+                                    LOGGER.debug("Channel state change: disconnected");
+                                  }
 
-                        ctx.fireEvent(new Event.ConnectionLost());
+                                  ctx.fireEvent(new Event.ConnectionLost());
+                                });
                       }
                     };
 
@@ -1591,30 +1595,14 @@ public class SessionFsmFactory {
   /**
    * Close the underlying Netty channel of the given transport to force a reconnect.
    *
-   * <p>This handles forward-connect ({@link OpcTcpClientTransport}), reverse-connect ({@link
-   * OpcTcpReverseConnectTransport}), and multiplexed reverse-connect ({@link
-   * OpcTcpMultiplexedReverseConnectTransport}) transports.
+   * <p>Transports that expose a current channel can be closed without depending on their concrete
+   * implementation type.
    *
    * @param transport the client transport whose channel should be closed.
    */
   static void closeTransportChannel(OpcClientTransport transport) {
-    if (transport instanceof OpcTcpClientTransport) {
-      ChannelFsm channelFsm = ((OpcTcpClientTransport) transport).getChannelFsm();
-      Channel channel = channelFsm.getChannel().getNow(null);
-      if (channel != null) {
-        channel.close();
-      }
-    } else if (transport instanceof OpcTcpReverseConnectTransport) {
-      ReverseConnectChannelFsm channelFsm =
-          ((OpcTcpReverseConnectTransport) transport).getChannelFsm();
-      Channel channel = channelFsm.getChannel();
-      if (channel != null) {
-        channel.close();
-      }
-    } else if (transport instanceof OpcTcpMultiplexedReverseConnectTransport) {
-      ReverseConnectChannelFsm channelFsm =
-          ((OpcTcpMultiplexedReverseConnectTransport) transport).getChannelFsm();
-      Channel channel = channelFsm.getChannel();
+    if (transport instanceof CurrentChannelProvider currentChannelProvider) {
+      Channel channel = currentChannelProvider.getCurrentChannel();
       if (channel != null) {
         channel.close();
       }

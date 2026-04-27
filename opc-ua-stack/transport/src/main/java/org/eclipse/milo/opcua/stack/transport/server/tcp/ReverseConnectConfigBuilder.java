@@ -11,6 +11,7 @@
 package org.eclipse.milo.opcua.stack.transport.server.tcp;
 
 import java.time.Duration;
+import java.util.Objects;
 
 /**
  * Builder for {@link ReverseConnectConfig}.
@@ -31,7 +32,7 @@ public class ReverseConnectConfigBuilder {
    * @return this {@link ReverseConnectConfigBuilder}.
    */
   public ReverseConnectConfigBuilder setConnectInterval(Duration connectInterval) {
-    this.connectInterval = connectInterval;
+    this.connectInterval = Objects.requireNonNull(connectInterval, "connectInterval");
     return this;
   }
 
@@ -42,7 +43,7 @@ public class ReverseConnectConfigBuilder {
    * @return this {@link ReverseConnectConfigBuilder}.
    */
   public ReverseConnectConfigBuilder setConnectTimeout(Duration connectTimeout) {
-    this.connectTimeout = connectTimeout;
+    this.connectTimeout = Objects.requireNonNull(connectTimeout, "connectTimeout");
     return this;
   }
 
@@ -54,7 +55,7 @@ public class ReverseConnectConfigBuilder {
    * @return this {@link ReverseConnectConfigBuilder}.
    */
   public ReverseConnectConfigBuilder setRejectBackoff(Duration rejectBackoff) {
-    this.rejectBackoff = rejectBackoff;
+    this.rejectBackoff = Objects.requireNonNull(rejectBackoff, "rejectBackoff");
     return this;
   }
 
@@ -65,7 +66,7 @@ public class ReverseConnectConfigBuilder {
    * @return this {@link ReverseConnectConfigBuilder}.
    */
   public ReverseConnectConfigBuilder setMaxReconnectDelay(Duration maxReconnectDelay) {
-    this.maxReconnectDelay = maxReconnectDelay;
+    this.maxReconnectDelay = Objects.requireNonNull(maxReconnectDelay, "maxReconnectDelay");
     return this;
   }
 
@@ -92,10 +93,10 @@ public class ReverseConnectConfigBuilder {
         Duration rejectBackoff,
         Duration maxReconnectDelay) {
 
-      this.connectInterval = connectInterval;
-      this.connectTimeout = connectTimeout;
-      this.rejectBackoff = rejectBackoff;
-      this.maxReconnectDelay = maxReconnectDelay;
+      this.connectInterval = Objects.requireNonNull(connectInterval, "connectInterval");
+      this.connectTimeout = Objects.requireNonNull(connectTimeout, "connectTimeout");
+      this.rejectBackoff = Objects.requireNonNull(rejectBackoff, "rejectBackoff");
+      this.maxReconnectDelay = Objects.requireNonNull(maxReconnectDelay, "maxReconnectDelay");
     }
 
     @Override

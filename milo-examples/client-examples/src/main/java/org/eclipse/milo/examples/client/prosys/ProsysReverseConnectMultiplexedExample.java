@@ -128,13 +128,14 @@ public class ProsysReverseConnectMultiplexedExample {
     var listener = new MultiplexedReverseConnectListener(listenerConfig);
     listener.start();
 
+    OpcUaClient client = null;
     try {
       logger.info(
           "Waiting for server to reverse-connect to {}... "
               + "(first connection discovers endpoints, second establishes session)",
           LISTEN_ADDRESS);
 
-      OpcUaClient client = clientFuture.get(60, TimeUnit.SECONDS);
+      client = clientFuture.get(60, TimeUnit.SECONDS);
 
       logger.info("Connected via Multiplexed Reverse Connect.");
 
@@ -151,9 +152,10 @@ public class ProsysReverseConnectMultiplexedExample {
       logger.info(
           "State={}", ServerState.from((Integer) requireNonNull(stateValue.value().value())));
       logger.info("CurrentTime={}", timeValue.value().value());
-
-      client.disconnectAsync().get(5, TimeUnit.SECONDS);
     } finally {
+      if (client != null) {
+        client.disconnectAsync().get(5, TimeUnit.SECONDS);
+      }
       listener.stop().get(5, TimeUnit.SECONDS);
       Stack.releaseSharedResources();
     }

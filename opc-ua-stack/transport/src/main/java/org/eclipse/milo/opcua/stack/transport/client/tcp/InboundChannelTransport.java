@@ -26,8 +26,7 @@ import org.eclipse.milo.opcua.stack.transport.client.uasc.UascClientReverseHello
  * An {@link AbstractUascClientTransport} subclass that wraps an already-connected inbound Netty
  * {@link Channel} and a pre-decoded {@link ReverseHelloMessage} for short-lived discovery.
  *
- * <p>This transport drives the Hello/Ack/OpenSecureChannel handshake on the inbound channel using
- * the same pipeline setup as {@link ReverseConnectChannelFsm}'s Handshaking entry action. It is
+ * <p>This transport drives the Hello/Ack/OpenSecureChannel handshake on the inbound channel. It is
  * used by the {@code Discovery} lambda in {@code MultiplexedReverseConnectListener} to perform
  * GetEndpoints discovery on the channel.
  */
@@ -70,8 +69,8 @@ public class InboundChannelTransport extends AbstractUascClientTransport {
               }
             });
 
-    // Pipeline setup must run on the channel's event loop (same
-    // requirement as ReverseConnectChannelFsm's Handshaking entry action).
+    // Pipeline mutation must run on the channel's event loop; this transport starts from an
+    // already-accepted channel, so it cannot rely on the normal client Bootstrap path to do it.
     channel
         .eventLoop()
         .execute(
@@ -102,8 +101,20 @@ public class InboundChannelTransport extends AbstractUascClientTransport {
 
   @Override
   public CompletableFuture<Unit> disconnect() {
-    channel.close();
-    return CompletableFuture.completedFuture(Unit.VALUE);
+    var future = new CompletableFuture<Unit>();
+
+    channel
+        .close()
+        .addListener(
+            f -> {
+              if (f.isSuccess()) {
+                future.complete(Unit.VALUE);
+              } else {
+                future.completeExceptionally(f.cause());
+              }
+            });
+
+    return future;
   }
 
   @Override

@@ -14,13 +14,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.digitalpetri.netty.fsm.ChannelFsm;
 import io.netty.channel.Channel;
-import java.util.concurrent.CompletableFuture;
+import org.eclipse.milo.opcua.stack.transport.client.CurrentChannelProvider;
 import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransport;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransport;
+import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpMultiplexedReverseConnectTransport;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpReverseConnectTransport;
-import org.eclipse.milo.opcua.stack.transport.client.tcp.ReverseConnectChannelFsm;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -30,11 +29,9 @@ class SessionFsmKeepAliveChannelCloseTest {
   @DisplayName("closeTransportChannel closes channel for OpcTcpClientTransport")
   void closeTransportChannel_forwardConnect() {
     var transport = mock(OpcTcpClientTransport.class);
-    var channelFsm = mock(ChannelFsm.class);
     var channel = mock(Channel.class);
 
-    when(transport.getChannelFsm()).thenReturn(channelFsm);
-    when(channelFsm.getChannel()).thenReturn(CompletableFuture.completedFuture(channel));
+    when(transport.getCurrentChannel()).thenReturn(channel);
 
     SessionFsmFactory.closeTransportChannel(transport);
 
@@ -45,11 +42,9 @@ class SessionFsmKeepAliveChannelCloseTest {
   @DisplayName("closeTransportChannel closes channel for OpcTcpReverseConnectTransport")
   void closeTransportChannel_reverseConnect() {
     var transport = mock(OpcTcpReverseConnectTransport.class);
-    var channelFsm = mock(ReverseConnectChannelFsm.class);
     var channel = mock(Channel.class);
 
-    when(transport.getChannelFsm()).thenReturn(channelFsm);
-    when(channelFsm.getChannel()).thenReturn(channel);
+    when(transport.getCurrentChannel()).thenReturn(channel);
 
     SessionFsmFactory.closeTransportChannel(transport);
 
@@ -57,26 +52,24 @@ class SessionFsmKeepAliveChannelCloseTest {
   }
 
   @Test
-  @DisplayName("closeTransportChannel does not throw when forward connect channel is null")
-  void closeTransportChannel_forwardConnect_nullChannel() {
-    var transport = mock(OpcTcpClientTransport.class);
-    var channelFsm = mock(ChannelFsm.class);
+  @DisplayName("closeTransportChannel closes channel for OpcTcpMultiplexedReverseConnectTransport")
+  void closeTransportChannel_multiplexedReverseConnect() {
+    var transport = mock(OpcTcpMultiplexedReverseConnectTransport.class);
+    var channel = mock(Channel.class);
 
-    when(transport.getChannelFsm()).thenReturn(channelFsm);
-    when(channelFsm.getChannel()).thenReturn(new CompletableFuture<>());
+    when(transport.getCurrentChannel()).thenReturn(channel);
 
-    // should not throw — getNow(null) returns null for an incomplete future
     SessionFsmFactory.closeTransportChannel(transport);
+
+    verify(channel).close();
   }
 
   @Test
-  @DisplayName("closeTransportChannel does not throw when reverse connect channel is null")
-  void closeTransportChannel_reverseConnect_nullChannel() {
-    var transport = mock(OpcTcpReverseConnectTransport.class);
-    var channelFsm = mock(ReverseConnectChannelFsm.class);
+  @DisplayName("closeTransportChannel does not throw when current channel is null")
+  void closeTransportChannel_currentChannelProvider_nullChannel() {
+    var transport = mock(CurrentChannelProviderTransport.class);
 
-    when(transport.getChannelFsm()).thenReturn(channelFsm);
-    when(channelFsm.getChannel()).thenReturn(null);
+    when(transport.getCurrentChannel()).thenReturn(null);
 
     // should not throw
     SessionFsmFactory.closeTransportChannel(transport);
@@ -87,7 +80,10 @@ class SessionFsmKeepAliveChannelCloseTest {
   void closeTransportChannel_unknownTransport() {
     var transport = mock(OpcClientTransport.class);
 
-    // should not throw — silently ignored for unknown transport types
+    // should not throw; unknown transport types are silently ignored
     SessionFsmFactory.closeTransportChannel(transport);
   }
+
+  private interface CurrentChannelProviderTransport
+      extends OpcClientTransport, CurrentChannelProvider {}
 }

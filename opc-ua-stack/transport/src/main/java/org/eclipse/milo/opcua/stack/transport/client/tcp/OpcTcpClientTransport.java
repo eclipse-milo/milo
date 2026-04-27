@@ -36,7 +36,9 @@ import io.netty.util.TimerTask;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -51,15 +53,17 @@ import org.eclipse.milo.opcua.stack.core.util.Unit;
 import org.eclipse.milo.opcua.stack.transport.client.AbstractUascClientTransport;
 import org.eclipse.milo.opcua.stack.transport.client.ChannelStateObservable;
 import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
+import org.eclipse.milo.opcua.stack.transport.client.CurrentChannelProvider;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.ClientSecureChannel;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.InboundUascResponseHandler.DelegatingUascResponseHandler;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.UascClientAcknowledgeHandler;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 public class OpcTcpClientTransport extends AbstractUascClientTransport
-    implements ChannelStateObservable {
+    implements ChannelStateObservable, CurrentChannelProvider {
 
   private static final FsmContext.Key<ClientApplicationContext> KEY_CLIENT_APPLICATION =
       new FsmContext.Key<>("clientApplication", ClientApplicationContext.class);
@@ -137,6 +141,15 @@ public class OpcTcpClientTransport extends AbstractUascClientTransport
 
   public ChannelFsm getChannelFsm() {
     return channelFsm;
+  }
+
+  @Override
+  public @Nullable Channel getCurrentChannel() {
+    try {
+      return channelFsm.getChannel().getNow(null);
+    } catch (CancellationException | CompletionException e) {
+      return null;
+    }
   }
 
   @Override

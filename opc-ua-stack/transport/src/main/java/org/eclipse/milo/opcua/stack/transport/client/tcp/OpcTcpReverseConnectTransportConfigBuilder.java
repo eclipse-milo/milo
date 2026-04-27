@@ -102,8 +102,11 @@ public class OpcTcpReverseConnectTransportConfigBuilder {
   }
 
   /**
-   * Set the maximum time in milliseconds to wait for a server to connect inbound when used with
-   * one-shot discovery methods. Default: 60,000 ms.
+   * Set the maximum time in milliseconds to wait for a server to connect inbound. Default: 60,000
+   * ms.
+   *
+   * <p>Reverse Connect transports apply this timeout to pending accepted channels and channel
+   * waiters. One-shot discovery and factory helpers also use it to bound their flows.
    *
    * @param connectTimeout the connect timeout in milliseconds.
    * @return this {@link OpcTcpReverseConnectTransportConfigBuilder}.

@@ -11,8 +11,11 @@
 package org.eclipse.milo.opcua.stack.transport.server.tcp;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -29,6 +32,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
@@ -47,6 +51,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.server.ServiceRequestContext;
+import org.eclipse.milo.opcua.stack.transport.server.uasc.SecureChannelOpenedEvent;
 import org.eclipse.milo.opcua.stack.transport.server.uasc.UascServerReverseHelloHandler;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -129,6 +134,95 @@ class OpcTcpReverseConnectServerTransportTest {
             newApplicationContext(), unreachableAddress, SERVER_URI, ENDPOINT_URL, 5_000);
 
     assertThrows(ExecutionException.class, () -> future.get(10, TimeUnit.SECONDS));
+  }
+
+  @Test
+  void connectAttemptReportsTcpConnectFailure() throws Exception {
+    OpcTcpServerTransportConfig config = newConfig();
+    var transport = new OpcTcpReverseConnectServerTransport(config);
+    var outcomes = new LinkedBlockingQueue<ReverseConnectAttempt.Outcome>();
+
+    // Use a port that is not listening.
+    var unreachableAddress = new InetSocketAddress("127.0.0.1", 1);
+
+    ReverseConnectAttempt attempt =
+        transport.connectAttempt(
+            newApplicationContext(),
+            unreachableAddress,
+            SERVER_URI,
+            ENDPOINT_URL,
+            5_000,
+            outcomes::offer);
+
+    var outcome =
+        assertInstanceOf(
+            ReverseConnectAttempt.TcpConnectFailure.class,
+            attempt.terminalOutcomeFuture().get(10, TimeUnit.SECONDS));
+
+    assertNotNull(outcome.cause());
+    assertEquals(outcome, outcomes.poll(10, TimeUnit.SECONDS));
+    assertThrows(ExecutionException.class, () -> attempt.connectedFuture().get());
+  }
+
+  @Test
+  void connectAttemptInstallsSecureChannelObserverBeforeReverseHelloHandler() throws Exception {
+    Channel serverChannel =
+        new ServerBootstrap()
+            .group(eventLoop)
+            .channel(NioServerSocketChannel.class)
+            .childHandler(
+                new ChannelInitializer<SocketChannel>() {
+                  @Override
+                  protected void initChannel(SocketChannel ch) {
+                    ch.pipeline()
+                        .addLast(
+                            new ChannelInboundHandlerAdapter() {
+                              @Override
+                              public void channelRead(ChannelHandlerContext ctx, Object msg) {
+                                ReferenceCountUtil.release(msg);
+                              }
+                            });
+                  }
+                })
+            .bind(0)
+            .sync()
+            .channel();
+
+    try {
+      var outcomes = new LinkedBlockingQueue<ReverseConnectAttempt.Outcome>();
+      var transport = new OpcTcpReverseConnectServerTransport(newConfig());
+
+      ReverseConnectAttempt attempt =
+          transport.connectAttempt(
+              newApplicationContext(),
+              (InetSocketAddress) serverChannel.localAddress(),
+              SERVER_URI,
+              ENDPOINT_URL,
+              5_000,
+              outcomes::offer);
+
+      Channel channel = attempt.connectedFuture().get(5, TimeUnit.SECONDS);
+
+      assertNotNull(channel.pipeline().get(ReverseConnectAttempt.Observer.class));
+      assertNotNull(channel.pipeline().get(UascServerReverseHelloHandler.class));
+      String observerName = channel.pipeline().context(ReverseConnectAttempt.Observer.class).name();
+      String reverseHelloName =
+          channel.pipeline().context(UascServerReverseHelloHandler.class).name();
+      assertTrue(
+          channel.pipeline().names().indexOf(observerName)
+              < channel.pipeline().names().indexOf(reverseHelloName));
+
+      channel.pipeline().fireUserEventTriggered(new SecureChannelOpenedEvent(789L));
+
+      var outcome =
+          assertInstanceOf(
+              ReverseConnectAttempt.SecureChannelOpened.class, outcomes.poll(5, TimeUnit.SECONDS));
+      assertEquals(789L, outcome.secureChannelId());
+
+      channel.close().sync();
+    } finally {
+      serverChannel.close().sync();
+    }
   }
 
   private OpcTcpServerTransportConfig newConfig() {
