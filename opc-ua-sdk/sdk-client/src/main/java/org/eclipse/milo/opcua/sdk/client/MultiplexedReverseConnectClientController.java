@@ -61,6 +61,8 @@ final class MultiplexedReverseConnectClientController {
   private final Object pendingLock = new Object();
   private final AtomicInteger pendingConnections = new AtomicInteger(0);
   private final Set<PendingConnection> pending = ConcurrentHashMap.newKeySet();
+  private final ConcurrentHashMap<String, PendingTransportHandoff> pendingHandoffs =
+      new ConcurrentHashMap<>();
   private final AtomicBoolean stopped = new AtomicBoolean(false);
 
   MultiplexedReverseConnectClientController(
@@ -85,6 +87,8 @@ final class MultiplexedReverseConnectClientController {
 
   void dispatch(Channel channel, ReverseHelloMessage reverseHello) {
     var connection = new PendingConnection(channel, reverseHello);
+    PendingTransportHandoff pendingHandoff = null;
+    boolean connectionQueued = false;
 
     try {
       synchronized (pendingLock) {
@@ -93,35 +97,58 @@ final class MultiplexedReverseConnectClientController {
           return;
         }
 
-        int pendingCount = pendingConnections.incrementAndGet();
-        if (pendingCount > config.getMaxPendingConnections()) {
-          pendingConnections.decrementAndGet();
+        pendingHandoff = pendingHandoffs.get(reverseHello.serverUri());
+        if (pendingHandoff == null) {
+          int pendingCount = pendingConnections.incrementAndGet();
+          if (pendingCount > config.getMaxPendingConnections()) {
+            pendingConnections.decrementAndGet();
 
-          logger.debug(
-              "maxPendingConnections ({}) exceeded, closing channel from {}",
-              config.getMaxPendingConnections(),
-              channel.remoteAddress());
+            logger.debug(
+                "maxPendingConnections ({}) exceeded, closing channel from {}",
+                config.getMaxPendingConnections(),
+                channel.remoteAddress());
 
-          closeChannel(channel, reverseHello, "max pending connections exceeded");
-          return;
+            closeChannel(channel, reverseHello, "max pending connections exceeded");
+            return;
+          }
+
+          pending.add(connection);
+          connectionQueued = true;
+          connection.timeoutFuture = scheduleTimeout(connection);
         }
+      }
 
-        pending.add(connection);
-        connection.timeoutFuture = scheduleTimeout(connection);
+      if (pendingHandoff != null) {
+        logger.debug(
+            "Offering reverse connection for ServerUri={} to pending on-demand transport",
+            reverseHello.serverUri());
+        pendingHandoff.offer(channel, reverseHello);
+        return;
       }
 
       executor.execute(() -> invokeResolver(connection));
     } catch (Throwable t) {
-      fail(connection, t);
+      if (connectionQueued) {
+        fail(connection, t);
+      } else {
+        closeChannel(channel, reverseHello, t.getMessage());
+      }
     }
   }
 
   CompletableFuture<Void> stop(Throwable cause) {
     PendingConnection[] connections;
+    PendingTransportHandoff[] handoffs;
 
     synchronized (pendingLock) {
       stopped.set(true);
       connections = pending.toArray(PendingConnection[]::new);
+      handoffs = pendingHandoffs.values().toArray(PendingTransportHandoff[]::new);
+      pendingHandoffs.clear();
+    }
+
+    for (PendingTransportHandoff handoff : handoffs) {
+      handoff.cancel();
     }
 
     var futures = new CompletableFuture<?>[connections.length];
@@ -242,7 +269,10 @@ final class MultiplexedReverseConnectClientController {
       return discoveryClient
           .connectAsync()
           .thenComposeAsync(
-              ignored -> discoveryClient.getEndpoints(connection.reverseHello.endpointUrl()),
+              ignored ->
+                  discoveryClient.getEndpoints(
+                      connection.reverseHello.endpointUrl(),
+                      new String[] {Stack.TCP_UASC_UABINARY_TRANSPORT_URI}),
               executor)
           .handleAsync(DiscoveryOutcome::new, executor)
           .thenCompose(outcome -> disconnectDiscoveryClient(connection, discoveryClient, outcome));
@@ -283,7 +313,10 @@ final class MultiplexedReverseConnectClientController {
             throw new CompletionException(failure);
           }
 
-          return outcome.endpoints();
+          List<EndpointDescription> endpoints = copyEndpoints(outcome.endpoints());
+          connection.discoveryEndpoints = endpoints;
+
+          return endpoints;
         },
         executor);
   }
@@ -326,6 +359,7 @@ final class MultiplexedReverseConnectClientController {
     try {
       OpcUaClientConfigBuilder builder = OpcUaClientConfig.builder();
       builder.setEndpoint(endpoint);
+      builder.setDiscoveryEndpoints(connection.discoveryEndpoints);
       builder.setSessionEndpointValidationEnabled(false);
 
       ClientCustomizer clientCustomizer = config.getClientCustomizer();
@@ -336,7 +370,9 @@ final class MultiplexedReverseConnectClientController {
       transport = transportFactory.apply(serverUri);
       client = new OpcUaClient(builder.build(), transport);
 
-      if (!channelConsumed) {
+      if (channelConsumed) {
+        registerPendingHandoff(serverUri, transport);
+      } else {
         // offerChannel is the transport-owner boundary; the owner will not start a handshake until
         // the real ClientApplicationContext is installed by OpcUaClient.connectAsync().
         transport.offerChannel(connection.channel, connection.reverseHello);
@@ -346,6 +382,10 @@ final class MultiplexedReverseConnectClientController {
       finish(connection, null);
     } catch (Throwable t) {
       logger.warn("Failed to create on-demand client for ServerUri={}", serverUri, t);
+
+      if (transport != null) {
+        removePendingHandoff(serverUri, transport);
+      }
 
       CompletableFuture<Void> cleanupFuture;
       if (client != null) {
@@ -451,6 +491,60 @@ final class MultiplexedReverseConnectClientController {
             });
   }
 
+  private void registerPendingHandoff(
+      String serverUri, OpcTcpMultiplexedReverseConnectTransport transport) {
+
+    var handoff = new PendingTransportHandoff(serverUri, transport);
+
+    transport.addTransitionListener(
+        connected -> {
+          if (connected) {
+            removePendingHandoff(serverUri, transport);
+          }
+        });
+
+    handoff.timeoutFuture =
+        scheduledExecutor.schedule(
+            () -> expirePendingHandoff(handoff),
+            pendingHandoffTimeout(transport),
+            TimeUnit.MILLISECONDS);
+
+    PendingTransportHandoff previous;
+    synchronized (pendingLock) {
+      if (stopped.get()) {
+        handoff.cancel();
+        return;
+      }
+
+      previous = pendingHandoffs.put(serverUri, handoff);
+    }
+
+    if (previous != null) {
+      previous.cancel();
+    }
+  }
+
+  private long pendingHandoffTimeout(OpcTcpMultiplexedReverseConnectTransport transport) {
+    return Math.max(1L, transport.getConfig().getConnectTimeout());
+  }
+
+  private void expirePendingHandoff(PendingTransportHandoff handoff) {
+    if (pendingHandoffs.remove(handoff.serverUri, handoff)) {
+      logger.debug("Pending transport handoff expired for ServerUri={}", handoff.serverUri);
+    }
+  }
+
+  private void removePendingHandoff(
+      String serverUri, OpcTcpMultiplexedReverseConnectTransport transport) {
+
+    PendingTransportHandoff handoff = pendingHandoffs.get(serverUri);
+    if (handoff != null
+        && handoff.transport == transport
+        && pendingHandoffs.remove(serverUri, handoff)) {
+      handoff.cancel();
+    }
+  }
+
   private OpcTcpMultiplexedReverseConnectTransportConfig createDiscoveryTransportConfig() {
     return OpcTcpMultiplexedReverseConnectTransportConfig.newBuilder()
         .setExecutor(config.getTransportConfig().getExecutor())
@@ -513,6 +607,12 @@ final class MultiplexedReverseConnectClientController {
     return failure;
   }
 
+  private static List<EndpointDescription> copyEndpoints(
+      @Nullable List<EndpointDescription> endpoints) {
+
+    return endpoints != null ? List.copyOf(endpoints) : List.of();
+  }
+
   @FunctionalInterface
   interface DiscoveryClientFactory {
 
@@ -527,7 +627,8 @@ final class MultiplexedReverseConnectClientController {
 
     CompletableFuture<Void> connectAsync();
 
-    CompletableFuture<List<EndpointDescription>> getEndpoints(String endpointUrl);
+    CompletableFuture<List<EndpointDescription>> getEndpoints(
+        String endpointUrl, String[] profileUris);
 
     CompletableFuture<Void> disconnectAsync();
   }
@@ -546,9 +647,11 @@ final class MultiplexedReverseConnectClientController {
     }
 
     @Override
-    public CompletableFuture<List<EndpointDescription>> getEndpoints(String endpointUrl) {
+    public CompletableFuture<List<EndpointDescription>> getEndpoints(
+        String endpointUrl, String[] profileUris) {
+
       return discoveryClient
-          .getEndpoints(endpointUrl, new String[0], new String[0])
+          .getEndpoints(endpointUrl, new String[0], profileUris)
           .thenApply(response -> Lists.ofNullable(response.getEndpoints()));
     }
 
@@ -561,6 +664,31 @@ final class MultiplexedReverseConnectClientController {
   private record DiscoveryOutcome(
       @Nullable List<EndpointDescription> endpoints, @Nullable Throwable failure) {}
 
+  private static final class PendingTransportHandoff {
+
+    private final String serverUri;
+    private final OpcTcpMultiplexedReverseConnectTransport transport;
+    private volatile @Nullable ScheduledFuture<?> timeoutFuture;
+
+    private PendingTransportHandoff(
+        String serverUri, OpcTcpMultiplexedReverseConnectTransport transport) {
+
+      this.serverUri = serverUri;
+      this.transport = transport;
+    }
+
+    private void offer(Channel channel, ReverseHelloMessage reverseHello) {
+      transport.offerChannel(channel, reverseHello);
+    }
+
+    private void cancel() {
+      ScheduledFuture<?> future = timeoutFuture;
+      if (future != null) {
+        future.cancel(false);
+      }
+    }
+  }
+
   private static final class PendingConnection {
 
     private final Channel channel;
@@ -568,6 +696,7 @@ final class MultiplexedReverseConnectClientController {
     private final AtomicBoolean terminalStarted = new AtomicBoolean(false);
     private final AtomicBoolean channelConsumed = new AtomicBoolean(false);
     private final CompletableFuture<Void> terminalFuture = new CompletableFuture<>();
+    private volatile List<EndpointDescription> discoveryEndpoints = List.of();
     private volatile @Nullable CompletableFuture<EndpointDescription> resolverFuture;
     private volatile @Nullable ScheduledFuture<?> timeoutFuture;
 

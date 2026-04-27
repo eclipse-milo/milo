@@ -474,7 +474,8 @@ class MultiplexedReverseConnectListenerTest {
                     builder
                         .setApplicationName(LocalizedText.english("2-shot discovery test client"))
                         .setApplicationUri("urn:eclipse:milo:test:2-shot-discovery-client")
-                        .setRequestTimeout(uint(30_000)))
+                        .setRequestTimeout(uint(30_000))
+                        .setSessionEndpointValidationEnabled(true))
             .setClientListener(
                 client ->
                     client
