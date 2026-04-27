@@ -22,6 +22,7 @@ import org.eclipse.milo.examples.server.ExampleServer;
 import org.eclipse.milo.opcua.sdk.client.MultiplexedReverseConnectListener;
 import org.eclipse.milo.opcua.sdk.client.MultiplexedReverseConnectListenerConfig;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.server.ReverseConnectHandle;
 import org.eclipse.milo.opcua.sdk.server.ReverseConnectManager;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.Stack;
@@ -126,14 +127,19 @@ public class ReverseConnectMultiplexedExample {
       try {
         // 5. Tell each server to dial the listener.
         String listenerUrl = "opc.tcp://localhost:" + LISTEN_ADDRESS.getPort();
-        server1.getServer().addReverseConnect(listenerUrl);
-        server2.getServer().addReverseConnect(listenerUrl);
-
-        // 6. Wait for both clients.
-        OpcUaClient client1 = clientFutures.get(SERVER_URI_1).get(60, TimeUnit.SECONDS);
-        OpcUaClient client2 = clientFutures.get(SERVER_URI_2).get(60, TimeUnit.SECONDS);
+        ReverseConnectHandle handle1 = null;
+        ReverseConnectHandle handle2 = null;
+        OpcUaClient client1 = null;
+        OpcUaClient client2 = null;
 
         try {
+          handle1 = server1.getServer().addReverseConnect(listenerUrl);
+          handle2 = server2.getServer().addReverseConnect(listenerUrl);
+
+          // 6. Wait for both clients.
+          client1 = clientFutures.get(SERVER_URI_1).get(60, TimeUnit.SECONDS);
+          client2 = clientFutures.get(SERVER_URI_2).get(60, TimeUnit.SECONDS);
+
           // 7. Print identities and read from both.
           for (OpcUaClient client : List.of(client1, client2)) {
             var appDesc = client.getConfig().getEndpoint().getServer();
@@ -142,8 +148,18 @@ public class ReverseConnectMultiplexedExample {
             readServerStatus(client);
           }
         } finally {
-          client1.disconnectAsync().get(5, TimeUnit.SECONDS);
-          client2.disconnectAsync().get(5, TimeUnit.SECONDS);
+          if (handle1 != null) {
+            server1.getServer().removeReverseConnect(handle1);
+          }
+          if (handle2 != null) {
+            server2.getServer().removeReverseConnect(handle2);
+          }
+          if (client1 != null) {
+            client1.disconnectAsync().get(5, TimeUnit.SECONDS);
+          }
+          if (client2 != null) {
+            client2.disconnectAsync().get(5, TimeUnit.SECONDS);
+          }
         }
       } finally {
         listener.stop().get(5, TimeUnit.SECONDS);

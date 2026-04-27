@@ -19,6 +19,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.milo.examples.server.ExampleServer;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.server.ReverseConnectHandle;
 import org.eclipse.milo.opcua.sdk.server.ReverseConnectManager;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.Stack;
@@ -88,13 +89,16 @@ public class ReverseConnectExample {
       //    is consumed by GetEndpoints (discovery). After that channel closes,
       //    the manager reconnects for the real session.
       String clientListenUrl = "opc.tcp://localhost:" + LISTEN_ADDRESS.getPort();
-      exampleServer.getServer().addReverseConnect(clientListenUrl);
-
-      // 4. Await discovery, then connect the session on the second connection.
-      OpcUaClient client = clientFuture.get(60, TimeUnit.SECONDS);
-      client.connectAsync().get(30, TimeUnit.SECONDS);
+      ReverseConnectHandle handle = null;
+      OpcUaClient client = null;
 
       try {
+        handle = exampleServer.getServer().addReverseConnect(clientListenUrl);
+
+        // 4. Await discovery, then connect the session on the second connection.
+        client = clientFuture.get(60, TimeUnit.SECONDS);
+        client.connectAsync().get(30, TimeUnit.SECONDS);
+
         // 5. Print the server's identity from the negotiated endpoint.
         var server = client.getConfig().getEndpoint().getServer();
         logger.info("ApplicationUri: {}", server.getApplicationUri());
@@ -103,7 +107,12 @@ public class ReverseConnectExample {
         // 6. Read nodes.
         readServerStatus(client);
       } finally {
-        client.disconnectAsync().get(5, TimeUnit.SECONDS);
+        if (handle != null) {
+          exampleServer.getServer().removeReverseConnect(handle);
+        }
+        if (client != null) {
+          client.disconnectAsync().get(5, TimeUnit.SECONDS);
+        }
       }
     } finally {
       Thread.sleep(1000);
