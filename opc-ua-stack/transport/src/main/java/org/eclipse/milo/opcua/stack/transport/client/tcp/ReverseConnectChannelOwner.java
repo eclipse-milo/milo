@@ -511,7 +511,7 @@ final class ReverseConnectChannelOwner {
 
     clearInactiveConnectedChannel();
 
-    if (application == null && !isAllowedServerUri(event.reverseHello().serverUri())) {
+    if (!isAllowedServerUri(event.reverseHello().serverUri())) {
       close(event.channel());
       return;
     }

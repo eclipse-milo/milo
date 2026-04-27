@@ -338,6 +338,26 @@ class ReverseConnectChannelOwnerTest {
   }
 
   @Test
+  void disallowedAcceptedAfterConnectDoesNotFailWaitingConnect() throws Exception {
+    CompletableFuture<Channel> connectFuture = owner.connect(newApplicationContext());
+
+    var disallowedChannel = new EmbeddedChannel();
+    owner.accepted(disallowedChannel, reverseHello("urn:unknown:server"));
+
+    assertFalse(disallowedChannel.isOpen());
+    assertFalse(connectFuture.isDone());
+    assertEquals(0, handshakeStarter.starts());
+    assertEquals(ReverseConnectChannelOwner.State.Armed, owner.getState());
+
+    var allowedChannel = new EmbeddedChannel();
+    owner.accepted(allowedChannel, reverseHello());
+    handshakeStarter.succeed(allowedChannel);
+
+    assertEquals(1, handshakeStarter.starts());
+    assertSame(allowedChannel, connectFuture.get(1, TimeUnit.SECONDS));
+  }
+
+  @Test
   void acceptedBeforeContextTimesOutWithoutStartingHandshake() {
     var channel = new EmbeddedChannel();
 

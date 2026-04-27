@@ -192,6 +192,28 @@ class OneToOneReverseConnectListenerTest {
     }
   }
 
+  @Test
+  void reverseHelloTimeoutClosesSocketWhenHeaderBytesTrickleIn() throws Exception {
+    var listener = newListener(new CapturingSink(), 1_000, pipeline -> {});
+    Channel listenerChannel = listener.start().get(5, TimeUnit.SECONDS);
+    byte[] partialHeader = helloHeader();
+
+    try (var socket = connectTo(listenerChannel)) {
+      socket.getOutputStream().write(partialHeader, 0, 1);
+      socket.getOutputStream().flush();
+      Thread.sleep(250);
+
+      socket.getOutputStream().write(partialHeader, 1, 1);
+      socket.getOutputStream().flush();
+      Thread.sleep(250);
+
+      socket.getOutputStream().write(partialHeader, 2, 1);
+      socket.getOutputStream().flush();
+
+      assertSocketClosesWithin(socket, 700);
+    }
+  }
+
   private OneToOneReverseConnectListener newListener(CapturingSink sink) {
     return newListener(sink, 30_000, pipeline -> {});
   }
@@ -301,6 +323,11 @@ class OneToOneReverseConnectListenerTest {
     while (socket.getInputStream().read() != -1) {
       // Drain an Error response, if one is written before the listener closes.
     }
+  }
+
+  private static void assertSocketClosesWithin(Socket socket, int timeoutMillis) throws Exception {
+    socket.setSoTimeout(timeoutMillis);
+    assertSocketCloses(socket);
   }
 
   private record Accepted(Channel channel, ReverseHelloMessage reverseHello) {}

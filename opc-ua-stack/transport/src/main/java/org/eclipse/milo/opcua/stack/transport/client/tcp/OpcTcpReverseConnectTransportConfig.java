@@ -53,13 +53,12 @@ public interface OpcTcpReverseConnectTransportConfig
   long getReverseHelloTimeout();
 
   /**
-   * Get the maximum time in milliseconds to wait for a server to connect inbound when used with
-   * one-shot discovery methods. Default: 60,000 ms.
+   * Get the maximum time in milliseconds to wait for a server to connect inbound. Default: 60,000
+   * ms.
    *
-   * <p>This timeout is NOT applied automatically by the transport — it is consumed by {@code
-   * DiscoveryClient} and {@code OpcUaClient#createReverseConnect} to bound their one-shot flows.
-   * Long-lived connections that need to wait indefinitely should manage timeouts at the application
-   * level.
+   * <p>Reverse Connect transports apply this timeout to pending accepted channels and channel
+   * waiters. One-shot discovery and factory helpers also use it to bound their flows. Set a
+   * suitably large value for long-lived passive waits.
    *
    * @return the connect timeout in milliseconds.
    */

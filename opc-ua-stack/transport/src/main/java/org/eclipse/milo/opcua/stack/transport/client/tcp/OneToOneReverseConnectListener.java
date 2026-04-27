@@ -16,21 +16,18 @@ import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.ByteToMessageDecoder;
-import io.netty.handler.timeout.IdleState;
-import io.netty.handler.timeout.IdleStateEvent;
-import io.netty.handler.timeout.IdleStateHandler;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -58,9 +55,6 @@ final class OneToOneReverseConnectListener {
    * EndpointUrl.
    */
   private static final int MAX_REVERSE_HELLO_MESSAGE_SIZE = 8 + 4 + 4096 + 4 + 4096;
-
-  private static final String REVERSE_HELLO_IDLE_HANDLER_NAME = "reverseHelloIdleHandler";
-  private static final String REVERSE_HELLO_TIMEOUT_HANDLER_NAME = "reverseHelloTimeoutHandler";
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(OneToOneReverseConnectListener.class);
@@ -111,20 +105,7 @@ final class OneToOneReverseConnectListener {
                   protected void initChannel(SocketChannel ch) {
                     trackChildChannel(ch);
 
-                    long reverseHelloTimeout = config.getReverseHelloTimeout();
-                    if (reverseHelloTimeout > 0) {
-                      ch.pipeline()
-                          .addLast(
-                              REVERSE_HELLO_IDLE_HANDLER_NAME,
-                              new IdleStateHandler(
-                                  reverseHelloTimeout, 0, 0, TimeUnit.MILLISECONDS));
-                      ch.pipeline()
-                          .addLast(
-                              REVERSE_HELLO_TIMEOUT_HANDLER_NAME,
-                              new ReverseHelloTimeoutHandler(reverseHelloTimeout));
-                    }
-
-                    ch.pipeline().addLast(new ReverseHelloDecoder());
+                    ch.pipeline().addLast(new ReverseHelloDecoder(config.getReverseHelloTimeout()));
 
                     config.getChannelPipelineCustomizer().accept(ch.pipeline());
                   }
@@ -297,6 +278,34 @@ final class OneToOneReverseConnectListener {
    */
   private final class ReverseHelloDecoder extends ByteToMessageDecoder implements HeaderDecoder {
 
+    private final long reverseHelloTimeout;
+    private ScheduledFuture<?> timeoutFuture;
+
+    private ReverseHelloDecoder(long reverseHelloTimeout) {
+      this.reverseHelloTimeout = reverseHelloTimeout;
+    }
+
+    @Override
+    public void handlerAdded(ChannelHandlerContext ctx) {
+      if (reverseHelloTimeout > 0) {
+        timeoutFuture =
+            ctx.channel()
+                .eventLoop()
+                .schedule(
+                    () -> {
+                      if (ctx.channel().isActive()) {
+                        LOGGER.debug(
+                            "ReverseHello timeout ({}ms) elapsed, closing {}",
+                            reverseHelloTimeout,
+                            ctx.channel().remoteAddress());
+                        ctx.close();
+                      }
+                    },
+                    reverseHelloTimeout,
+                    TimeUnit.MILLISECONDS);
+      }
+    }
+
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out)
         throws Exception {
@@ -333,7 +342,7 @@ final class OneToOneReverseConnectListener {
 
       ReverseHelloMessage rhe = TcpMessageDecoder.decodeReverseHello(messageBuffer);
 
-      removeReverseHelloTimeoutHandlers(ctx);
+      cancelReverseHelloTimeout();
       ctx.pipeline().remove(this);
 
       LOGGER.debug(
@@ -345,44 +354,28 @@ final class OneToOneReverseConnectListener {
     }
 
     @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+      cancelReverseHelloTimeout();
+      super.channelInactive(ctx);
+    }
+
+    @Override
+    protected void handlerRemoved0(ChannelHandlerContext ctx) throws Exception {
+      cancelReverseHelloTimeout();
+    }
+
+    @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
       LOGGER.error("Exception in ReverseHelloDecoder", cause);
       ExceptionHandler.sendErrorMessage(ctx, cause);
     }
-  }
 
-  /** Closes accepted child channels that stay idle before sending a {@code ReverseHello}. */
-  private static final class ReverseHelloTimeoutHandler extends ChannelInboundHandlerAdapter {
-
-    private final long reverseHelloTimeout;
-
-    private ReverseHelloTimeoutHandler(long reverseHelloTimeout) {
-      this.reverseHelloTimeout = reverseHelloTimeout;
-    }
-
-    @Override
-    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-      if (evt instanceof IdleStateEvent idleStateEvent
-          && idleStateEvent.state() == IdleState.READER_IDLE) {
-
-        LOGGER.debug(
-            "ReverseHello timeout ({}ms) elapsed, closing {}",
-            reverseHelloTimeout,
-            ctx.channel().remoteAddress());
-
-        ctx.close();
-      } else {
-        super.userEventTriggered(ctx, evt);
+    private void cancelReverseHelloTimeout() {
+      ScheduledFuture<?> future = timeoutFuture;
+      if (future != null) {
+        future.cancel(false);
+        timeoutFuture = null;
       }
-    }
-  }
-
-  private void removeReverseHelloTimeoutHandlers(ChannelHandlerContext ctx) {
-    if (ctx.pipeline().context(REVERSE_HELLO_TIMEOUT_HANDLER_NAME) != null) {
-      ctx.pipeline().remove(REVERSE_HELLO_TIMEOUT_HANDLER_NAME);
-    }
-    if (ctx.pipeline().context(REVERSE_HELLO_IDLE_HANDLER_NAME) != null) {
-      ctx.pipeline().remove(REVERSE_HELLO_IDLE_HANDLER_NAME);
     }
   }
 
