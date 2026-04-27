@@ -14,7 +14,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelOutboundHandlerAdapter;
+import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
 import java.net.InetSocketAddress;
 import java.time.Duration;
@@ -22,6 +27,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -163,6 +169,43 @@ class ReverseConnectTargetOwnerTest {
   }
 
   @Test
+  void asyncCloseCompletionReturnsThroughMailboxWhileStopping() throws Exception {
+    var executor = new ManualExecutor();
+    owner = newOwner(CLIENT_ENDPOINT_URL, executor);
+
+    CompletableFuture<Void> startFuture = owner.start();
+    executor.runNext();
+    startFuture.get(1, TimeUnit.SECONDS);
+    StartedAttempt attempt = transport.attempt(0);
+
+    CompletableFuture<Void> stopFuture = owner.stop();
+    executor.runNext();
+
+    var closeHandler = new DelayingCloseHandler();
+    var closeChannel = new EmbeddedChannel(closeHandler);
+    attempt.connect(closeChannel);
+    executor.runNext();
+
+    attempt.closeBeforeSecureChannel();
+    assertEquals(1, executor.taskCount());
+
+    CompletableFuture<Void> closeCompleted =
+        CompletableFuture.runAsync(closeHandler::completeClose);
+    closeCompleted.get(1, TimeUnit.SECONDS);
+
+    assertTrue(owner.hasIdleAttempt());
+    assertFalse(stopFuture.isDone());
+
+    executor.runNext();
+
+    stopFuture.get(1, TimeUnit.SECONDS);
+
+    assertEquals(ReverseConnectTargetOwner.State.Stopped, owner.getState());
+    assertEquals(1, transport.attemptCount());
+    assertEquals(0, scheduler.taskCount());
+  }
+
+  @Test
   void stopDuringConnectCompletesAfterLateConnectFailure() throws Exception {
     owner.start().get(1, TimeUnit.SECONDS);
     StartedAttempt attempt = transport.attempt(0);
@@ -212,6 +255,10 @@ class ReverseConnectTargetOwnerTest {
   }
 
   private ReverseConnectTargetOwner newOwner(String clientEndpointUrl) {
+    return newOwner(clientEndpointUrl, Runnable::run);
+  }
+
+  private ReverseConnectTargetOwner newOwner(String clientEndpointUrl, Executor executor) {
     ReverseConnectConfig config =
         ReverseConnectConfig.newBuilder()
             .setConnectInterval(CONNECT_INTERVAL)
@@ -221,14 +268,7 @@ class ReverseConnectTargetOwnerTest {
             .build();
 
     return new ReverseConnectTargetOwner(
-        clientEndpointUrl,
-        ENDPOINT_URL,
-        SERVER_URI,
-        transport,
-        null,
-        config,
-        Runnable::run,
-        scheduler);
+        clientEndpointUrl, ENDPOINT_URL, SERVER_URI, transport, null, config, executor, scheduler);
   }
 
   private static final class StubTransport extends OpcTcpReverseConnectServerTransport {
@@ -271,7 +311,7 @@ class ReverseConnectTargetOwnerTest {
       this.attempt = attempt;
     }
 
-    void connect(EmbeddedChannel channel) {
+    void connect(Channel channel) {
       attempt.channelInitialized(channel);
       attempt.tcpConnectSucceeded(channel);
     }
@@ -290,6 +330,59 @@ class ReverseConnectTargetOwnerTest {
 
     void openSecureChannel() {
       attempt.secureChannelOpened(1L);
+    }
+  }
+
+  private static final class DelayingCloseHandler extends ChannelOutboundHandlerAdapter {
+
+    private volatile ChannelPromise closePromise;
+    private volatile boolean closeRequested;
+
+    @Override
+    public void close(ChannelHandlerContext ctx, ChannelPromise promise) {
+      closePromise = promise;
+      closeRequested = true;
+    }
+
+    void completeClose() {
+      if (!closeRequested) {
+        fail("close was not requested");
+      }
+
+      ChannelPromise promise = closePromise;
+      if (promise == null) {
+        fail("close promise was not captured");
+      }
+
+      promise.setSuccess();
+    }
+  }
+
+  private static final class ManualExecutor implements Executor {
+
+    private final ArrayDeque<Runnable> tasks = new ArrayDeque<>();
+
+    @Override
+    public synchronized void execute(Runnable command) {
+      tasks.add(command);
+    }
+
+    synchronized int taskCount() {
+      return tasks.size();
+    }
+
+    void runNext() {
+      Runnable task;
+
+      synchronized (this) {
+        task = tasks.poll();
+      }
+
+      if (task == null) {
+        fail("expected an executor task");
+      }
+
+      task.run();
     }
   }
 

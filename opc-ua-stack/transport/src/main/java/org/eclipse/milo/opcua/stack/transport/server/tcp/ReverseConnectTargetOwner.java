@@ -65,6 +65,9 @@ final class ReverseConnectTargetOwner {
     record StopClosed(
         long generation, CompletableFuture<Void> completion, @Nullable Throwable failure)
         implements Event {}
+
+    record StoppingAttemptClosed(long generation, long attemptId, @Nullable Throwable failure)
+        implements Event {}
   }
 
   @FunctionalInterface
@@ -256,6 +259,8 @@ final class ReverseConnectTargetOwner {
       handleRetryDelayElapsed(retry);
     } else if (event instanceof Event.StopClosed closed) {
       handleStopClosed(closed);
+    } else if (event instanceof Event.StoppingAttemptClosed closed) {
+      handleStoppingAttemptClosed(closed);
     } else {
       throw new IllegalArgumentException("unexpected event: " + event);
     }
@@ -386,6 +391,15 @@ final class ReverseConnectTargetOwner {
     } else {
       event.completion().complete(null);
     }
+  }
+
+  private void handleStoppingAttemptClosed(Event.StoppingAttemptClosed event) {
+    AttemptContext context = findAttempt(event.generation(), event.attemptId());
+    if (context == null) {
+      return;
+    }
+
+    completeStoppingAttempt(context, event.failure());
   }
 
   private void handleSecureChannelOpened(AttemptContext context, Channel channel) {
@@ -561,11 +575,15 @@ final class ReverseConnectTargetOwner {
 
   private void closeStoppingAttempt(AttemptContext context, @Nullable Channel channel) {
     if (channel == null) {
-      completeStoppingAttempt(context, null);
+      fireEvent(new Event.StoppingAttemptClosed(context.generation, context.attemptId, null));
       return;
     }
 
-    close(channel).whenComplete((ignored, ex) -> completeStoppingAttempt(context, ex));
+    close(channel)
+        .whenComplete(
+            (ignored, ex) ->
+                fireEvent(
+                    new Event.StoppingAttemptClosed(context.generation, context.attemptId, ex)));
   }
 
   private void completeStoppingAttempt(AttemptContext context, @Nullable Throwable failure) {

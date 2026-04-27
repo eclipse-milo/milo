@@ -279,6 +279,7 @@ public class ReverseConnectManager {
     @Nullable PendingStart queuedStart = null;
     List<ManagedTarget> targetsToStart = List.of();
     @Nullable Throwable startFailure = null;
+    Throwable stopFailure = failure != null ? unwrap(failure) : null;
 
     lock.lock();
     try {
@@ -286,48 +287,51 @@ public class ReverseConnectManager {
       applicationContext = null;
       serverUri = null;
 
-      if (failure == null) {
-        stopCompletion.complete(null);
+      queuedStart = pendingStart;
+      pendingStart = null;
 
-        if (pendingStart != null) {
-          queuedStart = pendingStart;
-          pendingStart = null;
-
-          try {
-            targetsToStart =
-                prepareStartLocked(queuedStart.applicationContext(), queuedStart.serverUri());
-          } catch (Throwable t) {
-            startFailure = t;
-          }
-        }
-      } else {
-        stopCompletion.completeExceptionally(unwrap(failure));
-
-        if (pendingStart != null) {
-          pendingStart.future().completeExceptionally(unwrap(failure));
-          pendingStart = null;
+      if (stopFailure == null && queuedStart != null) {
+        try {
+          targetsToStart =
+              prepareStartLocked(queuedStart.applicationContext(), queuedStart.serverUri());
+        } catch (Throwable t) {
+          startFailure = t;
         }
       }
     } finally {
       lock.unlock();
     }
 
-    if (queuedStart != null) {
-      if (startFailure != null) {
-        queuedStart.future().completeExceptionally(startFailure);
-      } else {
-        PendingStart start = queuedStart;
-        finishStart(targetsToStart, start.applicationContext(), start.serverUri())
-            .whenComplete(
-                (v, ex) -> {
-                  if (ex != null) {
-                    start.future().completeExceptionally(unwrap(ex));
-                  } else {
-                    start.future().complete(null);
-                  }
-                });
+    if (stopFailure != null) {
+      stopCompletion.completeExceptionally(stopFailure);
+
+      if (queuedStart != null) {
+        queuedStart.future().completeExceptionally(stopFailure);
       }
+      return;
     }
+
+    stopCompletion.complete(null);
+
+    if (queuedStart == null) {
+      return;
+    }
+
+    if (startFailure != null) {
+      queuedStart.future().completeExceptionally(startFailure);
+      return;
+    }
+
+    PendingStart start = queuedStart;
+    finishStart(targetsToStart, start.applicationContext(), start.serverUri())
+        .whenComplete(
+            (v, ex) -> {
+              if (ex != null) {
+                start.future().completeExceptionally(unwrap(ex));
+              } else {
+                start.future().complete(null);
+              }
+            });
   }
 
   private List<ManagedTarget> prepareStartLocked(

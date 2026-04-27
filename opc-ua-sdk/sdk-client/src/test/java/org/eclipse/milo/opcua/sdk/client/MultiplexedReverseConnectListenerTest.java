@@ -697,12 +697,10 @@ class MultiplexedReverseConnectListenerTest {
     var discoveryClient = new TestDiscoveryClientHandle(List.of(endpoint), disconnectFuture);
 
     MultiplexedReverseConnectClientController controller =
-        newClientController(
-            executor, scheduledExecutor, resolver, clientCreated, discoveryClient);
+        newClientController(executor, scheduledExecutor, resolver, clientCreated, discoveryClient);
 
     try {
-      controller.dispatch(
-          new EmbeddedChannel(), new ReverseHelloMessage(SERVER_URI, ENDPOINT_URL));
+      controller.dispatch(new EmbeddedChannel(), new ReverseHelloMessage(SERVER_URI, ENDPOINT_URL));
 
       discoveryClient.disconnectStarted.get(5, TimeUnit.SECONDS);
       assertFalse(clientCreated.isDone());
@@ -793,8 +791,7 @@ class MultiplexedReverseConnectListenerTest {
         newClientController(executor, scheduledExecutor, resolver, clientCreated, discoveryClient);
 
     try {
-      controller.dispatch(
-          new EmbeddedChannel(), new ReverseHelloMessage(SERVER_URI, ENDPOINT_URL));
+      controller.dispatch(new EmbeddedChannel(), new ReverseHelloMessage(SERVER_URI, ENDPOINT_URL));
 
       List<EndpointDescription> endpoints = resolverEndpoints.get(5, TimeUnit.SECONDS);
       assertEquals(1, endpoints.size());
@@ -829,8 +826,7 @@ class MultiplexedReverseConnectListenerTest {
         };
 
     TestDiscoveryClientHandle discoveryClient =
-        new TestDiscoveryClientHandle(
-            List.of(endpoint), CompletableFuture.completedFuture(null));
+        new TestDiscoveryClientHandle(List.of(endpoint), CompletableFuture.completedFuture(null));
 
     OpcTcpMultiplexedReverseConnectTransportConfig transportConfig =
         OpcTcpMultiplexedReverseConnectTransportConfig.newBuilder()
@@ -851,14 +847,12 @@ class MultiplexedReverseConnectListenerTest {
         new MultiplexedReverseConnectClientController(
             config,
             serverUri ->
-                new CapturingTransport(
-                    serverUri, transportConfig, noopRegistry(), offeredChannel),
+                new CapturingTransport(serverUri, transportConfig, noopRegistry(), offeredChannel),
             (discoveryEndpoint, discoveryTransportConfig, channel, reverseHello) ->
                 discoveryClient);
 
     try {
-      controller.dispatch(
-          new EmbeddedChannel(), new ReverseHelloMessage(SERVER_URI, ENDPOINT_URL));
+      controller.dispatch(new EmbeddedChannel(), new ReverseHelloMessage(SERVER_URI, ENDPOINT_URL));
 
       assertNotNull(clientCreated.get(5, TimeUnit.SECONDS));
 
@@ -891,8 +885,7 @@ class MultiplexedReverseConnectListenerTest {
         EndpointResolver.discover((serverUri, endpoints) -> endpoints.get(0));
 
     TestDiscoveryClientHandle discoveryClient =
-        new TestDiscoveryClientHandle(
-            List.of(endpoint), CompletableFuture.completedFuture(null));
+        new TestDiscoveryClientHandle(List.of(endpoint), CompletableFuture.completedFuture(null));
 
     OpcTcpMultiplexedReverseConnectTransportConfig transportConfig =
         OpcTcpMultiplexedReverseConnectTransportConfig.newBuilder()
@@ -955,12 +948,10 @@ class MultiplexedReverseConnectListenerTest {
         new MultiplexedReverseConnectClientController(
             config,
             serverUri ->
-                new OpcTcpMultiplexedReverseConnectTransport(
-                    serverUri, transportConfig, registry));
+                new OpcTcpMultiplexedReverseConnectTransport(serverUri, transportConfig, registry));
 
     try {
-      controller.dispatch(
-          new EmbeddedChannel(), new ReverseHelloMessage(SERVER_URI, ENDPOINT_URL));
+      controller.dispatch(new EmbeddedChannel(), new ReverseHelloMessage(SERVER_URI, ENDPOINT_URL));
 
       OpcUaClient client = clientCreated.get(5, TimeUnit.SECONDS);
       assertTrue(client.getConfig().isSessionEndpointValidationEnabled());

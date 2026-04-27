@@ -30,6 +30,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
@@ -211,6 +212,39 @@ class ReverseConnectManagerTest {
 
     assertEquals(1, manager.connectionCount());
     assertEquals(1, manager.registrationCount());
+
+    CompletableFuture<Void> restartedStop = manager.stop();
+    restartedAttempt.failTcpConnect();
+    restartedStop.get(5, TimeUnit.SECONDS);
+  }
+
+  @Test
+  void stopCallbackStartDoesNotOrphanQueuedRestart() throws Exception {
+    ServerApplicationContext appContext = appContext();
+    startManager(appContext);
+
+    manager.addReverseConnect(CLIENT_URL, ENDPOINT_URL);
+    StartedAttempt attempt = stubTransport.pollAttempt();
+
+    CompletableFuture<Void> stopFuture = manager.stop();
+    CompletableFuture<Void> queuedStart = manager.start(appContext, SERVER_URI);
+    var callbackStart = new AtomicReference<CompletableFuture<Void>>();
+
+    stopFuture.thenRun(() -> callbackStart.set(manager.start(appContext, SERVER_URI)));
+
+    attempt.failTcpConnect();
+
+    stopFuture.get(5, TimeUnit.SECONDS);
+    queuedStart.get(5, TimeUnit.SECONDS);
+    CompletableFuture<Void> callbackStartFuture = callbackStart.get();
+    assertNotNull(callbackStartFuture);
+    callbackStartFuture.get(5, TimeUnit.SECONDS);
+
+    StartedAttempt restartedAttempt = stubTransport.pollAttempt();
+
+    assertEquals(1, manager.connectionCount());
+    assertEquals(2, stubTransport.attemptCount());
+    stubTransport.assertNoAttempt();
 
     CompletableFuture<Void> restartedStop = manager.stop();
     restartedAttempt.failTcpConnect();
