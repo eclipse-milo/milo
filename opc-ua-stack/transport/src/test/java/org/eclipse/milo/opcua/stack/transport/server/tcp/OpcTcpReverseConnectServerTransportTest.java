@@ -22,6 +22,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
@@ -114,6 +115,69 @@ class OpcTcpReverseConnectServerTransportTest {
 
       // Verify the pipeline contains UascServerReverseHelloHandler
       assertNotNull(channel.pipeline().get(UascServerReverseHelloHandler.class));
+
+      channel.close().sync();
+    } finally {
+      serverChannel.close().sync();
+    }
+  }
+
+  @Test
+  void connectAppliesPipelineCustomizer() throws Exception {
+    Channel serverChannel = startAcceptingServer();
+
+    try {
+      var localAddress = (InetSocketAddress) serverChannel.localAddress();
+      var customizerInvoked = new CompletableFuture<Void>();
+
+      OpcTcpServerTransportConfig config =
+          OpcTcpServerTransportConfig.newBuilder()
+              .setEventLoop(eventLoop)
+              .setExecutor(ForkJoinPool.commonPool())
+              .setChannelPipelineCustomizer(
+                  pipeline -> {
+                    pipeline.addLast(
+                        "reverse-connect-custom-handler", new ChannelInboundHandlerAdapter());
+                    customizerInvoked.complete(null);
+                  })
+              .build();
+      var transport = new OpcTcpReverseConnectServerTransport(config);
+
+      Channel channel =
+          transport
+              .connect(newApplicationContext(), localAddress, SERVER_URI, ENDPOINT_URL, 5_000)
+              .get(5, TimeUnit.SECONDS);
+
+      assertNotNull(channel.pipeline().get("reverse-connect-custom-handler"));
+      customizerInvoked.get(5, TimeUnit.SECONDS);
+
+      channel.close().sync();
+    } finally {
+      serverChannel.close().sync();
+    }
+  }
+
+  @Test
+  void connectAppliesBootstrapChildOptions() throws Exception {
+    Channel serverChannel = startAcceptingServer();
+
+    try {
+      var localAddress = (InetSocketAddress) serverChannel.localAddress();
+
+      OpcTcpServerTransportConfig config =
+          OpcTcpServerTransportConfig.newBuilder()
+              .setEventLoop(eventLoop)
+              .setExecutor(ForkJoinPool.commonPool())
+              .setBootstrapCustomizer(b -> b.childOption(ChannelOption.SO_KEEPALIVE, true))
+              .build();
+      var transport = new OpcTcpReverseConnectServerTransport(config);
+
+      Channel channel =
+          transport
+              .connect(newApplicationContext(), localAddress, SERVER_URI, ENDPOINT_URL, 5_000)
+              .get(5, TimeUnit.SECONDS);
+
+      assertTrue(((SocketChannel) channel).config().isKeepAlive());
 
       channel.close().sync();
     } finally {
@@ -230,6 +294,29 @@ class OpcTcpReverseConnectServerTransportTest {
         .setEventLoop(eventLoop)
         .setExecutor(ForkJoinPool.commonPool())
         .build();
+  }
+
+  private static Channel startAcceptingServer() throws InterruptedException {
+    return new ServerBootstrap()
+        .group(eventLoop)
+        .channel(NioServerSocketChannel.class)
+        .childHandler(
+            new ChannelInitializer<SocketChannel>() {
+              @Override
+              protected void initChannel(SocketChannel ch) {
+                ch.pipeline()
+                    .addLast(
+                        new ChannelInboundHandlerAdapter() {
+                          @Override
+                          public void channelRead(ChannelHandlerContext ctx, Object msg) {
+                            ReferenceCountUtil.release(msg);
+                          }
+                        });
+              }
+            })
+        .bind(0)
+        .sync()
+        .channel();
   }
 
   private static ServerApplicationContext newApplicationContext() {

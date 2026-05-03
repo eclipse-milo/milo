@@ -11,14 +11,18 @@
 package org.eclipse.milo.opcua.stack.transport.server.tcp;
 
 import io.netty.bootstrap.Bootstrap;
+import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.util.AttributeKey;
 import java.net.InetSocketAddress;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
@@ -137,8 +141,12 @@ public class OpcTcpReverseConnectServerTransport {
                             endpointUrl,
                             attempt::reverseHelloWriteFailed,
                             attempt::clientRejected));
+
+                config.getChannelPipelineCustomizer().accept(ch.pipeline());
               }
             });
+
+    applyBootstrapCustomizer(bootstrap);
 
     bootstrap
         .connect(clientAddress)
@@ -152,5 +160,27 @@ public class OpcTcpReverseConnectServerTransport {
             });
 
     return attempt;
+  }
+
+  private void applyBootstrapCustomizer(Bootstrap bootstrap) {
+    var serverBootstrap =
+        new ServerBootstrap().channel(NioServerSocketChannel.class).group(config.getEventLoop());
+
+    config.getBootstrapCustomizer().accept(serverBootstrap);
+
+    applyOptions(bootstrap, serverBootstrap.config().options());
+    applyOptions(bootstrap, serverBootstrap.config().childOptions());
+    applyAttributes(bootstrap, serverBootstrap.config().attrs());
+    applyAttributes(bootstrap, serverBootstrap.config().childAttrs());
+  }
+
+  @SuppressWarnings({"rawtypes", "unchecked"})
+  private static void applyOptions(Bootstrap bootstrap, Map<ChannelOption<?>, Object> options) {
+    options.forEach((option, value) -> bootstrap.option((ChannelOption) option, value));
+  }
+
+  @SuppressWarnings({"rawtypes", "unchecked"})
+  private static void applyAttributes(Bootstrap bootstrap, Map<AttributeKey<?>, Object> attrs) {
+    attrs.forEach((attr, value) -> bootstrap.attr((AttributeKey) attr, value));
   }
 }
