@@ -58,7 +58,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
     <!-- Dependency Versions -->
-    <bouncycastle.version>1.80</bouncycastle.version>
+    <bouncycastle.version>1.84</bouncycastle.version>
     <data-type-test.version>0.3</data-type-test.version>
     <gson.version>2.13.2</gson.version>
     <guava.version>33.4.8-jre</guava.version>
