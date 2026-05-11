@@ -168,9 +168,7 @@ public class OpcTcpReverseConnectServerTransport {
 
     config.getBootstrapCustomizer().accept(serverBootstrap);
 
-    applyOptions(bootstrap, serverBootstrap.config().options());
     applyOptions(bootstrap, serverBootstrap.config().childOptions());
-    applyAttributes(bootstrap, serverBootstrap.config().attrs());
     applyAttributes(bootstrap, serverBootstrap.config().childAttrs());
   }
 

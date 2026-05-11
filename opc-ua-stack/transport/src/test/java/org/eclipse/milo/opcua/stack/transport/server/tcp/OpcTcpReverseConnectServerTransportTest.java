@@ -14,6 +14,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -27,6 +28,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.util.AttributeKey;
 import io.netty.util.ReferenceCountUtil;
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -178,6 +180,41 @@ class OpcTcpReverseConnectServerTransportTest {
               .get(5, TimeUnit.SECONDS);
 
       assertTrue(((SocketChannel) channel).config().isKeepAlive());
+
+      channel.close().sync();
+    } finally {
+      serverChannel.close().sync();
+    }
+  }
+
+  @Test
+  void connectDoesNotPropagateServerBootstrapParentState() throws Exception {
+    Channel serverChannel = startAcceptingServer();
+
+    AttributeKey<String> parentAttrKey =
+        AttributeKey.newInstance("parent-only-attr-" + System.nanoTime());
+
+    try {
+      var localAddress = (InetSocketAddress) serverChannel.localAddress();
+
+      OpcTcpServerTransportConfig config =
+          OpcTcpServerTransportConfig.newBuilder()
+              .setEventLoop(eventLoop)
+              .setExecutor(ForkJoinPool.commonPool())
+              .setBootstrapCustomizer(
+                  b -> {
+                    b.option(ChannelOption.SO_BACKLOG, 128);
+                    b.attr(parentAttrKey, "parent-only");
+                  })
+              .build();
+      var transport = new OpcTcpReverseConnectServerTransport(config);
+
+      Channel channel =
+          transport
+              .connect(newApplicationContext(), localAddress, SERVER_URI, ENDPOINT_URL, 5_000)
+              .get(5, TimeUnit.SECONDS);
+
+      assertNull(channel.attr(parentAttrKey).get());
 
       channel.close().sync();
     } finally {
