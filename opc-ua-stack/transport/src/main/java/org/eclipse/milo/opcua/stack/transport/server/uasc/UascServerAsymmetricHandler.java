@@ -58,6 +58,7 @@ import org.eclipse.milo.opcua.stack.core.security.CertificateGroup;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfiles;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -141,6 +142,7 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
     chunkBuffers.forEach(ReferenceCountUtil::safeRelease);
     chunkBuffers.clear();
 
+    //noinspection DuplicatedCode
     if (cause instanceof IOException) {
       ctx.close();
       logger.debug(
@@ -246,6 +248,7 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
 
         String securityPolicyUri = header.getSecurityPolicyUri();
         SecurityPolicy securityPolicy = SecurityPolicy.fromUri(securityPolicyUri);
+        SecurityPolicyProfiles.requireSecureChannelSupported(securityPolicy);
 
         secureChannel.setSecurityPolicy(securityPolicy);
 
@@ -335,6 +338,7 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
         throw new UaException(StatusCodes.Bad_SecurityChecksFailed, message);
       }
 
+      //noinspection DuplicatedCode
       int chunkSize = buffer.readerIndex(0).readableBytes();
 
       if (chunkSize > maxChunkSize) {
@@ -587,16 +591,7 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
     SecurityKeysListener listener = application.getSecurityKeysListener();
 
     if (listener != null && newKeys != null) {
-      var keyset =
-          new SecurityKeyset(
-              secureChannel.getChannelId(),
-              newToken.getTokenId().longValue(),
-              newKeys.getClientKeys().getEncryptionKey(),
-              newKeys.getClientKeys().getInitializationVector(),
-              newKeys.getServerKeys().getEncryptionKey(),
-              newKeys.getServerKeys().getInitializationVector(),
-              secureChannel.getSymmetricSignatureSize());
-      listener.onSecurityKeysCreated(keyset);
+      listener.onSecurityKeysCreated(SecurityKeyset.from(secureChannel, newKeys, newToken));
     }
 
     /*

@@ -28,6 +28,7 @@ import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.util.DigestUtil;
+import org.jspecify.annotations.NonNull;
 
 public interface SecureChannel {
 
@@ -181,44 +182,22 @@ public interface SecureChannel {
 
   default int getSymmetricBlockSize() {
     if (isSymmetricEncryptionEnabled()) {
-      SecurityAlgorithm algorithm = getSecurityPolicy().getSymmetricEncryptionAlgorithm();
-
-      return switch (algorithm) {
-        case Aes128, Aes256 -> 16;
-        default -> 1;
-      };
+      return getSecurityPolicy().getProfile().symmetricBlockSize();
     } else {
       return 1;
     }
   }
 
   default int getSymmetricSignatureSize() {
-    SecurityAlgorithm algorithm = getSecurityPolicy().getSymmetricSignatureAlgorithm();
-
-    return switch (algorithm) {
-      case HmacSha1 -> 20;
-      case HmacSha256 -> 32;
-      default -> 0;
-    };
+    return getSecurityPolicy().getProfile().symmetricSignatureSize();
   }
 
   default int getSymmetricSignatureKeySize() {
-    return switch (getSecurityPolicy()) {
-      case None -> 0;
-      case Basic128Rsa15 -> 16;
-      case Basic256 -> 24;
-      case Basic256Sha256, Aes128_Sha256_RsaOaep, Aes256_Sha256_RsaPss -> 32;
-      default -> 0;
-    };
+    return getSecurityPolicy().getProfile().symmetricSignatureKeySize();
   }
 
   default int getSymmetricEncryptionKeySize() {
-    return switch (getSecurityPolicy()) {
-      case None -> 0;
-      case Basic128Rsa15, Aes128_Sha256_RsaOaep -> 16;
-      case Basic256, Basic256Sha256, Aes256_Sha256_RsaPss -> 32;
-      default -> 0;
-    };
+    return getSecurityPolicy().getProfile().symmetricEncryptionKeySize();
   }
 
   default boolean isSymmetricSigningEnabled() {
@@ -242,7 +221,8 @@ public interface SecureChannel {
         : 0;
   }
 
-  static int getAsymmetricSignatureSize(Certificate certificate, SecurityAlgorithm algorithm) {
+  static int getAsymmetricSignatureSize(
+      Certificate certificate, @NonNull SecurityAlgorithm algorithm) {
     return switch (algorithm) {
       case RsaSha1, RsaSha256, RsaSha256Pss -> (getAsymmetricKeyLength(certificate) + 7) / 8;
       default -> 0;
@@ -250,7 +230,7 @@ public interface SecureChannel {
   }
 
   static int getAsymmetricCipherTextBlockSize(
-      Certificate certificate, SecurityAlgorithm algorithm) {
+      Certificate certificate, @NonNull SecurityAlgorithm algorithm) {
     return switch (algorithm) {
       case Rsa15, RsaOaepSha1, RsaOaepSha256 -> (getAsymmetricKeyLength(certificate) + 7) / 8;
       default -> 1;
@@ -258,7 +238,7 @@ public interface SecureChannel {
   }
 
   static int getAsymmetricPlainTextBlockSize(
-      X509Certificate certificate, SecurityAlgorithm algorithm) {
+      X509Certificate certificate, @NonNull SecurityAlgorithm algorithm) {
     return switch (algorithm) {
       case Rsa15 -> (getAsymmetricKeyLength(certificate) + 7) / 8 - 11;
       case RsaOaepSha1 -> (getAsymmetricKeyLength(certificate) + 7) / 8 - 42;

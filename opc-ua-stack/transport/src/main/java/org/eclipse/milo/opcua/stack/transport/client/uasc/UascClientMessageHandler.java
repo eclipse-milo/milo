@@ -52,6 +52,7 @@ import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaBinaryDecoder;
 import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaBinaryEncoder;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfiles;
 import org.eclipse.milo.opcua.stack.core.types.UaMessageType;
 import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
 import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
@@ -326,8 +327,7 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
           out.add(response);
         }
       } catch (MessageAbortException e) {
-        logger.warn(
-            "Received message abort chunk; error={}, reason={}", e.getStatusCode(), e.getMessage());
+        logMessageAbort(e);
 
         out.add(
             UascResponse.failure(
@@ -371,6 +371,7 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
       CertificateValidator certificateValidator = application.getCertificateValidator();
 
       SecurityPolicy securityPolicy = SecurityPolicy.fromUri(securityHeader.getSecurityPolicyUri());
+      SecurityPolicyProfiles.requireSecureChannelSupported(securityPolicy);
 
       if (securityPolicy != SecurityPolicy.None) {
         ByteString serverCertificateBytes = securityHeader.getSenderCertificate();
@@ -425,8 +426,7 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
           ctx.close();
         }
       } catch (MessageAbortException e) {
-        logger.warn(
-            "Received message abort chunk; error={}, reason={}", e.getStatusCode(), e.getMessage());
+        logMessageAbort(e);
       } catch (MessageDecodeException e) {
         logger.error("Error decoding asymmetric message", e);
 
@@ -445,6 +445,11 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
         }
       }
     }
+  }
+
+  private void logMessageAbort(MessageAbortException e) {
+    logger.warn(
+        "Received message abort chunk; error={}, reason={}", e.getStatusCode(), e.getMessage());
   }
 
   private void installSecurityToken(ChannelHandlerContext ctx, OpenSecureChannelResponse response)
@@ -480,16 +485,7 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
     SecurityKeysListener listener = application.getSecurityKeysListener();
 
     if (listener != null && newKeys != null) {
-      var keyset =
-          new SecurityKeyset(
-              secureChannel.getChannelId(),
-              newToken.getTokenId().longValue(),
-              newKeys.getClientKeys().getEncryptionKey(),
-              newKeys.getClientKeys().getInitializationVector(),
-              newKeys.getServerKeys().getEncryptionKey(),
-              newKeys.getServerKeys().getInitializationVector(),
-              secureChannel.getSymmetricSignatureSize());
-      listener.onSecurityKeysCreated(keyset);
+      listener.onSecurityKeysCreated(SecurityKeyset.from(secureChannel, newKeys, newToken));
     }
 
     DateTime createdAt = response.getSecurityToken().getCreatedAt();
@@ -559,6 +555,7 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
     int maxChunkCount = getMaxChunkCount();
     int maxChunkSize = getMaxChunkSize();
 
+    //noinspection DuplicatedCode
     int chunkSize = buffer.readerIndex(0).readableBytes();
 
     if (chunkSize > maxChunkSize) {
@@ -718,6 +715,7 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
     EndpointDescription endpoint = application.getEndpoint();
 
     SecurityPolicy securityPolicy = SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri());
+    SecurityPolicyProfiles.requireSecureChannelSupported(securityPolicy);
 
     if (securityPolicy == SecurityPolicy.None) {
       return new ClientSecureChannel(securityPolicy, endpoint.getSecurityMode());

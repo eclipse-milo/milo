@@ -71,6 +71,8 @@ import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingManager;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfiles;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.DataTypeManager;
 import org.eclipse.milo.opcua.stack.core.types.DefaultDataTypeManager;
@@ -586,7 +588,11 @@ public class OpcUaServer extends AbstractServiceHandler {
     @Override
     public List<EndpointDescription> getEndpointDescriptions() {
       return endpointDescriptions.get(
-          () -> config.getEndpoints().stream().map(this::transformEndpoint).toList());
+          () ->
+              config.getEndpoints().stream()
+                  .map(this::transformEndpoint)
+                  .flatMap(Optional::stream)
+                  .toList());
     }
 
     @Override
@@ -687,14 +693,7 @@ public class OpcUaServer extends AbstractServiceHandler {
                               context.getChannel().remoteAddress(),
                               ex);
                         } else {
-                          if (logger.isTraceEnabled()) {
-                            logger.trace(
-                                "Service request completed: path={} handle={} service={} remote={}",
-                                path,
-                                requestMessage.getRequestHeader().getRequestHandle(),
-                                service,
-                                context.getChannel().remoteAddress());
-                          }
+                          logServiceRequestCompleted(path, requestMessage, service, context);
                         }
                       });
 
@@ -703,14 +702,7 @@ public class OpcUaServer extends AbstractServiceHandler {
           try {
             UaResponseMessageType response = serviceHandler.handle(context, requestMessage);
 
-            if (logger.isTraceEnabled()) {
-              logger.trace(
-                  "Service request completed: path={} handle={} service={} remote={}",
-                  path,
-                  requestMessage.getRequestHeader().getRequestHandle(),
-                  service,
-                  context.getChannel().remoteAddress());
-            }
+            logServiceRequestCompleted(path, requestMessage, service, context);
 
             future.complete(response);
           } catch (UaException e) {
@@ -729,6 +721,22 @@ public class OpcUaServer extends AbstractServiceHandler {
         logger.warn("No ServiceHandler registered for path={} service={}", path, service);
 
         future.completeExceptionally(new UaException(StatusCodes.Bad_NotImplemented));
+      }
+    }
+
+    private void logServiceRequestCompleted(
+        String path,
+        UaRequestMessageType requestMessage,
+        Service service,
+        ServiceRequestContext context) {
+
+      if (logger.isTraceEnabled()) {
+        logger.trace(
+            "Service request completed: path={} handle={} service={} remote={}",
+            path,
+            requestMessage.getRequestHeader().getRequestHandle(),
+            service,
+            context.getChannel().remoteAddress());
       }
     }
 
@@ -764,16 +772,33 @@ public class OpcUaServer extends AbstractServiceHandler {
       return false;
     }
 
-    private EndpointDescription transformEndpoint(EndpointConfig endpoint) {
-      return new EndpointDescription(
-          endpoint.getEndpointUrl(),
-          getApplicationDescription(),
-          certificateByteString(endpoint.getCertificate()),
-          endpoint.getSecurityMode(),
-          endpoint.getSecurityPolicy().getUri(),
-          endpoint.getTokenPolicies().toArray(new UserTokenPolicy[0]),
-          endpoint.getTransportProfile().getUri(),
-          ubyte(getSecurityLevel(endpoint.getSecurityPolicy(), endpoint.getSecurityMode())));
+    private Optional<EndpointDescription> transformEndpoint(EndpointConfig endpoint) {
+      SecurityPolicyProfile profile = SecurityPolicyProfiles.get(endpoint.getSecurityPolicy());
+
+      if (!profile.secureChannelSupported()) {
+        logger.warn(
+            "Omitting endpoint advertisement: endpointUrl={}, securityPolicyUri={},"
+                + " securityMode={}, certificateGroup={}, certificateType={}, reason={}",
+            endpoint.getEndpointUrl(),
+            endpoint.getSecurityPolicy().getUri(),
+            endpoint.getSecurityMode(),
+            "legacy-certificate-supplier",
+            "legacy-certificate-supplier",
+            "SecureChannel runtime support unavailable");
+
+        return Optional.empty();
+      }
+
+      return Optional.of(
+          new EndpointDescription(
+              endpoint.getEndpointUrl(),
+              getApplicationDescription(),
+              certificateByteString(endpoint.getCertificate()),
+              endpoint.getSecurityMode(),
+              endpoint.getSecurityPolicy().getUri(),
+              endpoint.getTokenPolicies().toArray(new UserTokenPolicy[0]),
+              endpoint.getTransportProfile().getUri(),
+              ubyte(getSecurityLevel(endpoint.getSecurityPolicy(), endpoint.getSecurityMode()))));
     }
 
     private ByteString certificateByteString(@Nullable X509Certificate certificate) {
@@ -820,38 +845,7 @@ public class OpcUaServer extends AbstractServiceHandler {
 
     private short getSecurityLevel(
         SecurityPolicy securityPolicy, MessageSecurityMode securityMode) {
-      short securityLevel = 0;
-
-      switch (securityPolicy) {
-        case Aes256_Sha256_RsaPss:
-        case Basic256Sha256:
-          securityLevel |= 0x08;
-          break;
-        case Aes128_Sha256_RsaOaep:
-          securityLevel |= 0x04;
-          break;
-        case Basic256:
-        case Basic128Rsa15:
-          securityLevel |= 0x01;
-          break;
-        case None:
-        default:
-          break;
-      }
-
-      switch (securityMode) {
-        case SignAndEncrypt:
-          securityLevel |= 0x80;
-          break;
-        case Sign:
-          securityLevel |= 0x40;
-          break;
-        default:
-          securityLevel |= 0x20;
-          break;
-      }
-
-      return securityLevel;
+      return securityPolicy.getProfile().getSecurityLevel(securityMode);
     }
   }
 
