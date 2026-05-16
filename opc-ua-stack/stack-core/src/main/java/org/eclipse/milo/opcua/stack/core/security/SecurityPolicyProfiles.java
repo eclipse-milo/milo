@@ -279,7 +279,7 @@ public final class SecurityPolicyProfiles {
             1,
             0x04,
             true,
-            false));
+            true));
 
     register(
         profiles,
@@ -305,7 +305,7 @@ public final class SecurityPolicyProfiles {
             1,
             0x04,
             true,
-            false));
+            true));
 
     return Map.copyOf(profiles);
   }

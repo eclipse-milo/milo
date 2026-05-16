@@ -54,15 +54,18 @@ import org.eclipse.milo.opcua.stack.core.channel.messages.ErrorMessage;
 import org.eclipse.milo.opcua.stack.core.channel.messages.MessageType;
 import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaBinaryDecoder;
 import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaBinaryEncoder;
+import org.eclipse.milo.opcua.stack.core.security.CertificateCompatibility;
 import org.eclipse.milo.opcua.stack.core.security.CertificateGroup;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfiles;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.SecurityTokenRequestType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ChannelSecurityToken;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
@@ -279,6 +282,9 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
                 secureChannel.getRemoteCertificateChain(), null, null, securityPolicy.getProfile());
 
             X509Certificate[] chain = localCertificateChain.get();
+            if (securityPolicy.getProfile().secureChannelEnhancements()) {
+              CertificateCompatibility.checkCompatible(securityPolicy.getProfile(), chain[0]);
+            }
 
             secureChannel.setLocalCertificate(chain[0]);
             secureChannel.setLocalCertificateChain(chain);
@@ -482,6 +488,9 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
     SecurityTokenRequestType requestType = request.getRequestType();
 
     if (requestType == SecurityTokenRequestType.Issue) {
+      requireSupportedMessageSecurityMode(
+          secureChannel.getSecurityPolicyProfile(), request.getSecurityMode());
+
       secureChannel.setMessageSecurityMode(request.getSecurityMode());
 
       String endpointUrl = ctx.channel().attr(UascServerHelloHandler.ENDPOINT_URL_KEY).get();
@@ -570,14 +579,33 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
 
       NonceUtil.validateNonce(remoteNonce, secureChannel.getSecurityPolicy());
 
-      ByteString localNonce = generateNonce(secureChannel.getSecurityPolicy());
+      KeyPair localEphemeralKeyPair = null;
+      ByteString localNonce;
+
+      SecurityPolicyProfile profile = secureChannel.getSecurityPolicyProfile();
+      if (usesEphemeralKeyAgreement(profile)) {
+        localEphemeralKeyPair = ChannelSecurity.generateEphemeralKeyPair(profile);
+        localNonce = ChannelSecurity.encodeEphemeralPublicKey(profile, localEphemeralKeyPair);
+      } else {
+        localNonce = generateNonce(secureChannel.getSecurityPolicy());
+      }
 
       secureChannel.setLocalNonce(localNonce);
       secureChannel.setRemoteNonce(remoteNonce);
 
-      newKeys =
-          ChannelSecurity.generateKeyPair(
-              secureChannel, secureChannel.getRemoteNonce(), secureChannel.getLocalNonce());
+      if (localEphemeralKeyPair != null) {
+        newKeys =
+            ChannelSecurity.generateKeyPair(
+                secureChannel,
+                localEphemeralKeyPair,
+                secureChannel.getRemoteNonce(),
+                secureChannel.getLocalNonce(),
+                remoteNonce);
+      } else {
+        newKeys =
+            ChannelSecurity.generateKeyPair(
+                secureChannel, secureChannel.getRemoteNonce(), secureChannel.getLocalNonce());
+      }
     }
 
     ChannelSecurity oldSecrets = secureChannel.getChannelSecurity();
@@ -639,6 +667,26 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
               + messageSize
               + " > "
               + remoteMaxMessageSize);
+    }
+  }
+
+  private static boolean usesEphemeralKeyAgreement(SecurityPolicyProfile profile) {
+    return switch (profile.keyAgreementAxis()) {
+      case ECDH_NIST_P256, X25519 -> true;
+      default -> false;
+    };
+  }
+
+  private static void requireSupportedMessageSecurityMode(
+      SecurityPolicyProfile profile, MessageSecurityMode securityMode) throws UaException {
+
+    if (profile.secureChannelEnhancements() && securityMode != MessageSecurityMode.SignAndEncrypt) {
+      throw new UaException(
+          StatusCodes.Bad_SecurityPolicyRejected,
+          "message security mode is not supported for "
+              + profile.securityPolicy().getUri()
+              + ": "
+              + securityMode);
     }
   }
 }

@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
@@ -30,7 +29,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.jspecify.annotations.NullMarked;
@@ -153,7 +151,7 @@ public class SecurityPolicyTest {
     assertEquals(1, nistP256.symmetricBlockSize());
     assertEquals((short) 0x84, nistP256.getSecurityLevel(MessageSecurityMode.SignAndEncrypt));
     assertTrue(nistP256.secureChannelEnhancements());
-    assertFalse(nistP256.secureChannelSupported());
+    assertTrue(nistP256.secureChannelSupported());
 
     SecurityPolicyProfile curve25519 =
         SecurityPolicyProfiles.get(SecurityPolicy.ECC_curve25519_ChaChaPoly);
@@ -173,7 +171,7 @@ public class SecurityPolicyTest {
     assertEquals(32, curve25519.symmetricEncryptionKeySize());
     assertEquals((short) 0x84, curve25519.getSecurityLevel(MessageSecurityMode.SignAndEncrypt));
     assertTrue(curve25519.secureChannelEnhancements());
-    assertFalse(curve25519.secureChannelSupported());
+    assertTrue(curve25519.secureChannelSupported());
   }
 
   @Test
@@ -194,18 +192,16 @@ public class SecurityPolicyTest {
   }
 
   @Test
-  public void testUnsupportedSecureChannelGate() {
-    UaException exception =
-        assertThrows(
-            UaException.class,
-            () ->
-                SecurityPolicyProfiles.requireSecureChannelSupported(
-                    SecurityPolicy.ECC_nistP256_AesGcm));
-
-    assertEquals(StatusCodes.Bad_SecurityPolicyRejected, exception.getStatusCode().getValue());
-    assertTrue(exception.getMessage().contains("SecureChannel runtime"));
-
+  public void testSecureChannelGateAllowsExecutablePolicies() {
     assertDoesNotThrow(
         () -> SecurityPolicyProfiles.requireSecureChannelSupported(SecurityPolicy.Basic256Sha256));
+    assertDoesNotThrow(
+        () ->
+            SecurityPolicyProfiles.requireSecureChannelSupported(
+                SecurityPolicy.ECC_nistP256_AesGcm));
+    assertDoesNotThrow(
+        () ->
+            SecurityPolicyProfiles.requireSecureChannelSupported(
+                SecurityPolicy.ECC_curve25519_ChaChaPoly));
   }
 }

@@ -616,6 +616,7 @@ public class OpcUaServer extends AbstractServiceHandler {
       if (endpoint.getSecurityPolicy() != SecurityPolicy.None) {
         securityProviderResolver.resolve(profile);
         profile.requireSecureChannelSupported();
+        requireEndpointAdvertisementSupported(endpoint, profile);
 
         if (endpoint.getEndpointCertificateConfig().isPresent()) {
           certificateIdentity = resolveCertificateIdentity(endpoint, profile, certificate);
@@ -641,6 +642,18 @@ public class OpcUaServer extends AbstractServiceHandler {
     } catch (UaException | EndpointResolutionException e) {
       logOmittedEndpoint(endpoint, e.getMessage());
       return Optional.empty();
+    }
+  }
+
+  private static void requireEndpointAdvertisementSupported(
+      EndpointConfig endpoint, SecurityPolicyProfile profile) throws EndpointResolutionException {
+
+    if (profile.secureChannelEnhancements()) {
+      throw new EndpointResolutionException(
+          "SDK session support is not implemented for "
+              + endpoint.getSecurityPolicy().getUri()
+              + "; OpenSecureChannel transport support is available, but CreateSession/"
+              + "ActivateSession integration is deferred");
     }
   }
 

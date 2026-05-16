@@ -104,6 +104,49 @@ class SecureChannelStrategiesTest {
                 .sign(channel, emptySecurityKeys(), ByteBuffer.allocate(0)));
   }
 
+  // ECC SecureChannel setup carries ephemeral public keys in ClientNonce/ServerNonce and both
+  // sides must derive the same directional AEAD key material from those exact wire values.
+  @ParameterizedTest
+  @EnumSource(
+      value = SecurityPolicy.class,
+      names = {"ECC_nistP256_AesGcm", "ECC_curve25519_ChaChaPoly"})
+  void eccEphemeralOpenSecureChannelDerivesMatchingAeadKeys(SecurityPolicy securityPolicy)
+      throws Exception {
+
+    SecurityPolicyProfile profile = securityPolicy.getProfile();
+    ServerSecureChannel channel = new ServerSecureChannel();
+    channel.setSecurityPolicy(securityPolicy);
+
+    KeyPair clientEphemeralKeyPair = ChannelSecurity.generateEphemeralKeyPair(profile);
+    KeyPair serverEphemeralKeyPair = ChannelSecurity.generateEphemeralKeyPair(profile);
+    ByteString clientNonce =
+        ChannelSecurity.encodeEphemeralPublicKey(profile, clientEphemeralKeyPair);
+    ByteString serverNonce =
+        ChannelSecurity.encodeEphemeralPublicKey(profile, serverEphemeralKeyPair);
+
+    ChannelSecurity.SecurityKeys clientKeys =
+        ChannelSecurity.generateKeyPair(
+            channel, clientEphemeralKeyPair, clientNonce, serverNonce, serverNonce);
+    ChannelSecurity.SecurityKeys serverKeys =
+        ChannelSecurity.generateKeyPair(
+            channel, serverEphemeralKeyPair, clientNonce, serverNonce, clientNonce);
+
+    assertEquals(profile.secureChannelNonceLength(), clientNonce.length());
+    assertEquals(profile.secureChannelNonceLength(), serverNonce.length());
+    assertArrayEquals(
+        clientKeys.getClientKeys().getEncryptionKey(),
+        serverKeys.getClientKeys().getEncryptionKey());
+    assertArrayEquals(
+        clientKeys.getClientKeys().getInitializationVector(),
+        serverKeys.getClientKeys().getInitializationVector());
+    assertArrayEquals(
+        clientKeys.getServerKeys().getEncryptionKey(),
+        serverKeys.getServerKeys().getEncryptionKey());
+    assertArrayEquals(
+        clientKeys.getServerKeys().getInitializationVector(),
+        serverKeys.getServerKeys().getInitializationVector());
+  }
+
   // The client/server nonce order is part of the UASC wire contract for legacy RSA policies.
   @Test
   void rsaNoncePShaKeyDerivationPreservesLegacyLayout() {

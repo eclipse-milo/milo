@@ -51,9 +51,11 @@ import org.eclipse.milo.opcua.stack.core.channel.messages.MessageType;
 import org.eclipse.milo.opcua.stack.core.channel.messages.TcpMessageDecoder;
 import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaBinaryDecoder;
 import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaBinaryEncoder;
+import org.eclipse.milo.opcua.stack.core.security.CertificateCompatibility;
 import org.eclipse.milo.opcua.stack.core.security.CertificateIdentity;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfiles;
 import org.eclipse.milo.opcua.stack.core.types.UaMessageType;
 import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
@@ -61,6 +63,7 @@ import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.SecurityTokenRequestType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ChannelSecurityToken;
 import org.eclipse.milo.opcua.stack.core.types.structured.CloseSecureChannelRequest;
@@ -92,6 +95,12 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
   // AEAD profiles may need renewal because their sequence/nonce space is nearly exhausted, not only
   // because the server-issued token lifetime is close to expiring.
   private volatile boolean renewalRequestPending;
+
+  // For ECC OpenSecureChannel requests, createClientNonce() sends the ephemeral public key in
+  // ClientNonce and retains the matching private key here until the signed response arrives.
+  // installSecurityToken() consumes it to derive symmetric keys, then clears the reference because
+  // each Issue/Renew exchange must use fresh ephemeral key material.
+  private volatile KeyPair localEphemeralKeyPair;
 
   private ClientSecureChannel secureChannel;
 
@@ -480,9 +489,31 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
 
       secureChannel.setRemoteNonce(serverNonce);
 
-      newKeys =
-          ChannelSecurity.generateKeyPair(
-              secureChannel, secureChannel.getLocalNonce(), secureChannel.getRemoteNonce());
+      if (usesEphemeralKeyAgreement(secureChannel.getSecurityPolicyProfile())) {
+        KeyPair ephemeralKeyPair = localEphemeralKeyPair;
+
+        if (ephemeralKeyPair == null) {
+          throw new UaException(
+              StatusCodes.Bad_SecurityChecksFailed,
+              "missing local ephemeral key pair for OpenSecureChannel response");
+        }
+
+        try {
+          newKeys =
+              ChannelSecurity.generateKeyPair(
+                  secureChannel,
+                  ephemeralKeyPair,
+                  secureChannel.getLocalNonce(),
+                  secureChannel.getRemoteNonce(),
+                  serverNonce);
+        } finally {
+          localEphemeralKeyPair = null;
+        }
+      } else {
+        newKeys =
+            ChannelSecurity.generateKeyPair(
+                secureChannel, secureChannel.getLocalNonce(), secureChannel.getRemoteNonce());
+      }
     }
 
     ChannelSecurity oldSecrets = secureChannel.getChannelSecurity();
@@ -593,29 +624,27 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
       renewalRequestPending = true;
     }
 
-    ByteString clientNonce =
-        secureChannel.isSymmetricSigningEnabled()
-            ? NonceUtil.generateNonce(secureChannel.getSecurityPolicy())
-            : ByteString.NULL_VALUE;
-
-    secureChannel.setLocalNonce(clientNonce);
-
-    var header =
-        new RequestHeader(
-            null, DateTime.now(), uint(0), uint(0), null, application.getRequestTimeout(), null);
-
-    var request =
-        new OpenSecureChannelRequest(
-            header,
-            uint(PROTOCOL_VERSION),
-            requestType,
-            secureChannel.getMessageSecurityMode(),
-            secureChannel.getLocalNonce(),
-            config.getChannelLifetime());
-
     ByteBuf messageBuffer = BufferUtil.pooledBuffer();
+    OpenSecureChannelRequest request = null;
 
     try {
+      ByteString clientNonce = createClientNonce();
+
+      secureChannel.setLocalNonce(clientNonce);
+
+      var header =
+          new RequestHeader(
+              null, DateTime.now(), uint(0), uint(0), null, application.getRequestTimeout(), null);
+
+      request =
+          new OpenSecureChannelRequest(
+              header,
+              uint(PROTOCOL_VERSION),
+              requestType,
+              secureChannel.getMessageSecurityMode(),
+              secureChannel.getLocalNonce(),
+              config.getChannelLifetime());
+
       binaryEncoder.setBuffer(messageBuffer);
       binaryEncoder.encodeMessage(null, request);
 
@@ -660,8 +689,33 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
       logger.error("Error encoding {}: {}", request, e.getMessage(), e);
 
       ctx.close();
+    } catch (UaException e) {
+      logger.error("Error preparing OpenSecureChannelRequest: {}", e.getStatusCode(), e);
+
+      handshakeFuture.completeExceptionally(e);
+      ctx.close();
     } finally {
       messageBuffer.release();
+    }
+  }
+
+  private ByteString createClientNonce() throws UaException {
+    if (!secureChannel.isSymmetricSigningEnabled()) {
+      localEphemeralKeyPair = null;
+
+      return ByteString.NULL_VALUE;
+    }
+
+    SecurityPolicyProfile profile = secureChannel.getSecurityPolicyProfile();
+
+    if (usesEphemeralKeyAgreement(profile)) {
+      localEphemeralKeyPair = ChannelSecurity.generateEphemeralKeyPair(profile);
+
+      return ChannelSecurity.encodeEphemeralPublicKey(profile, localEphemeralKeyPair);
+    } else {
+      localEphemeralKeyPair = null;
+
+      return NonceUtil.generateNonce(secureChannel.getSecurityPolicy());
     }
   }
 
@@ -739,6 +793,7 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
 
     SecurityPolicy securityPolicy = SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri());
     SecurityPolicyProfiles.requireSecureChannelSupported(securityPolicy);
+    requireSupportedMessageSecurityMode(securityPolicy.getProfile(), endpoint.getSecurityMode());
 
     if (securityPolicy == SecurityPolicy.None) {
       return new ClientSecureChannel(securityPolicy, endpoint.getSecurityMode());
@@ -772,6 +827,10 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
                       new UaException(
                           StatusCodes.Bad_ConfigurationError, "no certificate chain configured"));
 
+      if (securityPolicy.getProfile().secureChannelEnhancements()) {
+        CertificateCompatibility.checkCompatible(securityPolicy.getProfile(), certificate);
+      }
+
       X509Certificate remoteCertificate =
           CertificateUtil.decodeCertificate(endpoint.getServerCertificate().bytes());
 
@@ -798,6 +857,26 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
       throw new UaException(
           StatusCodes.Bad_TcpMessageTooLarge,
           String.format("max message length exceeded (%s > %s)", messageLength, maxMessageLength));
+    }
+  }
+
+  private static boolean usesEphemeralKeyAgreement(SecurityPolicyProfile profile) {
+    return switch (profile.keyAgreementAxis()) {
+      case ECDH_NIST_P256, X25519 -> true;
+      default -> false;
+    };
+  }
+
+  private static void requireSupportedMessageSecurityMode(
+      SecurityPolicyProfile profile, MessageSecurityMode securityMode) throws UaException {
+
+    if (profile.secureChannelEnhancements() && securityMode != MessageSecurityMode.SignAndEncrypt) {
+      throw new UaException(
+          StatusCodes.Bad_SecurityPolicyRejected,
+          "message security mode is not supported for "
+              + profile.securityPolicy().getUri()
+              + ": "
+              + securityMode);
     }
   }
 }

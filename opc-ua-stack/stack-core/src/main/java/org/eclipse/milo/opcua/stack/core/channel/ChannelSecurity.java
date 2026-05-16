@@ -10,10 +10,14 @@
 
 package org.eclipse.milo.opcua.stack.core.channel;
 
+import java.security.KeyPair;
+import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Optional;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.security.EccKeyAgreementUtil;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.ChannelSecurityToken;
@@ -120,6 +124,96 @@ public class ChannelSecurity {
             clientNonce,
             serverNonce,
             channel.getSymmetricBlockSize());
+  }
+
+  /**
+   * Generates an ephemeral key pair for a profile whose OpenSecureChannel nonce fields carry public
+   * key agreement values.
+   *
+   * @param profile the selected security-policy profile.
+   * @return a fresh ephemeral key pair for the profile's key-agreement axis.
+   * @throws UaException if the profile does not support ephemeral key agreement or generation
+   *     fails.
+   */
+  public static KeyPair generateEphemeralKeyPair(SecurityPolicyProfile profile) throws UaException {
+
+    return SecureChannelStrategies.keyAgreement(profile).generateEphemeral(profile);
+  }
+
+  /**
+   * Encodes an ephemeral public key into the OpenSecureChannel nonce wire value for {@code
+   * profile}.
+   *
+   * @param profile the selected security-policy profile.
+   * @param ephemeralKeyPair the ephemeral key pair whose public key should be sent.
+   * @return the encoded nonce/public-key value.
+   * @throws UaException if the public key is incompatible with the profile.
+   */
+  public static ByteString encodeEphemeralPublicKey(
+      SecurityPolicyProfile profile, KeyPair ephemeralKeyPair) throws UaException {
+
+    return encodeEphemeralPublicKey(profile, ephemeralKeyPair.getPublic());
+  }
+
+  /**
+   * Encodes an ephemeral public key into the OpenSecureChannel nonce wire value for {@code
+   * profile}.
+   *
+   * @param profile the selected security-policy profile.
+   * @param publicKey the ephemeral public key to encode.
+   * @return the encoded nonce/public-key value.
+   * @throws UaException if the public key is incompatible with the profile.
+   */
+  public static ByteString encodeEphemeralPublicKey(
+      SecurityPolicyProfile profile, PublicKey publicKey) throws UaException {
+
+    return SecureChannelStrategies.keyAgreement(profile).encodePublicKey(profile, publicKey);
+  }
+
+  /**
+   * Derives directional symmetric keys from an ephemeral key-agreement OpenSecureChannel exchange.
+   *
+   * <p>{@code clientNonce} and {@code serverNonce} must be the exact wire values from the request
+   * and response. {@code peerNonce} is decoded according to the profile, then combined with {@code
+   * localEphemeralKeyPair} to produce the shared secret used by profile-specific HKDF key
+   * derivation.
+   *
+   * @param channel the channel carrying the selected security-policy profile.
+   * @param localEphemeralKeyPair the local ephemeral key pair retained for this exchange.
+   * @param clientNonce the client nonce/public-key wire value.
+   * @param serverNonce the server nonce/public-key wire value.
+   * @param peerNonce the peer nonce/public-key wire value to decode and validate.
+   * @return directional client and server key material for the token.
+   * @throws UaException if peer key decoding, agreement, or HKDF derivation fails.
+   */
+  public static SecurityKeys generateKeyPair(
+      SecureChannel channel,
+      KeyPair localEphemeralKeyPair,
+      ByteString clientNonce,
+      ByteString serverNonce,
+      ByteString peerNonce)
+      throws UaException {
+
+    SecurityPolicyProfile profile = channel.getSecurityPolicyProfile();
+    SecureChannelStrategies.KeyAgreementStrategy keyAgreement =
+        SecureChannelStrategies.keyAgreement(profile);
+
+    PublicKey peerPublicKey = keyAgreement.decodePublicKey(profile, peerNonce);
+    byte[] sharedSecret =
+        keyAgreement.agree(profile, localEphemeralKeyPair.getPrivate(), peerPublicKey);
+
+    try {
+      EccKeyAgreementUtil.DerivedKeyMaterial keyMaterial =
+          keyAgreement.deriveKeyMaterial(profile, sharedSecret, clientNonce, serverNonce);
+
+      return createAeadKeyPair(
+          keyMaterial.clientEncryptionKey(),
+          keyMaterial.clientInitializationVector(),
+          keyMaterial.serverEncryptionKey(),
+          keyMaterial.serverInitializationVector());
+    } finally {
+      Arrays.fill(sharedSecret, (byte) 0);
+    }
   }
 
   /**
