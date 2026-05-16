@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.stack;
 import static org.eclipse.milo.opcua.stack.core.channel.EncodingLimits.DEFAULT_MAX_CHUNK_SIZE;
 import static org.eclipse.milo.opcua.stack.core.channel.EncodingLimits.DEFAULT_MAX_MESSAGE_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import io.netty.buffer.ByteBuf;
@@ -25,6 +26,7 @@ import org.eclipse.milo.opcua.stack.core.channel.ChannelParameters;
 import org.eclipse.milo.opcua.stack.core.channel.ChunkDecoder;
 import org.eclipse.milo.opcua.stack.core.channel.ChunkEncoder;
 import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
+import org.eclipse.milo.opcua.stack.core.channel.MessageDecodeException;
 import org.eclipse.milo.opcua.stack.core.channel.MessageEncodeException;
 import org.eclipse.milo.opcua.stack.core.channel.SecureChannel;
 import org.eclipse.milo.opcua.stack.core.channel.ServerSecureChannel;
@@ -346,6 +348,12 @@ public class ChunkSerializationTest extends SecureChannelFixture {
     };
   }
 
+  public static Object[][] getAeadSecurityParameters() {
+    return new Object[][] {
+      {SecurityPolicy.ECC_nistP256_AesGcm}, {SecurityPolicy.ECC_curve25519_ChaChaPoly}
+    };
+  }
+
   @ParameterizedTest
   @MethodSource("getSymmetricSecurityParameters")
   public void testSymmetricMessage(
@@ -414,6 +422,146 @@ public class ChunkSerializationTest extends SecureChannelFixture {
           fail("decoding error", t);
         }
       }
+    }
+  }
+
+  // Target AEAD policies use the signature footer as an authentication tag instead of a legacy
+  // HMAC,
+  // so round-trip coverage needs to exercise the full symmetric chunk framing path.
+  @ParameterizedTest
+  @MethodSource("getAeadSecurityParameters")
+  public void testAeadSymmetricMessage(SecurityPolicy securityPolicy) throws Exception {
+    LOGGER.debug("AEAD symmetric chunk serialization, securityPolicy={}", securityPolicy);
+
+    ChannelParameters[] channelParameters = {smallParameters, defaultParameters};
+
+    for (ChannelParameters parameters : channelParameters) {
+      int[] messageSizes = new int[] {1, 128, 8196};
+
+      for (int messageSize : messageSizes) {
+        ChunkEncoder encoder = new ChunkEncoder(parameters);
+        ChunkDecoder decoder = new ChunkDecoder(parameters, EncodingLimits.DEFAULT);
+
+        advanceNonLegacySequence(encoder, decoder, securityPolicy);
+
+        SecureChannel[] channels = generateAeadChannels(securityPolicy);
+        SecureChannel clientChannel = channels[0];
+        SecureChannel serverChannel = channels[1];
+
+        byte[] messageBytes = new byte[messageSize];
+        for (int i = 0; i < messageBytes.length; i++) {
+          messageBytes[i] = (byte) i;
+        }
+
+        ByteBuf messageBuffer = BufferUtil.pooledBuffer().writeBytes(messageBytes);
+
+        try {
+          ChunkEncoder.EncodedMessage message =
+              encoder.encodeSymmetric(clientChannel, 1L, messageBuffer, MessageType.SecureMessage);
+
+          ChunkDecoder.DecodedMessage decodedMessage =
+              decoder.decodeSymmetric(serverChannel, message.getMessageChunks());
+
+          ByteBuf decoded = decodedMessage.getMessage();
+
+          try {
+            messageBuffer.readerIndex(0);
+            assertEquals(messageBuffer, decoded);
+          } finally {
+            ReferenceCountUtil.release(decoded);
+          }
+        } finally {
+          ReferenceCountUtil.release(messageBuffer);
+        }
+      }
+    }
+  }
+
+  // Receivers must reject corrupted AEAD tags before plaintext sequence headers or bodies are used.
+  @ParameterizedTest
+  @MethodSource("getAeadSecurityParameters")
+  public void aeadRejectsTagCorruption(SecurityPolicy securityPolicy) throws Exception {
+    ChunkEncoder encoder = new ChunkEncoder(defaultParameters);
+    ChunkDecoder decoder = new ChunkDecoder(defaultParameters, EncodingLimits.DEFAULT);
+
+    SecureChannel[] channels = generateAeadChannels(securityPolicy);
+    SecureChannel clientChannel = channels[0];
+    SecureChannel serverChannel = channels[1];
+
+    advanceNonLegacySequence(encoder, decoder, securityPolicy);
+
+    ByteBuf messageBuffer = BufferUtil.pooledBuffer().writeBytes(new byte[] {0x01, 0x02, 0x03});
+
+    try {
+      ChunkEncoder.EncodedMessage message =
+          encoder.encodeSymmetric(clientChannel, 1L, messageBuffer, MessageType.SecureMessage);
+
+      ByteBuf chunk = message.getMessageChunks().get(0);
+      chunk.setByte(chunk.writerIndex() - 1, chunk.getByte(chunk.writerIndex() - 1) ^ 0x01);
+
+      assertThrows(
+          MessageDecodeException.class,
+          () -> decoder.decodeSymmetric(serverChannel, message.getMessageChunks()));
+    } finally {
+      ReferenceCountUtil.release(messageBuffer);
+    }
+  }
+
+  // The secure message and symmetric security headers are AEAD associated data; changes outside the
+  // ciphertext must still invalidate the chunk.
+  @ParameterizedTest
+  @MethodSource("getAeadSecurityParameters")
+  public void aeadRejectsAssociatedDataMismatch(SecurityPolicy securityPolicy) throws Exception {
+    ChunkEncoder encoder = new ChunkEncoder(defaultParameters);
+    ChunkDecoder decoder = new ChunkDecoder(defaultParameters, EncodingLimits.DEFAULT);
+
+    SecureChannel[] channels = generateAeadChannels(securityPolicy);
+    SecureChannel clientChannel = channels[0];
+    SecureChannel serverChannel = channels[1];
+
+    advanceNonLegacySequence(encoder, decoder, securityPolicy);
+
+    ByteBuf messageBuffer = BufferUtil.pooledBuffer().writeBytes(new byte[] {0x04, 0x05, 0x06});
+
+    try {
+      ChunkEncoder.EncodedMessage message =
+          encoder.encodeSymmetric(clientChannel, 1L, messageBuffer, MessageType.SecureMessage);
+
+      ByteBuf chunk = message.getMessageChunks().get(0);
+      chunk.setByte(8, chunk.getByte(8) ^ 0x01);
+
+      assertThrows(
+          MessageDecodeException.class,
+          () -> decoder.decodeSymmetric(serverChannel, message.getMessageChunks()));
+    } finally {
+      ReferenceCountUtil.release(messageBuffer);
+    }
+  }
+
+  private static void advanceNonLegacySequence(
+      ChunkEncoder encoder, ChunkDecoder decoder, SecurityPolicy securityPolicy) throws Exception {
+
+    // AEAD symmetric chunks use the previous chunk's SequenceNumber in their nonce. In a real
+    // connection the OpenSecureChannel chunk consumes sequence 0 before the first service chunk, so
+    // these tests advance both codecs to match that channel state.
+    ClientSecureChannel clientChannel =
+        new ClientSecureChannel(securityPolicy, MessageSecurityMode.SignAndEncrypt);
+
+    ServerSecureChannel serverChannel = new ServerSecureChannel();
+    serverChannel.setSecurityPolicy(securityPolicy);
+    serverChannel.setMessageSecurityMode(MessageSecurityMode.SignAndEncrypt);
+
+    ByteBuf messageBuffer = BufferUtil.pooledBuffer().writeByte(0x00);
+
+    try {
+      ChunkEncoder.EncodedMessage encodedMessage =
+          encoder.encodeAsymmetric(clientChannel, 0L, messageBuffer, MessageType.OpenSecureChannel);
+      ChunkDecoder.DecodedMessage decodedMessage =
+          decoder.decodeAsymmetric(serverChannel, encodedMessage.getMessageChunks());
+
+      ReferenceCountUtil.release(decodedMessage.getMessage());
+    } finally {
+      ReferenceCountUtil.release(messageBuffer);
     }
   }
 }

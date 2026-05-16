@@ -89,6 +89,10 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
   private ScheduledFuture<?> renewFuture;
   private Timeout secureChannelTimeout;
 
+  // AEAD profiles may need renewal because their sequence/nonce space is nearly exhausted, not only
+  // because the server-issued token lifetime is close to expiring.
+  private volatile boolean renewalRequestPending;
+
   private ClientSecureChannel secureChannel;
 
   private final OpcUaBinaryDecoder binaryDecoder;
@@ -220,6 +224,8 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
       binaryEncoder.encodeMessage(null, request.getRequestMessage());
 
       checkMessageSize(messageBuffer);
+
+      renewSecureChannelIfRequired(ctx);
 
       EncodedMessage encodedMessage =
           chunkEncoder.encodeSymmetric(
@@ -484,6 +490,7 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
     ChannelSecurityToken oldToken = oldSecrets != null ? oldSecrets.getCurrentToken() : null;
 
     secureChannel.setChannelSecurity(new ChannelSecurity(newKeys, newToken, oldKeys, oldToken));
+    renewalRequestPending = false;
 
     SecurityKeysListener listener = application.getSecurityKeysListener();
 
@@ -582,6 +589,10 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
 
   private void sendOpenSecureChannelRequest(
       ChannelHandlerContext ctx, SecurityTokenRequestType requestType) {
+    if (requestType == SecurityTokenRequestType.Renew) {
+      renewalRequestPending = true;
+    }
+
     ByteString clientNonce =
         secureChannel.isSymmetricSigningEnabled()
             ? NonceUtil.generateNonce(secureChannel.getSecurityPolicy())
@@ -651,6 +662,15 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
       ctx.close();
     } finally {
       messageBuffer.release();
+    }
+  }
+
+  private void renewSecureChannelIfRequired(ChannelHandlerContext ctx) {
+    if (chunkEncoder.isSecureChannelRenewalRequired(secureChannel) && !renewalRequestPending) {
+      logger.debug(
+          "AEAD SecureChannel renewal threshold reached; sending OpenSecureChannel Renew request.");
+
+      sendOpenSecureChannelRequest(ctx, SecurityTokenRequestType.Renew);
     }
   }
 

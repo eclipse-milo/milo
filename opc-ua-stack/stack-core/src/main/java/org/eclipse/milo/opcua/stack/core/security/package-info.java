@@ -47,9 +47,11 @@
  * field wire bytes and JCA public keys, {@link
  * org.eclipse.milo.opcua.stack.core.security.EccSignatureUtil} owns the ECC signature wire formats,
  * and {@link org.eclipse.milo.opcua.stack.core.security.EccKeyAgreementUtil} derives the
- * directional client/server key material consumed by channel-security state. Transport handlers
- * should go through SecureChannel strategies rather than calling those helpers directly unless they
- * are implementing a new strategy boundary.
+ * directional client/server key material consumed by channel-security state. {@link
+ * org.eclipse.milo.opcua.stack.core.security.AeadCipherUtil} keeps AES-GCM and ChaCha20-Poly1305
+ * cipher creation behind the same provider-selection boundary. Transport handlers should go through
+ * SecureChannel strategies rather than calling those helpers directly unless they are implementing
+ * a new strategy boundary.
  *
  * <h2>Extension guidance</h2>
  *

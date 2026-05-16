@@ -12,8 +12,11 @@ package org.eclipse.milo.opcua.stack.core.channel;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.security.KeyPair;
 import java.security.PublicKey;
@@ -22,6 +25,7 @@ import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.util.PShaUtil;
 import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.Test;
@@ -143,6 +147,53 @@ class SecureChannelStrategiesTest {
         keys.getServerKeys().getInitializationVector());
   }
 
+  // AEAD chunk security fails catastrophically if a token reuses a nonce, so the directional key
+  // state must own IV construction and counter exhaustion checks.
+  @Test
+  void aeadNonceStateBuildsProfileIvAndRejectsReuseOrExhaustion() throws UaException {
+    ChannelSecurity.SecretKeys keys =
+        new ChannelSecurity.SecretKeys(new byte[0], new byte[16], nonce(12, 0x00).bytesOrEmpty());
+
+    byte[] nonce = keys.reserveAeadNonce(0x01020304L, 0x05060708L);
+
+    assertArrayEquals(
+        new byte[] {0x04, 0x02, 0x00, 0x02, 0x0c, 0x02, 0x00, 0x02, 0x08, 0x09, 0x0a, 0x0b}, nonce);
+
+    assertThrows(UaException.class, () -> keys.reserveAeadNonce(0x01020304L, 0x05060708L));
+
+    assertFalse(
+        ChannelSecurity.SecretKeys.isAeadRenewalRequired(
+            UInteger.MAX_VALUE - ChannelSecurity.AEAD_RENEWAL_MARGIN - 1));
+    assertTrue(
+        ChannelSecurity.SecretKeys.isAeadRenewalRequired(
+            UInteger.MAX_VALUE - ChannelSecurity.AEAD_RENEWAL_MARGIN));
+    assertFalse(
+        ChannelSecurity.SecretKeys.isAeadExhausted(
+            UInteger.MAX_VALUE - ChannelSecurity.AEAD_RENEWAL_MARGIN));
+    assertTrue(ChannelSecurity.SecretKeys.isAeadExhausted(UInteger.MAX_VALUE));
+
+    ChannelSecurity.SecretKeys exhaustedKeys =
+        new ChannelSecurity.SecretKeys(new byte[0], new byte[16], nonce(12, 0x00).bytesOrEmpty());
+    assertThrows(
+        UaException.class, () -> exhaustedKeys.reserveAeadNonce(0x01020304L, UInteger.MAX_VALUE));
+  }
+
+  // The client transport uses this signal to start SecureChannel renewal while there is still an
+  // AEAD counter safety window left for in-flight chunks.
+  @Test
+  void aeadRenewalSignalTripsBeforeExhaustion() throws Exception {
+    ChunkEncoder encoder =
+        new ChunkEncoder(new ChannelParameters(8192, 8192, 8192, 0, 8192, 8192, 8192, 0));
+    ServerSecureChannel channel = new ServerSecureChannel();
+    channel.setSecurityPolicy(SecurityPolicy.ECC_nistP256_AesGcm);
+
+    setNonLegacyLastSequenceNumber(encoder, ChannelSecurity.AEAD_RENEWAL_SEQUENCE_NUMBER - 2L);
+    assertFalse(encoder.isSecureChannelRenewalRequired(channel));
+
+    setNonLegacyLastSequenceNumber(encoder, ChannelSecurity.AEAD_RENEWAL_SEQUENCE_NUMBER - 1L);
+    assertTrue(encoder.isSecureChannelRenewalRequired(channel));
+  }
+
   private static ByteString nonce(int length, int seed) {
     byte[] bytes = new byte[length];
     for (int i = 0; i < bytes.length; i++) {
@@ -161,5 +212,15 @@ class SecureChannelStrategiesTest {
     return new ChannelSecurity.SecurityKeys(
         new ChannelSecurity.SecretKeys(empty, empty, empty),
         new ChannelSecurity.SecretKeys(empty, empty, empty));
+  }
+
+  private static void setNonLegacyLastSequenceNumber(ChunkEncoder encoder, long lastSequenceNumber)
+      throws Exception {
+
+    // Jump close to UInt32.MaxValue without emitting billions of chunks; the public behavior under
+    // test is the renewal signal, not sequence-number incrementation itself.
+    Field field = ChunkEncoder.class.getDeclaredField("nonLegacyLastSequenceNumber");
+    field.setAccessible(true);
+    field.setLong(encoder, lastSequenceNumber);
   }
 }

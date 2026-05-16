@@ -28,6 +28,7 @@ import javax.crypto.spec.SecretKeySpec;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
+import org.eclipse.milo.opcua.stack.core.security.AeadCipherUtil;
 import org.eclipse.milo.opcua.stack.core.security.EccKeyAgreementUtil;
 import org.eclipse.milo.opcua.stack.core.security.EccPublicKeyCodec;
 import org.eclipse.milo.opcua.stack.core.security.EccSignatureUtil;
@@ -93,6 +94,10 @@ final class SecureChannelStrategies {
       new NoChunkProtectionStrategy();
   private static final ChunkProtectionStrategy CBC_HMAC_CHUNK_PROTECTION =
       new CbcHmacChunkProtectionStrategy();
+  private static final ChunkProtectionStrategy AES_GCM_CHUNK_PROTECTION =
+      new AesGcmChunkProtectionStrategy();
+  private static final ChunkProtectionStrategy CHACHA20_POLY1305_CHUNK_PROTECTION =
+      new ChaCha20Poly1305ChunkProtectionStrategy();
   private static final ChunkProtectionStrategy UNSUPPORTED_CHUNK_PROTECTION =
       new UnsupportedChunkProtectionStrategy();
 
@@ -134,6 +139,8 @@ final class SecureChannelStrategies {
     return switch (chunkProtectionAxis) {
       case NONE -> NO_CHUNK_PROTECTION;
       case CBC_HMAC -> CBC_HMAC_CHUNK_PROTECTION;
+      case AES_GCM -> AES_GCM_CHUNK_PROTECTION;
+      case CHACHA20_POLY1305 -> CHACHA20_POLY1305_CHUNK_PROTECTION;
       default -> UNSUPPORTED_CHUNK_PROTECTION;
     };
   }
@@ -268,6 +275,32 @@ final class SecureChannelStrategies {
 
     Cipher getDecryptionCipher(SecureChannel channel, ChannelSecurity.SecurityKeys securityKeys)
         throws UaException;
+
+    default boolean isAead() {
+      return false;
+    }
+
+    default Cipher getEncryptionCipher(
+        SecureChannel channel,
+        ChannelSecurity.SecurityKeys securityKeys,
+        long tokenId,
+        long aeadSequenceNumber,
+        ByteBuffer aad)
+        throws UaException {
+
+      return getEncryptionCipher(channel, securityKeys);
+    }
+
+    default Cipher getDecryptionCipher(
+        SecureChannel channel,
+        ChannelSecurity.SecurityKeys securityKeys,
+        long tokenId,
+        long aeadSequenceNumber,
+        ByteBuffer aad)
+        throws UaException {
+
+      return getDecryptionCipher(channel, securityKeys);
+    }
   }
 
   /**
@@ -893,6 +926,160 @@ final class SecureChannelStrategies {
       } catch (GeneralSecurityException e) {
         throw new UaException(StatusCodes.Bad_InternalError, e);
       }
+    }
+  }
+
+  /*
+   * AEAD profiles encrypt the SequenceHeader/body and append the cipher's authentication tag where
+   * legacy profiles append an HMAC. There is no separate sign/verify pass; decryption verifies the
+   * tag before plaintext can be consumed.
+   */
+  private abstract static class AeadChunkProtectionStrategy implements ChunkProtectionStrategy {
+
+    @Override
+    public int cipherTextBlockSize(SecurityPolicyProfile profile) {
+      return 1;
+    }
+
+    @Override
+    public int plainTextBlockSize(SecurityPolicyProfile profile) {
+      return 1;
+    }
+
+    @Override
+    public int signatureSize(SecurityPolicyProfile profile) {
+      return profile.symmetricSignatureSize();
+    }
+
+    @Override
+    public int paddingOverhead(int cipherTextBlockSize) {
+      return 0;
+    }
+
+    @Override
+    public void writePadding(int cipherTextBlockSize, int paddingSize, ByteBuf buffer) {}
+
+    @Override
+    public int getPaddingSize(int cipherTextBlockSize, int signatureSize, ByteBuf buffer) {
+      return 0;
+    }
+
+    @Override
+    public void verifyPadding(
+        int cipherTextBlockSize,
+        int signatureSize,
+        int paddingOverhead,
+        int paddingSize,
+        ByteBuf buffer) {}
+
+    @Override
+    public byte[] sign(
+        SecureChannel channel, ChannelSecurity.SecurityKeys securityKeys, ByteBuffer chunkNioBuffer)
+        throws UaException {
+
+      throw new UaException(
+          StatusCodes.Bad_SecurityPolicyRejected,
+          "AEAD chunk protection requires SignAndEncrypt mode: "
+              + channel.getSecurityPolicy().getUri());
+    }
+
+    @Override
+    public void verify(
+        SecureChannel channel, ChannelSecurity.SecurityKeys securityKeys, ByteBuf chunkBuffer)
+        throws UaException {
+
+      throw new UaException(
+          StatusCodes.Bad_SecurityPolicyRejected,
+          "AEAD chunk protection verifies tags during decryption: "
+              + channel.getSecurityPolicy().getUri());
+    }
+
+    @Override
+    public Cipher getEncryptionCipher(
+        SecureChannel channel, ChannelSecurity.SecurityKeys securityKeys) {
+
+      throw new UaRuntimeException(
+          StatusCodes.Bad_InternalError, "AEAD encryption requires a per-chunk nonce");
+    }
+
+    @Override
+    public Cipher getDecryptionCipher(
+        SecureChannel channel, ChannelSecurity.SecurityKeys securityKeys) {
+
+      throw new UaRuntimeException(
+          StatusCodes.Bad_InternalError, "AEAD decryption requires a per-chunk nonce");
+    }
+
+    @Override
+    public boolean isAead() {
+      return true;
+    }
+
+    @Override
+    public Cipher getEncryptionCipher(
+        SecureChannel channel,
+        ChannelSecurity.SecurityKeys securityKeys,
+        long tokenId,
+        long aeadSequenceNumber,
+        ByteBuffer aad)
+        throws UaException {
+
+      ChannelSecurity.SecretKeys secretKeys = channel.getEncryptionKeys(securityKeys);
+      byte[] nonce = secretKeys.reserveAeadNonce(tokenId, aeadSequenceNumber);
+
+      return initCipher(
+          resolveProviderProfile(channel.getSecurityPolicyProfile()),
+          Cipher.ENCRYPT_MODE,
+          secretKeys.getEncryptionKey(),
+          nonce,
+          aad);
+    }
+
+    @Override
+    public Cipher getDecryptionCipher(
+        SecureChannel channel,
+        ChannelSecurity.SecurityKeys securityKeys,
+        long tokenId,
+        long aeadSequenceNumber,
+        ByteBuffer aad)
+        throws UaException {
+
+      ChannelSecurity.SecretKeys secretKeys = channel.getDecryptionKeys(securityKeys);
+      byte[] nonce = secretKeys.createAeadNonce(tokenId, aeadSequenceNumber);
+
+      return initCipher(
+          resolveProviderProfile(channel.getSecurityPolicyProfile()),
+          Cipher.DECRYPT_MODE,
+          secretKeys.getEncryptionKey(),
+          nonce,
+          aad);
+    }
+
+    protected abstract Cipher initCipher(
+        ProviderProfile providerProfile, int mode, byte[] key, byte[] nonce, ByteBuffer aad)
+        throws UaException;
+  }
+
+  private static final class AesGcmChunkProtectionStrategy extends AeadChunkProtectionStrategy {
+
+    @Override
+    protected Cipher initCipher(
+        ProviderProfile providerProfile, int mode, byte[] key, byte[] nonce, ByteBuffer aad)
+        throws UaException {
+
+      return AeadCipherUtil.initAesGcm(providerProfile, mode, key, nonce, aad);
+    }
+  }
+
+  private static final class ChaCha20Poly1305ChunkProtectionStrategy
+      extends AeadChunkProtectionStrategy {
+
+    @Override
+    protected Cipher initCipher(
+        ProviderProfile providerProfile, int mode, byte[] key, byte[] nonce, ByteBuffer aad)
+        throws UaException {
+
+      return AeadCipherUtil.initChaCha20Poly1305(providerProfile, mode, key, nonce, aad);
     }
   }
 

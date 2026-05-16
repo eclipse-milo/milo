@@ -29,6 +29,7 @@ import org.eclipse.milo.opcua.stack.core.channel.headers.SecureMessageHeader;
 import org.eclipse.milo.opcua.stack.core.channel.headers.SequenceHeader;
 import org.eclipse.milo.opcua.stack.core.channel.headers.SymmetricSecurityHeader;
 import org.eclipse.milo.opcua.stack.core.channel.messages.MessageType;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.SequenceNumberMode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.util.BufferUtil;
 import org.eclipse.milo.opcua.stack.core.util.LongSequence;
@@ -49,6 +50,11 @@ import org.eclipse.milo.opcua.stack.core.util.LongSequence;
  * resolved from the channel's security profile so the framing code stays independent of individual
  * security-policy families.
  *
+ * <p>For profiles using SecureChannel Enhancements, the sequence-number stream starts at 0 and does
+ * not use the legacy wrap window. AEAD profiles also feed the previous sequence number, called
+ * {@code LastSequenceNumber} by the specification, into per-chunk nonce construction before the
+ * current SequenceHeader is encrypted.
+ *
  * <p>An encoder instance owns the outbound sequence-number stream for the connection using it.
  * Reuse one instance for ordered messages on the same channel; use a separate instance for a
  * separate channel or connection.
@@ -61,7 +67,11 @@ public final class ChunkEncoder {
   // The SequenceNumber shall monotonically increase for all Messages and shall not wrap around
   // until it is greater than 4_294_966_271 (UInt32.MaxValue – 1024). The first number after the
   // wrap around shall be less than 1024.
-  private final LongSequence sequenceNumber = new LongSequence(1L, UInteger.MAX_VALUE - 1024 + 1);
+  private final LongSequence legacySequenceNumber =
+      new LongSequence(1L, UInteger.MAX_VALUE - 1024 + 1);
+
+  private long nonLegacyNextSequenceNumber = 0L;
+  private long nonLegacyLastSequenceNumber = -1L;
 
   private final ChannelParameters parameters;
 
@@ -112,6 +122,34 @@ public final class ChunkEncoder {
     }
   }
 
+  /**
+   * Returns whether the next AEAD chunk should be preceded by SecureChannel renewal.
+   *
+   * <p>Client transports use this before writing a symmetric request. It is only true for AEAD
+   * SecureChannel profiles, where nonce construction cannot safely continue once the non-legacy
+   * sequence stream approaches {@code UInt32.MaxValue}.
+   *
+   * @param channel the channel whose selected security profile determines whether AEAD renewal
+   *     tracking applies.
+   * @return true when the client should start token renewal before sending more chunks.
+   */
+  public boolean isSecureChannelRenewalRequired(SecureChannel channel) {
+    return channel.getSecurityPolicyProfile().secureChannelEnhancements()
+        && SecureChannelStrategies.chunkProtection(channel.getSecurityPolicyProfile()).isAead()
+        && lastNonLegacySequenceNumberForRenewal()
+            >= ChannelSecurity.AEAD_RENEWAL_SEQUENCE_NUMBER - 1L;
+  }
+
+  private synchronized long lastNonLegacySequenceNumberForRenewal() {
+    return nonLegacyLastSequenceNumber == -1L ? 0L : nonLegacyLastSequenceNumber;
+  }
+
+  /*
+   * current is written into the plaintext SequenceHeader. last is the protocol
+   * LastSequenceNumber value used while building an AEAD nonce before encryption.
+   */
+  private record SequenceNumbers(long current, long last) {}
+
   private abstract class AbstractEncoder {
 
     EncodedMessage encode(
@@ -127,7 +165,8 @@ public final class ChunkEncoder {
       int securityHeaderSize = getSecurityHeaderSize(channel);
       int cipherTextBlockSize = getCipherTextBlockSize(channel);
       int plainTextBlockSize = getPlainTextBlockSize(channel);
-      int signatureSize = getSignatureSize(channel);
+      int signatureSize = isSigningEnabled(channel) || encrypted ? getSignatureSize(channel) : 0;
+      boolean aead = encrypted && isAead(channel);
 
       int maxChunkSize = parameters.getLocalSendBufferSize();
       int paddingOverhead = encrypted ? getPaddingOverhead(channel, cipherTextBlockSize) : 0;
@@ -188,8 +227,8 @@ public final class ChunkEncoder {
         encodeSecurityHeader(channel, chunkBuffer);
 
         /* Sequence Header */
-        SequenceHeader sequenceHeader =
-            new SequenceHeader(sequenceNumber.getAndIncrement(), requestId);
+        SequenceNumbers sequenceNumbers = nextSequenceNumbers(channel);
+        SequenceHeader sequenceHeader = new SequenceHeader(sequenceNumbers.current(), requestId);
 
         SequenceHeader.encode(sequenceHeader, chunkBuffer);
 
@@ -201,7 +240,7 @@ public final class ChunkEncoder {
           writePadding(channel, cipherTextBlockSize, paddingSize, chunkBuffer);
         }
 
-        if (isSigningEnabled(channel)) {
+        if (isSigningEnabled(channel) && !aead) {
           ByteBuffer chunkNioBuffer = chunkBuffer.nioBuffer(0, chunkBuffer.writerIndex());
 
           byte[] signature = signChunk(channel, chunkNioBuffer);
@@ -215,35 +254,43 @@ public final class ChunkEncoder {
 
           assert (chunkBuffer.readableBytes() % plainTextBlockSize == 0);
 
-          try {
-            int blockCount = chunkBuffer.readableBytes() / plainTextBlockSize;
+          if (aead) {
+            encryptAeadChunk(channel, sequenceNumbers, chunkBuffer, signatureSize);
+          } else {
+            try {
+              int blockCount = chunkBuffer.readableBytes() / plainTextBlockSize;
 
-            ByteBuffer chunkNioBuffer =
-                chunkBuffer.nioBuffer(chunkBuffer.readerIndex(), blockCount * cipherTextBlockSize);
+              ByteBuffer chunkNioBuffer =
+                  chunkBuffer.nioBuffer(
+                      chunkBuffer.readerIndex(), blockCount * cipherTextBlockSize);
 
-            ByteBuf copyBuffer = chunkBuffer.copy();
-            ByteBuffer plainTextNioBuffer = copyBuffer.nioBuffer();
+              ByteBuf copyBuffer = chunkBuffer.copy();
 
-            Cipher cipher = getCipher(channel);
+              try {
+                ByteBuffer plainTextNioBuffer = copyBuffer.nioBuffer();
 
-            if (isAsymmetric()) {
-              for (int blockNumber = 0; blockNumber < blockCount; blockNumber++) {
-                int position = blockNumber * plainTextBlockSize;
-                int limit = (blockNumber + 1) * plainTextBlockSize;
-                ((Buffer) plainTextNioBuffer).position(position);
-                ((Buffer) plainTextNioBuffer).limit(limit);
+                Cipher cipher = getCipher(channel, sequenceNumbers, chunkBuffer);
 
-                int bytesWritten = cipher.doFinal(plainTextNioBuffer, chunkNioBuffer);
+                if (isAsymmetric()) {
+                  for (int blockNumber = 0; blockNumber < blockCount; blockNumber++) {
+                    int position = blockNumber * plainTextBlockSize;
+                    int limit = (blockNumber + 1) * plainTextBlockSize;
+                    ((Buffer) plainTextNioBuffer).position(position);
+                    ((Buffer) plainTextNioBuffer).limit(limit);
 
-                assert (bytesWritten == cipherTextBlockSize);
+                    int bytesWritten = cipher.doFinal(plainTextNioBuffer, chunkNioBuffer);
+
+                    assert (bytesWritten == cipherTextBlockSize);
+                  }
+                } else {
+                  cipher.doFinal(plainTextNioBuffer, chunkNioBuffer);
+                }
+              } finally {
+                copyBuffer.release();
               }
-            } else {
-              cipher.doFinal(plainTextNioBuffer, chunkNioBuffer);
+            } catch (GeneralSecurityException e) {
+              throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
             }
-
-            copyBuffer.release();
-          } catch (GeneralSecurityException e) {
-            throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
           }
         }
 
@@ -253,13 +300,65 @@ public final class ChunkEncoder {
       return new EncodedMessage(chunks, requestId);
     }
 
+    private void encryptAeadChunk(
+        SecureChannel channel, SequenceNumbers sequenceNumbers, ByteBuf chunkBuffer, int tagSize)
+        throws UaException {
+
+      int plainTextStart = chunkBuffer.readerIndex();
+      int plainTextSize = chunkBuffer.readableBytes();
+      ByteBuf plainTextBuffer = chunkBuffer.copy(plainTextStart, plainTextSize);
+
+      try {
+        ByteBuffer plainTextNioBuffer = plainTextBuffer.nioBuffer();
+        ByteBuffer chunkNioBuffer = chunkBuffer.nioBuffer(plainTextStart, plainTextSize + tagSize);
+
+        Cipher cipher = getCipher(channel, sequenceNumbers, chunkBuffer);
+
+        int bytesWritten = cipher.doFinal(plainTextNioBuffer, chunkNioBuffer);
+
+        assert (bytesWritten == plainTextSize + tagSize);
+
+        chunkBuffer.writerIndex(plainTextStart + bytesWritten);
+      } catch (GeneralSecurityException e) {
+        throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
+      } finally {
+        plainTextBuffer.release();
+      }
+    }
+
+    private SequenceNumbers nextSequenceNumbers(SecureChannel channel) {
+      if (channel.getSecurityPolicyProfile().sequenceNumberMode() == SequenceNumberMode.LEGACY) {
+        long sequenceNumber = legacySequenceNumber.getAndIncrement();
+
+        return new SequenceNumbers(sequenceNumber, sequenceNumber);
+      }
+
+      return nextNonLegacySequenceNumbers();
+    }
+
+    private synchronized SequenceNumbers nextNonLegacySequenceNumbers() {
+      long current = nonLegacyNextSequenceNumber;
+      long last = lastNonLegacySequenceNumberForAead();
+
+      nonLegacyLastSequenceNumber = current;
+      nonLegacyNextSequenceNumber = current == UInteger.MAX_VALUE ? 0L : current + 1L;
+
+      return new SequenceNumbers(current, last);
+    }
+
+    private synchronized long lastNonLegacySequenceNumberForAead() {
+      return nonLegacyLastSequenceNumber == -1L ? 0L : nonLegacyLastSequenceNumber;
+    }
+
     protected abstract byte[] signChunk(SecureChannel channel, ByteBuffer chunkNioBuffer)
         throws UaException;
 
     protected abstract void encodeSecurityHeader(SecureChannel channel, ByteBuf buffer)
         throws UaException;
 
-    protected abstract Cipher getCipher(SecureChannel channel) throws UaException;
+    protected abstract Cipher getCipher(
+        SecureChannel channel, SequenceNumbers sequenceNumbers, ByteBuf chunkBuffer)
+        throws UaException;
 
     protected abstract int getSecurityHeaderSize(SecureChannel channel) throws UaException;
 
@@ -276,6 +375,8 @@ public final class ChunkEncoder {
         throws UaException;
 
     protected abstract boolean isAsymmetric();
+
+    protected abstract boolean isAead(SecureChannel channel);
 
     protected abstract boolean isEncryptionEnabled(SecureChannel channel);
 
@@ -314,7 +415,9 @@ public final class ChunkEncoder {
     }
 
     @Override
-    public Cipher getCipher(SecureChannel channel) throws UaException {
+    public Cipher getCipher(
+        SecureChannel channel, SequenceNumbers sequenceNumbers, ByteBuf chunkBuffer)
+        throws UaException {
       Certificate remoteCertificate = channel.getRemoteCertificate();
 
       assert (remoteCertificate != null);
@@ -381,6 +484,11 @@ public final class ChunkEncoder {
     }
 
     @Override
+    protected boolean isAead(SecureChannel channel) {
+      return false;
+    }
+
+    @Override
     public boolean isEncryptionEnabled(SecureChannel channel) {
       return channel.isAsymmetricEncryptionEnabled();
     }
@@ -396,20 +504,23 @@ public final class ChunkEncoder {
     private volatile ChannelSecurity.SecurityKeys securityKeys;
     private volatile Cipher cipher = null;
     private volatile long cipherId = -1;
+    private volatile long currentTokenId = 0L;
 
     @Override
     public void encodeSecurityHeader(SecureChannel channel, ByteBuf buffer) throws UaException {
       ChannelSecurity channelSecurity = channel.getChannelSecurity();
-      long tokenId =
+      currentTokenId =
           channelSecurity != null ? channelSecurity.getCurrentToken().getTokenId().longValue() : 0L;
 
-      SymmetricSecurityHeader.encode(new SymmetricSecurityHeader(tokenId), buffer);
+      SymmetricSecurityHeader.encode(new SymmetricSecurityHeader(currentTokenId), buffer);
 
       securityKeys = channelSecurity != null ? channelSecurity.getCurrentKeys() : null;
 
-      if (cipherId != tokenId && channel.isSymmetricEncryptionEnabled()) {
+      if (cipherId != currentTokenId
+          && channel.isSymmetricEncryptionEnabled()
+          && !chunkProtection(channel).isAead()) {
         cipher = initCipher(channel);
-        cipherId = tokenId;
+        cipherId = currentTokenId;
       }
     }
 
@@ -419,7 +530,23 @@ public final class ChunkEncoder {
     }
 
     @Override
-    public Cipher getCipher(SecureChannel channel) {
+    public Cipher getCipher(
+        SecureChannel channel, SequenceNumbers sequenceNumbers, ByteBuf chunkBuffer)
+        throws UaException {
+
+      SecureChannelStrategies.ChunkProtectionStrategy chunkProtection = chunkProtection(channel);
+
+      if (chunkProtection.isAead()) {
+        ByteBuffer aad =
+            chunkBuffer.nioBuffer(
+                0,
+                SECURE_MESSAGE_HEADER_SIZE
+                    + SymmetricSecurityHeader.SYMMETRIC_SECURITY_HEADER_SIZE);
+
+        return chunkProtection.getEncryptionCipher(
+            channel, securityKeys, currentTokenId, sequenceNumbers.last(), aad);
+      }
+
       assert cipher != null;
       return cipher;
     }
@@ -463,6 +590,11 @@ public final class ChunkEncoder {
     @Override
     protected boolean isAsymmetric() {
       return false;
+    }
+
+    @Override
+    protected boolean isAead(SecureChannel channel) {
+      return chunkProtection(channel).isAead();
     }
 
     @Override

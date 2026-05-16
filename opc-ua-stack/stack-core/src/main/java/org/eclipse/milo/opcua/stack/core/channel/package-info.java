@@ -36,8 +36,13 @@
  * those keys to sign, verify, pad, encrypt, or decrypt ordinary service chunks.
  *
  * <p>Existing RSA policies use RSA signatures, RSA-nonce P_SHA key derivation, RSA asymmetric
- * OpenSecureChannel encryption, and CBC/HMAC symmetric chunks. New policy families should extend
- * those strategy boundaries rather than adding policy-specific branches to transport handlers or
- * generic codecs.
+ * OpenSecureChannel encryption, and CBC/HMAC symmetric chunks. AEAD policies use the same chunk
+ * boundary with different invariants: the secure message and symmetric security headers are
+ * authenticated as additional data, the sequence header and message body are encrypted, and the
+ * authentication tag is carried as the chunk signature footer. AEAD nonce state belongs to the
+ * directional {@code SecretKeys} installed for each token; it combines the token id and
+ * LastSequenceNumber with the derived IV base so encoders cannot reuse a key/nonce pair. New policy
+ * families should extend those strategy boundaries rather than adding policy-specific branches to
+ * transport handlers or generic codecs.
  */
 package org.eclipse.milo.opcua.stack.core.channel;
