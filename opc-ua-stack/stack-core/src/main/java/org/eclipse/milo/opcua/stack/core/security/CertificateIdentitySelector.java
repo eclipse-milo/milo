@@ -12,8 +12,10 @@ package org.eclipse.milo.opcua.stack.core.security;
 
 import java.util.Optional;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.jspecify.annotations.NullMarked;
 
 /** Selects a usable local certificate identity for a policy-sensitive operation. */
+@NullMarked
 public interface CertificateIdentitySelector {
 
   /**

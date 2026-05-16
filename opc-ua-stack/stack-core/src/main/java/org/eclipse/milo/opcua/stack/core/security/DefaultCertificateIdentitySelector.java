@@ -16,12 +16,11 @@ import java.security.cert.X509Certificate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
+import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -32,6 +31,7 @@ import org.jspecify.annotations.Nullable;
  * certificate type request, the type preferred by the security policy profile, and finally stable
  * certificate group/type ordering.
  */
+@NullMarked
 public final class DefaultCertificateIdentitySelector implements CertificateIdentitySelector {
 
   private DefaultCertificateIdentitySelector() {}
@@ -54,7 +54,10 @@ public final class DefaultCertificateIdentitySelector implements CertificateIden
     List<CertificateIdentity> candidates =
         context.certificateManager().getCertificateIdentities().stream()
             .filter(identity -> matchesCertificateGroup(context.certificateGroupId(), identity))
-            .filter(identity -> isCompatible(context.securityPolicyProfile().authAxis(), identity))
+            .filter(
+                identity ->
+                    CertificateCompatibility.isCompatible(
+                        context.securityPolicyProfile(), identity))
             .toList();
 
     if (candidates.isEmpty()) {
@@ -99,7 +102,7 @@ public final class DefaultCertificateIdentitySelector implements CertificateIden
 
     NodeId requestedCertificateTypeId = context.certificateTypeId();
     NodeId policyPreferredCertificateTypeId =
-        preferredCertificateTypeId(context.securityPolicyProfile().authAxis()).orElse(null);
+        context.securityPolicyProfile().preferredCertificateTypeId().orElse(null);
 
     return Comparator.comparingInt(
             (CertificateIdentity identity) ->
@@ -119,35 +122,5 @@ public final class DefaultCertificateIdentitySelector implements CertificateIden
       @Nullable NodeId certificateTypeId, CertificateIdentity identity) {
 
     return certificateTypeId != null && certificateTypeId.equals(identity.certificateTypeId());
-  }
-
-  private static boolean isCompatible(AuthAxis authAxis, CertificateIdentity identity) {
-    List<NodeId> compatibleCertificateTypeIds = compatibleCertificateTypeIds(authAxis);
-
-    return compatibleCertificateTypeIds.isEmpty()
-        || compatibleCertificateTypeIds.contains(identity.certificateTypeId());
-  }
-
-  private static Optional<NodeId> preferredCertificateTypeId(AuthAxis authAxis) {
-    List<NodeId> certificateTypeIds = compatibleCertificateTypeIds(authAxis);
-
-    if (certificateTypeIds.isEmpty()) {
-      return Optional.empty();
-    } else {
-      return Optional.of(certificateTypeIds.get(0));
-    }
-  }
-
-  private static List<NodeId> compatibleCertificateTypeIds(AuthAxis authAxis) {
-    return switch (authAxis) {
-      case NONE -> List.of();
-      case RSA_PKCS1_SHA1 ->
-          List.of(
-              NodeIds.RsaSha256ApplicationCertificateType,
-              NodeIds.RsaMinApplicationCertificateType);
-      case RSA_PKCS1_SHA256, RSA_PSS_SHA256 -> List.of(NodeIds.RsaSha256ApplicationCertificateType);
-      case ECDSA_NIST_P256_SHA256 -> List.of(NodeIds.EccNistP256ApplicationCertificateType);
-      case ED25519 -> List.of(NodeIds.EccCurve25519ApplicationCertificateType);
-    };
   }
 }

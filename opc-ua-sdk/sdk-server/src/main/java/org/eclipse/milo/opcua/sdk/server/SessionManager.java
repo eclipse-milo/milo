@@ -310,7 +310,10 @@ public class SessionManager {
       certificateGroup
           .getCertificateValidator()
           .validateCertificateChain(
-              clientCertificateChain, clientDescription.getApplicationUri(), null);
+              clientCertificateChain,
+              clientDescription.getApplicationUri(),
+              null,
+              securityPolicy.getProfile());
     }
 
     // SignatureData must be created using only the bytes of the client
@@ -810,7 +813,14 @@ public class SessionManager {
       try {
         SecurityAlgorithm algorithm = securityPolicy.getAsymmetricSignatureAlgorithm();
 
-        byte[] data = Bytes.concat(clientCertificate.bytes(), clientNonce.bytes());
+        byte[] clientCertificateBytes = clientCertificate.bytes();
+        byte[] clientNonceBytes = clientNonce.bytes();
+
+        if (clientCertificateBytes == null || clientNonceBytes == null) {
+          throw new UaException(StatusCodes.Bad_SecurityChecksFailed);
+        }
+
+        byte[] data = Bytes.concat(clientCertificateBytes, clientNonceBytes);
 
         byte[] signature =
             SignatureUtil.sign(algorithm, keyPair.getPrivate(), ByteBuffer.wrap(data));

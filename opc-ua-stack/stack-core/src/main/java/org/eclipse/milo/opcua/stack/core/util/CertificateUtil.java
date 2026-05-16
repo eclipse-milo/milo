@@ -55,6 +55,7 @@ import org.bouncycastle.util.io.pem.PemWriter;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
+import org.jspecify.annotations.Nullable;
 
 public class CertificateUtil {
 
@@ -65,8 +66,8 @@ public class CertificateUtil {
   /**
    * Decode a DER-encoded X.509 certificate.
    *
-   * @param certificateBytes DER-encoded certificate bytes.
-   * @return an {@link X509Certificate}
+   * @param certificateBytes the DER-encoded certificate bytes.
+   * @return an {@link X509Certificate}.
    * @throws UaException if decoding the certificate fails.
    */
   public static X509Certificate decodeCertificate(byte[] certificateBytes) throws UaException {
@@ -78,8 +79,8 @@ public class CertificateUtil {
   /**
    * Decode a DER-encoded X.509 certificate.
    *
-   * @param inputStream {@link InputStream} containing DER-encoded certificate bytes.
-   * @return an {@link X509Certificate}
+   * @param inputStream the {@link InputStream} containing DER-encoded certificate bytes.
+   * @return an {@link X509Certificate}.
    * @throws UaException if decoding the certificate fails.
    */
   public static X509Certificate decodeCertificate(InputStream inputStream) throws UaException {
@@ -90,7 +91,7 @@ public class CertificateUtil {
    * Decode either a sequence of DER-encoded X.509 certificates or a PKCS#7 certificate chain.
    *
    * @param certificateBytes the byte[] to decode from.
-   * @return a {@link List} of certificates deocded from {@code certificateBytes}.
+   * @return a {@link List} of certificates decoded from {@code certificateBytes}.
    * @throws UaException if decoding fails.
    */
   public static List<X509Certificate> decodeCertificates(byte[] certificateBytes)
@@ -178,7 +179,7 @@ public class CertificateUtil {
    * Generate a {@link PKCS10CertificationRequest}.
    *
    * @param keyPair the {@link KeyPair} containing Public and Private keys.
-   * @param subjectName the subject name, in RFC 4519 style. (CN=foo,O=bar)
+   * @param subjectName the subject name, in RFC 4519 style, for example {@code CN=foo,O=bar}.
    * @param sanUri the URI to request in the SAN.
    * @param sanDnsNames the DNS names to request in the SAN.
    * @param sanIpAddresses the IP addresses to request in the SAN.
@@ -223,6 +224,47 @@ public class CertificateUtil {
       String signatureAlgorithm)
       throws Exception {
 
+    return generateCsr(
+        keyPair,
+        subject,
+        sanUri,
+        sanDnsNames,
+        sanIpAddresses,
+        signatureAlgorithm,
+        KeyUsage.digitalSignature
+            | KeyUsage.nonRepudiation
+            | KeyUsage.keyEncipherment
+            | KeyUsage.dataEncipherment,
+        List.of(KeyPurposeId.id_kp_clientAuth, KeyPurposeId.id_kp_serverAuth));
+  }
+
+  /**
+   * Generate a {@link PKCS10CertificationRequest}.
+   *
+   * @param keyPair the {@link KeyPair} containing Public and Private keys.
+   * @param subject the subject name {@link X500Name}.
+   * @param sanUri the URI to request in the SAN.
+   * @param sanDnsNames the DNS names to request in the SAN.
+   * @param sanIpAddresses the IP addresses to request in the SAN.
+   * @param signatureAlgorithm the signature algorithm to use when generating the signature to
+   *     validate the certificate.
+   * @param keyUsageFlags the requested KeyUsage flags.
+   * @param extendedKeyUsageIds the requested ExtendedKeyUsage IDs, or {@code null} to omit the
+   *     extension.
+   * @return a {@link PKCS10CertificationRequest}.
+   * @throws Exception if creating the signing request fails for any reason.
+   */
+  public static PKCS10CertificationRequest generateCsr(
+      KeyPair keyPair,
+      X500Name subject,
+      String sanUri,
+      List<String> sanDnsNames,
+      List<String> sanIpAddresses,
+      String signatureAlgorithm,
+      int keyUsageFlags,
+      @Nullable List<KeyPurposeId> extendedKeyUsageIds)
+      throws Exception {
+
     PKCS10CertificationRequestBuilder builder =
         new PKCS10CertificationRequestBuilder(
             subject, SubjectPublicKeyInfo.getInstance(keyPair.getPublic().getEncoded()));
@@ -246,18 +288,14 @@ public class CertificateUtil {
         false,
         new GeneralNames(generalNames.toArray(new GeneralName[0])));
 
-    KeyUsage keyUsage =
-        new KeyUsage(
-            KeyUsage.digitalSignature
-                | KeyUsage.nonRepudiation
-                | KeyUsage.keyEncipherment
-                | KeyUsage.dataEncipherment);
+    KeyUsage keyUsage = new KeyUsage(keyUsageFlags);
     extGen.addExtension(Extension.keyUsage, true, keyUsage);
 
-    ExtendedKeyUsage extendedKeyUsage =
-        new ExtendedKeyUsage(
-            new KeyPurposeId[] {KeyPurposeId.id_kp_clientAuth, KeyPurposeId.id_kp_serverAuth});
-    extGen.addExtension(Extension.extendedKeyUsage, false, extendedKeyUsage);
+    if (extendedKeyUsageIds != null && !extendedKeyUsageIds.isEmpty()) {
+      ExtendedKeyUsage extendedKeyUsage =
+          new ExtendedKeyUsage(extendedKeyUsageIds.toArray(new KeyPurposeId[0]));
+      extGen.addExtension(Extension.extendedKeyUsage, false, extendedKeyUsage);
+    }
 
     BasicConstraints basicConstraints = new BasicConstraints(false);
     extGen.addExtension(Extension.basicConstraints, true, basicConstraints);

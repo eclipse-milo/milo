@@ -94,8 +94,8 @@ class CertificateIdentityTest {
     assertEquals(key(GROUP_B, exact.certificateTypeId()), key(selected));
   }
 
-  // Certificate type selection is a preference here; compatibility checks decide hard failures
-  // later.
+  // Certificate type selection is a preference here; compatible candidates can still fall back to
+  // the policy-preferred certificate type.
   @Test
   void selectorFallsBackToPolicyPreferredTypeWhenExactTypeIsUnavailable() throws Exception {
     CertificateMaterial policyPreferred = certificate(NodeIds.RsaSha256ApplicationCertificateType);

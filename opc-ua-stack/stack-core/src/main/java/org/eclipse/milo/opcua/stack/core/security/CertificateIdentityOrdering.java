@@ -12,7 +12,9 @@ package org.eclipse.milo.opcua.stack.core.security;
 
 import java.util.Comparator;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 final class CertificateIdentityOrdering {
 
   static final Comparator<CertificateIdentity> STABLE =

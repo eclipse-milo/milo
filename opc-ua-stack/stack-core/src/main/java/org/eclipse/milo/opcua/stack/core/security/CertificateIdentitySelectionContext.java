@@ -14,6 +14,7 @@ import static java.util.Objects.requireNonNull;
 
 import java.security.cert.X509Certificate;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -34,6 +35,7 @@ import org.jspecify.annotations.Nullable;
  * @param explicitCertificate an explicitly configured certificate to prefer when it is present in
  *     the manager, or {@code null}.
  */
+@NullMarked
 public record CertificateIdentitySelectionContext(
     Purpose purpose,
     CertificateManager certificateManager,

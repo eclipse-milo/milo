@@ -32,6 +32,8 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.ChunkProtectionAxis;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Resolves the provider profile that can satisfy a security policy.
@@ -42,6 +44,7 @@ import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgree
  * cache successful policy resolutions; create a new resolver after changing provider preferences or
  * JVM provider configuration.
  */
+@NullMarked
 public final class SecurityProviderResolver {
 
   private static final String BC_PROVIDER_NAME = "BC";
@@ -168,14 +171,16 @@ public final class SecurityProviderResolver {
   }
 
   private static void validateAuth(
-      AuthAxis axis, ProviderProfile providerProfile, Provider provider)
+      AuthAxis axis, ProviderProfile providerProfile, @Nullable Provider provider)
       throws GeneralSecurityException {
 
     switch (axis) {
       case ECDSA_NIST_P256_SHA256 -> {
         if (providerProfile == ProviderProfile.BOUNCY_CASTLE) {
-          Signature.getInstance("SHA256WITHPLAIN-ECDSA", provider);
-          validateEcP256(provider);
+          Provider bouncyCastleProvider = requireNonNull(provider, "provider");
+
+          Signature.getInstance("SHA256WITHPLAIN-ECDSA", bouncyCastleProvider);
+          validateEcP256(bouncyCastleProvider);
         } else {
           requireJdkProvider(
               "SHA256withECDSAinP1363Format",
@@ -187,8 +192,10 @@ public final class SecurityProviderResolver {
       }
       case ED25519 -> {
         if (providerProfile == ProviderProfile.BOUNCY_CASTLE) {
-          Signature.getInstance("Ed25519", provider);
-          KeyPairGenerator.getInstance("Ed25519", provider);
+          Provider bouncyCastleProvider = requireNonNull(provider, "provider");
+
+          Signature.getInstance("Ed25519", bouncyCastleProvider);
+          KeyPairGenerator.getInstance("Ed25519", bouncyCastleProvider);
         } else {
           requireJdkProvider(
               "Ed25519",
@@ -203,14 +210,16 @@ public final class SecurityProviderResolver {
   }
 
   private static void validateKeyAgreement(
-      KeyAgreementAxis axis, ProviderProfile providerProfile, Provider provider)
+      KeyAgreementAxis axis, ProviderProfile providerProfile, @Nullable Provider provider)
       throws GeneralSecurityException {
 
     switch (axis) {
       case ECDH_NIST_P256 -> {
         if (providerProfile == ProviderProfile.BOUNCY_CASTLE) {
-          KeyAgreement.getInstance("ECDH", provider);
-          validateEcP256(provider);
+          Provider bouncyCastleProvider = requireNonNull(provider, "provider");
+
+          KeyAgreement.getInstance("ECDH", bouncyCastleProvider);
+          validateEcP256(bouncyCastleProvider);
         } else {
           requireJdkProvider(
               "ECDH",
@@ -222,8 +231,10 @@ public final class SecurityProviderResolver {
       }
       case X25519 -> {
         if (providerProfile == ProviderProfile.BOUNCY_CASTLE) {
-          KeyAgreement.getInstance("X25519", provider);
-          KeyPairGenerator.getInstance("X25519", provider);
+          Provider bouncyCastleProvider = requireNonNull(provider, "provider");
+
+          KeyAgreement.getInstance("X25519", bouncyCastleProvider);
+          KeyPairGenerator.getInstance("X25519", bouncyCastleProvider);
         } else {
           requireJdkProvider(
               "X25519",
@@ -238,13 +249,15 @@ public final class SecurityProviderResolver {
   }
 
   private static void validateHkdf(
-      KeyAgreementAxis axis, ProviderProfile providerProfile, Provider provider)
+      KeyAgreementAxis axis, ProviderProfile providerProfile, @Nullable Provider provider)
       throws GeneralSecurityException {
 
     switch (axis) {
       case ECDH_NIST_P256, X25519 -> {
         if (providerProfile == ProviderProfile.BOUNCY_CASTLE) {
-          SecretKeyFactory.getInstance("HKDF-SHA256", provider);
+          Provider bouncyCastleProvider = requireNonNull(provider, "provider");
+
+          SecretKeyFactory.getInstance("HKDF-SHA256", bouncyCastleProvider);
         } else {
           requireJdkProvider("HmacSHA256", p -> Mac.getInstance("HmacSHA256", p));
         }
@@ -254,7 +267,7 @@ public final class SecurityProviderResolver {
   }
 
   private static void validateChunkProtection(
-      ChunkProtectionAxis axis, ProviderProfile providerProfile, Provider provider)
+      ChunkProtectionAxis axis, ProviderProfile providerProfile, @Nullable Provider provider)
       throws GeneralSecurityException {
 
     switch (axis) {
@@ -265,11 +278,13 @@ public final class SecurityProviderResolver {
   }
 
   private static void validateCipher(
-      String transformation, ProviderProfile providerProfile, Provider provider)
+      String transformation, ProviderProfile providerProfile, @Nullable Provider provider)
       throws GeneralSecurityException {
 
     if (providerProfile == ProviderProfile.BOUNCY_CASTLE) {
-      Cipher.getInstance(transformation, provider);
+      Provider bouncyCastleProvider = requireNonNull(provider, "provider");
+
+      Cipher.getInstance(transformation, bouncyCastleProvider);
     } else {
       requireJdkProvider(transformation, p -> Cipher.getInstance(transformation, p));
     }

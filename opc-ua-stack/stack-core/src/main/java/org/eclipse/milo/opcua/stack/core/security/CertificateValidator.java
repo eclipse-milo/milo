@@ -37,6 +37,35 @@ public interface CertificateValidator {
       @Nullable String[] validHostnames)
       throws UaException;
 
+  /**
+   * Check that trust can be established using the provided certificate chain and policy profile,
+   * then validate every certificate in the chain.
+   *
+   * <p>The default implementation preserves legacy validation behavior and then applies
+   * certificate/profile compatibility when {@code securityPolicyProfile} is not {@code null}.
+   * Implementations that need profile-specific trust or usage checks should override this method.
+   *
+   * @param certificateChain the certificate chain to validate.
+   * @param applicationUri the applicationUri of the remote endpoint. Ignored if {@code null}.
+   * @param validHostnames the valid hostnames for the remote endpoint. Ignored if {@code null}.
+   * @param securityPolicyProfile the policy profile the certificate will be used with, or {@code
+   *     null} for legacy validation rules.
+   * @throws UaException if {@code certificateChain} is not trusted or validation fails.
+   */
+  default void validateCertificateChain(
+      List<X509Certificate> certificateChain,
+      @Nullable String applicationUri,
+      @Nullable String[] validHostnames,
+      @Nullable SecurityPolicyProfile securityPolicyProfile)
+      throws UaException {
+
+    validateCertificateChain(certificateChain, applicationUri, validHostnames);
+
+    if (securityPolicyProfile != null) {
+      CertificateCompatibility.checkCompatible(securityPolicyProfile, certificateChain.get(0));
+    }
+  }
+
   class InsecureCertificateValidator implements CertificateValidator {
 
     private static final Logger LOGGER =

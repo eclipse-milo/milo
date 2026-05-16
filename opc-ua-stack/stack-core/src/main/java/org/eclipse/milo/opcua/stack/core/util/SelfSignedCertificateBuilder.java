@@ -14,7 +14,9 @@ import java.security.KeyPair;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPublicKey;
+import java.security.interfaces.EdECPublicKey;
 import java.security.interfaces.RSAPublicKey;
+import java.security.spec.NamedParameterSpec;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.ZoneId;
@@ -39,9 +41,12 @@ public class SelfSignedCertificateBuilder {
   /**
    * Signature Algorithm for SHA256 with ECDSA.
    *
-   * <p>May only be uses with EC-based KeyPairs and security profiles.
+   * <p>May only be used with EC-based KeyPairs and security profiles.
    */
   public static final String SA_SHA256_ECDSA = "SHA256withECDSA";
+
+  /** Signature Algorithm for Ed25519. */
+  public static final String SA_ED25519 = "Ed25519";
 
   private Period validityPeriod = Period.ofYears(3);
 
@@ -53,8 +58,8 @@ public class SelfSignedCertificateBuilder {
   private String countryCode = null;
 
   private String applicationUri = "";
-  private List<String> dnsNames = new ArrayList<>();
-  private List<String> ipAddresses = new ArrayList<>();
+  private final List<String> dnsNames = new ArrayList<>();
+  private final List<String> ipAddresses = new ArrayList<>();
   private String signatureAlgorithm = SA_SHA256_RSA;
 
   private final KeyPair keyPair;
@@ -81,7 +86,31 @@ public class SelfSignedCertificateBuilder {
       }
     } else if (keyPair.getPublic() instanceof ECPublicKey) {
       signatureAlgorithm = SA_SHA256_ECDSA;
+    } else if (isEd25519PublicKey(keyPair.getPublic())) {
+      signatureAlgorithm = SA_ED25519;
     }
+  }
+
+  /**
+   * Create a builder for an ECC or Edwards-curve application instance certificate.
+   *
+   * <p>This builder uses ECC application-certificate defaults: only the required self-signed
+   * KeyUsage bits are generated and ExtendedKeyUsage is omitted.
+   *
+   * @param keyPair a NIST EC or Ed25519 key pair.
+   * @return a builder configured for an ECC application certificate.
+   * @throws IllegalArgumentException if {@code keyPair} is not an EC or Ed25519 key pair.
+   */
+  public static SelfSignedCertificateBuilder forEccApplicationCertificate(KeyPair keyPair) {
+    PublicKey publicKey = keyPair.getPublic();
+
+    if (!(publicKey instanceof ECPublicKey) && !isEd25519PublicKey(publicKey)) {
+      throw new IllegalArgumentException(
+          "ECC application certificates require an EC or Ed25519 key pair");
+    }
+
+    return new SelfSignedCertificateBuilder(
+        keyPair, SelfSignedCertificateGenerator.eccApplicationCertificateGenerator());
   }
 
   public SelfSignedCertificateBuilder setValidityPeriod(Period validityPeriod) {
@@ -161,5 +190,13 @@ public class SelfSignedCertificateBuilder {
         dnsNames,
         ipAddresses,
         signatureAlgorithm);
+  }
+
+  private static boolean isEd25519PublicKey(PublicKey publicKey) {
+    if (publicKey instanceof EdECPublicKey edPublicKey) {
+      return NamedParameterSpec.ED25519.getName().equals(edPublicKey.getParams().getName());
+    } else {
+      return "Ed25519".equalsIgnoreCase(publicKey.getAlgorithm());
+    }
   }
 }

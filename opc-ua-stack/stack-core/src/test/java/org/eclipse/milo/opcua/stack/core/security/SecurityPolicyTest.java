@@ -26,8 +26,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
@@ -133,6 +135,11 @@ public class SecurityPolicyTest {
     SecurityPolicyProfile nistP256 = SecurityPolicyProfiles.get(SecurityPolicy.ECC_nistP256_AesGcm);
 
     assertEquals(ECDSA_NIST_P256_SHA256, nistP256.authAxis());
+    assertEquals(
+        List.of(NodeIds.EccNistP256ApplicationCertificateType), nistP256.certificateTypeIds());
+    assertEquals(
+        NodeIds.EccNistP256ApplicationCertificateType,
+        nistP256.preferredCertificateTypeId().orElseThrow());
     assertEquals(ECDH_NIST_P256, nistP256.keyAgreementAxis());
     assertEquals(AES_GCM, nistP256.chunkProtectionAxis());
     assertEquals(NON_LEGACY, nistP256.sequenceNumberMode());
@@ -150,6 +157,11 @@ public class SecurityPolicyTest {
         SecurityPolicyProfiles.get(SecurityPolicy.ECC_curve25519_ChaChaPoly);
 
     assertEquals(ED25519, curve25519.authAxis());
+    assertEquals(
+        List.of(NodeIds.EccCurve25519ApplicationCertificateType), curve25519.certificateTypeIds());
+    assertEquals(
+        NodeIds.EccCurve25519ApplicationCertificateType,
+        curve25519.preferredCertificateTypeId().orElseThrow());
     assertEquals(X25519, curve25519.keyAgreementAxis());
     assertEquals(CHACHA20_POLY1305, curve25519.chunkProtectionAxis());
     assertEquals(NON_LEGACY, curve25519.sequenceNumberMode());

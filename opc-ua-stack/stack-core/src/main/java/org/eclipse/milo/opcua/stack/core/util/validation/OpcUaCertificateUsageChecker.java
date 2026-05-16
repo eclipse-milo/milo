@@ -20,6 +20,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,12 +37,22 @@ class OpcUaCertificateUsageChecker extends PKIXCertPathChecker {
   private final CertPath certPath;
   private final Set<ValidationCheck> validationChecks;
   private final boolean endEntityIsClient;
+  private final @Nullable SecurityPolicyProfile securityPolicyProfile;
 
   OpcUaCertificateUsageChecker(
       CertPath certPath, Set<ValidationCheck> validationChecks, boolean endEntityIsClient) {
+    this(certPath, validationChecks, endEntityIsClient, null);
+  }
+
+  OpcUaCertificateUsageChecker(
+      CertPath certPath,
+      Set<ValidationCheck> validationChecks,
+      boolean endEntityIsClient,
+      @Nullable SecurityPolicyProfile securityPolicyProfile) {
     this.certPath = certPath;
     this.validationChecks = validationChecks;
     this.endEntityIsClient = endEntityIsClient;
+    this.securityPolicyProfile = securityPolicyProfile;
 
     endEntityCert = (X509Certificate) certPath.getCertificates().get(0);
   }
@@ -72,7 +84,8 @@ class OpcUaCertificateUsageChecker extends PKIXCertPathChecker {
 
     if (endEntityCert.equals(cert)) {
       try {
-        CertificateValidationUtil.checkEndEntityKeyUsage((X509Certificate) cert);
+        CertificateValidationUtil.checkEndEntityKeyUsage(
+            (X509Certificate) cert, securityPolicyProfile);
 
         LOGGER.debug(
             "validated KeyUsage for end entity: {}",
@@ -94,7 +107,8 @@ class OpcUaCertificateUsageChecker extends PKIXCertPathChecker {
         }
       }
       try {
-        CertificateValidationUtil.checkEndEntityExtendedKeyUsage(certificate, endEntityIsClient);
+        CertificateValidationUtil.checkEndEntityExtendedKeyUsage(
+            certificate, endEntityIsClient, securityPolicyProfile);
 
         LOGGER.debug(
             "validated ExtendedKeyUsage for end entity: {}",

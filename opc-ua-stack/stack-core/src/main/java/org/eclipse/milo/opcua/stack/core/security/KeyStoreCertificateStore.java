@@ -28,6 +28,7 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
@@ -39,6 +40,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class KeyStoreCertificateStore implements CertificateStore, Closeable {
+
+  protected static final String RSA_SHA256_ALIAS = "server-rsa-sha256";
+  protected static final String ECC_NIST_P256_ALIAS = "server-ecc-nistp256";
+  protected static final String ECC_CURVE25519_ALIAS = "server-ecc-curve25519";
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -113,7 +118,7 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
 
       String alias = getAlias(certificateTypeId);
 
-      return alias != null && (entries.containsKey(alias) || keyStore.containsAlias(alias));
+      return alias != null && (entries.containsKey(alias) || keyStore.isKeyEntry(alias));
     } finally {
       keyStoreLock.unlock();
     }
@@ -135,23 +140,12 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
           return entries.get(alias);
         }
 
-        Key key = keyStore.getKey(alias, settings.getAliasPassword.apply(alias));
-        Certificate[] certificateChain = keyStore.getCertificateChain(alias);
-
-        if (key instanceof PrivateKey && certificateChain != null) {
-          X509Certificate[] x509CertificateChain =
-              Arrays.stream(certificateChain)
-                  .map(c -> (X509Certificate) c)
-                  .toArray(X509Certificate[]::new);
-
-          var entry = new Entry((PrivateKey) key, x509CertificateChain);
-
-          entries.putIfAbsent(alias, entry);
-
-          return entry;
-        } else {
+        if (!keyStore.isKeyEntry(alias)) {
           return null;
         }
+
+        Key key = keyStore.getKey(alias, settings.getAliasPassword.apply(alias));
+        return loadEntry(alias, key);
       } else {
         return null;
       }
@@ -229,23 +223,56 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
    */
   protected String getAlias(NodeId certificateTypeId) {
     if (certificateTypeId.equals(NodeIds.RsaSha256ApplicationCertificateType)) {
-      return "server-rsa-sha256";
+      return RSA_SHA256_ALIAS;
+    } else if (certificateTypeId.equals(NodeIds.EccNistP256ApplicationCertificateType)) {
+      return ECC_NIST_P256_ALIAS;
+    } else if (certificateTypeId.equals(NodeIds.EccCurve25519ApplicationCertificateType)) {
+      return ECC_CURVE25519_ALIAS;
     } else {
       return certificateTypeId.toParseableString();
     }
   }
 
   /**
-   * Call {@link #get(NodeId)} for each of the supported certificate types to pre-emptively load
-   * them into memory.
+   * Load configured certificate entries into memory.
    *
    * @throws Exception if an error occurs while loading the entries.
    */
   protected void loadEntries() throws Exception {
-    // Try to get each of the certificate types we support, pre-emptively loading them into
-    // `cache` for faster subsequent access.
+    for (NodeId certificateTypeId : getPreloadedCertificateTypeIds()) {
+      get(certificateTypeId);
+    }
+  }
 
-    get(NodeIds.RsaSha256ApplicationCertificateType);
+  /**
+   * Get the certificate type IDs to load when this store is initialized or reloaded.
+   *
+   * @return the certificate type IDs to load eagerly.
+   */
+  protected List<NodeId> getPreloadedCertificateTypeIds() {
+    return List.of(
+        NodeIds.RsaSha256ApplicationCertificateType,
+        NodeIds.EccNistP256ApplicationCertificateType,
+        NodeIds.EccCurve25519ApplicationCertificateType);
+  }
+
+  private Entry loadEntry(String alias, Key key) throws Exception {
+    Certificate[] certificateChain = keyStore.getCertificateChain(alias);
+
+    if (key instanceof PrivateKey privateKey && certificateChain != null) {
+      X509Certificate[] x509CertificateChain =
+          Arrays.stream(certificateChain)
+              .map(c -> (X509Certificate) c)
+              .toArray(X509Certificate[]::new);
+
+      var entry = new Entry(privateKey, x509CertificateChain);
+
+      entries.putIfAbsent(alias, entry);
+
+      return entry;
+    } else {
+      return null;
+    }
   }
 
   private void configureWatchService(File keyStoreFile) throws IOException {

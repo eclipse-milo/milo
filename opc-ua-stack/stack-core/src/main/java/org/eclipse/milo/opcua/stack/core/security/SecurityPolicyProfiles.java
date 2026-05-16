@@ -29,11 +29,14 @@ import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.S
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.ChunkProtectionAxis;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.SequenceNumberMode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -42,6 +45,7 @@ import org.jspecify.annotations.Nullable;
  * <p>Callers use this registry when they need policy metadata or when they need to verify that the
  * stack can open a SecureChannel using a known policy.
  */
+@NullMarked
 public final class SecurityPolicyProfiles {
 
   private static final Map<SecurityPolicy, SecurityPolicyProfile> PROFILES = buildProfiles();
@@ -96,6 +100,7 @@ public final class SecurityPolicyProfiles {
         profile(
             SecurityPolicy.None,
             NONE,
+            List.of(),
             KeyAgreementAxis.NONE,
             ChunkProtectionAxis.NONE,
             LEGACY,
@@ -121,6 +126,9 @@ public final class SecurityPolicyProfiles {
         profile(
             SecurityPolicy.Basic128Rsa15,
             RSA_PKCS1_SHA1,
+            List.of(
+                NodeIds.RsaSha256ApplicationCertificateType,
+                NodeIds.RsaMinApplicationCertificateType),
             RSA_NONCE,
             CBC_HMAC,
             LEGACY,
@@ -146,6 +154,9 @@ public final class SecurityPolicyProfiles {
         profile(
             SecurityPolicy.Basic256,
             RSA_PKCS1_SHA1,
+            List.of(
+                NodeIds.RsaSha256ApplicationCertificateType,
+                NodeIds.RsaMinApplicationCertificateType),
             RSA_NONCE,
             CBC_HMAC,
             LEGACY,
@@ -171,6 +182,7 @@ public final class SecurityPolicyProfiles {
         profile(
             SecurityPolicy.Basic256Sha256,
             RSA_PKCS1_SHA256,
+            List.of(NodeIds.RsaSha256ApplicationCertificateType),
             RSA_NONCE,
             CBC_HMAC,
             LEGACY,
@@ -196,6 +208,7 @@ public final class SecurityPolicyProfiles {
         profile(
             SecurityPolicy.Aes128_Sha256_RsaOaep,
             RSA_PKCS1_SHA256,
+            List.of(NodeIds.RsaSha256ApplicationCertificateType),
             RSA_NONCE,
             CBC_HMAC,
             LEGACY,
@@ -221,6 +234,7 @@ public final class SecurityPolicyProfiles {
         profile(
             SecurityPolicy.Aes256_Sha256_RsaPss,
             RSA_PSS_SHA256,
+            List.of(NodeIds.RsaSha256ApplicationCertificateType),
             RSA_NONCE,
             CBC_HMAC,
             LEGACY,
@@ -246,6 +260,7 @@ public final class SecurityPolicyProfiles {
         profile(
             SecurityPolicy.ECC_nistP256_AesGcm,
             ECDSA_NIST_P256_SHA256,
+            List.of(NodeIds.EccNistP256ApplicationCertificateType),
             ECDH_NIST_P256,
             AES_GCM,
             NON_LEGACY,
@@ -271,6 +286,7 @@ public final class SecurityPolicyProfiles {
         profile(
             SecurityPolicy.ECC_curve25519_ChaChaPoly,
             ED25519,
+            List.of(NodeIds.EccCurve25519ApplicationCertificateType),
             X25519,
             CHACHA20_POLY1305,
             NON_LEGACY,
@@ -307,6 +323,7 @@ public final class SecurityPolicyProfiles {
   private static SecurityPolicyProfile profile(
       SecurityPolicy securityPolicy,
       AuthAxis authAxis,
+      List<NodeId> certificateTypeIds,
       KeyAgreementAxis keyAgreementAxis,
       ChunkProtectionAxis chunkProtectionAxis,
       SequenceNumberMode sequenceNumberMode,
@@ -330,6 +347,7 @@ public final class SecurityPolicyProfiles {
     return new SecurityPolicyProfile(
         securityPolicy,
         authAxis,
+        certificateTypeIds,
         keyAgreementAxis,
         chunkProtectionAxis,
         sequenceNumberMode,

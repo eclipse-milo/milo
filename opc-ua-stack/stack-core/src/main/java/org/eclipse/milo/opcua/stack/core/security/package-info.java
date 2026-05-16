@@ -29,7 +29,10 @@
  * connection boundaries; callers should keep certificate lookup, trust configuration, and policy
  * selection coordinated through these APIs. {@link
  * org.eclipse.milo.opcua.stack.core.security.CertificateIdentity} represents a concrete local
- * identity selected from those sources for endpoint advertisement or SecureChannel setup.
+ * identity selected from those sources for endpoint advertisement or SecureChannel setup. {@link
+ * org.eclipse.milo.opcua.stack.core.security.CertificateCompatibility} contains the
+ * profile-specific certificate type, public key, and key-usage checks used before an identity is
+ * advertised or selected for a secured connection.
  *
  * <h2>Runtime boundaries</h2>
  *

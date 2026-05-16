@@ -635,25 +635,17 @@ public class SessionFsmFactory {
                 ChannelFsm channelFsm = ((OpcTcpClientTransport) transport).getChannelFsm();
 
                 ChannelFsm.TransitionListener listener =
-                    new ChannelFsm.TransitionListener() {
-                      @Override
-                      public void onStateTransition(
-                          com.digitalpetri.netty.fsm.State from,
-                          com.digitalpetri.netty.fsm.State to,
-                          com.digitalpetri.netty.fsm.Event via) {
+                    (from, to, via) -> {
+                      if (from == com.digitalpetri.netty.fsm.State.Connected
+                          && to != com.digitalpetri.netty.fsm.State.Connected) {
 
-                        if (from == com.digitalpetri.netty.fsm.State.Connected
-                            && to != com.digitalpetri.netty.fsm.State.Connected) {
+                        try (MDCCloseable ignored =
+                            MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
 
-                          try (MDCCloseable ignored =
-                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
-
-                            LOGGER.debug(
-                                "ChannelFsm transition from={} to={} via={}", from, to, via);
-                          }
-
-                          ctx.fireEvent(new Event.ConnectionLost());
+                          LOGGER.debug("ChannelFsm transition from={} to={} via={}", from, to, via);
                         }
+
+                        ctx.fireEvent(new Event.ConnectionLost());
                       }
                     };
 
@@ -1012,29 +1004,28 @@ public class SessionFsmFactory {
         .from(State.ReactivatingWait)
         .via(Event.ReactivatingWaitExpired.class)
         .execute(
-            ctx -> {
-              reactivateSession(ctx, client)
-                  .whenComplete(
-                      (session, ex) -> {
-                        if (session != null) {
-                          try (MDCCloseable ignored =
-                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+            ctx ->
+                reactivateSession(ctx, client)
+                    .whenComplete(
+                        (session, ex) -> {
+                          if (session != null) {
+                            try (MDCCloseable ignored =
+                                MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
 
-                            LOGGER.debug("Session reactivated: {}", session);
+                              LOGGER.debug("Session reactivated: {}", session);
+                            }
+
+                            ctx.fireEvent(new Event.ReactivateSessionSuccess(session));
+                          } else {
+                            try (MDCCloseable ignored =
+                                MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
+
+                              LOGGER.debug("Reactivation failed: {}", ex.getMessage(), ex);
+                            }
+
+                            ctx.fireEvent(new Event.ReactivateSessionFailure(ex));
                           }
-
-                          ctx.fireEvent(new Event.ReactivateSessionSuccess(session));
-                        } else {
-                          try (MDCCloseable ignored =
-                              MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
-
-                            LOGGER.debug("Reactivation failed: {}", ex.getMessage(), ex);
-                          }
-
-                          ctx.fireEvent(new Event.ReactivateSessionFailure(ex));
-                        }
-                      });
-            });
+                        }));
 
     /* Internal Transition Actions */
 
@@ -1202,7 +1193,8 @@ public class SessionFsmFactory {
                       .validateCertificateChain(
                           serverCertificateChain,
                           endpoint.getServer().getApplicationUri(),
-                          new String[] {EndpointUtil.getHost(endpoint.getEndpointUrl())});
+                          new String[] {EndpointUtil.getHost(endpoint.getEndpointUrl())},
+                          securityPolicy.getProfile());
 
                   SignatureData serverSignature = response.getServerSignature();
 

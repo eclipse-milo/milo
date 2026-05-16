@@ -20,6 +20,8 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A usable local application certificate identity selected from a {@link CertificateManager}.
@@ -33,6 +35,7 @@ import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
  * @param keyPair the key pair belonging to the leaf certificate.
  * @param certificateChain the leaf certificate and any issuer certificates.
  */
+@NullMarked
 public record CertificateIdentity(
     NodeId certificateGroupId,
     NodeId certificateTypeId,
@@ -77,7 +80,7 @@ public record CertificateIdentity(
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(@Nullable Object o) {
     if (this == o) {
       return true;
     }

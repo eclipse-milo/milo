@@ -276,7 +276,7 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
             CertificateValidator certificateValidator = certificateGroup.getCertificateValidator();
 
             certificateValidator.validateCertificateChain(
-                secureChannel.getRemoteCertificateChain(), null, null);
+                secureChannel.getRemoteCertificateChain(), null, null, securityPolicy.getProfile());
 
             X509Certificate[] chain = localCertificateChain.get();
 

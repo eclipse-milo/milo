@@ -240,7 +240,8 @@ public class UsernameProvider implements IdentityProvider {
         certificateValidator.validateCertificateChain(
             certificateChain,
             endpoint.getServer().getApplicationUri(),
-            new String[] {EndpointUtil.getHost(endpoint.getEndpointUrl())});
+            new String[] {EndpointUtil.getHost(endpoint.getEndpointUrl())},
+            securityPolicy.getProfile());
       }
 
       int plainTextBlockSize =

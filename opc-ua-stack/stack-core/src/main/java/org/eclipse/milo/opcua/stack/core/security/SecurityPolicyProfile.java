@@ -12,9 +12,13 @@ package org.eclipse.milo.opcua.stack.core.security;
 
 import static java.util.Objects.requireNonNull;
 
+import java.util.List;
+import java.util.Optional;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
+import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -31,6 +35,8 @@ import org.jspecify.annotations.Nullable;
  *
  * @param securityPolicy the policy URI identifier represented by this profile.
  * @param authAxis the authentication/signature family used by the policy.
+ * @param certificateTypeIds the certificate type IDs compatible with this profile, in preference
+ *     order. Empty when the profile does not use application certificates.
  * @param keyAgreementAxis the key-agreement family used during OpenSecureChannel.
  * @param chunkProtectionAxis the symmetric chunk-protection family used after key installation.
  * @param sequenceNumberMode the sequence-number validation mode required by the policy.
@@ -67,9 +73,11 @@ import org.jspecify.annotations.Nullable;
  * @param secureChannelEnhancements whether the policy requires SecureChannelEnhancements behavior.
  * @param secureChannelSupported whether the stack can open a SecureChannel with this policy.
  */
+@NullMarked
 public record SecurityPolicyProfile(
     SecurityPolicy securityPolicy,
     AuthAxis authAxis,
+    List<NodeId> certificateTypeIds,
     KeyAgreementAxis keyAgreementAxis,
     ChunkProtectionAxis chunkProtectionAxis,
     SequenceNumberMode sequenceNumberMode,
@@ -93,6 +101,7 @@ public record SecurityPolicyProfile(
   public SecurityPolicyProfile {
     requireNonNull(securityPolicy, "securityPolicy");
     requireNonNull(authAxis, "authAxis");
+    certificateTypeIds = List.copyOf(requireNonNull(certificateTypeIds, "certificateTypeIds"));
     requireNonNull(keyAgreementAxis, "keyAgreementAxis");
     requireNonNull(chunkProtectionAxis, "chunkProtectionAxis");
     requireNonNull(sequenceNumberMode, "sequenceNumberMode");
@@ -119,6 +128,16 @@ public record SecurityPolicyProfile(
     if (securityLevel < 0 || securityLevel > 0x0F) {
       throw new IllegalArgumentException("securityLevel: " + securityLevel);
     }
+  }
+
+  /**
+   * Get the certificate type this profile prefers when more than one compatible identity is
+   * available.
+   *
+   * @return the first compatible certificate type ID, or empty for certificate-less profiles.
+   */
+  public Optional<NodeId> preferredCertificateTypeId() {
+    return certificateTypeIds.stream().findFirst();
   }
 
   /**

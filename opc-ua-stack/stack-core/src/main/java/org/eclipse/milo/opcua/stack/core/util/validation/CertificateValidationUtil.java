@@ -51,6 +51,9 @@ import org.bouncycastle.asn1.x509.GeneralNames;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,8 +81,8 @@ public class CertificateValidationUtil {
    *
    * <p>The {@link CertPath} and {@link TrustAnchor} from the result is meant to be further
    * validated by {@link #validateTrustedCertPath(CertPath, TrustAnchor, Collection, Set, boolean)},
-   * which can return more detailed failure {@link StatusCodes} in its exceptions because it is
-   * dealing with a known trusted path.
+   * which can return more detailed failure {@link StatusCodes} in its exceptions after the trusted
+   * path is known.
    *
    * @param certificateChain a possibly partial certificate chain to build a trusted path from.
    * @param trustedCertificates a collection of known trusted certificates.
@@ -186,10 +189,39 @@ public class CertificateValidationUtil {
       boolean endEntityIsClient)
       throws UaException {
 
+    validateTrustedCertPath(certPath, trustAnchor, crls, validationChecks, endEntityIsClient, null);
+  }
+
+  /**
+   * Validates the trusted certificate path represented by a {@link TrustAnchor} and a {@link
+   * CertPath} against policy-aware OPC UA certificate usage rules.
+   *
+   * @param certPath a {@link CertPath} containing 0 or more certificates leading to the trust
+   *     anchor.
+   * @param trustAnchor a {@link TrustAnchor} containing the root of trust for the path being
+   *     validated.
+   * @param crls a collection of {@link X509CRL}s.
+   * @param validationChecks the set of {@link ValidationCheck}s to enforce.
+   * @param endEntityIsClient {@code true} if the end-entity is a client, {@code false} if it is a
+   *     server.
+   * @param securityPolicyProfile the policy profile the end-entity certificate will be used with,
+   *     or {@code null} for legacy RSA-era usage checks.
+   * @throws UaException if a check from the set of {@link ValidationCheck}s failed.
+   */
+  public static void validateTrustedCertPath(
+      CertPath certPath,
+      TrustAnchor trustAnchor,
+      Collection<X509CRL> crls,
+      Set<ValidationCheck> validationChecks,
+      boolean endEntityIsClient,
+      @Nullable SecurityPolicyProfile securityPolicyProfile)
+      throws UaException {
+
     X509Certificate anchorCert = trustAnchor.getTrustedCert();
     boolean anchorIsEndEntity = certPath.getCertificates().isEmpty();
 
-    checkAnchorValidity(anchorCert, validationChecks, anchorIsEndEntity, endEntityIsClient);
+    checkAnchorValidity(
+        anchorCert, validationChecks, anchorIsEndEntity, endEntityIsClient, securityPolicyProfile);
 
     if (!anchorIsEndEntity) {
       // anchorCert is an issuer; validate the rest of the certPath
@@ -199,7 +231,8 @@ public class CertificateValidationUtil {
         PKIXParameters parameters = new PKIXParameters(Set.of(trustAnchor));
 
         parameters.addCertPathChecker(
-            new OpcUaCertificateUsageChecker(certPath, validationChecks, endEntityIsClient));
+            new OpcUaCertificateUsageChecker(
+                certPath, validationChecks, endEntityIsClient, securityPolicyProfile));
 
         try {
           // Try to add our own custom revocation checker that can
@@ -292,7 +325,8 @@ public class CertificateValidationUtil {
       X509Certificate anchorCert,
       Set<ValidationCheck> validationChecks,
       boolean endEntity,
-      boolean endEntityIsClient)
+      boolean endEntityIsClient,
+      @Nullable SecurityPolicyProfile securityPolicyProfile)
       throws UaException {
 
     Set<String> criticalExtensions = anchorCert.getCriticalExtensionOIDs();
@@ -312,7 +346,7 @@ public class CertificateValidationUtil {
 
     if (endEntity) {
       try {
-        checkEndEntityKeyUsage(anchorCert);
+        checkEndEntityKeyUsage(anchorCert, securityPolicyProfile);
       } catch (UaException e) {
         if (validationChecks.contains(ValidationCheck.KEY_USAGE_END_ENTITY)
             || criticalExtensions.contains(KEY_USAGE_OID)) {
@@ -326,7 +360,7 @@ public class CertificateValidationUtil {
       }
 
       try {
-        checkEndEntityExtendedKeyUsage(anchorCert, endEntityIsClient);
+        checkEndEntityExtendedKeyUsage(anchorCert, endEntityIsClient, securityPolicyProfile);
       } catch (UaException e) {
         if (validationChecks.contains(ValidationCheck.EXTENDED_KEY_USAGE_END_ENTITY)
             || criticalExtensions.contains(EXTENDED_KEY_USAGE_OID)) {
@@ -518,6 +552,13 @@ public class CertificateValidationUtil {
   }
 
   public static void checkEndEntityKeyUsage(X509Certificate certificate) throws UaException {
+    checkEndEntityKeyUsage(certificate, null);
+  }
+
+  public static void checkEndEntityKeyUsage(
+      X509Certificate certificate, @Nullable SecurityPolicyProfile securityPolicyProfile)
+      throws UaException {
+
     boolean[] keyUsage = certificate.getKeyUsage();
 
     if (keyUsage == null) {
@@ -525,17 +566,27 @@ public class CertificateValidationUtil {
           StatusCodes.Bad_CertificateUseNotAllowed, "KeyUsage extension not found");
     }
 
-    boolean digitalSignature = keyUsage[0];
-    boolean nonRepudiation = keyUsage[1];
-    boolean keyEncipherment = keyUsage[2];
-    boolean dataEncipherment = keyUsage[3];
-    boolean keyCertSign = keyUsage[5];
+    boolean digitalSignature = hasKeyUsage(keyUsage, 0);
+    boolean keyCertSign = hasKeyUsage(keyUsage, 5);
 
     if (!digitalSignature) {
       throw new UaException(
           StatusCodes.Bad_CertificateUseNotAllowed,
           "required KeyUsage 'digitalSignature' not found");
     }
+
+    if (keyCertSignRequiredForSelfSigned(securityPolicyProfile)) {
+      if (!keyCertSign && certificateIsSelfSigned(certificate)) {
+        throw new UaException(
+            StatusCodes.Bad_CertificateUseNotAllowed, "required KeyUsage 'keyCertSign' not found");
+      }
+
+      return;
+    }
+
+    boolean nonRepudiation = hasKeyUsage(keyUsage, 1);
+    boolean keyEncipherment = hasKeyUsage(keyUsage, 2);
+    boolean dataEncipherment = hasKeyUsage(keyUsage, 3);
 
     if (!nonRepudiation) {
       throw new UaException(
@@ -563,6 +614,19 @@ public class CertificateValidationUtil {
   public static void checkEndEntityExtendedKeyUsage(
       X509Certificate certificate, boolean endEntityIsClient) throws UaException {
 
+    checkEndEntityExtendedKeyUsage(certificate, endEntityIsClient, null);
+  }
+
+  public static void checkEndEntityExtendedKeyUsage(
+      X509Certificate certificate,
+      boolean endEntityIsClient,
+      @Nullable SecurityPolicyProfile securityPolicyProfile)
+      throws UaException {
+
+    if (isEccOrEdwardsApplicationProfile(securityPolicyProfile)) {
+      return;
+    }
+
     try {
       List<String> extendedKeyUsage = certificate.getExtendedKeyUsage();
 
@@ -585,6 +649,28 @@ public class CertificateValidationUtil {
     } catch (CertificateParsingException e) {
       throw new UaException(StatusCodes.Bad_CertificateUseNotAllowed);
     }
+  }
+
+  private static boolean keyCertSignRequiredForSelfSigned(
+      @Nullable SecurityPolicyProfile securityPolicyProfile) {
+
+    return isEccOrEdwardsApplicationProfile(securityPolicyProfile);
+  }
+
+  private static boolean isEccOrEdwardsApplicationProfile(
+      @Nullable SecurityPolicyProfile securityPolicyProfile) {
+
+    if (securityPolicyProfile == null) {
+      return false;
+    }
+
+    AuthAxis authAxis = securityPolicyProfile.authAxis();
+
+    return authAxis == AuthAxis.ECDSA_NIST_P256_SHA256 || authAxis == AuthAxis.ED25519;
+  }
+
+  private static boolean hasKeyUsage(boolean[] keyUsage, int bitIndex) {
+    return keyUsage.length > bitIndex && keyUsage[bitIndex];
   }
 
   /**
