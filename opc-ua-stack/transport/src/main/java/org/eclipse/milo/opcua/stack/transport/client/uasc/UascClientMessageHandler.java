@@ -24,6 +24,7 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -50,6 +51,7 @@ import org.eclipse.milo.opcua.stack.core.channel.messages.MessageType;
 import org.eclipse.milo.opcua.stack.core.channel.messages.TcpMessageDecoder;
 import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaBinaryDecoder;
 import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaBinaryEncoder;
+import org.eclipse.milo.opcua.stack.core.security.CertificateIdentity;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfiles;
@@ -721,30 +723,34 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
     if (securityPolicy == SecurityPolicy.None) {
       return new ClientSecureChannel(securityPolicy, endpoint.getSecurityMode());
     } else {
+      Optional<CertificateIdentity> certificateIdentity =
+          application.getCertificateIdentity(securityPolicy.getProfile());
+
       KeyPair keyPair =
-          application
-              .getKeyPair()
+          certificateIdentity
+              .map(CertificateIdentity::keyPair)
+              .or(application::getKeyPair)
               .orElseThrow(
                   () ->
                       new UaException(StatusCodes.Bad_ConfigurationError, "no KeyPair configured"));
 
       X509Certificate certificate =
-          application
-              .getCertificate()
+          certificateIdentity
+              .map(CertificateIdentity::certificate)
+              .or(application::getCertificate)
               .orElseThrow(
                   () ->
                       new UaException(
                           StatusCodes.Bad_ConfigurationError, "no certificate configured"));
 
       List<X509Certificate> certificateChain =
-          Arrays.asList(
-              application
-                  .getCertificateChain()
-                  .orElseThrow(
-                      () ->
-                          new UaException(
-                              StatusCodes.Bad_ConfigurationError,
-                              "no certificate chain configured")));
+          certificateIdentity
+              .map(identity -> Arrays.asList(identity.certificateChain()))
+              .or(() -> application.getCertificateChain().map(Arrays::asList))
+              .orElseThrow(
+                  () ->
+                      new UaException(
+                          StatusCodes.Bad_ConfigurationError, "no certificate chain configured"));
 
       X509Certificate remoteCertificate =
           CertificateUtil.decodeCertificate(endpoint.getServerCertificate().bytes());

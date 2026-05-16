@@ -14,14 +14,29 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.milo.opcua.sdk.client.identity.AnonymousProvider;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.Stack;
+import org.eclipse.milo.opcua.stack.core.security.CertificateIdentitySelector;
+import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
+import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
+import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
+import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransport;
+import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransportConfig;
 import org.junit.jupiter.api.Test;
 
 public class OpcUaClientConfigTest {
@@ -40,11 +55,22 @@ public class OpcUaClientConfigTest {
           null);
 
   @Test
-  public void testCopy() {
+  public void copyPreservesConfiguredValues() throws Exception {
+    CertificateManager certificateManager =
+        new DefaultCertificateManager(new MemoryCertificateQuarantine());
+    CertificateIdentitySelector certificateIdentitySelector = context -> Optional.empty();
+    NodeId certificateGroupId =
+        NodeIds.ServerConfiguration_CertificateGroups_DefaultApplicationGroup;
+    NodeId certificateTypeId = NodeIds.EccNistP256ApplicationCertificateType;
+
     OpcUaClientConfig original =
         OpcUaClientConfig.builder()
             .setEndpoint(endpoint)
             .setDiscoveryEndpoints(List.of(endpoint))
+            .setCertificateManager(certificateManager)
+            .setCertificateIdentitySelector(certificateIdentitySelector)
+            .setCertificateGroupId(certificateGroupId)
+            .setCertificateTypeId(certificateTypeId)
             .setSessionEndpointValidationEnabled(true)
             .setSessionName(() -> "testSessionName")
             .setSessionTimeout(uint(60000 * 60))
@@ -68,10 +94,15 @@ public class OpcUaClientConfigTest {
     assertEquals(original.getDiscoveryEndpoints(), copy.getDiscoveryEndpoints());
     assertEquals(
         original.isSessionEndpointValidationEnabled(), copy.isSessionEndpointValidationEnabled());
+    assertEquals(original.getCertificateManager(), copy.getCertificateManager());
+    assertSame(original.getCertificateIdentitySelector(), copy.getCertificateIdentitySelector());
+    assertEquals(original.getCertificateGroupId(), copy.getCertificateGroupId());
+    assertEquals(original.getCertificateTypeId(), copy.getCertificateTypeId());
+    assertTrue(copy.getCertificateIdentity(SecurityPolicy.None.getProfile()).isEmpty());
   }
 
   @Test
-  public void testCopyAndModify() {
+  public void copyAndModifyOverridesConfiguredValues() {
     OpcUaClientConfig original =
         OpcUaClientConfig.builder()
             .setEndpoint(endpoint)
@@ -131,5 +162,34 @@ public class OpcUaClientConfigTest {
     assertNotEquals(
         original.isSessionEndpointValidationEnabled(), copy.isSessionEndpointValidationEnabled());
     assertTrue(copy.isSessionEndpointValidationEnabled());
+  }
+
+  // SecureChannel and Session setup must reuse one selected client identity for a connection.
+  @Test
+  public void clientCachesSelectedCertificateIdentity() throws Exception {
+    CertificateManager certificateManager =
+        new DefaultCertificateManager(new MemoryCertificateQuarantine());
+    AtomicInteger selections = new AtomicInteger();
+    CertificateIdentitySelector certificateIdentitySelector =
+        context -> {
+          selections.incrementAndGet();
+          return Optional.empty();
+        };
+    OpcClientTransportConfig transportConfig = mock(OpcClientTransportConfig.class);
+    when(transportConfig.getExecutor()).thenReturn(Stack.sharedExecutor());
+    OpcClientTransport transport = mock(OpcClientTransport.class);
+    when(transport.getConfig()).thenReturn(transportConfig);
+
+    OpcUaClientConfig config =
+        OpcUaClientConfig.builder()
+            .setEndpoint(endpoint)
+            .setCertificateManager(certificateManager)
+            .setCertificateIdentitySelector(certificateIdentitySelector)
+            .build();
+    OpcUaClient client = new OpcUaClient(config, transport);
+
+    assertTrue(client.getCertificateIdentity(SecurityPolicy.Basic256Sha256.getProfile()).isEmpty());
+    assertTrue(client.getCertificateIdentity(SecurityPolicy.Basic256Sha256.getProfile()).isEmpty());
+    assertEquals(1, selections.get());
   }
 }

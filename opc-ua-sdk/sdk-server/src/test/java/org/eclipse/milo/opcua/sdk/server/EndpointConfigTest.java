@@ -10,14 +10,46 @@
 
 package org.eclipse.milo.opcua.sdk.server;
 
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.security.KeyPair;
+import java.security.cert.X509Certificate;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultDiscoveryServiceSet;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.security.CertificateFactory;
+import org.eclipse.milo.opcua.stack.core.security.CertificateGroup;
+import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
+import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
+import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
+import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
+import org.eclipse.milo.opcua.stack.core.security.TrustListManager;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
+import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.GetEndpointsRequest;
+import org.eclipse.milo.opcua.stack.core.types.structured.GetEndpointsResponse;
+import org.eclipse.milo.opcua.stack.core.types.structured.RequestHeader;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
+import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
+import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
 import org.junit.jupiter.api.Test;
 
 public class EndpointConfigTest {
@@ -55,6 +87,38 @@ public class EndpointConfigTest {
                 .build());
   }
 
+  // Managed certificate selection lets secure endpoints defer certificate choice until
+  // advertisement time.
+  @Test
+  public void certificateSelectionConfigAllowsSecureEndpointWithoutFixedCertificate() {
+    EndpointCertificateConfig certificateConfig =
+        EndpointCertificateConfig.newBuilder()
+            .setCertificateTypeId(NodeIds.RsaSha256ApplicationCertificateType)
+            .build();
+
+    EndpointConfig endpointConfig =
+        EndpointConfig.newBuilder()
+            .setEndpointCertificateConfig(certificateConfig)
+            .setSecurityPolicy(SecurityPolicy.Basic256Sha256)
+            .setSecurityMode(MessageSecurityMode.SignAndEncrypt)
+            .build();
+
+    assertEquals(Optional.of(certificateConfig), endpointConfig.getEndpointCertificateConfig());
+  }
+
+  // Copying endpoint configs must preserve the legacy fixed-certificate API exactly.
+  @Test
+  public void legacyFixedCertificateApiIsPreservedByCopy() throws Exception {
+    CertificateMaterial certificate = rsaCertificate("legacy");
+
+    EndpointConfig.Builder builder =
+        EndpointConfig.newBuilder().setCertificate(certificate.certificate());
+    EndpointConfig copy = builder.copy().build();
+
+    assertSame(certificate.certificate(), copy.getCertificate());
+    assertEquals(Optional.empty(), copy.getEndpointCertificateConfig());
+  }
+
   @Test
   public void unsupportedTransportThrows() {
     assertThrows(
@@ -86,5 +150,263 @@ public class EndpointConfigTest {
     List<UserTokenPolicy> tokenPolicies = endpointConfig.getTokenPolicies();
     assertEquals(1, tokenPolicies.size());
     assertEquals(EndpointConfig.Builder.USER_TOKEN_POLICY_ANONYMOUS, tokenPolicies.get(0));
+  }
+
+  // Discovery clients must see the concrete certificate selected from the managed identity set.
+  @Test
+  public void endpointCertificateConfigSelectsAdvertisedCertificate() throws Exception {
+    CertificateMaterial certificate = rsaCertificate("selected");
+    CertificateManager certificateManager =
+        manager(
+            group(
+                NodeIds.ServerConfiguration_CertificateGroups_DefaultApplicationGroup,
+                certificate));
+
+    EndpointConfig endpoint =
+        EndpointConfig.newBuilder()
+            .setEndpointCertificateConfig(
+                EndpointCertificateConfig.newBuilder()
+                    .setCertificateTypeId(NodeIds.RsaSha256ApplicationCertificateType)
+                    .build())
+            .setSecurityPolicy(SecurityPolicy.Basic256Sha256)
+            .setSecurityMode(MessageSecurityMode.SignAndEncrypt)
+            .build();
+
+    OpcUaServer server = server(Set.of(endpoint), certificateManager);
+
+    EndpointDescription description =
+        server.getApplicationContext().getEndpointDescriptions().get(0);
+
+    assertArrayEquals(
+        certificate.certificate().getEncoded(), description.getServerCertificate().bytesOrEmpty());
+  }
+
+  // Legacy fixed-certificate endpoints remain authoritative even when other managed identities
+  // exist.
+  @Test
+  public void legacyFixedCertificateIsNotReplacedByAnotherManagedIdentity() throws Exception {
+    CertificateMaterial fixed = rsaCertificate("fixed");
+    CertificateMaterial managed = rsaCertificate("managed");
+    CertificateManager certificateManager =
+        manager(
+            group(NodeIds.ServerConfiguration_CertificateGroups_DefaultApplicationGroup, managed));
+
+    EndpointConfig endpoint =
+        EndpointConfig.newBuilder()
+            .setCertificate(fixed.certificate())
+            .setSecurityPolicy(SecurityPolicy.Basic256Sha256)
+            .setSecurityMode(MessageSecurityMode.SignAndEncrypt)
+            .build();
+
+    OpcUaServer server = server(Set.of(endpoint), certificateManager);
+
+    EndpointDescription description =
+        server.getApplicationContext().getEndpointDescriptions().get(0);
+
+    assertArrayEquals(
+        fixed.certificate().getEncoded(), description.getServerCertificate().bytesOrEmpty());
+  }
+
+  // Endpoints that cannot be served by the current SecureChannel runtime must not be advertised.
+  @Test
+  public void unsupportedEccEndpointIsOmittedFromDiscoveryAdvertisement() throws Exception {
+    CertificateMaterial certificate = rsaCertificate("rsa-only");
+    CertificateManager certificateManager =
+        manager(
+            group(
+                NodeIds.ServerConfiguration_CertificateGroups_DefaultApplicationGroup,
+                certificate));
+
+    EndpointConfig endpoint =
+        EndpointConfig.newBuilder()
+            .setEndpointCertificateConfig(
+                EndpointCertificateConfig.newBuilder()
+                    .setCertificateTypeId(NodeIds.EccNistP256ApplicationCertificateType)
+                    .build())
+            .setSecurityPolicy(SecurityPolicy.ECC_nistP256_AesGcm)
+            .setSecurityMode(MessageSecurityMode.SignAndEncrypt)
+            .build();
+
+    OpcUaServer server = server(Set.of(endpoint), certificateManager);
+
+    DefaultDiscoveryServiceSet discoveryServiceSet = new DefaultDiscoveryServiceSet(server);
+    GetEndpointsResponse response =
+        discoveryServiceSet.onGetEndpoints(
+            null, new GetEndpointsRequest(requestHeader(), endpoint.getEndpointUrl(), null, null));
+
+    assertEquals(0, Objects.requireNonNull(response.getEndpoints()).length);
+  }
+
+  // Dynamic legacy certificate suppliers are only re-evaluated after the advertised endpoint cache
+  // is reset.
+  @Test
+  public void resetEndpointDescriptionCacheReselectsLegacySupplierCertificate() throws Exception {
+    CertificateMaterial first = rsaCertificate("first");
+    CertificateMaterial second = rsaCertificate("second");
+    CertificateManager certificateManager =
+        manager(group(new NodeId(2, "group-a"), first), group(new NodeId(2, "group-b"), second));
+    AtomicReference<X509Certificate> certificateRef = new AtomicReference<>(first.certificate());
+
+    EndpointConfig endpoint =
+        EndpointConfig.newBuilder()
+            .setCertificate(certificateRef::get)
+            .setSecurityPolicy(SecurityPolicy.Basic256Sha256)
+            .setSecurityMode(MessageSecurityMode.SignAndEncrypt)
+            .build();
+
+    OpcUaServer server = server(Set.of(endpoint), certificateManager);
+
+    EndpointDescription cachedDescription =
+        server.getApplicationContext().getEndpointDescriptions().get(0);
+    certificateRef.set(second.certificate());
+    EndpointDescription stillCachedDescription =
+        server.getApplicationContext().getEndpointDescriptions().get(0);
+
+    assertSame(cachedDescription, stillCachedDescription);
+    assertArrayEquals(
+        first.certificate().getEncoded(),
+        stillCachedDescription.getServerCertificate().bytesOrEmpty());
+
+    server.resetEndpointDescriptionCache();
+
+    EndpointDescription refreshedDescription =
+        server.getApplicationContext().getEndpointDescriptions().get(0);
+
+    assertArrayEquals(
+        second.certificate().getEncoded(),
+        refreshedDescription.getServerCertificate().bytesOrEmpty());
+  }
+
+  private static RequestHeader requestHeader() {
+    return new RequestHeader(
+        NodeId.NULL_VALUE, DateTime.now(), uint(1), uint(0), null, uint(0), null);
+  }
+
+  private static OpcUaServer server(
+      Set<EndpointConfig> endpoints, CertificateManager certificateManager) {
+
+    OpcUaServerConfig config =
+        OpcUaServerConfig.builder()
+            .setEndpoints(endpoints)
+            .setCertificateManager(certificateManager)
+            .setApplicationUri("urn:test:server")
+            .setProductUri("urn:test:product")
+            .build();
+
+    return new OpcUaServer(config, transportProfile -> null);
+  }
+
+  private static CertificateManager manager(TestCertificateGroup... groups) {
+    List<CertificateGroup> certificateGroups =
+        Arrays.stream(groups).map(CertificateGroup.class::cast).toList();
+
+    return new DefaultCertificateManager(new MemoryCertificateQuarantine(), certificateGroups);
+  }
+
+  private static TestCertificateGroup group(NodeId groupId, CertificateMaterial... certificates) {
+    return new TestCertificateGroup(groupId, List.of(certificates));
+  }
+
+  private static CertificateMaterial rsaCertificate(String commonName) throws Exception {
+
+    KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+    X509Certificate certificate =
+        new SelfSignedCertificateBuilder(keyPair)
+            .setCommonName(commonName)
+            .setOrganization("Eclipse Milo")
+            .setApplicationUri("urn:test:" + commonName)
+            .build();
+
+    return new CertificateMaterial(
+        NodeIds.RsaSha256ApplicationCertificateType, keyPair, new X509Certificate[] {certificate});
+  }
+
+  private record CertificateMaterial(
+      NodeId certificateTypeId, KeyPair keyPair, X509Certificate[] certificateChain) {
+
+    X509Certificate certificate() {
+      return certificateChain[0];
+    }
+  }
+
+  private record TestCertificateGroup(
+      NodeId certificateGroupId, Map<NodeId, CertificateMaterial> certificates)
+      implements CertificateGroup {
+
+    private TestCertificateGroup(
+        NodeId certificateGroupId, List<CertificateMaterial> certificates) {
+      this(certificateGroupId, toCertificateMap(certificates));
+    }
+
+    private static Map<NodeId, CertificateMaterial> toCertificateMap(
+        List<CertificateMaterial> certificates) {
+
+      Map<NodeId, CertificateMaterial> certificateMap =
+          certificates.stream()
+              .collect(
+                  Collectors.toMap(
+                      CertificateMaterial::certificateTypeId,
+                      Function.identity(),
+                      (left, right) -> right,
+                      LinkedHashMap::new));
+
+      return Collections.unmodifiableMap(certificateMap);
+    }
+
+    @Override
+    public NodeId getCertificateGroupId() {
+      return certificateGroupId;
+    }
+
+    @Override
+    public List<NodeId> getSupportedCertificateTypeIds() {
+      return List.copyOf(certificates.keySet());
+    }
+
+    @Override
+    public TrustListManager getTrustListManager() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<Entry> getCertificateEntries() {
+      return certificates.values().stream()
+          .map(
+              certificate ->
+                  new CertificateGroup.Entry(
+                      certificateGroupId,
+                      certificate.certificateTypeId(),
+                      certificate.certificateChain()))
+          .toList();
+    }
+
+    @Override
+    public Optional<KeyPair> getKeyPair(NodeId certificateTypeId) {
+      return Optional.ofNullable(certificates.get(certificateTypeId))
+          .map(CertificateMaterial::keyPair);
+    }
+
+    @Override
+    public Optional<X509Certificate[]> getCertificateChain(NodeId certificateTypeId) {
+      return Optional.ofNullable(certificates.get(certificateTypeId))
+          .map(CertificateMaterial::certificateChain)
+          .map(X509Certificate[]::clone);
+    }
+
+    @Override
+    public void updateCertificate(
+        NodeId certificateTypeId, KeyPair keyPair, X509Certificate[] certificateChain) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public CertificateFactory getCertificateFactory() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public CertificateValidator getCertificateValidator() {
+      return new CertificateValidator.InsecureCertificateValidator();
+    }
   }
 }

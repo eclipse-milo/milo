@@ -69,10 +69,15 @@ import org.eclipse.milo.opcua.stack.core.channel.messages.ErrorMessage;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingManager;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingManager;
+import org.eclipse.milo.opcua.stack.core.security.CertificateIdentity;
+import org.eclipse.milo.opcua.stack.core.security.CertificateIdentitySelectionContext;
+import org.eclipse.milo.opcua.stack.core.security.CertificateIdentitySelector;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
+import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateIdentitySelector;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfiles;
+import org.eclipse.milo.opcua.stack.core.security.SecurityProviderResolver;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.DataTypeManager;
 import org.eclipse.milo.opcua.stack.core.types.DefaultDataTypeManager;
@@ -86,6 +91,7 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
+import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.eclipse.milo.opcua.stack.core.util.FutureUtils;
 import org.eclipse.milo.opcua.stack.core.util.Lazy;
@@ -144,8 +150,13 @@ public class OpcUaServer extends AbstractServiceHandler {
   private final ServerDiagnosticsSummary diagnosticsSummary = new ServerDiagnosticsSummary(this);
 
   private final Lazy<List<EndpointDescription>> endpointDescriptions = new Lazy<>();
+  private final Lazy<List<ResolvedEndpoint>> resolvedEndpoints = new Lazy<>();
 
   private final List<EndpointConfig> boundEndpoints = new CopyOnWriteArrayList<>();
+  private final CertificateIdentitySelector endpointCertificateIdentitySelector =
+      DefaultCertificateIdentitySelector.create();
+  private final SecurityProviderResolver securityProviderResolver =
+      SecurityProviderResolver.create();
 
   /**
    * SecureChannel id sequence, starting at a random value in [1..{@link Integer#MAX_VALUE}], and
@@ -276,10 +287,12 @@ public class OpcUaServer extends AbstractServiceHandler {
   public CompletableFuture<OpcUaServer> startup() {
     eventFactory.startup();
 
-    config.getEndpoints().stream()
-        .sorted(Comparator.comparing(EndpointConfig::getTransportProfile))
+    getResolvedEndpoints().stream()
+        .sorted(Comparator.comparing(e -> e.endpointConfig().getTransportProfile()))
         .forEach(
-            endpoint -> {
+            resolvedEndpoint -> {
+              EndpointConfig endpoint = resolvedEndpoint.endpointConfig();
+
               logger.info(
                   "Binding endpoint {} to {}:{} [{}/{}]",
                   endpoint.getEndpointUrl(),
@@ -581,6 +594,168 @@ public class OpcUaServer extends AbstractServiceHandler {
    */
   public void resetEndpointDescriptionCache() {
     endpointDescriptions.reset();
+    resolvedEndpoints.reset();
+  }
+
+  private List<ResolvedEndpoint> getResolvedEndpoints() {
+    return resolvedEndpoints.get(
+        () ->
+            config.getEndpoints().stream()
+                .map(this::resolveEndpoint)
+                .flatMap(Optional::stream)
+                .toList());
+  }
+
+  private Optional<ResolvedEndpoint> resolveEndpoint(EndpointConfig endpoint) {
+    SecurityPolicyProfile profile = SecurityPolicyProfiles.get(endpoint.getSecurityPolicy());
+
+    try {
+      CertificateIdentity certificateIdentity = null;
+      X509Certificate certificate = endpoint.getCertificate();
+
+      if (endpoint.getSecurityPolicy() != SecurityPolicy.None) {
+        securityProviderResolver.resolve(profile);
+        profile.requireSecureChannelSupported();
+
+        if (endpoint.getEndpointCertificateConfig().isPresent()) {
+          certificateIdentity = resolveCertificateIdentity(endpoint, profile, certificate);
+          certificate = certificateIdentity.certificate();
+        }
+      }
+
+      return Optional.of(
+          new ResolvedEndpoint(
+              endpoint,
+              certificateIdentity,
+              new EndpointDescription(
+                  endpoint.getEndpointUrl(),
+                  getApplicationDescription(),
+                  certificateByteString(certificate),
+                  endpoint.getSecurityMode(),
+                  endpoint.getSecurityPolicy().getUri(),
+                  endpoint.getTokenPolicies().toArray(new UserTokenPolicy[0]),
+                  endpoint.getTransportProfile().getUri(),
+                  ubyte(
+                      getSecurityLevel(
+                          endpoint.getSecurityPolicy(), endpoint.getSecurityMode())))));
+    } catch (UaException | EndpointResolutionException e) {
+      logOmittedEndpoint(endpoint, e.getMessage());
+      return Optional.empty();
+    }
+  }
+
+  private CertificateIdentity resolveCertificateIdentity(
+      EndpointConfig endpoint, SecurityPolicyProfile profile, @Nullable X509Certificate certificate)
+      throws UaException, EndpointResolutionException {
+
+    CertificateManager certificateManager = config.getCertificateManager();
+
+    if (certificateManager == null) {
+      throw new EndpointResolutionException("no CertificateManager configured");
+    }
+
+    EndpointCertificateConfig certificateConfig =
+        endpoint.getEndpointCertificateConfig().orElse(null);
+
+    NodeId certificateGroupId =
+        certificateConfig != null ? certificateConfig.getCertificateGroupId() : null;
+    NodeId certificateTypeId =
+        certificateConfig != null ? certificateConfig.getCertificateTypeId().orElse(null) : null;
+
+    CertificateIdentitySelectionContext context =
+        CertificateIdentitySelectionContext.forEndpointAdvertisement(
+            certificateManager, profile, certificateGroupId, certificateTypeId, certificate);
+
+    CertificateIdentity selectedIdentity =
+        endpointCertificateIdentitySelector
+            .select(context)
+            .orElseThrow(
+                () -> new EndpointResolutionException("no compatible certificate identity found"));
+
+    if (certificate != null
+        && !CertificateUtil.thumbprint(certificate).equals(selectedIdentity.thumbprint())) {
+      throw new EndpointResolutionException(
+          "explicit endpoint certificate is not available as a compatible local identity");
+    }
+
+    return selectedIdentity;
+  }
+
+  private void logOmittedEndpoint(EndpointConfig endpoint, String reason) {
+    String certificateGroup =
+        endpoint
+            .getEndpointCertificateConfig()
+            .map(config -> config.getCertificateGroupId().toParseableString())
+            .orElse("<any>");
+    String certificateType =
+        endpoint
+            .getEndpointCertificateConfig()
+            .flatMap(EndpointCertificateConfig::getCertificateTypeId)
+            .map(NodeId::toParseableString)
+            .orElse("<policy-preferred>");
+
+    logger.warn(
+        "Omitting endpoint advertisement: endpointUrl={}, securityPolicyUri={}, securityMode={},"
+            + " certificateGroup={}, certificateType={}, reason={}",
+        endpoint.getEndpointUrl(),
+        endpoint.getSecurityPolicy().getUri(),
+        endpoint.getSecurityMode(),
+        certificateGroup,
+        certificateType,
+        reason);
+  }
+
+  private ByteString certificateByteString(@Nullable X509Certificate certificate) {
+    if (certificate != null) {
+      try {
+        return ByteString.of(certificate.getEncoded());
+      } catch (CertificateEncodingException e) {
+        logger.error("Error decoding certificate.", e);
+        return ByteString.NULL_VALUE;
+      }
+    } else {
+      return ByteString.NULL_VALUE;
+    }
+  }
+
+  private ApplicationDescription getApplicationDescription() {
+    return applicationDescription.get(
+        () -> {
+          List<String> discoveryUrls =
+              config.getEndpoints().stream()
+                  .map(EndpointConfig::getEndpointUrl)
+                  .filter(url -> url.endsWith("/discovery"))
+                  .distinct()
+                  .collect(toList());
+
+          if (discoveryUrls.isEmpty()) {
+            discoveryUrls =
+                config.getEndpoints().stream()
+                    .map(EndpointConfig::getEndpointUrl)
+                    .distinct()
+                    .toList();
+          }
+
+          return new ApplicationDescription(
+              config.getApplicationUri(),
+              config.getProductUri(),
+              config.getApplicationName(),
+              ApplicationType.Server,
+              null,
+              null,
+              discoveryUrls.toArray(new String[0]));
+        });
+  }
+
+  private short getSecurityLevel(SecurityPolicy securityPolicy, MessageSecurityMode securityMode) {
+    return securityPolicy.getProfile().getSecurityLevel(securityMode);
+  }
+
+  private static final class EndpointResolutionException extends Exception {
+
+    private EndpointResolutionException(String message) {
+      super(message);
+    }
   }
 
   private class ServerApplicationContextImpl implements ServerApplicationContext {
@@ -589,10 +764,7 @@ public class OpcUaServer extends AbstractServiceHandler {
     public List<EndpointDescription> getEndpointDescriptions() {
       return endpointDescriptions.get(
           () ->
-              config.getEndpoints().stream()
-                  .map(this::transformEndpoint)
-                  .flatMap(Optional::stream)
-                  .toList());
+              getResolvedEndpoints().stream().map(ResolvedEndpoint::endpointDescription).toList());
     }
 
     @Override
@@ -770,82 +942,6 @@ public class OpcUaServer extends AbstractServiceHandler {
       }
 
       return false;
-    }
-
-    private Optional<EndpointDescription> transformEndpoint(EndpointConfig endpoint) {
-      SecurityPolicyProfile profile = SecurityPolicyProfiles.get(endpoint.getSecurityPolicy());
-
-      if (!profile.secureChannelSupported()) {
-        logger.warn(
-            "Omitting endpoint advertisement: endpointUrl={}, securityPolicyUri={},"
-                + " securityMode={}, certificateGroup={}, certificateType={}, reason={}",
-            endpoint.getEndpointUrl(),
-            endpoint.getSecurityPolicy().getUri(),
-            endpoint.getSecurityMode(),
-            "legacy-certificate-supplier",
-            "legacy-certificate-supplier",
-            "SecureChannel runtime support unavailable");
-
-        return Optional.empty();
-      }
-
-      return Optional.of(
-          new EndpointDescription(
-              endpoint.getEndpointUrl(),
-              getApplicationDescription(),
-              certificateByteString(endpoint.getCertificate()),
-              endpoint.getSecurityMode(),
-              endpoint.getSecurityPolicy().getUri(),
-              endpoint.getTokenPolicies().toArray(new UserTokenPolicy[0]),
-              endpoint.getTransportProfile().getUri(),
-              ubyte(getSecurityLevel(endpoint.getSecurityPolicy(), endpoint.getSecurityMode()))));
-    }
-
-    private ByteString certificateByteString(@Nullable X509Certificate certificate) {
-      if (certificate != null) {
-        try {
-          return ByteString.of(certificate.getEncoded());
-        } catch (CertificateEncodingException e) {
-          logger.error("Error decoding certificate.", e);
-          return ByteString.NULL_VALUE;
-        }
-      } else {
-        return ByteString.NULL_VALUE;
-      }
-    }
-
-    private ApplicationDescription getApplicationDescription() {
-      return applicationDescription.get(
-          () -> {
-            List<String> discoveryUrls =
-                config.getEndpoints().stream()
-                    .map(EndpointConfig::getEndpointUrl)
-                    .filter(url -> url.endsWith("/discovery"))
-                    .distinct()
-                    .collect(toList());
-
-            if (discoveryUrls.isEmpty()) {
-              discoveryUrls =
-                  config.getEndpoints().stream()
-                      .map(EndpointConfig::getEndpointUrl)
-                      .distinct()
-                      .toList();
-            }
-
-            return new ApplicationDescription(
-                config.getApplicationUri(),
-                config.getProductUri(),
-                config.getApplicationName(),
-                ApplicationType.Server,
-                null,
-                null,
-                discoveryUrls.toArray(new String[0]));
-          });
-    }
-
-    private short getSecurityLevel(
-        SecurityPolicy securityPolicy, MessageSecurityMode securityMode) {
-      return securityPolicy.getProfile().getSecurityLevel(securityMode);
     }
   }
 

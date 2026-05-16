@@ -44,6 +44,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -56,6 +57,7 @@ import org.eclipse.milo.opcua.sdk.client.identity.SignedIdentityToken;
 import org.eclipse.milo.opcua.sdk.client.session.SessionFsm.SessionFuture;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaSubscription;
 import org.eclipse.milo.opcua.stack.core.*;
+import org.eclipse.milo.opcua.stack.core.security.CertificateIdentity;
 import org.eclipse.milo.opcua.stack.core.security.SecurityAlgorithm;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
@@ -1100,6 +1102,18 @@ public class SessionFsmFactory {
       FsmContext<State, Event> ctx, OpcUaClient client) {
 
     EndpointDescription endpoint = client.getConfig().getEndpoint();
+    SecurityPolicy securityPolicy;
+    Optional<CertificateIdentity> certificateIdentity;
+
+    try {
+      securityPolicy = SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri());
+      certificateIdentity =
+          securityPolicy != SecurityPolicy.None
+              ? client.getCertificateIdentity(securityPolicy.getProfile())
+              : Optional.empty();
+    } catch (UaException e) {
+      return failedFuture(e);
+    }
 
     String gatewayServerUri = endpoint.getServer().getGatewayServerUri();
 
@@ -1113,9 +1127,9 @@ public class SessionFsmFactory {
     ByteString clientNonce = NonceUtil.generateNonce(32);
 
     ByteString clientCertificate =
-        client
-            .getConfig()
-            .getCertificate()
+        certificateIdentity
+            .map(CertificateIdentity::certificate)
+            .or(() -> client.getConfig().getCertificate())
             .map(
                 c -> {
                   try {
@@ -1160,9 +1174,6 @@ public class SessionFsmFactory {
         .thenCompose(
             response -> {
               try {
-                SecurityPolicy securityPolicy =
-                    SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri());
-
                 if (securityPolicy != SecurityPolicy.None) {
                   if (response.getServerCertificate().isNullOrEmpty()) {
                     throw new UaException(
@@ -1322,7 +1333,7 @@ public class SessionFsmFactory {
       ActivateSessionRequest request =
           new ActivateSessionRequest(
               client.newRequestHeader(csr.getAuthenticationToken()),
-              buildClientSignature(client.getConfig(), csrNonce),
+              buildClientSignature(client, csrNonce),
               new SignedSoftwareCertificate[0],
               client.getConfig().getSessionLocaleIds(),
               ExtensionObject.encode(client.getStaticEncodingContext(), userIdentityToken),
@@ -1385,7 +1396,7 @@ public class SessionFsmFactory {
       var request =
           new ActivateSessionRequest(
               client.newRequestHeader(session.getAuthenticationToken()),
-              buildClientSignature(client.getConfig(), serverNonce),
+              buildClientSignature(client, serverNonce),
               new SignedSoftwareCertificate[0],
               client.getConfig().getSessionLocaleIds(),
               ExtensionObject.encode(client.getStaticEncodingContext(), userIdentityToken),
@@ -1620,8 +1631,10 @@ public class SessionFsmFactory {
   }
 
   @SuppressWarnings("Duplicates")
-  private static SignatureData buildClientSignature(
-      OpcUaClientConfig config, ByteString serverNonce) throws Exception {
+  private static SignatureData buildClientSignature(OpcUaClient client, ByteString serverNonce)
+      throws Exception {
+
+    OpcUaClientConfig config = client.getConfig();
 
     EndpointDescription endpoint = config.getEndpoint();
 
@@ -1631,7 +1644,14 @@ public class SessionFsmFactory {
       return new SignatureData(null, null);
     } else {
       SecurityAlgorithm signatureAlgorithm = securityPolicy.getAsymmetricSignatureAlgorithm();
-      PrivateKey privateKey = config.getKeyPair().map(KeyPair::getPrivate).orElse(null);
+      Optional<CertificateIdentity> certificateIdentity =
+          client.getCertificateIdentity(securityPolicy.getProfile());
+      PrivateKey privateKey =
+          certificateIdentity
+              .map(CertificateIdentity::keyPair)
+              .map(KeyPair::getPrivate)
+              .or(() -> config.getKeyPair().map(KeyPair::getPrivate))
+              .orElse(null);
       List<X509Certificate> serverCertificates =
           CertificateUtil.decodeCertificates(endpoint.getServerCertificate().bytesOrEmpty());
 

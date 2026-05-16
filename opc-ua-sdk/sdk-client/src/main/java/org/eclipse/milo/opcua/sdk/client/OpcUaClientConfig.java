@@ -18,10 +18,18 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.eclipse.milo.opcua.sdk.client.identity.IdentityProvider;
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
 import org.eclipse.milo.opcua.stack.core.channel.SecurityKeysListener;
+import org.eclipse.milo.opcua.stack.core.security.CertificateIdentity;
+import org.eclipse.milo.opcua.stack.core.security.CertificateIdentitySelectionContext;
+import org.eclipse.milo.opcua.stack.core.security.CertificateIdentitySelector;
+import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
+import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateIdentitySelector;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishRequest;
@@ -74,6 +82,69 @@ public interface OpcUaClientConfig {
   Optional<X509Certificate[]> getCertificateChain();
 
   /**
+   * Get the {@link CertificateManager} used for policy-aware client certificate selection.
+   *
+   * @return an {@link Optional} containing the configured {@link CertificateManager}, if any.
+   */
+  default Optional<CertificateManager> getCertificateManager() {
+    return Optional.empty();
+  }
+
+  /**
+   * Get the selector used with {@link #getCertificateManager()} to choose a local client identity.
+   *
+   * @return the certificate identity selector.
+   */
+  default CertificateIdentitySelector getCertificateIdentitySelector() {
+    return DefaultCertificateIdentitySelector.create();
+  }
+
+  /**
+   * Get the requested certificate group for client identity selection.
+   *
+   * @return the requested certificate group ID, or empty when any group may be selected.
+   */
+  default Optional<NodeId> getCertificateGroupId() {
+    return Optional.empty();
+  }
+
+  /**
+   * Get the requested certificate type for client identity selection.
+   *
+   * @return the requested certificate type ID, or empty when the policy should choose.
+   */
+  default Optional<NodeId> getCertificateTypeId() {
+    return Optional.empty();
+  }
+
+  /**
+   * Get a local certificate identity for the chosen endpoint security policy.
+   *
+   * @param securityPolicyProfile the selected endpoint security-policy profile.
+   * @return the selected identity, or empty when no {@link CertificateManager} is configured or no
+   *     identity matches.
+   * @throws UaException if the selector fails while evaluating identities.
+   */
+  default Optional<CertificateIdentity> getCertificateIdentity(
+      SecurityPolicyProfile securityPolicyProfile) throws UaException {
+
+    Optional<CertificateManager> certificateManager = getCertificateManager();
+
+    if (certificateManager.isEmpty()) {
+      return Optional.empty();
+    }
+
+    CertificateIdentitySelectionContext context =
+        CertificateIdentitySelectionContext.forClientConnectionSetup(
+            certificateManager.get(),
+            securityPolicyProfile,
+            getCertificateGroupId().orElse(null),
+            getCertificateTypeId().orElse(null));
+
+    return getCertificateIdentitySelector().select(context);
+  }
+
+  /**
    * Get the {@link CertificateValidator} this client will use to validate server certificates when
    * connecting.
    *
@@ -103,7 +174,7 @@ public interface OpcUaClientConfig {
   Supplier<String> getSessionName();
 
   /**
-   * @return the list of locale ids in priority order for localized strings
+   * @return the locale ids in priority order for localized strings.
    */
   String[] getSessionLocaleIds();
 
@@ -197,6 +268,10 @@ public interface OpcUaClientConfig {
     builder.setDiscoveryEndpoints(new ArrayList<>(config.getDiscoveryEndpoints()));
     config.getCertificate().ifPresent(builder::setCertificate);
     config.getCertificateChain().ifPresent(builder::setCertificateChain);
+    config.getCertificateManager().ifPresent(builder::setCertificateManager);
+    builder.setCertificateIdentitySelector(config.getCertificateIdentitySelector());
+    builder.setCertificateGroupId(config.getCertificateGroupId().orElse(null));
+    builder.setCertificateTypeId(config.getCertificateTypeId().orElse(null));
     builder.setApplicationName(config.getApplicationName());
     builder.setApplicationUri(config.getApplicationUri());
     builder.setProductUri(config.getProductUri());

@@ -16,7 +16,6 @@ import static org.eclipse.milo.opcua.sdk.server.servicesets.AbstractServiceSet.c
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import org.eclipse.milo.opcua.sdk.server.EndpointConfig;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.servicesets.DiscoveryServiceSet;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -158,16 +157,18 @@ public class DefaultDiscoveryServiceSet implements DiscoveryServiceSet {
 
   private ApplicationDescription getFilteredApplicationDescription(String endpointUrl) {
     List<String> allDiscoveryUrls =
-        server.getConfig().getEndpoints().stream()
-            .map(EndpointConfig::getEndpointUrl)
+        server.getApplicationContext().getEndpointDescriptions().stream()
+            .map(EndpointDescription::getEndpointUrl)
+            .filter(Objects::nonNull)
             .filter(url -> url.endsWith("/discovery"))
             .distinct()
             .collect(toList());
 
     if (allDiscoveryUrls.isEmpty()) {
       allDiscoveryUrls =
-          server.getConfig().getEndpoints().stream()
-              .map(EndpointConfig::getEndpointUrl)
+          server.getApplicationContext().getEndpointDescriptions().stream()
+              .map(EndpointDescription::getEndpointUrl)
+              .filter(Objects::nonNull)
               .distinct()
               .toList();
     }

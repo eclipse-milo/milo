@@ -13,9 +13,12 @@ package org.eclipse.milo.opcua.stack.transport.client;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.util.Optional;
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.channel.SecurityKeysListener;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
+import org.eclipse.milo.opcua.stack.core.security.CertificateIdentity;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.jspecify.annotations.Nullable;
@@ -55,6 +58,20 @@ public interface ClientApplicationContext {
    * @return the client application instance certificate chain, if configured.
    */
   Optional<X509Certificate[]> getCertificateChain();
+
+  /**
+   * Get the client certificate identity for {@code securityPolicyProfile}, if a policy-aware
+   * identity source is configured.
+   *
+   * @param securityPolicyProfile the selected endpoint security-policy profile.
+   * @return the selected identity, or empty when policy-aware selection is not configured.
+   * @throws UaException if identity selection fails while evaluating candidates.
+   */
+  default Optional<CertificateIdentity> getCertificateIdentity(
+      SecurityPolicyProfile securityPolicyProfile) throws UaException {
+
+    return Optional.empty();
+  }
 
   /**
    * Get the client's {@link CertificateValidator}.

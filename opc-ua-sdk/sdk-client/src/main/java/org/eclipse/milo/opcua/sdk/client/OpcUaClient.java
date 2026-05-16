@@ -53,8 +53,10 @@ import org.eclipse.milo.opcua.stack.core.channel.SecurityKeysListener;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingManager;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingManager;
+import org.eclipse.milo.opcua.stack.core.security.CertificateIdentity;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
 import org.eclipse.milo.opcua.stack.core.types.DataTypeManager;
 import org.eclipse.milo.opcua.stack.core.types.DefaultDataTypeManager;
 import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
@@ -356,6 +358,10 @@ public class OpcUaClient {
   private final OpcUaClientConfig config;
 
   private final OpcClientTransport transport;
+  private final Object certificateIdentityLock = new Object();
+  private @Nullable CertificateIdentity selectedCertificateIdentity;
+  private @Nullable SecurityPolicyProfile selectedCertificateIdentityProfile;
+  private boolean certificateIdentitySelected;
 
   public OpcUaClient(OpcUaClientConfig config, OpcClientTransport transport) {
     this.config = config;
@@ -412,6 +418,13 @@ public class OpcUaClient {
           }
 
           @Override
+          public Optional<CertificateIdentity> getCertificateIdentity(
+              SecurityPolicyProfile securityPolicyProfile) throws UaException {
+
+            return OpcUaClient.this.getCertificateIdentity(securityPolicyProfile);
+          }
+
+          @Override
           public CertificateValidator getCertificateValidator() {
             return config.getCertificateValidator();
           }
@@ -460,11 +473,13 @@ public class OpcUaClient {
           return client
               .sendRequestAsync(readRequest)
               .thenApply(ReadResponse.class::cast)
-              .thenApply(response -> Objects.requireNonNull(response.getResults()))
               .thenApply(
-                  results -> {
-                    String[] namespaceArray = (String[]) results[0].value().value();
-                    String[] serverArray = (String[]) results[1].value().value();
+                  response -> {
+                    DataValue[] results = Objects.requireNonNull(response.getResults());
+                    String[] namespaceArray =
+                        (String[]) Objects.requireNonNull(results[0]).value().value();
+                    String[] serverArray =
+                        (String[]) Objects.requireNonNull(results[1]).value().value();
                     if (namespaceArray != null) {
                       updateNamespaceTable(namespaceArray);
                     }
@@ -611,6 +626,35 @@ public class OpcUaClient {
 
   public OpcUaClientConfig getConfig() {
     return config;
+  }
+
+  /**
+   * Get the client certificate identity for the selected endpoint security policy.
+   *
+   * <p>The selected identity is cached by this client instance for the last requested security
+   * policy profile. This keeps SecureChannel and Session setup on the client consistent even when a
+   * selector is stateful.
+   *
+   * @param securityPolicyProfile the selected endpoint security-policy profile.
+   * @return the selected identity, or empty when no policy-aware identity source is configured.
+   * @throws UaException if identity selection fails while evaluating candidates.
+   */
+  public Optional<CertificateIdentity> getCertificateIdentity(
+      SecurityPolicyProfile securityPolicyProfile) throws UaException {
+
+    synchronized (certificateIdentityLock) {
+      if (!certificateIdentitySelected
+          || !securityPolicyProfile.equals(selectedCertificateIdentityProfile)) {
+        Optional<CertificateIdentity> selected =
+            config.getCertificateIdentity(securityPolicyProfile);
+
+        selectedCertificateIdentity = selected.orElse(null);
+        selectedCertificateIdentityProfile = securityPolicyProfile;
+        certificateIdentitySelected = true;
+      }
+
+      return Optional.ofNullable(selectedCertificateIdentity);
+    }
   }
 
   public OpcClientTransport getTransport() {
@@ -798,8 +842,11 @@ public class OpcUaClient {
               CompletableFuture<String[]> namespaceArray =
                   sendRequestAsync(readRequest)
                       .thenApply(ReadResponse.class::cast)
-                      .thenApply(response -> Objects.requireNonNull(response.getResults()))
-                      .thenApply(results -> (String[]) results[0].value().value());
+                      .thenApply(
+                          response -> {
+                            DataValue[] results = Objects.requireNonNull(response.getResults());
+                            return (String[]) Objects.requireNonNull(results[0]).value().value();
+                          });
 
               return namespaceArray
                   .thenAccept(this::updateNamespaceTable)
@@ -863,8 +910,11 @@ public class OpcUaClient {
               CompletableFuture<String[]> serverArray =
                   sendRequestAsync(readRequest)
                       .thenApply(ReadResponse.class::cast)
-                      .thenApply(response -> Objects.requireNonNull(response.getResults()))
-                      .thenApply(results -> (String[]) results[0].value().value());
+                      .thenApply(
+                          response -> {
+                            DataValue[] results = Objects.requireNonNull(response.getResults());
+                            return (String[]) Objects.requireNonNull(results[0]).value().value();
+                          });
 
               return serverArray
                   .thenAccept(this::updateServerTable)
