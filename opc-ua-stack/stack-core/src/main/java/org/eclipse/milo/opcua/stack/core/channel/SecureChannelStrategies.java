@@ -163,19 +163,25 @@ final class SecureChannelStrategies {
     };
   }
 
-  /** Authenticates OpenSecureChannel chunks with the local private key and the peer certificate. */
+  /**
+   * Authenticates OpenSecureChannel chunks with the local private key and the peer certificate.
+   *
+   * <p>The signed input is accepted as one or more buffers because SecureChannel-enhancement
+   * profiles bind the first response signature to both the response bytes and the first request
+   * signature.
+   */
   interface AuthenticationStrategy {
 
     /** Produces the signature bytes appended to an outgoing OpenSecureChannel chunk. */
-    byte[] sign(SecurityPolicyProfile profile, PrivateKey privateKey, ByteBuffer chunkNioBuffer)
+    byte[] sign(SecurityPolicyProfile profile, PrivateKey privateKey, ByteBuffer... signedBytes)
         throws UaException;
 
     /** Verifies the signature bytes read from an incoming OpenSecureChannel chunk. */
     void verify(
         SecurityPolicyProfile profile,
         Certificate certificate,
-        ByteBuffer signedBytes,
-        byte[] signatureBytes)
+        byte[] signatureBytes,
+        ByteBuffer... signedBytes)
         throws UaException;
 
     /** Returns the fixed signature length used by this profile and certificate. */
@@ -341,7 +347,7 @@ final class SecureChannelStrategies {
 
     @Override
     public byte[] sign(
-        SecurityPolicyProfile profile, PrivateKey privateKey, ByteBuffer chunkNioBuffer) {
+        SecurityPolicyProfile profile, PrivateKey privateKey, ByteBuffer... signedBytes) {
       return new byte[0];
     }
 
@@ -349,8 +355,8 @@ final class SecureChannelStrategies {
     public void verify(
         SecurityPolicyProfile profile,
         Certificate certificate,
-        ByteBuffer signedBytes,
-        byte[] signatureBytes) {}
+        byte[] signatureBytes,
+        ByteBuffer... signedBytes) {}
 
     @Override
     public int signatureSize(Certificate certificate) {
@@ -362,18 +368,18 @@ final class SecureChannelStrategies {
 
     @Override
     public byte[] sign(
-        SecurityPolicyProfile profile, PrivateKey privateKey, ByteBuffer chunkNioBuffer)
+        SecurityPolicyProfile profile, PrivateKey privateKey, ByteBuffer... signedBytes)
         throws UaException {
 
-      return SignatureUtil.sign(profile.asymmetricSignatureAlgorithm(), privateKey, chunkNioBuffer);
+      return SignatureUtil.sign(profile.asymmetricSignatureAlgorithm(), privateKey, signedBytes);
     }
 
     @Override
     public void verify(
         SecurityPolicyProfile profile,
         Certificate certificate,
-        ByteBuffer signedBytes,
-        byte[] signatureBytes)
+        byte[] signatureBytes,
+        ByteBuffer... signedBytes)
         throws UaException {
 
       try {
@@ -381,7 +387,10 @@ final class SecureChannelStrategies {
             Signature.getInstance(profile.asymmetricSignatureAlgorithm().getTransformation());
 
         signature.initVerify(certificate);
-        signature.update(signedBytes);
+
+        for (ByteBuffer signedByteBuffer : signedBytes) {
+          signature.update(signedByteBuffer);
+        }
 
         if (!signature.verify(signatureBytes)) {
           throw new UaException(StatusCodes.Bad_SecurityChecksFailed, "could not verify signature");
@@ -405,19 +414,19 @@ final class SecureChannelStrategies {
 
     @Override
     public byte[] sign(
-        SecurityPolicyProfile profile, PrivateKey privateKey, ByteBuffer chunkNioBuffer)
+        SecurityPolicyProfile profile, PrivateKey privateKey, ByteBuffer... signedBytes)
         throws UaException {
 
       return EccSignatureUtil.signEcdsaP256Sha256P1363(
-          resolveProviderProfile(profile), privateKey, chunkNioBuffer);
+          resolveProviderProfile(profile), privateKey, signedBytes);
     }
 
     @Override
     public void verify(
         SecurityPolicyProfile profile,
         Certificate certificate,
-        ByteBuffer signedBytes,
-        byte[] signatureBytes)
+        byte[] signatureBytes,
+        ByteBuffer... signedBytes)
         throws UaException {
 
       EccSignatureUtil.verifyEcdsaP256Sha256P1363(
@@ -434,19 +443,18 @@ final class SecureChannelStrategies {
 
     @Override
     public byte[] sign(
-        SecurityPolicyProfile profile, PrivateKey privateKey, ByteBuffer chunkNioBuffer)
+        SecurityPolicyProfile profile, PrivateKey privateKey, ByteBuffer... signedBytes)
         throws UaException {
 
-      return EccSignatureUtil.signEd25519(
-          resolveProviderProfile(profile), privateKey, chunkNioBuffer);
+      return EccSignatureUtil.signEd25519(resolveProviderProfile(profile), privateKey, signedBytes);
     }
 
     @Override
     public void verify(
         SecurityPolicyProfile profile,
         Certificate certificate,
-        ByteBuffer signedBytes,
-        byte[] signatureBytes)
+        byte[] signatureBytes,
+        ByteBuffer... signedBytes)
         throws UaException {
 
       EccSignatureUtil.verifyEd25519(
@@ -464,7 +472,7 @@ final class SecureChannelStrategies {
 
     @Override
     public byte[] sign(
-        SecurityPolicyProfile profile, PrivateKey privateKey, ByteBuffer chunkNioBuffer)
+        SecurityPolicyProfile profile, PrivateKey privateKey, ByteBuffer... signedBytes)
         throws UaException {
 
       throw unsupported(profile, "authentication axis");
@@ -474,8 +482,8 @@ final class SecureChannelStrategies {
     public void verify(
         SecurityPolicyProfile profile,
         Certificate certificate,
-        ByteBuffer signedBytes,
-        byte[] signatureBytes)
+        byte[] signatureBytes,
+        ByteBuffer... signedBytes)
         throws UaException {
 
       throw unsupported(profile, "authentication axis");

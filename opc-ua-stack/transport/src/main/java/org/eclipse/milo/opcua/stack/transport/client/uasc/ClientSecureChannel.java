@@ -42,6 +42,7 @@ public class ClientSecureChannel extends DefaultAttributeMap implements SecureCh
   private volatile ChannelSecurity channelSecurity;
   private volatile ByteString localNonce = ByteString.NULL_VALUE;
   private volatile ByteString remoteNonce = ByteString.NULL_VALUE;
+  private volatile ByteString channelThumbprint = ByteString.NULL_VALUE;
 
   private final KeyPair keyPair;
   private final X509Certificate localCertificate;
@@ -92,6 +93,16 @@ public class ClientSecureChannel extends DefaultAttributeMap implements SecureCh
 
   public void setRemoteNonce(ByteString remoteNonce) {
     this.remoteNonce = remoteNonce;
+  }
+
+  /**
+   * Store the SecureChannel-enhancement thumbprint produced by the first OpenSecureChannel
+   * response.
+   *
+   * @param channelThumbprint the channel thumbprint used by later session signatures.
+   */
+  public void setChannelThumbprint(ByteString channelThumbprint) {
+    this.channelThumbprint = channelThumbprint;
   }
 
   public Channel getChannel() {
@@ -151,6 +162,11 @@ public class ClientSecureChannel extends DefaultAttributeMap implements SecureCh
   @Override
   public ChannelSecurity getChannelSecurity() {
     return channelSecurity;
+  }
+
+  @Override
+  public ByteString getChannelThumbprint() {
+    return channelThumbprint;
   }
 
   @Override

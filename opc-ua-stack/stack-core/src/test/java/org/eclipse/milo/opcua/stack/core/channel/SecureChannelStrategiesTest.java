@@ -20,6 +20,7 @@ import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.security.KeyPair;
 import java.security.PublicKey;
+import java.security.cert.X509Certificate;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
@@ -27,6 +28,8 @@ import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.util.PShaUtil;
+import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
+import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
 import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -237,6 +240,45 @@ class SecureChannelStrategiesTest {
     assertTrue(encoder.isSecureChannelRenewalRequired(channel));
   }
 
+  // SecureChannelEnhancements sign the first OpenSecureChannel response over its own bytes plus the
+  // request signature; verifying only the response bytes recreates the interop failure.
+  @ParameterizedTest
+  @EnumSource(
+      value = SecurityPolicy.class,
+      names = {"ECC_nistP256_AesGcm", "ECC_curve25519_ChaChaPoly"})
+  void asymmetricAuthenticationBindsAdditionalOpenSecureChannelBytes(SecurityPolicy securityPolicy)
+      throws Exception {
+
+    SecurityPolicyProfile profile = securityPolicy.getProfile();
+    KeyPair keyPair = applicationKeyPair(securityPolicy);
+    X509Certificate certificate = applicationCertificate(keyPair);
+
+    ByteBuffer responseBytes = ByteBuffer.wrap(new byte[] {0x01, 0x02, 0x03});
+    ByteBuffer requestSignature = ByteBuffer.wrap(new byte[] {0x04, 0x05});
+
+    byte[] signature =
+        SecureChannelStrategies.authentication(profile)
+            .sign(profile, keyPair.getPrivate(), responseBytes, requestSignature);
+
+    SecureChannelStrategies.authentication(profile)
+        .verify(
+            profile,
+            certificate,
+            signature,
+            ByteBuffer.wrap(new byte[] {0x01, 0x02, 0x03}),
+            ByteBuffer.wrap(new byte[] {0x04, 0x05}));
+
+    assertThrows(
+        UaException.class,
+        () ->
+            SecureChannelStrategies.authentication(profile)
+                .verify(
+                    profile,
+                    certificate,
+                    signature,
+                    ByteBuffer.wrap(new byte[] {0x01, 0x02, 0x03})));
+  }
+
   private static ByteString nonce(int length, int seed) {
     byte[] bytes = new byte[length];
     for (int i = 0; i < bytes.length; i++) {
@@ -255,6 +297,23 @@ class SecureChannelStrategiesTest {
     return new ChannelSecurity.SecurityKeys(
         new ChannelSecurity.SecretKeys(empty, empty, empty),
         new ChannelSecurity.SecretKeys(empty, empty, empty));
+  }
+
+  private static KeyPair applicationKeyPair(SecurityPolicy securityPolicy) throws Exception {
+    return switch (securityPolicy.getProfile().authAxis()) {
+      case ECDSA_NIST_P256_SHA256 -> SelfSignedCertificateGenerator.generateNistP256KeyPair();
+      case ED25519 -> SelfSignedCertificateGenerator.generateEd25519KeyPair();
+      default -> throw new IllegalArgumentException("securityPolicy: " + securityPolicy);
+    };
+  }
+
+  private static X509Certificate applicationCertificate(KeyPair keyPair) throws Exception {
+    return SelfSignedCertificateBuilder.forEccApplicationCertificate(keyPair)
+        .setCommonName("SecureChannelStrategiesTest")
+        .setOrganization("Eclipse Milo")
+        .setApplicationUri("urn:eclipse:milo:test")
+        .addDnsName("localhost")
+        .build();
   }
 
   private static void setNonLegacyLastSequenceNumber(ChunkEncoder encoder, long lastSequenceNumber)

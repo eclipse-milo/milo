@@ -101,6 +101,7 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
   // installSecurityToken() consumes it to derive symmetric keys, then clears the reference because
   // each Issue/Renew exchange must use fresh ephemeral key material.
   private volatile KeyPair localEphemeralKeyPair;
+  private volatile byte[] openSecureChannelIssueRequestSignature;
 
   private ClientSecureChannel secureChannel;
 
@@ -414,8 +415,15 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
       ByteBuf messageBuffer = null;
 
       try {
+        boolean initialIssueResponse =
+            secureChannel.getChannelId() == 0L
+                && secureChannel.getSecurityPolicyProfile().secureChannelEnhancements();
+
         DecodedMessage decodedMessage =
-            chunkDecoder.decodeAsymmetric(secureChannel, buffersToDecode);
+            chunkDecoder.decodeAsymmetric(
+                secureChannel,
+                buffersToDecode,
+                initialIssueResponse ? openSecureChannelIssueRequestSignature : null);
 
         messageBuffer = decodedMessage.getMessage();
 
@@ -430,6 +438,16 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
           logger.debug("Received OpenSecureChannelResponse.");
 
           secureChannel.setChannelId(response.getSecurityToken().getChannelId().longValue());
+
+          if (initialIssueResponse) {
+            byte[] signature = decodedMessage.getSignature();
+            if (signature == null) {
+              throw new UaException(
+                  StatusCodes.Bad_SecurityChecksFailed,
+                  "missing OpenSecureChannel response signature");
+            }
+            secureChannel.setChannelThumbprint(ByteString.of(signature));
+          }
 
           installSecurityToken(ctx, response);
 
@@ -653,6 +671,16 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
       EncodedMessage encodedMessage =
           chunkEncoder.encodeAsymmetric(
               secureChannel, requestIdSupplier.get(), messageBuffer, MessageType.OpenSecureChannel);
+
+      if (requestType == SecurityTokenRequestType.Issue
+          && secureChannel.getSecurityPolicyProfile().secureChannelEnhancements()) {
+        openSecureChannelIssueRequestSignature = encodedMessage.getSignature();
+        if (openSecureChannelIssueRequestSignature == null) {
+          throw new UaException(
+              StatusCodes.Bad_SecurityChecksFailed, "missing OpenSecureChannel request signature");
+        }
+        secureChannel.setChannelThumbprint(ByteString.NULL_VALUE);
+      }
 
       CompositeByteBuf chunkComposite = BufferUtil.compositeBuffer();
 

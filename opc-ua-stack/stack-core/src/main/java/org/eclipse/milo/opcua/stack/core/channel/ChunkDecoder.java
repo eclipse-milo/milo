@@ -28,6 +28,7 @@ import org.eclipse.milo.opcua.stack.core.channel.messages.ErrorMessage;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.util.BufferUtil;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,7 +74,29 @@ public final class ChunkDecoder {
   public DecodedMessage decodeAsymmetric(SecureChannel channel, List<ByteBuf> chunkBuffers)
       throws MessageAbortException, MessageDecodeException {
 
-    return decode(asymmetricDecoder, channel, chunkBuffers);
+    return decodeAsymmetric(channel, chunkBuffers, null);
+  }
+
+  /**
+   * Decodes one OpenSecureChannel message and, when supplied, appends extra bytes to the
+   * application-signature verification input.
+   *
+   * <p>The extra bytes are not part of the encoded chunk. They are the peer bytes that
+   * SecureChannel-enhancement profiles require the asymmetric signature to cover, such as the first
+   * OpenSecureChannel request signature when verifying the first response.
+   *
+   * @param channel the SecureChannel state used for certificates, policy, and nonces.
+   * @param chunkBuffers the chunk buffers that make up one OpenSecureChannel message.
+   * @param additionalSignedBytes extra bytes expected after the chunk bytes in the signature input.
+   * @return the decoded message and the last asymmetric signature, when one was present.
+   * @throws MessageAbortException if the peer sent an abort chunk.
+   * @throws MessageDecodeException if framing, decryption, or signature verification fails.
+   */
+  public DecodedMessage decodeAsymmetric(
+      SecureChannel channel, List<ByteBuf> chunkBuffers, byte @Nullable [] additionalSignedBytes)
+      throws MessageAbortException, MessageDecodeException {
+
+    return decode(asymmetricDecoder, channel, chunkBuffers, additionalSignedBytes);
   }
 
   /**
@@ -92,17 +115,20 @@ public final class ChunkDecoder {
       throw new MessageDecodeException(e);
     }
 
-    return decode(symmetricDecoder, channel, chunkBuffers);
+    return decode(symmetricDecoder, channel, chunkBuffers, null);
   }
 
   private static DecodedMessage decode(
-      AbstractDecoder decoder, SecureChannel channel, List<ByteBuf> chunkBuffers)
+      AbstractDecoder decoder,
+      SecureChannel channel,
+      List<ByteBuf> chunkBuffers,
+      byte @Nullable [] additionalSignedBytes)
       throws MessageAbortException, MessageDecodeException {
 
     CompositeByteBuf composite = BufferUtil.compositeBuffer();
 
     try {
-      return decoder.decode(channel, composite, chunkBuffers);
+      return decoder.decode(channel, composite, chunkBuffers, additionalSignedBytes);
     } catch (MessageAbortException e) {
       ReferenceCountUtil.safeRelease(composite);
       chunkBuffers.forEach(ReferenceCountUtil::safeRelease);
@@ -146,10 +172,12 @@ public final class ChunkDecoder {
 
     private final ByteBuf message;
     private final long requestId;
+    private final byte @Nullable [] signature;
 
-    private DecodedMessage(ByteBuf message, long requestId) {
+    private DecodedMessage(ByteBuf message, long requestId, byte @Nullable [] signature) {
       this.message = message;
       this.requestId = requestId;
+      this.signature = signature;
     }
 
     public ByteBuf getMessage() {
@@ -159,6 +187,18 @@ public final class ChunkDecoder {
     public long getRequestId() {
       return requestId;
     }
+
+    /**
+     * Returns the last application-signature bytes read from this message.
+     *
+     * <p>OpenSecureChannel issue/response handlers keep this value as the SecureChannel-enhancement
+     * binding input. Symmetric and unsigned messages return {@code null}.
+     *
+     * @return the last asymmetric signature, or {@code null}.
+     */
+    public byte @Nullable [] getSignature() {
+      return signature;
+    }
   }
 
   private abstract class AbstractDecoder {
@@ -166,7 +206,10 @@ public final class ChunkDecoder {
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     DecodedMessage decode(
-        SecureChannel channel, CompositeByteBuf composite, List<ByteBuf> chunkBuffers)
+        SecureChannel channel,
+        CompositeByteBuf composite,
+        List<ByteBuf> chunkBuffers,
+        byte @Nullable [] additionalSignedBytes)
         throws MessageAbortException, UaException {
 
       int cipherTextBlockSize = getCipherTextBlockSize(channel);
@@ -177,6 +220,7 @@ public final class ChunkDecoder {
       boolean aead = encrypted && isAead(channel);
 
       long requestId = -1L;
+      byte[] lastSignature = null;
 
       for (ByteBuf chunkBuffer : chunkBuffers) {
         final char chunkType = (char) chunkBuffer.getByte(3);
@@ -193,7 +237,7 @@ public final class ChunkDecoder {
         chunkBuffer.readerIndex(0);
 
         if (signed && !aead) {
-          verifyChunk(channel, chunkBuffer);
+          lastSignature = verifyChunk(channel, chunkBuffer, additionalSignedBytes);
         }
 
         final int paddingOverhead =
@@ -257,7 +301,7 @@ public final class ChunkDecoder {
         throw new UaException(StatusCodes.Bad_TcpMessageTooLarge, errorMessage);
       }
 
-      return new DecodedMessage(composite, requestId);
+      return new DecodedMessage(composite, requestId, lastSignature);
     }
 
     private void decryptChunk(SecureChannel channel, ByteBuf chunkBuffer) throws UaException {
@@ -309,7 +353,8 @@ public final class ChunkDecoder {
 
     protected abstract int getSignatureSize(SecureChannel channel);
 
-    protected abstract void verifyChunk(SecureChannel channel, ByteBuf chunkBuffer)
+    protected abstract byte[] verifyChunk(
+        SecureChannel channel, ByteBuf chunkBuffer, byte @Nullable [] additionalSignedBytes)
         throws UaException;
 
     protected abstract int getPaddingOverhead(SecureChannel channel, int cipherTextBlockSize);
@@ -360,7 +405,9 @@ public final class ChunkDecoder {
     }
 
     @Override
-    public void verifyChunk(SecureChannel channel, ByteBuf chunkBuffer) throws UaException {
+    public byte[] verifyChunk(
+        SecureChannel channel, ByteBuf chunkBuffer, byte @Nullable [] additionalSignedBytes)
+        throws UaException {
       int signatureSize = channel.getRemoteAsymmetricSignatureSize();
 
       ByteBuffer signedBytes = chunkBuffer.nioBuffer(0, chunkBuffer.writerIndex() - signatureSize);
@@ -374,8 +421,12 @@ public final class ChunkDecoder {
           .verify(
               channel.getSecurityPolicyProfile(),
               channel.getRemoteCertificate(),
-              signedBytes,
-              signatureBytes);
+              signatureBytes,
+              additionalSignedBytes != null && additionalSignedBytes.length > 0
+                  ? new ByteBuffer[] {signedBytes, ByteBuffer.wrap(additionalSignedBytes)}
+                  : new ByteBuffer[] {signedBytes});
+
+      return signatureBytes;
     }
 
     @Override
@@ -510,8 +561,12 @@ public final class ChunkDecoder {
     }
 
     @Override
-    public void verifyChunk(SecureChannel channel, ByteBuf chunkBuffer) throws UaException {
+    public byte[] verifyChunk(
+        SecureChannel channel, ByteBuf chunkBuffer, byte @Nullable [] additionalSignedBytes)
+        throws UaException {
       chunkProtection(channel).verify(channel, securityKeys, chunkBuffer);
+
+      return null;
     }
 
     @Override

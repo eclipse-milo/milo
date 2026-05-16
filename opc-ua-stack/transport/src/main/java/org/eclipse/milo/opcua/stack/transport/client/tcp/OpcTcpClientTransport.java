@@ -41,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.structured.CloseSecureChannelRequest;
@@ -70,6 +71,7 @@ public class OpcTcpClientTransport extends AbstractUascClientTransport {
   private final ChannelFsm channelFsm;
 
   private final OpcTcpClientTransportConfig config;
+  private volatile ClientSecureChannel secureChannel;
 
   public OpcTcpClientTransport(OpcTcpClientTransportConfig config) {
     super(config);
@@ -110,7 +112,19 @@ public class OpcTcpClientTransport extends AbstractUascClientTransport {
 
   @Override
   public CompletableFuture<Unit> disconnect() {
-    return channelFsm.disconnect().thenApply(v -> Unit.VALUE);
+    return channelFsm
+        .disconnect()
+        .thenApply(
+            v -> {
+              secureChannel = null;
+              return Unit.VALUE;
+            });
+  }
+
+  @Override
+  public ByteString getChannelThumbprint() {
+    ClientSecureChannel channel = secureChannel;
+    return channel != null ? channel.getChannelThumbprint() : ByteString.NULL_VALUE;
   }
 
   @Override
@@ -187,7 +201,11 @@ public class OpcTcpClientTransport extends AbstractUascClientTransport {
                 }
               });
 
-      return handshakeFuture.thenApply(ClientSecureChannel::getChannel);
+      return handshakeFuture.thenApply(
+          secureChannel -> {
+            OpcTcpClientTransport.this.secureChannel = secureChannel;
+            return secureChannel.getChannel();
+          });
     }
 
     @Override

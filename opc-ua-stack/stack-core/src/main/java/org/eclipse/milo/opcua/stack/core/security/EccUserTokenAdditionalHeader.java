@@ -24,6 +24,7 @@ import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgree
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
+import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AdditionalParametersType;
@@ -41,6 +42,10 @@ import org.jspecify.annotations.Nullable;
  * key as a signed {@link EphemeralKeyType} in the CreateSession response. The password itself is
  * not carried here; it remains in the opaque {@link EccEncryptedSecret} payload sent later in
  * ActivateSession.
+ *
+ * <p>The request identifies the desired ECDH policy by {@code ECDHPolicyUri}. The response carries
+ * only {@code ECDHKey}; servers may place a {@link StatusCode} in that parameter when they cannot
+ * create the key material.
  */
 public final class EccUserTokenAdditionalHeader {
 
@@ -215,6 +220,9 @@ public final class EccUserTokenAdditionalHeader {
   /**
    * Create the CreateSession response additional header containing the signed server ephemeral key.
    *
+   * <p>The response contains one {@code ECDHKey} parameter and does not echo the request's {@code
+   * ECDHPolicyUri}. Clients already know which user-token policy made this response expected.
+   *
    * @param context an encoding context.
    * @param securityPolicy the negotiated user-token security policy.
    * @param ephemeralKey the signed server ephemeral key.
@@ -235,9 +243,6 @@ public final class EccUserTokenAdditionalHeader {
         new AdditionalParametersType(
             new KeyValuePair[] {
               parameter(
-                  EccEncryptedSecret.ECDH_POLICY_URI_PARAMETER,
-                  Variant.ofString(securityPolicy.getUri())),
-              parameter(
                   EccEncryptedSecret.ECDH_KEY_PARAMETER, Variant.ofExtensionObject(ephemeralKeyXo))
             }));
   }
@@ -247,9 +252,10 @@ public final class EccUserTokenAdditionalHeader {
    *
    * @param context an encoding context.
    * @param additionalHeader the response additional header.
-   * @param expectedSecurityPolicy the expected user-token security policy.
+   * @param expectedSecurityPolicy the user-token policy that made ECC key material expected.
    * @return the signed key, or empty when no header was supplied.
-   * @throws UaException if the header is malformed or names the wrong policy.
+   * @throws UaException if the header is malformed or the server returned an {@code ECDHKey} status
+   *     code.
    */
   public static Optional<EphemeralKeyType> decodeResponse(
       EncodingContext context,
@@ -266,14 +272,6 @@ public final class EccUserTokenAdditionalHeader {
       return Optional.empty();
     }
 
-    Optional<Variant> policyUriValue =
-        parameterValue(additionalParameters.get(), EccEncryptedSecret.ECDH_POLICY_URI_PARAMETER);
-
-    if (policyUriValue.isEmpty()
-        || !expectedSecurityPolicy.getUri().equals(policyUriValue.get().getValue())) {
-      throw new UaException(StatusCodes.Bad_SecurityPolicyRejected);
-    }
-
     Optional<Variant> keyValue =
         parameterValue(additionalParameters.get(), EccEncryptedSecret.ECDH_KEY_PARAMETER);
 
@@ -283,6 +281,10 @@ public final class EccUserTokenAdditionalHeader {
     }
 
     Object value = keyValue.get().getValue();
+    if (value instanceof StatusCode statusCode) {
+      throw new UaException(statusCode.getValue());
+    }
+
     if (value instanceof EphemeralKeyType ephemeralKey) {
       return Optional.of(ephemeralKey);
     }

@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.netty.channel.Channel;
 import java.net.ServerSocket;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
@@ -33,6 +34,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfigBuilder;
+import org.eclipse.milo.opcua.sdk.client.SessionActivityListener;
+import org.eclipse.milo.opcua.sdk.client.UaSession;
 import org.eclipse.milo.opcua.sdk.client.identity.AnonymousProvider;
 import org.eclipse.milo.opcua.sdk.client.identity.IdentityProvider;
 import org.eclipse.milo.opcua.sdk.client.identity.UsernameProvider;
@@ -66,12 +69,21 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
+import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransport;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransportConfigBuilder;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransport;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransportConfig;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransportConfigBuilder;
 import org.junit.jupiter.api.Test;
 
+/**
+ * End-to-end ECC session coverage through the Milo public client/server APIs.
+ *
+ * <p>These tests deliberately sit above the helper-unit tests: they prove that endpoint
+ * advertisement, SecureChannel issue/renew, CreateSession additional headers, ActivateSession
+ * signatures, user-token encryption, and basic service calls all agree across SDK and stack module
+ * boundaries.
+ */
 class EccSessionIntegrationTest {
 
   private static final String SERVER_URI = "urn:eclipse:milo:ecc-session-test:server";
@@ -86,6 +98,8 @@ class EccSessionIntegrationTest {
         SecurityPolicy.ECC_nistP256_AesGcm, NodeIds.EccNistP256ApplicationCertificateType);
   }
 
+  // The Curve25519 profile uses Ed25519, X25519, and ChaCha20-Poly1305 paths that the NIST case
+  // does not cover.
   @Test
   void activatesAnonymousSessionAndReadsWritesWithCurve25519ChaChaPoly() throws Exception {
     activatesAnonymousSessionAndReadsWrites(
@@ -121,6 +135,7 @@ class EccSessionIntegrationTest {
         SecurityPolicy.ECC_nistP256_AesGcm, NodeIds.EccNistP256ApplicationCertificateType);
   }
 
+  // Username-token encryption must work with the Curve25519 receiver-key and AEAD primitives too.
   @Test
   void activatesUsernameSessionAndReadsWritesWithCurve25519ChaChaPoly() throws Exception {
     activatesUsernameSessionAndReadsWrites(
@@ -156,6 +171,8 @@ class EccSessionIntegrationTest {
         SecurityPolicy.ECC_nistP256_AesGcm, NodeIds.EccNistP256ApplicationCertificateType);
   }
 
+  // Renewal is profile-sensitive because nonces, sequence numbers, and AEAD keys are all
+  // profile-specific.
   @Test
   void renewsSecureChannelWithActiveSessionWithCurve25519ChaChaPoly() throws Exception {
     renewsSecureChannelWithActiveSession(
@@ -189,6 +206,60 @@ class EccSessionIntegrationTest {
         assertTrue(
             clientKeysCreated.await(5, TimeUnit.SECONDS),
             "client did not observe SecureChannel renewal");
+        readWriteTestNode(client, running.namespaceIndex());
+      } finally {
+        disconnectQuietly(client);
+      }
+    }
+  }
+
+  // Reconnection reactivates the existing Session on a new SecureChannel; the ActivateSession
+  // signature must be verified against the new channel thumbprint, not the stale channel.
+  @Test
+  void reactivatesUsernameSessionOnNewSecureChannelWithNistP256AesGcm() throws Exception {
+    reactivatesUsernameSessionOnNewSecureChannel(
+        SecurityPolicy.ECC_nistP256_AesGcm, NodeIds.EccNistP256ApplicationCertificateType);
+  }
+
+  // The Curve25519 reactivation path protects against accidentally hard-coding NIST-only session
+  // signature or token-secret behavior.
+  @Test
+  void reactivatesUsernameSessionOnNewSecureChannelWithCurve25519ChaChaPoly() throws Exception {
+    reactivatesUsernameSessionOnNewSecureChannel(
+        SecurityPolicy.ECC_curve25519_ChaChaPoly, NodeIds.EccCurve25519ApplicationCertificateType);
+  }
+
+  private static void reactivatesUsernameSessionOnNewSecureChannel(
+      SecurityPolicy securityPolicy, NodeId certificateTypeId) throws Exception {
+
+    CountDownLatch sessionActive = new CountDownLatch(2);
+
+    try (RunningServer running = startSecureServer(securityPolicy, certificateTypeId, b -> {})) {
+      CertificateManager clientCertificateManager =
+          certificateManager(certificate(certificateTypeId, "client", CLIENT_URI));
+      OpcUaClient client =
+          createClient(
+              running,
+              securityPolicy,
+              new UsernameProvider(USERNAME, PASSWORD),
+              clientCertificateManager,
+              b -> {},
+              b -> {});
+      client.addSessionActivityListener(
+          new SessionActivityListener() {
+            @Override
+            public void onSessionActive(UaSession session) {
+              sessionActive.countDown();
+            }
+          });
+
+      try {
+        client.connect();
+        closeActiveTcpChannel(client);
+
+        assertTrue(
+            sessionActive.await(10, TimeUnit.SECONDS),
+            "session did not reactivate after channel drop");
         readWriteTestNode(client, running.namespaceIndex());
       } finally {
         disconnectQuietly(client);
@@ -512,6 +583,13 @@ class EccSessionIntegrationTest {
     } catch (Exception ignored) {
       // Best-effort cleanup; the test failure, if any, is already being reported.
     }
+  }
+
+  private static void closeActiveTcpChannel(OpcUaClient client) throws Exception {
+    OpcTcpClientTransport transport = (OpcTcpClientTransport) client.getTransport();
+    Channel channel = transport.getChannelFsm().getChannel().get(5, TimeUnit.SECONDS);
+
+    channel.close().sync();
   }
 
   private record RunningServer(

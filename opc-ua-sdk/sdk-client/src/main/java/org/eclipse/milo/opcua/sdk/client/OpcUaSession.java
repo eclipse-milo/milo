@@ -24,6 +24,7 @@ import org.jspecify.annotations.Nullable;
 public class OpcUaSession extends ConcurrentHashMap<String, Object> implements UaSession {
 
   private volatile ByteString serverNonce = ByteString.NULL_VALUE;
+  private volatile ByteString clientNonce = ByteString.NULL_VALUE;
   private volatile ByteString userTokenReceiverEccPublicKey = ByteString.NULL_VALUE;
   private volatile @Nullable StatusCode lastActivateSessionServiceResult;
 
@@ -100,6 +101,27 @@ public class OpcUaSession extends ConcurrentHashMap<String, Object> implements U
 
   public void setServerNonce(ByteString serverNonce) {
     this.serverNonce = serverNonce;
+  }
+
+  /**
+   * Get the client nonce originally sent in CreateSession.
+   *
+   * <p>ActivateSession signatures for SecureChannel-enhancement policies continue to include the
+   * CreateSession client nonce when the session is reactivated on a new SecureChannel.
+   *
+   * @return the CreateSession client nonce.
+   */
+  public ByteString getClientNonce() {
+    return clientNonce;
+  }
+
+  /**
+   * Store the client nonce used to create this session.
+   *
+   * @param clientNonce the CreateSession client nonce.
+   */
+  public void setClientNonce(ByteString clientNonce) {
+    this.clientNonce = clientNonce;
   }
 
   /**

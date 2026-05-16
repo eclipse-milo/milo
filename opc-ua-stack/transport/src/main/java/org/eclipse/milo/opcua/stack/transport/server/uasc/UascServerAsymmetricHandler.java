@@ -369,6 +369,7 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
 
         ByteBuf message;
         long requestId;
+        byte[] requestSignature;
 
         try {
           ChunkDecoder.DecodedMessage decodedMessage =
@@ -376,6 +377,7 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
 
           message = decodedMessage.getMessage();
           requestId = decodedMessage.getRequestId();
+          requestSignature = decodedMessage.getSignature();
         } catch (MessageAbortException e) {
           logger.warn(
               "Received message abort chunk; error={}, reason={}",
@@ -408,7 +410,7 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
             }
           }
 
-          sendOpenSecureChannelResponse(ctx, requestId, header, request);
+          sendOpenSecureChannelResponse(ctx, requestId, header, request, requestSignature);
         } catch (Throwable t) {
           logger.error("Error decoding OpenSecureChannelRequest", t);
 
@@ -425,7 +427,8 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
       ChannelHandlerContext ctx,
       long requestId,
       AsymmetricSecurityHeader header,
-      OpenSecureChannelRequest request) {
+      OpenSecureChannelRequest request,
+      byte[] requestSignature) {
 
     ByteBuf messageBuffer = BufferUtil.pooledBuffer();
 
@@ -437,9 +440,35 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
 
       checkMessageSize(messageBuffer);
 
+      byte[] additionalSignedBytes =
+          request.getRequestType() == SecurityTokenRequestType.Issue
+                  && secureChannel.getSecurityPolicyProfile().secureChannelEnhancements()
+              ? requestSignature
+              : null;
+
+      if (request.getRequestType() == SecurityTokenRequestType.Issue
+          && secureChannel.getSecurityPolicyProfile().secureChannelEnhancements()
+          && additionalSignedBytes == null) {
+        throw new UaException(
+            StatusCodes.Bad_SecurityChecksFailed, "missing OpenSecureChannel request signature");
+      }
+
       EncodedMessage encodedMessage =
           chunkEncoder.encodeAsymmetric(
-              secureChannel, requestId, messageBuffer, MessageType.OpenSecureChannel);
+              secureChannel,
+              requestId,
+              messageBuffer,
+              MessageType.OpenSecureChannel,
+              additionalSignedBytes);
+
+      if (additionalSignedBytes != null) {
+        byte[] signature = encodedMessage.getSignature();
+        if (signature == null) {
+          throw new UaException(
+              StatusCodes.Bad_SecurityChecksFailed, "missing OpenSecureChannel response signature");
+        }
+        secureChannel.setChannelThumbprint(ByteString.of(signature));
+      }
 
       if (!symmetricHandlerAdded) {
         var symmetricHandler =

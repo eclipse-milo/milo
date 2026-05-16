@@ -20,6 +20,7 @@ import java.util.concurrent.ScheduledFuture;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.OpcUaSession;
 import org.eclipse.milo.opcua.sdk.client.SessionActivityListener;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.util.Unit;
 
 public class SessionFsm {
@@ -132,6 +133,9 @@ public class SessionFsm {
 
   static final FsmContext.Key<SessionFuture> KEY_SESSION_FUTURE =
       new FsmContext.Key<>("sessionFuture", SessionFuture.class);
+
+  static final FsmContext.Key<ByteString> KEY_CREATE_SESSION_CLIENT_NONCE =
+      new FsmContext.Key<>("createSessionClientNonce", ByteString.class);
 
   static final FsmContext.Key<Long> KEY_KEEP_ALIVE_FAILURE_COUNT =
       new FsmContext.Key<>("keepAliveFailureCount", Long.class);

@@ -33,6 +33,7 @@ import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.Sequence
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.util.BufferUtil;
 import org.eclipse.milo.opcua.stack.core.util.LongSequence;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Encodes service payload bytes into OPC UA Secure Conversation chunks ready for transport.
@@ -87,7 +88,36 @@ public final class ChunkEncoder {
       SecureChannel channel, long requestId, ByteBuf messageBuffer, MessageType messageType)
       throws MessageEncodeException {
 
-    return encode(asymmetricEncoder, channel, requestId, messageBuffer, messageType);
+    return encodeAsymmetric(channel, requestId, messageBuffer, messageType, null);
+  }
+
+  /**
+   * Encodes an OpenSecureChannel message and, when supplied, appends extra bytes to the
+   * application-signature input.
+   *
+   * <p>The extra bytes are not written into the chunk. They are only included in the signature
+   * calculation used by SecureChannel-enhancement profiles, where the first OpenSecureChannel
+   * response signs both the response chunk bytes and the first request signature.
+   *
+   * @param channel the SecureChannel state used for certificates, policy, and nonces.
+   * @param requestId the UASC request id written into the SequenceHeader.
+   * @param messageBuffer the encoded OpenSecureChannel service payload.
+   * @param messageType the Secure Conversation message type.
+   * @param additionalSignedBytes extra bytes to include after the chunk bytes in the signature
+   *     input.
+   * @return the encoded chunks and the last asymmetric signature, when one was produced.
+   * @throws MessageEncodeException if chunk framing or protection fails.
+   */
+  public EncodedMessage encodeAsymmetric(
+      SecureChannel channel,
+      long requestId,
+      ByteBuf messageBuffer,
+      MessageType messageType,
+      byte @Nullable [] additionalSignedBytes)
+      throws MessageEncodeException {
+
+    return encode(
+        asymmetricEncoder, channel, requestId, messageBuffer, messageType, additionalSignedBytes);
   }
 
   /**
@@ -100,7 +130,7 @@ public final class ChunkEncoder {
       SecureChannel channel, long requestId, ByteBuf messageBuffer, MessageType messageType)
       throws MessageEncodeException {
 
-    return encode(symmetricEncoder, channel, requestId, messageBuffer, messageType);
+    return encode(symmetricEncoder, channel, requestId, messageBuffer, messageType, null);
   }
 
   private EncodedMessage encode(
@@ -108,13 +138,15 @@ public final class ChunkEncoder {
       SecureChannel channel,
       long requestId,
       ByteBuf messageBuffer,
-      MessageType messageType)
+      MessageType messageType,
+      byte @Nullable [] additionalSignedBytes)
       throws MessageEncodeException {
 
     List<ByteBuf> chunks = new ArrayList<>();
 
     try {
-      return encoder.encode(chunks, channel, requestId, messageBuffer, messageType);
+      return encoder.encode(
+          chunks, channel, requestId, messageBuffer, messageType, additionalSignedBytes);
     } catch (UaException e) {
       chunks.forEach(ReferenceCountUtil::safeRelease);
 
@@ -157,7 +189,8 @@ public final class ChunkEncoder {
         SecureChannel channel,
         long requestId,
         ByteBuf messageBuffer,
-        MessageType messageType)
+        MessageType messageType,
+        byte @Nullable [] additionalSignedBytes)
         throws UaException {
 
       boolean encrypted = isEncryptionEnabled(channel);
@@ -177,6 +210,8 @@ public final class ChunkEncoder {
       int maxBodySize = maxPlainTextSize - SEQUENCE_HEADER_SIZE - paddingOverhead - signatureSize;
 
       assert (maxPlainTextSize + securityHeaderSize + SECURE_MESSAGE_HEADER_SIZE <= maxChunkSize);
+
+      byte[] lastSignature = null;
 
       while (messageBuffer.readableBytes() > 0) {
         int bodySize = Math.min(messageBuffer.readableBytes(), maxBodySize);
@@ -243,7 +278,9 @@ public final class ChunkEncoder {
         if (isSigningEnabled(channel) && !aead) {
           ByteBuffer chunkNioBuffer = chunkBuffer.nioBuffer(0, chunkBuffer.writerIndex());
 
-          byte[] signature = signChunk(channel, chunkNioBuffer);
+          byte[] signature = signChunk(channel, chunkNioBuffer, additionalSignedBytes);
+
+          lastSignature = signature;
 
           chunkBuffer.writeBytes(signature);
         }
@@ -297,7 +334,7 @@ public final class ChunkEncoder {
         chunkBuffer.readerIndex(0).writerIndex(chunkSize);
       }
 
-      return new EncodedMessage(chunks, requestId);
+      return new EncodedMessage(chunks, requestId, lastSignature);
     }
 
     private void encryptAeadChunk(
@@ -350,7 +387,8 @@ public final class ChunkEncoder {
       return nonLegacyLastSequenceNumber == -1L ? 0L : nonLegacyLastSequenceNumber;
     }
 
-    protected abstract byte[] signChunk(SecureChannel channel, ByteBuffer chunkNioBuffer)
+    protected abstract byte[] signChunk(
+        SecureChannel channel, ByteBuffer chunkNioBuffer, byte @Nullable [] additionalSignedBytes)
         throws UaException;
 
     protected abstract void encodeSecurityHeader(SecureChannel channel, ByteBuf buffer)
@@ -388,10 +426,13 @@ public final class ChunkEncoder {
 
     private final List<ByteBuf> messageChunks;
     private final long requestId;
+    private final byte @Nullable [] signature;
 
-    public EncodedMessage(List<ByteBuf> messageChunks, long requestId) {
+    public EncodedMessage(
+        List<ByteBuf> messageChunks, long requestId, byte @Nullable [] signature) {
       this.messageChunks = messageChunks;
       this.requestId = requestId;
+      this.signature = signature;
     }
 
     public List<ByteBuf> getMessageChunks() {
@@ -401,12 +442,36 @@ public final class ChunkEncoder {
     public long getRequestId() {
       return requestId;
     }
+
+    /**
+     * Returns the last application-signature bytes produced for this message.
+     *
+     * <p>OpenSecureChannel issue/response callers use this value as the SecureChannel-enhancement
+     * binding input. Symmetric and unsigned messages return {@code null}.
+     *
+     * @return the last asymmetric signature, or {@code null}.
+     */
+    public byte @Nullable [] getSignature() {
+      return signature;
+    }
   }
 
   private final class AsymmetricEncoder extends AbstractEncoder {
 
     @Override
-    public byte[] signChunk(SecureChannel channel, ByteBuffer chunkNioBuffer) throws UaException {
+    public byte[] signChunk(
+        SecureChannel channel, ByteBuffer chunkNioBuffer, byte @Nullable [] additionalSignedBytes)
+        throws UaException {
+
+      if (additionalSignedBytes != null && additionalSignedBytes.length > 0) {
+        return SecureChannelStrategies.authentication(channel.getSecurityPolicyProfile())
+            .sign(
+                channel.getSecurityPolicyProfile(),
+                channel.getKeyPair().getPrivate(),
+                chunkNioBuffer,
+                ByteBuffer.wrap(additionalSignedBytes));
+      }
+
       return SecureChannelStrategies.authentication(channel.getSecurityPolicyProfile())
           .sign(
               channel.getSecurityPolicyProfile(),
@@ -525,7 +590,10 @@ public final class ChunkEncoder {
     }
 
     @Override
-    public byte[] signChunk(SecureChannel channel, ByteBuffer chunkNioBuffer) throws UaException {
+    public byte[] signChunk(
+        SecureChannel channel, ByteBuffer chunkNioBuffer, byte @Nullable [] additionalSignedBytes)
+        throws UaException {
+
       return chunkProtection(channel).sign(channel, securityKeys, chunkNioBuffer);
     }
 

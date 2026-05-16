@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.stack.transport.client;
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
 import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.util.Unit;
 
 public interface OpcClientTransport {
@@ -23,6 +24,19 @@ public interface OpcClientTransport {
    * @return the {@link OpcClientTransportConfig} associated with this transport.
    */
   OpcClientTransportConfig getConfig();
+
+  /**
+   * Get the channel thumbprint established by the active SecureChannel.
+   *
+   * <p>Session code uses this value when SecureChannel-enhancement policies bind
+   * CreateSession/ActivateSession signatures to the channel that carried them. Transports without
+   * such a binding return {@link ByteString#NULL_VALUE}.
+   *
+   * @return the active SecureChannel thumbprint, or {@link ByteString#NULL_VALUE}.
+   */
+  default ByteString getChannelThumbprint() {
+    return ByteString.NULL_VALUE;
+  }
 
   /**
    * Connect this transport implementation.

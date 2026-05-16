@@ -69,6 +69,18 @@ public interface SecureChannel {
   ChannelSecurity getChannelSecurity();
 
   /**
+   * Returns the channel thumbprint established by SecureChannel-enhancement policies.
+   *
+   * <p>For OPC UA TCP, this is the signature from the first OpenSecureChannel response. Legacy
+   * policies and transports without a channel-bound signature return {@link ByteString#NULL_VALUE}.
+   *
+   * @return the negotiated channel thumbprint, or {@link ByteString#NULL_VALUE}.
+   */
+  default ByteString getChannelThumbprint() {
+    return ByteString.NULL_VALUE;
+  }
+
+  /**
    * Returns the keys used to protect chunks sent by the local endpoint under {@code securityKeys}.
    */
   SecretKeys getEncryptionKeys(SecurityKeys securityKeys);

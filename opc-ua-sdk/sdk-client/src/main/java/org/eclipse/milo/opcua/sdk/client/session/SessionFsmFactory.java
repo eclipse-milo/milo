@@ -14,6 +14,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_CHANNEL_FSM_TRANSITION_LISTENER;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_CLOSE_FUTURE;
+import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_CREATE_SESSION_CLIENT_NONCE;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_KEEP_ALIVE_FAILURE_COUNT;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_KEEP_ALIVE_SCHEDULED_FUTURE;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_SESSION;
@@ -32,7 +33,6 @@ import com.digitalpetri.fsm.dsl.ActionContext;
 import com.digitalpetri.fsm.dsl.FsmBuilder;
 import com.digitalpetri.netty.fsm.ChannelFsm;
 import com.google.common.collect.Streams;
-import com.google.common.primitives.Bytes;
 import io.netty.channel.Channel;
 import java.nio.ByteBuffer;
 import java.security.KeyPair;
@@ -62,6 +62,7 @@ import org.eclipse.milo.opcua.stack.core.*;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.security.CertificateIdentity;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
+import org.eclipse.milo.opcua.stack.core.security.ChannelBoundSignatureData;
 import org.eclipse.milo.opcua.stack.core.security.EccEncryptedSecret;
 import org.eclipse.milo.opcua.stack.core.security.EccSignatureUtil;
 import org.eclipse.milo.opcua.stack.core.security.EccUserTokenAdditionalHeader;
@@ -1134,6 +1135,9 @@ public class SessionFsmFactory {
     }
 
     ByteString clientNonce = NonceUtil.generateNonce(32);
+    // ActivateSession signatures keep using the CreateSession client nonce, including later
+    // reactivation on a different SecureChannel.
+    KEY_CREATE_SESSION_CLIENT_NONCE.set(ctx, clientNonce);
 
     ByteString clientCertificate =
         certificateIdentity
@@ -1232,7 +1236,14 @@ public class SessionFsmFactory {
                   SignatureData serverSignature = response.getServerSignature();
 
                   byte[] dataBytes =
-                      Bytes.concat(clientCertificate.bytesOrEmpty(), clientNonce.bytesOrEmpty());
+                      ChannelBoundSignatureData.serverSignatureData(
+                          securityPolicy.getProfile(),
+                          client.getTransport().getChannelThumbprint(),
+                          clientNonce,
+                          certificateBytes(certificateFromEndpoint),
+                          clientCertificate,
+                          response.getServerNonce(),
+                          clientCertificate);
 
                   verifyApplicationSignature(
                       securityPolicy, serverCertificate, serverSignature, dataBytes);
@@ -1498,6 +1509,7 @@ public class SessionFsmFactory {
 
     try {
       EndpointDescription endpoint = client.getConfig().getEndpoint();
+      ByteString clientNonce = KEY_CREATE_SESSION_CLIENT_NONCE.get(ctx);
 
       ByteString csrNonce = csr.getServerNonce();
       Optional<SecurityPolicy> userTokenSecurityPolicy =
@@ -1524,7 +1536,7 @@ public class SessionFsmFactory {
       ActivateSessionRequest request =
           new ActivateSessionRequest(
               client.newRequestHeader(csr.getAuthenticationToken()),
-              buildClientSignature(client, csrNonce),
+              buildClientSignature(client, csr.getServerCertificate(), csrNonce, clientNonce),
               new SignedSoftwareCertificate[0],
               client.getConfig().getSessionLocaleIds(),
               ExtensionObject.encode(client.getStaticEncodingContext(), userIdentityToken),
@@ -1558,6 +1570,7 @@ public class SessionFsmFactory {
 
                 session.setLastActivateSessionServiceResult(
                     asr.getResponseHeader().getServiceResult());
+                session.setClientNonce(clientNonce);
                 session.setServerNonce(asrNonce);
                 receiverEccPublicKey.ifPresent(session::setUserTokenReceiverEccPublicKey);
 
@@ -1599,7 +1612,8 @@ public class SessionFsmFactory {
       var request =
           new ActivateSessionRequest(
               client.newRequestHeader(session.getAuthenticationToken()),
-              buildClientSignature(client, serverNonce),
+              buildClientSignature(
+                  client, session.getServerCertificate(), serverNonce, session.getClientNonce()),
               new SignedSoftwareCertificate[0],
               client.getConfig().getSessionLocaleIds(),
               ExtensionObject.encode(client.getStaticEncodingContext(), userIdentityToken),
@@ -1834,7 +1848,38 @@ public class SessionFsmFactory {
   }
 
   @SuppressWarnings("Duplicates")
-  private static SignatureData buildClientSignature(OpcUaClient client, ByteString serverNonce)
+  private static ByteString getClientCertificate(OpcUaClient client, SecurityPolicy securityPolicy)
+      throws UaException {
+
+    return client
+        .getCertificateIdentity(securityPolicy.getProfile())
+        .map(CertificateIdentity::certificate)
+        .or(() -> client.getConfig().getCertificate())
+        .map(
+            c -> {
+              try {
+                return ByteString.of(c.getEncoded());
+              } catch (CertificateEncodingException e) {
+                return ByteString.NULL_VALUE;
+              }
+            })
+        .orElse(ByteString.NULL_VALUE);
+  }
+
+  private static ByteString certificateBytes(X509Certificate certificate) throws UaException {
+    try {
+      return ByteString.of(certificate.getEncoded());
+    } catch (CertificateEncodingException e) {
+      throw new UaException(StatusCodes.Bad_CertificateInvalid, e);
+    }
+  }
+
+  @SuppressWarnings("Duplicates")
+  private static SignatureData buildClientSignature(
+      OpcUaClient client,
+      ByteString serverCertificate,
+      ByteString serverNonce,
+      ByteString clientNonce)
       throws Exception {
 
     OpcUaClientConfig config = client.getConfig();
@@ -1859,13 +1904,19 @@ public class SessionFsmFactory {
                       new UaException(
                           StatusCodes.Bad_ConfigurationError,
                           "client certificate identity is required for session signature"));
-      List<X509Certificate> serverCertificates =
-          CertificateUtil.decodeCertificates(endpoint.getServerCertificate().bytesOrEmpty());
+      ByteString clientCertificate = getClientCertificate(client, securityPolicy);
+      X509Certificate serverChannelCertificate =
+          CertificateUtil.decodeCertificate(endpoint.getServerCertificate().bytesOrEmpty());
 
-      // Signature data is serverCert + serverNonce signed with our private key.
-      byte[] serverNonceBytes = serverNonce.bytesOrEmpty();
-      byte[] serverCertificateBytes = serverCertificates.get(0).getEncoded();
-      byte[] dataToSign = Bytes.concat(serverCertificateBytes, serverNonceBytes);
+      byte[] dataToSign =
+          ChannelBoundSignatureData.clientSignatureData(
+              securityPolicy.getProfile(),
+              client.getTransport().getChannelThumbprint(),
+              serverNonce,
+              serverCertificate,
+              certificateBytes(serverChannelCertificate),
+              clientCertificate,
+              clientNonce);
 
       byte[] signature;
       String algorithmUri;
@@ -1874,7 +1925,7 @@ public class SessionFsmFactory {
         SecurityPolicyProfile profile = securityPolicy.getProfile();
 
         signature = EccSignatureUtil.sign(profile, privateKey, ByteBuffer.wrap(dataToSign));
-        algorithmUri = EccSignatureUtil.getSignatureAlgorithmUri(profile);
+        algorithmUri = null;
       } else {
         signature = SignatureUtil.sign(signatureAlgorithm, privateKey, ByteBuffer.wrap(dataToSign));
         algorithmUri = signatureAlgorithm.getUri();
@@ -1895,13 +1946,6 @@ public class SessionFsmFactory {
 
     if (algorithm == SecurityAlgorithm.None) {
       SecurityPolicyProfile profile = securityPolicy.getProfile();
-      String algorithmUri = EccSignatureUtil.getSignatureAlgorithmUri(profile);
-
-      if (!algorithmUri.equals(signature.getAlgorithm())) {
-        throw new UaException(
-            StatusCodes.Bad_SecurityChecksFailed,
-            "unexpected application signature algorithm: " + signature.getAlgorithm());
-      }
 
       EccSignatureUtil.verify(
           profile,

@@ -23,6 +23,15 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.jspecify.annotations.Nullable;
 
+/**
+ * Session-facing view of the SecureChannel security material used by the server SDK.
+ *
+ * <p>CreateSession and ActivateSession validation need a stable snapshot of the policy,
+ * certificates, key pair, and SecureChannel-enhancement thumbprint that were active on the channel
+ * carrying the service request. Reassociation can present a different channel from the one that
+ * originally created the session, so callers pass the candidate configuration into signature
+ * verification before moving the session onto that channel.
+ */
 public final class SecurityConfiguration {
 
   private final SecurityPolicy securityPolicy;
@@ -32,6 +41,7 @@ public final class SecurityConfiguration {
   private final List<X509Certificate> serverCertificateChain;
   private final X509Certificate clientCertificate;
   private final List<X509Certificate> clientCertificateChain;
+  private final ByteString channelThumbprint;
 
   public SecurityConfiguration(
       SecurityPolicy securityPolicy,
@@ -42,6 +52,27 @@ public final class SecurityConfiguration {
       @Nullable X509Certificate clientCertificate,
       @Nullable List<X509Certificate> clientCertificateChain) {
 
+    this(
+        securityPolicy,
+        securityMode,
+        keyPair,
+        serverCertificate,
+        serverCertificateChain,
+        clientCertificate,
+        clientCertificateChain,
+        ByteString.NULL_VALUE);
+  }
+
+  public SecurityConfiguration(
+      SecurityPolicy securityPolicy,
+      MessageSecurityMode securityMode,
+      @Nullable KeyPair keyPair,
+      @Nullable X509Certificate serverCertificate,
+      @Nullable List<X509Certificate> serverCertificateChain,
+      @Nullable X509Certificate clientCertificate,
+      @Nullable List<X509Certificate> clientCertificateChain,
+      ByteString channelThumbprint) {
+
     this.securityPolicy = securityPolicy;
     this.securityMode = securityMode;
     this.keyPair = keyPair;
@@ -49,6 +80,7 @@ public final class SecurityConfiguration {
     this.serverCertificateChain = serverCertificateChain;
     this.clientCertificate = clientCertificate;
     this.clientCertificateChain = clientCertificateChain;
+    this.channelThumbprint = channelThumbprint;
   }
 
   public SecurityPolicy getSecurityPolicy() {
@@ -98,6 +130,39 @@ public final class SecurityConfiguration {
 
   public ByteString getServerCertificateChainBytes() throws UaException {
     return getCertificateChainBytes(getServerCertificateChain());
+  }
+
+  /**
+   * Returns the server certificate bytes from the SecureChannel context.
+   *
+   * <p>For OPC UA TCP this is currently the endpoint leaf certificate. The explicit channel name
+   * keeps session signature code aligned with the SecureChannel-enhancement terminology, where the
+   * channel certificate and endpoint certificate may be reasoned about separately.
+   *
+   * @return the encoded server channel certificate, or {@link ByteString#NULL_VALUE}.
+   * @throws UaException if the certificate cannot be encoded.
+   */
+  public ByteString getServerChannelCertificateBytes() throws UaException {
+    return getServerCertificateBytes();
+  }
+
+  /**
+   * Returns the client certificate bytes from the SecureChannel context.
+   *
+   * @return the encoded client channel certificate, or {@link ByteString#NULL_VALUE}.
+   * @throws UaException if the certificate cannot be encoded.
+   */
+  public ByteString getClientChannelCertificateBytes() throws UaException {
+    return getClientCertificateBytes();
+  }
+
+  /**
+   * Returns the SecureChannel-enhancement thumbprint used by channel-bound session signatures.
+   *
+   * @return the active channel thumbprint, or {@link ByteString#NULL_VALUE}.
+   */
+  public ByteString getChannelThumbprint() {
+    return channelThumbprint;
   }
 
   private static ByteString getCertificateBytes(@Nullable X509Certificate certificate)

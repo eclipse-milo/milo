@@ -69,6 +69,7 @@ public class Session {
   private volatile Identity identity;
 
   private volatile ByteString lastNonce = ByteString.NULL_VALUE;
+  private volatile ByteString clientNonce = ByteString.NULL_VALUE;
   private volatile @Nullable KeyPair userTokenEphemeralKeyPair;
   private volatile ByteString userTokenEphemeralPublicKey = ByteString.NULL_VALUE;
 
@@ -293,8 +294,32 @@ public class Session {
     this.lastNonce = lastNonce;
   }
 
+  void setClientNonce(ByteString clientNonce) {
+    this.clientNonce = clientNonce;
+  }
+
+  /**
+   * Get the last server nonce issued for this session.
+   *
+   * <p>The value is the CreateSession nonce before first activation and then the newest
+   * ActivateSession nonce after each successful activation or reactivation.
+   *
+   * @return the latest server nonce issued to the client.
+   */
   public ByteString getLastNonce() {
     return lastNonce;
+  }
+
+  /**
+   * Get the client nonce from the original CreateSession request.
+   *
+   * <p>SecureChannel-enhancement ActivateSession signatures keep using this nonce when the session
+   * is later reactivated on a different SecureChannel.
+   *
+   * @return the CreateSession client nonce.
+   */
+  public ByteString getClientNonce() {
+    return clientNonce;
   }
 
   /**

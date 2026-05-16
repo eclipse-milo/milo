@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.stack.core.security;
 
+import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -20,7 +21,12 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
+import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
+import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.structured.AdditionalParametersType;
 import org.eclipse.milo.opcua.stack.core.types.structured.EphemeralKeyType;
+import org.eclipse.milo.opcua.stack.core.types.structured.KeyValuePair;
 import org.junit.jupiter.api.Test;
 
 class EccUserTokenAdditionalHeaderTest {
@@ -60,15 +66,38 @@ class EccUserTokenAdditionalHeaderTest {
             .orElseThrow());
   }
 
-  // A response for a different token policy must not be accepted for the selected policy.
+  // Part 6 defines ECDHPolicyUri as the request selector; interoperable servers return ECDHKey
+  // without echoing the selected policy URI.
   @Test
-  void decodeResponseRejectsWrongPolicy() throws Exception {
+  void createSessionResponseContainsOnlyEcdhKeyParameter() throws Exception {
     EphemeralKeyType ephemeralKey =
         new EphemeralKeyType(ByteString.of(new byte[] {0x01}), ByteString.of(new byte[] {0x02}));
 
     ExtensionObject additionalHeader =
         EccUserTokenAdditionalHeader.createResponse(
             DefaultEncodingContext.INSTANCE, SecurityPolicy.ECC_nistP256_AesGcm, ephemeralKey);
+
+    AdditionalParametersType parameters =
+        (AdditionalParametersType) additionalHeader.decode(DefaultEncodingContext.INSTANCE);
+    KeyValuePair[] keyValuePairs = requireNonNull(parameters.getParameters());
+
+    assertEquals(1, keyValuePairs.length);
+    assertEquals(
+        new QualifiedName(0, EccEncryptedSecret.ECDH_KEY_PARAMETER), keyValuePairs[0].getKey());
+  }
+
+  // The server reports an unsupported ECDH policy by returning a StatusCode under ECDHKey.
+  @Test
+  void decodeResponsePropagatesEcdhKeyStatusCode() {
+    ExtensionObject additionalHeader =
+        ExtensionObject.encode(
+            DefaultEncodingContext.INSTANCE,
+            new AdditionalParametersType(
+                new KeyValuePair[] {
+                  new KeyValuePair(
+                      new QualifiedName(0, EccEncryptedSecret.ECDH_KEY_PARAMETER),
+                      Variant.ofStatusCode(new StatusCode(StatusCodes.Bad_SecurityPolicyRejected)))
+                }));
 
     UaException exception =
         assertThrows(
@@ -77,11 +106,13 @@ class EccUserTokenAdditionalHeaderTest {
                 EccUserTokenAdditionalHeader.decodeResponse(
                     DefaultEncodingContext.INSTANCE,
                     additionalHeader,
-                    SecurityPolicy.ECC_curve25519_ChaChaPoly));
+                    SecurityPolicy.ECC_nistP256_AesGcm));
 
     assertEquals(StatusCodes.Bad_SecurityPolicyRejected, exception.getStatusCode().getValue());
   }
 
+  // Anonymous and non-ECC username-token paths do not negotiate ECDH material, so a missing header
+  // must be distinguishable from a malformed one.
   @Test
   void nullAdditionalHeaderDecodesAsEmpty() throws Exception {
     assertTrue(
@@ -89,6 +120,8 @@ class EccUserTokenAdditionalHeaderTest {
             .isEmpty());
   }
 
+  // Malformed AdditionalParametersType payloads must fail before ActivateSession encrypts or
+  // validates a username secret against an ambiguous receiver key.
   @Test
   void malformedAdditionalHeaderFailsWithDecodingError() {
     ExtensionObject additionalHeader =
