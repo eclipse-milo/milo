@@ -1,0 +1,346 @@
+/*
+ * Copyright (c) 2026 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
+package org.eclipse.milo.opcua.stack.core.security;
+
+import static java.util.Objects.requireNonNull;
+
+import java.security.GeneralSecurityException;
+import java.security.KeyPairGenerator;
+import java.security.Provider;
+import java.security.Security;
+import java.security.Signature;
+import java.security.spec.ECGenParameterSpec;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import javax.crypto.Cipher;
+import javax.crypto.KeyAgreement;
+import javax.crypto.Mac;
+import javax.crypto.SecretKeyFactory;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.ChunkProtectionAxis;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis;
+
+/**
+ * Resolves the provider profile that can satisfy a security policy.
+ *
+ * <p>The default resolver prefers Bouncy Castle for ECC policies and falls back to the built-in
+ * JDK/JCA providers when their primitives are available. Policies that do not require an ECC/AEAD
+ * provider profile resolve to {@link ProviderProfile#JDK}. Resolver instances are thread-safe and
+ * cache successful policy resolutions; create a new resolver after changing provider preferences or
+ * JVM provider configuration.
+ */
+public final class SecurityProviderResolver {
+
+  private static final String BC_PROVIDER_NAME = "BC";
+
+  private final List<ProviderProfile> providerProfiles;
+  private final ConcurrentMap<SecurityPolicy, ProviderProfile> profileCache =
+      new ConcurrentHashMap<>();
+
+  private SecurityProviderResolver(List<ProviderProfile> providerProfiles) {
+    this.providerProfiles = List.copyOf(requireNonNull(providerProfiles, "providerProfiles"));
+
+    for (ProviderProfile providerProfile : this.providerProfiles) {
+      requireNonNull(providerProfile, "providerProfile");
+    }
+  }
+
+  /**
+   * Create a resolver that prefers Bouncy Castle and then tries the built-in JDK/JCA providers.
+   *
+   * @return the default resolver.
+   */
+  public static SecurityProviderResolver create() {
+    return withProviderProfiles(List.of(ProviderProfile.BOUNCY_CASTLE, ProviderProfile.JDK));
+  }
+
+  /**
+   * Create a resolver with an explicit provider-profile preference order.
+   *
+   * @param providerProfiles the provider profiles to try, in order.
+   * @return a resolver that uses {@code providerProfiles}.
+   */
+  public static SecurityProviderResolver withProviderProfiles(
+      List<ProviderProfile> providerProfiles) {
+    return new SecurityProviderResolver(providerProfiles);
+  }
+
+  /**
+   * Resolve the provider profile that can satisfy {@code profile}.
+   *
+   * @param profile the security-policy profile to resolve.
+   * @return the provider profile to use.
+   * @throws UaException if no configured provider profile can satisfy {@code profile}.
+   */
+  public ProviderProfile resolve(SecurityPolicyProfile profile) throws UaException {
+    requireNonNull(profile, "profile");
+
+    SecurityPolicy securityPolicy = profile.securityPolicy();
+    ProviderProfile cached = profileCache.get(securityPolicy);
+
+    if (cached != null) {
+      return cached;
+    }
+
+    ProviderProfile resolved = find(profile);
+    ProviderProfile previous = profileCache.putIfAbsent(securityPolicy, resolved);
+
+    return previous != null ? previous : resolved;
+  }
+
+  private ProviderProfile find(SecurityPolicyProfile profile) throws UaException {
+    if (!needsNewProviderProfile(profile)) {
+      return ProviderProfile.JDK;
+    }
+
+    List<String> attempts = new ArrayList<>();
+
+    for (ProviderProfile providerProfile : providerProfiles) {
+      try {
+        validate(providerProfile, profile);
+
+        return providerProfile;
+      } catch (GeneralSecurityException | RuntimeException e) {
+        attempts.add(formatAttempt(providerProfile, e));
+      }
+    }
+
+    throw new UaException(
+        StatusCodes.Bad_ConfigurationError, unsupportedProfileMessage(profile, attempts));
+  }
+
+  private static boolean needsNewProviderProfile(SecurityPolicyProfile profile) {
+    return switch (profile.authAxis()) {
+      case ECDSA_NIST_P256_SHA256, ED25519 -> true;
+      default ->
+          switch (profile.keyAgreementAxis()) {
+            case ECDH_NIST_P256, X25519 -> true;
+            default ->
+                switch (profile.chunkProtectionAxis()) {
+                  case AES_GCM, CHACHA20_POLY1305 -> true;
+                  default -> false;
+                };
+          };
+    };
+  }
+
+  private static void validate(ProviderProfile providerProfile, SecurityPolicyProfile profile)
+      throws GeneralSecurityException {
+
+    switch (providerProfile) {
+      case BOUNCY_CASTLE -> validateBouncyCastle(profile);
+      case JDK -> validateJdk(profile);
+    }
+  }
+
+  private static void validateBouncyCastle(SecurityPolicyProfile profile)
+      throws GeneralSecurityException {
+
+    Provider provider = Security.getProvider(BC_PROVIDER_NAME);
+    if (provider == null) {
+      provider = new BouncyCastleProvider();
+    }
+
+    validateAuth(profile.authAxis(), ProviderProfile.BOUNCY_CASTLE, provider);
+    validateKeyAgreement(profile.keyAgreementAxis(), ProviderProfile.BOUNCY_CASTLE, provider);
+    validateHkdf(profile.keyAgreementAxis(), ProviderProfile.BOUNCY_CASTLE, provider);
+    validateChunkProtection(profile.chunkProtectionAxis(), ProviderProfile.BOUNCY_CASTLE, provider);
+  }
+
+  private static void validateJdk(SecurityPolicyProfile profile) throws GeneralSecurityException {
+    validateAuth(profile.authAxis(), ProviderProfile.JDK, null);
+    validateKeyAgreement(profile.keyAgreementAxis(), ProviderProfile.JDK, null);
+    validateHkdf(profile.keyAgreementAxis(), ProviderProfile.JDK, null);
+    validateChunkProtection(profile.chunkProtectionAxis(), ProviderProfile.JDK, null);
+  }
+
+  private static void validateAuth(
+      AuthAxis axis, ProviderProfile providerProfile, Provider provider)
+      throws GeneralSecurityException {
+
+    switch (axis) {
+      case ECDSA_NIST_P256_SHA256 -> {
+        if (providerProfile == ProviderProfile.BOUNCY_CASTLE) {
+          Signature.getInstance("SHA256WITHPLAIN-ECDSA", provider);
+          validateEcP256(provider);
+        } else {
+          requireJdkProvider(
+              "SHA256withECDSAinP1363Format",
+              p -> {
+                Signature.getInstance("SHA256withECDSAinP1363Format", p);
+                validateEcP256(p);
+              });
+        }
+      }
+      case ED25519 -> {
+        if (providerProfile == ProviderProfile.BOUNCY_CASTLE) {
+          Signature.getInstance("Ed25519", provider);
+          KeyPairGenerator.getInstance("Ed25519", provider);
+        } else {
+          requireJdkProvider(
+              "Ed25519",
+              p -> {
+                Signature.getInstance("Ed25519", p);
+                KeyPairGenerator.getInstance("Ed25519", p);
+              });
+        }
+      }
+      default -> {}
+    }
+  }
+
+  private static void validateKeyAgreement(
+      KeyAgreementAxis axis, ProviderProfile providerProfile, Provider provider)
+      throws GeneralSecurityException {
+
+    switch (axis) {
+      case ECDH_NIST_P256 -> {
+        if (providerProfile == ProviderProfile.BOUNCY_CASTLE) {
+          KeyAgreement.getInstance("ECDH", provider);
+          validateEcP256(provider);
+        } else {
+          requireJdkProvider(
+              "ECDH",
+              p -> {
+                KeyAgreement.getInstance("ECDH", p);
+                validateEcP256(p);
+              });
+        }
+      }
+      case X25519 -> {
+        if (providerProfile == ProviderProfile.BOUNCY_CASTLE) {
+          KeyAgreement.getInstance("X25519", provider);
+          KeyPairGenerator.getInstance("X25519", provider);
+        } else {
+          requireJdkProvider(
+              "X25519",
+              p -> {
+                KeyAgreement.getInstance("X25519", p);
+                KeyPairGenerator.getInstance("X25519", p);
+              });
+        }
+      }
+      default -> {}
+    }
+  }
+
+  private static void validateHkdf(
+      KeyAgreementAxis axis, ProviderProfile providerProfile, Provider provider)
+      throws GeneralSecurityException {
+
+    switch (axis) {
+      case ECDH_NIST_P256, X25519 -> {
+        if (providerProfile == ProviderProfile.BOUNCY_CASTLE) {
+          SecretKeyFactory.getInstance("HKDF-SHA256", provider);
+        } else {
+          requireJdkProvider("HmacSHA256", p -> Mac.getInstance("HmacSHA256", p));
+        }
+      }
+      default -> {}
+    }
+  }
+
+  private static void validateChunkProtection(
+      ChunkProtectionAxis axis, ProviderProfile providerProfile, Provider provider)
+      throws GeneralSecurityException {
+
+    switch (axis) {
+      case AES_GCM -> validateCipher("AES/GCM/NoPadding", providerProfile, provider);
+      case CHACHA20_POLY1305 -> validateCipher("ChaCha20-Poly1305", providerProfile, provider);
+      default -> {}
+    }
+  }
+
+  private static void validateCipher(
+      String transformation, ProviderProfile providerProfile, Provider provider)
+      throws GeneralSecurityException {
+
+    if (providerProfile == ProviderProfile.BOUNCY_CASTLE) {
+      Cipher.getInstance(transformation, provider);
+    } else {
+      requireJdkProvider(transformation, p -> Cipher.getInstance(transformation, p));
+    }
+  }
+
+  private static void validateEcP256(Provider provider) throws GeneralSecurityException {
+    KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC", provider);
+
+    keyPairGenerator.initialize(new ECGenParameterSpec("secp256r1"));
+  }
+
+  private static void requireJdkProvider(String name, ProviderCheck check)
+      throws GeneralSecurityException {
+
+    List<String> attempts = new ArrayList<>();
+
+    for (Provider provider : Security.getProviders()) {
+      if (!BC_PROVIDER_NAME.equals(provider.getName())) {
+        try {
+          check.check(provider);
+
+          return;
+        } catch (GeneralSecurityException | RuntimeException e) {
+          attempts.add(provider.getName() + ": " + e.getClass().getSimpleName());
+        }
+      }
+    }
+
+    throw new GeneralSecurityException(
+        "no built-in JDK/JCA provider for " + name + "; attempted " + attempts);
+  }
+
+  private String unsupportedProfileMessage(SecurityPolicyProfile profile, List<String> attempts) {
+    StringBuilder message =
+        new StringBuilder()
+            .append("no provider profile found for ")
+            .append(profile.securityPolicy().getUri());
+
+    if (providerProfiles.isEmpty()) {
+      message.append("; configured provider profiles: <none>");
+    } else {
+      message.append("; configured provider profiles: ").append(providerProfiles);
+    }
+
+    if (!attempts.isEmpty()) {
+      message.append("; attempted: ").append(String.join("; ", attempts));
+    }
+
+    return message.toString();
+  }
+
+  private static String formatAttempt(ProviderProfile providerProfile, Exception exception) {
+    String message = exception.getMessage();
+
+    return providerProfile
+        + " failed: "
+        + exception.getClass().getSimpleName()
+        + (message == null || message.isBlank() ? "" : " (" + message + ")");
+  }
+
+  /** A provider family that can satisfy a security policy. */
+  public enum ProviderProfile {
+    /** Bouncy Castle provider profile. */
+    BOUNCY_CASTLE,
+
+    /** Built-in JDK/JCA provider profile. */
+    JDK
+  }
+
+  @FunctionalInterface
+  private interface ProviderCheck {
+    void check(Provider provider) throws GeneralSecurityException;
+  }
+}

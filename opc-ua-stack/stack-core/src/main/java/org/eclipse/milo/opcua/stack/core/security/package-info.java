@@ -33,8 +33,9 @@
  *
  * <p>Endpoint advertisement and SecureChannel creation should combine certificate availability,
  * provider capability, and policy profile support before advertising or using a secured endpoint.
- * The stack can recognize a policy even when the current runtime cannot execute the corresponding
- * SecureChannel strategy.
+ * {@link org.eclipse.milo.opcua.stack.core.security.SecurityProviderResolver} owns provider-profile
+ * selection so policy metadata does not depend on JVM provider order. The stack can recognize a
+ * policy even when the current runtime cannot execute the corresponding SecureChannel strategy.
  *
  * <h2>Extension guidance</h2>
  *
