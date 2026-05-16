@@ -28,20 +28,32 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @NullMarked
 public class SecurityPolicyTest {
 
   @Test
-  public void testPolicyUriLookupRecognizesTargetEccPolicies() throws UaException {
+  public void testPolicyUriLookupRecognizesCurrentEccPolicies() throws UaException {
     assertSame(
         SecurityPolicy.ECC_nistP256_AesGcm,
         SecurityPolicy.fromUri(SecurityPolicy.ECC_nistP256_AesGcm.getUri()));
+
+    assertSame(
+        SecurityPolicy.ECC_nistP256_ChaChaPoly,
+        SecurityPolicy.fromUri(SecurityPolicy.ECC_nistP256_ChaChaPoly.getUri()));
+
+    assertSame(
+        SecurityPolicy.ECC_curve25519_AesGcm,
+        SecurityPolicy.fromUri(SecurityPolicy.ECC_curve25519_AesGcm.getUri()));
 
     assertSame(
         SecurityPolicy.ECC_curve25519_ChaChaPoly,
@@ -57,7 +69,13 @@ public class SecurityPolicyTest {
             .filter(name -> name.startsWith("ECC_"))
             .collect(Collectors.toSet());
 
-    assertEquals(Set.of("ECC_nistP256_AesGcm", "ECC_curve25519_ChaChaPoly"), eccPolicyNames);
+    assertEquals(
+        Set.of(
+            "ECC_nistP256_AesGcm",
+            "ECC_nistP256_ChaChaPoly",
+            "ECC_curve25519_AesGcm",
+            "ECC_curve25519_ChaChaPoly"),
+        eccPolicyNames);
 
     assertTrue(
         SecurityPolicy.fromUriSafe("http://opcfoundation.org/UA/SecurityPolicy#ECC_nistP256")
@@ -130,48 +148,29 @@ public class SecurityPolicyTest {
         SecurityAlgorithm.None, SecurityPolicy.None.getProfile().certificateThumbprintAlgorithm());
   }
 
-  @Test
-  public void testTargetEccProfileMetadata() {
-    SecurityPolicyProfile nistP256 = SecurityPolicyProfiles.get(SecurityPolicy.ECC_nistP256_AesGcm);
+  // These tuples are the public policy contract that endpoint advertisement, certificate
+  // selection, OpenSecureChannel, chunk codecs, and username-token encryption all share.
+  @ParameterizedTest
+  @MethodSource("currentEccProfileExpectations")
+  public void testCurrentEccProfileMetadata(EccProfileExpectation expectation) {
+    SecurityPolicyProfile profile = SecurityPolicyProfiles.get(expectation.securityPolicy());
 
-    assertEquals(ECDSA_NIST_P256_SHA256, nistP256.authAxis());
+    assertEquals(expectation.authAxis(), profile.authAxis());
+    assertEquals(List.of(expectation.certificateTypeId()), profile.certificateTypeIds());
     assertEquals(
-        List.of(NodeIds.EccNistP256ApplicationCertificateType), nistP256.certificateTypeIds());
-    assertEquals(
-        NodeIds.EccNistP256ApplicationCertificateType,
-        nistP256.preferredCertificateTypeId().orElseThrow());
-    assertEquals(ECDH_NIST_P256, nistP256.keyAgreementAxis());
-    assertEquals(AES_GCM, nistP256.chunkProtectionAxis());
-    assertEquals(NON_LEGACY, nistP256.sequenceNumberMode());
-    assertEquals(SecurityAlgorithm.Sha256, nistP256.certificateThumbprintAlgorithm());
-    assertEquals(64, nistP256.secureChannelNonceLength());
-    assertEquals(16, nistP256.symmetricSignatureSize());
-    assertEquals(0, nistP256.symmetricSignatureKeySize());
-    assertEquals(16, nistP256.symmetricEncryptionKeySize());
-    assertEquals(1, nistP256.symmetricBlockSize());
-    assertEquals((short) 0x84, nistP256.getSecurityLevel(MessageSecurityMode.SignAndEncrypt));
-    assertTrue(nistP256.secureChannelEnhancements());
-    assertTrue(nistP256.secureChannelSupported());
-
-    SecurityPolicyProfile curve25519 =
-        SecurityPolicyProfiles.get(SecurityPolicy.ECC_curve25519_ChaChaPoly);
-
-    assertEquals(ED25519, curve25519.authAxis());
-    assertEquals(
-        List.of(NodeIds.EccCurve25519ApplicationCertificateType), curve25519.certificateTypeIds());
-    assertEquals(
-        NodeIds.EccCurve25519ApplicationCertificateType,
-        curve25519.preferredCertificateTypeId().orElseThrow());
-    assertEquals(X25519, curve25519.keyAgreementAxis());
-    assertEquals(CHACHA20_POLY1305, curve25519.chunkProtectionAxis());
-    assertEquals(NON_LEGACY, curve25519.sequenceNumberMode());
-    assertEquals(32, curve25519.secureChannelNonceLength());
-    assertEquals(16, curve25519.symmetricSignatureSize());
-    assertEquals(0, curve25519.symmetricSignatureKeySize());
-    assertEquals(32, curve25519.symmetricEncryptionKeySize());
-    assertEquals((short) 0x84, curve25519.getSecurityLevel(MessageSecurityMode.SignAndEncrypt));
-    assertTrue(curve25519.secureChannelEnhancements());
-    assertTrue(curve25519.secureChannelSupported());
+        expectation.certificateTypeId(), profile.preferredCertificateTypeId().orElseThrow());
+    assertEquals(expectation.keyAgreementAxis(), profile.keyAgreementAxis());
+    assertEquals(expectation.chunkProtectionAxis(), profile.chunkProtectionAxis());
+    assertEquals(NON_LEGACY, profile.sequenceNumberMode());
+    assertEquals(SecurityAlgorithm.Sha256, profile.certificateThumbprintAlgorithm());
+    assertEquals(expectation.secureChannelNonceLength(), profile.secureChannelNonceLength());
+    assertEquals(16, profile.symmetricSignatureSize());
+    assertEquals(0, profile.symmetricSignatureKeySize());
+    assertEquals(expectation.symmetricEncryptionKeySize(), profile.symmetricEncryptionKeySize());
+    assertEquals(1, profile.symmetricBlockSize());
+    assertEquals((short) 0x84, profile.getSecurityLevel(MessageSecurityMode.SignAndEncrypt));
+    assertTrue(profile.secureChannelEnhancements());
+    assertTrue(profile.secureChannelSupported());
   }
 
   @Test
@@ -202,6 +201,59 @@ public class SecurityPolicyTest {
     assertDoesNotThrow(
         () ->
             SecurityPolicyProfiles.requireSecureChannelSupported(
+                SecurityPolicy.ECC_nistP256_ChaChaPoly));
+    assertDoesNotThrow(
+        () ->
+            SecurityPolicyProfiles.requireSecureChannelSupported(
+                SecurityPolicy.ECC_curve25519_AesGcm));
+    assertDoesNotThrow(
+        () ->
+            SecurityPolicyProfiles.requireSecureChannelSupported(
                 SecurityPolicy.ECC_curve25519_ChaChaPoly));
   }
+
+  private static Stream<EccProfileExpectation> currentEccProfileExpectations() {
+    return Stream.of(
+        new EccProfileExpectation(
+            SecurityPolicy.ECC_nistP256_AesGcm,
+            ECDSA_NIST_P256_SHA256,
+            NodeIds.EccNistP256ApplicationCertificateType,
+            ECDH_NIST_P256,
+            AES_GCM,
+            64,
+            16),
+        new EccProfileExpectation(
+            SecurityPolicy.ECC_nistP256_ChaChaPoly,
+            ECDSA_NIST_P256_SHA256,
+            NodeIds.EccNistP256ApplicationCertificateType,
+            ECDH_NIST_P256,
+            CHACHA20_POLY1305,
+            64,
+            32),
+        new EccProfileExpectation(
+            SecurityPolicy.ECC_curve25519_AesGcm,
+            ED25519,
+            NodeIds.EccCurve25519ApplicationCertificateType,
+            X25519,
+            AES_GCM,
+            32,
+            16),
+        new EccProfileExpectation(
+            SecurityPolicy.ECC_curve25519_ChaChaPoly,
+            ED25519,
+            NodeIds.EccCurve25519ApplicationCertificateType,
+            X25519,
+            CHACHA20_POLY1305,
+            32,
+            32));
+  }
+
+  private record EccProfileExpectation(
+      SecurityPolicy securityPolicy,
+      SecurityPolicyProfile.AuthAxis authAxis,
+      NodeId certificateTypeId,
+      SecurityPolicyProfile.KeyAgreementAxis keyAgreementAxis,
+      SecurityPolicyProfile.ChunkProtectionAxis chunkProtectionAxis,
+      int secureChannelNonceLength,
+      int symmetricEncryptionKeySize) {}
 }

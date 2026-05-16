@@ -649,7 +649,7 @@ public class OpcUaServer extends AbstractServiceHandler {
       EndpointConfig endpoint, SecurityPolicyProfile profile) throws EndpointResolutionException {
 
     if (profile.secureChannelEnhancements()) {
-      if (isM1EccSessionPolicy(profile.securityPolicy())) {
+      if (hasSdkSessionSupport(profile.securityPolicy())) {
         return;
       }
 
@@ -661,8 +661,10 @@ public class OpcUaServer extends AbstractServiceHandler {
     }
   }
 
-  private static boolean isM1EccSessionPolicy(SecurityPolicy securityPolicy) {
+  private static boolean hasSdkSessionSupport(SecurityPolicy securityPolicy) {
     return securityPolicy == SecurityPolicy.ECC_nistP256_AesGcm
+        || securityPolicy == SecurityPolicy.ECC_nistP256_ChaChaPoly
+        || securityPolicy == SecurityPolicy.ECC_curve25519_AesGcm
         || securityPolicy == SecurityPolicy.ECC_curve25519_ChaChaPoly;
   }
 

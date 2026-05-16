@@ -706,6 +706,8 @@ class EccEncryptedSecretTest {
   private static Stream<Arguments> supportedEccProfiles() {
     return Stream.of(
         Arguments.of(SecurityPolicy.ECC_nistP256_AesGcm.getProfile()),
+        Arguments.of(SecurityPolicy.ECC_nistP256_ChaChaPoly.getProfile()),
+        Arguments.of(SecurityPolicy.ECC_curve25519_AesGcm.getProfile()),
         Arguments.of(SecurityPolicy.ECC_curve25519_ChaChaPoly.getProfile()));
   }
 

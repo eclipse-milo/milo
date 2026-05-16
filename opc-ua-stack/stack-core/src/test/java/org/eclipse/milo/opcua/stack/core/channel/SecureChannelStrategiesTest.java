@@ -112,7 +112,12 @@ class SecureChannelStrategiesTest {
   @ParameterizedTest
   @EnumSource(
       value = SecurityPolicy.class,
-      names = {"ECC_nistP256_AesGcm", "ECC_curve25519_ChaChaPoly"})
+      names = {
+        "ECC_nistP256_AesGcm",
+        "ECC_nistP256_ChaChaPoly",
+        "ECC_curve25519_AesGcm",
+        "ECC_curve25519_ChaChaPoly"
+      })
   void eccEphemeralOpenSecureChannelDerivesMatchingAeadKeys(SecurityPolicy securityPolicy)
       throws Exception {
 
@@ -245,7 +250,12 @@ class SecureChannelStrategiesTest {
   @ParameterizedTest
   @EnumSource(
       value = SecurityPolicy.class,
-      names = {"ECC_nistP256_AesGcm", "ECC_curve25519_ChaChaPoly"})
+      names = {
+        "ECC_nistP256_AesGcm",
+        "ECC_nistP256_ChaChaPoly",
+        "ECC_curve25519_AesGcm",
+        "ECC_curve25519_ChaChaPoly"
+      })
   void asymmetricAuthenticationBindsAdditionalOpenSecureChannelBytes(SecurityPolicy securityPolicy)
       throws Exception {
 

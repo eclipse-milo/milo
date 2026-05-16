@@ -32,6 +32,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfigBuilder;
 import org.eclipse.milo.opcua.sdk.client.SessionActivityListener;
@@ -75,6 +76,9 @@ import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransport;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransportConfig;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransportConfigBuilder;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * End-to-end ECC session coverage through the Milo public client/server APIs.
@@ -91,22 +95,10 @@ class EccSessionIntegrationTest {
   private static final String USERNAME = "user1";
   private static final String PASSWORD = "password";
 
-  // Anonymous activation still exercises CreateSession/ActivateSession over the ECC SecureChannel.
-  @Test
-  void activatesAnonymousSessionAndReadsWritesWithNistP256AesGcm() throws Exception {
-    activatesAnonymousSessionAndReadsWrites(
-        SecurityPolicy.ECC_nistP256_AesGcm, NodeIds.EccNistP256ApplicationCertificateType);
-  }
-
-  // The Curve25519 profile uses Ed25519, X25519, and ChaCha20-Poly1305 paths that the NIST case
-  // does not cover.
-  @Test
-  void activatesAnonymousSessionAndReadsWritesWithCurve25519ChaChaPoly() throws Exception {
-    activatesAnonymousSessionAndReadsWrites(
-        SecurityPolicy.ECC_curve25519_ChaChaPoly, NodeIds.EccCurve25519ApplicationCertificateType);
-  }
-
-  private static void activatesAnonymousSessionAndReadsWrites(
+  // Anonymous activation still exercises CreateSession/ActivateSession over each ECC SecureChannel.
+  @ParameterizedTest
+  @MethodSource("currentEccPolicies")
+  void activatesAnonymousSessionAndReadsWrites(
       SecurityPolicy securityPolicy, NodeId certificateTypeId) throws Exception {
 
     try (RunningServer running = startSecureServer(securityPolicy, certificateTypeId, b -> {})) {
@@ -129,20 +121,9 @@ class EccSessionIntegrationTest {
   }
 
   // Username activation proves the CreateSession additional header and EccEncryptedSecret path.
-  @Test
-  void activatesUsernameSessionAndReadsWritesWithNistP256AesGcm() throws Exception {
-    activatesUsernameSessionAndReadsWrites(
-        SecurityPolicy.ECC_nistP256_AesGcm, NodeIds.EccNistP256ApplicationCertificateType);
-  }
-
-  // Username-token encryption must work with the Curve25519 receiver-key and AEAD primitives too.
-  @Test
-  void activatesUsernameSessionAndReadsWritesWithCurve25519ChaChaPoly() throws Exception {
-    activatesUsernameSessionAndReadsWrites(
-        SecurityPolicy.ECC_curve25519_ChaChaPoly, NodeIds.EccCurve25519ApplicationCertificateType);
-  }
-
-  private static void activatesUsernameSessionAndReadsWrites(
+  @ParameterizedTest
+  @MethodSource("currentEccPolicies")
+  void activatesUsernameSessionAndReadsWrites(
       SecurityPolicy securityPolicy, NodeId certificateTypeId) throws Exception {
 
     try (RunningServer running = startSecureServer(securityPolicy, certificateTypeId, b -> {})) {
@@ -164,23 +145,12 @@ class EccSessionIntegrationTest {
     }
   }
 
-  // Renewal must keep an already activated session usable after a second ECC key exchange.
-  @Test
-  void renewsSecureChannelWithActiveSessionWithNistP256AesGcm() throws Exception {
-    renewsSecureChannelWithActiveSession(
-        SecurityPolicy.ECC_nistP256_AesGcm, NodeIds.EccNistP256ApplicationCertificateType);
-  }
-
   // Renewal is profile-sensitive because nonces, sequence numbers, and AEAD keys are all
   // profile-specific.
-  @Test
-  void renewsSecureChannelWithActiveSessionWithCurve25519ChaChaPoly() throws Exception {
-    renewsSecureChannelWithActiveSession(
-        SecurityPolicy.ECC_curve25519_ChaChaPoly, NodeIds.EccCurve25519ApplicationCertificateType);
-  }
-
-  private static void renewsSecureChannelWithActiveSession(
-      SecurityPolicy securityPolicy, NodeId certificateTypeId) throws Exception {
+  @ParameterizedTest
+  @MethodSource("currentEccPolicies")
+  void renewsSecureChannelWithActiveSession(SecurityPolicy securityPolicy, NodeId certificateTypeId)
+      throws Exception {
 
     CountDownLatch clientKeysCreated = new CountDownLatch(2);
 
@@ -215,21 +185,9 @@ class EccSessionIntegrationTest {
 
   // Reconnection reactivates the existing Session on a new SecureChannel; the ActivateSession
   // signature must be verified against the new channel thumbprint, not the stale channel.
-  @Test
-  void reactivatesUsernameSessionOnNewSecureChannelWithNistP256AesGcm() throws Exception {
-    reactivatesUsernameSessionOnNewSecureChannel(
-        SecurityPolicy.ECC_nistP256_AesGcm, NodeIds.EccNistP256ApplicationCertificateType);
-  }
-
-  // The Curve25519 reactivation path protects against accidentally hard-coding NIST-only session
-  // signature or token-secret behavior.
-  @Test
-  void reactivatesUsernameSessionOnNewSecureChannelWithCurve25519ChaChaPoly() throws Exception {
-    reactivatesUsernameSessionOnNewSecureChannel(
-        SecurityPolicy.ECC_curve25519_ChaChaPoly, NodeIds.EccCurve25519ApplicationCertificateType);
-  }
-
-  private static void reactivatesUsernameSessionOnNewSecureChannel(
+  @ParameterizedTest
+  @MethodSource("currentEccPolicies")
+  void reactivatesUsernameSessionOnNewSecureChannel(
       SecurityPolicy securityPolicy, NodeId certificateTypeId) throws Exception {
 
     CountDownLatch sessionActive = new CountDownLatch(2);
@@ -569,6 +527,21 @@ class EccSessionIntegrationTest {
   private static UserTokenPolicy usernamePolicy(SecurityPolicy securityPolicy) {
     return new UserTokenPolicy(
         "username", UserTokenType.UserName, null, null, securityPolicy.getUri());
+  }
+
+  // The matrix pairs each executable ECC policy with the application certificate type that should
+  // be selected for both endpoint advertisement and client identity selection.
+  private static Stream<Arguments> currentEccPolicies() {
+    return Stream.of(
+        Arguments.of(
+            SecurityPolicy.ECC_nistP256_AesGcm, NodeIds.EccNistP256ApplicationCertificateType),
+        Arguments.of(
+            SecurityPolicy.ECC_nistP256_ChaChaPoly, NodeIds.EccNistP256ApplicationCertificateType),
+        Arguments.of(
+            SecurityPolicy.ECC_curve25519_AesGcm, NodeIds.EccCurve25519ApplicationCertificateType),
+        Arguments.of(
+            SecurityPolicy.ECC_curve25519_ChaChaPoly,
+            NodeIds.EccCurve25519ApplicationCertificateType));
   }
 
   private static int freePort() throws Exception {

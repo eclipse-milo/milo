@@ -350,7 +350,10 @@ public class ChunkSerializationTest extends SecureChannelFixture {
 
   public static Object[][] getAeadSecurityParameters() {
     return new Object[][] {
-      {SecurityPolicy.ECC_nistP256_AesGcm}, {SecurityPolicy.ECC_curve25519_ChaChaPoly}
+      {SecurityPolicy.ECC_nistP256_AesGcm},
+      {SecurityPolicy.ECC_nistP256_ChaChaPoly},
+      {SecurityPolicy.ECC_curve25519_AesGcm},
+      {SecurityPolicy.ECC_curve25519_ChaChaPoly}
     };
   }
 
@@ -425,9 +428,8 @@ public class ChunkSerializationTest extends SecureChannelFixture {
     }
   }
 
-  // Target AEAD policies use the signature footer as an authentication tag instead of a legacy
-  // HMAC,
-  // so round-trip coverage needs to exercise the full symmetric chunk framing path.
+  // Current AEAD policies use the signature footer as an authentication tag instead of a legacy
+  // HMAC, so round-trip coverage needs to exercise the full symmetric chunk framing path.
   @ParameterizedTest
   @MethodSource("getAeadSecurityParameters")
   public void testAeadSymmetricMessage(SecurityPolicy securityPolicy) throws Exception {

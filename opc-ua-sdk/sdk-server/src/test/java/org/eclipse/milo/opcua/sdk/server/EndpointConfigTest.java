@@ -207,7 +207,8 @@ public class EndpointConfigTest {
         fixed.certificate().getEncoded(), description.getServerCertificate().bytesOrEmpty());
   }
 
-  // Endpoints that cannot be served by the current SecureChannel runtime must not be advertised.
+  // Endpoints that ask for an ECC certificate type must be omitted when the configured certificate
+  // manager only has incompatible identities.
   @Test
   public void unsupportedEccEndpointIsOmittedFromDiscoveryAdvertisement() throws Exception {
     CertificateMaterial certificate = rsaCertificate("rsa-only");
@@ -237,13 +238,22 @@ public class EndpointConfigTest {
     assertEquals(0, Objects.requireNonNull(response.getEndpoints()).length);
   }
 
-  // Once Phase 10 session/user-token behavior is present, M1 ECC endpoints are safe to advertise.
+  // Current ECC endpoints are advertised only when the server can pair the policy with a matching
+  // local application certificate identity.
   @Test
-  public void m1EccEndpointsAreAdvertisedWithCompatibleIdentities() throws Exception {
+  public void currentEccEndpointsAreAdvertisedWithCompatibleIdentities() throws Exception {
     assertEccEndpointAdvertised(
         SecurityPolicy.ECC_nistP256_AesGcm,
         NodeIds.EccNistP256ApplicationCertificateType,
         nistP256Certificate());
+    assertEccEndpointAdvertised(
+        SecurityPolicy.ECC_nistP256_ChaChaPoly,
+        NodeIds.EccNistP256ApplicationCertificateType,
+        nistP256Certificate());
+    assertEccEndpointAdvertised(
+        SecurityPolicy.ECC_curve25519_AesGcm,
+        NodeIds.EccCurve25519ApplicationCertificateType,
+        ed25519Certificate());
     assertEccEndpointAdvertised(
         SecurityPolicy.ECC_curve25519_ChaChaPoly,
         NodeIds.EccCurve25519ApplicationCertificateType,

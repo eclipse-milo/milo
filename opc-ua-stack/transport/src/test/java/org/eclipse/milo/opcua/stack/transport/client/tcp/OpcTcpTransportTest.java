@@ -115,16 +115,39 @@ class OpcTcpTransportTest extends SecurityFixture {
         Arguments.of(SecurityPolicy.Aes256_Sha256_RsaPss, MessageSecurityMode.SignAndEncrypt));
   }
 
-  private static Stream<Arguments> provideM1EccSecurityParameters() throws Exception {
+  // These policies deliberately recombine the same certificate and ephemeral-key families with both
+  // AEAD chunk-protection strategies, so transport tests catch accidental policy-specific wiring.
+  private static Stream<EccSecurityParameters> provideCurrentEccSecurityParameters()
+      throws Exception {
     return Stream.of(
-        Arguments.of(
+        new EccSecurityParameters(
             SecurityPolicy.ECC_nistP256_AesGcm,
             nistP256Certificate("ecc-nist-client"),
-            nistP256Certificate("ecc-nist-server")),
-        Arguments.of(
+            nistP256Certificate("ecc-nist-server"),
+            nistP256Certificate("wrong-ecc-nist-server"),
+            nistP256Certificate("wrong-ecc-nist-client-key"),
+            malformedNistP256PublicKey()),
+        new EccSecurityParameters(
+            SecurityPolicy.ECC_nistP256_ChaChaPoly,
+            nistP256Certificate("ecc-nist-chacha-client"),
+            nistP256Certificate("ecc-nist-chacha-server"),
+            nistP256Certificate("wrong-ecc-nist-chacha-server"),
+            nistP256Certificate("wrong-ecc-nist-chacha-client-key"),
+            malformedNistP256PublicKey()),
+        new EccSecurityParameters(
+            SecurityPolicy.ECC_curve25519_AesGcm,
+            ed25519Certificate("ecc-curve25519-aes-client"),
+            ed25519Certificate("ecc-curve25519-aes-server"),
+            ed25519Certificate("wrong-ecc-curve25519-aes-server"),
+            ed25519Certificate("wrong-ecc-curve25519-aes-client-key"),
+            malformedX25519PublicKey()),
+        new EccSecurityParameters(
             SecurityPolicy.ECC_curve25519_ChaChaPoly,
             ed25519Certificate("ecc-curve25519-client"),
-            ed25519Certificate("ecc-curve25519-server")));
+            ed25519Certificate("ecc-curve25519-server"),
+            ed25519Certificate("wrong-ecc-curve25519-server"),
+            ed25519Certificate("wrong-ecc-curve25519-client-key"),
+            malformedX25519PublicKey()));
   }
 
   @ParameterizedTest
@@ -313,25 +336,30 @@ class OpcTcpTransportTest extends SecurityFixture {
   }
 
   @ParameterizedTest
-  @MethodSource("provideM1EccSecurityParameters")
-  void connectThenDisconnectWithM1EccPolicies(
-      SecurityPolicy securityPolicy, CertificateMaterial client, CertificateMaterial server)
+  @MethodSource("provideCurrentEccSecurityParameters")
+  void connectThenDisconnectWithCurrentEccPolicies(EccSecurityParameters parameters)
       throws Exception {
 
     MessageSecurityMode messageSecurityMode = MessageSecurityMode.SignAndEncrypt;
     OpcServerTransport serverTransport =
-        bindServerTransport(securityPolicy, messageSecurityMode, server, client.certificate());
+        bindServerTransport(
+            parameters.securityPolicy(),
+            messageSecurityMode,
+            parameters.server(),
+            parameters.client().certificate());
 
     try {
-      var applicationContext = clientApplicationContext(securityPolicy, client, server);
+      var applicationContext =
+          clientApplicationContext(
+              parameters.securityPolicy(), parameters.client(), parameters.server());
 
       OpcTcpClientTransportConfig config = OpcTcpClientTransportConfig.newBuilder().build();
 
       var transport = new OpcTcpClientTransport(config);
 
-      LOGGER.debug("connecting with {}...", securityPolicy);
+      LOGGER.debug("connecting with {}...", parameters.securityPolicy());
       transport.connect(applicationContext).get();
-      LOGGER.debug("connected with {}", securityPolicy);
+      LOGGER.debug("connected with {}", parameters.securityPolicy());
 
       LOGGER.debug("disconnecting...");
       transport.disconnect().get();
@@ -346,15 +374,14 @@ class OpcTcpTransportTest extends SecurityFixture {
   // Renewal must perform a second ECC ephemeral-key exchange and install a distinct token, not
   // reuse the Issue exchange key material.
   @ParameterizedTest
-  @MethodSource("provideM1EccSecurityParameters")
-  void secureChannelRenewsWithM1EccPolicies(
-      SecurityPolicy securityPolicy, CertificateMaterial client, CertificateMaterial server)
+  @MethodSource("provideCurrentEccSecurityParameters")
+  void secureChannelRenewsWithCurrentEccPolicies(EccSecurityParameters parameters)
       throws Exception {
 
     assertSecureChannelRenews(
-        securityPolicy,
-        client,
-        server,
+        parameters.securityPolicy(),
+        parameters.client(),
+        parameters.server(),
         OpcTcpClientTransportConfig.newBuilder().setChannelLifetime(uint(300)).build(),
         OpcTcpServerTransportConfig.newBuilder()
             .setMinimumSecureChannelLifetime(uint(300))
@@ -362,8 +389,8 @@ class OpcTcpTransportTest extends SecurityFixture {
             .build());
   }
 
-  // RSA renewal is the long-standing path; exercising it here protects the Phase 9 ECC changes
-  // from changing legacy OpenSecureChannel Issue/Renew behavior.
+  // RSA renewal is the long-standing path; exercising it here protects legacy
+  // OpenSecureChannel Issue/Renew behavior while ECC renewal support evolves beside it.
   @Test
   void secureChannelRenewsWithRsaPolicy() throws Exception {
     assertSecureChannelRenews(
@@ -380,14 +407,16 @@ class OpcTcpTransportTest extends SecurityFixture {
   // A malformed ClientNonce for ECC policies is malformed key-agreement input; the server must
   // reject it before issuing a usable token.
   @ParameterizedTest
-  @MethodSource("provideM1EccSecurityParameters")
-  void openSecureChannelRejectsMalformedEccEphemeralPublicKeys(
-      SecurityPolicy securityPolicy, CertificateMaterial client, CertificateMaterial server)
+  @MethodSource("provideCurrentEccSecurityParameters")
+  void openSecureChannelRejectsMalformedEccEphemeralPublicKeys(EccSecurityParameters parameters)
       throws Exception {
 
     OpcServerTransport serverTransport =
         bindServerTransport(
-            securityPolicy, MessageSecurityMode.SignAndEncrypt, server, client.certificate());
+            parameters.securityPolicy(),
+            MessageSecurityMode.SignAndEncrypt,
+            parameters.server(),
+            parameters.client().certificate());
 
     try (Socket socket = new Socket()) {
       ChannelParameters channelParameters = openRawTcpChannel(socket);
@@ -395,11 +424,11 @@ class OpcTcpTransportTest extends SecurityFixture {
       writeRawOpenSecureChannelRequest(
           socket,
           channelParameters,
-          securityPolicy,
-          client.keyPair(),
-          client.certificate(),
-          server.certificate(),
-          malformedEphemeralPublicKey(securityPolicy));
+          parameters.securityPolicy(),
+          parameters.client().keyPair(),
+          parameters.client().certificate(),
+          parameters.server().certificate(),
+          parameters.malformedEphemeralPublicKey());
 
       assertRawOpenSecureChannelRejected(socket);
     } finally {
@@ -410,27 +439,23 @@ class OpcTcpTransportTest extends SecurityFixture {
   // The asymmetric header thumbprint selects the server certificate identity. A client that points
   // at a different certificate must not be allowed to open a channel.
   @ParameterizedTest
-  @MethodSource("provideM1EccSecurityParameters")
-  void openSecureChannelRejectsWrongReceiverThumbprint(
-      SecurityPolicy securityPolicy, CertificateMaterial client, CertificateMaterial server)
+  @MethodSource("provideCurrentEccSecurityParameters")
+  void openSecureChannelRejectsWrongReceiverThumbprint(EccSecurityParameters parameters)
       throws Exception {
-
-    CertificateMaterial wrongServer =
-        switch (securityPolicy) {
-          case ECC_nistP256_AesGcm -> nistP256Certificate("wrong-ecc-nist-server");
-          case ECC_curve25519_ChaChaPoly -> ed25519Certificate("wrong-ecc-curve25519-server");
-          default -> throw new IllegalArgumentException("securityPolicy: " + securityPolicy);
-        };
 
     OpcServerTransport serverTransport =
         bindServerTransport(
-            securityPolicy, MessageSecurityMode.SignAndEncrypt, server, client.certificate());
+            parameters.securityPolicy(),
+            MessageSecurityMode.SignAndEncrypt,
+            parameters.server(),
+            parameters.client().certificate());
     OpcTcpClientTransport transport =
         new OpcTcpClientTransport(OpcTcpClientTransportConfig.newBuilder().build());
 
     try {
       ClientApplicationContext applicationContext =
-          clientApplicationContext(securityPolicy, client, wrongServer);
+          clientApplicationContext(
+              parameters.securityPolicy(), parameters.client(), parameters.wrongServer());
 
       assertThrows(ExecutionException.class, () -> transport.connect(applicationContext).get());
     } finally {
@@ -442,36 +467,31 @@ class OpcTcpTransportTest extends SecurityFixture {
   // The OPN signature authenticates the sender certificate. Signing with a different private key
   // must fail even when the certificate itself is trusted.
   @ParameterizedTest
-  @MethodSource("provideM1EccSecurityParameters")
-  void openSecureChannelRejectsInvalidEccOpnSignatures(
-      SecurityPolicy securityPolicy, CertificateMaterial client, CertificateMaterial server)
+  @MethodSource("provideCurrentEccSecurityParameters")
+  void openSecureChannelRejectsInvalidEccOpnSignatures(EccSecurityParameters parameters)
       throws Exception {
-
-    CertificateMaterial mismatchedClient =
-        switch (securityPolicy) {
-          case ECC_nistP256_AesGcm -> nistP256Certificate("wrong-ecc-nist-client-key");
-          case ECC_curve25519_ChaChaPoly -> ed25519Certificate("wrong-ecc-curve25519-client-key");
-          default -> throw new IllegalArgumentException("securityPolicy: " + securityPolicy);
-        };
 
     OpcServerTransport serverTransport =
         bindServerTransport(
-            securityPolicy, MessageSecurityMode.SignAndEncrypt, server, client.certificate());
+            parameters.securityPolicy(),
+            MessageSecurityMode.SignAndEncrypt,
+            parameters.server(),
+            parameters.client().certificate());
 
     try (Socket socket = new Socket()) {
       ChannelParameters channelParameters = openRawTcpChannel(socket);
       ByteString clientNonce =
           ChannelSecurity.encodeEphemeralPublicKey(
-              securityPolicy.getProfile(),
-              ChannelSecurity.generateEphemeralKeyPair(securityPolicy.getProfile()));
+              parameters.securityPolicy().getProfile(),
+              ChannelSecurity.generateEphemeralKeyPair(parameters.securityPolicy().getProfile()));
 
       writeRawOpenSecureChannelRequest(
           socket,
           channelParameters,
-          securityPolicy,
-          mismatchedClient.keyPair(),
-          client.certificate(),
-          server.certificate(),
+          parameters.securityPolicy(),
+          parameters.mismatchedClient().keyPair(),
+          parameters.client().certificate(),
+          parameters.server().certificate(),
           clientNonce);
 
       assertRawOpenSecureChannelRejected(socket);
@@ -482,22 +502,24 @@ class OpcTcpTransportTest extends SecurityFixture {
 
   // Local fallback identities still need to match the selected ECC authentication family.
   @ParameterizedTest
-  @MethodSource("provideM1EccSecurityParameters")
-  void openSecureChannelRejectsWrongLocalCertificateType(
-      SecurityPolicy securityPolicy, CertificateMaterial ignoredClient, CertificateMaterial server)
+  @MethodSource("provideCurrentEccSecurityParameters")
+  void openSecureChannelRejectsWrongLocalCertificateType(EccSecurityParameters parameters)
       throws Exception {
 
     CertificateMaterial rsaClient =
         new CertificateMaterial(clientKeyPair, clientCertificate, clientCertificateBytes);
     OpcServerTransport serverTransport =
         bindServerTransport(
-            securityPolicy, MessageSecurityMode.SignAndEncrypt, server, rsaClient.certificate());
+            parameters.securityPolicy(),
+            MessageSecurityMode.SignAndEncrypt,
+            parameters.server(),
+            rsaClient.certificate());
     OpcTcpClientTransport transport =
         new OpcTcpClientTransport(OpcTcpClientTransportConfig.newBuilder().build());
 
     try {
       ClientApplicationContext applicationContext =
-          clientApplicationContext(securityPolicy, rsaClient, server);
+          clientApplicationContext(parameters.securityPolicy(), rsaClient, parameters.server());
 
       assertThrows(ExecutionException.class, () -> transport.connect(applicationContext).get());
     } finally {
@@ -930,22 +952,18 @@ class OpcTcpTransportTest extends SecurityFixture {
     return message;
   }
 
-  private static ByteString malformedEphemeralPublicKey(SecurityPolicy securityPolicy) {
-    return switch (securityPolicy) {
-      case ECC_nistP256_AesGcm -> {
-        byte[] offCurvePoint = new byte[64];
-        offCurvePoint[63] = 1;
+  private static ByteString malformedNistP256PublicKey() {
+    byte[] offCurvePoint = new byte[64];
+    offCurvePoint[63] = 1;
 
-        yield ByteString.of(offCurvePoint);
-      }
-      case ECC_curve25519_ChaChaPoly -> {
-        byte[] lowOrderPoint = new byte[32];
-        lowOrderPoint[0] = 1;
+    return ByteString.of(offCurvePoint);
+  }
 
-        yield ByteString.of(lowOrderPoint);
-      }
-      default -> throw new IllegalArgumentException("securityPolicy: " + securityPolicy);
-    };
+  private static ByteString malformedX25519PublicKey() {
+    byte[] lowOrderPoint = new byte[32];
+    lowOrderPoint[0] = 1;
+
+    return ByteString.of(lowOrderPoint);
   }
 
   private EndpointDescription newEndpointDescription(
@@ -997,6 +1015,14 @@ class OpcTcpTransportTest extends SecurityFixture {
 
     return new CertificateMaterial(keyPair, certificate, certificate.getEncoded());
   }
+
+  private record EccSecurityParameters(
+      SecurityPolicy securityPolicy,
+      CertificateMaterial client,
+      CertificateMaterial server,
+      CertificateMaterial wrongServer,
+      CertificateMaterial mismatchedClient,
+      ByteString malformedEphemeralPublicKey) {}
 
   private record CertificateMaterial(
       KeyPair keyPair, X509Certificate certificate, byte[] certificateBytes) {}

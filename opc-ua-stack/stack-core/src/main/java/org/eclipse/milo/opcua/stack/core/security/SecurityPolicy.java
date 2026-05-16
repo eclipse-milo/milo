@@ -64,6 +64,18 @@ public enum SecurityPolicy {
   ECC_nistP256_AesGcm("http://opcfoundation.org/UA/SecurityPolicy#ECC_nistP256_AesGcm"),
 
   /**
+   * An ECC policy that uses NIST P-256 ECDSA authentication, P-256 ECDH key agreement, and
+   * ChaCha20-Poly1305 chunk protection.
+   */
+  ECC_nistP256_ChaChaPoly("http://opcfoundation.org/UA/SecurityPolicy#ECC_nistP256_ChaChaPoly"),
+
+  /**
+   * An ECC policy that uses Ed25519 authentication, X25519 key agreement, and AES-GCM chunk
+   * protection.
+   */
+  ECC_curve25519_AesGcm("http://opcfoundation.org/UA/SecurityPolicy#ECC_curve25519_AesGcm"),
+
+  /**
    * An ECC policy that uses Ed25519 authentication, X25519 key agreement, and ChaCha20-Poly1305
    * chunk protection.
    */

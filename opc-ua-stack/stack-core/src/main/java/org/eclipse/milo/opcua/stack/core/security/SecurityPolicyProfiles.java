@@ -255,6 +255,12 @@ public final class SecurityPolicyProfiles {
             false,
             true));
 
+    // The executable ECC policies below combine two certificate/key-agreement families with two
+    // AEAD chunk protectors. NIST P-256 uses ECDSA certificates plus P-256 ECDH with a 64-byte
+    // ephemeral public key in ClientNonce/ServerNonce. Curve25519 uses Ed25519 certificates plus
+    // X25519 with a 32-byte ephemeral public key. AES-GCM uses a 16-byte symmetric key;
+    // ChaCha20-Poly1305 uses a 32-byte symmetric key. Both use a 16-byte AEAD tag instead of a
+    // separate HMAC signature.
     register(
         profiles,
         profile(
@@ -273,6 +279,58 @@ public final class SecurityPolicyProfiles {
             null,
             SecurityAlgorithm.Sha256,
             64,
+            16,
+            0,
+            16,
+            1,
+            0x04,
+            true,
+            true));
+
+    register(
+        profiles,
+        profile(
+            SecurityPolicy.ECC_nistP256_ChaChaPoly,
+            ECDSA_NIST_P256_SHA256,
+            List.of(NodeIds.EccNistP256ApplicationCertificateType),
+            ECDH_NIST_P256,
+            CHACHA20_POLY1305,
+            NON_LEGACY,
+            null,
+            null,
+            SecurityAlgorithm.None,
+            SecurityAlgorithm.None,
+            null,
+            null,
+            null,
+            SecurityAlgorithm.Sha256,
+            64,
+            16,
+            0,
+            32,
+            1,
+            0x04,
+            true,
+            true));
+
+    register(
+        profiles,
+        profile(
+            SecurityPolicy.ECC_curve25519_AesGcm,
+            ED25519,
+            List.of(NodeIds.EccCurve25519ApplicationCertificateType),
+            X25519,
+            AES_GCM,
+            NON_LEGACY,
+            null,
+            null,
+            SecurityAlgorithm.None,
+            SecurityAlgorithm.None,
+            null,
+            null,
+            null,
+            SecurityAlgorithm.Sha256,
+            32,
             16,
             0,
             16,

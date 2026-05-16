@@ -28,41 +28,54 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AdditionalParametersTy
 import org.eclipse.milo.opcua.stack.core.types.structured.EphemeralKeyType;
 import org.eclipse.milo.opcua.stack.core.types.structured.KeyValuePair;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 class EccUserTokenAdditionalHeaderTest {
 
   // The client asks for ECC username-token key material by policy URI, not by endpoint order.
-  @Test
-  void encodesAndDecodesCreateSessionRequestPolicy() throws Exception {
+  @ParameterizedTest
+  @EnumSource(
+      value = SecurityPolicy.class,
+      names = {
+        "ECC_nistP256_AesGcm",
+        "ECC_nistP256_ChaChaPoly",
+        "ECC_curve25519_AesGcm",
+        "ECC_curve25519_ChaChaPoly"
+      })
+  void encodesAndDecodesCreateSessionRequestPolicy(SecurityPolicy securityPolicy) throws Exception {
     ExtensionObject additionalHeader =
-        EccUserTokenAdditionalHeader.createRequest(
-            DefaultEncodingContext.INSTANCE, SecurityPolicy.ECC_nistP256_AesGcm);
+        EccUserTokenAdditionalHeader.createRequest(DefaultEncodingContext.INSTANCE, securityPolicy);
 
     assertEquals(
-        SecurityPolicy.ECC_nistP256_AesGcm,
+        securityPolicy,
         EccUserTokenAdditionalHeader.decodeRequest(
                 DefaultEncodingContext.INSTANCE, additionalHeader)
             .orElseThrow());
   }
 
   // The server's response must carry the signed session key in the generated UA structure.
-  @Test
-  void encodesAndDecodesCreateSessionResponseKey() throws Exception {
+  @ParameterizedTest
+  @EnumSource(
+      value = SecurityPolicy.class,
+      names = {
+        "ECC_nistP256_AesGcm",
+        "ECC_nistP256_ChaChaPoly",
+        "ECC_curve25519_AesGcm",
+        "ECC_curve25519_ChaChaPoly"
+      })
+  void encodesAndDecodesCreateSessionResponseKey(SecurityPolicy securityPolicy) throws Exception {
     EphemeralKeyType ephemeralKey =
         new EphemeralKeyType(ByteString.of(new byte[] {0x01}), ByteString.of(new byte[] {0x02}));
 
     ExtensionObject additionalHeader =
         EccUserTokenAdditionalHeader.createResponse(
-            DefaultEncodingContext.INSTANCE,
-            SecurityPolicy.ECC_curve25519_ChaChaPoly,
-            ephemeralKey);
+            DefaultEncodingContext.INSTANCE, securityPolicy, ephemeralKey);
 
     assertEquals(
         ephemeralKey,
         EccUserTokenAdditionalHeader.decodeResponse(
-                DefaultEncodingContext.INSTANCE,
-                additionalHeader,
-                SecurityPolicy.ECC_curve25519_ChaChaPoly)
+                DefaultEncodingContext.INSTANCE, additionalHeader, securityPolicy)
             .orElseThrow());
   }
 

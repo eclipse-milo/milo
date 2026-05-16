@@ -28,20 +28,30 @@ import org.junit.jupiter.api.Test;
 @NullMarked
 public class SecurityProviderResolverTest {
 
+  // Endpoint advertisement should get a deterministic provider answer for every executable ECC
+  // policy without depending on global JVM provider ordering.
   @Test
-  public void testDefaultResolverPrefersBouncyCastleForM1Policies() throws UaException {
+  public void testDefaultResolverPrefersBouncyCastleForCurrentEccPolicies() throws UaException {
     SecurityProviderResolver resolver = SecurityProviderResolver.create();
 
     assertEquals(BOUNCY_CASTLE, resolver.resolve(SecurityPolicy.ECC_nistP256_AesGcm.getProfile()));
     assertEquals(
+        BOUNCY_CASTLE, resolver.resolve(SecurityPolicy.ECC_nistP256_ChaChaPoly.getProfile()));
+    assertEquals(
+        BOUNCY_CASTLE, resolver.resolve(SecurityPolicy.ECC_curve25519_AesGcm.getProfile()));
+    assertEquals(
         BOUNCY_CASTLE, resolver.resolve(SecurityPolicy.ECC_curve25519_ChaChaPoly.getProfile()));
   }
 
+  // The same policy tuples should remain executable on the built-in JDK providers for deployments
+  // that do not want the Bouncy Castle profile.
   @Test
-  public void testM1PoliciesCanUseJdkProviderProfile() throws UaException {
+  public void testCurrentEccPoliciesCanUseJdkProviderProfile() throws UaException {
     SecurityProviderResolver resolver = SecurityProviderResolver.withProviderProfiles(List.of(JDK));
 
     assertEquals(JDK, resolver.resolve(SecurityPolicy.ECC_nistP256_AesGcm.getProfile()));
+    assertEquals(JDK, resolver.resolve(SecurityPolicy.ECC_nistP256_ChaChaPoly.getProfile()));
+    assertEquals(JDK, resolver.resolve(SecurityPolicy.ECC_curve25519_AesGcm.getProfile()));
     assertEquals(JDK, resolver.resolve(SecurityPolicy.ECC_curve25519_ChaChaPoly.getProfile()));
   }
 
