@@ -13,11 +13,9 @@ package org.eclipse.milo.opcua.stack.core.channel;
 import static org.eclipse.milo.opcua.stack.core.util.CertificateUtil.getCertificateChainBytes;
 
 import java.security.KeyPair;
-import java.security.PublicKey;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
-import java.security.interfaces.RSAPublicKey;
 import java.util.List;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -25,11 +23,26 @@ import org.eclipse.milo.opcua.stack.core.channel.ChannelSecurity.SecretKeys;
 import org.eclipse.milo.opcua.stack.core.channel.ChannelSecurity.SecurityKeys;
 import org.eclipse.milo.opcua.stack.core.security.SecurityAlgorithm;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.util.DigestUtil;
-import org.jspecify.annotations.NonNull;
 
+/**
+ * Negotiated OPC UA Secure Conversation state used by chunk encoders, chunk decoders, and
+ * transports.
+ *
+ * <p>A {@code SecureChannel} is the security context installed on a transport after
+ * OpenSecureChannel has selected a policy, exchanged endpoint certificates and nonces, and created
+ * token-specific key material. Channel codecs use it to answer three questions while processing a
+ * chunk: which security profile is active, which certificate identity belongs to each side, and
+ * which directional keys apply to bytes being sent or received.
+ *
+ * <p>The local and remote directions depend on the implementation. A client sends with client keys
+ * and receives with server keys; a server sends with server keys and receives with client keys.
+ * {@link #getEncryptionKeys(SecurityKeys)} and {@link #getDecryptionKeys(SecurityKeys)} hide that
+ * direction switch so the codecs can stay independent of a client/server role.
+ */
 public interface SecureChannel {
 
   KeyPair getKeyPair();
@@ -44,14 +57,26 @@ public interface SecureChannel {
 
   SecurityPolicy getSecurityPolicy();
 
+  /** Returns the structured security-policy profile negotiated for this channel. */
+  default SecurityPolicyProfile getSecurityPolicyProfile() {
+    return getSecurityPolicy().getProfile();
+  }
+
   MessageSecurityMode getMessageSecurityMode();
 
   long getChannelId();
 
   ChannelSecurity getChannelSecurity();
 
+  /**
+   * Returns the keys used to protect chunks sent by the local endpoint under {@code securityKeys}.
+   */
   SecretKeys getEncryptionKeys(SecurityKeys securityKeys);
 
+  /**
+   * Returns the keys used to verify or decrypt chunks received by the local endpoint under {@code
+   * securityKeys}.
+   */
   SecretKeys getDecryptionKeys(SecurityKeys securityKeys);
 
   ByteString getLocalNonce();
@@ -120,9 +145,8 @@ public interface SecureChannel {
 
   default int getLocalAsymmetricCipherTextBlockSize() {
     if (isAsymmetricEncryptionEnabled()) {
-      SecurityAlgorithm algorithm = getSecurityPolicy().getAsymmetricEncryptionAlgorithm();
-
-      return getAsymmetricCipherTextBlockSize(getLocalCertificate(), algorithm);
+      return SecureChannelStrategies.asymmetricEncryption(getSecurityPolicyProfile())
+          .cipherTextBlockSize(getLocalCertificate());
     } else {
       return 1;
     }
@@ -130,9 +154,8 @@ public interface SecureChannel {
 
   default int getRemoteAsymmetricCipherTextBlockSize() {
     if (isAsymmetricEncryptionEnabled()) {
-      SecurityAlgorithm algorithm = getSecurityPolicy().getAsymmetricEncryptionAlgorithm();
-
-      return getAsymmetricCipherTextBlockSize(getRemoteCertificate(), algorithm);
+      return SecureChannelStrategies.asymmetricEncryption(getSecurityPolicyProfile())
+          .cipherTextBlockSize(getRemoteCertificate());
     } else {
       return 1;
     }
@@ -140,9 +163,8 @@ public interface SecureChannel {
 
   default int getLocalAsymmetricPlainTextBlockSize() {
     if (isAsymmetricEncryptionEnabled()) {
-      SecurityAlgorithm algorithm = getSecurityPolicy().getAsymmetricEncryptionAlgorithm();
-
-      return getAsymmetricPlainTextBlockSize(getLocalCertificate(), algorithm);
+      return SecureChannelStrategies.asymmetricEncryption(getSecurityPolicyProfile())
+          .plainTextBlockSize(getSecurityPolicyProfile(), getLocalCertificate());
     } else {
       return 1;
     }
@@ -150,36 +172,49 @@ public interface SecureChannel {
 
   default int getRemoteAsymmetricPlainTextBlockSize() {
     if (isAsymmetricEncryptionEnabled()) {
-      SecurityAlgorithm algorithm = getSecurityPolicy().getAsymmetricEncryptionAlgorithm();
-
-      return getAsymmetricPlainTextBlockSize(getRemoteCertificate(), algorithm);
+      return SecureChannelStrategies.asymmetricEncryption(getSecurityPolicyProfile())
+          .plainTextBlockSize(getSecurityPolicyProfile(), getRemoteCertificate());
     } else {
       return 1;
     }
   }
 
   default int getLocalAsymmetricSignatureSize() {
-    SecurityAlgorithm algorithm = getSecurityPolicy().getAsymmetricSignatureAlgorithm();
-
-    return getAsymmetricSignatureSize(getLocalCertificate(), algorithm);
+    return SecureChannelStrategies.authentication(getSecurityPolicyProfile())
+        .signatureSize(getLocalCertificate());
   }
 
   default int getRemoteAsymmetricSignatureSize() {
-    SecurityAlgorithm algorithm = getSecurityPolicy().getAsymmetricSignatureAlgorithm();
-
-    return getAsymmetricSignatureSize(getRemoteCertificate(), algorithm);
+    return SecureChannelStrategies.authentication(getSecurityPolicyProfile())
+        .signatureSize(getRemoteCertificate());
   }
 
+  /**
+   * Returns whether OpenSecureChannel chunks carry an asymmetric signature.
+   *
+   * <p>Signing is intentionally separate from asymmetric encryption. Some profile families
+   * authenticate OpenSecureChannel chunks with certificates without RSA-encrypting those chunks.
+   */
   default boolean isAsymmetricSigningEnabled() {
     return getSecurityPolicy() != SecurityPolicy.None && getLocalCertificate() != null;
   }
 
+  /**
+   * Returns whether OpenSecureChannel chunks are encrypted with the peer certificate.
+   *
+   * <p>This is only true for policies that define a certificate-based asymmetric encryption
+   * algorithm and have both local and remote certificate identities available.
+   */
   default boolean isAsymmetricEncryptionEnabled() {
     return getSecurityPolicy() != SecurityPolicy.None
         && getLocalCertificate() != null
-        && getRemoteCertificate() != null;
+        && getRemoteCertificate() != null
+        && getSecurityPolicyProfile().asymmetricEncryptionAlgorithm() != SecurityAlgorithm.None;
   }
 
+  /**
+   * Returns the symmetric cipher block size, or {@code 1} when symmetric encryption is disabled.
+   */
   default int getSymmetricBlockSize() {
     if (isSymmetricEncryptionEnabled()) {
       return getSecurityPolicy().getProfile().symmetricBlockSize();
@@ -200,6 +235,7 @@ public interface SecureChannel {
     return getSecurityPolicy().getProfile().symmetricEncryptionKeySize();
   }
 
+  /** Returns whether symmetric chunks are signed for the negotiated message security mode. */
   default boolean isSymmetricSigningEnabled() {
     return getLocalCertificate() != null
         && getSecurityPolicy() != SecurityPolicy.None
@@ -207,43 +243,40 @@ public interface SecureChannel {
             || getMessageSecurityMode() == MessageSecurityMode.SignAndEncrypt);
   }
 
+  /** Returns whether symmetric chunks are encrypted for the negotiated message security mode. */
   default boolean isSymmetricEncryptionEnabled() {
     return getRemoteCertificate() != null
         && getSecurityPolicy() != SecurityPolicy.None
         && getMessageSecurityMode() == MessageSecurityMode.SignAndEncrypt;
   }
 
+  /*
+   * Compatibility helpers for callers that still ask RSA sizing questions by SecurityAlgorithm.
+   * Channel codecs should resolve operations from the negotiated SecurityPolicyProfile instead.
+   */
   static int getAsymmetricKeyLength(Certificate certificate) {
-    PublicKey publicKey = certificate != null ? certificate.getPublicKey() : null;
-
-    return (publicKey instanceof RSAPublicKey)
-        ? ((RSAPublicKey) publicKey).getModulus().bitLength()
-        : 0;
+    return SecureChannelStrategies.getRsaKeyLength(certificate);
   }
 
-  static int getAsymmetricSignatureSize(
-      Certificate certificate, @NonNull SecurityAlgorithm algorithm) {
+  static int getAsymmetricSignatureSize(Certificate certificate, SecurityAlgorithm algorithm) {
     return switch (algorithm) {
-      case RsaSha1, RsaSha256, RsaSha256Pss -> (getAsymmetricKeyLength(certificate) + 7) / 8;
+      case RsaSha1, RsaSha256, RsaSha256Pss ->
+          SecureChannelStrategies.rsaSignatureSize(certificate);
       default -> 0;
     };
   }
 
   static int getAsymmetricCipherTextBlockSize(
-      Certificate certificate, @NonNull SecurityAlgorithm algorithm) {
+      Certificate certificate, SecurityAlgorithm algorithm) {
     return switch (algorithm) {
-      case Rsa15, RsaOaepSha1, RsaOaepSha256 -> (getAsymmetricKeyLength(certificate) + 7) / 8;
+      case Rsa15, RsaOaepSha1, RsaOaepSha256 ->
+          SecureChannelStrategies.rsaCipherTextBlockSize(certificate);
       default -> 1;
     };
   }
 
   static int getAsymmetricPlainTextBlockSize(
-      X509Certificate certificate, @NonNull SecurityAlgorithm algorithm) {
-    return switch (algorithm) {
-      case Rsa15 -> (getAsymmetricKeyLength(certificate) + 7) / 8 - 11;
-      case RsaOaepSha1 -> (getAsymmetricKeyLength(certificate) + 7) / 8 - 42;
-      case RsaOaepSha256 -> (getAsymmetricKeyLength(certificate) + 7) / 8 - 66;
-      default -> 1;
-    };
+      X509Certificate certificate, SecurityAlgorithm algorithm) {
+    return SecureChannelStrategies.rsaPlainTextBlockSize(certificate, algorithm);
   }
 }

@@ -112,7 +112,7 @@ class OpcTcpTransportTest extends SecurityFixture {
 
           @Override
           public CertificateValidator getCertificateValidator() {
-            return new CertificateValidator.InsecureCertificateValidator();
+            return new TestServerCertificateValidator(serverCertificate);
           }
 
           @Override
@@ -177,7 +177,7 @@ class OpcTcpTransportTest extends SecurityFixture {
 
           @Override
           public CertificateValidator getCertificateValidator() {
-            return new CertificateValidator.InsecureCertificateValidator();
+            return new TestServerCertificateValidator(serverCertificate);
           }
 
           @Override
@@ -240,7 +240,7 @@ class OpcTcpTransportTest extends SecurityFixture {
 
           @Override
           public CertificateValidator getCertificateValidator() {
-            return new CertificateValidator.InsecureCertificateValidator();
+            return new TestServerCertificateValidator(serverCertificate);
           }
 
           @Override

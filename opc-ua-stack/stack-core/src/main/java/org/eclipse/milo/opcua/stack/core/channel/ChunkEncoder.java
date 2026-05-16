@@ -22,8 +22,6 @@ import java.security.cert.Certificate;
 import java.util.ArrayList;
 import java.util.List;
 import javax.crypto.Cipher;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.channel.headers.AsymmetricSecurityHeader;
@@ -31,12 +29,30 @@ import org.eclipse.milo.opcua.stack.core.channel.headers.SecureMessageHeader;
 import org.eclipse.milo.opcua.stack.core.channel.headers.SequenceHeader;
 import org.eclipse.milo.opcua.stack.core.channel.headers.SymmetricSecurityHeader;
 import org.eclipse.milo.opcua.stack.core.channel.messages.MessageType;
-import org.eclipse.milo.opcua.stack.core.security.SecurityAlgorithm;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.util.BufferUtil;
 import org.eclipse.milo.opcua.stack.core.util.LongSequence;
-import org.eclipse.milo.opcua.stack.core.util.SignatureUtil;
 
+/**
+ * Encodes service payload bytes into OPC UA Secure Conversation chunks ready for transport.
+ *
+ * <p>The encoder has two entry points because OpenSecureChannel chunks and normal service chunks
+ * carry different security headers and use different protection material. {@link
+ * #encodeAsymmetric(SecureChannel, long, ByteBuf, MessageType)} is used while opening or renewing a
+ * channel, when the message is protected with endpoint certificates. {@link
+ * #encodeSymmetric(SecureChannel, long, ByteBuf, MessageType)} is used after a channel token has
+ * installed symmetric keys.
+ *
+ * <p>Both paths follow the same UASC chunk shape: secure message header, security header, sequence
+ * header, body bytes, optional padding, optional signature or authentication data, and optional
+ * encryption of the protected portion. Profile-specific signing, padding, and cipher setup are
+ * resolved from the channel's security profile so the framing code stays independent of individual
+ * security-policy families.
+ *
+ * <p>An encoder instance owns the outbound sequence-number stream for the connection using it.
+ * Reuse one instance for ordered messages on the same channel; use a separate instance for a
+ * separate channel or connection.
+ */
 public final class ChunkEncoder {
 
   private final AsymmetricEncoder asymmetricEncoder = new AsymmetricEncoder();
@@ -53,6 +69,10 @@ public final class ChunkEncoder {
     this.parameters = parameters;
   }
 
+  /**
+   * Encodes an OpenSecureChannel message using the channel's asymmetric security header and
+   * certificate-based protection settings.
+   */
   public EncodedMessage encodeAsymmetric(
       SecureChannel channel, long requestId, ByteBuf messageBuffer, MessageType messageType)
       throws MessageEncodeException {
@@ -60,6 +80,12 @@ public final class ChunkEncoder {
     return encode(asymmetricEncoder, channel, requestId, messageBuffer, messageType);
   }
 
+  /**
+   * Encodes a service message using the channel's current symmetric security token.
+   *
+   * <p>The returned chunks carry the current token id from {@link ChannelSecurity} when channel
+   * security has been installed.
+   */
   public EncodedMessage encodeSymmetric(
       SecureChannel channel, long requestId, ByteBuf messageBuffer, MessageType messageType)
       throws MessageEncodeException {
@@ -104,7 +130,7 @@ public final class ChunkEncoder {
       int signatureSize = getSignatureSize(channel);
 
       int maxChunkSize = parameters.getLocalSendBufferSize();
-      int paddingOverhead = encrypted ? (cipherTextBlockSize > 256 ? 2 : 1) : 0;
+      int paddingOverhead = encrypted ? getPaddingOverhead(channel, cipherTextBlockSize) : 0;
 
       int maxCipherTextSize = maxChunkSize - SECURE_MESSAGE_HEADER_SIZE - securityHeaderSize;
       int maxCipherTextBlocks = maxCipherTextSize / cipherTextBlockSize;
@@ -172,7 +198,7 @@ public final class ChunkEncoder {
 
         /* Padding and Signature */
         if (encrypted) {
-          writePadding(cipherTextBlockSize, paddingSize, chunkBuffer);
+          writePadding(channel, cipherTextBlockSize, paddingSize, chunkBuffer);
         }
 
         if (isSigningEnabled(channel)) {
@@ -227,21 +253,6 @@ public final class ChunkEncoder {
       return new EncodedMessage(chunks, requestId);
     }
 
-    private void writePadding(int cipherTextBlockSize, int paddingSize, ByteBuf buffer) {
-      buffer.writeByte(paddingSize);
-
-      for (int i = 0; i < paddingSize; i++) {
-        buffer.writeByte(paddingSize);
-      }
-
-      if (cipherTextBlockSize > 256) {
-        // Add the extra padding byte containing
-        // the MSB of the 2-byte padding length.
-        int paddingLengthMsb = (paddingSize >> 8) & 0xFF;
-        buffer.writeByte(paddingLengthMsb);
-      }
-    }
-
     protected abstract byte[] signChunk(SecureChannel channel, ByteBuffer chunkNioBuffer)
         throws UaException;
 
@@ -258,6 +269,12 @@ public final class ChunkEncoder {
 
     protected abstract int getSignatureSize(SecureChannel channel);
 
+    protected abstract int getPaddingOverhead(SecureChannel channel, int cipherTextBlockSize);
+
+    protected abstract void writePadding(
+        SecureChannel channel, int cipherTextBlockSize, int paddingSize, ByteBuf buffer)
+        throws UaException;
+
     protected abstract boolean isAsymmetric();
 
     protected abstract boolean isEncryptionEnabled(SecureChannel channel);
@@ -265,7 +282,7 @@ public final class ChunkEncoder {
     protected abstract boolean isSigningEnabled(SecureChannel channel);
   }
 
-  /** A fully encoded message, in one more more chunks ready to send. */
+  /** A fully encoded message, in one or more chunks ready to send. */
   public static class EncodedMessage {
 
     private final List<ByteBuf> messageChunks;
@@ -289,10 +306,11 @@ public final class ChunkEncoder {
 
     @Override
     public byte[] signChunk(SecureChannel channel, ByteBuffer chunkNioBuffer) throws UaException {
-      return SignatureUtil.sign(
-          channel.getSecurityPolicy().getAsymmetricSignatureAlgorithm(),
-          channel.getKeyPair().getPrivate(),
-          chunkNioBuffer);
+      return SecureChannelStrategies.authentication(channel.getSecurityPolicyProfile())
+          .sign(
+              channel.getSecurityPolicyProfile(),
+              channel.getKeyPair().getPrivate(),
+              chunkNioBuffer);
     }
 
     @Override
@@ -301,15 +319,8 @@ public final class ChunkEncoder {
 
       assert (remoteCertificate != null);
 
-      try {
-        String transformation =
-            channel.getSecurityPolicy().getAsymmetricEncryptionAlgorithm().getTransformation();
-        Cipher cipher = Cipher.getInstance(transformation);
-        cipher.init(Cipher.ENCRYPT_MODE, remoteCertificate.getPublicKey());
-        return cipher;
-      } catch (GeneralSecurityException e) {
-        throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
-      }
+      return SecureChannelStrategies.asymmetricEncryption(channel.getSecurityPolicyProfile())
+          .getEncryptionCipher(channel.getSecurityPolicyProfile(), remoteCertificate);
     }
 
     @Override
@@ -348,6 +359,20 @@ public final class ChunkEncoder {
     @Override
     public int getSignatureSize(SecureChannel channel) {
       return channel.getLocalAsymmetricSignatureSize();
+    }
+
+    @Override
+    protected int getPaddingOverhead(SecureChannel channel, int cipherTextBlockSize) {
+      return SecureChannelStrategies.asymmetricEncryption(channel.getSecurityPolicyProfile())
+          .paddingOverhead(cipherTextBlockSize);
+    }
+
+    @Override
+    protected void writePadding(
+        SecureChannel channel, int cipherTextBlockSize, int paddingSize, ByteBuf buffer) {
+
+      SecureChannelStrategies.asymmetricEncryption(channel.getSecurityPolicyProfile())
+          .writePadding(cipherTextBlockSize, paddingSize, buffer);
     }
 
     @Override
@@ -390,11 +415,7 @@ public final class ChunkEncoder {
 
     @Override
     public byte[] signChunk(SecureChannel channel, ByteBuffer chunkNioBuffer) throws UaException {
-      SecurityAlgorithm signatureAlgorithm =
-          channel.getSecurityPolicy().getSymmetricSignatureAlgorithm();
-      byte[] signatureKey = channel.getEncryptionKeys(securityKeys).getSignatureKey();
-
-      return SignatureUtil.hmac(signatureAlgorithm, signatureKey, chunkNioBuffer);
+      return chunkProtection(channel).sign(channel, securityKeys, chunkNioBuffer);
     }
 
     @Override
@@ -410,17 +431,33 @@ public final class ChunkEncoder {
 
     @Override
     public int getCipherTextBlockSize(SecureChannel channel) {
-      return channel.getSymmetricBlockSize();
+      return channel.isSymmetricEncryptionEnabled()
+          ? chunkProtection(channel).cipherTextBlockSize(channel.getSecurityPolicyProfile())
+          : 1;
     }
 
     @Override
     public int getPlainTextBlockSize(SecureChannel channel) {
-      return channel.getSymmetricBlockSize();
+      return channel.isSymmetricEncryptionEnabled()
+          ? chunkProtection(channel).plainTextBlockSize(channel.getSecurityPolicyProfile())
+          : 1;
     }
 
     @Override
     public int getSignatureSize(SecureChannel channel) {
-      return channel.getSymmetricSignatureSize();
+      return chunkProtection(channel).signatureSize(channel.getSecurityPolicyProfile());
+    }
+
+    @Override
+    protected int getPaddingOverhead(SecureChannel channel, int cipherTextBlockSize) {
+      return chunkProtection(channel).paddingOverhead(cipherTextBlockSize);
+    }
+
+    @Override
+    protected void writePadding(
+        SecureChannel channel, int cipherTextBlockSize, int paddingSize, ByteBuf buffer) {
+
+      chunkProtection(channel).writePadding(cipherTextBlockSize, paddingSize, buffer);
     }
 
     @Override
@@ -439,23 +476,11 @@ public final class ChunkEncoder {
     }
 
     private Cipher initCipher(SecureChannel channel) throws UaException {
-      try {
-        String transformation =
-            channel.getSecurityPolicy().getSymmetricEncryptionAlgorithm().getTransformation();
-        ChannelSecurity.SecretKeys secretKeys = channel.getEncryptionKeys(securityKeys);
+      return chunkProtection(channel).getEncryptionCipher(channel, securityKeys);
+    }
 
-        SecretKeySpec keySpec = new SecretKeySpec(secretKeys.getEncryptionKey(), "AES");
-        IvParameterSpec ivSpec = new IvParameterSpec(secretKeys.getInitializationVector());
-
-        Cipher cipher = Cipher.getInstance(transformation);
-        cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec);
-
-        assert (cipher.getBlockSize() == channel.getSymmetricBlockSize());
-
-        return cipher;
-      } catch (GeneralSecurityException e) {
-        throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
-      }
+    private SecureChannelStrategies.ChunkProtectionStrategy chunkProtection(SecureChannel channel) {
+      return SecureChannelStrategies.chunkProtection(channel.getSecurityPolicyProfile());
     }
   }
 }

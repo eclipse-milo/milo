@@ -231,6 +231,36 @@ public class ChunkSerializationTest extends SecureChannelFixture {
     }
   }
 
+  // Token id 0 is valid before channel security is installed; null-security handshakes depend on
+  // this bootstrap path instead of requiring a ChannelSecurity instance.
+  @Test
+  public void symmetricTokenZeroDecodesBeforeChannelSecurityIsInstalled() throws Exception {
+    ChunkEncoder encoder = new ChunkEncoder(defaultParameters);
+    ChunkDecoder decoder = new ChunkDecoder(defaultParameters, EncodingLimits.DEFAULT);
+
+    ClientSecureChannel clientChannel =
+        new ClientSecureChannel(SecurityPolicy.None, MessageSecurityMode.None);
+
+    ServerSecureChannel serverChannel = new ServerSecureChannel();
+    serverChannel.setSecurityPolicy(SecurityPolicy.None);
+    serverChannel.setMessageSecurityMode(MessageSecurityMode.None);
+
+    ByteBuf messageBuffer = BufferUtil.pooledBuffer().writeBytes(new byte[] {0x01, 0x02, 0x03});
+
+    ChunkEncoder.EncodedMessage encodedMessage =
+        encoder.encodeSymmetric(clientChannel, 1L, messageBuffer, MessageType.SecureMessage);
+    ChunkDecoder.DecodedMessage decodedMessage =
+        decoder.decodeSymmetric(serverChannel, encodedMessage.getMessageChunks());
+
+    try {
+      messageBuffer.readerIndex(0);
+      assertEquals(messageBuffer, decodedMessage.getMessage());
+    } finally {
+      ReferenceCountUtil.release(decodedMessage.getMessage());
+      ReferenceCountUtil.release(messageBuffer);
+    }
+  }
+
   @ParameterizedTest
   @MethodSource("getAsymmetricSecurityParameters")
   public void testAsymmetricMessage(

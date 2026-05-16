@@ -15,9 +15,19 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
 
+/**
+ * Test fixture certificate validator used by transport handshake tests.
+ *
+ * <p>The transport tests exercise TCP/UASC connection behavior with fixed fixture certificates.
+ * Profile-specific certificate compatibility is covered by stack-core security tests, so this
+ * validator keeps both validator entry points focused on fixture trust behavior instead of applying
+ * production certificate checks.
+ */
 public class TestServerCertificateValidator implements CertificateValidator {
 
   private final Set<X509Certificate> trustedCertificates = ConcurrentHashMap.newKeySet();
@@ -35,6 +45,19 @@ public class TestServerCertificateValidator implements CertificateValidator {
       List<X509Certificate> certificateChain, String applicationUri, String[] validHostnames)
       throws UaException {
 
-    // noop
+    if (certificateChain.isEmpty() || !trustedCertificates.contains(certificateChain.get(0))) {
+      throw new UaException(StatusCodes.Bad_CertificateUntrusted);
+    }
+  }
+
+  @Override
+  public void validateCertificateChain(
+      List<X509Certificate> certificateChain,
+      String applicationUri,
+      String[] validHostnames,
+      SecurityPolicyProfile securityPolicyProfile)
+      throws UaException {
+
+    validateCertificateChain(certificateChain, applicationUri, validHostnames);
   }
 }

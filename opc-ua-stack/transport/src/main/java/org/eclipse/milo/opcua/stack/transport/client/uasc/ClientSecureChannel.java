@@ -22,6 +22,19 @@ import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 
+/**
+ * Client-side {@link SecureChannel} state used by the OPC UA TCP client transport.
+ *
+ * <p>The client channel starts with the endpoint security configuration selected by the client:
+ * policy, message security mode, local certificate identity, and remote server certificate. As
+ * OpenSecureChannel responses arrive, the transport updates the channel id, negotiated nonces,
+ * Netty channel, and {@link ChannelSecurity} token/key material used by symmetric service messages.
+ *
+ * <p>For symmetric traffic, the client sends with client keys and receives with server keys. The
+ * {@link #getEncryptionKeys(ChannelSecurity.SecurityKeys)} and {@link
+ * #getDecryptionKeys(ChannelSecurity.SecurityKeys)} implementations provide that role-specific
+ * mapping for the shared chunk codecs.
+ */
 public class ClientSecureChannel extends DefaultAttributeMap implements SecureChannel {
 
   private volatile Channel channel;
