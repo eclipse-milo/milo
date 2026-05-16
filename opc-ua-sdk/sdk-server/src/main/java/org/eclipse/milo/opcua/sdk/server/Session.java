@@ -11,6 +11,7 @@
 package org.eclipse.milo.opcua.sdk.server;
 
 import java.net.InetAddress;
+import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -68,6 +69,8 @@ public class Session {
   private volatile Identity identity;
 
   private volatile ByteString lastNonce = ByteString.NULL_VALUE;
+  private volatile @Nullable KeyPair userTokenEphemeralKeyPair;
+  private volatile ByteString userTokenEphemeralPublicKey = ByteString.NULL_VALUE;
 
   private volatile long lastActivityNanos = System.nanoTime();
   private volatile ScheduledFuture<?> checkTimeoutFuture;
@@ -292,6 +295,42 @@ public class Session {
 
   public ByteString getLastNonce() {
     return lastNonce;
+  }
+
+  /**
+   * Get the server ephemeral key pair issued for ECC username-token encryption.
+   *
+   * <p>The key pair is generated during CreateSession when the client asks for ECC user-token key
+   * material. The username validator uses it during ActivateSession to decrypt the password secret.
+   *
+   * @return the session-scoped ECC user-token key pair.
+   */
+  public Optional<KeyPair> getUserTokenEphemeralKeyPair() {
+    return Optional.ofNullable(userTokenEphemeralKeyPair);
+  }
+
+  /**
+   * Get the encoded server public key that was returned to the client.
+   *
+   * @return the encoded session public key advertised for ECC username-token encryption.
+   */
+  public Optional<ByteString> getUserTokenEphemeralPublicKey() {
+    return userTokenEphemeralPublicKey.isNotNull()
+        ? Optional.of(userTokenEphemeralPublicKey)
+        : Optional.empty();
+  }
+
+  /**
+   * Store the session-scoped key pair returned to the client for ECC username-token encryption.
+   *
+   * @param userTokenEphemeralKeyPair the private/public key pair retained for ActivateSession
+   *     decryption.
+   * @param userTokenEphemeralPublicKey the encoded public key returned in CreateSession.
+   */
+  public void setUserTokenEphemeralKeyPair(
+      KeyPair userTokenEphemeralKeyPair, ByteString userTokenEphemeralPublicKey) {
+    this.userTokenEphemeralKeyPair = userTokenEphemeralKeyPair;
+    this.userTokenEphemeralPublicKey = userTokenEphemeralPublicKey;
   }
 
   private void checkTimeout() {

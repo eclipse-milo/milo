@@ -18,6 +18,7 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -32,12 +33,16 @@ import org.eclipse.milo.opcua.stack.core.types.structured.X509IdentityToken;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
 import org.eclipse.milo.opcua.stack.core.util.SignatureUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+/**
+ * An {@link IdentityProvider} that authenticates with a certificate user-token policy.
+ *
+ * <p>The provider sends the configured certificate chain as the user identity token and signs the
+ * server certificate plus nonce when the selected user-token security policy requires a signature.
+ * Certificate-token policies do not use the ECC username-secret additional-header exchange, even
+ * when the certificate-token policy itself uses an ECC security policy.
+ */
 public class X509IdentityProvider implements IdentityProvider {
-
-  private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private final List<X509Certificate> certificateChain =
       Collections.synchronizedList(new ArrayList<>());
@@ -93,30 +98,29 @@ public class X509IdentityProvider implements IdentityProvider {
   }
 
   @Override
+  public Optional<SecurityPolicy> getUserTokenSecurityPolicy(EndpointDescription endpoint)
+      throws Exception {
+
+    UserTokenPolicy tokenPolicy = selectTokenPolicy(endpoint);
+
+    return Optional.of(resolveSecurityPolicy(endpoint, tokenPolicy));
+  }
+
+  @Override
+  public Optional<SecurityPolicy> getEccUserTokenSecurityPolicy(EndpointDescription endpoint)
+      throws Exception {
+
+    selectTokenPolicy(endpoint);
+
+    return Optional.empty();
+  }
+
+  @Override
   public SignedIdentityToken getIdentityToken(EndpointDescription endpoint, ByteString serverNonce)
       throws Exception {
 
-    UserTokenPolicy[] userIdentityTokens =
-        requireNonNullElse(endpoint.getUserIdentityTokens(), new UserTokenPolicy[0]);
-
-    UserTokenPolicy tokenPolicy =
-        Stream.of(userIdentityTokens)
-            .filter(t -> t.getTokenType() == UserTokenType.Certificate)
-            .findFirst()
-            .orElseThrow(() -> new Exception("no x509 certificate token policy found"));
-
-    SecurityPolicy securityPolicy;
-
-    String securityPolicyUri = tokenPolicy.getSecurityPolicyUri();
-
-    try {
-      if (securityPolicyUri == null || securityPolicyUri.isEmpty()) {
-        securityPolicyUri = endpoint.getSecurityPolicyUri();
-      }
-      securityPolicy = SecurityPolicy.fromUri(securityPolicyUri);
-    } catch (Throwable t) {
-      throw new UaException(StatusCodes.Bad_SecurityPolicyRejected, t);
-    }
+    UserTokenPolicy tokenPolicy = selectTokenPolicy(endpoint);
+    SecurityPolicy securityPolicy = resolveSecurityPolicy(endpoint, tokenPolicy);
 
     X509IdentityToken token =
         new X509IdentityToken(
@@ -149,5 +153,30 @@ public class X509IdentityProvider implements IdentityProvider {
     }
 
     return new SignedIdentityToken(token, signatureData);
+  }
+
+  private static UserTokenPolicy selectTokenPolicy(EndpointDescription endpoint) throws Exception {
+    UserTokenPolicy[] userIdentityTokens =
+        requireNonNullElse(endpoint.getUserIdentityTokens(), new UserTokenPolicy[0]);
+
+    return Stream.of(userIdentityTokens)
+        .filter(t -> t.getTokenType() == UserTokenType.Certificate)
+        .findFirst()
+        .orElseThrow(() -> new Exception("no x509 certificate token policy found"));
+  }
+
+  private static SecurityPolicy resolveSecurityPolicy(
+      EndpointDescription endpoint, UserTokenPolicy tokenPolicy) throws UaException {
+
+    String securityPolicyUri = tokenPolicy.getSecurityPolicyUri();
+
+    try {
+      if (securityPolicyUri == null || securityPolicyUri.isEmpty()) {
+        securityPolicyUri = endpoint.getSecurityPolicyUri();
+      }
+      return SecurityPolicy.fromUri(securityPolicyUri);
+    } catch (Throwable t) {
+      throw new UaException(StatusCodes.Bad_SecurityPolicyRejected, t);
+    }
   }
 }

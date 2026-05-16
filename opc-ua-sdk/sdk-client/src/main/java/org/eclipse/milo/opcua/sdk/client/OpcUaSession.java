@@ -24,6 +24,7 @@ import org.jspecify.annotations.Nullable;
 public class OpcUaSession extends ConcurrentHashMap<String, Object> implements UaSession {
 
   private volatile ByteString serverNonce = ByteString.NULL_VALUE;
+  private volatile ByteString userTokenReceiverEccPublicKey = ByteString.NULL_VALUE;
   private volatile @Nullable StatusCode lastActivateSessionServiceResult;
 
   private final NodeId authToken;
@@ -99,6 +100,29 @@ public class OpcUaSession extends ConcurrentHashMap<String, Object> implements U
 
   public void setServerNonce(ByteString serverNonce) {
     this.serverNonce = serverNonce;
+  }
+
+  /**
+   * Get the server session public key used for ECC username-token reactivation.
+   *
+   * <p>The key is learned from the CreateSession additional header and reused when the session is
+   * reactivated on the same negotiated user-token policy.
+   *
+   * @return the receiver public key advertised by the server for ECC username-token encryption.
+   */
+  public Optional<ByteString> getUserTokenReceiverEccPublicKey() {
+    return userTokenReceiverEccPublicKey.isNotNull()
+        ? Optional.of(userTokenReceiverEccPublicKey)
+        : Optional.empty();
+  }
+
+  /**
+   * Store the server session public key returned during ECC username-token negotiation.
+   *
+   * @param userTokenReceiverEccPublicKey the receiver public key advertised by the server.
+   */
+  public void setUserTokenReceiverEccPublicKey(ByteString userTokenReceiverEccPublicKey) {
+    this.userTokenReceiverEccPublicKey = userTokenReceiverEccPublicKey;
   }
 
   public void setLastActivateSessionServiceResult(

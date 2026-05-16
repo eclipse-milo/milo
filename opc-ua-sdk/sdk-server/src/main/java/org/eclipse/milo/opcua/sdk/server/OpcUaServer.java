@@ -649,12 +649,21 @@ public class OpcUaServer extends AbstractServiceHandler {
       EndpointConfig endpoint, SecurityPolicyProfile profile) throws EndpointResolutionException {
 
     if (profile.secureChannelEnhancements()) {
+      if (isM1EccSessionPolicy(profile.securityPolicy())) {
+        return;
+      }
+
       throw new EndpointResolutionException(
           "SDK session support is not implemented for "
               + endpoint.getSecurityPolicy().getUri()
               + "; OpenSecureChannel transport support is available, but CreateSession/"
               + "ActivateSession integration is deferred");
     }
+  }
+
+  private static boolean isM1EccSessionPolicy(SecurityPolicy securityPolicy) {
+    return securityPolicy == SecurityPolicy.ECC_nistP256_AesGcm
+        || securityPolicy == SecurityPolicy.ECC_curve25519_ChaChaPoly;
   }
 
   private CertificateIdentity resolveCertificateIdentity(

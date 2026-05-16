@@ -49,9 +49,15 @@
  * and {@link org.eclipse.milo.opcua.stack.core.security.EccKeyAgreementUtil} derives the
  * directional client/server key material consumed by channel-security state. {@link
  * org.eclipse.milo.opcua.stack.core.security.AeadCipherUtil} keeps AES-GCM and ChaCha20-Poly1305
- * cipher creation behind the same provider-selection boundary. Transport handlers should go through
- * SecureChannel strategies rather than calling those helpers directly unless they are implementing
- * a new strategy boundary.
+ * cipher creation behind the same provider-selection boundary. {@link
+ * org.eclipse.milo.opcua.stack.core.security.EccEncryptedSecret} owns the ECC user-token secret
+ * payload format used above SecureChannel during session activation. Transport handlers should go
+ * through SecureChannel strategies rather than calling those helpers directly unless they are
+ * implementing a new strategy boundary.
+ *
+ * <p>{@link org.eclipse.milo.opcua.stack.core.security.EccUserTokenAdditionalHeader} owns the
+ * generated {@code AdditionalParametersType}/{@code EphemeralKeyType} negotiation wrapper used by
+ * SDK CreateSession/ActivateSession code before the opaque token secret is produced.
  *
  * <h2>Extension guidance</h2>
  *

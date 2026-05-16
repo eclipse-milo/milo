@@ -237,21 +237,20 @@ public class EndpointConfigTest {
     assertEquals(0, Objects.requireNonNull(response.getEndpoints()).length);
   }
 
-  // Phase 9 proves ECC SecureChannel transport, but SDK sessions still need Phase 10 signatures and
-  // user-token secret handling before these endpoints can be safely advertised.
+  // Once Phase 10 session/user-token behavior is present, M1 ECC endpoints are safe to advertise.
   @Test
-  public void m1EccEndpointsAreOmittedFromDiscoveryUntilSessionSupport() throws Exception {
-    assertEccEndpointOmitted(
+  public void m1EccEndpointsAreAdvertisedWithCompatibleIdentities() throws Exception {
+    assertEccEndpointAdvertised(
         SecurityPolicy.ECC_nistP256_AesGcm,
         NodeIds.EccNistP256ApplicationCertificateType,
-        nistP256Certificate("ecc-nist"));
-    assertEccEndpointOmitted(
+        nistP256Certificate());
+    assertEccEndpointAdvertised(
         SecurityPolicy.ECC_curve25519_ChaChaPoly,
         NodeIds.EccCurve25519ApplicationCertificateType,
-        ed25519Certificate("ecc-curve25519"));
+        ed25519Certificate());
   }
 
-  private static void assertEccEndpointOmitted(
+  private static void assertEccEndpointAdvertised(
       SecurityPolicy securityPolicy, NodeId certificateTypeId, CertificateMaterial certificate)
       throws Exception {
 
@@ -276,7 +275,11 @@ public class EndpointConfigTest {
     List<EndpointDescription> descriptions =
         server.getApplicationContext().getEndpointDescriptions();
 
-    assertEquals(0, descriptions.size());
+    assertEquals(1, descriptions.size());
+    assertEquals(securityPolicy.getUri(), descriptions.get(0).getSecurityPolicyUri());
+    assertArrayEquals(
+        certificate.certificate().getEncoded(),
+        descriptions.get(0).getServerCertificate().bytesOrEmpty());
   }
 
   // Dynamic legacy certificate suppliers are only re-evaluated after the advertised endpoint cache
@@ -363,18 +366,18 @@ public class EndpointConfigTest {
         NodeIds.RsaSha256ApplicationCertificateType, keyPair, new X509Certificate[] {certificate});
   }
 
-  private static CertificateMaterial nistP256Certificate(String commonName) throws Exception {
+  private static CertificateMaterial nistP256Certificate() throws Exception {
     return eccCertificate(
         NodeIds.EccNistP256ApplicationCertificateType,
         SelfSignedCertificateGenerator.generateNistP256KeyPair(),
-        commonName);
+        "ecc-nist");
   }
 
-  private static CertificateMaterial ed25519Certificate(String commonName) throws Exception {
+  private static CertificateMaterial ed25519Certificate() throws Exception {
     return eccCertificate(
         NodeIds.EccCurve25519ApplicationCertificateType,
         SelfSignedCertificateGenerator.generateEd25519KeyPair(),
-        commonName);
+        "ecc-curve25519");
   }
 
   private static CertificateMaterial eccCertificate(

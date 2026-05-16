@@ -34,10 +34,89 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public final class EccSignatureUtil {
 
+  public static final String ECDSA_SHA256_URI =
+      "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256";
+  public static final String ED25519_URI = "http://www.w3.org/2021/04/xmldsig-more#eddsa-ed25519";
+
   public static final int ECDSA_P256_SHA256_P1363_SIGNATURE_LENGTH = 64;
   public static final int ED25519_SIGNATURE_LENGTH = 64;
 
+  private static final SecurityProviderResolver PROVIDER_RESOLVER =
+      SecurityProviderResolver.create();
+
   private EccSignatureUtil() {}
+
+  /**
+   * Get the SignatureData algorithm URI for a policy using an ECC authentication axis.
+   *
+   * @param profile the security policy profile.
+   * @return the URI used in {@code SignatureData.algorithm}.
+   * @throws UaException if {@code profile} does not use a supported ECC signature axis.
+   */
+  public static String getSignatureAlgorithmUri(SecurityPolicyProfile profile) throws UaException {
+    return switch (profile.authAxis()) {
+      case ECDSA_NIST_P256_SHA256 -> ECDSA_SHA256_URI;
+      case ED25519 -> ED25519_URI;
+      default ->
+          throw new UaException(
+              StatusCodes.Bad_SecurityPolicyRejected,
+              "unsupported ECC signature axis: " + profile.authAxis());
+    };
+  }
+
+  /**
+   * Sign data with the ECC authentication axis selected by {@code profile}.
+   *
+   * @param profile the security policy profile.
+   * @param privateKey the application instance private key.
+   * @param buffers the data buffers to sign from their current positions to limits.
+   * @return the fixed-width ECC signature bytes.
+   * @throws UaException if signing fails or the profile is unsupported.
+   */
+  public static byte[] sign(
+      SecurityPolicyProfile profile, PrivateKey privateKey, ByteBuffer... buffers)
+      throws UaException {
+
+    ProviderProfile providerProfile = PROVIDER_RESOLVER.resolve(profile);
+
+    return switch (profile.authAxis()) {
+      case ECDSA_NIST_P256_SHA256 -> signEcdsaP256Sha256P1363(providerProfile, privateKey, buffers);
+      case ED25519 -> signEd25519(providerProfile, privateKey, buffers);
+      default ->
+          throw new UaException(
+              StatusCodes.Bad_SecurityPolicyRejected,
+              "unsupported ECC signature axis: " + profile.authAxis());
+    };
+  }
+
+  /**
+   * Verify data with the ECC authentication axis selected by {@code profile}.
+   *
+   * @param profile the security policy profile.
+   * @param publicKey the application instance public key.
+   * @param signatureBytes the fixed-width ECC signature bytes.
+   * @param buffers the signed data buffers from their current positions to limits.
+   * @throws UaException if verification fails or the profile is unsupported.
+   */
+  public static void verify(
+      SecurityPolicyProfile profile,
+      PublicKey publicKey,
+      byte[] signatureBytes,
+      ByteBuffer... buffers)
+      throws UaException {
+
+    ProviderProfile providerProfile = PROVIDER_RESOLVER.resolve(profile);
+
+    switch (profile.authAxis()) {
+      case ECDSA_NIST_P256_SHA256 ->
+          verifyEcdsaP256Sha256P1363(providerProfile, publicKey, signatureBytes, buffers);
+      case ED25519 -> verifyEd25519(providerProfile, publicKey, signatureBytes, buffers);
+      default ->
+          throw new UaException(
+              StatusCodes.Bad_SecurityPolicyRejected,
+              "unsupported ECC signature axis: " + profile.authAxis());
+    }
+  }
 
   /**
    * Sign data with ECDSA P-256 SHA-256 and return a P1363 {@code r || s} signature.
@@ -207,8 +286,6 @@ public final class EccSignatureUtil {
       if (!signature.verify(signatureBytes)) {
         throw new UaException(StatusCodes.Bad_SecurityChecksFailed, "could not verify signature");
       }
-    } catch (UaException e) {
-      throw e;
     } catch (GeneralSecurityException e) {
       throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
     }

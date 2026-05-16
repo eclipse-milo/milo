@@ -13,8 +13,10 @@ package org.eclipse.milo.opcua.sdk.server.servicesets;
 import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.structured.ResponseHeader;
+import org.jspecify.annotations.Nullable;
 
 public abstract class AbstractServiceSet {
 
@@ -28,15 +30,23 @@ public abstract class AbstractServiceSet {
 
   public static ResponseHeader createResponseHeader(
       UaRequestMessageType request, StatusCode serviceResult) {
+    return createResponseHeader(request, serviceResult, null);
+  }
+
+  public static ResponseHeader createResponseHeader(
+      UaRequestMessageType request,
+      StatusCode serviceResult,
+      @Nullable ExtensionObject additionalHeader) {
     return new ResponseHeader(
         DateTime.now(),
         request.getRequestHeader().getRequestHandle(),
         serviceResult,
         null,
         null,
-        null);
+        additionalHeader);
   }
 
+  @SuppressWarnings("unused")
   public static ResponseHeader createResponseHeader(
       UaRequestMessageType request, DiagnosticInfo[] diagnosticInfos) {
     // TODO use DiagnosticInfo to create crazy header...

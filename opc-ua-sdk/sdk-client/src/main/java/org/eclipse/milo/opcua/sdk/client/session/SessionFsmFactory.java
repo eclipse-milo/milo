@@ -53,13 +53,21 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.client.*;
+import org.eclipse.milo.opcua.sdk.client.identity.IdentityProvider;
+import org.eclipse.milo.opcua.sdk.client.identity.IdentityProviderContext;
 import org.eclipse.milo.opcua.sdk.client.identity.SignedIdentityToken;
 import org.eclipse.milo.opcua.sdk.client.session.SessionFsm.SessionFuture;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaSubscription;
 import org.eclipse.milo.opcua.stack.core.*;
+import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.security.CertificateIdentity;
+import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
+import org.eclipse.milo.opcua.stack.core.security.EccEncryptedSecret;
+import org.eclipse.milo.opcua.stack.core.security.EccSignatureUtil;
+import org.eclipse.milo.opcua.stack.core.security.EccUserTokenAdditionalHeader;
 import org.eclipse.milo.opcua.stack.core.security.SecurityAlgorithm;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
@@ -76,6 +84,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.CloseSessionRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CreateSessionRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CreateSessionResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.EphemeralKeyType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
@@ -1150,9 +1159,22 @@ public class SessionFsmFactory {
             null,
             null);
 
+    RequestHeader requestHeader;
+    try {
+      requestHeader =
+          withAdditionalHeader(
+              client.newRequestHeader(),
+              buildCreateSessionAdditionalHeader(
+                  client.getConfig().getIdentityProvider(),
+                  client.getStaticEncodingContext(),
+                  endpoint));
+    } catch (Exception e) {
+      return failedFuture(e);
+    }
+
     CreateSessionRequest request =
         new CreateSessionRequest(
-            client.newRequestHeader(),
+            requestHeader,
             clientDescription,
             serverUri,
             client.getConfig().getEndpoint().getEndpointUrl(),
@@ -1212,13 +1234,8 @@ public class SessionFsmFactory {
                   byte[] dataBytes =
                       Bytes.concat(clientCertificate.bytesOrEmpty(), clientNonce.bytesOrEmpty());
 
-                  byte[] signatureBytes = serverSignature.getSignature().bytesOrEmpty();
-
-                  SignatureUtil.verify(
-                      SecurityAlgorithm.fromUri(serverSignature.getAlgorithm()),
-                      serverCertificate,
-                      dataBytes,
-                      signatureBytes);
+                  verifyApplicationSignature(
+                      securityPolicy, serverCertificate, serverSignature, dataBytes);
                 }
 
                 if (client.getConfig().isSessionEndpointValidationEnabled()) {
@@ -1235,6 +1252,30 @@ public class SessionFsmFactory {
                 return failedFuture(e);
               }
             });
+  }
+
+  static ExtensionObject buildCreateSessionAdditionalHeader(
+      IdentityProvider identityProvider, EncodingContext context, EndpointDescription endpoint)
+      throws Exception {
+
+    return identityProvider.getCreateSessionAdditionalHeader(context, endpoint);
+  }
+
+  private static RequestHeader withAdditionalHeader(
+      RequestHeader requestHeader, ExtensionObject additionalHeader) {
+
+    if (additionalHeader == null) {
+      return requestHeader;
+    }
+
+    return new RequestHeader(
+        requestHeader.getAuthenticationToken(),
+        requestHeader.getTimestamp(),
+        requestHeader.getRequestHandle(),
+        requestHeader.getReturnDiagnostics(),
+        requestHeader.getAuditEntryId(),
+        requestHeader.getTimeoutHint(),
+        additionalHeader);
   }
 
   /**
@@ -1315,6 +1356,142 @@ public class SessionFsmFactory {
         && Objects.equals(endpoint1.getSecurityLevel(), endpoint2.getSecurityLevel());
   }
 
+  static Optional<ByteString> verifyCreateSessionEccUserTokenKey(
+      OpcUaClient client,
+      EndpointDescription endpoint,
+      CreateSessionResponse response,
+      SecurityPolicy userTokenSecurityPolicy)
+      throws Exception {
+
+    return verifyCreateSessionEccUserTokenKey(
+        client.getStaticEncodingContext(),
+        client.getConfig().getCertificateValidator(),
+        endpoint,
+        response,
+        userTokenSecurityPolicy);
+  }
+
+  static Optional<ByteString> verifyCreateSessionEccUserTokenKey(
+      EncodingContext encodingContext,
+      CertificateValidator certificateValidator,
+      EndpointDescription endpoint,
+      CreateSessionResponse response,
+      SecurityPolicy userTokenSecurityPolicy)
+      throws Exception {
+
+    if (userTokenSecurityPolicy == null
+        || !EccUserTokenAdditionalHeader.isSupportedEccProfile(
+            userTokenSecurityPolicy.getProfile())) {
+      return Optional.empty();
+    }
+
+    ByteString responseServerCertificate = response.getServerCertificate();
+    ByteString endpointServerCertificate = endpoint.getServerCertificate();
+
+    if (responseServerCertificate == null
+        || responseServerCertificate.isNullOrEmpty()
+        || endpointServerCertificate == null
+        || endpointServerCertificate.isNullOrEmpty()) {
+
+      throw new UaException(
+          StatusCodes.Bad_ConfigurationError,
+          "ECC user-token negotiation requires an advertised server certificate");
+    }
+
+    EphemeralKeyType ephemeralKey =
+        EccUserTokenAdditionalHeader.decodeResponse(
+                encodingContext,
+                response.getResponseHeader().getAdditionalHeader(),
+                userTokenSecurityPolicy)
+            .orElseThrow(
+                () ->
+                    new UaException(
+                        StatusCodes.Bad_SecurityChecksFailed,
+                        "server did not return ECC user-token key material"));
+
+    /*
+     * The signed ephemeral key is only meaningful if it is anchored to the endpoint certificate the
+     * client selected. SecureChannel validation already covers this for secured endpoints; None and
+     * HTTPS-style token-encryption paths need the same explicit certificate match and trust check
+     * before the username secret is encrypted.
+     */
+    List<X509Certificate> serverCertificateChain =
+        CertificateUtil.decodeCertificates(responseServerCertificate.bytesOrEmpty());
+    X509Certificate serverCertificate = serverCertificateChain.get(0);
+
+    X509Certificate certificateFromEndpoint =
+        CertificateUtil.decodeCertificate(endpointServerCertificate.bytesOrEmpty());
+
+    if (!serverCertificate.equals(certificateFromEndpoint)) {
+      throw new UaException(
+          StatusCodes.Bad_SecurityChecksFailed,
+          "Certificate from CreateSessionResponse did not match certificate from"
+              + " EndpointDescription!");
+    }
+
+    SecurityPolicy endpointSecurityPolicy = SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri());
+    if (endpointSecurityPolicy == SecurityPolicy.None
+        || !Stack.TCP_UASC_UABINARY_TRANSPORT_URI.equals(endpoint.getTransportProfileUri())) {
+
+      certificateValidator.validateCertificateChain(
+          serverCertificateChain,
+          endpoint.getServer().getApplicationUri(),
+          new String[] {EndpointUtil.getHost(endpoint.getEndpointUrl())},
+          userTokenSecurityPolicy.getProfile());
+    }
+
+    EccEncryptedSecret.verifyEphemeralKey(
+        userTokenSecurityPolicy.getProfile(), serverCertificate, ephemeralKey);
+
+    return Optional.of(ephemeralKey.getPublicKey());
+  }
+
+  private static IdentityProviderContext buildIdentityProviderContext(
+      OpcUaClient client,
+      EndpointDescription endpoint,
+      ByteString serverNonce,
+      SecurityPolicy userTokenSecurityPolicy,
+      ByteString receiverEccPublicKey)
+      throws UaException {
+
+    SecurityPolicy endpointSecurityPolicy = SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri());
+    SecurityPolicy certificateSecurityPolicy =
+        userTokenSecurityPolicy != null && userTokenSecurityPolicy != SecurityPolicy.None
+            ? userTokenSecurityPolicy
+            : endpointSecurityPolicy;
+
+    Optional<CertificateIdentity> certificateIdentity =
+        certificateSecurityPolicy != SecurityPolicy.None
+            ? client.getCertificateIdentity(certificateSecurityPolicy.getProfile())
+            : Optional.empty();
+
+    KeyPair keyPair =
+        certificateIdentity
+            .map(CertificateIdentity::keyPair)
+            .or(() -> client.getConfig().getKeyPair())
+            .orElse(null);
+
+    X509Certificate[] certificateChain =
+        certificateIdentity
+            .map(CertificateIdentity::certificateChain)
+            .or(() -> client.getConfig().getCertificateChain())
+            .or(
+                () ->
+                    client
+                        .getConfig()
+                        .getCertificate()
+                        .map(certificate -> new X509Certificate[] {certificate}))
+            .orElse(null);
+
+    return new IdentityProviderContext(
+        endpoint,
+        serverNonce,
+        userTokenSecurityPolicy,
+        receiverEccPublicKey,
+        keyPair,
+        certificateChain);
+  }
+
   @SuppressWarnings("Duplicates")
   private static CompletableFuture<OpcUaSession> activateSession(
       FsmContext<State, Event> ctx, OpcUaClient client, CreateSessionResponse csr) {
@@ -1323,9 +1500,23 @@ public class SessionFsmFactory {
       EndpointDescription endpoint = client.getConfig().getEndpoint();
 
       ByteString csrNonce = csr.getServerNonce();
+      Optional<SecurityPolicy> userTokenSecurityPolicy =
+          client.getConfig().getIdentityProvider().getEccUserTokenSecurityPolicy(endpoint);
+      Optional<ByteString> receiverEccPublicKey =
+          verifyCreateSessionEccUserTokenKey(
+              client, endpoint, csr, userTokenSecurityPolicy.orElse(null));
 
       SignedIdentityToken signedIdentityToken =
-          client.getConfig().getIdentityProvider().getIdentityToken(endpoint, csrNonce);
+          client
+              .getConfig()
+              .getIdentityProvider()
+              .getIdentityToken(
+                  buildIdentityProviderContext(
+                      client,
+                      endpoint,
+                      csrNonce,
+                      userTokenSecurityPolicy.orElse(null),
+                      receiverEccPublicKey.orElse(null)));
 
       UserIdentityToken userIdentityToken = signedIdentityToken.getToken();
       SignatureData userTokenSignature = signedIdentityToken.getSignature();
@@ -1368,6 +1559,7 @@ public class SessionFsmFactory {
                 session.setLastActivateSessionServiceResult(
                     asr.getResponseHeader().getServiceResult());
                 session.setServerNonce(asrNonce);
+                receiverEccPublicKey.ifPresent(session::setUserTokenReceiverEccPublicKey);
 
                 return completedFuture(session);
               });
@@ -1386,9 +1578,20 @@ public class SessionFsmFactory {
       EndpointDescription endpoint = client.getConfig().getEndpoint();
 
       ByteString serverNonce = session.getServerNonce();
+      Optional<SecurityPolicy> userTokenSecurityPolicy =
+          client.getConfig().getIdentityProvider().getEccUserTokenSecurityPolicy(endpoint);
 
       SignedIdentityToken signedIdentityToken =
-          client.getConfig().getIdentityProvider().getIdentityToken(endpoint, serverNonce);
+          client
+              .getConfig()
+              .getIdentityProvider()
+              .getIdentityToken(
+                  buildIdentityProviderContext(
+                      client,
+                      endpoint,
+                      serverNonce,
+                      userTokenSecurityPolicy.orElse(null),
+                      session.getUserTokenReceiverEccPublicKey().orElse(null)));
 
       UserIdentityToken userIdentityToken = signedIdentityToken.getToken();
       SignatureData userTokenSignature = signedIdentityToken.getSignature();
@@ -1651,7 +1854,11 @@ public class SessionFsmFactory {
               .map(CertificateIdentity::keyPair)
               .map(KeyPair::getPrivate)
               .or(() -> config.getKeyPair().map(KeyPair::getPrivate))
-              .orElse(null);
+              .orElseThrow(
+                  () ->
+                      new UaException(
+                          StatusCodes.Bad_ConfigurationError,
+                          "client certificate identity is required for session signature"));
       List<X509Certificate> serverCertificates =
           CertificateUtil.decodeCertificates(endpoint.getServerCertificate().bytesOrEmpty());
 
@@ -1660,10 +1867,53 @@ public class SessionFsmFactory {
       byte[] serverCertificateBytes = serverCertificates.get(0).getEncoded();
       byte[] dataToSign = Bytes.concat(serverCertificateBytes, serverNonceBytes);
 
-      byte[] signature =
-          SignatureUtil.sign(signatureAlgorithm, privateKey, ByteBuffer.wrap(dataToSign));
+      byte[] signature;
+      String algorithmUri;
 
-      return new SignatureData(signatureAlgorithm.getUri(), ByteString.of(signature));
+      if (signatureAlgorithm == SecurityAlgorithm.None) {
+        SecurityPolicyProfile profile = securityPolicy.getProfile();
+
+        signature = EccSignatureUtil.sign(profile, privateKey, ByteBuffer.wrap(dataToSign));
+        algorithmUri = EccSignatureUtil.getSignatureAlgorithmUri(profile);
+      } else {
+        signature = SignatureUtil.sign(signatureAlgorithm, privateKey, ByteBuffer.wrap(dataToSign));
+        algorithmUri = signatureAlgorithm.getUri();
+      }
+
+      return new SignatureData(algorithmUri, ByteString.of(signature));
+    }
+  }
+
+  private static void verifyApplicationSignature(
+      SecurityPolicy securityPolicy,
+      X509Certificate certificate,
+      SignatureData signature,
+      byte[] dataBytes)
+      throws UaException {
+
+    SecurityAlgorithm algorithm = securityPolicy.getAsymmetricSignatureAlgorithm();
+
+    if (algorithm == SecurityAlgorithm.None) {
+      SecurityPolicyProfile profile = securityPolicy.getProfile();
+      String algorithmUri = EccSignatureUtil.getSignatureAlgorithmUri(profile);
+
+      if (!algorithmUri.equals(signature.getAlgorithm())) {
+        throw new UaException(
+            StatusCodes.Bad_SecurityChecksFailed,
+            "unexpected application signature algorithm: " + signature.getAlgorithm());
+      }
+
+      EccSignatureUtil.verify(
+          profile,
+          certificate.getPublicKey(),
+          signature.getSignature().bytesOrEmpty(),
+          ByteBuffer.wrap(dataBytes));
+    } else {
+      SignatureUtil.verify(
+          SecurityAlgorithm.fromUri(signature.getAlgorithm()),
+          certificate,
+          dataBytes,
+          signature.getSignature().bytesOrEmpty());
     }
   }
 
