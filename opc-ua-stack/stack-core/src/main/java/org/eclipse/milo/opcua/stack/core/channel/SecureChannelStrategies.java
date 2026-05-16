@@ -15,7 +15,9 @@ import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
+import java.security.KeyPair;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.security.cert.Certificate;
@@ -26,11 +28,16 @@ import javax.crypto.spec.SecretKeySpec;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
+import org.eclipse.milo.opcua.stack.core.security.EccKeyAgreementUtil;
+import org.eclipse.milo.opcua.stack.core.security.EccPublicKeyCodec;
+import org.eclipse.milo.opcua.stack.core.security.EccSignatureUtil;
 import org.eclipse.milo.opcua.stack.core.security.SecurityAlgorithm;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.ChunkProtectionAxis;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis;
+import org.eclipse.milo.opcua.stack.core.security.SecurityProviderResolver;
+import org.eclipse.milo.opcua.stack.core.security.SecurityProviderResolver.ProviderProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.util.PShaUtil;
 import org.eclipse.milo.opcua.stack.core.util.SignatureUtil;
@@ -53,14 +60,25 @@ import org.eclipse.milo.opcua.stack.core.util.SignatureUtil;
  */
 final class SecureChannelStrategies {
 
+  private static final SecurityProviderResolver PROVIDER_RESOLVER =
+      SecurityProviderResolver.create();
+
   private static final AuthenticationStrategy NO_AUTHENTICATION = new NoAuthenticationStrategy();
   private static final AuthenticationStrategy RSA_AUTHENTICATION = new RsaAuthenticationStrategy();
+  private static final AuthenticationStrategy ECDSA_P256_AUTHENTICATION =
+      new EcdsaP256AuthenticationStrategy();
+  private static final AuthenticationStrategy ED25519_AUTHENTICATION =
+      new Ed25519AuthenticationStrategy();
   private static final AuthenticationStrategy UNSUPPORTED_AUTHENTICATION =
       new UnsupportedAuthenticationStrategy();
 
   private static final KeyAgreementStrategy NO_KEY_AGREEMENT = new NoKeyAgreementStrategy();
   private static final KeyAgreementStrategy RSA_NONCE_KEY_AGREEMENT =
       new RsaNoncePShaKeyAgreementStrategy();
+  private static final KeyAgreementStrategy ECDH_NIST_P256_KEY_AGREEMENT =
+      new EcdhNistP256HkdfKeyAgreementStrategy();
+  private static final KeyAgreementStrategy X25519_KEY_AGREEMENT =
+      new X25519HkdfKeyAgreementStrategy();
   private static final KeyAgreementStrategy UNSUPPORTED_KEY_AGREEMENT =
       new UnsupportedKeyAgreementStrategy();
 
@@ -85,7 +103,8 @@ final class SecureChannelStrategies {
     return switch (authAxis) {
       case NONE -> NO_AUTHENTICATION;
       case RSA_PKCS1_SHA1, RSA_PKCS1_SHA256, RSA_PSS_SHA256 -> RSA_AUTHENTICATION;
-      default -> UNSUPPORTED_AUTHENTICATION;
+      case ECDSA_NIST_P256_SHA256 -> ECDSA_P256_AUTHENTICATION;
+      case ED25519 -> ED25519_AUTHENTICATION;
     };
   }
 
@@ -96,7 +115,8 @@ final class SecureChannelStrategies {
     return switch (keyAgreementAxis) {
       case NONE -> NO_KEY_AGREEMENT;
       case RSA_NONCE -> RSA_NONCE_KEY_AGREEMENT;
-      default -> UNSUPPORTED_KEY_AGREEMENT;
+      case ECDH_NIST_P256 -> ECDH_NIST_P256_KEY_AGREEMENT;
+      case X25519 -> X25519_KEY_AGREEMENT;
     };
   }
 
@@ -152,10 +172,43 @@ final class SecureChannelStrategies {
    * Derives the pair of directional symmetric key sets installed on a SecureChannel token.
    *
    * <p>The returned keys are directional rather than local/remote. Client implementations send with
-   * client keys and servers send with server keys; {@link SecureChannel} maps those directions to
+   * client keys, and servers send with server keys; {@link SecureChannel} maps those directions to
    * encryption and decryption for the current role.
    */
   interface KeyAgreementStrategy {
+
+    default KeyPair generateEphemeral(SecurityPolicyProfile profile) throws UaException {
+      throw unsupported(profile, "ephemeral key generation");
+    }
+
+    default ByteString encodePublicKey(SecurityPolicyProfile profile, PublicKey publicKey)
+        throws UaException {
+
+      throw unsupported(profile, "public-key encoding");
+    }
+
+    default PublicKey decodePublicKey(SecurityPolicyProfile profile, ByteString wirePublicKey)
+        throws UaException {
+
+      throw unsupported(profile, "public-key decoding");
+    }
+
+    default byte[] agree(
+        SecurityPolicyProfile profile, PrivateKey privateKey, PublicKey peerPublicKey)
+        throws UaException {
+
+      throw unsupported(profile, "key agreement");
+    }
+
+    default EccKeyAgreementUtil.DerivedKeyMaterial deriveKeyMaterial(
+        SecurityPolicyProfile profile,
+        byte[] sharedSecret,
+        ByteString clientNonce,
+        ByteString serverNonce)
+        throws UaException {
+
+      throw unsupported(profile, "HKDF key derivation");
+    }
 
     ChannelSecurity.SecurityKeys deriveKeys(
         SecurityPolicyProfile profile,
@@ -307,6 +360,64 @@ final class SecureChannelStrategies {
     }
   }
 
+  private static final class EcdsaP256AuthenticationStrategy implements AuthenticationStrategy {
+
+    @Override
+    public byte[] sign(
+        SecurityPolicyProfile profile, PrivateKey privateKey, ByteBuffer chunkNioBuffer)
+        throws UaException {
+
+      return EccSignatureUtil.signEcdsaP256Sha256P1363(
+          resolveProviderProfile(profile), privateKey, chunkNioBuffer);
+    }
+
+    @Override
+    public void verify(
+        SecurityPolicyProfile profile,
+        Certificate certificate,
+        ByteBuffer signedBytes,
+        byte[] signatureBytes)
+        throws UaException {
+
+      EccSignatureUtil.verifyEcdsaP256Sha256P1363(
+          resolveProviderProfile(profile), certificate.getPublicKey(), signatureBytes, signedBytes);
+    }
+
+    @Override
+    public int signatureSize(Certificate certificate) {
+      return EccSignatureUtil.ECDSA_P256_SHA256_P1363_SIGNATURE_LENGTH;
+    }
+  }
+
+  private static final class Ed25519AuthenticationStrategy implements AuthenticationStrategy {
+
+    @Override
+    public byte[] sign(
+        SecurityPolicyProfile profile, PrivateKey privateKey, ByteBuffer chunkNioBuffer)
+        throws UaException {
+
+      return EccSignatureUtil.signEd25519(
+          resolveProviderProfile(profile), privateKey, chunkNioBuffer);
+    }
+
+    @Override
+    public void verify(
+        SecurityPolicyProfile profile,
+        Certificate certificate,
+        ByteBuffer signedBytes,
+        byte[] signatureBytes)
+        throws UaException {
+
+      EccSignatureUtil.verifyEd25519(
+          resolveProviderProfile(profile), certificate.getPublicKey(), signatureBytes, signedBytes);
+    }
+
+    @Override
+    public int signatureSize(Certificate certificate) {
+      return EccSignatureUtil.ED25519_SIGNATURE_LENGTH;
+    }
+  }
+
   private static final class UnsupportedAuthenticationStrategy implements AuthenticationStrategy {
 
     @Override
@@ -424,6 +535,118 @@ final class SecureChannelStrategies {
               clientSignatureKey, clientEncryptionKey, clientInitializationVector),
           new ChannelSecurity.SecretKeys(
               serverSignatureKey, serverEncryptionKey, serverInitializationVector));
+    }
+  }
+
+  private static final class EcdhNistP256HkdfKeyAgreementStrategy implements KeyAgreementStrategy {
+
+    @Override
+    public KeyPair generateEphemeral(SecurityPolicyProfile profile) throws UaException {
+      return EccKeyAgreementUtil.generateNistP256KeyPair(resolveProviderProfile(profile));
+    }
+
+    @Override
+    public ByteString encodePublicKey(SecurityPolicyProfile profile, PublicKey publicKey)
+        throws UaException {
+
+      return EccPublicKeyCodec.encodeNistP256(publicKey);
+    }
+
+    @Override
+    public PublicKey decodePublicKey(SecurityPolicyProfile profile, ByteString wirePublicKey)
+        throws UaException {
+
+      return EccPublicKeyCodec.decodeNistP256(wirePublicKey, resolveProviderProfile(profile));
+    }
+
+    @Override
+    public byte[] agree(
+        SecurityPolicyProfile profile, PrivateKey privateKey, PublicKey peerPublicKey)
+        throws UaException {
+
+      return EccKeyAgreementUtil.agreeNistP256(
+          resolveProviderProfile(profile), privateKey, peerPublicKey);
+    }
+
+    @Override
+    public EccKeyAgreementUtil.DerivedKeyMaterial deriveKeyMaterial(
+        SecurityPolicyProfile profile,
+        byte[] sharedSecret,
+        ByteString clientNonce,
+        ByteString serverNonce)
+        throws UaException {
+
+      return EccKeyAgreementUtil.deriveEccAeadKeyMaterial(
+          resolveProviderProfile(profile), profile, sharedSecret, clientNonce, serverNonce);
+    }
+
+    @Override
+    public ChannelSecurity.SecurityKeys deriveKeys(
+        SecurityPolicyProfile profile,
+        ByteString clientNonce,
+        ByteString serverNonce,
+        int initializationVectorSize) {
+
+      throw new UaRuntimeException(
+          StatusCodes.Bad_SecurityPolicyRejected,
+          "ECC key agreement requires an ephemeral private key: "
+              + profile.securityPolicy().getUri());
+    }
+  }
+
+  private static final class X25519HkdfKeyAgreementStrategy implements KeyAgreementStrategy {
+
+    @Override
+    public KeyPair generateEphemeral(SecurityPolicyProfile profile) throws UaException {
+      return EccKeyAgreementUtil.generateX25519KeyPair(resolveProviderProfile(profile));
+    }
+
+    @Override
+    public ByteString encodePublicKey(SecurityPolicyProfile profile, PublicKey publicKey)
+        throws UaException {
+
+      return EccPublicKeyCodec.encodeX25519(publicKey);
+    }
+
+    @Override
+    public PublicKey decodePublicKey(SecurityPolicyProfile profile, ByteString wirePublicKey)
+        throws UaException {
+
+      return EccPublicKeyCodec.decodeX25519(wirePublicKey, resolveProviderProfile(profile));
+    }
+
+    @Override
+    public byte[] agree(
+        SecurityPolicyProfile profile, PrivateKey privateKey, PublicKey peerPublicKey)
+        throws UaException {
+
+      return EccKeyAgreementUtil.agreeX25519(
+          resolveProviderProfile(profile), privateKey, peerPublicKey);
+    }
+
+    @Override
+    public EccKeyAgreementUtil.DerivedKeyMaterial deriveKeyMaterial(
+        SecurityPolicyProfile profile,
+        byte[] sharedSecret,
+        ByteString clientNonce,
+        ByteString serverNonce)
+        throws UaException {
+
+      return EccKeyAgreementUtil.deriveEccAeadKeyMaterial(
+          resolveProviderProfile(profile), profile, sharedSecret, clientNonce, serverNonce);
+    }
+
+    @Override
+    public ChannelSecurity.SecurityKeys deriveKeys(
+        SecurityPolicyProfile profile,
+        ByteString clientNonce,
+        ByteString serverNonce,
+        int initializationVectorSize) {
+
+      throw new UaRuntimeException(
+          StatusCodes.Bad_SecurityPolicyRejected,
+          "ECC key agreement requires an ephemeral private key: "
+              + profile.securityPolicy().getUri());
     }
   }
 
@@ -943,5 +1166,11 @@ final class SecureChannelStrategies {
     return new UaException(
         StatusCodes.Bad_SecurityPolicyRejected,
         "unsupported " + strategyName + ": " + profile.securityPolicy().getUri());
+  }
+
+  private static ProviderProfile resolveProviderProfile(SecurityPolicyProfile profile)
+      throws UaException {
+
+    return PROVIDER_RESOLVER.resolve(profile);
   }
 }

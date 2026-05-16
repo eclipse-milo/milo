@@ -15,6 +15,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.ByteBuffer;
+import java.security.KeyPair;
+import java.security.PublicKey;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
@@ -67,25 +69,27 @@ class SecureChannelStrategiesTest {
     assertEquals(profile.symmetricSignatureSize(), chunks.signatureSize(profile));
   }
 
-  // Recognized ECC policies must fail at the strategy boundary until their channel operations are
-  // implemented, rather than accidentally taking an RSA code path.
+  // Recognized ECC policies expose their primitive strategy pieces, while the legacy
+  // ChannelSecurity derivation entry point remains guarded because ECC needs retained ephemeral
+  // private-key state before keys can be installed.
   @Test
-  void eccProfilesRemainUnsupportedAtStrategyBoundary() {
+  void eccProfilesExposePrimitiveStrategiesButRemainPartiallyGuarded() throws UaException {
     SecurityPolicyProfile profile = SecurityPolicy.ECC_nistP256_AesGcm.getProfile();
     ServerSecureChannel channel = new ServerSecureChannel();
     channel.setSecurityPolicy(SecurityPolicy.ECC_nistP256_AesGcm);
+    SecureChannelStrategies.KeyAgreementStrategy keyAgreement =
+        SecureChannelStrategies.keyAgreement(profile);
+    KeyPair local = keyAgreement.generateEphemeral(profile);
+    KeyPair peer = keyAgreement.generateEphemeral(profile);
+    ByteString peerWire = keyAgreement.encodePublicKey(profile, peer.getPublic());
+    PublicKey decodedPeer = keyAgreement.decodePublicKey(profile, peerWire);
 
-    assertThrows(
-        UaException.class,
-        () ->
-            SecureChannelStrategies.authentication(profile)
-                .sign(profile, null, ByteBuffer.allocate(0)));
+    assertEquals(profile.secureChannelNonceLength(), peerWire.length());
+    assertEquals(32, keyAgreement.agree(profile, local.getPrivate(), decodedPeer).length);
 
     assertThrows(
         UaRuntimeException.class,
-        () ->
-            SecureChannelStrategies.keyAgreement(profile)
-                .deriveKeys(profile, ByteString.NULL_VALUE, ByteString.NULL_VALUE, 0));
+        () -> keyAgreement.deriveKeys(profile, ByteString.NULL_VALUE, ByteString.NULL_VALUE, 0));
 
     assertThrows(
         UaException.class,

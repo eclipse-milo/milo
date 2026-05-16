@@ -42,6 +42,15 @@
  * selection so policy metadata does not depend on JVM provider order. The stack can recognize a
  * policy even when the current runtime cannot execute the corresponding SecureChannel strategy.
  *
+ * <p>ECC SecureChannel setup uses a small set of primitive helpers at this layer. {@link
+ * org.eclipse.milo.opcua.stack.core.security.EccPublicKeyCodec} translates between OPC UA's nonce
+ * field wire bytes and JCA public keys, {@link
+ * org.eclipse.milo.opcua.stack.core.security.EccSignatureUtil} owns the ECC signature wire formats,
+ * and {@link org.eclipse.milo.opcua.stack.core.security.EccKeyAgreementUtil} derives the
+ * directional client/server key material consumed by channel-security state. Transport handlers
+ * should go through SecureChannel strategies rather than calling those helpers directly unless they
+ * are implementing a new strategy boundary.
+ *
  * <h2>Extension guidance</h2>
  *
  * <p>Add new policy metadata through {@code SecurityPolicyProfile} and {@code
