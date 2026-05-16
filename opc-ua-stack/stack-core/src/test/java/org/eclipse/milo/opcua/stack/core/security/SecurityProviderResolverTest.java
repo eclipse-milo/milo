@@ -22,8 +22,10 @@ import java.security.Security;
 import java.util.List;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.Test;
 
+@NullMarked
 public class SecurityProviderResolverTest {
 
   @Test

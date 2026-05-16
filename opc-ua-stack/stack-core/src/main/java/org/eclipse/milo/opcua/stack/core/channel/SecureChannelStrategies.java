@@ -41,6 +41,8 @@ import org.eclipse.milo.opcua.stack.core.security.SecurityProviderResolver.Provi
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.util.PShaUtil;
 import org.eclipse.milo.opcua.stack.core.util.SignatureUtil;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Resolves a {@link SecurityPolicyProfile} into the cryptographic operations used by SecureChannel
@@ -58,6 +60,7 @@ import org.eclipse.milo.opcua.stack.core.util.SignatureUtil;
  * reaches the codec too early, the strategy fails at the boundary with {@code
  * Bad_SecurityPolicyRejected} instead of silently falling back to an RSA assumption.
  */
+@NullMarked
 final class SecureChannelStrategies {
 
   private static final SecurityProviderResolver PROVIDER_RESOLVER =
@@ -69,6 +72,8 @@ final class SecureChannelStrategies {
       new EcdsaP256AuthenticationStrategy();
   private static final AuthenticationStrategy ED25519_AUTHENTICATION =
       new Ed25519AuthenticationStrategy();
+
+  @SuppressWarnings("unused")
   private static final AuthenticationStrategy UNSUPPORTED_AUTHENTICATION =
       new UnsupportedAuthenticationStrategy();
 
@@ -79,6 +84,8 @@ final class SecureChannelStrategies {
       new EcdhNistP256HkdfKeyAgreementStrategy();
   private static final KeyAgreementStrategy X25519_KEY_AGREEMENT =
       new X25519HkdfKeyAgreementStrategy();
+
+  @SuppressWarnings("unused")
   private static final KeyAgreementStrategy UNSUPPORTED_KEY_AGREEMENT =
       new UnsupportedKeyAgreementStrategy();
 
@@ -200,6 +207,7 @@ final class SecureChannelStrategies {
       throw unsupported(profile, "key agreement");
     }
 
+    @SuppressWarnings("unused")
     default EccKeyAgreementUtil.DerivedKeyMaterial deriveKeyMaterial(
         SecurityPolicyProfile profile,
         byte[] sharedSecret,
@@ -418,6 +426,7 @@ final class SecureChannelStrategies {
     }
   }
 
+  @SuppressWarnings("unused")
   private static final class UnsupportedAuthenticationStrategy implements AuthenticationStrategy {
 
     @Override
@@ -482,18 +491,17 @@ final class SecureChannelStrategies {
 
       int signatureKeySize = profile.symmetricSignatureKeySize();
       int encryptionKeySize = profile.symmetricEncryptionKeySize();
-      assert (clientNonce != null);
-      assert (serverNonce != null);
+      byte[] clientNonceBytes = requireNonceBytes(clientNonce, "clientNonce");
+      byte[] serverNonceBytes = requireNonceBytes(serverNonce, "serverNonce");
 
       byte[] clientSignatureKey =
-          createPShaKey(
-              keyDerivation, serverNonce.bytes(), clientNonce.bytes(), 0, signatureKeySize);
+          createPShaKey(keyDerivation, serverNonceBytes, clientNonceBytes, 0, signatureKeySize);
 
       byte[] clientEncryptionKey =
           createPShaKey(
               keyDerivation,
-              serverNonce.bytes(),
-              clientNonce.bytes(),
+              serverNonceBytes,
+              clientNonceBytes,
               signatureKeySize,
               encryptionKeySize);
 
@@ -505,28 +513,27 @@ final class SecureChannelStrategies {
       byte[] clientInitializationVector =
           createPShaKey(
               keyDerivation,
-              serverNonce.bytes(),
-              clientNonce.bytes(),
+              serverNonceBytes,
+              clientNonceBytes,
               signatureKeySize + encryptionKeySize,
               initializationVectorSize);
 
       byte[] serverSignatureKey =
-          createPShaKey(
-              keyDerivation, clientNonce.bytes(), serverNonce.bytes(), 0, signatureKeySize);
+          createPShaKey(keyDerivation, clientNonceBytes, serverNonceBytes, 0, signatureKeySize);
 
       byte[] serverEncryptionKey =
           createPShaKey(
               keyDerivation,
-              clientNonce.bytes(),
-              serverNonce.bytes(),
+              clientNonceBytes,
+              serverNonceBytes,
               signatureKeySize,
               encryptionKeySize);
 
       byte[] serverInitializationVector =
           createPShaKey(
               keyDerivation,
-              clientNonce.bytes(),
-              serverNonce.bytes(),
+              clientNonceBytes,
+              serverNonceBytes,
               signatureKeySize + encryptionKeySize,
               initializationVectorSize);
 
@@ -650,6 +657,7 @@ final class SecureChannelStrategies {
     }
   }
 
+  @SuppressWarnings("unused")
   private static final class UnsupportedKeyAgreementStrategy implements KeyAgreementStrategy {
 
     @Override
@@ -1098,7 +1106,7 @@ final class SecureChannelStrategies {
     };
   }
 
-  static int getRsaKeyLength(Certificate certificate) {
+  static int getRsaKeyLength(@Nullable Certificate certificate) {
     if (certificate == null || !(certificate.getPublicKey() instanceof RSAPublicKey publicKey)) {
       return 0;
     }
@@ -1106,15 +1114,15 @@ final class SecureChannelStrategies {
     return publicKey.getModulus().bitLength();
   }
 
-  static int rsaSignatureSize(Certificate certificate) {
+  static int rsaSignatureSize(@Nullable Certificate certificate) {
     return rsaCipherTextBlockSize(certificate);
   }
 
-  static int rsaCipherTextBlockSize(Certificate certificate) {
+  static int rsaCipherTextBlockSize(@Nullable Certificate certificate) {
     return (getRsaKeyLength(certificate) + 7) / 8;
   }
 
-  static int rsaPlainTextBlockSize(Certificate certificate, SecurityAlgorithm algorithm) {
+  static int rsaPlainTextBlockSize(@Nullable Certificate certificate, SecurityAlgorithm algorithm) {
     return switch (algorithm) {
       case Rsa15 -> rsaCipherTextBlockSize(certificate) - 11;
       case RsaOaepSha1 -> rsaCipherTextBlockSize(certificate) - 42;
@@ -1166,6 +1174,14 @@ final class SecureChannelStrategies {
     return new UaException(
         StatusCodes.Bad_SecurityPolicyRejected,
         "unsupported " + strategyName + ": " + profile.securityPolicy().getUri());
+  }
+
+  private static byte[] requireNonceBytes(ByteString nonce, String name) {
+    if (nonce.isNull()) {
+      throw new UaRuntimeException(StatusCodes.Bad_NonceInvalid, name + " is null");
+    }
+
+    return nonce.bytesOrEmpty();
   }
 
   private static ProviderProfile resolveProviderProfile(SecurityPolicyProfile profile)

@@ -23,8 +23,10 @@ import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
 import org.eclipse.milo.opcua.stack.core.util.validation.CaSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.validation.ValidationCheck;
+import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.Test;
 
+@NullMarked
 class DefaultCertificateValidatorTest {
 
   @Test

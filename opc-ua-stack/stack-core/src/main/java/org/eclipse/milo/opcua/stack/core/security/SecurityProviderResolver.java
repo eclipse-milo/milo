@@ -54,11 +54,7 @@ public final class SecurityProviderResolver {
       new ConcurrentHashMap<>();
 
   private SecurityProviderResolver(List<ProviderProfile> providerProfiles) {
-    this.providerProfiles = List.copyOf(requireNonNull(providerProfiles, "providerProfiles"));
-
-    for (ProviderProfile providerProfile : this.providerProfiles) {
-      requireNonNull(providerProfile, "providerProfile");
-    }
+    this.providerProfiles = List.copyOf(providerProfiles);
   }
 
   /**

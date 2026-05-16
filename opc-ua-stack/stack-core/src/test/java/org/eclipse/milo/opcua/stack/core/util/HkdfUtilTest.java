@@ -14,8 +14,10 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.HexFormat;
+import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.Test;
 
+@NullMarked
 class HkdfUtilTest {
 
   // RFC 5869 vectors make the generic HKDF implementation independent of any OPC UA salt layout.

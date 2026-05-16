@@ -10,8 +10,6 @@
 
 package org.eclipse.milo.opcua.stack.core.security;
 
-import static java.util.Objects.requireNonNull;
-
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
@@ -43,11 +41,6 @@ public record CertificateIdentity(
     X509Certificate[] certificateChain) {
 
   public CertificateIdentity {
-    requireNonNull(certificateGroupId, "certificateGroupId");
-    requireNonNull(certificateTypeId, "certificateTypeId");
-    requireNonNull(keyPair, "keyPair");
-    requireNonNull(certificateChain, "certificateChain");
-
     if (certificateChain.length == 0) {
       throw new IllegalArgumentException("certificateChain must not be empty");
     }

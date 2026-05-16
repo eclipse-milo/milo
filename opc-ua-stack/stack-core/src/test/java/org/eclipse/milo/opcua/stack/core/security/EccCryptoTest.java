@@ -34,10 +34,12 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.EccKeyAgreementUtil.DerivedKeyMaterial;
 import org.eclipse.milo.opcua.stack.core.security.SecurityProviderResolver.ProviderProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
+import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+@NullMarked
 class EccCryptoTest {
 
   // OPC UA peers expect fixed-width P1363 ECDSA signatures on the wire; DER output would be

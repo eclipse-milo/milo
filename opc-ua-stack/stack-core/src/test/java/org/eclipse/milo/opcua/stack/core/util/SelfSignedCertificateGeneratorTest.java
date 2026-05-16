@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.stack.core.util;
 
+import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -19,8 +20,10 @@ import java.security.cert.X509Certificate;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.security.CertificateCompatibility;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
+import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.Test;
 
+@NullMarked
 class SelfSignedCertificateGeneratorTest {
 
   @Test
@@ -59,7 +62,7 @@ class SelfSignedCertificateGeneratorTest {
   }
 
   private static void assertMinimalEccKeyUsage(X509Certificate certificate) throws Exception {
-    boolean[] keyUsage = certificate.getKeyUsage();
+    boolean[] keyUsage = requireNonNull(certificate.getKeyUsage(), "keyUsage");
 
     assertTrue(keyUsage[0], "digitalSignature should be set");
     assertFalse(keyUsage[1], "nonRepudiation should not be set");

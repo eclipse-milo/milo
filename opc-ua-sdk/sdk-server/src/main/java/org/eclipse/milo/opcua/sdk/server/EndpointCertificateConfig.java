@@ -17,6 +17,7 @@ import java.util.Optional;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -27,6 +28,7 @@ import org.jspecify.annotations.Nullable;
  * that use {@link EndpointConfig.Builder#setCertificate(X509Certificate)} continue to advertise
  * that fixed certificate directly.
  */
+@NullMarked
 public final class EndpointCertificateConfig {
 
   private final NodeId certificateGroupId;
@@ -34,7 +36,7 @@ public final class EndpointCertificateConfig {
 
   private EndpointCertificateConfig(NodeId certificateGroupId, @Nullable NodeId certificateTypeId) {
 
-    this.certificateGroupId = requireNonNull(certificateGroupId, "certificateGroupId");
+    this.certificateGroupId = certificateGroupId;
     this.certificateTypeId = certificateTypeId;
   }
 

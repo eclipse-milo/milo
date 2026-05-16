@@ -27,8 +27,10 @@ import java.util.stream.Collectors;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.Test;
 
+@NullMarked
 class CertificateIdentityTest {
 
   private static final NodeId GROUP_A = new NodeId(2, "group-a");

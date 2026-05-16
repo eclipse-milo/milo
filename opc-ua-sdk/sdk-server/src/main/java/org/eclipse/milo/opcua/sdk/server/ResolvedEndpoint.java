@@ -12,8 +12,10 @@ package org.eclipse.milo.opcua.sdk.server;
 
 import org.eclipse.milo.opcua.stack.core.security.CertificateIdentity;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
+import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+@NullMarked
 record ResolvedEndpoint(
     EndpointConfig endpointConfig,
     @Nullable CertificateIdentity certificateIdentity,

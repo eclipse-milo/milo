@@ -23,10 +23,12 @@ import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.util.PShaUtil;
+import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+@NullMarked
 class SecureChannelStrategiesTest {
 
   // RSA strategy resolution must agree with profile sizes or the symmetric codecs frame chunks
@@ -95,7 +97,7 @@ class SecureChannelStrategiesTest {
         UaException.class,
         () ->
             SecureChannelStrategies.chunkProtection(profile)
-                .sign(channel, null, ByteBuffer.allocate(0)));
+                .sign(channel, emptySecurityKeys(), ByteBuffer.allocate(0)));
   }
 
   // The client/server nonce order is part of the UASC wire contract for legacy RSA policies.
@@ -150,6 +152,14 @@ class SecureChannelStrategiesTest {
   }
 
   private static byte[] expectedKey(ByteString secret, ByteString seed, int offset, int length) {
-    return PShaUtil.createPSha256Key(secret.bytes(), seed.bytes(), offset, length);
+    return PShaUtil.createPSha256Key(secret.bytesOrEmpty(), seed.bytesOrEmpty(), offset, length);
+  }
+
+  private static ChannelSecurity.SecurityKeys emptySecurityKeys() {
+    byte[] empty = new byte[0];
+
+    return new ChannelSecurity.SecurityKeys(
+        new ChannelSecurity.SecretKeys(empty, empty, empty),
+        new ChannelSecurity.SecretKeys(empty, empty, empty));
   }
 }

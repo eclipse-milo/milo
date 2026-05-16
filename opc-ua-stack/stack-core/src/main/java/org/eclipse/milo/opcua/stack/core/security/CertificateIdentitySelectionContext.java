@@ -10,8 +10,6 @@
 
 package org.eclipse.milo.opcua.stack.core.security;
 
-import static java.util.Objects.requireNonNull;
-
 import java.security.cert.X509Certificate;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.jspecify.annotations.NullMarked;
@@ -43,12 +41,6 @@ public record CertificateIdentitySelectionContext(
     @Nullable NodeId certificateGroupId,
     @Nullable NodeId certificateTypeId,
     @Nullable X509Certificate explicitCertificate) {
-
-  public CertificateIdentitySelectionContext {
-    requireNonNull(purpose, "purpose");
-    requireNonNull(certificateManager, "certificateManager");
-    requireNonNull(securityPolicyProfile, "securityPolicyProfile");
-  }
 
   /**
    * Create a context for server endpoint advertisement.

@@ -10,8 +10,6 @@
 
 package org.eclipse.milo.opcua.stack.core.security;
 
-import static java.util.Objects.requireNonNull;
-
 import java.util.List;
 import java.util.Optional;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -99,15 +97,7 @@ public record SecurityPolicyProfile(
     boolean secureChannelSupported) {
 
   public SecurityPolicyProfile {
-    requireNonNull(securityPolicy, "securityPolicy");
-    requireNonNull(authAxis, "authAxis");
-    certificateTypeIds = List.copyOf(requireNonNull(certificateTypeIds, "certificateTypeIds"));
-    requireNonNull(keyAgreementAxis, "keyAgreementAxis");
-    requireNonNull(chunkProtectionAxis, "chunkProtectionAxis");
-    requireNonNull(sequenceNumberMode, "sequenceNumberMode");
-    requireNonNull(asymmetricSignatureAlgorithm, "asymmetricSignatureAlgorithm");
-    requireNonNull(asymmetricEncryptionAlgorithm, "asymmetricEncryptionAlgorithm");
-    requireNonNull(certificateThumbprintAlgorithm, "certificateThumbprintAlgorithm");
+    certificateTypeIds = List.copyOf(certificateTypeIds);
 
     if (secureChannelNonceLength < 0) {
       throw new IllegalArgumentException("secureChannelNonceLength: " + secureChannelNonceLength);
