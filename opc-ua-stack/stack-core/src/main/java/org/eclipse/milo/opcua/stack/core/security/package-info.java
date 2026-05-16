@@ -27,7 +27,9 @@
  * <p>Certificate managers and certificate groups remain the source of local certificate identity
  * and trust material. Certificate validators enforce trust-list and certificate-chain decisions at
  * connection boundaries; callers should keep certificate lookup, trust configuration, and policy
- * selection coordinated through these APIs.
+ * selection coordinated through these APIs. {@link
+ * org.eclipse.milo.opcua.stack.core.security.CertificateIdentity} represents a concrete local
+ * identity selected from those sources for endpoint advertisement or SecureChannel setup.
  *
  * <h2>Runtime boundaries</h2>
  *

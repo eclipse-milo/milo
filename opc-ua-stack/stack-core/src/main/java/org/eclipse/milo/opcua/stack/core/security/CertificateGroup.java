@@ -49,6 +49,32 @@ public interface CertificateGroup {
   List<Entry> getCertificateEntries();
 
   /**
+   * Get the usable certificate identities belonging to this group.
+   *
+   * <p>An identity is usable when the group has both a non-empty certificate chain and a key pair
+   * for the certificate type.
+   *
+   * @return the usable certificate identities belonging to this group.
+   */
+  default List<CertificateIdentity> getCertificateIdentities() {
+    return getCertificateEntries().stream()
+        .filter(entry -> entry.certificateChain != null && entry.certificateChain.length > 0)
+        .flatMap(
+            entry ->
+                getKeyPair(entry.certificateTypeId)
+                    .map(
+                        keyPair ->
+                            new CertificateIdentity(
+                                entry.certificateGroupId,
+                                entry.certificateTypeId,
+                                keyPair,
+                                entry.certificateChain))
+                    .stream())
+        .sorted(CertificateIdentityOrdering.STABLE)
+        .toList();
+  }
+
+  /**
    * Get the {@link KeyPair} associated with the certificate of the type identified by {@code
    * certificateTypeId}.
    *
@@ -96,6 +122,7 @@ public interface CertificateGroup {
   CertificateValidator getCertificateValidator();
 
   /** An entry describing a certificate and type belonging to a {@link CertificateGroup}. */
+  @SuppressWarnings("ClassCanBeRecord")
   class Entry {
     public final NodeId certificateGroupId;
     public final NodeId certificateTypeId;
