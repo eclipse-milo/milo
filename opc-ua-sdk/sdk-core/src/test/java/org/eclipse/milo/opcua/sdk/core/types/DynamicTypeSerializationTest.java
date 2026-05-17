@@ -42,6 +42,7 @@ import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.core.types.DynamicUnionType.UnionValue;
 import org.eclipse.milo.opcua.sdk.core.types.util.DynamicEncodingContext;
 import org.eclipse.milo.opcua.sdk.core.types.util.StaticEncodingContext;
+import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
@@ -664,6 +665,29 @@ class DynamicTypeSerializationTest {
   }
 
   @Test
+  void eagerExtensionObjectDecodeHonorsMaxRecursionDepth() {
+    var limitedEncodingContext =
+        new DynamicEncodingContext() {
+          @Override
+          public EncodingLimits getEncodingLimits() {
+            return new EncodingLimits(8196, 1, 65535, 4);
+          }
+        };
+
+    ExtensionObject encoded1 = nestedStructWithStructureScalarFields(8);
+
+    DynamicStructType decoded = (DynamicStructType) encoded1.decode(limitedEncodingContext);
+    Object value = decoded.getMembers().get("Struct1");
+
+    for (int i = 0; i < limitedEncodingContext.getEncodingLimits().getMaxRecursionDepth(); i++) {
+      DynamicStructType nested = assertInstanceOf(DynamicStructType.class, value);
+      value = nested.getMembers().get("Struct1");
+    }
+
+    assertInstanceOf(ExtensionObject.class, value);
+  }
+
+  @Test
   void structWithStructureArrayFields() {
     var xo1 = ExtensionObject.encode(staticEncodingContext, new XVType(0.0d, 0.0f));
     var xo2 =
@@ -735,6 +759,14 @@ class DynamicTypeSerializationTest {
     var encoded2 = ExtensionObject.encode(dynamicEncodingContext, decoded);
 
     assertEquals(encoded1, encoded2);
+  }
+
+  private ExtensionObject nestedStructWithStructureScalarFields(int depth) {
+    ExtensionObject leaf = ExtensionObject.encode(staticEncodingContext, new XVType(0.0d, 0.0f));
+    ExtensionObject nested = depth > 0 ? nestedStructWithStructureScalarFields(depth - 1) : leaf;
+
+    return ExtensionObject.encode(
+        staticEncodingContext, new StructWithStructureScalarFields(nested, leaf, leaf));
   }
 
   private static Stream<Arguments> structWithOptionalScalarFieldsProvider() {
