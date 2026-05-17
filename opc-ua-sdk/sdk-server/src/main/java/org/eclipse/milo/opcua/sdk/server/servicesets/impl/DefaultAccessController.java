@@ -160,34 +160,6 @@ public class DefaultAccessController implements AccessController {
             p.result = AccessResult.DENIED_USER_ACCESS;
           }
         }
-      } else if (AttributeId.RolePermissions.uid().equals(attributeId)) {
-        List<NodeId> roleIds = context.getRoleIds().orElse(null);
-
-        RolePermissionType[] userRolePermissions = attributes.get(nodeId).userRolePermissions();
-
-        if (roleIds != null && userRolePermissions != null) {
-          boolean hasAccess =
-              Stream.of(userRolePermissions)
-                  .anyMatch(rp -> rp.getPermissions().getWriteRolePermissions());
-
-          if (!hasAccess) {
-            p.result = AccessResult.DENIED_USER_ACCESS;
-          }
-        }
-      } else if (AttributeId.Historizing.uid().equals(attributeId)) {
-        List<NodeId> roleIds = context.getRoleIds().orElse(null);
-
-        RolePermissionType[] userRolePermissions = attributes.get(nodeId).userRolePermissions();
-
-        if (roleIds != null && userRolePermissions != null) {
-          boolean hasAccess =
-              Stream.of(userRolePermissions)
-                  .anyMatch(rp -> rp.getPermissions().getWriteHistorizing());
-
-          if (!hasAccess) {
-            p.result = AccessResult.DENIED_USER_ACCESS;
-          }
-        }
       } else {
         UInteger userWriteMask = attributes.get(nodeId).userWriteMask();
         if (userWriteMask != null) {
@@ -198,11 +170,48 @@ public class DefaultAccessController implements AccessController {
           // the WriteAttribute PermissionType bit.
           boolean hasAccess =
               AttributeId.from(attributeId)
-                  .map(id -> userWriteMasks.contains(WriteMask.forAttribute(id)))
+                  .map(
+                      id ->
+                          id != AttributeId.UserRolePermissions
+                              && userWriteMasks.contains(WriteMask.forAttribute(id)))
                   .orElse(false);
 
           if (!hasAccess) {
             p.result = AccessResult.DENIED_USER_ACCESS;
+          }
+        }
+
+        if (p.result.isDenied()) {
+          continue;
+        }
+
+        if (AttributeId.RolePermissions.uid().equals(attributeId)) {
+          List<NodeId> roleIds = context.getRoleIds().orElse(null);
+
+          RolePermissionType[] userRolePermissions = attributes.get(nodeId).userRolePermissions();
+
+          if (roleIds != null && userRolePermissions != null) {
+            boolean hasAccess =
+                Stream.of(userRolePermissions)
+                    .anyMatch(rp -> rp.getPermissions().getWriteRolePermissions());
+
+            if (!hasAccess) {
+              p.result = AccessResult.DENIED_USER_ACCESS;
+            }
+          }
+        } else if (AttributeId.Historizing.uid().equals(attributeId)) {
+          List<NodeId> roleIds = context.getRoleIds().orElse(null);
+
+          RolePermissionType[] userRolePermissions = attributes.get(nodeId).userRolePermissions();
+
+          if (roleIds != null && userRolePermissions != null) {
+            boolean hasAccess =
+                Stream.of(userRolePermissions)
+                    .anyMatch(rp -> rp.getPermissions().getWriteHistorizing());
+
+            if (!hasAccess) {
+              p.result = AccessResult.DENIED_USER_ACCESS;
+            }
           }
         }
       }
