@@ -30,7 +30,7 @@ Record PASS/FAIL/SKIPPED and notes for each policy:
 
 1. Confirm GetEndpoints advertises only supported M1 ECC policies expected for this peer.
 2. Confirm each endpoint certificate matches the policy certificate type.
-3. Open a SecureChannel with SignAndEncrypt for each policy.
+3. Open a SecureChannel with SignAndEncrypt and Sign for each policy when the peer advertises both.
 4. Force or wait for SecureChannel Renew and confirm the active session remains usable.
 5. CreateSession and ActivateSession with username-token auth for each policy.
 6. Read and write a simple scalar node after activation.

@@ -104,13 +104,33 @@ class EccSessionIntegrationTest {
   void activatesAnonymousSessionAndReadsWrites(
       SecurityPolicy securityPolicy, NodeId certificateTypeId) throws Exception {
 
-    try (RunningServer running = startSecureServer(securityPolicy, certificateTypeId, b -> {})) {
+    assertAnonymousSessionReadsWrites(
+        securityPolicy, certificateTypeId, MessageSecurityMode.SignAndEncrypt);
+  }
+
+  // ECC Sign uses tag-only AEAD chunk protection, so the session layer should behave the same as it
+  // does over SignAndEncrypt aside from confidentiality.
+  @ParameterizedTest
+  @MethodSource("currentEccPolicies")
+  void activatesAnonymousSessionAndReadsWritesWithEccSign(
+      SecurityPolicy securityPolicy, NodeId certificateTypeId) throws Exception {
+
+    assertAnonymousSessionReadsWrites(securityPolicy, certificateTypeId, MessageSecurityMode.Sign);
+  }
+
+  private static void assertAnonymousSessionReadsWrites(
+      SecurityPolicy securityPolicy, NodeId certificateTypeId, MessageSecurityMode securityMode)
+      throws Exception {
+
+    try (RunningServer running =
+        startSecureServer(securityPolicy, certificateTypeId, securityMode, b -> {})) {
       CertificateManager clientCertificateManager =
           certificateManager(certificate(certificateTypeId, "client", CLIENT_URI));
       OpcUaClient client =
           connectClient(
               running,
               securityPolicy,
+              securityMode,
               AnonymousProvider.INSTANCE,
               clientCertificateManager,
               b -> {});
@@ -130,13 +150,33 @@ class EccSessionIntegrationTest {
   void activatesUsernameSessionAndReadsWrites(
       SecurityPolicy securityPolicy, NodeId certificateTypeId) throws Exception {
 
-    try (RunningServer running = startSecureServer(securityPolicy, certificateTypeId, b -> {})) {
+    assertUsernameSessionReadsWrites(
+        securityPolicy, certificateTypeId, MessageSecurityMode.SignAndEncrypt);
+  }
+
+  // Username activation over ECC Sign proves the encrypted token secret and channel-bound
+  // ActivateSession signature are independent of symmetric payload encryption.
+  @ParameterizedTest
+  @MethodSource("currentEccPolicies")
+  void activatesUsernameSessionAndReadsWritesWithEccSign(
+      SecurityPolicy securityPolicy, NodeId certificateTypeId) throws Exception {
+
+    assertUsernameSessionReadsWrites(securityPolicy, certificateTypeId, MessageSecurityMode.Sign);
+  }
+
+  private static void assertUsernameSessionReadsWrites(
+      SecurityPolicy securityPolicy, NodeId certificateTypeId, MessageSecurityMode securityMode)
+      throws Exception {
+
+    try (RunningServer running =
+        startSecureServer(securityPolicy, certificateTypeId, securityMode, b -> {})) {
       CertificateManager clientCertificateManager =
           certificateManager(certificate(certificateTypeId, "client", CLIENT_URI));
       OpcUaClient client =
           connectClient(
               running,
               securityPolicy,
+              securityMode,
               new UsernameProvider(USERNAME, PASSWORD),
               clientCertificateManager,
               b -> {});
@@ -158,12 +198,31 @@ class EccSessionIntegrationTest {
   void renewsSecureChannelWithActiveSession(SecurityPolicy securityPolicy, NodeId certificateTypeId)
       throws Exception {
 
+    assertSecureChannelRenewsWithActiveSession(
+        securityPolicy, certificateTypeId, MessageSecurityMode.SignAndEncrypt);
+  }
+
+  // ECC Sign renewals must install fresh AEAD keys and keep the active Session usable after renewal.
+  @ParameterizedTest
+  @MethodSource("currentEccPolicies")
+  void renewsSecureChannelWithActiveSessionOverEccSign(
+      SecurityPolicy securityPolicy, NodeId certificateTypeId) throws Exception {
+
+    assertSecureChannelRenewsWithActiveSession(
+        securityPolicy, certificateTypeId, MessageSecurityMode.Sign);
+  }
+
+  private static void assertSecureChannelRenewsWithActiveSession(
+      SecurityPolicy securityPolicy, NodeId certificateTypeId, MessageSecurityMode securityMode)
+      throws Exception {
+
     CountDownLatch clientKeysCreated = new CountDownLatch(2);
 
     try (RunningServer running =
         startSecureServer(
             securityPolicy,
             certificateTypeId,
+            securityMode,
             b ->
                 b.setMinimumSecureChannelLifetime(uint(RENEWAL_TEST_LIFETIME_MILLIS))
                     .setMaximumSecureChannelLifetime(uint(RENEWAL_TEST_LIFETIME_MILLIS)))) {
@@ -174,6 +233,7 @@ class EccSessionIntegrationTest {
           connectClient(
               running,
               securityPolicy,
+              securityMode,
               clientCertificateManager,
               b -> b.setChannelLifetime(uint(RENEWAL_TEST_LIFETIME_MILLIS)),
               b -> b.setSecurityKeysListener(keyset -> clientKeysCreated.countDown()));
@@ -196,15 +256,35 @@ class EccSessionIntegrationTest {
   void reactivatesUsernameSessionOnNewSecureChannel(
       SecurityPolicy securityPolicy, NodeId certificateTypeId) throws Exception {
 
+    assertUsernameSessionReactivatesOnNewSecureChannel(
+        securityPolicy, certificateTypeId, MessageSecurityMode.SignAndEncrypt);
+  }
+
+  // Reconnection over ECC Sign must bind the reactivated Session to the new signed-only channel.
+  @ParameterizedTest
+  @MethodSource("currentEccPolicies")
+  void reactivatesUsernameSessionOnNewSecureChannelOverEccSign(
+      SecurityPolicy securityPolicy, NodeId certificateTypeId) throws Exception {
+
+    assertUsernameSessionReactivatesOnNewSecureChannel(
+        securityPolicy, certificateTypeId, MessageSecurityMode.Sign);
+  }
+
+  private static void assertUsernameSessionReactivatesOnNewSecureChannel(
+      SecurityPolicy securityPolicy, NodeId certificateTypeId, MessageSecurityMode securityMode)
+      throws Exception {
+
     CountDownLatch sessionActive = new CountDownLatch(2);
 
-    try (RunningServer running = startSecureServer(securityPolicy, certificateTypeId, b -> {})) {
+    try (RunningServer running =
+        startSecureServer(securityPolicy, certificateTypeId, securityMode, b -> {})) {
       CertificateManager clientCertificateManager =
           certificateManager(certificate(certificateTypeId, "client", CLIENT_URI));
       OpcUaClient client =
           createClient(
               running,
               securityPolicy,
+              securityMode,
               new UsernameProvider(USERNAME, PASSWORD),
               clientCertificateManager,
               b -> {},
@@ -296,10 +376,29 @@ class EccSessionIntegrationTest {
       java.util.function.Consumer<OpcTcpClientTransportConfigBuilder> configureTransport)
       throws UaException {
 
+    return connectClient(
+        running,
+        securityPolicy,
+        defaultSecurityMode(securityPolicy),
+        identityProvider,
+        clientCertificateManager,
+        configureTransport);
+  }
+
+  private static OpcUaClient connectClient(
+      RunningServer running,
+      SecurityPolicy securityPolicy,
+      MessageSecurityMode securityMode,
+      IdentityProvider identityProvider,
+      CertificateManager clientCertificateManager,
+      java.util.function.Consumer<OpcTcpClientTransportConfigBuilder> configureTransport)
+      throws UaException {
+
     OpcUaClient client =
         createClient(
             running,
             securityPolicy,
+            securityMode,
             identityProvider,
             clientCertificateManager,
             configureTransport,
@@ -317,10 +416,29 @@ class EccSessionIntegrationTest {
       java.util.function.Consumer<OpcUaClientConfigBuilder> configureClient)
       throws UaException {
 
+    return connectClient(
+        running,
+        securityPolicy,
+        defaultSecurityMode(securityPolicy),
+        clientCertificateManager,
+        configureTransport,
+        configureClient);
+  }
+
+  private static OpcUaClient connectClient(
+      RunningServer running,
+      SecurityPolicy securityPolicy,
+      MessageSecurityMode securityMode,
+      CertificateManager clientCertificateManager,
+      java.util.function.Consumer<OpcTcpClientTransportConfigBuilder> configureTransport,
+      java.util.function.Consumer<OpcUaClientConfigBuilder> configureClient)
+      throws UaException {
+
     OpcUaClient client =
         createClient(
             running,
             securityPolicy,
+            securityMode,
             AnonymousProvider.INSTANCE,
             clientCertificateManager,
             configureTransport,
@@ -339,11 +457,32 @@ class EccSessionIntegrationTest {
       java.util.function.Consumer<OpcUaClientConfigBuilder> configureClient)
       throws UaException {
 
+    return createClient(
+        running,
+        securityPolicy,
+        defaultSecurityMode(securityPolicy),
+        identityProvider,
+        clientCertificateManager,
+        configureTransport,
+        configureClient);
+  }
+
+  private static OpcUaClient createClient(
+      RunningServer running,
+      SecurityPolicy securityPolicy,
+      MessageSecurityMode securityMode,
+      IdentityProvider identityProvider,
+      CertificateManager clientCertificateManager,
+      java.util.function.Consumer<OpcTcpClientTransportConfigBuilder> configureTransport,
+      java.util.function.Consumer<OpcUaClientConfigBuilder> configureClient)
+      throws UaException {
+
     return OpcUaClient.create(
         running.endpointUrl(),
         endpoints ->
             endpoints.stream()
                 .filter(e -> securityPolicy.getUri().equals(e.getSecurityPolicyUri()))
+                .filter(e -> e.getSecurityMode() == securityMode)
                 .filter(
                     e -> {
                       String endpointUrl = e.getEndpointUrl();
@@ -362,9 +501,29 @@ class EccSessionIntegrationTest {
         });
   }
 
+  private static MessageSecurityMode defaultSecurityMode(SecurityPolicy securityPolicy) {
+    return securityPolicy == SecurityPolicy.None
+        ? MessageSecurityMode.None
+        : MessageSecurityMode.SignAndEncrypt;
+  }
+
   private static RunningServer startSecureServer(
       SecurityPolicy securityPolicy,
       NodeId certificateTypeId,
+      java.util.function.Consumer<OpcTcpServerTransportConfigBuilder> configureTransport)
+      throws Exception {
+
+    return startSecureServer(
+        securityPolicy,
+        certificateTypeId,
+        MessageSecurityMode.SignAndEncrypt,
+        configureTransport);
+  }
+
+  private static RunningServer startSecureServer(
+      SecurityPolicy securityPolicy,
+      NodeId certificateTypeId,
+      MessageSecurityMode securityMode,
       java.util.function.Consumer<OpcTcpServerTransportConfigBuilder> configureTransport)
       throws Exception {
 
@@ -382,7 +541,7 @@ class EccSessionIntegrationTest {
                     .setCertificateTypeId(certificateTypeId)
                     .build())
             .setSecurityPolicy(securityPolicy)
-            .setSecurityMode(MessageSecurityMode.SignAndEncrypt)
+            .setSecurityMode(securityMode)
             .setTransportProfile(TransportProfile.TCP_UASC_UABINARY)
             .addTokenPolicies(anonymousPolicy(), usernamePolicy(securityPolicy))
             .build();
@@ -552,6 +711,10 @@ class EccSessionIntegrationTest {
   // The matrix pairs each executable enhanced policy with the application certificate type that
   // should be selected for both endpoint advertisement and client identity selection.
   private static Stream<Arguments> currentEnhancedPolicies() {
+    return Stream.concat(currentEccPolicies(), currentRsaDhPolicies());
+  }
+
+  private static Stream<Arguments> currentEccPolicies() {
     return Stream.of(
         Arguments.of(
             SecurityPolicy.ECC_nistP256_AesGcm, NodeIds.EccNistP256ApplicationCertificateType),
@@ -567,7 +730,11 @@ class EccSessionIntegrationTest {
             NodeIds.EccBrainpoolP384r1ApplicationCertificateType),
         Arguments.of(
             SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly,
-            NodeIds.EccBrainpoolP384r1ApplicationCertificateType),
+            NodeIds.EccBrainpoolP384r1ApplicationCertificateType));
+  }
+
+  private static Stream<Arguments> currentRsaDhPolicies() {
+    return Stream.of(
         Arguments.of(SecurityPolicy.RSA_DH_AesGcm, NodeIds.RsaSha256ApplicationCertificateType),
         Arguments.of(
             SecurityPolicy.RSA_DH_ChaChaPoly, NodeIds.RsaSha256ApplicationCertificateType));

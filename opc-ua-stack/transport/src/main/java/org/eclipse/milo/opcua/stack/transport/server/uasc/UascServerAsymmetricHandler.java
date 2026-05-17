@@ -77,6 +77,7 @@ import org.eclipse.milo.opcua.stack.core.util.DigestUtil;
 import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -428,7 +429,7 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
       long requestId,
       AsymmetricSecurityHeader header,
       OpenSecureChannelRequest request,
-      byte[] requestSignature) {
+      byte @Nullable [] requestSignature) {
 
     ByteBuf messageBuffer = BufferUtil.pooledBuffer();
 
@@ -440,18 +441,7 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
 
       checkMessageSize(messageBuffer);
 
-      byte[] additionalSignedBytes =
-          request.getRequestType() == SecurityTokenRequestType.Issue
-                  && secureChannel.getSecurityPolicyProfile().secureChannelEnhancements()
-              ? requestSignature
-              : null;
-
-      if (request.getRequestType() == SecurityTokenRequestType.Issue
-          && secureChannel.getSecurityPolicyProfile().secureChannelEnhancements()
-          && additionalSignedBytes == null) {
-        throw new UaException(
-            StatusCodes.Bad_SecurityChecksFailed, "missing OpenSecureChannel request signature");
-      }
+      byte[] additionalSignedBytes = getAdditionalSignedBytes(request, requestSignature);
 
       EncodedMessage encodedMessage =
           chunkEncoder.encodeAsymmetric(
@@ -508,6 +498,22 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
     } finally {
       messageBuffer.release();
     }
+  }
+
+  private byte @Nullable [] getAdditionalSignedBytes(
+      OpenSecureChannelRequest request, byte @Nullable [] requestSignature) throws UaException {
+
+    if (request.getRequestType() != SecurityTokenRequestType.Issue
+        || !secureChannel.getSecurityPolicyProfile().secureChannelEnhancements()) {
+      return null;
+    }
+
+    if (requestSignature == null) {
+      throw new UaException(
+          StatusCodes.Bad_SecurityChecksFailed, "missing OpenSecureChannel request signature");
+    }
+
+    return requestSignature;
   }
 
   private OpenSecureChannelResponse openSecureChannel(
@@ -709,7 +715,9 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
   private static void requireSupportedMessageSecurityMode(
       SecurityPolicyProfile profile, MessageSecurityMode securityMode) throws UaException {
 
-    if (profile.secureChannelEnhancements() && securityMode != MessageSecurityMode.SignAndEncrypt) {
+    if (profile.secureChannelEnhancements()
+        && securityMode != MessageSecurityMode.SignAndEncrypt
+        && !isAeadSignSupported(profile, securityMode)) {
       throw new UaException(
           StatusCodes.Bad_SecurityPolicyRejected,
           "message security mode is not supported for "
@@ -717,5 +725,17 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
               + ": "
               + securityMode);
     }
+  }
+
+  private static boolean isAeadSignSupported(
+      SecurityPolicyProfile profile, MessageSecurityMode mode) {
+    if (mode != MessageSecurityMode.Sign || !profile.secureChannelSupported()) {
+      return false;
+    }
+
+    return switch (profile.chunkProtectionAxis()) {
+      case AES_GCM, CHACHA20_POLY1305 -> true;
+      default -> false;
+    };
   }
 }

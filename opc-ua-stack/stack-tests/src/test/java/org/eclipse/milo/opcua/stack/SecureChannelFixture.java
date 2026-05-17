@@ -149,13 +149,16 @@ public abstract class SecureChannelFixture extends SecurityFixture {
   }
 
   protected SecureChannel[] generateAeadChannels(SecurityPolicy securityPolicy) throws Exception {
+    return generateAeadChannels(securityPolicy, MessageSecurityMode.SignAndEncrypt);
+  }
+
+  protected SecureChannel[] generateAeadChannels(
+      SecurityPolicy securityPolicy, MessageSecurityMode messageSecurity) throws Exception {
     super.setUp();
 
     // AEAD chunk tests need installed keys before ECC OpenSecureChannel key agreement is wired
     // through the transports. Deterministic key material keeps these tests focused on chunk
     // protection rather than on ephemeral key exchange.
-    MessageSecurityMode messageSecurity = MessageSecurityMode.SignAndEncrypt;
-
     ClientSecureChannel clientChannel =
         new ClientSecureChannel(
             clientKeyPair,

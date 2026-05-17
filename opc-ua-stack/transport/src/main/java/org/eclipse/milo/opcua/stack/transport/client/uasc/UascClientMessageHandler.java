@@ -898,7 +898,9 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
   private static void requireSupportedMessageSecurityMode(
       SecurityPolicyProfile profile, MessageSecurityMode securityMode) throws UaException {
 
-    if (profile.secureChannelEnhancements() && securityMode != MessageSecurityMode.SignAndEncrypt) {
+    if (profile.secureChannelEnhancements()
+        && securityMode != MessageSecurityMode.SignAndEncrypt
+        && !isAeadSignSupported(profile, securityMode)) {
       throw new UaException(
           StatusCodes.Bad_SecurityPolicyRejected,
           "message security mode is not supported for "
@@ -906,5 +908,17 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
               + ": "
               + securityMode);
     }
+  }
+
+  private static boolean isAeadSignSupported(
+      SecurityPolicyProfile profile, MessageSecurityMode mode) {
+    if (mode != MessageSecurityMode.Sign || !profile.secureChannelSupported()) {
+      return false;
+    }
+
+    return switch (profile.chunkProtectionAxis()) {
+      case AES_GCM, CHACHA20_POLY1305 -> true;
+      default -> false;
+    };
   }
 }

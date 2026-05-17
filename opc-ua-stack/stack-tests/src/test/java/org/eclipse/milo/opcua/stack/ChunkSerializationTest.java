@@ -12,6 +12,9 @@ package org.eclipse.milo.opcua.stack;
 
 import static org.eclipse.milo.opcua.stack.core.channel.EncodingLimits.DEFAULT_MAX_CHUNK_SIZE;
 import static org.eclipse.milo.opcua.stack.core.channel.EncodingLimits.DEFAULT_MAX_MESSAGE_SIZE;
+import static org.eclipse.milo.opcua.stack.core.channel.headers.SecureMessageHeader.SECURE_MESSAGE_HEADER_SIZE;
+import static org.eclipse.milo.opcua.stack.core.channel.headers.SequenceHeader.SEQUENCE_HEADER_SIZE;
+import static org.eclipse.milo.opcua.stack.core.channel.headers.SymmetricSecurityHeader.SYMMETRIC_SECURITY_HEADER_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -355,7 +358,9 @@ public class ChunkSerializationTest extends SecureChannelFixture {
       {SecurityPolicy.ECC_curve25519_AesGcm},
       {SecurityPolicy.ECC_curve25519_ChaChaPoly},
       {SecurityPolicy.ECC_brainpoolP384r1_AesGcm},
-      {SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly}
+      {SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly},
+      {SecurityPolicy.RSA_DH_AesGcm},
+      {SecurityPolicy.RSA_DH_ChaChaPoly}
     };
   }
 
@@ -437,6 +442,23 @@ public class ChunkSerializationTest extends SecureChannelFixture {
   public void testAeadSymmetricMessage(SecurityPolicy securityPolicy) throws Exception {
     LOGGER.debug("AEAD symmetric chunk serialization, securityPolicy={}", securityPolicy);
 
+    assertAeadSymmetricMessage(securityPolicy, MessageSecurityMode.SignAndEncrypt);
+  }
+
+  // AEAD Sign mode uses the tag as a signature footer: no symmetric encryption, but the tag still
+  // authenticates the secure message header, symmetric security header, sequence header, and body
+  // bytes.
+  @ParameterizedTest
+  @MethodSource("getAeadSecurityParameters")
+  public void testAeadSignSymmetricMessage(SecurityPolicy securityPolicy) throws Exception {
+    LOGGER.debug("AEAD Sign chunk serialization, securityPolicy={}", securityPolicy);
+
+    assertAeadSymmetricMessage(securityPolicy, MessageSecurityMode.Sign);
+  }
+
+  private void assertAeadSymmetricMessage(
+      SecurityPolicy securityPolicy, MessageSecurityMode messageSecurity) throws Exception {
+
     ChannelParameters[] channelParameters = {smallParameters, defaultParameters};
 
     for (ChannelParameters parameters : channelParameters) {
@@ -446,9 +468,9 @@ public class ChunkSerializationTest extends SecureChannelFixture {
         ChunkEncoder encoder = new ChunkEncoder(parameters);
         ChunkDecoder decoder = new ChunkDecoder(parameters, EncodingLimits.DEFAULT);
 
-        advanceNonLegacySequence(encoder, decoder, securityPolicy);
+        advanceNonLegacySequence(encoder, decoder, securityPolicy, messageSecurity);
 
-        SecureChannel[] channels = generateAeadChannels(securityPolicy);
+        SecureChannel[] channels = generateAeadChannels(securityPolicy, messageSecurity);
         SecureChannel clientChannel = channels[0];
         SecureChannel serverChannel = channels[1];
 
@@ -542,18 +564,87 @@ public class ChunkSerializationTest extends SecureChannelFixture {
     }
   }
 
+  @ParameterizedTest
+  @MethodSource("getAeadSecurityParameters")
+  public void aeadSignRejectsHeaderCorruption(SecurityPolicy securityPolicy) throws Exception {
+    assertAeadSignRejectsCorruption(securityPolicy, Corruption.HEADER);
+  }
+
+  @ParameterizedTest
+  @MethodSource("getAeadSecurityParameters")
+  public void aeadSignRejectsBodyCorruption(SecurityPolicy securityPolicy) throws Exception {
+    assertAeadSignRejectsCorruption(securityPolicy, Corruption.BODY);
+  }
+
+  @ParameterizedTest
+  @MethodSource("getAeadSecurityParameters")
+  public void aeadSignRejectsTagCorruption(SecurityPolicy securityPolicy) throws Exception {
+    assertAeadSignRejectsCorruption(securityPolicy, Corruption.TAG);
+  }
+
+  private void assertAeadSignRejectsCorruption(
+      SecurityPolicy securityPolicy, Corruption corruption) throws Exception {
+
+    ChunkEncoder encoder = new ChunkEncoder(defaultParameters);
+    ChunkDecoder decoder = new ChunkDecoder(defaultParameters, EncodingLimits.DEFAULT);
+
+    SecureChannel[] channels = generateAeadChannels(securityPolicy, MessageSecurityMode.Sign);
+    SecureChannel clientChannel = channels[0];
+    SecureChannel serverChannel = channels[1];
+
+    advanceNonLegacySequence(encoder, decoder, securityPolicy, MessageSecurityMode.Sign);
+
+    ByteBuf messageBuffer = BufferUtil.pooledBuffer().writeBytes(new byte[] {0x04, 0x05, 0x06});
+
+    try {
+      ChunkEncoder.EncodedMessage message =
+          encoder.encodeSymmetric(clientChannel, 1L, messageBuffer, MessageType.SecureMessage);
+
+      ByteBuf chunk = message.getMessageChunks().get(0);
+      switch (corruption) {
+        case HEADER -> chunk.setByte(8, chunk.getByte(8) ^ 0x01);
+        case BODY -> {
+          int bodyOffset =
+              SECURE_MESSAGE_HEADER_SIZE
+                  + SYMMETRIC_SECURITY_HEADER_SIZE
+                  + SEQUENCE_HEADER_SIZE;
+          chunk.setByte(bodyOffset, chunk.getByte(bodyOffset) ^ 0x01);
+        }
+        case TAG ->
+            chunk.setByte(chunk.writerIndex() - 1, chunk.getByte(chunk.writerIndex() - 1) ^ 0x01);
+      }
+
+      assertThrows(
+          MessageDecodeException.class,
+          () -> decoder.decodeSymmetric(serverChannel, message.getMessageChunks()));
+    } finally {
+      ReferenceCountUtil.release(messageBuffer);
+    }
+  }
+
   private static void advanceNonLegacySequence(
       ChunkEncoder encoder, ChunkDecoder decoder, SecurityPolicy securityPolicy) throws Exception {
+
+    advanceNonLegacySequence(
+        encoder, decoder, securityPolicy, MessageSecurityMode.SignAndEncrypt);
+  }
+
+  private static void advanceNonLegacySequence(
+      ChunkEncoder encoder,
+      ChunkDecoder decoder,
+      SecurityPolicy securityPolicy,
+      MessageSecurityMode messageSecurity)
+      throws Exception {
 
     // AEAD symmetric chunks use the previous chunk's SequenceNumber in their nonce. In a real
     // connection the OpenSecureChannel chunk consumes sequence 0 before the first service chunk, so
     // these tests advance both codecs to match that channel state.
     ClientSecureChannel clientChannel =
-        new ClientSecureChannel(securityPolicy, MessageSecurityMode.SignAndEncrypt);
+        new ClientSecureChannel(securityPolicy, messageSecurity);
 
     ServerSecureChannel serverChannel = new ServerSecureChannel();
     serverChannel.setSecurityPolicy(securityPolicy);
-    serverChannel.setMessageSecurityMode(MessageSecurityMode.SignAndEncrypt);
+    serverChannel.setMessageSecurityMode(messageSecurity);
 
     ByteBuf messageBuffer = BufferUtil.pooledBuffer().writeByte(0x00);
 
@@ -567,5 +658,11 @@ public class ChunkSerializationTest extends SecureChannelFixture {
     } finally {
       ReferenceCountUtil.release(messageBuffer);
     }
+  }
+
+  private enum Corruption {
+    HEADER,
+    BODY,
+    TAG
   }
 }

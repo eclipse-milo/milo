@@ -238,35 +238,56 @@ public class EndpointConfigTest {
     assertEquals(0, Objects.requireNonNull(response.getEndpoints()).length);
   }
 
-  // Enhanced SecureChannel profiles are only executable with SignAndEncrypt; discovery should not
-  // advertise Sign-only endpoints that transport will reject later.
+  // RSA-DH Sign endpoints are executable: AEAD is used as a tag-only signature footer without
+  // symmetric encryption.
   @Test
-  public void enhancedSignOnlyEndpointIsOmittedFromDiscoveryAdvertisement() throws Exception {
-    CertificateMaterial certificate = rsaCertificate("rsa-dh-sign-only");
-    CertificateManager certificateManager =
-        manager(
-            group(
-                NodeIds.ServerConfiguration_CertificateGroups_DefaultApplicationGroup,
-                certificate));
+  public void rsaDhSignEndpointsAreAdvertisedWithCompatibleIdentities() throws Exception {
+    assertEndpointAdvertised(
+        SecurityPolicy.RSA_DH_AesGcm,
+        MessageSecurityMode.Sign,
+        NodeIds.RsaSha256ApplicationCertificateType,
+        rsaCertificate("rsa-dh-aesgcm-sign"));
+    assertEndpointAdvertised(
+        SecurityPolicy.RSA_DH_ChaChaPoly,
+        MessageSecurityMode.Sign,
+        NodeIds.RsaSha256ApplicationCertificateType,
+        rsaCertificate("rsa-dh-chacha-sign"));
+  }
 
-    EndpointConfig endpoint =
-        EndpointConfig.newBuilder()
-            .setEndpointCertificateConfig(
-                EndpointCertificateConfig.newBuilder()
-                    .setCertificateTypeId(NodeIds.RsaSha256ApplicationCertificateType)
-                    .build())
-            .setSecurityPolicy(SecurityPolicy.RSA_DH_AesGcm)
-            .setSecurityMode(MessageSecurityMode.Sign)
-            .build();
-
-    OpcUaServer server = server(Set.of(endpoint), certificateManager);
-
-    DefaultDiscoveryServiceSet discoveryServiceSet = new DefaultDiscoveryServiceSet(server);
-    GetEndpointsResponse response =
-        discoveryServiceSet.onGetEndpoints(
-            null, new GetEndpointsRequest(requestHeader(), endpoint.getEndpointUrl(), null, null));
-
-    assertEquals(0, Objects.requireNonNull(response.getEndpoints()).length);
+  // ECC AEAD Sign endpoints use the same tag-only symmetric footer as RSA-DH Sign endpoints, so
+  // discovery should advertise them when a compatible application identity exists.
+  @Test
+  public void currentEccSignEndpointsAreAdvertisedWithCompatibleIdentities() throws Exception {
+    assertEndpointAdvertised(
+        SecurityPolicy.ECC_nistP256_AesGcm,
+        MessageSecurityMode.Sign,
+        NodeIds.EccNistP256ApplicationCertificateType,
+        nistP256Certificate());
+    assertEndpointAdvertised(
+        SecurityPolicy.ECC_nistP256_ChaChaPoly,
+        MessageSecurityMode.Sign,
+        NodeIds.EccNistP256ApplicationCertificateType,
+        nistP256Certificate());
+    assertEndpointAdvertised(
+        SecurityPolicy.ECC_curve25519_AesGcm,
+        MessageSecurityMode.Sign,
+        NodeIds.EccCurve25519ApplicationCertificateType,
+        ed25519Certificate());
+    assertEndpointAdvertised(
+        SecurityPolicy.ECC_curve25519_ChaChaPoly,
+        MessageSecurityMode.Sign,
+        NodeIds.EccCurve25519ApplicationCertificateType,
+        ed25519Certificate());
+    assertEndpointAdvertised(
+        SecurityPolicy.ECC_brainpoolP384r1_AesGcm,
+        MessageSecurityMode.Sign,
+        NodeIds.EccBrainpoolP384r1ApplicationCertificateType,
+        brainpoolP384Certificate());
+    assertEndpointAdvertised(
+        SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly,
+        MessageSecurityMode.Sign,
+        NodeIds.EccBrainpoolP384r1ApplicationCertificateType,
+        brainpoolP384Certificate());
   }
 
   // Current ECC endpoints are advertised only when the server can pair the policy with a matching
@@ -317,6 +338,17 @@ public class EndpointConfigTest {
       SecurityPolicy securityPolicy, NodeId certificateTypeId, CertificateMaterial certificate)
       throws Exception {
 
+    assertEndpointAdvertised(
+        securityPolicy, MessageSecurityMode.SignAndEncrypt, certificateTypeId, certificate);
+  }
+
+  private static void assertEndpointAdvertised(
+      SecurityPolicy securityPolicy,
+      MessageSecurityMode securityMode,
+      NodeId certificateTypeId,
+      CertificateMaterial certificate)
+      throws Exception {
+
     CertificateManager certificateManager =
         manager(
             group(
@@ -330,7 +362,7 @@ public class EndpointConfigTest {
                     .setCertificateTypeId(certificateTypeId)
                     .build())
             .setSecurityPolicy(securityPolicy)
-            .setSecurityMode(MessageSecurityMode.SignAndEncrypt)
+            .setSecurityMode(securityMode)
             .build();
 
     OpcUaServer server = server(Set.of(endpoint), certificateManager);
@@ -340,6 +372,7 @@ public class EndpointConfigTest {
 
     assertEquals(1, descriptions.size());
     assertEquals(securityPolicy.getUri(), descriptions.get(0).getSecurityPolicyUri());
+    assertEquals(securityMode, descriptions.get(0).getSecurityMode());
     assertArrayEquals(
         certificate.certificate().getEncoded(),
         descriptions.get(0).getServerCertificate().bytesOrEmpty());

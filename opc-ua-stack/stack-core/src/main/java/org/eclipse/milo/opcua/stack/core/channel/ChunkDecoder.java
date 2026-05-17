@@ -46,10 +46,13 @@ import org.slf4j.LoggerFactory;
  * {@link MessageAbortException}; security and framing failures are surfaced as {@link
  * MessageDecodeException}.
  *
- * <p>AEAD profiles authenticate the secure message header and symmetric security header as
- * associated data, then decrypt the SequenceHeader and body while verifying the authentication tag.
- * The decoder predicts the AEAD nonce from the last accepted sequence number because the current
- * SequenceHeader is not available until after tag verification succeeds.
+ * <p>AEAD profiles always authenticate the chunk with a nonce derived from the current token id and
+ * the last accepted sequence number. In {@code SignAndEncrypt}, the secure message and symmetric
+ * security headers are associated data while the SequenceHeader and body are decrypted and
+ * authenticated together. In {@code Sign}, the plaintext secure message header, symmetric security
+ * header, SequenceHeader, and body are authenticated by a tag-only signature footer. The decoder
+ * predicts the nonce before trusting the current SequenceHeader, so replayed or corrupted chunks
+ * are rejected before their sequence number can advance the stream.
  *
  * <p>A decoder instance tracks incoming sequence numbers for the stream it is assigned to. Use one
  * decoder per ordered channel stream so sequence validation reflects the peer's actual message
@@ -217,7 +220,8 @@ public final class ChunkDecoder {
       boolean encrypted = isEncryptionEnabled(channel);
       boolean signed = isSigningEnabled(channel);
       int signatureSize = signed || encrypted ? getSignatureSize(channel) : 0;
-      boolean aead = encrypted && isAead(channel);
+      boolean aead = isAead(channel);
+      boolean aeadEncryption = encrypted && aead;
 
       long requestId = -1L;
       byte[] lastSignature = null;
@@ -236,8 +240,9 @@ public final class ChunkDecoder {
         int encryptedStart = chunkBuffer.readerIndex();
         chunkBuffer.readerIndex(0);
 
-        if (signed && !aead) {
-          lastSignature = verifyChunk(channel, chunkBuffer, additionalSignedBytes);
+        if (signed && !aeadEncryption) {
+          lastSignature =
+              verifyChunk(channel, chunkBuffer, additionalSignedBytes, lastSequenceNumber);
         }
 
         final int paddingOverhead =
@@ -246,7 +251,7 @@ public final class ChunkDecoder {
             encrypted
                 ? getPaddingSize(channel, cipherTextBlockSize, signatureSize, chunkBuffer)
                 : 0;
-        final int footerSignatureSize = aead ? 0 : signatureSize;
+        final int footerSignatureSize = aeadEncryption ? 0 : signatureSize;
         final int bodyEnd =
             chunkBuffer.readableBytes() - footerSignatureSize - paddingOverhead - paddingSize;
 
@@ -354,7 +359,10 @@ public final class ChunkDecoder {
     protected abstract int getSignatureSize(SecureChannel channel);
 
     protected abstract byte[] verifyChunk(
-        SecureChannel channel, ByteBuf chunkBuffer, byte @Nullable [] additionalSignedBytes)
+        SecureChannel channel,
+        ByteBuf chunkBuffer,
+        byte @Nullable [] additionalSignedBytes,
+        long lastSequenceNumber)
         throws UaException;
 
     protected abstract int getPaddingOverhead(SecureChannel channel, int cipherTextBlockSize);
@@ -406,7 +414,10 @@ public final class ChunkDecoder {
 
     @Override
     public byte[] verifyChunk(
-        SecureChannel channel, ByteBuf chunkBuffer, byte @Nullable [] additionalSignedBytes)
+        SecureChannel channel,
+        ByteBuf chunkBuffer,
+        byte @Nullable [] additionalSignedBytes,
+        long lastSequenceNumber)
         throws UaException {
       int signatureSize = channel.getRemoteAsymmetricSignatureSize();
 
@@ -562,9 +573,21 @@ public final class ChunkDecoder {
 
     @Override
     public byte[] verifyChunk(
-        SecureChannel channel, ByteBuf chunkBuffer, byte @Nullable [] additionalSignedBytes)
+        SecureChannel channel,
+        ByteBuf chunkBuffer,
+        byte @Nullable [] additionalSignedBytes,
+        long lastSequenceNumber)
         throws UaException {
-      chunkProtection(channel).verify(channel, securityKeys, chunkBuffer);
+      SecureChannelStrategies.ChunkProtectionStrategy chunkProtection = chunkProtection(channel);
+
+      if (chunkProtection.isAead()) {
+        long aeadSequenceNumber =
+            NonLegacySequenceNumberValidator.aeadNonceSequenceNumber(lastSequenceNumber);
+        chunkProtection.verify(
+            channel, securityKeys, receivedTokenId, aeadSequenceNumber, chunkBuffer);
+      } else {
+        chunkProtection.verify(channel, securityKeys, chunkBuffer);
+      }
 
       return null;
     }

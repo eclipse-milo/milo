@@ -649,7 +649,8 @@ public class OpcUaServer extends AbstractServiceHandler {
       EndpointConfig endpoint, SecurityPolicyProfile profile) throws EndpointResolutionException {
 
     if (profile.secureChannelEnhancements()) {
-      if (endpoint.getSecurityMode() != MessageSecurityMode.SignAndEncrypt) {
+      if (endpoint.getSecurityMode() != MessageSecurityMode.SignAndEncrypt
+          && !isAeadSignSupported(profile, endpoint.getSecurityMode())) {
         throw new EndpointResolutionException(
             "message security mode is not supported for "
                 + endpoint.getSecurityPolicy().getUri()
@@ -667,6 +668,18 @@ public class OpcUaServer extends AbstractServiceHandler {
               + "; OpenSecureChannel transport support is available, but CreateSession/"
               + "ActivateSession integration is deferred");
     }
+  }
+
+  private static boolean isAeadSignSupported(
+      SecurityPolicyProfile profile, MessageSecurityMode mode) {
+    if (mode != MessageSecurityMode.Sign || !profile.secureChannelSupported()) {
+      return false;
+    }
+
+    return switch (profile.chunkProtectionAxis()) {
+      case AES_GCM, CHACHA20_POLY1305 -> true;
+      default -> false;
+    };
   }
 
   private static boolean hasSdkSessionSupport(SecurityPolicy securityPolicy) {

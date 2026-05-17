@@ -105,6 +105,7 @@ final class SecureChannelStrategies {
       new AesGcmChunkProtectionStrategy();
   private static final ChunkProtectionStrategy CHACHA20_POLY1305_CHUNK_PROTECTION =
       new ChaCha20Poly1305ChunkProtectionStrategy();
+  @SuppressWarnings("unused")
   private static final ChunkProtectionStrategy UNSUPPORTED_CHUNK_PROTECTION =
       new UnsupportedChunkProtectionStrategy();
 
@@ -132,6 +133,7 @@ final class SecureChannelStrategies {
   static KeyAgreementStrategy keyAgreement(SecurityPolicyProfile profile) {
     KeyAgreementAxis keyAgreementAxis = profile.keyAgreementAxis();
 
+    //noinspection DuplicatedCode
     return switch (keyAgreementAxis) {
       case NONE -> NO_KEY_AGREEMENT;
       case RSA_NONCE -> RSA_NONCE_KEY_AGREEMENT;
@@ -281,9 +283,31 @@ final class SecureChannelStrategies {
         SecureChannel channel, ChannelSecurity.SecurityKeys securityKeys, ByteBuffer chunkNioBuffer)
         throws UaException;
 
+    default byte[] sign(
+        SecureChannel channel,
+        ChannelSecurity.SecurityKeys securityKeys,
+        long tokenId,
+        long aeadSequenceNumber,
+        ByteBuffer aad)
+        throws UaException {
+
+      return sign(channel, securityKeys, aad);
+    }
+
     void verify(
         SecureChannel channel, ChannelSecurity.SecurityKeys securityKeys, ByteBuf chunkBuffer)
         throws UaException;
+
+    default void verify(
+        SecureChannel channel,
+        ChannelSecurity.SecurityKeys securityKeys,
+        long tokenId,
+        long aeadSequenceNumber,
+        ByteBuf chunkBuffer)
+        throws UaException {
+
+      verify(channel, securityKeys, chunkBuffer);
+    }
 
     Cipher getEncryptionCipher(SecureChannel channel, ChannelSecurity.SecurityKeys securityKeys)
         throws UaException;
@@ -1092,9 +1116,10 @@ final class SecureChannelStrategies {
   }
 
   /*
-   * AEAD profiles encrypt the SequenceHeader/body and append the cipher's authentication tag where
-   * legacy profiles append an HMAC. There is no separate sign/verify pass; decryption verifies the
-   * tag before plaintext can be consumed.
+   * AEAD profiles append the cipher's authentication tag where legacy profiles append an HMAC.
+   * SignAndEncrypt encrypts the SequenceHeader/body and verifies the tag during decryption. Sign
+   * leaves those bytes plaintext and uses the same tag construction as a signature footer over the
+   * complete symmetric chunk.
    */
   private abstract static class AeadChunkProtectionStrategy implements ChunkProtectionStrategy {
 
@@ -1141,8 +1166,35 @@ final class SecureChannelStrategies {
 
       throw new UaException(
           StatusCodes.Bad_SecurityPolicyRejected,
-          "AEAD chunk protection requires SignAndEncrypt mode: "
+          "AEAD chunk protection requires token-bound nonce context: "
               + channel.getSecurityPolicy().getUri());
+    }
+
+    @Override
+    public byte[] sign(
+        SecureChannel channel,
+        ChannelSecurity.SecurityKeys securityKeys,
+        long tokenId,
+        long aeadSequenceNumber,
+        ByteBuffer aad)
+        throws UaException {
+
+      try {
+        ChannelSecurity.SecretKeys secretKeys = channel.getEncryptionKeys(securityKeys);
+        byte[] nonce = secretKeys.reserveAeadNonce(tokenId, aeadSequenceNumber);
+
+        Cipher cipher =
+            initCipher(
+                resolveProviderProfile(channel.getSecurityPolicyProfile()),
+                Cipher.ENCRYPT_MODE,
+                secretKeys.getEncryptionKey(),
+                nonce,
+                aad);
+
+        return cipher.doFinal(new byte[0]);
+      } catch (GeneralSecurityException e) {
+        throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
+      }
     }
 
     @Override
@@ -1154,6 +1206,46 @@ final class SecureChannelStrategies {
           StatusCodes.Bad_SecurityPolicyRejected,
           "AEAD chunk protection verifies tags during decryption: "
               + channel.getSecurityPolicy().getUri());
+    }
+
+    @Override
+    public void verify(
+        SecureChannel channel,
+        ChannelSecurity.SecurityKeys securityKeys,
+        long tokenId,
+        long aeadSequenceNumber,
+        ByteBuf chunkBuffer)
+        throws UaException {
+
+      try {
+        ChannelSecurity.SecretKeys secretKeys = channel.getDecryptionKeys(securityKeys);
+        byte[] nonce = secretKeys.createAeadNonce(tokenId, aeadSequenceNumber);
+
+        int tagSize = signatureSize(channel.getSecurityPolicyProfile());
+        int aadSize = chunkBuffer.writerIndex() - tagSize;
+
+        if (aadSize < 0) {
+          throw new UaException(
+              StatusCodes.Bad_SecurityChecksFailed,
+              "AEAD signature footer is missing: " + channel.getSecurityPolicy().getUri());
+        }
+
+        ByteBuffer aad = chunkBuffer.nioBuffer(0, aadSize);
+        byte[] tag = new byte[tagSize];
+        chunkBuffer.getBytes(aadSize, tag);
+
+        Cipher cipher =
+            initCipher(
+                resolveProviderProfile(channel.getSecurityPolicyProfile()),
+                Cipher.DECRYPT_MODE,
+                secretKeys.getEncryptionKey(),
+                nonce,
+                aad);
+
+        cipher.doFinal(tag);
+      } catch (GeneralSecurityException e) {
+        throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
+      }
     }
 
     @Override

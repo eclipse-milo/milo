@@ -167,23 +167,26 @@ class OpcTcpTransportTest extends SecurityFixture {
 
   private static Stream<EnhancedSecurityParameters> provideCurrentEnhancedSecurityParameters()
       throws Exception {
-    return Stream.concat(
-        provideCurrentEccSecurityParameters(),
-        Stream.of(
-            new EnhancedSecurityParameters(
-                SecurityPolicy.RSA_DH_AesGcm,
-                rsaCertificate("rsa-dh-aes-client"),
-                rsaCertificate("rsa-dh-aes-server"),
-                rsaCertificate("wrong-rsa-dh-aes-server"),
-                rsaCertificate("wrong-rsa-dh-aes-client-key"),
-                malformedFfdhe3072PublicKey()),
-            new EnhancedSecurityParameters(
-                SecurityPolicy.RSA_DH_ChaChaPoly,
-                rsaCertificate("rsa-dh-chacha-client"),
-                rsaCertificate("rsa-dh-chacha-server"),
-                rsaCertificate("wrong-rsa-dh-chacha-server"),
-                rsaCertificate("wrong-rsa-dh-chacha-client-key"),
-                malformedFfdhe3072PublicKey())));
+    return Stream.concat(provideCurrentEccSecurityParameters(), provideRsaDhSecurityParameters());
+  }
+
+  private static Stream<EnhancedSecurityParameters> provideRsaDhSecurityParameters()
+      throws Exception {
+    return Stream.of(
+        new EnhancedSecurityParameters(
+            SecurityPolicy.RSA_DH_AesGcm,
+            rsaCertificate("rsa-dh-aes-client"),
+            rsaCertificate("rsa-dh-aes-server"),
+            rsaCertificate("wrong-rsa-dh-aes-server"),
+            rsaCertificate("wrong-rsa-dh-aes-client-key"),
+            malformedFfdhe3072PublicKey()),
+        new EnhancedSecurityParameters(
+            SecurityPolicy.RSA_DH_ChaChaPoly,
+            rsaCertificate("rsa-dh-chacha-client"),
+            rsaCertificate("rsa-dh-chacha-server"),
+            rsaCertificate("wrong-rsa-dh-chacha-server"),
+            rsaCertificate("wrong-rsa-dh-chacha-client-key"),
+            malformedFfdhe3072PublicKey()));
   }
 
   @ParameterizedTest
@@ -407,6 +410,45 @@ class OpcTcpTransportTest extends SecurityFixture {
     }
   }
 
+  @ParameterizedTest
+  @MethodSource("provideCurrentEnhancedSecurityParameters")
+  void connectThenDisconnectWithCurrentEnhancedSignPolicies(EnhancedSecurityParameters parameters)
+      throws Exception {
+
+    MessageSecurityMode messageSecurityMode = MessageSecurityMode.Sign;
+    OpcServerTransport serverTransport =
+        bindServerTransport(
+            parameters.securityPolicy(),
+            messageSecurityMode,
+            parameters.server(),
+            parameters.client().certificate());
+
+    try {
+      var applicationContext =
+          clientApplicationContext(
+              parameters.securityPolicy(),
+              parameters.client(),
+              parameters.server(),
+              messageSecurityMode);
+
+      OpcTcpClientTransportConfig config = OpcTcpClientTransportConfig.newBuilder().build();
+
+      var transport = new OpcTcpClientTransport(config);
+
+      LOGGER.debug("connecting with {} / Sign...", parameters.securityPolicy());
+      transport.connect(applicationContext).get();
+      LOGGER.debug("connected with {} / Sign", parameters.securityPolicy());
+
+      LOGGER.debug("disconnecting...");
+      transport.disconnect().get();
+      LOGGER.debug("disconnected");
+    } finally {
+      LOGGER.debug("unbinding server transport...");
+      serverTransport.unbind();
+      LOGGER.debug("server transport unbound");
+    }
+  }
+
   // Renewal must perform a second enhanced ephemeral-key exchange and install a distinct token, not
   // reuse the Issue exchange key material.
   @ParameterizedTest
@@ -418,6 +460,23 @@ class OpcTcpTransportTest extends SecurityFixture {
         parameters.securityPolicy(),
         parameters.client(),
         parameters.server(),
+        OpcTcpClientTransportConfig.newBuilder().setChannelLifetime(uint(300)).build(),
+        OpcTcpServerTransportConfig.newBuilder()
+            .setMinimumSecureChannelLifetime(uint(300))
+            .setMaximumSecureChannelLifetime(uint(300))
+            .build());
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideCurrentEnhancedSecurityParameters")
+  void secureChannelRenewsWithCurrentEnhancedSignPolicies(EnhancedSecurityParameters parameters)
+      throws Exception {
+
+    assertSecureChannelRenews(
+        parameters.securityPolicy(),
+        parameters.client(),
+        parameters.server(),
+        MessageSecurityMode.Sign,
         OpcTcpClientTransportConfig.newBuilder().setChannelLifetime(uint(300)).build(),
         OpcTcpServerTransportConfig.newBuilder()
             .setMinimumSecureChannelLifetime(uint(300))
@@ -594,7 +653,24 @@ class OpcTcpTransportTest extends SecurityFixture {
       OpcTcpServerTransportConfig serverConfig)
       throws Exception {
 
-    MessageSecurityMode messageSecurityMode = MessageSecurityMode.SignAndEncrypt;
+    assertSecureChannelRenews(
+        securityPolicy,
+        client,
+        server,
+        MessageSecurityMode.SignAndEncrypt,
+        clientConfig,
+        serverConfig);
+  }
+
+  private void assertSecureChannelRenews(
+      SecurityPolicy securityPolicy,
+      CertificateMaterial client,
+      CertificateMaterial server,
+      MessageSecurityMode messageSecurityMode,
+      OpcTcpClientTransportConfig clientConfig,
+      OpcTcpServerTransportConfig serverConfig)
+      throws Exception {
+
     CountDownLatch clientTokensCreated = new CountDownLatch(2);
     CountDownLatch serverTokensCreated = new CountDownLatch(2);
     var clientTokenIds = ConcurrentHashMap.<Long>newKeySet();
@@ -617,7 +693,8 @@ class OpcTcpTransportTest extends SecurityFixture {
 
     try {
       ClientApplicationContext applicationContext =
-          clientApplicationContext(securityPolicy, client, server, clientKeysListener);
+          clientApplicationContext(
+              securityPolicy, client, server, messageSecurityMode, clientKeysListener);
 
       transport.connect(applicationContext).get();
 
@@ -654,7 +731,8 @@ class OpcTcpTransportTest extends SecurityFixture {
   private ClientApplicationContext clientApplicationContext(
       SecurityPolicy securityPolicy, CertificateMaterial client, CertificateMaterial server) {
 
-    return clientApplicationContext(securityPolicy, client, server, null);
+    return clientApplicationContext(
+        securityPolicy, client, server, MessageSecurityMode.SignAndEncrypt, null);
   }
 
   private ClientApplicationContext clientApplicationContext(
@@ -663,7 +741,29 @@ class OpcTcpTransportTest extends SecurityFixture {
       CertificateMaterial server,
       SecurityKeysListener securityKeysListener) {
 
-    MessageSecurityMode messageSecurityMode = MessageSecurityMode.SignAndEncrypt;
+    return clientApplicationContext(
+        securityPolicy,
+        client,
+        server,
+        MessageSecurityMode.SignAndEncrypt,
+        securityKeysListener);
+  }
+
+  private ClientApplicationContext clientApplicationContext(
+      SecurityPolicy securityPolicy,
+      CertificateMaterial client,
+      CertificateMaterial server,
+      MessageSecurityMode messageSecurityMode) {
+
+    return clientApplicationContext(securityPolicy, client, server, messageSecurityMode, null);
+  }
+
+  private ClientApplicationContext clientApplicationContext(
+      SecurityPolicy securityPolicy,
+      CertificateMaterial client,
+      CertificateMaterial server,
+      MessageSecurityMode messageSecurityMode,
+      SecurityKeysListener securityKeysListener) {
 
     return new ClientApplicationContext() {
       @Override

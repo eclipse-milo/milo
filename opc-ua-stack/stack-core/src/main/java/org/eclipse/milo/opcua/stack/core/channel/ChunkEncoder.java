@@ -53,8 +53,9 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>For profiles using SecureChannel Enhancements, the sequence-number stream starts at 0 and does
  * not use the legacy wrap window. AEAD profiles also feed the previous sequence number, called
- * {@code LastSequenceNumber} by the specification, into per-chunk nonce construction before the
- * current SequenceHeader is encrypted.
+ * {@code LastSequenceNumber} by the specification, into per-chunk nonce construction. In
+ * {@code SignAndEncrypt} that nonce protects the encrypted SequenceHeader and body; in {@code Sign}
+ * it protects the tag-only signature footer over the plaintext chunk bytes.
  *
  * <p>An encoder instance owns the outbound sequence-number stream for the connection using it.
  * Reuse one instance for ordered messages on the same channel; use a separate instance for a
@@ -194,12 +195,14 @@ public final class ChunkEncoder {
         throws UaException {
 
       boolean encrypted = isEncryptionEnabled(channel);
+      boolean signed = isSigningEnabled(channel);
 
       int securityHeaderSize = getSecurityHeaderSize(channel);
       int cipherTextBlockSize = getCipherTextBlockSize(channel);
       int plainTextBlockSize = getPlainTextBlockSize(channel);
-      int signatureSize = isSigningEnabled(channel) || encrypted ? getSignatureSize(channel) : 0;
-      boolean aead = encrypted && isAead(channel);
+      int signatureSize = signed || encrypted ? getSignatureSize(channel) : 0;
+      boolean aead = isAead(channel);
+      boolean aeadEncryption = encrypted && aead;
 
       int maxChunkSize = parameters.getLocalSendBufferSize();
       int paddingOverhead = encrypted ? getPaddingOverhead(channel, cipherTextBlockSize) : 0;
@@ -275,10 +278,11 @@ public final class ChunkEncoder {
           writePadding(channel, cipherTextBlockSize, paddingSize, chunkBuffer);
         }
 
-        if (isSigningEnabled(channel) && !aead) {
+        if (signed && !aeadEncryption) {
           ByteBuffer chunkNioBuffer = chunkBuffer.nioBuffer(0, chunkBuffer.writerIndex());
 
-          byte[] signature = signChunk(channel, chunkNioBuffer, additionalSignedBytes);
+          byte[] signature =
+              signChunk(channel, sequenceNumbers, chunkNioBuffer, additionalSignedBytes);
 
           lastSignature = signature;
 
@@ -291,7 +295,7 @@ public final class ChunkEncoder {
 
           assert (chunkBuffer.readableBytes() % plainTextBlockSize == 0);
 
-          if (aead) {
+          if (aeadEncryption) {
             encryptAeadChunk(channel, sequenceNumbers, chunkBuffer, signatureSize);
           } else {
             try {
@@ -388,7 +392,10 @@ public final class ChunkEncoder {
     }
 
     protected abstract byte[] signChunk(
-        SecureChannel channel, ByteBuffer chunkNioBuffer, byte @Nullable [] additionalSignedBytes)
+        SecureChannel channel,
+        SequenceNumbers sequenceNumbers,
+        ByteBuffer chunkNioBuffer,
+        byte @Nullable [] additionalSignedBytes)
         throws UaException;
 
     protected abstract void encodeSecurityHeader(SecureChannel channel, ByteBuf buffer)
@@ -444,12 +451,14 @@ public final class ChunkEncoder {
     }
 
     /**
-     * Returns the last application-signature bytes produced for this message.
+     * Returns the last signature-like footer produced for this message.
      *
      * <p>OpenSecureChannel issue/response callers use this value as the SecureChannel-enhancement
-     * binding input. Symmetric and unsigned messages return {@code null}.
+     * binding input when an asymmetric application signature was produced. Symmetric signed chunks
+     * may also produce footer bytes, including legacy HMAC signatures or AEAD Sign tags, but those
+     * bytes are already written into the encoded chunks and are not channel-binding input.
      *
-     * @return the last asymmetric signature, or {@code null}.
+     * @return the last signature-like footer, or {@code null}.
      */
     public byte @Nullable [] getSignature() {
       return signature;
@@ -460,7 +469,10 @@ public final class ChunkEncoder {
 
     @Override
     public byte[] signChunk(
-        SecureChannel channel, ByteBuffer chunkNioBuffer, byte @Nullable [] additionalSignedBytes)
+        SecureChannel channel,
+        SequenceNumbers sequenceNumbers,
+        ByteBuffer chunkNioBuffer,
+        byte @Nullable [] additionalSignedBytes)
         throws UaException {
 
       if (additionalSignedBytes != null && additionalSignedBytes.length > 0) {
@@ -591,10 +603,20 @@ public final class ChunkEncoder {
 
     @Override
     public byte[] signChunk(
-        SecureChannel channel, ByteBuffer chunkNioBuffer, byte @Nullable [] additionalSignedBytes)
+        SecureChannel channel,
+        SequenceNumbers sequenceNumbers,
+        ByteBuffer chunkNioBuffer,
+        byte @Nullable [] additionalSignedBytes)
         throws UaException {
 
-      return chunkProtection(channel).sign(channel, securityKeys, chunkNioBuffer);
+      SecureChannelStrategies.ChunkProtectionStrategy chunkProtection = chunkProtection(channel);
+
+      if (chunkProtection.isAead()) {
+        return chunkProtection.sign(
+            channel, securityKeys, currentTokenId, sequenceNumbers.last(), chunkNioBuffer);
+      }
+
+      return chunkProtection.sign(channel, securityKeys, chunkNioBuffer);
     }
 
     @Override
