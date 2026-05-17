@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
+import org.eclipse.milo.opcua.sdk.core.WriteMask;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.AccessResult;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultAccessController.AccessControlAttributes;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultAccessController.AccessControlContext;
@@ -257,6 +258,115 @@ class DefaultAccessControllerTest {
     assertEquals(AccessResult.DENIED_USER_ACCESS, results.get(wvDisplayName));
     assertEquals(AccessResult.DENIED_USER_ACCESS, results.get(wvDescription));
     assertEquals(AccessResult.DENIED_USER_ACCESS, results.get(wvBrowseName));
+  }
+
+  @Test
+  void checkWriteAccess_RolePermissions_DeniedByUserWriteMask() {
+    var nodeId = new NodeId(1, "foo");
+    var writeValue =
+        new WriteValue(
+            nodeId,
+            AttributeId.RolePermissions.uid(),
+            null,
+            DataValue.valueOnly(Variant.NULL_VALUE));
+
+    attributesMap.put(
+        nodeId,
+        new AccessControlAttributes(
+            null,
+            null,
+            UInteger.MIN,
+            null,
+            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  ROLE_A, PermissionType.of(PermissionType.Field.WriteRolePermissions))
+            }));
+    Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_A)));
+
+    AccessResult result =
+        DefaultAccessController.checkWriteAccess(context, List.of(writeValue)).get(writeValue);
+
+    assertEquals(AccessResult.DENIED_USER_ACCESS, result);
+  }
+
+  @Test
+  void checkWriteAccess_Historizing_DeniedByUserWriteMask() {
+    var nodeId = new NodeId(1, "foo");
+    var writeValue =
+        new WriteValue(
+            nodeId, AttributeId.Historizing.uid(), null, DataValue.valueOnly(Variant.NULL_VALUE));
+
+    attributesMap.put(
+        nodeId,
+        new AccessControlAttributes(
+            null,
+            null,
+            UInteger.MIN,
+            null,
+            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  ROLE_A, PermissionType.of(PermissionType.Field.WriteHistorizing))
+            }));
+    Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_A)));
+
+    AccessResult result =
+        DefaultAccessController.checkWriteAccess(context, List.of(writeValue)).get(writeValue);
+
+    assertEquals(AccessResult.DENIED_USER_ACCESS, result);
+  }
+
+  @Test
+  void checkWriteAccess_UserRolePermissions_DeniedByUserWriteMask() {
+    var nodeId = new NodeId(1, "foo");
+    var writeValue =
+        new WriteValue(
+            nodeId,
+            AttributeId.UserRolePermissions.uid(),
+            null,
+            DataValue.valueOnly(Variant.NULL_VALUE));
+
+    attributesMap.put(
+        nodeId,
+        new AccessControlAttributes(
+            null, null, UInteger.MAX, null, null, new RolePermissionType[] {}));
+    Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of()));
+
+    AccessResult result =
+        DefaultAccessController.checkWriteAccess(context, List.of(writeValue)).get(writeValue);
+
+    assertEquals(AccessResult.DENIED_USER_ACCESS, result);
+  }
+
+  @Test
+  void checkWriteAccess_RolePermissions_AllowedByUserWriteMask() {
+    var nodeId = new NodeId(1, "foo");
+    var writeValue =
+        new WriteValue(
+            nodeId,
+            AttributeId.RolePermissions.uid(),
+            null,
+            DataValue.valueOnly(Variant.NULL_VALUE));
+
+    attributesMap.put(
+        nodeId,
+        new AccessControlAttributes(
+            null,
+            null,
+            UInteger.valueOf(WriteMask.RolePermissions.getValue()),
+            null,
+            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  ROLE_A, PermissionType.of(PermissionType.Field.WriteRolePermissions))
+            }));
+    Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_A)));
+
+    AccessResult result =
+        DefaultAccessController.checkWriteAccess(context, List.of(writeValue)).get(writeValue);
+
+    assertEquals(AccessResult.ALLOWED, result);
   }
 
   @Test
