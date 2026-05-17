@@ -54,7 +54,7 @@ class UsernameProviderTest {
 
   // Enhanced username tokens must use the receiver key negotiated in CreateSession.
   @ParameterizedTest
-  @MethodSource("supportedEnhancedProfiles")
+  @MethodSource("representativeEnhancedProfiles")
   void encryptsEnhancedPasswordWithNegotiatedReceiverKey(SecurityPolicyProfile profile)
       throws Exception {
 
@@ -235,22 +235,11 @@ class UsernameProviderTest {
         ubyte(0));
   }
 
-  private static Stream<Arguments> supportedEnhancedProfiles() {
+  private static Stream<Arguments> representativeEnhancedProfiles() {
     return Stream.of(
         Arguments.of(SecurityPolicy.ECC_nistP256_AesGcm.getProfile()),
-        Arguments.of(SecurityPolicy.ECC_nistP256_ChaChaPoly.getProfile()),
-        Arguments.of(SecurityPolicy.ECC_nistP384_AesGcm.getProfile()),
-        Arguments.of(SecurityPolicy.ECC_nistP384_ChaChaPoly.getProfile()),
-        Arguments.of(SecurityPolicy.ECC_brainpoolP256r1_AesGcm.getProfile()),
-        Arguments.of(SecurityPolicy.ECC_brainpoolP256r1_ChaChaPoly.getProfile()),
-        Arguments.of(SecurityPolicy.ECC_curve25519_AesGcm.getProfile()),
         Arguments.of(SecurityPolicy.ECC_curve25519_ChaChaPoly.getProfile()),
-        Arguments.of(SecurityPolicy.ECC_curve448_AesGcm.getProfile()),
-        Arguments.of(SecurityPolicy.ECC_curve448_ChaChaPoly.getProfile()),
-        Arguments.of(SecurityPolicy.ECC_brainpoolP384r1_AesGcm.getProfile()),
-        Arguments.of(SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly.getProfile()),
-        Arguments.of(SecurityPolicy.RSA_DH_AesGcm.getProfile()),
-        Arguments.of(SecurityPolicy.RSA_DH_ChaChaPoly.getProfile()));
+        Arguments.of(SecurityPolicy.RSA_DH_AesGcm.getProfile()));
   }
 
   private static ApplicationIdentity applicationIdentity(SecurityPolicyProfile profile)

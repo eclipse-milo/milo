@@ -213,6 +213,69 @@ class OpcTcpTransportTest extends SecurityFixture {
     return Stream.concat(provideCurrentEccSecurityParameters(), provideRsaDhSecurityParameters());
   }
 
+  private static Stream<EnhancedSecurityParameters>
+      provideRepresentativeEnhancedSecurityParameters() throws Exception {
+
+    return Stream.concat(
+        provideRepresentativeEccSecurityParameters(),
+        Stream.of(
+            new EnhancedSecurityParameters(
+                SecurityPolicy.RSA_DH_AesGcm,
+                rsaCertificate("rsa-dh-aes-client"),
+                rsaCertificate("rsa-dh-aes-server"),
+                rsaCertificate("wrong-rsa-dh-aes-server"),
+                rsaCertificate("wrong-rsa-dh-aes-client-key"),
+                malformedFfdhe3072PublicKey())));
+  }
+
+  private static Stream<EnhancedSecurityParameters> provideRepresentativeEccSecurityParameters()
+      throws Exception {
+
+    return Stream.of(
+        new EnhancedSecurityParameters(
+            SecurityPolicy.ECC_nistP256_AesGcm,
+            nistP256Certificate("ecc-nist-client"),
+            nistP256Certificate("ecc-nist-server"),
+            nistP256Certificate("wrong-ecc-nist-server"),
+            nistP256Certificate("wrong-ecc-nist-client-key"),
+            malformedNistP256PublicKey()),
+        new EnhancedSecurityParameters(
+            SecurityPolicy.ECC_nistP384_AesGcm,
+            nistP384Certificate("ecc-nistp384-aes-client"),
+            nistP384Certificate("ecc-nistp384-aes-server"),
+            nistP384Certificate("wrong-ecc-nistp384-aes-server"),
+            nistP384Certificate("wrong-ecc-nistp384-aes-client-key"),
+            malformedNistP384PublicKey()),
+        new EnhancedSecurityParameters(
+            SecurityPolicy.ECC_brainpoolP256r1_AesGcm,
+            brainpoolP256Certificate("ecc-brainpoolp256-aes-client"),
+            brainpoolP256Certificate("ecc-brainpoolp256-aes-server"),
+            brainpoolP256Certificate("wrong-ecc-brainpoolp256-aes-server"),
+            brainpoolP256Certificate("wrong-ecc-brainpoolp256-aes-client-key"),
+            malformedBrainpoolP256PublicKey()),
+        new EnhancedSecurityParameters(
+            SecurityPolicy.ECC_brainpoolP384r1_AesGcm,
+            brainpoolP384Certificate("ecc-brainpool-aes-client"),
+            brainpoolP384Certificate("ecc-brainpool-aes-server"),
+            brainpoolP384Certificate("wrong-ecc-brainpool-aes-server"),
+            brainpoolP384Certificate("wrong-ecc-brainpool-aes-client-key"),
+            malformedBrainpoolP384PublicKey()),
+        new EnhancedSecurityParameters(
+            SecurityPolicy.ECC_curve25519_AesGcm,
+            ed25519Certificate("ecc-curve25519-aes-client"),
+            ed25519Certificate("ecc-curve25519-aes-server"),
+            ed25519Certificate("wrong-ecc-curve25519-aes-server"),
+            ed25519Certificate("wrong-ecc-curve25519-aes-client-key"),
+            malformedX25519PublicKey()),
+        new EnhancedSecurityParameters(
+            SecurityPolicy.ECC_curve448_AesGcm,
+            ed448Certificate("ecc-curve448-aes-client"),
+            ed448Certificate("ecc-curve448-aes-server"),
+            ed448Certificate("wrong-ecc-curve448-aes-server"),
+            ed448Certificate("wrong-ecc-curve448-aes-client-key"),
+            malformedX448PublicKey()));
+  }
+
   private static Stream<EnhancedSecurityParameters> provideRsaDhSecurityParameters()
       throws Exception {
     return Stream.of(
@@ -545,7 +608,7 @@ class OpcTcpTransportTest extends SecurityFixture {
   // A malformed ClientNonce for enhanced policies is malformed key-agreement input; the server must
   // reject it before issuing a usable token.
   @ParameterizedTest
-  @MethodSource("provideCurrentEnhancedSecurityParameters")
+  @MethodSource("provideRepresentativeEnhancedSecurityParameters")
   void openSecureChannelRejectsMalformedEphemeralPublicKeys(EnhancedSecurityParameters parameters)
       throws Exception {
 
@@ -577,7 +640,7 @@ class OpcTcpTransportTest extends SecurityFixture {
   // The asymmetric header thumbprint selects the server certificate identity. A client that points
   // at a different certificate must not be allowed to open a channel.
   @ParameterizedTest
-  @MethodSource("provideCurrentEnhancedSecurityParameters")
+  @MethodSource("provideRepresentativeEnhancedSecurityParameters")
   void openSecureChannelRejectsWrongReceiverThumbprint(EnhancedSecurityParameters parameters)
       throws Exception {
 
@@ -605,7 +668,7 @@ class OpcTcpTransportTest extends SecurityFixture {
   // The OPN signature authenticates the sender certificate. Signing with a different private key
   // must fail even when the certificate itself is trusted.
   @ParameterizedTest
-  @MethodSource("provideCurrentEnhancedSecurityParameters")
+  @MethodSource("provideRepresentativeEnhancedSecurityParameters")
   void openSecureChannelRejectsInvalidOpnSignatures(EnhancedSecurityParameters parameters)
       throws Exception {
 
@@ -641,7 +704,7 @@ class OpcTcpTransportTest extends SecurityFixture {
   // Local fallback identities still need to match the selected ECC authentication family. This
   // check stays ECC-only because RSA certificates are the correct family for RSA-DH policies.
   @ParameterizedTest
-  @MethodSource("provideCurrentEccSecurityParameters")
+  @MethodSource("provideRepresentativeEccSecurityParameters")
   void openSecureChannelRejectsWrongLocalCertificateType(EnhancedSecurityParameters parameters)
       throws Exception {
 

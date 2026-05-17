@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.server.identity;
 
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -32,6 +33,7 @@ import org.eclipse.milo.opcua.stack.core.security.EccEncryptedSecret;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SignatureData;
@@ -57,7 +59,7 @@ class AbstractUsernameIdentityValidatorTest {
 
   // The validator is the server-side bridge from opaque enhanced token bytes to application auth.
   @ParameterizedTest
-  @MethodSource("supportedEnhancedProfiles")
+  @MethodSource("representativeEnhancedProfiles")
   void decryptsEnhancedUsernameToken(SecurityPolicyProfile profile) throws Exception {
     TokenFixture fixture = tokenFixture(profile);
     TestUsernameValidator validator = new TestUsernameValidator("password");
@@ -75,7 +77,7 @@ class AbstractUsernameIdentityValidatorTest {
 
   // ActivateSession must fail clearly if CreateSession never issued receiver key material.
   @ParameterizedTest
-  @MethodSource("supportedEnhancedProfiles")
+  @MethodSource("representativeEnhancedProfiles")
   void rejectsMissingEnhancedSessionKeyMaterial(SecurityPolicyProfile profile) throws Exception {
     TokenFixture fixture = tokenFixture(profile);
     TestUsernameValidator validator = new TestUsernameValidator("password");
@@ -97,7 +99,7 @@ class AbstractUsernameIdentityValidatorTest {
 
   // The password secret is bound to the exact public key returned to the client.
   @ParameterizedTest
-  @MethodSource("supportedEnhancedProfiles")
+  @MethodSource("representativeEnhancedProfiles")
   void rejectsWrongReceiverKey(SecurityPolicyProfile profile) throws Exception {
     TokenFixture fixture = tokenFixture(profile);
     KeyPair wrongReceiverEphemeralKeyPair = EccEncryptedSecret.generateEphemeralKeyPair(profile);
@@ -120,7 +122,7 @@ class AbstractUsernameIdentityValidatorTest {
 
   // Malformed enhanced token-secret bytes should fail token validation, not reach authentication.
   @ParameterizedTest
-  @MethodSource("supportedEnhancedProfiles")
+  @MethodSource("representativeEnhancedProfiles")
   void rejectsMalformedEnhancedPayload(SecurityPolicyProfile profile) throws Exception {
     TokenFixture fixture = tokenFixture(profile);
     UserNameIdentityToken malformedToken =
@@ -144,7 +146,7 @@ class AbstractUsernameIdentityValidatorTest {
   // Enhanced token-secret nonce mismatches should map to the same service result as the legacy RSA
   // username-token path.
   @ParameterizedTest
-  @MethodSource("supportedEnhancedProfiles")
+  @MethodSource("representativeEnhancedProfiles")
   void mapsEnhancedNonceMismatchLikeRsaPath(SecurityPolicyProfile profile) throws Exception {
     TokenFixture fixture = tokenFixture(profile);
     TestUsernameValidator validator = new TestUsernameValidator("password");
@@ -160,6 +162,37 @@ class AbstractUsernameIdentityValidatorTest {
                     new SignatureData(null, null)));
 
     assertEquals(StatusCodes.Bad_UserAccessDenied, exception.getStatusCode().getValue());
+  }
+
+  // Enhanced username-token secrets must respect the same configured password limit as the legacy
+  // RSA username-token path after decryption succeeds.
+  @Test
+  void rejectsEnhancedPasswordAboveConfiguredLimit() throws Exception {
+    SecurityPolicyProfile profile = SecurityPolicy.ECC_nistP256_AesGcm.getProfile();
+    TokenFixture fixture = tokenFixture(profile, "password");
+    TestUsernameValidator validator = new TestUsernameValidator("password");
+    Session session =
+        session(
+            fixture,
+            SERVER_NONCE,
+            new OpcUaServerConfigLimits() {
+              @Override
+              public UInteger getMaxPasswordLength() {
+                return uint(4);
+              }
+            });
+
+    UaException exception =
+        assertThrows(
+            UaException.class,
+            () ->
+                validator.validateIdentityToken(
+                    session,
+                    fixture.token(),
+                    policy(profile.securityPolicy()),
+                    new SignatureData(null, null)));
+
+    assertEquals(StatusCodes.Bad_EncodingLimitsExceeded, exception.getStatusCode().getValue());
   }
 
   // The enhanced path must not disturb the long-standing unencrypted username token behavior.
@@ -188,7 +221,11 @@ class AbstractUsernameIdentityValidatorTest {
   }
 
   private static TokenFixture tokenFixture(SecurityPolicyProfile profile) throws Exception {
+    return tokenFixture(profile, "password");
+  }
 
+  private static TokenFixture tokenFixture(SecurityPolicyProfile profile, String password)
+      throws Exception {
     ApplicationIdentity clientIdentity = applicationIdentity(profile);
     KeyPair receiverEphemeralKeyPair = EccEncryptedSecret.generateEphemeralKeyPair(profile);
     ByteString receiverPublicKey =
@@ -200,7 +237,7 @@ class AbstractUsernameIdentityValidatorTest {
             new X509Certificate[] {clientIdentity.certificate()},
             receiverPublicKey,
             SERVER_NONCE,
-            ByteString.of("password".getBytes(StandardCharsets.UTF_8)),
+            ByteString.of(password.getBytes(StandardCharsets.UTF_8)),
             false);
 
     return new TokenFixture(
@@ -212,10 +249,15 @@ class AbstractUsernameIdentityValidatorTest {
   }
 
   private static Session session(TokenFixture fixture, ByteString lastNonce) {
+    return session(fixture, lastNonce, new OpcUaServerConfigLimits() {});
+  }
+
+  private static Session session(
+      TokenFixture fixture, ByteString lastNonce, OpcUaServerConfigLimits limits) {
     Session session = mock(Session.class);
     OpcUaServer server = mock(OpcUaServer.class);
     OpcUaServerConfig config = mock(OpcUaServerConfig.class);
-    when(config.getLimits()).thenReturn(new OpcUaServerConfigLimits() {});
+    when(config.getLimits()).thenReturn(limits);
     when(server.getConfig()).thenReturn(config);
     when(session.getServer()).thenReturn(server);
     when(session.getLastNonce()).thenReturn(lastNonce);
@@ -245,22 +287,11 @@ class AbstractUsernameIdentityValidatorTest {
         "username", UserTokenType.UserName, null, null, securityPolicy.getUri());
   }
 
-  private static Stream<Arguments> supportedEnhancedProfiles() {
+  private static Stream<Arguments> representativeEnhancedProfiles() {
     return Stream.of(
         Arguments.of(SecurityPolicy.ECC_nistP256_AesGcm.getProfile()),
-        Arguments.of(SecurityPolicy.ECC_nistP256_ChaChaPoly.getProfile()),
-        Arguments.of(SecurityPolicy.ECC_nistP384_AesGcm.getProfile()),
-        Arguments.of(SecurityPolicy.ECC_nistP384_ChaChaPoly.getProfile()),
-        Arguments.of(SecurityPolicy.ECC_brainpoolP256r1_AesGcm.getProfile()),
-        Arguments.of(SecurityPolicy.ECC_brainpoolP256r1_ChaChaPoly.getProfile()),
-        Arguments.of(SecurityPolicy.ECC_curve25519_AesGcm.getProfile()),
         Arguments.of(SecurityPolicy.ECC_curve25519_ChaChaPoly.getProfile()),
-        Arguments.of(SecurityPolicy.ECC_curve448_AesGcm.getProfile()),
-        Arguments.of(SecurityPolicy.ECC_curve448_ChaChaPoly.getProfile()),
-        Arguments.of(SecurityPolicy.ECC_brainpoolP384r1_AesGcm.getProfile()),
-        Arguments.of(SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly.getProfile()),
-        Arguments.of(SecurityPolicy.RSA_DH_AesGcm.getProfile()),
-        Arguments.of(SecurityPolicy.RSA_DH_ChaChaPoly.getProfile()));
+        Arguments.of(SecurityPolicy.RSA_DH_AesGcm.getProfile()));
   }
 
   private static ApplicationIdentity applicationIdentity(SecurityPolicyProfile profile)

@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultDiscoveryServiceSet;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.security.CertificateFactory;
@@ -51,6 +52,8 @@ import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class EndpointConfigTest {
 
@@ -240,152 +243,122 @@ public class EndpointConfigTest {
 
   // RSA-DH Sign endpoints are executable: AEAD is used as a tag-only signature footer without
   // symmetric encryption.
-  @Test
-  public void rsaDhSignEndpointsAreAdvertisedWithCompatibleIdentities() throws Exception {
+  @ParameterizedTest
+  @MethodSource("rsaDhEndpointExpectations")
+  public void rsaDhSignEndpointsAreAdvertisedWithCompatibleIdentities(
+      EndpointExpectation expectation) throws Exception {
+
     assertEndpointAdvertised(
-        SecurityPolicy.RSA_DH_AesGcm,
+        expectation.securityPolicy(),
         MessageSecurityMode.Sign,
-        NodeIds.RsaSha256ApplicationCertificateType,
-        rsaCertificate("rsa-dh-aesgcm-sign"));
-    assertEndpointAdvertised(
-        SecurityPolicy.RSA_DH_ChaChaPoly,
-        MessageSecurityMode.Sign,
-        NodeIds.RsaSha256ApplicationCertificateType,
-        rsaCertificate("rsa-dh-chacha-sign"));
+        expectation.certificateTypeId(),
+        expectation.certificate());
   }
 
   // ECC AEAD Sign endpoints use the same tag-only symmetric footer as RSA-DH Sign endpoints, so
   // discovery should advertise them when a compatible application identity exists.
-  @Test
-  public void currentEccSignEndpointsAreAdvertisedWithCompatibleIdentities() throws Exception {
+  @ParameterizedTest
+  @MethodSource("currentEccEndpointExpectations")
+  public void currentEccSignEndpointsAreAdvertisedWithCompatibleIdentities(
+      EndpointExpectation expectation) throws Exception {
+
     assertEndpointAdvertised(
-        SecurityPolicy.ECC_nistP256_AesGcm,
+        expectation.securityPolicy(),
         MessageSecurityMode.Sign,
-        NodeIds.EccNistP256ApplicationCertificateType,
-        nistP256Certificate());
-    assertEndpointAdvertised(
-        SecurityPolicy.ECC_nistP256_ChaChaPoly,
-        MessageSecurityMode.Sign,
-        NodeIds.EccNistP256ApplicationCertificateType,
-        nistP256Certificate());
-    assertEndpointAdvertised(
-        SecurityPolicy.ECC_nistP384_AesGcm,
-        MessageSecurityMode.Sign,
-        NodeIds.EccNistP384ApplicationCertificateType,
-        nistP384Certificate());
-    assertEndpointAdvertised(
-        SecurityPolicy.ECC_nistP384_ChaChaPoly,
-        MessageSecurityMode.Sign,
-        NodeIds.EccNistP384ApplicationCertificateType,
-        nistP384Certificate());
-    assertEndpointAdvertised(
-        SecurityPolicy.ECC_brainpoolP256r1_AesGcm,
-        MessageSecurityMode.Sign,
-        NodeIds.EccBrainpoolP256r1ApplicationCertificateType,
-        brainpoolP256Certificate());
-    assertEndpointAdvertised(
-        SecurityPolicy.ECC_brainpoolP256r1_ChaChaPoly,
-        MessageSecurityMode.Sign,
-        NodeIds.EccBrainpoolP256r1ApplicationCertificateType,
-        brainpoolP256Certificate());
-    assertEndpointAdvertised(
-        SecurityPolicy.ECC_curve25519_AesGcm,
-        MessageSecurityMode.Sign,
-        NodeIds.EccCurve25519ApplicationCertificateType,
-        ed25519Certificate());
-    assertEndpointAdvertised(
-        SecurityPolicy.ECC_curve25519_ChaChaPoly,
-        MessageSecurityMode.Sign,
-        NodeIds.EccCurve25519ApplicationCertificateType,
-        ed25519Certificate());
-    assertEndpointAdvertised(
-        SecurityPolicy.ECC_curve448_AesGcm,
-        MessageSecurityMode.Sign,
-        NodeIds.EccCurve448ApplicationCertificateType,
-        ed448Certificate());
-    assertEndpointAdvertised(
-        SecurityPolicy.ECC_curve448_ChaChaPoly,
-        MessageSecurityMode.Sign,
-        NodeIds.EccCurve448ApplicationCertificateType,
-        ed448Certificate());
-    assertEndpointAdvertised(
-        SecurityPolicy.ECC_brainpoolP384r1_AesGcm,
-        MessageSecurityMode.Sign,
-        NodeIds.EccBrainpoolP384r1ApplicationCertificateType,
-        brainpoolP384Certificate());
-    assertEndpointAdvertised(
-        SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly,
-        MessageSecurityMode.Sign,
-        NodeIds.EccBrainpoolP384r1ApplicationCertificateType,
-        brainpoolP384Certificate());
+        expectation.certificateTypeId(),
+        expectation.certificate());
   }
 
   // Current ECC endpoints are advertised only when the server can pair the policy with a matching
   // local application certificate identity.
-  @Test
-  public void currentEccEndpointsAreAdvertisedWithCompatibleIdentities() throws Exception {
+  @ParameterizedTest
+  @MethodSource("currentEccEndpointExpectations")
+  public void currentEccEndpointsAreAdvertisedWithCompatibleIdentities(
+      EndpointExpectation expectation) throws Exception {
+
     assertEndpointAdvertised(
-        SecurityPolicy.ECC_nistP256_AesGcm,
-        NodeIds.EccNistP256ApplicationCertificateType,
-        nistP256Certificate());
-    assertEndpointAdvertised(
-        SecurityPolicy.ECC_nistP256_ChaChaPoly,
-        NodeIds.EccNistP256ApplicationCertificateType,
-        nistP256Certificate());
-    assertEndpointAdvertised(
-        SecurityPolicy.ECC_nistP384_AesGcm,
-        NodeIds.EccNistP384ApplicationCertificateType,
-        nistP384Certificate());
-    assertEndpointAdvertised(
-        SecurityPolicy.ECC_nistP384_ChaChaPoly,
-        NodeIds.EccNistP384ApplicationCertificateType,
-        nistP384Certificate());
-    assertEndpointAdvertised(
-        SecurityPolicy.ECC_brainpoolP256r1_AesGcm,
-        NodeIds.EccBrainpoolP256r1ApplicationCertificateType,
-        brainpoolP256Certificate());
-    assertEndpointAdvertised(
-        SecurityPolicy.ECC_brainpoolP256r1_ChaChaPoly,
-        NodeIds.EccBrainpoolP256r1ApplicationCertificateType,
-        brainpoolP256Certificate());
-    assertEndpointAdvertised(
-        SecurityPolicy.ECC_curve25519_AesGcm,
-        NodeIds.EccCurve25519ApplicationCertificateType,
-        ed25519Certificate());
-    assertEndpointAdvertised(
-        SecurityPolicy.ECC_curve25519_ChaChaPoly,
-        NodeIds.EccCurve25519ApplicationCertificateType,
-        ed25519Certificate());
-    assertEndpointAdvertised(
-        SecurityPolicy.ECC_curve448_AesGcm,
-        NodeIds.EccCurve448ApplicationCertificateType,
-        ed448Certificate());
-    assertEndpointAdvertised(
-        SecurityPolicy.ECC_curve448_ChaChaPoly,
-        NodeIds.EccCurve448ApplicationCertificateType,
-        ed448Certificate());
-    assertEndpointAdvertised(
-        SecurityPolicy.ECC_brainpoolP384r1_AesGcm,
-        NodeIds.EccBrainpoolP384r1ApplicationCertificateType,
-        brainpoolP384Certificate());
-    assertEndpointAdvertised(
-        SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly,
-        NodeIds.EccBrainpoolP384r1ApplicationCertificateType,
-        brainpoolP384Certificate());
+        expectation.securityPolicy(), expectation.certificateTypeId(), expectation.certificate());
   }
 
   // RSA-DH endpoints use RSA application identities even though their SecureChannel key agreement
   // uses finite-field DH.
-  @Test
-  public void rsaDhEndpointsAreAdvertisedWithCompatibleIdentities() throws Exception {
+  @ParameterizedTest
+  @MethodSource("rsaDhEndpointExpectations")
+  public void rsaDhEndpointsAreAdvertisedWithCompatibleIdentities(EndpointExpectation expectation)
+      throws Exception {
+
     assertEndpointAdvertised(
-        SecurityPolicy.RSA_DH_AesGcm,
-        NodeIds.RsaSha256ApplicationCertificateType,
-        rsaCertificate("rsa-dh-aesgcm"));
-    assertEndpointAdvertised(
-        SecurityPolicy.RSA_DH_ChaChaPoly,
-        NodeIds.RsaSha256ApplicationCertificateType,
-        rsaCertificate("rsa-dh-chacha"));
+        expectation.securityPolicy(), expectation.certificateTypeId(), expectation.certificate());
+  }
+
+  private static Stream<EndpointExpectation> currentEccEndpointExpectations() throws Exception {
+    return Stream.of(
+        endpointExpectation(
+            SecurityPolicy.ECC_nistP256_AesGcm,
+            NodeIds.EccNistP256ApplicationCertificateType,
+            nistP256Certificate()),
+        endpointExpectation(
+            SecurityPolicy.ECC_nistP256_ChaChaPoly,
+            NodeIds.EccNistP256ApplicationCertificateType,
+            nistP256Certificate()),
+        endpointExpectation(
+            SecurityPolicy.ECC_nistP384_AesGcm,
+            NodeIds.EccNistP384ApplicationCertificateType,
+            nistP384Certificate()),
+        endpointExpectation(
+            SecurityPolicy.ECC_nistP384_ChaChaPoly,
+            NodeIds.EccNistP384ApplicationCertificateType,
+            nistP384Certificate()),
+        endpointExpectation(
+            SecurityPolicy.ECC_brainpoolP256r1_AesGcm,
+            NodeIds.EccBrainpoolP256r1ApplicationCertificateType,
+            brainpoolP256Certificate()),
+        endpointExpectation(
+            SecurityPolicy.ECC_brainpoolP256r1_ChaChaPoly,
+            NodeIds.EccBrainpoolP256r1ApplicationCertificateType,
+            brainpoolP256Certificate()),
+        endpointExpectation(
+            SecurityPolicy.ECC_curve25519_AesGcm,
+            NodeIds.EccCurve25519ApplicationCertificateType,
+            ed25519Certificate()),
+        endpointExpectation(
+            SecurityPolicy.ECC_curve25519_ChaChaPoly,
+            NodeIds.EccCurve25519ApplicationCertificateType,
+            ed25519Certificate()),
+        endpointExpectation(
+            SecurityPolicy.ECC_curve448_AesGcm,
+            NodeIds.EccCurve448ApplicationCertificateType,
+            ed448Certificate()),
+        endpointExpectation(
+            SecurityPolicy.ECC_curve448_ChaChaPoly,
+            NodeIds.EccCurve448ApplicationCertificateType,
+            ed448Certificate()),
+        endpointExpectation(
+            SecurityPolicy.ECC_brainpoolP384r1_AesGcm,
+            NodeIds.EccBrainpoolP384r1ApplicationCertificateType,
+            brainpoolP384Certificate()),
+        endpointExpectation(
+            SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly,
+            NodeIds.EccBrainpoolP384r1ApplicationCertificateType,
+            brainpoolP384Certificate()));
+  }
+
+  private static Stream<EndpointExpectation> rsaDhEndpointExpectations() throws Exception {
+    return Stream.of(
+        endpointExpectation(
+            SecurityPolicy.RSA_DH_AesGcm,
+            NodeIds.RsaSha256ApplicationCertificateType,
+            rsaCertificate("rsa-dh-aesgcm")),
+        endpointExpectation(
+            SecurityPolicy.RSA_DH_ChaChaPoly,
+            NodeIds.RsaSha256ApplicationCertificateType,
+            rsaCertificate("rsa-dh-chacha")));
+  }
+
+  private static EndpointExpectation endpointExpectation(
+      SecurityPolicy securityPolicy, NodeId certificateTypeId, CertificateMaterial certificate) {
+
+    return new EndpointExpectation(securityPolicy, certificateTypeId, certificate);
   }
 
   private static void assertEndpointAdvertised(
@@ -578,6 +551,9 @@ public class EndpointConfigTest {
       return certificateChain[0];
     }
   }
+
+  private record EndpointExpectation(
+      SecurityPolicy securityPolicy, NodeId certificateTypeId, CertificateMaterial certificate) {}
 
   private record TestCertificateGroup(
       NodeId certificateGroupId, Map<NodeId, CertificateMaterial> certificates)
