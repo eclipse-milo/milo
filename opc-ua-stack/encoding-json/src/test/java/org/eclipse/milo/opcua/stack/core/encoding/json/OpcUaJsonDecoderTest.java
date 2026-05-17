@@ -961,7 +961,7 @@ class OpcUaJsonDecoderTest {
     assertThrows(
         UaSerializationException.class, () -> decoder.decodeMatrix(null, OpcUaDataType.Int32));
 
-    decoder.reset(new StringReader("{\"Array\":[1],\"Dimensions\":[1,1]}"));
+    decoder.reset(new StringReader("{\"Array\":[1],\"Dimensions\":[2,1]}"));
     assertThrows(
         UaSerializationException.class, () -> decoder.decodeMatrix(null, OpcUaDataType.Int32));
   }
