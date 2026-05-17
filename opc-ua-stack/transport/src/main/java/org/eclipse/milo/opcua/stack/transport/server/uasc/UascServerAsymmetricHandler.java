@@ -707,7 +707,13 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
 
   private static boolean usesEphemeralKeyAgreement(SecurityPolicyProfile profile) {
     return switch (profile.keyAgreementAxis()) {
-      case ECDH_NIST_P256, ECDH_BRAINPOOL_P384R1, X25519, FFDH_3072 -> true;
+      case ECDH_NIST_P256,
+          ECDH_NIST_P384,
+          ECDH_BRAINPOOL_P256R1,
+          ECDH_BRAINPOOL_P384R1,
+          X25519,
+          FFDH_3072 ->
+          true;
       default -> false;
     };
   }

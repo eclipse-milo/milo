@@ -269,6 +269,26 @@ public class EndpointConfigTest {
         NodeIds.EccNistP256ApplicationCertificateType,
         nistP256Certificate());
     assertEndpointAdvertised(
+        SecurityPolicy.ECC_nistP384_AesGcm,
+        MessageSecurityMode.Sign,
+        NodeIds.EccNistP384ApplicationCertificateType,
+        nistP384Certificate());
+    assertEndpointAdvertised(
+        SecurityPolicy.ECC_nistP384_ChaChaPoly,
+        MessageSecurityMode.Sign,
+        NodeIds.EccNistP384ApplicationCertificateType,
+        nistP384Certificate());
+    assertEndpointAdvertised(
+        SecurityPolicy.ECC_brainpoolP256r1_AesGcm,
+        MessageSecurityMode.Sign,
+        NodeIds.EccBrainpoolP256r1ApplicationCertificateType,
+        brainpoolP256Certificate());
+    assertEndpointAdvertised(
+        SecurityPolicy.ECC_brainpoolP256r1_ChaChaPoly,
+        MessageSecurityMode.Sign,
+        NodeIds.EccBrainpoolP256r1ApplicationCertificateType,
+        brainpoolP256Certificate());
+    assertEndpointAdvertised(
         SecurityPolicy.ECC_curve25519_AesGcm,
         MessageSecurityMode.Sign,
         NodeIds.EccCurve25519ApplicationCertificateType,
@@ -302,6 +322,22 @@ public class EndpointConfigTest {
         SecurityPolicy.ECC_nistP256_ChaChaPoly,
         NodeIds.EccNistP256ApplicationCertificateType,
         nistP256Certificate());
+    assertEndpointAdvertised(
+        SecurityPolicy.ECC_nistP384_AesGcm,
+        NodeIds.EccNistP384ApplicationCertificateType,
+        nistP384Certificate());
+    assertEndpointAdvertised(
+        SecurityPolicy.ECC_nistP384_ChaChaPoly,
+        NodeIds.EccNistP384ApplicationCertificateType,
+        nistP384Certificate());
+    assertEndpointAdvertised(
+        SecurityPolicy.ECC_brainpoolP256r1_AesGcm,
+        NodeIds.EccBrainpoolP256r1ApplicationCertificateType,
+        brainpoolP256Certificate());
+    assertEndpointAdvertised(
+        SecurityPolicy.ECC_brainpoolP256r1_ChaChaPoly,
+        NodeIds.EccBrainpoolP256r1ApplicationCertificateType,
+        brainpoolP256Certificate());
     assertEndpointAdvertised(
         SecurityPolicy.ECC_curve25519_AesGcm,
         NodeIds.EccCurve25519ApplicationCertificateType,
@@ -469,6 +505,13 @@ public class EndpointConfigTest {
         "ecc-nist");
   }
 
+  private static CertificateMaterial nistP384Certificate() throws Exception {
+    return eccCertificate(
+        NodeIds.EccNistP384ApplicationCertificateType,
+        SelfSignedCertificateGenerator.generateNistP384KeyPair(),
+        "ecc-nistp384");
+  }
+
   private static CertificateMaterial ed25519Certificate() throws Exception {
     return eccCertificate(
         NodeIds.EccCurve25519ApplicationCertificateType,
@@ -481,6 +524,13 @@ public class EndpointConfigTest {
         NodeIds.EccBrainpoolP384r1ApplicationCertificateType,
         SelfSignedCertificateGenerator.generateBrainpoolP384r1KeyPair(),
         "ecc-brainpoolp384");
+  }
+
+  private static CertificateMaterial brainpoolP256Certificate() throws Exception {
+    return eccCertificate(
+        NodeIds.EccBrainpoolP256r1ApplicationCertificateType,
+        SelfSignedCertificateGenerator.generateBrainpoolP256r1KeyPair(),
+        "ecc-brainpoolp256");
   }
 
   private static CertificateMaterial eccCertificate(

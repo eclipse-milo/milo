@@ -64,7 +64,7 @@ class KeyStoreCertificateStoreTest extends CertificateStoreTest {
   }
 
   @Test
-  void defaultAliasesPreserveRsaAndNameM1EccTypes() throws IOException {
+  void defaultAliasesPreserveRsaAndNameCurrentEccTypes() throws IOException {
     try (var store =
         new KeyStoreCertificateStore(
             new KeyStoreCertificateStore.Settings(
@@ -76,6 +76,12 @@ class KeyStoreCertificateStoreTest extends CertificateStoreTest {
       assertEquals(
           KeyStoreCertificateStore.ECC_NIST_P256_ALIAS,
           store.getAlias(NodeIds.EccNistP256ApplicationCertificateType));
+      assertEquals(
+          KeyStoreCertificateStore.ECC_NIST_P384_ALIAS,
+          store.getAlias(NodeIds.EccNistP384ApplicationCertificateType));
+      assertEquals(
+          KeyStoreCertificateStore.ECC_BRAINPOOL_P256R1_ALIAS,
+          store.getAlias(NodeIds.EccBrainpoolP256r1ApplicationCertificateType));
       assertEquals(
           KeyStoreCertificateStore.ECC_BRAINPOOL_P384R1_ALIAS,
           store.getAlias(NodeIds.EccBrainpoolP384r1ApplicationCertificateType));
@@ -150,6 +156,8 @@ class KeyStoreCertificateStoreTest extends CertificateStoreTest {
     assertDoesNotThrow(store::initialize);
     assertTrue(store.contains(NodeIds.RsaSha256ApplicationCertificateType));
     assertFalse(store.contains(NodeIds.EccNistP256ApplicationCertificateType));
+    assertFalse(store.contains(NodeIds.EccNistP384ApplicationCertificateType));
+    assertFalse(store.contains(NodeIds.EccBrainpoolP256r1ApplicationCertificateType));
     assertFalse(store.contains(NodeIds.EccBrainpoolP384r1ApplicationCertificateType));
     assertFalse(store.contains(NodeIds.EccCurve25519ApplicationCertificateType));
 

@@ -638,6 +638,10 @@ class EccEncryptedSecretTest {
         switch (profile.keyAgreementAxis()) {
           case ECDH_NIST_P256 ->
               EccPublicKeyCodec.decodeNistP256(parts.senderPublicKey(), providerProfile);
+          case ECDH_NIST_P384 ->
+              EccPublicKeyCodec.decodeNistP384(parts.senderPublicKey(), providerProfile);
+          case ECDH_BRAINPOOL_P256R1 ->
+              EccPublicKeyCodec.decodeBrainpoolP256r1(parts.senderPublicKey(), providerProfile);
           case ECDH_BRAINPOOL_P384R1 ->
               EccPublicKeyCodec.decodeBrainpoolP384r1(parts.senderPublicKey(), providerProfile);
           case X25519 -> EccPublicKeyCodec.decodeX25519(parts.senderPublicKey(), providerProfile);
@@ -650,6 +654,12 @@ class EccEncryptedSecretTest {
         switch (profile.keyAgreementAxis()) {
           case ECDH_NIST_P256 ->
               EccKeyAgreementUtil.agreeNistP256(
+                  providerProfile, receiverEphemeralKeyPair.getPrivate(), senderEphemeralPublicKey);
+          case ECDH_NIST_P384 ->
+              EccKeyAgreementUtil.agreeNistP384(
+                  providerProfile, receiverEphemeralKeyPair.getPrivate(), senderEphemeralPublicKey);
+          case ECDH_BRAINPOOL_P256R1 ->
+              EccKeyAgreementUtil.agreeBrainpoolP256r1(
                   providerProfile, receiverEphemeralKeyPair.getPrivate(), senderEphemeralPublicKey);
           case ECDH_BRAINPOOL_P384R1 ->
               EccKeyAgreementUtil.agreeBrainpoolP384r1(
@@ -669,10 +679,10 @@ class EccEncryptedSecretTest {
     byte[] salt = secretSalt(totalLength, parts.senderPublicKey(), parts.receiverPublicKey());
     byte[] keyMaterial =
         switch (profile.keyAgreementAxis()) {
-          case ECDH_BRAINPOOL_P384R1 ->
+          case ECDH_NIST_P384, ECDH_BRAINPOOL_P384R1 ->
               HkdfUtil.hkdfSha384(
                   sharedSecret, salt, salt, totalLength, hmacProvider(providerProfile, profile));
-          case ECDH_NIST_P256, X25519, FFDH_3072 ->
+          case ECDH_NIST_P256, ECDH_BRAINPOOL_P256R1, X25519, FFDH_3072 ->
               HkdfUtil.hkdfSha256(
                   sharedSecret, salt, salt, totalLength, hmacProvider(providerProfile, profile));
           default -> throw new IllegalArgumentException("unsupported key agreement axis");
@@ -688,8 +698,8 @@ class EccEncryptedSecretTest {
 
     String hmacTransformation =
         switch (profile.keyAgreementAxis()) {
-          case ECDH_BRAINPOOL_P384R1 -> "HmacSHA384";
-          case ECDH_NIST_P256, X25519, FFDH_3072 -> "HmacSHA256";
+          case ECDH_NIST_P384, ECDH_BRAINPOOL_P384R1 -> "HmacSHA384";
+          case ECDH_NIST_P256, ECDH_BRAINPOOL_P256R1, X25519, FFDH_3072 -> "HmacSHA256";
           default -> throw new IllegalArgumentException("unsupported key agreement axis");
         };
 
@@ -726,9 +736,9 @@ class EccEncryptedSecretTest {
     ProviderProfile providerProfile = SecurityProviderResolver.create().resolve(profile);
 
     return switch (profile.authAxis()) {
-      case ECDSA_NIST_P256_SHA256 ->
+      case ECDSA_NIST_P256_SHA256, ECDSA_BRAINPOOL_P256R1_SHA256 ->
           EccSignatureUtil.signEcdsaP256Sha256P1363(providerProfile, privateKey, data);
-      case ECDSA_BRAINPOOL_P384R1_SHA384 ->
+      case ECDSA_NIST_P384_SHA384, ECDSA_BRAINPOOL_P384R1_SHA384 ->
           EccSignatureUtil.signEcdsaP384Sha384P1363(providerProfile, privateKey, data);
       case ED25519 -> EccSignatureUtil.signEd25519(providerProfile, privateKey, data);
       case RSA_PKCS1_SHA256 -> SignatureUtil.sign(SecurityAlgorithm.RsaSha256, privateKey, data);
@@ -740,6 +750,10 @@ class EccEncryptedSecretTest {
     return Stream.of(
         Arguments.of(SecurityPolicy.ECC_nistP256_AesGcm.getProfile()),
         Arguments.of(SecurityPolicy.ECC_nistP256_ChaChaPoly.getProfile()),
+        Arguments.of(SecurityPolicy.ECC_nistP384_AesGcm.getProfile()),
+        Arguments.of(SecurityPolicy.ECC_nistP384_ChaChaPoly.getProfile()),
+        Arguments.of(SecurityPolicy.ECC_brainpoolP256r1_AesGcm.getProfile()),
+        Arguments.of(SecurityPolicy.ECC_brainpoolP256r1_ChaChaPoly.getProfile()),
         Arguments.of(SecurityPolicy.ECC_curve25519_AesGcm.getProfile()),
         Arguments.of(SecurityPolicy.ECC_curve25519_ChaChaPoly.getProfile()),
         Arguments.of(SecurityPolicy.ECC_brainpoolP384r1_AesGcm.getProfile()),
@@ -754,6 +768,9 @@ class EccEncryptedSecretTest {
     KeyPair keyPair =
         switch (profile.authAxis()) {
           case ECDSA_NIST_P256_SHA256 -> SelfSignedCertificateGenerator.generateNistP256KeyPair();
+          case ECDSA_NIST_P384_SHA384 -> SelfSignedCertificateGenerator.generateNistP384KeyPair();
+          case ECDSA_BRAINPOOL_P256R1_SHA256 ->
+              SelfSignedCertificateGenerator.generateBrainpoolP256r1KeyPair();
           case ECDSA_BRAINPOOL_P384R1_SHA384 ->
               SelfSignedCertificateGenerator.generateBrainpoolP384r1KeyPair();
           case ED25519 -> SelfSignedCertificateGenerator.generateEd25519KeyPair();
@@ -775,7 +792,11 @@ class EccEncryptedSecretTest {
       SecurityPolicyProfile profile, KeyPair keyPair) {
 
     return switch (profile.authAxis()) {
-      case ECDSA_NIST_P256_SHA256, ECDSA_BRAINPOOL_P384R1_SHA384, ED25519 ->
+      case ECDSA_NIST_P256_SHA256,
+          ECDSA_NIST_P384_SHA384,
+          ECDSA_BRAINPOOL_P256R1_SHA256,
+          ECDSA_BRAINPOOL_P384R1_SHA384,
+          ED25519 ->
           SelfSignedCertificateBuilder.forEccApplicationCertificate(keyPair);
       case RSA_PKCS1_SHA256 -> new SelfSignedCertificateBuilder(keyPair);
       default -> throw new IllegalArgumentException("unsupported auth axis: " + profile.authAxis());
@@ -787,6 +808,8 @@ class EccEncryptedSecretTest {
 
     return switch (keyAgreementAxis) {
       case ECDH_NIST_P256 -> EccPublicKeyCodec.NIST_P256_PUBLIC_KEY_LENGTH;
+      case ECDH_NIST_P384 -> EccPublicKeyCodec.NIST_P384_PUBLIC_KEY_LENGTH;
+      case ECDH_BRAINPOOL_P256R1 -> EccPublicKeyCodec.BRAINPOOL_P256R1_PUBLIC_KEY_LENGTH;
       case ECDH_BRAINPOOL_P384R1 -> EccPublicKeyCodec.BRAINPOOL_P384R1_PUBLIC_KEY_LENGTH;
       case X25519 -> EccPublicKeyCodec.X25519_PUBLIC_KEY_LENGTH;
       case FFDH_3072 -> FiniteFieldDhKeyAgreementUtil.FFDHE_3072_PUBLIC_KEY_LENGTH;
@@ -799,8 +822,9 @@ class EccEncryptedSecretTest {
     AuthAxis authAxis = profile.authAxis();
 
     return switch (authAxis) {
-      case ECDSA_NIST_P256_SHA256 -> EccSignatureUtil.ECDSA_P256_SHA256_P1363_SIGNATURE_LENGTH;
-      case ECDSA_BRAINPOOL_P384R1_SHA384 ->
+      case ECDSA_NIST_P256_SHA256, ECDSA_BRAINPOOL_P256R1_SHA256 ->
+          EccSignatureUtil.ECDSA_P256_SHA256_P1363_SIGNATURE_LENGTH;
+      case ECDSA_NIST_P384_SHA384, ECDSA_BRAINPOOL_P384R1_SHA384 ->
           EccSignatureUtil.ECDSA_P384_SHA384_P1363_SIGNATURE_LENGTH;
       case ED25519 -> EccSignatureUtil.ED25519_SIGNATURE_LENGTH;
       case RSA_PKCS1_SHA256 -> RSA_2048_SIGNATURE_LENGTH;

@@ -28,6 +28,12 @@ import org.jspecify.annotations.Nullable;
  * SecurityPolicy#getProfile()} or {@link SecurityPolicyProfiles#get(SecurityPolicy)} to inspect the
  * corresponding profile.
  *
+ * <p>The axis fields intentionally keep certificate authentication, OpenSecureChannel secret
+ * establishment, and symmetric chunk protection separate. Enhanced policies can share a coordinate
+ * size while still requiring different certificate identities or provider support, so callers
+ * should compare profile metadata instead of inferring behavior from policy URI strings or nonce
+ * lengths.
+ *
  * <p>Required object components must be non-null. Size values must be non-negative, and security
  * level values must fit in the OPC UA policy-strength bit range.
  *
@@ -171,6 +177,8 @@ public record SecurityPolicyProfile(
     RSA_PKCS1_SHA256,
     RSA_PSS_SHA256,
     ECDSA_NIST_P256_SHA256,
+    ECDSA_NIST_P384_SHA384,
+    ECDSA_BRAINPOOL_P256R1_SHA256,
     ECDSA_BRAINPOOL_P384R1_SHA384,
     ED25519
   }
@@ -180,6 +188,8 @@ public record SecurityPolicyProfile(
     NONE,
     RSA_NONCE,
     ECDH_NIST_P256,
+    ECDH_NIST_P384,
+    ECDH_BRAINPOOL_P256R1,
     ECDH_BRAINPOOL_P384R1,
     X25519,
     FFDH_3072

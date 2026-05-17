@@ -48,10 +48,10 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>A provider profile is a capability boundary, not just a provider name lookup. Some policy
  * families can use either Bouncy Castle or the JDK when all required transformations are present.
- * RSA-DH profiles are in that portable group when the provider can create ffdhe3072 DH keys and
- * perform HKDF-SHA-256/AEAD operations. Brainpool P-384 policies are intentionally Bouncy
- * Castle-only because Java's built-in providers do not provide portable Brainpool curve support for
- * ECDSA and ECDH.
+ * NIST ECC and RSA-DH profiles are in that portable group when the provider can create the required
+ * curve or ffdhe3072 keys and perform the matching HKDF/AEAD operations. Brainpool policies are
+ * intentionally Bouncy Castle-only because Java's built-in providers do not provide portable
+ * Brainpool curve support for ECDSA and ECDH.
  */
 @NullMarked
 public final class SecurityProviderResolver {
@@ -132,10 +132,21 @@ public final class SecurityProviderResolver {
 
   private static boolean needsNewProviderProfile(SecurityPolicyProfile profile) {
     return switch (profile.authAxis()) {
-      case ECDSA_NIST_P256_SHA256, ECDSA_BRAINPOOL_P384R1_SHA384, ED25519 -> true;
+      case ECDSA_NIST_P256_SHA256,
+          ECDSA_NIST_P384_SHA384,
+          ECDSA_BRAINPOOL_P256R1_SHA256,
+          ECDSA_BRAINPOOL_P384R1_SHA384,
+          ED25519 ->
+          true;
       default ->
           switch (profile.keyAgreementAxis()) {
-            case ECDH_NIST_P256, ECDH_BRAINPOOL_P384R1, X25519, FFDH_3072 -> true;
+            case ECDH_NIST_P256,
+                ECDH_NIST_P384,
+                ECDH_BRAINPOOL_P256R1,
+                ECDH_BRAINPOOL_P384R1,
+                X25519,
+                FFDH_3072 ->
+                true;
             default ->
                 switch (profile.chunkProtectionAxis()) {
                   case AES_GCM, CHACHA20_POLY1305 -> true;
@@ -202,6 +213,32 @@ public final class SecurityProviderResolver {
               });
         }
       }
+      case ECDSA_NIST_P384_SHA384 -> {
+        if (providerProfile == ProviderProfile.BOUNCY_CASTLE) {
+          Provider bouncyCastleProvider = requireNonNull(provider, "provider");
+
+          Signature.getInstance("SHA384WITHPLAIN-ECDSA", bouncyCastleProvider);
+          validateEc("secp384r1", bouncyCastleProvider);
+        } else {
+          requireJdkProvider(
+              "SHA384withECDSAinP1363Format",
+              p -> {
+                Signature.getInstance("SHA384withECDSAinP1363Format", p);
+                validateEc("secp384r1", p);
+              });
+        }
+      }
+      case ECDSA_BRAINPOOL_P256R1_SHA256 -> {
+        if (providerProfile == ProviderProfile.BOUNCY_CASTLE) {
+          Provider bouncyCastleProvider = requireNonNull(provider, "provider");
+
+          Signature.getInstance("SHA256WITHPLAIN-ECDSA", bouncyCastleProvider);
+          validateEc("brainpoolP256r1", bouncyCastleProvider);
+        } else {
+          throw new GeneralSecurityException(
+              "Brainpool P-256 ECDSA requires Bouncy Castle provider profile");
+        }
+      }
       case ECDSA_BRAINPOOL_P384R1_SHA384 -> {
         if (providerProfile == ProviderProfile.BOUNCY_CASTLE) {
           Provider bouncyCastleProvider = requireNonNull(provider, "provider");
@@ -252,6 +289,32 @@ public final class SecurityProviderResolver {
               });
         }
       }
+      case ECDH_NIST_P384 -> {
+        if (providerProfile == ProviderProfile.BOUNCY_CASTLE) {
+          Provider bouncyCastleProvider = requireNonNull(provider, "provider");
+
+          KeyAgreement.getInstance("ECDH", bouncyCastleProvider);
+          validateEc("secp384r1", bouncyCastleProvider);
+        } else {
+          requireJdkProvider(
+              "ECDH",
+              p -> {
+                KeyAgreement.getInstance("ECDH", p);
+                validateEc("secp384r1", p);
+              });
+        }
+      }
+      case ECDH_BRAINPOOL_P256R1 -> {
+        if (providerProfile == ProviderProfile.BOUNCY_CASTLE) {
+          Provider bouncyCastleProvider = requireNonNull(provider, "provider");
+
+          KeyAgreement.getInstance("ECDH", bouncyCastleProvider);
+          validateEc("brainpoolP256r1", bouncyCastleProvider);
+        } else {
+          throw new GeneralSecurityException(
+              "Brainpool P-256 ECDH requires Bouncy Castle provider profile");
+        }
+      }
       case ECDH_BRAINPOOL_P384R1 -> {
         if (providerProfile == ProviderProfile.BOUNCY_CASTLE) {
           Provider bouncyCastleProvider = requireNonNull(provider, "provider");
@@ -296,7 +359,7 @@ public final class SecurityProviderResolver {
       throws GeneralSecurityException {
 
     switch (axis) {
-      case ECDH_NIST_P256, X25519, FFDH_3072 -> {
+      case ECDH_NIST_P256, ECDH_BRAINPOOL_P256R1, X25519, FFDH_3072 -> {
         if (providerProfile == ProviderProfile.BOUNCY_CASTLE) {
           Provider bouncyCastleProvider = requireNonNull(provider, "provider");
 
@@ -305,7 +368,7 @@ public final class SecurityProviderResolver {
           requireJdkProvider("HmacSHA256", p -> Mac.getInstance("HmacSHA256", p));
         }
       }
-      case ECDH_BRAINPOOL_P384R1 -> {
+      case ECDH_NIST_P384, ECDH_BRAINPOOL_P384R1 -> {
         if (providerProfile == ProviderProfile.BOUNCY_CASTLE) {
           Provider bouncyCastleProvider = requireNonNull(provider, "provider");
 

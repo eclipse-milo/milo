@@ -36,11 +36,19 @@ import org.jspecify.annotations.Nullable;
 /**
  * Checks whether application certificates and local identities are compatible with security policy
  * profiles.
+ *
+ * <p>Enhanced endpoint advertisement and SecureChannel setup should only use a certificate when the
+ * certificate type ID, public key family, and end-entity key usage all match the selected profile.
+ * These checks keep visually similar keys, such as NIST and Brainpool curves with the same
+ * coordinate size, from being selected for endpoints that cannot complete the matching handshake.
  */
 @NullMarked
 public final class CertificateCompatibility {
 
   private static final ECParameterSpec NIST_P256 = nistP256ParameterSpec();
+  private static final ECParameterSpec NIST_P384 = ecParameterSpec("secp384r1", null);
+  private static final ECParameterSpec BRAINPOOL_P256R1 =
+      ecParameterSpec("brainpoolP256r1", new BouncyCastleProvider());
   private static final ECParameterSpec BRAINPOOL_P384R1 =
       ecParameterSpec("brainpoolP384r1", new BouncyCastleProvider());
 
@@ -147,6 +155,20 @@ public final class CertificateCompatibility {
       case ECDSA_NIST_P256_SHA256 -> {
         if (!(publicKey instanceof ECPublicKey ecPublicKey)
             || isDifferentParameterSpec(NIST_P256, ecPublicKey.getParams())) {
+
+          throw incompatiblePublicKey(authAxis, publicKey);
+        }
+      }
+      case ECDSA_NIST_P384_SHA384 -> {
+        if (!(publicKey instanceof ECPublicKey ecPublicKey)
+            || isDifferentParameterSpec(NIST_P384, ecPublicKey.getParams())) {
+
+          throw incompatiblePublicKey(authAxis, publicKey);
+        }
+      }
+      case ECDSA_BRAINPOOL_P256R1_SHA256 -> {
+        if (!(publicKey instanceof ECPublicKey ecPublicKey)
+            || isDifferentParameterSpec(BRAINPOOL_P256R1, ecPublicKey.getParams())) {
 
           throw incompatiblePublicKey(authAxis, publicKey);
         }

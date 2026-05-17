@@ -136,6 +136,34 @@ class OpcTcpTransportTest extends SecurityFixture {
             nistP256Certificate("wrong-ecc-nist-chacha-client-key"),
             malformedNistP256PublicKey()),
         new EnhancedSecurityParameters(
+            SecurityPolicy.ECC_nistP384_AesGcm,
+            nistP384Certificate("ecc-nistp384-aes-client"),
+            nistP384Certificate("ecc-nistp384-aes-server"),
+            nistP384Certificate("wrong-ecc-nistp384-aes-server"),
+            nistP384Certificate("wrong-ecc-nistp384-aes-client-key"),
+            malformedNistP384PublicKey()),
+        new EnhancedSecurityParameters(
+            SecurityPolicy.ECC_nistP384_ChaChaPoly,
+            nistP384Certificate("ecc-nistp384-chacha-client"),
+            nistP384Certificate("ecc-nistp384-chacha-server"),
+            nistP384Certificate("wrong-ecc-nistp384-chacha-server"),
+            nistP384Certificate("wrong-ecc-nistp384-chacha-client-key"),
+            malformedNistP384PublicKey()),
+        new EnhancedSecurityParameters(
+            SecurityPolicy.ECC_brainpoolP256r1_AesGcm,
+            brainpoolP256Certificate("ecc-brainpoolp256-aes-client"),
+            brainpoolP256Certificate("ecc-brainpoolp256-aes-server"),
+            brainpoolP256Certificate("wrong-ecc-brainpoolp256-aes-server"),
+            brainpoolP256Certificate("wrong-ecc-brainpoolp256-aes-client-key"),
+            malformedBrainpoolP256PublicKey()),
+        new EnhancedSecurityParameters(
+            SecurityPolicy.ECC_brainpoolP256r1_ChaChaPoly,
+            brainpoolP256Certificate("ecc-brainpoolp256-chacha-client"),
+            brainpoolP256Certificate("ecc-brainpoolp256-chacha-server"),
+            brainpoolP256Certificate("wrong-ecc-brainpoolp256-chacha-server"),
+            brainpoolP256Certificate("wrong-ecc-brainpoolp256-chacha-client-key"),
+            malformedBrainpoolP256PublicKey()),
+        new EnhancedSecurityParameters(
             SecurityPolicy.ECC_curve25519_AesGcm,
             ed25519Certificate("ecc-curve25519-aes-client"),
             ed25519Certificate("ecc-curve25519-aes-server"),
@@ -742,11 +770,7 @@ class OpcTcpTransportTest extends SecurityFixture {
       SecurityKeysListener securityKeysListener) {
 
     return clientApplicationContext(
-        securityPolicy,
-        client,
-        server,
-        MessageSecurityMode.SignAndEncrypt,
-        securityKeysListener);
+        securityPolicy, client, server, MessageSecurityMode.SignAndEncrypt, securityKeysListener);
   }
 
   private ClientApplicationContext clientApplicationContext(
@@ -1096,6 +1120,20 @@ class OpcTcpTransportTest extends SecurityFixture {
     return ByteString.of(offCurvePoint);
   }
 
+  private static ByteString malformedNistP384PublicKey() {
+    byte[] offCurvePoint = new byte[96];
+    offCurvePoint[95] = 1;
+
+    return ByteString.of(offCurvePoint);
+  }
+
+  private static ByteString malformedBrainpoolP256PublicKey() {
+    byte[] offCurvePoint = new byte[64];
+    offCurvePoint[63] = 1;
+
+    return ByteString.of(offCurvePoint);
+  }
+
   private static ByteString malformedBrainpoolP384PublicKey() {
     byte[] offCurvePoint = new byte[96];
     offCurvePoint[95] = 1;
@@ -1147,8 +1185,17 @@ class OpcTcpTransportTest extends SecurityFixture {
     return eccCertificate(SelfSignedCertificateGenerator.generateNistP256KeyPair(), commonName);
   }
 
+  private static CertificateMaterial nistP384Certificate(String commonName) throws Exception {
+    return eccCertificate(SelfSignedCertificateGenerator.generateNistP384KeyPair(), commonName);
+  }
+
   private static CertificateMaterial ed25519Certificate(String commonName) throws Exception {
     return eccCertificate(SelfSignedCertificateGenerator.generateEd25519KeyPair(), commonName);
+  }
+
+  private static CertificateMaterial brainpoolP256Certificate(String commonName) throws Exception {
+    return eccCertificate(
+        SelfSignedCertificateGenerator.generateBrainpoolP256r1KeyPair(), commonName);
   }
 
   private static CertificateMaterial brainpoolP384Certificate(String commonName) throws Exception {

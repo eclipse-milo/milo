@@ -685,6 +685,10 @@ public class OpcUaServer extends AbstractServiceHandler {
   private static boolean hasSdkSessionSupport(SecurityPolicy securityPolicy) {
     return securityPolicy == SecurityPolicy.ECC_nistP256_AesGcm
         || securityPolicy == SecurityPolicy.ECC_nistP256_ChaChaPoly
+        || securityPolicy == SecurityPolicy.ECC_nistP384_AesGcm
+        || securityPolicy == SecurityPolicy.ECC_nistP384_ChaChaPoly
+        || securityPolicy == SecurityPolicy.ECC_brainpoolP256r1_AesGcm
+        || securityPolicy == SecurityPolicy.ECC_brainpoolP256r1_ChaChaPoly
         || securityPolicy == SecurityPolicy.ECC_curve25519_AesGcm
         || securityPolicy == SecurityPolicy.ECC_curve25519_ChaChaPoly
         || securityPolicy == SecurityPolicy.ECC_brainpoolP384r1_AesGcm

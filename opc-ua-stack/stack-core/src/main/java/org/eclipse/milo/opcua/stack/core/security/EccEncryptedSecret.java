@@ -117,6 +117,9 @@ public final class EccEncryptedSecret {
 
     return switch (profile.keyAgreementAxis()) {
       case ECDH_NIST_P256 -> EccKeyAgreementUtil.generateNistP256KeyPair(providerProfile);
+      case ECDH_NIST_P384 -> EccKeyAgreementUtil.generateNistP384KeyPair(providerProfile);
+      case ECDH_BRAINPOOL_P256R1 ->
+          EccKeyAgreementUtil.generateBrainpoolP256r1KeyPair(providerProfile);
       case ECDH_BRAINPOOL_P384R1 ->
           EccKeyAgreementUtil.generateBrainpoolP384r1KeyPair(providerProfile);
       case X25519 -> EccKeyAgreementUtil.generateX25519KeyPair(providerProfile);
@@ -727,8 +730,9 @@ public final class EccEncryptedSecret {
               });
 
       return switch (profile.keyAgreementAxis()) {
-        case ECDH_BRAINPOOL_P384R1 -> HkdfUtil.hkdfSha384(ikm, salt, info, length, provider);
-        case ECDH_NIST_P256, X25519, FFDH_3072 ->
+        case ECDH_NIST_P384, ECDH_BRAINPOOL_P384R1 ->
+            HkdfUtil.hkdfSha384(ikm, salt, info, length, provider);
+        case ECDH_NIST_P256, ECDH_BRAINPOOL_P256R1, X25519, FFDH_3072 ->
             HkdfUtil.hkdfSha256(ikm, salt, info, length, provider);
         default -> throw unsupported(profile, "HKDF key derivation");
       };
@@ -739,8 +743,8 @@ public final class EccEncryptedSecret {
 
   private static String hkdfHmacTransformation(SecurityPolicyProfile profile) throws UaException {
     return switch (profile.keyAgreementAxis()) {
-      case ECDH_BRAINPOOL_P384R1 -> "HmacSHA384";
-      case ECDH_NIST_P256, X25519, FFDH_3072 -> "HmacSHA256";
+      case ECDH_NIST_P384, ECDH_BRAINPOOL_P384R1 -> "HmacSHA384";
+      case ECDH_NIST_P256, ECDH_BRAINPOOL_P256R1, X25519, FFDH_3072 -> "HmacSHA256";
       default -> throw unsupported(profile, "HKDF key derivation");
     };
   }
@@ -756,6 +760,10 @@ public final class EccEncryptedSecret {
     return switch (profile.keyAgreementAxis()) {
       case ECDH_NIST_P256 ->
           EccKeyAgreementUtil.agreeNistP256(providerProfile, privateKey, peerPublicKey);
+      case ECDH_NIST_P384 ->
+          EccKeyAgreementUtil.agreeNistP384(providerProfile, privateKey, peerPublicKey);
+      case ECDH_BRAINPOOL_P256R1 ->
+          EccKeyAgreementUtil.agreeBrainpoolP256r1(providerProfile, privateKey, peerPublicKey);
       case ECDH_BRAINPOOL_P384R1 ->
           EccKeyAgreementUtil.agreeBrainpoolP384r1(providerProfile, privateKey, peerPublicKey);
       case X25519 -> EccKeyAgreementUtil.agreeX25519(providerProfile, privateKey, peerPublicKey);
@@ -771,6 +779,8 @@ public final class EccEncryptedSecret {
 
     return switch (profile.keyAgreementAxis()) {
       case ECDH_NIST_P256 -> EccPublicKeyCodec.encodeNistP256(publicKey);
+      case ECDH_NIST_P384 -> EccPublicKeyCodec.encodeNistP384(publicKey);
+      case ECDH_BRAINPOOL_P256R1 -> EccPublicKeyCodec.encodeBrainpoolP256r1(publicKey);
       case ECDH_BRAINPOOL_P384R1 -> EccPublicKeyCodec.encodeBrainpoolP384r1(publicKey);
       case X25519 -> EccPublicKeyCodec.encodeX25519(publicKey);
       case FFDH_3072 -> FiniteFieldDhKeyAgreementUtil.encodeFfdhe3072(publicKey);
@@ -785,6 +795,9 @@ public final class EccEncryptedSecret {
 
     return switch (profile.keyAgreementAxis()) {
       case ECDH_NIST_P256 -> EccPublicKeyCodec.decodeNistP256(publicKey, providerProfile);
+      case ECDH_NIST_P384 -> EccPublicKeyCodec.decodeNistP384(publicKey, providerProfile);
+      case ECDH_BRAINPOOL_P256R1 ->
+          EccPublicKeyCodec.decodeBrainpoolP256r1(publicKey, providerProfile);
       case ECDH_BRAINPOOL_P384R1 ->
           EccPublicKeyCodec.decodeBrainpoolP384r1(publicKey, providerProfile);
       case X25519 -> EccPublicKeyCodec.decodeX25519(publicKey, providerProfile);
@@ -843,8 +856,9 @@ public final class EccEncryptedSecret {
   private static int signatureSize(SecurityPolicyProfile profile, PublicKey publicKey)
       throws UaException {
     return switch (profile.authAxis()) {
-      case ECDSA_NIST_P256_SHA256 -> EccSignatureUtil.ECDSA_P256_SHA256_P1363_SIGNATURE_LENGTH;
-      case ECDSA_BRAINPOOL_P384R1_SHA384 ->
+      case ECDSA_NIST_P256_SHA256, ECDSA_BRAINPOOL_P256R1_SHA256 ->
+          EccSignatureUtil.ECDSA_P256_SHA256_P1363_SIGNATURE_LENGTH;
+      case ECDSA_NIST_P384_SHA384, ECDSA_BRAINPOOL_P384R1_SHA384 ->
           EccSignatureUtil.ECDSA_P384_SHA384_P1363_SIGNATURE_LENGTH;
       case ED25519 -> EccSignatureUtil.ED25519_SIGNATURE_LENGTH;
       case RSA_PKCS1_SHA256 -> {
@@ -960,6 +974,8 @@ public final class EccEncryptedSecret {
     requireNonNull(profile, "profile");
 
     if ((profile.keyAgreementAxis() != KeyAgreementAxis.ECDH_NIST_P256
+            && profile.keyAgreementAxis() != KeyAgreementAxis.ECDH_NIST_P384
+            && profile.keyAgreementAxis() != KeyAgreementAxis.ECDH_BRAINPOOL_P256R1
             && profile.keyAgreementAxis() != KeyAgreementAxis.ECDH_BRAINPOOL_P384R1
             && profile.keyAgreementAxis() != KeyAgreementAxis.X25519
             && profile.keyAgreementAxis() != KeyAgreementAxis.FFDH_3072)

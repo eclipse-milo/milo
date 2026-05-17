@@ -355,6 +355,10 @@ public class ChunkSerializationTest extends SecureChannelFixture {
     return new Object[][] {
       {SecurityPolicy.ECC_nistP256_AesGcm},
       {SecurityPolicy.ECC_nistP256_ChaChaPoly},
+      {SecurityPolicy.ECC_nistP384_AesGcm},
+      {SecurityPolicy.ECC_nistP384_ChaChaPoly},
+      {SecurityPolicy.ECC_brainpoolP256r1_AesGcm},
+      {SecurityPolicy.ECC_brainpoolP256r1_ChaChaPoly},
       {SecurityPolicy.ECC_curve25519_AesGcm},
       {SecurityPolicy.ECC_curve25519_ChaChaPoly},
       {SecurityPolicy.ECC_brainpoolP384r1_AesGcm},
@@ -582,8 +586,8 @@ public class ChunkSerializationTest extends SecureChannelFixture {
     assertAeadSignRejectsCorruption(securityPolicy, Corruption.TAG);
   }
 
-  private void assertAeadSignRejectsCorruption(
-      SecurityPolicy securityPolicy, Corruption corruption) throws Exception {
+  private void assertAeadSignRejectsCorruption(SecurityPolicy securityPolicy, Corruption corruption)
+      throws Exception {
 
     ChunkEncoder encoder = new ChunkEncoder(defaultParameters);
     ChunkDecoder decoder = new ChunkDecoder(defaultParameters, EncodingLimits.DEFAULT);
@@ -605,9 +609,7 @@ public class ChunkSerializationTest extends SecureChannelFixture {
         case HEADER -> chunk.setByte(8, chunk.getByte(8) ^ 0x01);
         case BODY -> {
           int bodyOffset =
-              SECURE_MESSAGE_HEADER_SIZE
-                  + SYMMETRIC_SECURITY_HEADER_SIZE
-                  + SEQUENCE_HEADER_SIZE;
+              SECURE_MESSAGE_HEADER_SIZE + SYMMETRIC_SECURITY_HEADER_SIZE + SEQUENCE_HEADER_SIZE;
           chunk.setByte(bodyOffset, chunk.getByte(bodyOffset) ^ 0x01);
         }
         case TAG ->
@@ -625,8 +627,7 @@ public class ChunkSerializationTest extends SecureChannelFixture {
   private static void advanceNonLegacySequence(
       ChunkEncoder encoder, ChunkDecoder decoder, SecurityPolicy securityPolicy) throws Exception {
 
-    advanceNonLegacySequence(
-        encoder, decoder, securityPolicy, MessageSecurityMode.SignAndEncrypt);
+    advanceNonLegacySequence(encoder, decoder, securityPolicy, MessageSecurityMode.SignAndEncrypt);
   }
 
   private static void advanceNonLegacySequence(
@@ -639,8 +640,7 @@ public class ChunkSerializationTest extends SecureChannelFixture {
     // AEAD symmetric chunks use the previous chunk's SequenceNumber in their nonce. In a real
     // connection the OpenSecureChannel chunk consumes sequence 0 before the first service chunk, so
     // these tests advance both codecs to match that channel state.
-    ClientSecureChannel clientChannel =
-        new ClientSecureChannel(securityPolicy, messageSecurity);
+    ClientSecureChannel clientChannel = new ClientSecureChannel(securityPolicy, messageSecurity);
 
     ServerSecureChannel serverChannel = new ServerSecureChannel();
     serverChannel.setSecurityPolicy(securityPolicy);

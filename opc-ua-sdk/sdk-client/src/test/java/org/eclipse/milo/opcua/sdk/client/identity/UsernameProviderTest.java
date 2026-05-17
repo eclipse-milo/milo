@@ -239,6 +239,10 @@ class UsernameProviderTest {
     return Stream.of(
         Arguments.of(SecurityPolicy.ECC_nistP256_AesGcm.getProfile()),
         Arguments.of(SecurityPolicy.ECC_nistP256_ChaChaPoly.getProfile()),
+        Arguments.of(SecurityPolicy.ECC_nistP384_AesGcm.getProfile()),
+        Arguments.of(SecurityPolicy.ECC_nistP384_ChaChaPoly.getProfile()),
+        Arguments.of(SecurityPolicy.ECC_brainpoolP256r1_AesGcm.getProfile()),
+        Arguments.of(SecurityPolicy.ECC_brainpoolP256r1_ChaChaPoly.getProfile()),
         Arguments.of(SecurityPolicy.ECC_curve25519_AesGcm.getProfile()),
         Arguments.of(SecurityPolicy.ECC_curve25519_ChaChaPoly.getProfile()),
         Arguments.of(SecurityPolicy.ECC_brainpoolP384r1_AesGcm.getProfile()),
@@ -253,6 +257,9 @@ class UsernameProviderTest {
     KeyPair keyPair =
         switch (profile.authAxis()) {
           case ECDSA_NIST_P256_SHA256 -> SelfSignedCertificateGenerator.generateNistP256KeyPair();
+          case ECDSA_NIST_P384_SHA384 -> SelfSignedCertificateGenerator.generateNistP384KeyPair();
+          case ECDSA_BRAINPOOL_P256R1_SHA256 ->
+              SelfSignedCertificateGenerator.generateBrainpoolP256r1KeyPair();
           case ECDSA_BRAINPOOL_P384R1_SHA384 ->
               SelfSignedCertificateGenerator.generateBrainpoolP384r1KeyPair();
           case ED25519 -> SelfSignedCertificateGenerator.generateEd25519KeyPair();
@@ -275,7 +282,11 @@ class UsernameProviderTest {
       SecurityPolicyProfile profile, KeyPair keyPair) {
 
     return switch (profile.authAxis()) {
-      case ECDSA_NIST_P256_SHA256, ECDSA_BRAINPOOL_P384R1_SHA384, ED25519 ->
+      case ECDSA_NIST_P256_SHA256,
+          ECDSA_NIST_P384_SHA384,
+          ECDSA_BRAINPOOL_P256R1_SHA256,
+          ECDSA_BRAINPOOL_P384R1_SHA384,
+          ED25519 ->
           SelfSignedCertificateBuilder.forEccApplicationCertificate(keyPair);
       case RSA_PKCS1_SHA256 -> new SelfSignedCertificateBuilder(keyPair);
       default -> throw new IllegalArgumentException("unsupported auth axis: " + profile.authAxis());

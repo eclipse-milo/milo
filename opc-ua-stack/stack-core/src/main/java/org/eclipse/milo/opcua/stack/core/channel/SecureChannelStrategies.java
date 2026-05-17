@@ -86,6 +86,10 @@ final class SecureChannelStrategies {
       new RsaNoncePShaKeyAgreementStrategy();
   private static final KeyAgreementStrategy ECDH_NIST_P256_KEY_AGREEMENT =
       new EcdhNistP256HkdfKeyAgreementStrategy();
+  private static final KeyAgreementStrategy ECDH_NIST_P384_KEY_AGREEMENT =
+      new EcdhNistP384HkdfKeyAgreementStrategy();
+  private static final KeyAgreementStrategy ECDH_BRAINPOOL_P256R1_KEY_AGREEMENT =
+      new EcdhBrainpoolP256r1HkdfKeyAgreementStrategy();
   private static final KeyAgreementStrategy ECDH_BRAINPOOL_P384R1_KEY_AGREEMENT =
       new EcdhBrainpoolP384r1HkdfKeyAgreementStrategy();
   private static final KeyAgreementStrategy X25519_KEY_AGREEMENT =
@@ -105,6 +109,7 @@ final class SecureChannelStrategies {
       new AesGcmChunkProtectionStrategy();
   private static final ChunkProtectionStrategy CHACHA20_POLY1305_CHUNK_PROTECTION =
       new ChaCha20Poly1305ChunkProtectionStrategy();
+
   @SuppressWarnings("unused")
   private static final ChunkProtectionStrategy UNSUPPORTED_CHUNK_PROTECTION =
       new UnsupportedChunkProtectionStrategy();
@@ -123,8 +128,8 @@ final class SecureChannelStrategies {
     return switch (authAxis) {
       case NONE -> NO_AUTHENTICATION;
       case RSA_PKCS1_SHA1, RSA_PKCS1_SHA256, RSA_PSS_SHA256 -> RSA_AUTHENTICATION;
-      case ECDSA_NIST_P256_SHA256 -> ECDSA_P256_AUTHENTICATION;
-      case ECDSA_BRAINPOOL_P384R1_SHA384 -> ECDSA_P384_AUTHENTICATION;
+      case ECDSA_NIST_P256_SHA256, ECDSA_BRAINPOOL_P256R1_SHA256 -> ECDSA_P256_AUTHENTICATION;
+      case ECDSA_NIST_P384_SHA384, ECDSA_BRAINPOOL_P384R1_SHA384 -> ECDSA_P384_AUTHENTICATION;
       case ED25519 -> ED25519_AUTHENTICATION;
     };
   }
@@ -138,6 +143,8 @@ final class SecureChannelStrategies {
       case NONE -> NO_KEY_AGREEMENT;
       case RSA_NONCE -> RSA_NONCE_KEY_AGREEMENT;
       case ECDH_NIST_P256 -> ECDH_NIST_P256_KEY_AGREEMENT;
+      case ECDH_NIST_P384 -> ECDH_NIST_P384_KEY_AGREEMENT;
+      case ECDH_BRAINPOOL_P256R1 -> ECDH_BRAINPOOL_P256R1_KEY_AGREEMENT;
       case ECDH_BRAINPOOL_P384R1 -> ECDH_BRAINPOOL_P384R1_KEY_AGREEMENT;
       case X25519 -> X25519_KEY_AGREEMENT;
       case FFDH_3072 -> FFDH_3072_KEY_AGREEMENT;
@@ -675,6 +682,120 @@ final class SecureChannelStrategies {
         throws UaException {
 
       return EccKeyAgreementUtil.agreeNistP256(
+          resolveProviderProfile(profile), privateKey, peerPublicKey);
+    }
+
+    @Override
+    public EccKeyAgreementUtil.DerivedKeyMaterial deriveKeyMaterial(
+        SecurityPolicyProfile profile,
+        byte[] inputKeyMaterial,
+        ByteString clientNonce,
+        ByteString serverNonce)
+        throws UaException {
+
+      return EccKeyAgreementUtil.deriveAeadKeyMaterial(
+          resolveProviderProfile(profile), profile, inputKeyMaterial, clientNonce, serverNonce);
+    }
+
+    @Override
+    public ChannelSecurity.SecurityKeys deriveKeys(
+        SecurityPolicyProfile profile,
+        ByteString clientNonce,
+        ByteString serverNonce,
+        int initializationVectorSize) {
+
+      throw new UaRuntimeException(
+          StatusCodes.Bad_SecurityPolicyRejected,
+          "ECC key agreement requires an ephemeral private key: "
+              + profile.securityPolicy().getUri());
+    }
+  }
+
+  private static final class EcdhNistP384HkdfKeyAgreementStrategy implements KeyAgreementStrategy {
+
+    @Override
+    public KeyPair generateEphemeral(SecurityPolicyProfile profile) throws UaException {
+      return EccKeyAgreementUtil.generateNistP384KeyPair(resolveProviderProfile(profile));
+    }
+
+    @Override
+    public ByteString encodePublicKey(SecurityPolicyProfile profile, PublicKey publicKey)
+        throws UaException {
+
+      return EccPublicKeyCodec.encodeNistP384(publicKey);
+    }
+
+    @Override
+    public PublicKey decodePublicKey(SecurityPolicyProfile profile, ByteString wirePublicKey)
+        throws UaException {
+
+      return EccPublicKeyCodec.decodeNistP384(wirePublicKey, resolveProviderProfile(profile));
+    }
+
+    @Override
+    public byte[] agree(
+        SecurityPolicyProfile profile, PrivateKey privateKey, PublicKey peerPublicKey)
+        throws UaException {
+
+      return EccKeyAgreementUtil.agreeNistP384(
+          resolveProviderProfile(profile), privateKey, peerPublicKey);
+    }
+
+    @Override
+    public EccKeyAgreementUtil.DerivedKeyMaterial deriveKeyMaterial(
+        SecurityPolicyProfile profile,
+        byte[] inputKeyMaterial,
+        ByteString clientNonce,
+        ByteString serverNonce)
+        throws UaException {
+
+      return EccKeyAgreementUtil.deriveAeadKeyMaterial(
+          resolveProviderProfile(profile), profile, inputKeyMaterial, clientNonce, serverNonce);
+    }
+
+    @Override
+    public ChannelSecurity.SecurityKeys deriveKeys(
+        SecurityPolicyProfile profile,
+        ByteString clientNonce,
+        ByteString serverNonce,
+        int initializationVectorSize) {
+
+      throw new UaRuntimeException(
+          StatusCodes.Bad_SecurityPolicyRejected,
+          "ECC key agreement requires an ephemeral private key: "
+              + profile.securityPolicy().getUri());
+    }
+  }
+
+  private static final class EcdhBrainpoolP256r1HkdfKeyAgreementStrategy
+      implements KeyAgreementStrategy {
+
+    @Override
+    public KeyPair generateEphemeral(SecurityPolicyProfile profile) throws UaException {
+      return EccKeyAgreementUtil.generateBrainpoolP256r1KeyPair(resolveProviderProfile(profile));
+    }
+
+    @Override
+    public ByteString encodePublicKey(SecurityPolicyProfile profile, PublicKey publicKey)
+        throws UaException {
+
+      return EccPublicKeyCodec.encodeBrainpoolP256r1(publicKey);
+    }
+
+    @Override
+    public PublicKey decodePublicKey(SecurityPolicyProfile profile, ByteString wirePublicKey)
+        throws UaException {
+
+      return EccPublicKeyCodec.decodeBrainpoolP256r1(
+          wirePublicKey, resolveProviderProfile(profile));
+    }
+
+    @Override
+    public byte[] agree(
+        SecurityPolicyProfile profile, PrivateKey privateKey, PublicKey peerPublicKey)
+        throws UaException {
+
+      return EccKeyAgreementUtil.agreeBrainpoolP256r1(
           resolveProviderProfile(profile), privateKey, peerPublicKey);
     }
 

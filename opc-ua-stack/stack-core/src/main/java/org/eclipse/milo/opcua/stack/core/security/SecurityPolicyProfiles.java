@@ -11,8 +11,10 @@
 package org.eclipse.milo.opcua.stack.core.security;
 
 import static java.util.Objects.requireNonNull;
+import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.ECDSA_BRAINPOOL_P256R1_SHA256;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.ECDSA_BRAINPOOL_P384R1_SHA384;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.ECDSA_NIST_P256_SHA256;
+import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.ECDSA_NIST_P384_SHA384;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.ED25519;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.NONE;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.RSA_PKCS1_SHA1;
@@ -21,8 +23,10 @@ import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.A
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.ChunkProtectionAxis.AES_GCM;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.ChunkProtectionAxis.CBC_HMAC;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.ChunkProtectionAxis.CHACHA20_POLY1305;
+import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.ECDH_BRAINPOOL_P256R1;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.ECDH_BRAINPOOL_P384R1;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.ECDH_NIST_P256;
+import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.ECDH_NIST_P384;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.FFDH_3072;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.RSA_NONCE;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.X25519;
@@ -290,6 +294,112 @@ public final class SecurityPolicyProfiles {
             ECDSA_NIST_P256_SHA256,
             List.of(NodeIds.EccNistP256ApplicationCertificateType),
             ECDH_NIST_P256,
+            CHACHA20_POLY1305,
+            NON_LEGACY,
+            null,
+            null,
+            SecurityAlgorithm.None,
+            SecurityAlgorithm.None,
+            null,
+            null,
+            null,
+            SecurityAlgorithm.Sha256,
+            64,
+            16,
+            0,
+            32,
+            1,
+            0x04,
+            true));
+
+    // NIST P-384 policies are ECC B profiles. They use NIST P-384 ECDSA certificates and
+    // P-384 ECDH ephemeral public keys encoded as 96-byte x||y values. The profile tuple follows
+    // the NIST P-384 certificate identity even where published registry metadata is inconsistent,
+    // so certificate selection, provider checks, and nonce decoding all use the same curve family.
+    register(
+        profiles,
+        profile(
+            SecurityPolicy.ECC_nistP384_AesGcm,
+            ECDSA_NIST_P384_SHA384,
+            List.of(NodeIds.EccNistP384ApplicationCertificateType),
+            ECDH_NIST_P384,
+            AES_GCM,
+            NON_LEGACY,
+            null,
+            null,
+            SecurityAlgorithm.None,
+            SecurityAlgorithm.None,
+            null,
+            null,
+            null,
+            SecurityAlgorithm.Sha384,
+            96,
+            16,
+            0,
+            32,
+            1,
+            0x08,
+            true));
+
+    register(
+        profiles,
+        profile(
+            SecurityPolicy.ECC_nistP384_ChaChaPoly,
+            ECDSA_NIST_P384_SHA384,
+            List.of(NodeIds.EccNistP384ApplicationCertificateType),
+            ECDH_NIST_P384,
+            CHACHA20_POLY1305,
+            NON_LEGACY,
+            null,
+            null,
+            SecurityAlgorithm.None,
+            SecurityAlgorithm.None,
+            null,
+            null,
+            null,
+            SecurityAlgorithm.Sha384,
+            96,
+            16,
+            0,
+            32,
+            1,
+            0x08,
+            true));
+
+    // Brainpool P-256 policies are ECC A profiles. They require Brainpool P-256r1 ECDSA
+    // certificates and P-256r1 ECDH ephemeral public keys encoded as 64-byte x||y values.
+    register(
+        profiles,
+        profile(
+            SecurityPolicy.ECC_brainpoolP256r1_AesGcm,
+            ECDSA_BRAINPOOL_P256R1_SHA256,
+            List.of(NodeIds.EccBrainpoolP256r1ApplicationCertificateType),
+            ECDH_BRAINPOOL_P256R1,
+            AES_GCM,
+            NON_LEGACY,
+            null,
+            null,
+            SecurityAlgorithm.None,
+            SecurityAlgorithm.None,
+            null,
+            null,
+            null,
+            SecurityAlgorithm.Sha256,
+            64,
+            16,
+            0,
+            16,
+            1,
+            0x04,
+            true));
+
+    register(
+        profiles,
+        profile(
+            SecurityPolicy.ECC_brainpoolP256r1_ChaChaPoly,
+            ECDSA_BRAINPOOL_P256R1_SHA256,
+            List.of(NodeIds.EccBrainpoolP256r1ApplicationCertificateType),
+            ECDH_BRAINPOOL_P256R1,
             CHACHA20_POLY1305,
             NON_LEGACY,
             null,

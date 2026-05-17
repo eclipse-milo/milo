@@ -43,6 +43,8 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
 
   protected static final String RSA_SHA256_ALIAS = "server-rsa-sha256";
   protected static final String ECC_NIST_P256_ALIAS = "server-ecc-nistp256";
+  protected static final String ECC_NIST_P384_ALIAS = "server-ecc-nistp384";
+  protected static final String ECC_BRAINPOOL_P256R1_ALIAS = "server-ecc-brainpoolp256r1";
   protected static final String ECC_BRAINPOOL_P384R1_ALIAS = "server-ecc-brainpoolp384r1";
   protected static final String ECC_CURVE25519_ALIAS = "server-ecc-curve25519";
 
@@ -227,6 +229,10 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
       return RSA_SHA256_ALIAS;
     } else if (certificateTypeId.equals(NodeIds.EccNistP256ApplicationCertificateType)) {
       return ECC_NIST_P256_ALIAS;
+    } else if (certificateTypeId.equals(NodeIds.EccNistP384ApplicationCertificateType)) {
+      return ECC_NIST_P384_ALIAS;
+    } else if (certificateTypeId.equals(NodeIds.EccBrainpoolP256r1ApplicationCertificateType)) {
+      return ECC_BRAINPOOL_P256R1_ALIAS;
     } else if (certificateTypeId.equals(NodeIds.EccBrainpoolP384r1ApplicationCertificateType)) {
       return ECC_BRAINPOOL_P384R1_ALIAS;
     } else if (certificateTypeId.equals(NodeIds.EccCurve25519ApplicationCertificateType)) {
@@ -256,6 +262,8 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
     return List.of(
         NodeIds.RsaSha256ApplicationCertificateType,
         NodeIds.EccNistP256ApplicationCertificateType,
+        NodeIds.EccNistP384ApplicationCertificateType,
+        NodeIds.EccBrainpoolP256r1ApplicationCertificateType,
         NodeIds.EccBrainpoolP384r1ApplicationCertificateType,
         NodeIds.EccCurve25519ApplicationCertificateType);
   }

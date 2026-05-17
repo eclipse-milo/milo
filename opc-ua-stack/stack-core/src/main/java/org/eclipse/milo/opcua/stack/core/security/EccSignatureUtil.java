@@ -58,8 +58,8 @@ public final class EccSignatureUtil {
    */
   public static String getSignatureAlgorithmUri(SecurityPolicyProfile profile) throws UaException {
     return switch (profile.authAxis()) {
-      case ECDSA_NIST_P256_SHA256 -> ECDSA_SHA256_URI;
-      case ECDSA_BRAINPOOL_P384R1_SHA384 -> ECDSA_SHA384_URI;
+      case ECDSA_NIST_P256_SHA256, ECDSA_BRAINPOOL_P256R1_SHA256 -> ECDSA_SHA256_URI;
+      case ECDSA_NIST_P384_SHA384, ECDSA_BRAINPOOL_P384R1_SHA384 -> ECDSA_SHA384_URI;
       case ED25519 -> ED25519_URI;
       default ->
           throw new UaException(
@@ -84,8 +84,9 @@ public final class EccSignatureUtil {
     ProviderProfile providerProfile = PROVIDER_RESOLVER.resolve(profile);
 
     return switch (profile.authAxis()) {
-      case ECDSA_NIST_P256_SHA256 -> signEcdsaP256Sha256P1363(providerProfile, privateKey, buffers);
-      case ECDSA_BRAINPOOL_P384R1_SHA384 ->
+      case ECDSA_NIST_P256_SHA256, ECDSA_BRAINPOOL_P256R1_SHA256 ->
+          signEcdsaP256Sha256P1363(providerProfile, privateKey, buffers);
+      case ECDSA_NIST_P384_SHA384, ECDSA_BRAINPOOL_P384R1_SHA384 ->
           signEcdsaP384Sha384P1363(providerProfile, privateKey, buffers);
       case ED25519 -> signEd25519(providerProfile, privateKey, buffers);
       default ->
@@ -114,9 +115,9 @@ public final class EccSignatureUtil {
     ProviderProfile providerProfile = PROVIDER_RESOLVER.resolve(profile);
 
     switch (profile.authAxis()) {
-      case ECDSA_NIST_P256_SHA256 ->
+      case ECDSA_NIST_P256_SHA256, ECDSA_BRAINPOOL_P256R1_SHA256 ->
           verifyEcdsaP256Sha256P1363(providerProfile, publicKey, signatureBytes, buffers);
-      case ECDSA_BRAINPOOL_P384R1_SHA384 ->
+      case ECDSA_NIST_P384_SHA384, ECDSA_BRAINPOOL_P384R1_SHA384 ->
           verifyEcdsaP384Sha384P1363(providerProfile, publicKey, signatureBytes, buffers);
       case ED25519 -> verifyEd25519(providerProfile, publicKey, signatureBytes, buffers);
       default ->

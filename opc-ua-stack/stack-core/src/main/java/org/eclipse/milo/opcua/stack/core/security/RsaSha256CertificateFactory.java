@@ -30,6 +30,8 @@ import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
  *
  * <p>Subclasses provide the certificate chains for generated key pairs. The default key-pair and
  * signing-request helpers support RSA SHA-256 and the current ECC application certificate types.
+ * Certificate stores call this factory with a certificate type {@link NodeId}; subclasses only need
+ * to override the protected chain creation methods for the certificate types they can issue.
  */
 public abstract class RsaSha256CertificateFactory implements CertificateFactory {
 
@@ -41,6 +43,10 @@ public abstract class RsaSha256CertificateFactory implements CertificateFactory 
       return createRsaSha256KeyPair();
     } else if (certificateTypeId.equals(NodeIds.EccNistP256ApplicationCertificateType)) {
       return createEccNistP256KeyPair();
+    } else if (certificateTypeId.equals(NodeIds.EccNistP384ApplicationCertificateType)) {
+      return createEccNistP384KeyPair();
+    } else if (certificateTypeId.equals(NodeIds.EccBrainpoolP256r1ApplicationCertificateType)) {
+      return createEccBrainpoolP256r1KeyPair();
     } else if (certificateTypeId.equals(NodeIds.EccBrainpoolP384r1ApplicationCertificateType)) {
       return createEccBrainpoolP384r1KeyPair();
     } else if (certificateTypeId.equals(NodeIds.EccCurve25519ApplicationCertificateType)) {
@@ -57,6 +63,10 @@ public abstract class RsaSha256CertificateFactory implements CertificateFactory 
       return createRsaSha256CertificateChain(keyPair);
     } else if (certificateTypeId.equals(NodeIds.EccNistP256ApplicationCertificateType)) {
       return createEccNistP256CertificateChain(keyPair);
+    } else if (certificateTypeId.equals(NodeIds.EccNistP384ApplicationCertificateType)) {
+      return createEccNistP384CertificateChain(keyPair);
+    } else if (certificateTypeId.equals(NodeIds.EccBrainpoolP256r1ApplicationCertificateType)) {
+      return createEccBrainpoolP256r1CertificateChain(keyPair);
     } else if (certificateTypeId.equals(NodeIds.EccBrainpoolP384r1ApplicationCertificateType)) {
       return createEccBrainpoolP384r1CertificateChain(keyPair);
     } else if (certificateTypeId.equals(NodeIds.EccCurve25519ApplicationCertificateType)) {
@@ -80,6 +90,11 @@ public abstract class RsaSha256CertificateFactory implements CertificateFactory 
       return createRsaSha256SigningRequest(keyPair, subjectName, sanUri, dnsNames, ipAddresses);
     } else if (certificateTypeId.equals(NodeIds.EccNistP256ApplicationCertificateType)) {
       return createEccNistP256SigningRequest(keyPair, subjectName, sanUri, dnsNames, ipAddresses);
+    } else if (certificateTypeId.equals(NodeIds.EccNistP384ApplicationCertificateType)) {
+      return createEccNistP384SigningRequest(keyPair, subjectName, sanUri, dnsNames, ipAddresses);
+    } else if (certificateTypeId.equals(NodeIds.EccBrainpoolP256r1ApplicationCertificateType)) {
+      return createEccBrainpoolP256r1SigningRequest(
+          keyPair, subjectName, sanUri, dnsNames, ipAddresses);
     } else if (certificateTypeId.equals(NodeIds.EccBrainpoolP384r1ApplicationCertificateType)) {
       return createEccBrainpoolP384r1SigningRequest(
           keyPair, subjectName, sanUri, dnsNames, ipAddresses);
@@ -108,6 +123,29 @@ public abstract class RsaSha256CertificateFactory implements CertificateFactory 
    */
   protected KeyPair createEccNistP256KeyPair() throws GeneralSecurityException {
     return SelfSignedCertificateGenerator.generateNistP256KeyPair();
+  }
+
+  /**
+   * Create a new NIST P-384 ECDSA {@link KeyPair} for a {@link
+   * NodeIds#EccNistP384ApplicationCertificateType} type certificate.
+   *
+   * @return the new {@link KeyPair}.
+   */
+  protected KeyPair createEccNistP384KeyPair() throws GeneralSecurityException {
+    return SelfSignedCertificateGenerator.generateNistP384KeyPair();
+  }
+
+  /**
+   * Create a new Brainpool P-256r1 ECDSA {@link KeyPair} for a {@link
+   * NodeIds#EccBrainpoolP256r1ApplicationCertificateType} type certificate.
+   *
+   * <p>Brainpool P-256r1 key generation is routed through Bouncy Castle so the generated key can be
+   * used consistently for certificates, CSRs, and SecureChannel compatibility checks.
+   *
+   * @return the new {@link KeyPair}.
+   */
+  protected KeyPair createEccBrainpoolP256r1KeyPair() throws GeneralSecurityException {
+    return SelfSignedCertificateGenerator.generateBrainpoolP256r1KeyPair();
   }
 
   /**
@@ -160,6 +198,36 @@ public abstract class RsaSha256CertificateFactory implements CertificateFactory 
   protected X509Certificate[] createEccNistP256CertificateChain(KeyPair keyPair) throws Exception {
     throw new UnsupportedOperationException(
         "certificateTypeId: " + NodeIds.EccNistP256ApplicationCertificateType);
+  }
+
+  /**
+   * Create a new {@link X509Certificate} chain of type {@link
+   * NodeIds#EccNistP384ApplicationCertificateType}.
+   *
+   * @param keyPair the {@link KeyPair} to use when creating the certificate chain.
+   * @return the new {@link X509Certificate} chain.
+   * @throws Exception if an error occurs while creating the certificate chain.
+   */
+  @SuppressWarnings({"unused", "RedundantThrows"})
+  protected X509Certificate[] createEccNistP384CertificateChain(KeyPair keyPair) throws Exception {
+    throw new UnsupportedOperationException(
+        "certificateTypeId: " + NodeIds.EccNistP384ApplicationCertificateType);
+  }
+
+  /**
+   * Create a new {@link X509Certificate} chain of type {@link
+   * NodeIds#EccBrainpoolP256r1ApplicationCertificateType}.
+   *
+   * @param keyPair the {@link KeyPair} to use when creating the certificate chain.
+   * @return the new {@link X509Certificate} chain.
+   * @throws Exception if an error occurs while creating the certificate chain.
+   */
+  @SuppressWarnings({"unused", "RedundantThrows"})
+  protected X509Certificate[] createEccBrainpoolP256r1CertificateChain(KeyPair keyPair)
+      throws Exception {
+
+    throw new UnsupportedOperationException(
+        "certificateTypeId: " + NodeIds.EccBrainpoolP256r1ApplicationCertificateType);
   }
 
   /**
@@ -251,6 +319,78 @@ public abstract class RsaSha256CertificateFactory implements CertificateFactory 
             "SHA256withECDSA",
             KeyUsage.digitalSignature,
             null);
+
+    return ByteString.of(csr.getEncoded());
+  }
+
+  /**
+   * Create a new PKCS10 certificate signing request for a {@link
+   * NodeIds#EccNistP384ApplicationCertificateType} type certificate.
+   *
+   * @param keyPair the {@link KeyPair} to use when creating the signing request.
+   * @param subjectName the {@link X500Name} to request.
+   * @param sanUri the URI to request in the Subject Alternative Name of the CSR.
+   * @param dnsNames the DNS names to request in the Subject Alternative Name of the CSR.
+   * @param ipAddresses the IP addresses to request in the Subject Alternative Name of the CSR.
+   * @return the new {@link ByteString} containing the DER-encoded PKCS10 signing request.
+   * @throws Exception if an error occurs while creating the signing request.
+   */
+  protected ByteString createEccNistP384SigningRequest(
+      KeyPair keyPair,
+      X500Name subjectName,
+      String sanUri,
+      List<String> dnsNames,
+      List<String> ipAddresses)
+      throws Exception {
+
+    PKCS10CertificationRequest csr =
+        CertificateUtil.generateCsr(
+            keyPair,
+            subjectName,
+            sanUri,
+            dnsNames,
+            ipAddresses,
+            "SHA384withECDSA",
+            KeyUsage.digitalSignature,
+            null);
+
+    return ByteString.of(csr.getEncoded());
+  }
+
+  /**
+   * Create a new PKCS10 certificate signing request for a {@link
+   * NodeIds#EccBrainpoolP256r1ApplicationCertificateType} type certificate.
+   *
+   * <p>The CSR signer uses Bouncy Castle explicitly because default JCA provider lookup may choose
+   * a provider that does not understand the Brainpool curve carried by {@code keyPair}.
+   *
+   * @param keyPair the {@link KeyPair} to use when creating the signing request.
+   * @param subjectName the {@link X500Name} to request.
+   * @param sanUri the URI to request in the Subject Alternative Name of the CSR.
+   * @param dnsNames the DNS names to request in the Subject Alternative Name of the CSR.
+   * @param ipAddresses the IP addresses to request in the Subject Alternative Name of the CSR.
+   * @return the new {@link ByteString} containing the DER-encoded PKCS10 signing request.
+   * @throws Exception if an error occurs while creating the signing request.
+   */
+  protected ByteString createEccBrainpoolP256r1SigningRequest(
+      KeyPair keyPair,
+      X500Name subjectName,
+      String sanUri,
+      List<String> dnsNames,
+      List<String> ipAddresses)
+      throws Exception {
+
+    PKCS10CertificationRequest csr =
+        CertificateUtil.generateCsr(
+            keyPair,
+            subjectName,
+            sanUri,
+            dnsNames,
+            ipAddresses,
+            "SHA256withECDSA",
+            KeyUsage.digitalSignature,
+            null,
+            new BouncyCastleProvider());
 
     return ByteString.of(csr.getEncoded());
   }

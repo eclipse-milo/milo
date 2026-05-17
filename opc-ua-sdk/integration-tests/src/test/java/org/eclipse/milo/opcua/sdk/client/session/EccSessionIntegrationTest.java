@@ -202,7 +202,8 @@ class EccSessionIntegrationTest {
         securityPolicy, certificateTypeId, MessageSecurityMode.SignAndEncrypt);
   }
 
-  // ECC Sign renewals must install fresh AEAD keys and keep the active Session usable after renewal.
+  // ECC Sign renewals must install fresh AEAD keys and keep the active Session usable after
+  // renewal.
   @ParameterizedTest
   @MethodSource("currentEccPolicies")
   void renewsSecureChannelWithActiveSessionOverEccSign(
@@ -514,10 +515,7 @@ class EccSessionIntegrationTest {
       throws Exception {
 
     return startSecureServer(
-        securityPolicy,
-        certificateTypeId,
-        MessageSecurityMode.SignAndEncrypt,
-        configureTransport);
+        securityPolicy, certificateTypeId, MessageSecurityMode.SignAndEncrypt, configureTransport);
   }
 
   private static RunningServer startSecureServer(
@@ -668,6 +666,10 @@ class EccSessionIntegrationTest {
     KeyPair keyPair;
     if (NodeIds.EccNistP256ApplicationCertificateType.equals(certificateTypeId)) {
       keyPair = SelfSignedCertificateGenerator.generateNistP256KeyPair();
+    } else if (NodeIds.EccNistP384ApplicationCertificateType.equals(certificateTypeId)) {
+      keyPair = SelfSignedCertificateGenerator.generateNistP384KeyPair();
+    } else if (NodeIds.EccBrainpoolP256r1ApplicationCertificateType.equals(certificateTypeId)) {
+      keyPair = SelfSignedCertificateGenerator.generateBrainpoolP256r1KeyPair();
     } else if (NodeIds.EccBrainpoolP384r1ApplicationCertificateType.equals(certificateTypeId)) {
       keyPair = SelfSignedCertificateGenerator.generateBrainpoolP384r1KeyPair();
     } else if (NodeIds.EccCurve25519ApplicationCertificateType.equals(certificateTypeId)) {
@@ -720,6 +722,16 @@ class EccSessionIntegrationTest {
             SecurityPolicy.ECC_nistP256_AesGcm, NodeIds.EccNistP256ApplicationCertificateType),
         Arguments.of(
             SecurityPolicy.ECC_nistP256_ChaChaPoly, NodeIds.EccNistP256ApplicationCertificateType),
+        Arguments.of(
+            SecurityPolicy.ECC_nistP384_AesGcm, NodeIds.EccNistP384ApplicationCertificateType),
+        Arguments.of(
+            SecurityPolicy.ECC_nistP384_ChaChaPoly, NodeIds.EccNistP384ApplicationCertificateType),
+        Arguments.of(
+            SecurityPolicy.ECC_brainpoolP256r1_AesGcm,
+            NodeIds.EccBrainpoolP256r1ApplicationCertificateType),
+        Arguments.of(
+            SecurityPolicy.ECC_brainpoolP256r1_ChaChaPoly,
+            NodeIds.EccBrainpoolP256r1ApplicationCertificateType),
         Arguments.of(
             SecurityPolicy.ECC_curve25519_AesGcm, NodeIds.EccCurve25519ApplicationCertificateType),
         Arguments.of(

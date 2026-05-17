@@ -70,6 +70,32 @@ public enum SecurityPolicy {
   ECC_nistP256_ChaChaPoly("http://opcfoundation.org/UA/SecurityPolicy#ECC_nistP256_ChaChaPoly"),
 
   /**
+   * An ECC policy that uses NIST P-384 ECDSA authentication, P-384 ECDH key agreement, and AES-GCM
+   * chunk protection.
+   */
+  ECC_nistP384_AesGcm("http://opcfoundation.org/UA/SecurityPolicy#ECC_nistP384_AesGcm"),
+
+  /**
+   * An ECC policy that uses NIST P-384 ECDSA authentication, P-384 ECDH key agreement, and
+   * ChaCha20-Poly1305 chunk protection.
+   */
+  ECC_nistP384_ChaChaPoly("http://opcfoundation.org/UA/SecurityPolicy#ECC_nistP384_ChaChaPoly"),
+
+  /**
+   * An ECC policy that uses Brainpool P-256r1 ECDSA authentication, Brainpool P-256r1 ECDH key
+   * agreement, and AES-GCM chunk protection.
+   */
+  ECC_brainpoolP256r1_AesGcm(
+      "http://opcfoundation.org/UA/SecurityPolicy#ECC_brainpoolP256r1_AesGcm"),
+
+  /**
+   * An ECC policy that uses Brainpool P-256r1 ECDSA authentication, Brainpool P-256r1 ECDH key
+   * agreement, and ChaCha20-Poly1305 chunk protection.
+   */
+  ECC_brainpoolP256r1_ChaChaPoly(
+      "http://opcfoundation.org/UA/SecurityPolicy#ECC_brainpoolP256r1_ChaChaPoly"),
+
+  /**
    * An ECC policy that uses Ed25519 authentication, X25519 key agreement, and AES-GCM chunk
    * protection.
    */

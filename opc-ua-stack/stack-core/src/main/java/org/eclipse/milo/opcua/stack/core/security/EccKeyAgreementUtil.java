@@ -44,8 +44,8 @@ import org.jspecify.annotations.NullMarked;
  * the client, and server keys protect chunks sent by the server. A concrete {@code SecureChannel}
  * maps those protocol directions onto local encryption and decryption roles.
  *
- * <p>The profile selects both the key-agreement family and the HKDF hash. NIST P-256, X25519, and
- * ffdhe3072 profiles derive key material with HKDF-SHA-256; Brainpool P-384r1 profiles derive the
+ * <p>The profile selects both the key-agreement family and the HKDF hash. P-256 profile families,
+ * X25519, and ffdhe3072 derive key material with HKDF-SHA-256; P-384 profile families derive the
  * same directional fields with HKDF-SHA-384. Callers should pass the negotiated {@link
  * SecurityPolicyProfile} through this helper instead of selecting the hash from key length alone.
  */
@@ -68,6 +68,32 @@ public final class EccKeyAgreementUtil {
       throws UaException {
 
     return generateEcKeyPair(providerProfile, "secp256r1");
+  }
+
+  /**
+   * Generate an ephemeral NIST P-384 ECDH key pair.
+   *
+   * @param providerProfile the provider profile to use.
+   * @return an ephemeral P-384 key pair.
+   * @throws UaException if the key generation fails.
+   */
+  public static KeyPair generateNistP384KeyPair(ProviderProfile providerProfile)
+      throws UaException {
+
+    return generateEcKeyPair(providerProfile, "secp384r1");
+  }
+
+  /**
+   * Generate an ephemeral Brainpool P-256r1 ECDH key pair.
+   *
+   * @param providerProfile the provider profile to use.
+   * @return an ephemeral Brainpool P-256r1 key pair.
+   * @throws UaException if the key generation fails.
+   */
+  public static KeyPair generateBrainpoolP256r1KeyPair(ProviderProfile providerProfile)
+      throws UaException {
+
+    return generateEcKeyPair(providerProfile, "brainpoolP256r1");
   }
 
   /**
@@ -122,6 +148,42 @@ public final class EccKeyAgreementUtil {
       throws UaException {
 
     EccPublicKeyCodec.encodeNistP256(peerPublicKey);
+
+    return agree(providerProfile, "ECDH", privateKey, peerPublicKey);
+  }
+
+  /**
+   * Compute a P-384 ECDH shared secret.
+   *
+   * @param providerProfile the provider profile to use.
+   * @param privateKey the local ephemeral private key.
+   * @param peerPublicKey the peer ephemeral public key.
+   * @return the shared secret.
+   * @throws UaException if agreement fails.
+   */
+  public static byte[] agreeNistP384(
+      ProviderProfile providerProfile, PrivateKey privateKey, PublicKey peerPublicKey)
+      throws UaException {
+
+    EccPublicKeyCodec.encodeNistP384(peerPublicKey);
+
+    return agree(providerProfile, "ECDH", privateKey, peerPublicKey);
+  }
+
+  /**
+   * Compute a Brainpool P-256r1 ECDH shared secret.
+   *
+   * @param providerProfile the provider profile to use.
+   * @param privateKey the local ephemeral private key.
+   * @param peerPublicKey the peer ephemeral public key.
+   * @return the shared secret.
+   * @throws UaException if agreement fails.
+   */
+  public static byte[] agreeBrainpoolP256r1(
+      ProviderProfile providerProfile, PrivateKey privateKey, PublicKey peerPublicKey)
+      throws UaException {
+
+    EccPublicKeyCodec.encodeBrainpoolP256r1(peerPublicKey);
 
     return agree(providerProfile, "ECDH", privateKey, peerPublicKey);
   }
@@ -222,6 +284,8 @@ public final class EccKeyAgreementUtil {
     requireNonNull(serverNonce, "serverNonce");
 
     if (profile.keyAgreementAxis() != KeyAgreementAxis.ECDH_NIST_P256
+        && profile.keyAgreementAxis() != KeyAgreementAxis.ECDH_NIST_P384
+        && profile.keyAgreementAxis() != KeyAgreementAxis.ECDH_BRAINPOOL_P256R1
         && profile.keyAgreementAxis() != KeyAgreementAxis.ECDH_BRAINPOOL_P384R1
         && profile.keyAgreementAxis() != KeyAgreementAxis.X25519
         && profile.keyAgreementAxis() != KeyAgreementAxis.FFDH_3072) {
@@ -330,8 +394,9 @@ public final class EccKeyAgreementUtil {
               });
 
       return switch (profile.keyAgreementAxis()) {
-        case ECDH_BRAINPOOL_P384R1 -> HkdfUtil.hkdfSha384(ikm, salt, info, length, provider);
-        case ECDH_NIST_P256, X25519, FFDH_3072 ->
+        case ECDH_NIST_P384, ECDH_BRAINPOOL_P384R1 ->
+            HkdfUtil.hkdfSha384(ikm, salt, info, length, provider);
+        case ECDH_NIST_P256, ECDH_BRAINPOOL_P256R1, X25519, FFDH_3072 ->
             HkdfUtil.hkdfSha256(ikm, salt, info, length, provider);
         default ->
             throw new UaException(
@@ -345,8 +410,8 @@ public final class EccKeyAgreementUtil {
 
   private static String hkdfHmacTransformation(SecurityPolicyProfile profile) throws UaException {
     return switch (profile.keyAgreementAxis()) {
-      case ECDH_BRAINPOOL_P384R1 -> "HmacSHA384";
-      case ECDH_NIST_P256, X25519, FFDH_3072 -> "HmacSHA256";
+      case ECDH_NIST_P384, ECDH_BRAINPOOL_P384R1 -> "HmacSHA384";
+      case ECDH_NIST_P256, ECDH_BRAINPOOL_P256R1, X25519, FFDH_3072 -> "HmacSHA256";
       default ->
           throw new UaException(
               StatusCodes.Bad_SecurityPolicyRejected,

@@ -667,6 +667,8 @@ public class CertificateValidationUtil {
     AuthAxis authAxis = securityPolicyProfile.authAxis();
 
     return authAxis == AuthAxis.ECDSA_NIST_P256_SHA256
+        || authAxis == AuthAxis.ECDSA_NIST_P384_SHA384
+        || authAxis == AuthAxis.ECDSA_BRAINPOOL_P256R1_SHA256
         || authAxis == AuthAxis.ECDSA_BRAINPOOL_P384R1_SHA384
         || authAxis == AuthAxis.ED25519;
   }

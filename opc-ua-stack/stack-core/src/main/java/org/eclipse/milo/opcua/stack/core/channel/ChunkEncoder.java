@@ -53,9 +53,9 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>For profiles using SecureChannel Enhancements, the sequence-number stream starts at 0 and does
  * not use the legacy wrap window. AEAD profiles also feed the previous sequence number, called
- * {@code LastSequenceNumber} by the specification, into per-chunk nonce construction. In
- * {@code SignAndEncrypt} that nonce protects the encrypted SequenceHeader and body; in {@code Sign}
- * it protects the tag-only signature footer over the plaintext chunk bytes.
+ * {@code LastSequenceNumber} by the specification, into per-chunk nonce construction. In {@code
+ * SignAndEncrypt} that nonce protects the encrypted SequenceHeader and body; in {@code Sign} it
+ * protects the tag-only signature footer over the plaintext chunk bytes.
  *
  * <p>An encoder instance owns the outbound sequence-number stream for the connection using it.
  * Reuse one instance for ordered messages on the same channel; use a separate instance for a

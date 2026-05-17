@@ -72,6 +72,66 @@ class EccCryptoTest {
     assertEquals(StatusCodes.Bad_SecurityChecksFailed, exception.getStatusCode().getValue());
   }
 
+  // NIST P-384 policies use SHA-384 ECDSA with the 96-byte P1363 r||s wire format and can use
+  // either the JDK or BC provider profile.
+  @ParameterizedTest
+  @EnumSource(ProviderProfile.class)
+  void ecdsaNistP384P1363SignsAndVerifies(ProviderProfile providerProfile) throws Exception {
+    KeyPair keyPair = EccKeyAgreementUtil.generateNistP384KeyPair(providerProfile);
+    byte[] message = hex("0102030405060708090a0b0c0d0e0f");
+
+    byte[] signature =
+        EccSignatureUtil.signEcdsaP384Sha384P1363(
+            providerProfile, keyPair.getPrivate(), ByteBuffer.wrap(message));
+
+    assertEquals(EccSignatureUtil.ECDSA_P384_SHA384_P1363_SIGNATURE_LENGTH, signature.length);
+    assertDoesNotThrow(
+        () ->
+            EccSignatureUtil.verifyEcdsaP384Sha384P1363(
+                providerProfile, keyPair.getPublic(), signature, ByteBuffer.wrap(message)));
+
+    signature[0] ^= 0x01;
+
+    UaException exception =
+        assertThrows(
+            UaException.class,
+            () ->
+                EccSignatureUtil.verifyEcdsaP384Sha384P1363(
+                    providerProfile, keyPair.getPublic(), signature, ByteBuffer.wrap(message)));
+
+    assertEquals(StatusCodes.Bad_SecurityChecksFailed, exception.getStatusCode().getValue());
+  }
+
+  // Brainpool P-256 uses SHA-256 ECDSA with the same 64-byte P1363 shape as NIST P-256, but with
+  // BC-backed curve support.
+  @Test
+  void ecdsaBrainpoolP256P1363SignsAndVerifies() throws Exception {
+    ProviderProfile providerProfile = ProviderProfile.BOUNCY_CASTLE;
+    KeyPair keyPair = EccKeyAgreementUtil.generateBrainpoolP256r1KeyPair(providerProfile);
+    byte[] message = hex("0102030405060708090a0b0c0d0e0f");
+
+    byte[] signature =
+        EccSignatureUtil.signEcdsaP256Sha256P1363(
+            providerProfile, keyPair.getPrivate(), ByteBuffer.wrap(message));
+
+    assertEquals(EccSignatureUtil.ECDSA_P256_SHA256_P1363_SIGNATURE_LENGTH, signature.length);
+    assertDoesNotThrow(
+        () ->
+            EccSignatureUtil.verifyEcdsaP256Sha256P1363(
+                providerProfile, keyPair.getPublic(), signature, ByteBuffer.wrap(message)));
+
+    signature[0] ^= 0x01;
+
+    UaException exception =
+        assertThrows(
+            UaException.class,
+            () ->
+                EccSignatureUtil.verifyEcdsaP256Sha256P1363(
+                    providerProfile, keyPair.getPublic(), signature, ByteBuffer.wrap(message)));
+
+    assertEquals(StatusCodes.Bad_SecurityChecksFailed, exception.getStatusCode().getValue());
+  }
+
   // Brainpool P-384 policies use ECDSA-SHA384 with the same fixed-width P1363 wire encoding,
   // but require the BC provider profile because Java 17 built-ins do not provide Brainpool curves.
   @Test
@@ -160,8 +220,8 @@ class EccCryptoTest {
   }
 
   // P-256 public keys are encoded as raw x||y coordinates in nonce fields, not as
-  // SubjectPublicKeyInfo
-  // or X9.62 points; the fixed base-point bytes guard the exact coordinate order.
+  // SubjectPublicKeyInfo or X9.62 points; the fixed base-point bytes guard the exact coordinate
+  // order.
   @ParameterizedTest
   @EnumSource(ProviderProfile.class)
   void nistP256PublicKeyCodecRoundTripsAndAgreementMatches(ProviderProfile providerProfile)
@@ -196,6 +256,89 @@ class EccCryptoTest {
             providerProfile,
             bob.getPrivate(),
             EccPublicKeyCodec.decodeNistP256(aliceWire, providerProfile));
+
+    assertEquals(32, aliceSecret.length);
+    assertArrayEquals(aliceSecret, bobSecret);
+  }
+
+  // P-384 uses 48-byte coordinates in the same x||y nonce layout as P-256.
+  @ParameterizedTest
+  @EnumSource(ProviderProfile.class)
+  void nistP384PublicKeyCodecRoundTripsAndAgreementMatches(ProviderProfile providerProfile)
+      throws Exception {
+    ByteString basePoint =
+        ByteString.of(
+            hex(
+                "aa87ca22be8b05378eb1c71ef320ad746e1d3b628ba79b9859f741e0"
+                    + "82542a385502f25dbf55296c3a545e3872760ab7"
+                    + "3617de4a96262c6f5d9e98bf9292dc29f8f41dbd289a147ce9da3113"
+                    + "b5f0b8c00a60b1ce1d7e819d7a431d7c90ea0e5f"));
+    KeyPair alice = EccKeyAgreementUtil.generateNistP384KeyPair(providerProfile);
+    KeyPair bob = EccKeyAgreementUtil.generateNistP384KeyPair(providerProfile);
+    ByteString aliceWire = EccPublicKeyCodec.encodeNistP384(alice.getPublic());
+    ByteString bobWire = EccPublicKeyCodec.encodeNistP384(bob.getPublic());
+
+    assertEquals(
+        basePoint,
+        EccPublicKeyCodec.encodeNistP384(
+            EccPublicKeyCodec.decodeNistP384(basePoint, providerProfile)));
+    assertEquals(EccPublicKeyCodec.NIST_P384_PUBLIC_KEY_LENGTH, aliceWire.length());
+    assertEquals(
+        aliceWire,
+        EccPublicKeyCodec.encodeNistP384(
+            EccPublicKeyCodec.decodeNistP384(aliceWire, providerProfile)));
+
+    byte[] aliceSecret =
+        EccKeyAgreementUtil.agreeNistP384(
+            providerProfile,
+            alice.getPrivate(),
+            EccPublicKeyCodec.decodeNistP384(bobWire, providerProfile));
+    byte[] bobSecret =
+        EccKeyAgreementUtil.agreeNistP384(
+            providerProfile,
+            bob.getPrivate(),
+            EccPublicKeyCodec.decodeNistP384(aliceWire, providerProfile));
+
+    assertEquals(48, aliceSecret.length);
+    assertArrayEquals(aliceSecret, bobSecret);
+  }
+
+  // Brainpool P-256 has 32-byte coordinates and requires BC-backed validation/key creation.
+  @Test
+  void brainpoolP256PublicKeyCodecRoundTripsAndAgreementMatches() throws Exception {
+    ProviderProfile providerProfile = ProviderProfile.BOUNCY_CASTLE;
+    ByteString basePoint =
+        ByteString.of(
+            hex(
+                "8bd2aeb9cb7e57cb2c4b482ffc81b7afb9de27e1e3bd23c23a4453bd"
+                    + "9ace3262"
+                    + "547ef835c3dac4fd97f8461a14611dc9c27745132ded8e545c1d54c7"
+                    + "2f046997"));
+    KeyPair alice = EccKeyAgreementUtil.generateBrainpoolP256r1KeyPair(providerProfile);
+    KeyPair bob = EccKeyAgreementUtil.generateBrainpoolP256r1KeyPair(providerProfile);
+    ByteString aliceWire = EccPublicKeyCodec.encodeBrainpoolP256r1(alice.getPublic());
+    ByteString bobWire = EccPublicKeyCodec.encodeBrainpoolP256r1(bob.getPublic());
+
+    assertEquals(
+        basePoint,
+        EccPublicKeyCodec.encodeBrainpoolP256r1(
+            EccPublicKeyCodec.decodeBrainpoolP256r1(basePoint, providerProfile)));
+    assertEquals(EccPublicKeyCodec.BRAINPOOL_P256R1_PUBLIC_KEY_LENGTH, aliceWire.length());
+    assertEquals(
+        aliceWire,
+        EccPublicKeyCodec.encodeBrainpoolP256r1(
+            EccPublicKeyCodec.decodeBrainpoolP256r1(aliceWire, providerProfile)));
+
+    byte[] aliceSecret =
+        EccKeyAgreementUtil.agreeBrainpoolP256r1(
+            providerProfile,
+            alice.getPrivate(),
+            EccPublicKeyCodec.decodeBrainpoolP256r1(bobWire, providerProfile));
+    byte[] bobSecret =
+        EccKeyAgreementUtil.agreeBrainpoolP256r1(
+            providerProfile,
+            bob.getPrivate(),
+            EccPublicKeyCodec.decodeBrainpoolP256r1(aliceWire, providerProfile));
 
     assertEquals(32, aliceSecret.length);
     assertArrayEquals(aliceSecret, bobSecret);
@@ -262,6 +405,48 @@ class EccCryptoTest {
             UaException.class,
             () ->
                 EccPublicKeyCodec.decodeBrainpoolP384r1(
+                    ByteString.of(offCurve), ProviderProfile.BOUNCY_CASTLE));
+
+    assertEquals(StatusCodes.Bad_NonceInvalid, exception.getStatusCode().getValue());
+  }
+
+  @Test
+  void nistP384PublicKeyCodecRejectsMalformedWireValues() {
+    assertThrows(
+        UaException.class,
+        () -> EccPublicKeyCodec.decodeNistP384(ByteString.of(new byte[95]), ProviderProfile.JDK));
+
+    byte[] offCurve = new byte[EccPublicKeyCodec.NIST_P384_PUBLIC_KEY_LENGTH];
+    offCurve[47] = 1;
+    offCurve[95] = 1;
+
+    UaException exception =
+        assertThrows(
+            UaException.class,
+            () -> EccPublicKeyCodec.decodeNistP384(ByteString.of(offCurve), ProviderProfile.JDK));
+
+    assertEquals(StatusCodes.Bad_NonceInvalid, exception.getStatusCode().getValue());
+  }
+
+  // Brainpool P-256 has the same 64-byte nonce size as NIST P-256; validation must prove the point
+  // is on the Brainpool curve instead of accepting any EC point with the right width.
+  @Test
+  void brainpoolP256PublicKeyCodecRejectsMalformedWireValues() {
+    assertThrows(
+        UaException.class,
+        () ->
+            EccPublicKeyCodec.decodeBrainpoolP256r1(
+                ByteString.of(new byte[63]), ProviderProfile.BOUNCY_CASTLE));
+
+    byte[] offCurve = new byte[EccPublicKeyCodec.BRAINPOOL_P256R1_PUBLIC_KEY_LENGTH];
+    offCurve[31] = 1;
+    offCurve[63] = 1;
+
+    UaException exception =
+        assertThrows(
+            UaException.class,
+            () ->
+                EccPublicKeyCodec.decodeBrainpoolP256r1(
                     ByteString.of(offCurve), ProviderProfile.BOUNCY_CASTLE));
 
     assertEquals(StatusCodes.Bad_NonceInvalid, exception.getStatusCode().getValue());
@@ -459,6 +644,49 @@ class EccCryptoTest {
     assertEquals(
         2 + "opcua-client".length() + 96 + 96,
         EccKeyAgreementUtil.hkdfSalt("opcua-client", 44, clientNonce, serverNonce).length);
+  }
+
+  // NIST P-384 uses HKDF-SHA384 and AES-256-sized material even when the chunk cipher is AES-GCM.
+  @Test
+  void nistP384AeadHkdfKeyMaterialUsesSha384Sizing() throws Exception {
+    byte[] sharedSecret = ascending(48, 0x20);
+    ByteString clientNonce = ByteString.of(ascending(96, 0x00));
+    ByteString serverNonce = ByteString.of(ascending(96, 0x60));
+
+    DerivedKeyMaterial keyMaterial =
+        EccKeyAgreementUtil.deriveEccAeadKeyMaterial(
+            ProviderProfile.JDK,
+            SecurityPolicy.ECC_nistP384_AesGcm.getProfile(),
+            sharedSecret,
+            clientNonce,
+            serverNonce);
+
+    assertEquals(32, keyMaterial.clientEncryptionKey().length);
+    assertEquals(12, keyMaterial.clientInitializationVector().length);
+    assertEquals(32, keyMaterial.serverEncryptionKey().length);
+    assertEquals(12, keyMaterial.serverInitializationVector().length);
+  }
+
+  // Brainpool P-256 stays in the SHA-256/AES-128-size ECC A profile family even though its
+  // provider support differs from NIST P-256.
+  @Test
+  void brainpoolP256AeadHkdfKeyMaterialUsesSha256Sizing() throws Exception {
+    byte[] sharedSecret = ascending(32, 0x20);
+    ByteString clientNonce = ByteString.of(ascending(64, 0x00));
+    ByteString serverNonce = ByteString.of(ascending(64, 0x40));
+
+    DerivedKeyMaterial keyMaterial =
+        EccKeyAgreementUtil.deriveEccAeadKeyMaterial(
+            ProviderProfile.BOUNCY_CASTLE,
+            SecurityPolicy.ECC_brainpoolP256r1_AesGcm.getProfile(),
+            sharedSecret,
+            clientNonce,
+            serverNonce);
+
+    assertEquals(16, keyMaterial.clientEncryptionKey().length);
+    assertEquals(12, keyMaterial.clientInitializationVector().length);
+    assertEquals(16, keyMaterial.serverEncryptionKey().length);
+    assertEquals(12, keyMaterial.serverInitializationVector().length);
   }
 
   // RSA nonce profiles still use P_SHA; the ECC HKDF helper must not silently accept them.

@@ -40,6 +40,10 @@ class EccUserTokenAdditionalHeaderTest {
       names = {
         "ECC_nistP256_AesGcm",
         "ECC_nistP256_ChaChaPoly",
+        "ECC_nistP384_AesGcm",
+        "ECC_nistP384_ChaChaPoly",
+        "ECC_brainpoolP256r1_AesGcm",
+        "ECC_brainpoolP256r1_ChaChaPoly",
         "ECC_curve25519_AesGcm",
         "ECC_curve25519_ChaChaPoly",
         "ECC_brainpoolP384r1_AesGcm",
@@ -65,6 +69,10 @@ class EccUserTokenAdditionalHeaderTest {
       names = {
         "ECC_nistP256_AesGcm",
         "ECC_nistP256_ChaChaPoly",
+        "ECC_nistP384_AesGcm",
+        "ECC_nistP384_ChaChaPoly",
+        "ECC_brainpoolP256r1_AesGcm",
+        "ECC_brainpoolP256r1_ChaChaPoly",
         "ECC_curve25519_AesGcm",
         "ECC_curve25519_ChaChaPoly",
         "ECC_brainpoolP384r1_AesGcm",

@@ -40,6 +40,37 @@ class SelfSignedCertificateGeneratorTest {
     assertTrue(certificate.getSigAlgName().contains("ECDSA"));
   }
 
+  @Test
+  void generatesNistP384ApplicationCertificate() throws Exception {
+    KeyPair keyPair = SelfSignedCertificateGenerator.generateNistP384KeyPair();
+
+    X509Certificate certificate = buildEccApplicationCertificate(keyPair);
+
+    CertificateCompatibility.checkCompatible(
+        SecurityPolicy.ECC_nistP384_AesGcm.getProfile(),
+        NodeIds.EccNistP384ApplicationCertificateType,
+        certificate);
+    assertMinimalEccKeyUsage(certificate);
+    assertTrue(certificate.getSigAlgName().contains("ECDSA"));
+    assertTrue(certificate.getSigAlgName().contains("384"));
+  }
+
+  // Brainpool P-256 certificates require BC-backed key generation while still using the minimal ECC
+  // application-certificate key usage expected by endpoint compatibility checks.
+  @Test
+  void generatesBrainpoolP256ApplicationCertificate() throws Exception {
+    KeyPair keyPair = SelfSignedCertificateGenerator.generateBrainpoolP256r1KeyPair();
+
+    X509Certificate certificate = buildEccApplicationCertificate(keyPair);
+
+    CertificateCompatibility.checkCompatible(
+        SecurityPolicy.ECC_brainpoolP256r1_AesGcm.getProfile(),
+        NodeIds.EccBrainpoolP256r1ApplicationCertificateType,
+        certificate);
+    assertMinimalEccKeyUsage(certificate);
+    assertTrue(certificate.getSigAlgName().contains("ECDSA"));
+  }
+
   // Self-signed Brainpool certificates need SHA384/ECDSA signatures and the minimal ECC
   // application-certificate key usage so endpoint compatibility checks can accept them.
   @Test

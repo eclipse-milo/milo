@@ -120,6 +120,10 @@ class SecureChannelStrategiesTest {
       names = {
         "ECC_nistP256_AesGcm",
         "ECC_nistP256_ChaChaPoly",
+        "ECC_nistP384_AesGcm",
+        "ECC_nistP384_ChaChaPoly",
+        "ECC_brainpoolP256r1_AesGcm",
+        "ECC_brainpoolP256r1_ChaChaPoly",
         "ECC_curve25519_AesGcm",
         "ECC_curve25519_ChaChaPoly",
         "ECC_brainpoolP384r1_AesGcm",
@@ -297,6 +301,10 @@ class SecureChannelStrategiesTest {
       names = {
         "ECC_nistP256_AesGcm",
         "ECC_nistP256_ChaChaPoly",
+        "ECC_nistP384_AesGcm",
+        "ECC_nistP384_ChaChaPoly",
+        "ECC_brainpoolP256r1_AesGcm",
+        "ECC_brainpoolP256r1_ChaChaPoly",
         "ECC_curve25519_AesGcm",
         "ECC_curve25519_ChaChaPoly",
         "ECC_brainpoolP384r1_AesGcm",
@@ -429,6 +437,9 @@ class SecureChannelStrategiesTest {
   private static KeyPair applicationKeyPair(SecurityPolicy securityPolicy) throws Exception {
     return switch (securityPolicy.getProfile().authAxis()) {
       case ECDSA_NIST_P256_SHA256 -> SelfSignedCertificateGenerator.generateNistP256KeyPair();
+      case ECDSA_NIST_P384_SHA384 -> SelfSignedCertificateGenerator.generateNistP384KeyPair();
+      case ECDSA_BRAINPOOL_P256R1_SHA256 ->
+          SelfSignedCertificateGenerator.generateBrainpoolP256r1KeyPair();
       case ECDSA_BRAINPOOL_P384R1_SHA384 ->
           SelfSignedCertificateGenerator.generateBrainpoolP384r1KeyPair();
       case ED25519 -> SelfSignedCertificateGenerator.generateEd25519KeyPair();

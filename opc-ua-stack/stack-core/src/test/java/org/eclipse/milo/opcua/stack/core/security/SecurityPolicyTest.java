@@ -10,14 +10,18 @@
 
 package org.eclipse.milo.opcua.stack.core.security;
 
+import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.ECDSA_BRAINPOOL_P256R1_SHA256;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.ECDSA_BRAINPOOL_P384R1_SHA384;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.ECDSA_NIST_P256_SHA256;
+import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.ECDSA_NIST_P384_SHA384;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.ED25519;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.RSA_PKCS1_SHA256;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.ChunkProtectionAxis.AES_GCM;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.ChunkProtectionAxis.CHACHA20_POLY1305;
+import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.ECDH_BRAINPOOL_P256R1;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.ECDH_BRAINPOOL_P384R1;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.ECDH_NIST_P256;
+import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.ECDH_NIST_P384;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.FFDH_3072;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.X25519;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.SequenceNumberMode.NON_LEGACY;
@@ -54,6 +58,22 @@ public class SecurityPolicyTest {
     assertSame(
         SecurityPolicy.ECC_nistP256_ChaChaPoly,
         SecurityPolicy.fromUri(SecurityPolicy.ECC_nistP256_ChaChaPoly.getUri()));
+
+    assertSame(
+        SecurityPolicy.ECC_nistP384_AesGcm,
+        SecurityPolicy.fromUri(SecurityPolicy.ECC_nistP384_AesGcm.getUri()));
+
+    assertSame(
+        SecurityPolicy.ECC_nistP384_ChaChaPoly,
+        SecurityPolicy.fromUri(SecurityPolicy.ECC_nistP384_ChaChaPoly.getUri()));
+
+    assertSame(
+        SecurityPolicy.ECC_brainpoolP256r1_AesGcm,
+        SecurityPolicy.fromUri(SecurityPolicy.ECC_brainpoolP256r1_AesGcm.getUri()));
+
+    assertSame(
+        SecurityPolicy.ECC_brainpoolP256r1_ChaChaPoly,
+        SecurityPolicy.fromUri(SecurityPolicy.ECC_brainpoolP256r1_ChaChaPoly.getUri()));
 
     assertSame(
         SecurityPolicy.ECC_curve25519_AesGcm,
@@ -93,6 +113,10 @@ public class SecurityPolicyTest {
         Set.of(
             "ECC_nistP256_AesGcm",
             "ECC_nistP256_ChaChaPoly",
+            "ECC_nistP384_AesGcm",
+            "ECC_nistP384_ChaChaPoly",
+            "ECC_brainpoolP256r1_AesGcm",
+            "ECC_brainpoolP256r1_ChaChaPoly",
             "ECC_curve25519_AesGcm",
             "ECC_curve25519_ChaChaPoly",
             "ECC_brainpoolP384r1_AesGcm",
@@ -103,7 +127,13 @@ public class SecurityPolicyTest {
         SecurityPolicy.fromUriSafe("http://opcfoundation.org/UA/SecurityPolicy#ECC_nistP256")
             .isEmpty());
     assertTrue(
+        SecurityPolicy.fromUriSafe("http://opcfoundation.org/UA/SecurityPolicy#ECC_nistP384")
+            .isEmpty());
+    assertTrue(
         SecurityPolicy.fromUriSafe("http://opcfoundation.org/UA/SecurityPolicy#ECC_curve25519")
+            .isEmpty());
+    assertTrue(
+        SecurityPolicy.fromUriSafe("http://opcfoundation.org/UA/SecurityPolicy#ECC_brainpoolP256r1")
             .isEmpty());
     assertTrue(
         SecurityPolicy.fromUriSafe("http://opcfoundation.org/UA/SecurityPolicy#ECC_brainpoolP384r1")
@@ -261,6 +291,22 @@ public class SecurityPolicyTest {
     assertDoesNotThrow(
         () ->
             SecurityPolicyProfiles.requireSecureChannelSupported(
+                SecurityPolicy.ECC_nistP384_AesGcm));
+    assertDoesNotThrow(
+        () ->
+            SecurityPolicyProfiles.requireSecureChannelSupported(
+                SecurityPolicy.ECC_nistP384_ChaChaPoly));
+    assertDoesNotThrow(
+        () ->
+            SecurityPolicyProfiles.requireSecureChannelSupported(
+                SecurityPolicy.ECC_brainpoolP256r1_AesGcm));
+    assertDoesNotThrow(
+        () ->
+            SecurityPolicyProfiles.requireSecureChannelSupported(
+                SecurityPolicy.ECC_brainpoolP256r1_ChaChaPoly));
+    assertDoesNotThrow(
+        () ->
+            SecurityPolicyProfiles.requireSecureChannelSupported(
                 SecurityPolicy.ECC_curve25519_AesGcm));
     assertDoesNotThrow(
         () ->
@@ -298,6 +344,46 @@ public class SecurityPolicyTest {
             ECDSA_NIST_P256_SHA256,
             NodeIds.EccNistP256ApplicationCertificateType,
             ECDH_NIST_P256,
+            CHACHA20_POLY1305,
+            64,
+            32,
+            SecurityAlgorithm.Sha256,
+            (short) 0x84),
+        new PolicyProfileExpectation(
+            SecurityPolicy.ECC_nistP384_AesGcm,
+            ECDSA_NIST_P384_SHA384,
+            NodeIds.EccNistP384ApplicationCertificateType,
+            ECDH_NIST_P384,
+            AES_GCM,
+            96,
+            32,
+            SecurityAlgorithm.Sha384,
+            (short) 0x88),
+        new PolicyProfileExpectation(
+            SecurityPolicy.ECC_nistP384_ChaChaPoly,
+            ECDSA_NIST_P384_SHA384,
+            NodeIds.EccNistP384ApplicationCertificateType,
+            ECDH_NIST_P384,
+            CHACHA20_POLY1305,
+            96,
+            32,
+            SecurityAlgorithm.Sha384,
+            (short) 0x88),
+        new PolicyProfileExpectation(
+            SecurityPolicy.ECC_brainpoolP256r1_AesGcm,
+            ECDSA_BRAINPOOL_P256R1_SHA256,
+            NodeIds.EccBrainpoolP256r1ApplicationCertificateType,
+            ECDH_BRAINPOOL_P256R1,
+            AES_GCM,
+            64,
+            16,
+            SecurityAlgorithm.Sha256,
+            (short) 0x84),
+        new PolicyProfileExpectation(
+            SecurityPolicy.ECC_brainpoolP256r1_ChaChaPoly,
+            ECDSA_BRAINPOOL_P256R1_SHA256,
+            NodeIds.EccBrainpoolP256r1ApplicationCertificateType,
+            ECDH_BRAINPOOL_P256R1,
             CHACHA20_POLY1305,
             64,
             32,

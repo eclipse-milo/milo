@@ -44,25 +44,33 @@ import org.jspecify.annotations.NullMarked;
  * Wire codecs for ECC ephemeral public keys carried in OpenSecureChannel nonce fields.
  *
  * <p>OPC UA ECC policies do not encode these public keys as X.509 {@code SubjectPublicKeyInfo}
- * values. NIST P-256 and Brainpool P-384r1 keys are sent as fixed-width big-endian {@code x || y}
- * coordinates with no leading X9.62 {@code 0x04} point marker: 64 bytes for P-256 and 96 bytes for
- * Brainpool P-384r1. X25519 keys are sent as the 32-byte RFC 7748 public value; when receiving
- * X25519 bytes, the final byte's most-significant bit is ignored as required by the curve
- * definition. The JCA XEC interfaces can also represent other curves such as X448, so encoding
- * checks both the key shape and curve identity. Decode methods validate the wire shape before
- * returning a provider-backed {@link PublicKey} suitable for key agreement.
+ * values. NIST and Brainpool keys are sent as fixed-width big-endian {@code x || y} coordinates
+ * with no leading X9.62 {@code 0x04} point marker: 64 bytes for P-256 curves and 96 bytes for P-384
+ * curves. X25519 keys are sent as the 32-byte RFC 7748 public value; when receiving X25519 bytes,
+ * the final byte's most-significant bit is ignored as required by the curve definition. The JCA XEC
+ * interfaces can also represent other curves such as X448, so encoding checks both the key shape
+ * and curve identity. Decode methods validate the wire shape before returning a provider-backed
+ * {@link PublicKey} suitable for key agreement.
  */
 @NullMarked
 public final class EccPublicKeyCodec {
 
   public static final int NIST_P256_PUBLIC_KEY_LENGTH = 64;
+  public static final int NIST_P384_PUBLIC_KEY_LENGTH = 96;
+  public static final int BRAINPOOL_P256R1_PUBLIC_KEY_LENGTH = 64;
   public static final int BRAINPOOL_P384R1_PUBLIC_KEY_LENGTH = 96;
   public static final int X25519_PUBLIC_KEY_LENGTH = 32;
 
   private static final int NIST_P256_COORDINATE_LENGTH = 32;
+  private static final int NIST_P384_COORDINATE_LENGTH = 48;
+  private static final int BRAINPOOL_P256R1_COORDINATE_LENGTH = 32;
   private static final int BRAINPOOL_P384R1_COORDINATE_LENGTH = 48;
+  private static final String BRAINPOOL_P256R1_CURVE_NAME = "brainpoolP256r1";
   private static final String BRAINPOOL_P384R1_CURVE_NAME = "brainpoolP384r1";
   private static final ECParameterSpec NIST_P256 = nistP256ParameterSpec();
+  private static final ECParameterSpec NIST_P384 = nistP384ParameterSpec();
+  private static final ECParameterSpec BRAINPOOL_P256R1 =
+      brainpoolParameterSpec(BRAINPOOL_P256R1_CURVE_NAME);
   private static final ECParameterSpec BRAINPOOL_P384R1 = brainpoolP384r1ParameterSpec();
   private static final NamedParameterSpec X25519 = new NamedParameterSpec("X25519");
 
@@ -85,6 +93,45 @@ public final class EccPublicKeyCodec {
         NIST_P256_COORDINATE_LENGTH,
         NIST_P256_PUBLIC_KEY_LENGTH,
         "NIST P-256");
+  }
+
+  /**
+   * Encode a NIST P-384 public key as fixed-width {@code x || y} coordinates.
+   *
+   * <p>The returned bytes are the exact OpenSecureChannel wire value for profiles that use P-384
+   * ECDH ephemeral keys.
+   *
+   * @param publicKey the P-384 public key.
+   * @return the OPC UA wire encoding.
+   * @throws UaException if the key is not a valid P-384 public key.
+   */
+  public static ByteString encodeNistP384(PublicKey publicKey) throws UaException {
+    return encodeEc(
+        publicKey,
+        NIST_P384,
+        NIST_P384_COORDINATE_LENGTH,
+        NIST_P384_PUBLIC_KEY_LENGTH,
+        "NIST P-384");
+  }
+
+  /**
+   * Encode a Brainpool P-256r1 public key as fixed-width {@code x || y} coordinates.
+   *
+   * <p>The returned bytes are the exact OpenSecureChannel wire value for profiles that use
+   * Brainpool P-256r1 ECDH ephemeral keys. Brainpool keys normally resolve to the Bouncy Castle
+   * provider profile because the JDK EC providers do not consistently expose this curve.
+   *
+   * @param publicKey the Brainpool P-256r1 public key.
+   * @return the OPC UA wire encoding.
+   * @throws UaException if the key is not a valid Brainpool P-256r1 public key.
+   */
+  public static ByteString encodeBrainpoolP256r1(PublicKey publicKey) throws UaException {
+    return encodeEc(
+        publicKey,
+        BRAINPOOL_P256R1,
+        BRAINPOOL_P256R1_COORDINATE_LENGTH,
+        BRAINPOOL_P256R1_PUBLIC_KEY_LENGTH,
+        "Brainpool P-256r1");
   }
 
   /**
@@ -128,6 +175,54 @@ public final class EccPublicKeyCodec {
         NIST_P256_COORDINATE_LENGTH,
         NIST_P256_PUBLIC_KEY_LENGTH,
         "NIST P-256");
+  }
+
+  /**
+   * Decode fixed-width {@code x || y} coordinates into a NIST P-384 public key.
+   *
+   * <p>The point must be on the P-384 curve. The returned key is created through the requested
+   * provider profile, so subsequent key-agreement operations use the same provider family.
+   *
+   * @param wire the OPC UA wire encoding.
+   * @param providerProfile the provider profile used to create the returned key.
+   * @return a P-384 public key.
+   * @throws UaException if the bytes are the wrong length, off-curve, or unsupported.
+   */
+  public static PublicKey decodeNistP384(ByteString wire, ProviderProfile providerProfile)
+      throws UaException {
+
+    return decodeEc(
+        wire,
+        providerProfile,
+        NIST_P384,
+        NIST_P384_COORDINATE_LENGTH,
+        NIST_P384_PUBLIC_KEY_LENGTH,
+        "NIST P-384");
+  }
+
+  /**
+   * Decode fixed-width {@code x || y} coordinates into a Brainpool P-256r1 public key.
+   *
+   * <p>The point must be on the Brainpool P-256r1 curve. The returned key is created through the
+   * requested provider profile, so subsequent key-agreement operations use the same provider
+   * family. Callers normally obtain that provider profile from {@link SecurityProviderResolver}
+   * rather than selecting a JCA provider directly.
+   *
+   * @param wire the OPC UA wire encoding.
+   * @param providerProfile the provider profile used to create the returned key.
+   * @return a Brainpool P-256r1 public key.
+   * @throws UaException if the bytes are the wrong length, off-curve, or unsupported.
+   */
+  public static PublicKey decodeBrainpoolP256r1(ByteString wire, ProviderProfile providerProfile)
+      throws UaException {
+
+    return decodeEc(
+        wire,
+        providerProfile,
+        BRAINPOOL_P256R1,
+        BRAINPOOL_P256R1_COORDINATE_LENGTH,
+        BRAINPOOL_P256R1_PUBLIC_KEY_LENGTH,
+        "Brainpool P-256r1");
   }
 
   /**
@@ -396,12 +491,51 @@ public final class EccPublicKeyCodec {
         new EllipticCurve(new ECFieldFp(p), a, b), new ECPoint(gx, gy), n, 1);
   }
 
+  private static ECParameterSpec nistP384ParameterSpec() {
+    BigInteger p =
+        new BigInteger(
+            "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE"
+                + "FFFFFFFF0000000000000000FFFFFFFF",
+            16);
+    BigInteger a =
+        new BigInteger(
+            "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE"
+                + "FFFFFFFF0000000000000000FFFFFFFC",
+            16);
+    BigInteger b =
+        new BigInteger(
+            "B3312FA7E23EE7E4988E056BE3F82D19181D9C6EFE8141120314088F"
+                + "5013875AC656398D8A2ED19D2A85C8EDD3EC2AEF",
+            16);
+    BigInteger gx =
+        new BigInteger(
+            "AA87CA22BE8B05378EB1C71EF320AD746E1D3B628BA79B9859F741E0"
+                + "82542A385502F25DBF55296C3A545E3872760AB7",
+            16);
+    BigInteger gy =
+        new BigInteger(
+            "3617DE4A96262C6F5D9E98BF9292DC29F8F41DBD289A147CE9DA3113"
+                + "B5F0B8C00A60B1CE1D7E819D7A431D7C90EA0E5F",
+            16);
+    BigInteger n =
+        new BigInteger(
+            "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC7634D81F4372DDF"
+                + "581A0DB248B0A77AECEC196ACCC52973",
+            16);
+
+    return new ECParameterSpec(
+        new EllipticCurve(new ECFieldFp(p), a, b), new ECPoint(gx, gy), n, 1);
+  }
+
   private static ECParameterSpec brainpoolP384r1ParameterSpec() {
-    ECNamedCurveParameterSpec namedSpec =
-        ECNamedCurveTable.getParameterSpec(BRAINPOOL_P384R1_CURVE_NAME);
+    return brainpoolParameterSpec(BRAINPOOL_P384R1_CURVE_NAME);
+  }
+
+  private static ECParameterSpec brainpoolParameterSpec(String curveName) {
+    ECNamedCurveParameterSpec namedSpec = ECNamedCurveTable.getParameterSpec(curveName);
 
     if (namedSpec == null) {
-      throw new ExceptionInInitializerError("unknown EC curve: " + BRAINPOOL_P384R1_CURVE_NAME);
+      throw new ExceptionInInitializerError("unknown EC curve: " + curveName);
     }
 
     org.bouncycastle.math.ec.ECPoint generator = namedSpec.getG().normalize();
