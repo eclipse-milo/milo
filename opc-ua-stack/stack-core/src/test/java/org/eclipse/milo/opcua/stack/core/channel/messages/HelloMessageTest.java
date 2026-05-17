@@ -21,6 +21,36 @@ import org.junit.jupiter.api.Test;
 public class HelloMessageTest {
 
   @Test
+  public void testDecodeFailsWhenEndpointUrlLengthIsNegative() {
+    ByteBuf buffer = Unpooled.buffer();
+    buffer.writeIntLE(0);
+    buffer.writeIntLE(8192);
+    buffer.writeIntLE(8192);
+    buffer.writeIntLE(0);
+    buffer.writeIntLE(0);
+    buffer.writeIntLE(-2);
+
+    assertThrows(UaException.class, () -> HelloMessage.decode(buffer));
+
+    buffer.release();
+  }
+
+  @Test
+  public void testDecodeFailsWhenEndpointUrlLengthExceedsReadableBytes() {
+    ByteBuf buffer = Unpooled.buffer();
+    buffer.writeIntLE(0);
+    buffer.writeIntLE(8192);
+    buffer.writeIntLE(8192);
+    buffer.writeIntLE(0);
+    buffer.writeIntLE(0);
+    buffer.writeIntLE(HelloMessage.MAX_ENDPOINT_URL_LENGTH);
+
+    assertThrows(UaException.class, () -> HelloMessage.decode(buffer));
+
+    buffer.release();
+  }
+
+  @Test
   public void testDecodeFailsWhenEndpointUrlTooLarge() throws UaException {
     for (int i = 0; i < HelloMessage.MAX_ENDPOINT_URL_LENGTH * 2; i++) {
       ByteBuf buffer = Unpooled.buffer();

@@ -59,8 +59,9 @@ public class HelloMessage {
     checkArgument(receiveBufferSize >= 8192, "receiverBufferSize must be at least 8192 bytes");
     checkArgument(sendBufferSize >= 8192, "sendBufferSize must be at least 8192 bytes");
     checkArgument(
-        endpointUrl == null || endpointUrl.length() <= MAX_ENDPOINT_URL_LENGTH,
-        "endpointUrl length cannot be greater than 4096 bytes");
+        endpointUrl == null
+            || endpointUrl.getBytes(StandardCharsets.UTF_8).length <= MAX_ENDPOINT_URL_LENGTH,
+        "endpointUrl encoded length cannot be greater than 4096 bytes");
 
     this.protocolVersion = protocolVersion;
     this.receiveBufferSize = receiveBufferSize;
@@ -156,8 +157,9 @@ public class HelloMessage {
     if (s == null) {
       buffer.writeIntLE(-1);
     } else {
-      buffer.writeIntLE(s.length());
-      buffer.writeBytes(s.getBytes(StandardCharsets.UTF_8));
+      byte[] bs = s.getBytes(StandardCharsets.UTF_8);
+      buffer.writeIntLE(bs.length);
+      buffer.writeBytes(bs);
     }
   }
 
@@ -174,6 +176,13 @@ public class HelloMessage {
       if (length > MAX_ENDPOINT_URL_LENGTH) {
         throw new UaException(
             StatusCodes.Bad_EncodingLimitsExceeded, "endpoint URL length exceeds 4096: " + length);
+      }
+      if (length > buffer.readableBytes()) {
+        throw new UaException(
+            StatusCodes.Bad_DecodingError,
+            String.format(
+                "endpoint URL length exceeds remaining frame bytes (length=%s, remaining=%s)",
+                length, buffer.readableBytes()));
       }
       byte[] bs = new byte[length];
       buffer.readBytes(bs);
