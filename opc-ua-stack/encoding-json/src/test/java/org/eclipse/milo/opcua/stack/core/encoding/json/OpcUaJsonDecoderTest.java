@@ -15,6 +15,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -28,6 +29,7 @@ import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
@@ -817,6 +819,9 @@ class OpcUaJsonDecoderTest {
         new StringReader("{\"Type\":6,\"Body\":[0,1,2,3,4,5,6,7],\"Dimensions\":[2,2,2]}"));
     assertEquals(new Variant(Matrix.ofInt32(value3d)), decoder.decodeVariant(null));
 
+    decoder.reset(new StringReader("{\"Type\":6,\"Body\":[1],\"Dimensions\":[2147483647]}"));
+    assertThrows(UaSerializationException.class, () -> decoder.decodeVariant(null));
+
     decoder.reset(new StringReader("{\"foo\":{\"Type\":1,\"Body\":true}}"));
     decoder.jsonReader.beginObject();
     assertEquals(new Variant(true), decoder.decodeVariant("foo"));
@@ -945,6 +950,23 @@ class OpcUaJsonDecoderTest {
   }
 
   @Test
+  void decodeMatrixRejectsInvalidDimensions() {
+    var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
+
+    decoder.reset(new StringReader("{\"Array\":[1],\"Dimensions\":[2147483647]}"));
+    assertThrows(
+        UaSerializationException.class, () -> decoder.decodeMatrix(null, OpcUaDataType.Int32));
+
+    decoder.reset(new StringReader("{\"Array\":[1],\"Dimensions\":[-1]}"));
+    assertThrows(
+        UaSerializationException.class, () -> decoder.decodeMatrix(null, OpcUaDataType.Int32));
+
+    decoder.reset(new StringReader("{\"Array\":[1],\"Dimensions\":[2,1]}"));
+    assertThrows(
+        UaSerializationException.class, () -> decoder.decodeMatrix(null, OpcUaDataType.Int32));
+  }
+
+  @Test
   void decodeEnumMatrix() throws Exception {
     var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
 
@@ -980,6 +1002,10 @@ class OpcUaJsonDecoderTest {
     decoder.jsonReader.beginObject();
     assertEquals(matrix, decoder.decodeStructMatrix("foo", XVType.TYPE_ID));
     decoder.jsonReader.endObject();
+
+    decoder.reset(new StringReader("{\"Array\":[{\"Value\":1.0}],\"Dimensions\":[2147483647]}"));
+    assertThrows(
+        UaSerializationException.class, () -> decoder.decodeStructMatrix(null, XVType.TYPE_ID));
   }
 
   private static byte[] randomBytes16() {
