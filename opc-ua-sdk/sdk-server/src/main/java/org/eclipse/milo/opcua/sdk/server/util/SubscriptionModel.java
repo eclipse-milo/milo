@@ -145,6 +145,10 @@ public class SubscriptionModel extends AbstractLifecycle {
     schedule.forEach(executor::execute);
   }
 
+  static long nextDelayMillis(long samplingInterval, long elapsedMillis) {
+    return Math.max(1, samplingInterval - elapsedMillis);
+  }
+
   private class ScheduledUpdate implements Runnable {
 
     private volatile boolean cancelled = false;
@@ -207,12 +211,9 @@ public class SubscriptionModel extends AbstractLifecycle {
       if (!cancelled) {
         long elapsedNanos = System.nanoTime() - startNanos;
         long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(elapsedNanos);
-        long delay = Math.max(0, samplingInterval - elapsedMillis);
-        if (delay == 0) {
-          executor.execute(this);
-        } else {
-          scheduler.schedule(() -> executor.execute(this), delay, TimeUnit.MILLISECONDS);
-        }
+        long delay = nextDelayMillis(samplingInterval, elapsedMillis);
+
+        scheduler.schedule(() -> executor.execute(this), delay, TimeUnit.MILLISECONDS);
       }
     }
   }
