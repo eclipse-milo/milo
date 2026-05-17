@@ -899,6 +899,8 @@ public class OpcUaJsonDecoder implements UaDecoder {
             Array.set(flatArray, i, elements.get(i));
           }
 
+          validateMatrixDimensions(flatArray, dimensions);
+
           var matrix = new Matrix(flatArray, dimensions, OpcUaDataType.fromTypeId(typeId));
 
           return new Variant(matrix);
@@ -908,6 +910,58 @@ public class OpcUaJsonDecoder implements UaDecoder {
       }
     } catch (IOException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
+    }
+  }
+
+  private void validateMatrixDimensions(Object flatArray, int[] dimensions)
+      throws UaSerializationException {
+    if (flatArray == null) {
+      throw new UaSerializationException(StatusCodes.Bad_DecodingError, "matrix Array is missing");
+    }
+
+    if (dimensions == null) {
+      throw new UaSerializationException(
+          StatusCodes.Bad_DecodingError, "matrix Dimensions is missing");
+    }
+
+    int maxMessageSize = context.getEncodingLimits().getMaxMessageSize();
+    int flatArrayLength = Array.getLength(flatArray);
+    int expectedLength = 1;
+
+    for (int dimension : dimensions) {
+      if (dimension < 0) {
+        throw new UaSerializationException(
+            StatusCodes.Bad_DecodingError,
+            String.format("matrix dimension is negative (dimension=%s)", dimension));
+      }
+
+      if (dimension > maxMessageSize) {
+        throw new UaSerializationException(
+            StatusCodes.Bad_EncodingLimitsExceeded,
+            String.format(
+                "matrix dimension exceeds max message size (dimension=%s, max=%s)",
+                dimension, maxMessageSize));
+      }
+
+      if (expectedLength == 0 || dimension == 0) {
+        expectedLength = 0;
+      } else {
+        if (expectedLength > maxMessageSize / dimension) {
+          throw new UaSerializationException(
+              StatusCodes.Bad_EncodingLimitsExceeded,
+              String.format("matrix length exceeds max message size (max=%s)", maxMessageSize));
+        }
+
+        expectedLength *= dimension;
+      }
+    }
+
+    if (expectedLength != flatArrayLength) {
+      throw new UaSerializationException(
+          StatusCodes.Bad_DecodingError,
+          String.format(
+              "matrix dimensions do not match array length (dimensionsLength=%s, arrayLength=%s)",
+              expectedLength, flatArrayLength));
     }
   }
 
@@ -1386,6 +1440,8 @@ public class OpcUaJsonDecoder implements UaDecoder {
           }
         }
 
+        validateMatrixDimensions(flatArray, dimensions);
+
         return new Matrix(flatArray, dimensions, dataType);
       } finally {
         jsonReader.endObject();
@@ -1473,6 +1529,8 @@ public class OpcUaJsonDecoder implements UaDecoder {
                     String.format("readLocalizedText: unexpected field: " + nextName));
             }
           }
+
+          validateMatrixDimensions(flatArray, dimensions);
 
           return new Matrix(flatArray, dimensions, OpcUaDataType.ExtensionObject);
         } finally {
