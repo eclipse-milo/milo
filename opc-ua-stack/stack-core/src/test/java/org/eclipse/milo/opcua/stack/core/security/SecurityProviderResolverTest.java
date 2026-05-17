@@ -28,10 +28,11 @@ import org.junit.jupiter.api.Test;
 @NullMarked
 public class SecurityProviderResolverTest {
 
-  // Endpoint advertisement should get a deterministic provider answer for every executable ECC
-  // policy without depending on global JVM provider ordering.
+  // Endpoint advertisement should get a deterministic provider answer for every executable
+  // enhanced policy without depending on global JVM provider ordering.
   @Test
-  public void testDefaultResolverPrefersBouncyCastleForCurrentEccPolicies() throws UaException {
+  public void testDefaultResolverPrefersBouncyCastleForCurrentEnhancedPolicies()
+      throws UaException {
     SecurityProviderResolver resolver = SecurityProviderResolver.create();
 
     assertEquals(BOUNCY_CASTLE, resolver.resolve(SecurityPolicy.ECC_nistP256_AesGcm.getProfile()));
@@ -46,18 +47,22 @@ public class SecurityProviderResolverTest {
     assertEquals(
         BOUNCY_CASTLE,
         resolver.resolve(SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly.getProfile()));
+    assertEquals(BOUNCY_CASTLE, resolver.resolve(SecurityPolicy.RSA_DH_AesGcm.getProfile()));
+    assertEquals(BOUNCY_CASTLE, resolver.resolve(SecurityPolicy.RSA_DH_ChaChaPoly.getProfile()));
   }
 
   // The same policy tuples should remain executable on the built-in JDK providers for deployments
   // that do not want the Bouncy Castle profile.
   @Test
-  public void testCurrentEccPoliciesCanUseJdkProviderProfile() throws UaException {
+  public void testCurrentPortableEnhancedPoliciesCanUseJdkProviderProfile() throws UaException {
     SecurityProviderResolver resolver = SecurityProviderResolver.withProviderProfiles(List.of(JDK));
 
     assertEquals(JDK, resolver.resolve(SecurityPolicy.ECC_nistP256_AesGcm.getProfile()));
     assertEquals(JDK, resolver.resolve(SecurityPolicy.ECC_nistP256_ChaChaPoly.getProfile()));
     assertEquals(JDK, resolver.resolve(SecurityPolicy.ECC_curve25519_AesGcm.getProfile()));
     assertEquals(JDK, resolver.resolve(SecurityPolicy.ECC_curve25519_ChaChaPoly.getProfile()));
+    assertEquals(JDK, resolver.resolve(SecurityPolicy.RSA_DH_AesGcm.getProfile()));
+    assertEquals(JDK, resolver.resolve(SecurityPolicy.RSA_DH_ChaChaPoly.getProfile()));
   }
 
   // Brainpool P-384 is not a "try JDK if BC is absent" policy family; callers should get a clear

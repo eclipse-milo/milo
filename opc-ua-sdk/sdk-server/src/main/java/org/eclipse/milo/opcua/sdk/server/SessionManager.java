@@ -383,10 +383,10 @@ public class SessionManager {
       throws UaException {
 
     /*
-     * ECC username-token policies need a server ephemeral key before ActivateSession can encrypt
-     * the password. The client requests that key by policy URI in the CreateSession RequestHeader
-     * AdditionalHeader, and the server answers with a signed EphemeralKeyType in the response
-     * AdditionalHeader.
+     * Enhanced ECC and RSA-DH username-token policies need a server ephemeral key before
+     * ActivateSession can encrypt the password. The client requests that key by policy URI in the
+     * CreateSession RequestHeader AdditionalHeader, and the server answers with a signed
+     * EphemeralKeyType in the response AdditionalHeader.
      */
     Optional<SecurityPolicy> requestedPolicy =
         EccUserTokenAdditionalHeader.decodeRequest(
@@ -402,7 +402,7 @@ public class SessionManager {
         session.getEndpoint(), securityPolicy)) {
       throw new UaException(
           StatusCodes.Bad_SecurityPolicyRejected,
-          "requested ECC user-token policy is not available on the selected endpoint");
+          "requested enhanced user-token policy is not available on the selected endpoint");
     }
 
     KeyPair signingKeyPair = selectUserTokenSigningKeyPair(securityConfiguration, session);
@@ -441,7 +441,7 @@ public class SessionManager {
     if (endpointCertificateBytes == null || endpointCertificateBytes.isNullOrEmpty()) {
       throw new UaException(
           StatusCodes.Bad_ConfigurationError,
-          "ECC user-token negotiation requires an advertised server certificate");
+          "enhanced user-token negotiation requires an advertised server certificate");
     }
 
     X509Certificate endpointCertificate =

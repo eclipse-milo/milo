@@ -238,37 +238,82 @@ public class EndpointConfigTest {
     assertEquals(0, Objects.requireNonNull(response.getEndpoints()).length);
   }
 
+  // Enhanced SecureChannel profiles are only executable with SignAndEncrypt; discovery should not
+  // advertise Sign-only endpoints that transport will reject later.
+  @Test
+  public void enhancedSignOnlyEndpointIsOmittedFromDiscoveryAdvertisement() throws Exception {
+    CertificateMaterial certificate = rsaCertificate("rsa-dh-sign-only");
+    CertificateManager certificateManager =
+        manager(
+            group(
+                NodeIds.ServerConfiguration_CertificateGroups_DefaultApplicationGroup,
+                certificate));
+
+    EndpointConfig endpoint =
+        EndpointConfig.newBuilder()
+            .setEndpointCertificateConfig(
+                EndpointCertificateConfig.newBuilder()
+                    .setCertificateTypeId(NodeIds.RsaSha256ApplicationCertificateType)
+                    .build())
+            .setSecurityPolicy(SecurityPolicy.RSA_DH_AesGcm)
+            .setSecurityMode(MessageSecurityMode.Sign)
+            .build();
+
+    OpcUaServer server = server(Set.of(endpoint), certificateManager);
+
+    DefaultDiscoveryServiceSet discoveryServiceSet = new DefaultDiscoveryServiceSet(server);
+    GetEndpointsResponse response =
+        discoveryServiceSet.onGetEndpoints(
+            null, new GetEndpointsRequest(requestHeader(), endpoint.getEndpointUrl(), null, null));
+
+    assertEquals(0, Objects.requireNonNull(response.getEndpoints()).length);
+  }
+
   // Current ECC endpoints are advertised only when the server can pair the policy with a matching
   // local application certificate identity.
   @Test
   public void currentEccEndpointsAreAdvertisedWithCompatibleIdentities() throws Exception {
-    assertEccEndpointAdvertised(
+    assertEndpointAdvertised(
         SecurityPolicy.ECC_nistP256_AesGcm,
         NodeIds.EccNistP256ApplicationCertificateType,
         nistP256Certificate());
-    assertEccEndpointAdvertised(
+    assertEndpointAdvertised(
         SecurityPolicy.ECC_nistP256_ChaChaPoly,
         NodeIds.EccNistP256ApplicationCertificateType,
         nistP256Certificate());
-    assertEccEndpointAdvertised(
+    assertEndpointAdvertised(
         SecurityPolicy.ECC_curve25519_AesGcm,
         NodeIds.EccCurve25519ApplicationCertificateType,
         ed25519Certificate());
-    assertEccEndpointAdvertised(
+    assertEndpointAdvertised(
         SecurityPolicy.ECC_curve25519_ChaChaPoly,
         NodeIds.EccCurve25519ApplicationCertificateType,
         ed25519Certificate());
-    assertEccEndpointAdvertised(
+    assertEndpointAdvertised(
         SecurityPolicy.ECC_brainpoolP384r1_AesGcm,
         NodeIds.EccBrainpoolP384r1ApplicationCertificateType,
         brainpoolP384Certificate());
-    assertEccEndpointAdvertised(
+    assertEndpointAdvertised(
         SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly,
         NodeIds.EccBrainpoolP384r1ApplicationCertificateType,
         brainpoolP384Certificate());
   }
 
-  private static void assertEccEndpointAdvertised(
+  // RSA-DH endpoints use RSA application identities even though their SecureChannel key agreement
+  // uses finite-field DH.
+  @Test
+  public void rsaDhEndpointsAreAdvertisedWithCompatibleIdentities() throws Exception {
+    assertEndpointAdvertised(
+        SecurityPolicy.RSA_DH_AesGcm,
+        NodeIds.RsaSha256ApplicationCertificateType,
+        rsaCertificate("rsa-dh-aesgcm"));
+    assertEndpointAdvertised(
+        SecurityPolicy.RSA_DH_ChaChaPoly,
+        NodeIds.RsaSha256ApplicationCertificateType,
+        rsaCertificate("rsa-dh-chacha"));
+  }
+
+  private static void assertEndpointAdvertised(
       SecurityPolicy securityPolicy, NodeId certificateTypeId, CertificateMaterial certificate)
       throws Exception {
 

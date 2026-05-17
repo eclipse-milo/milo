@@ -649,6 +649,14 @@ public class OpcUaServer extends AbstractServiceHandler {
       EndpointConfig endpoint, SecurityPolicyProfile profile) throws EndpointResolutionException {
 
     if (profile.secureChannelEnhancements()) {
+      if (endpoint.getSecurityMode() != MessageSecurityMode.SignAndEncrypt) {
+        throw new EndpointResolutionException(
+            "message security mode is not supported for "
+                + endpoint.getSecurityPolicy().getUri()
+                + ": "
+                + endpoint.getSecurityMode());
+      }
+
       if (hasSdkSessionSupport(profile.securityPolicy())) {
         return;
       }
@@ -667,7 +675,9 @@ public class OpcUaServer extends AbstractServiceHandler {
         || securityPolicy == SecurityPolicy.ECC_curve25519_AesGcm
         || securityPolicy == SecurityPolicy.ECC_curve25519_ChaChaPoly
         || securityPolicy == SecurityPolicy.ECC_brainpoolP384r1_AesGcm
-        || securityPolicy == SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly;
+        || securityPolicy == SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly
+        || securityPolicy == SecurityPolicy.RSA_DH_AesGcm
+        || securityPolicy == SecurityPolicy.RSA_DH_ChaChaPoly;
   }
 
   private CertificateIdentity resolveCertificateIdentity(

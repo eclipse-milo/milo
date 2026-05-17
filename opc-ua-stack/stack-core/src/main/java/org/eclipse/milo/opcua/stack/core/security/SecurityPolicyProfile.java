@@ -181,7 +181,8 @@ public record SecurityPolicyProfile(
     RSA_NONCE,
     ECDH_NIST_P256,
     ECDH_BRAINPOOL_P384R1,
-    X25519
+    X25519,
+    FFDH_3072
   }
 
   /** The symmetric chunk protection family used after SecureChannel keys are installed. */

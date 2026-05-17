@@ -35,31 +35,33 @@ import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Creates and decodes ECC user-token additional-header negotiation parameters.
+ * Creates and decodes enhanced user-token additional-header negotiation parameters.
  *
- * <p>When a username token is protected by an ECC user-token security policy, the client asks for
- * the server's session ephemeral public key in the CreateSession request. The server returns that
- * key as a signed {@link EphemeralKeyType} in the CreateSession response. The password itself is
- * not carried here; it remains in the opaque {@link EccEncryptedSecret} payload sent later in
- * ActivateSession.
+ * <p>When a username token is protected by an ECC or RSA-DH user-token security policy, the client
+ * asks for the server's session ephemeral public key in the CreateSession request. The server
+ * returns that key as a signed {@link EphemeralKeyType} in the CreateSession response. The password
+ * itself is not carried here; it remains in the opaque {@link EccEncryptedSecret} payload sent
+ * later in ActivateSession.
  *
- * <p>The request identifies the desired ECDH policy by {@code ECDHPolicyUri}. The response carries
- * only {@code ECDHKey}; servers may place a {@link StatusCode} in that parameter when they cannot
- * create the key material.
+ * <p>The request identifies the desired user-token policy by {@code ECDHPolicyUri}. The response
+ * carries only {@code ECDHKey}; servers may place a {@link StatusCode} in that parameter when they
+ * cannot create the key material. These parameter names are OPC UA wire names inherited from the
+ * {@code EccEncryptedSecret} definition. RSA-DH profiles still use them because they reuse the same
+ * additional-header negotiation wrapper.
  */
 public final class EccUserTokenAdditionalHeader {
 
   private EccUserTokenAdditionalHeader() {}
 
   /**
-   * Return whether {@code endpoint} has a username token policy that needs ECC user-token key
+   * Return whether {@code endpoint} has a username token policy that needs enhanced user-token key
    * negotiation.
    *
    * <p>Callers that already know which {@link UserTokenPolicy} was selected should resolve that
    * policy directly instead of using this endpoint-wide probe.
    *
    * @param endpoint the endpoint being connected to.
-   * @return {@code true} when at least one username token policy resolves to a supported ECC
+   * @return {@code true} when at least one username token policy resolves to a supported enhanced
    *     policy.
    */
   public static boolean requiresNegotiation(EndpointDescription endpoint) {
@@ -67,15 +69,15 @@ public final class EccUserTokenAdditionalHeader {
   }
 
   /**
-   * Select the first username token security policy on {@code endpoint} that needs ECC user-token
-   * key negotiation.
+   * Select the first username token security policy on {@code endpoint} that needs enhanced
+   * user-token key negotiation.
    *
    * <p>This is a convenience for endpoint inspection. Session code that has an application-selected
    * identity provider should negotiate the provider-selected policy, not the first matching
    * endpoint policy.
    *
    * @param endpoint the endpoint being connected to.
-   * @return the selected ECC user-token security policy, if present.
+   * @return the selected enhanced user-token security policy, if present.
    */
   public static Optional<SecurityPolicy> selectNegotiatedSecurityPolicy(
       EndpointDescription endpoint) {
@@ -142,23 +144,28 @@ public final class EccUserTokenAdditionalHeader {
   }
 
   /**
-   * Return whether {@code profile} is supported by the current ECC token-secret helper.
+   * Return whether {@code profile} is supported by the current enhanced token-secret helper.
+   *
+   * <p>The method name follows the {@code EccEncryptedSecret} terminology used by OPC UA. It
+   * returns {@code true} for both ECC profiles and RSA-DH profiles that use the same
+   * additional-header negotiation and token-secret payload structure.
    *
    * @param profile a security policy profile.
-   * @return {@code true} for ECC user-token profiles supported by {@link EccEncryptedSecret}.
+   * @return {@code true} for user-token profiles supported by {@link EccEncryptedSecret}.
    */
   public static boolean isSupportedEccProfile(SecurityPolicyProfile profile) {
     requireNonNull(profile, "profile");
 
     return (profile.keyAgreementAxis() == KeyAgreementAxis.ECDH_NIST_P256
             || profile.keyAgreementAxis() == KeyAgreementAxis.ECDH_BRAINPOOL_P384R1
-            || profile.keyAgreementAxis() == KeyAgreementAxis.X25519)
+            || profile.keyAgreementAxis() == KeyAgreementAxis.X25519
+            || profile.keyAgreementAxis() == KeyAgreementAxis.FFDH_3072)
         && (profile.chunkProtectionAxis() == ChunkProtectionAxis.AES_GCM
             || profile.chunkProtectionAxis() == ChunkProtectionAxis.CHACHA20_POLY1305);
   }
 
   /**
-   * Create the CreateSession request additional header for an ECC username-token policy.
+   * Create the CreateSession request additional header for an enhanced username-token policy.
    *
    * @param context an encoding context.
    * @param securityPolicy the requested user-token security policy.
@@ -168,7 +175,7 @@ public final class EccUserTokenAdditionalHeader {
   public static ExtensionObject createRequest(
       EncodingContext context, SecurityPolicy securityPolicy) throws UaException {
 
-    requireEccPolicy(securityPolicy);
+    requireEnhancedPolicy(securityPolicy);
 
     return encode(
         context,
@@ -213,7 +220,7 @@ public final class EccUserTokenAdditionalHeader {
     }
 
     SecurityPolicy securityPolicy = SecurityPolicy.fromUri(securityPolicyUri);
-    requireEccPolicy(securityPolicy);
+    requireEnhancedPolicy(securityPolicy);
 
     return Optional.of(securityPolicy);
   }
@@ -234,7 +241,7 @@ public final class EccUserTokenAdditionalHeader {
       EncodingContext context, SecurityPolicy securityPolicy, EphemeralKeyType ephemeralKey)
       throws UaException {
 
-    requireEccPolicy(securityPolicy);
+    requireEnhancedPolicy(securityPolicy);
     requireNonNull(ephemeralKey, "ephemeralKey");
 
     ExtensionObject ephemeralKeyXo = encode(context, ephemeralKey);
@@ -253,7 +260,7 @@ public final class EccUserTokenAdditionalHeader {
    *
    * @param context an encoding context.
    * @param additionalHeader the response additional header.
-   * @param expectedSecurityPolicy the user-token policy that made ECC key material expected.
+   * @param expectedSecurityPolicy the user-token policy that made enhanced key material expected.
    * @return the signed key, or empty when no header was supplied.
    * @throws UaException if the header is malformed or the server returned an {@code ECDHKey} status
    *     code.
@@ -264,7 +271,7 @@ public final class EccUserTokenAdditionalHeader {
       SecurityPolicy expectedSecurityPolicy)
       throws UaException {
 
-    requireEccPolicy(expectedSecurityPolicy);
+    requireEnhancedPolicy(expectedSecurityPolicy);
 
     Optional<AdditionalParametersType> additionalParameters =
         decodeAdditionalParameters(context, additionalHeader);
@@ -362,13 +369,13 @@ public final class EccUserTokenAdditionalHeader {
     }
   }
 
-  private static void requireEccPolicy(SecurityPolicy securityPolicy) throws UaException {
+  private static void requireEnhancedPolicy(SecurityPolicy securityPolicy) throws UaException {
     requireNonNull(securityPolicy, "securityPolicy");
 
     if (!isSupportedEccProfile(securityPolicy.getProfile())) {
       throw new UaException(
           StatusCodes.Bad_SecurityPolicyRejected,
-          "security policy does not support ECC user-token negotiation: "
+          "security policy does not support enhanced user-token negotiation: "
               + securityPolicy.getUri());
     }
   }

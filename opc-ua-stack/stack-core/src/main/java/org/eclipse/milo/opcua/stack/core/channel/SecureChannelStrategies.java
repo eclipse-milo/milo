@@ -32,6 +32,7 @@ import org.eclipse.milo.opcua.stack.core.security.AeadCipherUtil;
 import org.eclipse.milo.opcua.stack.core.security.EccKeyAgreementUtil;
 import org.eclipse.milo.opcua.stack.core.security.EccPublicKeyCodec;
 import org.eclipse.milo.opcua.stack.core.security.EccSignatureUtil;
+import org.eclipse.milo.opcua.stack.core.security.FiniteFieldDhKeyAgreementUtil;
 import org.eclipse.milo.opcua.stack.core.security.SecurityAlgorithm;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis;
@@ -89,6 +90,8 @@ final class SecureChannelStrategies {
       new EcdhBrainpoolP384r1HkdfKeyAgreementStrategy();
   private static final KeyAgreementStrategy X25519_KEY_AGREEMENT =
       new X25519HkdfKeyAgreementStrategy();
+  private static final KeyAgreementStrategy FFDH_3072_KEY_AGREEMENT =
+      new Ffdh3072HkdfKeyAgreementStrategy();
 
   @SuppressWarnings("unused")
   private static final KeyAgreementStrategy UNSUPPORTED_KEY_AGREEMENT =
@@ -135,6 +138,7 @@ final class SecureChannelStrategies {
       case ECDH_NIST_P256 -> ECDH_NIST_P256_KEY_AGREEMENT;
       case ECDH_BRAINPOOL_P384R1 -> ECDH_BRAINPOOL_P384R1_KEY_AGREEMENT;
       case X25519 -> X25519_KEY_AGREEMENT;
+      case FFDH_3072 -> FFDH_3072_KEY_AGREEMENT;
     };
   }
 
@@ -228,7 +232,7 @@ final class SecureChannelStrategies {
     @SuppressWarnings("unused")
     default EccKeyAgreementUtil.DerivedKeyMaterial deriveKeyMaterial(
         SecurityPolicyProfile profile,
-        byte[] sharedSecret,
+        byte[] inputKeyMaterial,
         ByteString clientNonce,
         ByteString serverNonce)
         throws UaException {
@@ -653,13 +657,13 @@ final class SecureChannelStrategies {
     @Override
     public EccKeyAgreementUtil.DerivedKeyMaterial deriveKeyMaterial(
         SecurityPolicyProfile profile,
-        byte[] sharedSecret,
+        byte[] inputKeyMaterial,
         ByteString clientNonce,
         ByteString serverNonce)
         throws UaException {
 
-      return EccKeyAgreementUtil.deriveEccAeadKeyMaterial(
-          resolveProviderProfile(profile), profile, sharedSecret, clientNonce, serverNonce);
+      return EccKeyAgreementUtil.deriveAeadKeyMaterial(
+          resolveProviderProfile(profile), profile, inputKeyMaterial, clientNonce, serverNonce);
     }
 
     @Override
@@ -711,13 +715,13 @@ final class SecureChannelStrategies {
     @Override
     public EccKeyAgreementUtil.DerivedKeyMaterial deriveKeyMaterial(
         SecurityPolicyProfile profile,
-        byte[] sharedSecret,
+        byte[] inputKeyMaterial,
         ByteString clientNonce,
         ByteString serverNonce)
         throws UaException {
 
-      return EccKeyAgreementUtil.deriveEccAeadKeyMaterial(
-          resolveProviderProfile(profile), profile, sharedSecret, clientNonce, serverNonce);
+      return EccKeyAgreementUtil.deriveAeadKeyMaterial(
+          resolveProviderProfile(profile), profile, inputKeyMaterial, clientNonce, serverNonce);
     }
 
     @Override
@@ -767,13 +771,13 @@ final class SecureChannelStrategies {
     @Override
     public EccKeyAgreementUtil.DerivedKeyMaterial deriveKeyMaterial(
         SecurityPolicyProfile profile,
-        byte[] sharedSecret,
+        byte[] inputKeyMaterial,
         ByteString clientNonce,
         ByteString serverNonce)
         throws UaException {
 
-      return EccKeyAgreementUtil.deriveEccAeadKeyMaterial(
-          resolveProviderProfile(profile), profile, sharedSecret, clientNonce, serverNonce);
+      return EccKeyAgreementUtil.deriveAeadKeyMaterial(
+          resolveProviderProfile(profile), profile, inputKeyMaterial, clientNonce, serverNonce);
     }
 
     @Override
@@ -786,6 +790,64 @@ final class SecureChannelStrategies {
       throw new UaRuntimeException(
           StatusCodes.Bad_SecurityPolicyRejected,
           "ECC key agreement requires an ephemeral private key: "
+              + profile.securityPolicy().getUri());
+    }
+  }
+
+  private static final class Ffdh3072HkdfKeyAgreementStrategy implements KeyAgreementStrategy {
+
+    @Override
+    public KeyPair generateEphemeral(SecurityPolicyProfile profile) throws UaException {
+      return FiniteFieldDhKeyAgreementUtil.generateFfdhe3072KeyPair(
+          resolveProviderProfile(profile));
+    }
+
+    @Override
+    public ByteString encodePublicKey(SecurityPolicyProfile profile, PublicKey publicKey)
+        throws UaException {
+
+      return FiniteFieldDhKeyAgreementUtil.encodeFfdhe3072(publicKey);
+    }
+
+    @Override
+    public PublicKey decodePublicKey(SecurityPolicyProfile profile, ByteString wirePublicKey)
+        throws UaException {
+
+      return FiniteFieldDhKeyAgreementUtil.decodeFfdhe3072(
+          wirePublicKey, resolveProviderProfile(profile));
+    }
+
+    @Override
+    public byte[] agree(
+        SecurityPolicyProfile profile, PrivateKey privateKey, PublicKey peerPublicKey)
+        throws UaException {
+
+      return FiniteFieldDhKeyAgreementUtil.agreeFfdhe3072(
+          resolveProviderProfile(profile), privateKey, peerPublicKey);
+    }
+
+    @Override
+    public EccKeyAgreementUtil.DerivedKeyMaterial deriveKeyMaterial(
+        SecurityPolicyProfile profile,
+        byte[] inputKeyMaterial,
+        ByteString clientNonce,
+        ByteString serverNonce)
+        throws UaException {
+
+      return EccKeyAgreementUtil.deriveAeadKeyMaterial(
+          resolveProviderProfile(profile), profile, inputKeyMaterial, clientNonce, serverNonce);
+    }
+
+    @Override
+    public ChannelSecurity.SecurityKeys deriveKeys(
+        SecurityPolicyProfile profile,
+        ByteString clientNonce,
+        ByteString serverNonce,
+        int initializationVectorSize) {
+
+      throw new UaRuntimeException(
+          StatusCodes.Bad_SecurityPolicyRejected,
+          "ephemeral key agreement requires a retained private key: "
               + profile.securityPolicy().getUri());
     }
   }

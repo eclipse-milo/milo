@@ -23,23 +23,24 @@
  * a token. The SDK passes that data through {@link
  * org.eclipse.milo.opcua.sdk.client.identity.IdentityProviderContext}. Legacy providers can ignore
  * the context and continue using the endpoint and server nonce only. Providers that protect a
- * username secret with ECC also receive the server's signed session ephemeral key and the local
- * client certificate identity selected for the user-token security policy.
+ * username secret with an enhanced ECC or RSA-DH policy also receive the server's signed session
+ * ephemeral key and the local client certificate identity selected for the user-token security
+ * policy.
  *
  * <h2>CreateSession negotiation</h2>
  *
  * <p>Username providers may need an additional CreateSession header before ActivateSession. The
  * {@code IdentityProvider} methods split this into two decisions: the selected user-token security
- * policy, and the narrower ECC username-token policy that actually requires ECDH key material.
- * Certificate-token providers may use ECC signatures, but they must not request username-secret key
- * negotiation.
+ * policy, and the narrower enhanced username-token policy that actually requires ephemeral key
+ * material. Certificate-token providers may use ECC or RSA-DH security policies, but they must not
+ * request username-secret key negotiation.
  *
  * <h2>Extension guidance</h2>
  *
  * <p>Custom providers should keep policy selection and token construction aligned. If a provider
- * returns an ECC username-token security policy for CreateSession, its context-based {@code
+ * returns an enhanced username-token security policy for CreateSession, its context-based {@code
  * getIdentityToken(...)} implementation should consume the returned receiver public key and fail
  * clearly when that material is missing. Providers for token types other than username should
- * return empty from the ECC username-token negotiation hook.
+ * return empty from the enhanced username-token negotiation hook.
  */
 package org.eclipse.milo.opcua.sdk.client.identity;

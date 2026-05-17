@@ -50,6 +50,7 @@ import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.eclipse.milo.opcua.stack.core.util.HkdfUtil;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
+import org.eclipse.milo.opcua.stack.core.util.SignatureUtil;
 import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -64,10 +65,11 @@ class EccEncryptedSecretTest {
   private static final ByteString SECRET =
       ByteString.of("correct horse battery staple".getBytes(StandardCharsets.UTF_8));
   private static final byte[] SECRET_LABEL = "opcua-secret".getBytes(StandardCharsets.UTF_8);
+  private static final int RSA_2048_SIGNATURE_LENGTH = 256;
 
   // Sender certificates may be embedded in the opaque secret when no channel certificate is known.
   @ParameterizedTest
-  @MethodSource("supportedEccProfiles")
+  @MethodSource("supportedEnhancedProfiles")
   void encryptsAndDecryptsEmbeddedSenderCertificate(SecurityPolicyProfile profile)
       throws Exception {
 
@@ -95,7 +97,7 @@ class EccEncryptedSecretTest {
 
   // SecureChannel already authenticates the sender certificate, so the secret can omit it.
   @ParameterizedTest
-  @MethodSource("supportedEccProfiles")
+  @MethodSource("supportedEnhancedProfiles")
   void decryptsWithKnownSenderCertificateWhenCertificateIsOmitted(SecurityPolicyProfile profile)
       throws Exception {
 
@@ -140,7 +142,7 @@ class EccEncryptedSecretTest {
 
   // A known sender certificate must match any embedded certificate before the signature is trusted.
   @ParameterizedTest
-  @MethodSource("supportedEccProfiles")
+  @MethodSource("supportedEnhancedProfiles")
   void rejectsMismatchedKnownSenderCertificate(SecurityPolicyProfile profile) throws Exception {
     ApplicationIdentity sender = applicationIdentity(profile);
     ApplicationIdentity otherSender = applicationIdentity(profile);
@@ -166,7 +168,7 @@ class EccEncryptedSecretTest {
 
   // The token secret is an opaque ByteString, so layout regressions are wire-compatibility bugs.
   @ParameterizedTest
-  @MethodSource("supportedEccProfiles")
+  @MethodSource("supportedEnhancedProfiles")
   void encodesExpectedOpaquePayloadLayout(SecurityPolicyProfile profile) throws Exception {
     ApplicationIdentity sender = applicationIdentity(profile);
     KeyPair receiverEphemeralKeyPair = EccEncryptedSecret.generateEphemeralKeyPair(profile);
@@ -215,7 +217,7 @@ class EccEncryptedSecretTest {
 
   // The client trusts the CreateSession receiver key only after the server certificate signs it.
   @ParameterizedTest
-  @MethodSource("supportedEccProfiles")
+  @MethodSource("supportedEnhancedProfiles")
   void verifiesSignedEphemeralKey(SecurityPolicyProfile profile) throws Exception {
     ApplicationIdentity sender = applicationIdentity(profile);
     KeyPair receiverEphemeralKeyPair = EccEncryptedSecret.generateEphemeralKeyPair(profile);
@@ -241,7 +243,7 @@ class EccEncryptedSecretTest {
 
   // A valid secret from another session must not authenticate against this session's nonce.
   @ParameterizedTest
-  @MethodSource("supportedEccProfiles")
+  @MethodSource("supportedEnhancedProfiles")
   void rejectsWrongNonce(SecurityPolicyProfile profile) throws Exception {
     ApplicationIdentity sender = applicationIdentity(profile);
     KeyPair receiverEphemeralKeyPair = EccEncryptedSecret.generateEphemeralKeyPair(profile);
@@ -266,7 +268,7 @@ class EccEncryptedSecretTest {
 
   // Stale token-secret signatures can otherwise be replayed if the session nonce is also replayed.
   @ParameterizedTest
-  @MethodSource("supportedEccProfiles")
+  @MethodSource("supportedEnhancedProfiles")
   void rejectsStaleSigningTime(SecurityPolicyProfile profile) throws Exception {
     ApplicationIdentity sender = applicationIdentity(profile);
     KeyPair receiverEphemeralKeyPair = EccEncryptedSecret.generateEphemeralKeyPair(profile);
@@ -304,7 +306,7 @@ class EccEncryptedSecretTest {
 
   // The receiver key advertised in CreateSession is part of the encrypted secret's identity.
   @ParameterizedTest
-  @MethodSource("supportedEccProfiles")
+  @MethodSource("supportedEnhancedProfiles")
   void rejectsWrongReceiverPrivateKey(SecurityPolicyProfile profile) throws Exception {
     ApplicationIdentity sender = applicationIdentity(profile);
     KeyPair receiverEphemeralKeyPair = EccEncryptedSecret.generateEphemeralKeyPair(profile);
@@ -325,9 +327,9 @@ class EccEncryptedSecretTest {
                 encryptedSecret));
   }
 
-  // The unencrypted ECC key data is still covered by the sender's application signature.
+  // The unencrypted key data is still covered by the sender's application signature.
   @ParameterizedTest
-  @MethodSource("supportedEccProfiles")
+  @MethodSource("supportedEnhancedProfiles")
   void rejectsTamperedSignature(SecurityPolicyProfile profile) throws Exception {
     ApplicationIdentity sender = applicationIdentity(profile);
     KeyPair receiverEphemeralKeyPair = EccEncryptedSecret.generateEphemeralKeyPair(profile);
@@ -353,7 +355,7 @@ class EccEncryptedSecretTest {
   // Padding is inside the authenticated ciphertext, so a valid tag with bad padding must still be
   // rejected by payload validation rather than accepted as a password.
   @ParameterizedTest
-  @MethodSource("supportedEccProfiles")
+  @MethodSource("supportedEnhancedProfiles")
   void rejectsBadPayloadPadding(SecurityPolicyProfile profile) throws Exception {
     ApplicationIdentity sender = applicationIdentity(profile);
     KeyPair receiverEphemeralKeyPair = EccEncryptedSecret.generateEphemeralKeyPair(profile);
@@ -387,7 +389,7 @@ class EccEncryptedSecretTest {
 
   // A valid signature and AEAD tag do not make a malformed decrypted payload acceptable.
   @ParameterizedTest
-  @MethodSource("supportedEccProfiles")
+  @MethodSource("supportedEnhancedProfiles")
   void rejectsMalformedPlaintextPayload(SecurityPolicyProfile profile) throws Exception {
     ApplicationIdentity sender = applicationIdentity(profile);
     KeyPair receiverEphemeralKeyPair = EccEncryptedSecret.generateEphemeralKeyPair(profile);
@@ -421,7 +423,7 @@ class EccEncryptedSecretTest {
 
   // The outer opaque length bounds the authenticated payload and signature.
   @ParameterizedTest
-  @MethodSource("supportedEccProfiles")
+  @MethodSource("supportedEnhancedProfiles")
   void rejectsMalformedLength(SecurityPolicyProfile profile) throws Exception {
     ApplicationIdentity sender = applicationIdentity(profile);
     KeyPair receiverEphemeralKeyPair = EccEncryptedSecret.generateEphemeralKeyPair(profile);
@@ -639,6 +641,9 @@ class EccEncryptedSecretTest {
           case ECDH_BRAINPOOL_P384R1 ->
               EccPublicKeyCodec.decodeBrainpoolP384r1(parts.senderPublicKey(), providerProfile);
           case X25519 -> EccPublicKeyCodec.decodeX25519(parts.senderPublicKey(), providerProfile);
+          case FFDH_3072 ->
+              FiniteFieldDhKeyAgreementUtil.decodeFfdhe3072(
+                  parts.senderPublicKey(), providerProfile);
           default -> throw new IllegalArgumentException("unsupported key agreement axis");
         };
     byte[] sharedSecret =
@@ -652,6 +657,9 @@ class EccEncryptedSecretTest {
           case X25519 ->
               EccKeyAgreementUtil.agreeX25519(
                   providerProfile, receiverEphemeralKeyPair.getPrivate(), senderEphemeralPublicKey);
+          case FFDH_3072 ->
+              FiniteFieldDhKeyAgreementUtil.agreeFfdhe3072(
+                  providerProfile, receiverEphemeralKeyPair.getPrivate(), senderEphemeralPublicKey);
           default -> throw new IllegalArgumentException("unsupported key agreement axis");
         };
 
@@ -664,7 +672,7 @@ class EccEncryptedSecretTest {
           case ECDH_BRAINPOOL_P384R1 ->
               HkdfUtil.hkdfSha384(
                   sharedSecret, salt, salt, totalLength, hmacProvider(providerProfile, profile));
-          case ECDH_NIST_P256, X25519 ->
+          case ECDH_NIST_P256, X25519, FFDH_3072 ->
               HkdfUtil.hkdfSha256(
                   sharedSecret, salt, salt, totalLength, hmacProvider(providerProfile, profile));
           default -> throw new IllegalArgumentException("unsupported key agreement axis");
@@ -681,7 +689,7 @@ class EccEncryptedSecretTest {
     String hmacTransformation =
         switch (profile.keyAgreementAxis()) {
           case ECDH_BRAINPOOL_P384R1 -> "HmacSHA384";
-          case ECDH_NIST_P256, X25519 -> "HmacSHA256";
+          case ECDH_NIST_P256, X25519, FFDH_3072 -> "HmacSHA256";
           default -> throw new IllegalArgumentException("unsupported key agreement axis");
         };
 
@@ -723,18 +731,21 @@ class EccEncryptedSecretTest {
       case ECDSA_BRAINPOOL_P384R1_SHA384 ->
           EccSignatureUtil.signEcdsaP384Sha384P1363(providerProfile, privateKey, data);
       case ED25519 -> EccSignatureUtil.signEd25519(providerProfile, privateKey, data);
+      case RSA_PKCS1_SHA256 -> SignatureUtil.sign(SecurityAlgorithm.RsaSha256, privateKey, data);
       default -> throw new IllegalArgumentException("unsupported auth axis");
     };
   }
 
-  private static Stream<Arguments> supportedEccProfiles() {
+  private static Stream<Arguments> supportedEnhancedProfiles() {
     return Stream.of(
         Arguments.of(SecurityPolicy.ECC_nistP256_AesGcm.getProfile()),
         Arguments.of(SecurityPolicy.ECC_nistP256_ChaChaPoly.getProfile()),
         Arguments.of(SecurityPolicy.ECC_curve25519_AesGcm.getProfile()),
         Arguments.of(SecurityPolicy.ECC_curve25519_ChaChaPoly.getProfile()),
         Arguments.of(SecurityPolicy.ECC_brainpoolP384r1_AesGcm.getProfile()),
-        Arguments.of(SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly.getProfile()));
+        Arguments.of(SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly.getProfile()),
+        Arguments.of(SecurityPolicy.RSA_DH_AesGcm.getProfile()),
+        Arguments.of(SecurityPolicy.RSA_DH_ChaChaPoly.getProfile()));
   }
 
   private static ApplicationIdentity applicationIdentity(SecurityPolicyProfile profile)
@@ -746,17 +757,29 @@ class EccEncryptedSecretTest {
           case ECDSA_BRAINPOOL_P384R1_SHA384 ->
               SelfSignedCertificateGenerator.generateBrainpoolP384r1KeyPair();
           case ED25519 -> SelfSignedCertificateGenerator.generateEd25519KeyPair();
+          case RSA_PKCS1_SHA256 -> SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
           default ->
               throw new IllegalArgumentException("unsupported auth axis: " + profile.authAxis());
         };
 
     X509Certificate certificate =
-        SelfSignedCertificateBuilder.forEccApplicationCertificate(keyPair)
+        certificateBuilder(profile, keyPair)
             .setApplicationUri("urn:eclipse:milo:ecc-secret-test")
             .addDnsName("localhost")
             .build();
 
     return new ApplicationIdentity(keyPair, certificate);
+  }
+
+  private static SelfSignedCertificateBuilder certificateBuilder(
+      SecurityPolicyProfile profile, KeyPair keyPair) {
+
+    return switch (profile.authAxis()) {
+      case ECDSA_NIST_P256_SHA256, ECDSA_BRAINPOOL_P384R1_SHA384, ED25519 ->
+          SelfSignedCertificateBuilder.forEccApplicationCertificate(keyPair);
+      case RSA_PKCS1_SHA256 -> new SelfSignedCertificateBuilder(keyPair);
+      default -> throw new IllegalArgumentException("unsupported auth axis: " + profile.authAxis());
+    };
   }
 
   private static int ephemeralPublicKeyLength(SecurityPolicyProfile profile) {
@@ -766,6 +789,7 @@ class EccEncryptedSecretTest {
       case ECDH_NIST_P256 -> EccPublicKeyCodec.NIST_P256_PUBLIC_KEY_LENGTH;
       case ECDH_BRAINPOOL_P384R1 -> EccPublicKeyCodec.BRAINPOOL_P384R1_PUBLIC_KEY_LENGTH;
       case X25519 -> EccPublicKeyCodec.X25519_PUBLIC_KEY_LENGTH;
+      case FFDH_3072 -> FiniteFieldDhKeyAgreementUtil.FFDHE_3072_PUBLIC_KEY_LENGTH;
       default ->
           throw new IllegalArgumentException("unsupported key agreement axis: " + keyAgreementAxis);
     };
@@ -779,6 +803,7 @@ class EccEncryptedSecretTest {
       case ECDSA_BRAINPOOL_P384R1_SHA384 ->
           EccSignatureUtil.ECDSA_P384_SHA384_P1363_SIGNATURE_LENGTH;
       case ED25519 -> EccSignatureUtil.ED25519_SIGNATURE_LENGTH;
+      case RSA_PKCS1_SHA256 -> RSA_2048_SIGNATURE_LENGTH;
       default -> throw new IllegalArgumentException("unsupported auth axis: " + authAxis);
     };
   }

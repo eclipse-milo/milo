@@ -21,10 +21,10 @@
  * <h2>Username-token protection</h2>
  *
  * <p>Username tokens can be sent in three forms: unencrypted for a {@code None} user-token policy,
- * RSA-encrypted with the endpoint certificate for legacy policies, or ECC-protected with the
- * session ephemeral key negotiated in CreateSession. The username validator owns the common token
- * validation, nonce check, size limits, and decryption path before handing the resulting username
- * and password to the application-specific authentication method.
+ * RSA-encrypted with the endpoint certificate for legacy policies, or protected with the enhanced
+ * ECC/RSA-DH session ephemeral key negotiated in CreateSession. The username validator owns the
+ * common token validation, nonce check, size limits, and decryption path before handing the
+ * resulting username and password to the application-specific authentication method.
  *
  * <h2>Extension guidance</h2>
  *

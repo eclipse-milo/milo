@@ -32,27 +32,27 @@ import org.eclipse.milo.opcua.stack.core.util.HkdfUtil;
 import org.jspecify.annotations.NullMarked;
 
 /**
- * Key-agreement helpers for ECC SecureChannel setup.
+ * Key-agreement and AEAD derivation helpers for enhanced SecureChannel setup.
  *
- * <p>For ECC policies, the OpenSecureChannel {@code ClientNonce} and {@code ServerNonce} fields
- * carry ephemeral public keys instead of random nonce bytes. Callers generate an ephemeral key
- * pair, encode the public key with {@link EccPublicKeyCodec}, decode the peer's public key, compute
- * a shared secret, and then derive directional client/server key material from the same wire public
- * keys that appeared in the request and response.
+ * <p>For ECC and RSA-DH policies, the OpenSecureChannel {@code ClientNonce} and {@code ServerNonce}
+ * fields carry ephemeral public keys instead of random nonce bytes. Callers generate an ephemeral
+ * key pair, encode the public key, decode the peer's public key, compute a shared secret, and then
+ * derive directional client/server key material from the same wire public keys that appeared in the
+ * request and response.
  *
  * <p>The returned key material keeps OPC UA's direction names: client keys protect chunks sent by
  * the client, and server keys protect chunks sent by the server. A concrete {@code SecureChannel}
  * maps those protocol directions onto local encryption and decryption roles.
  *
- * <p>The profile selects both the curve and the HKDF hash. NIST P-256 and X25519 profiles derive
- * key material with HKDF-SHA-256; Brainpool P-384r1 profiles derive the same directional fields
- * with HKDF-SHA-384. Callers should pass the negotiated {@link SecurityPolicyProfile} through this
- * helper instead of selecting the hash from key length alone.
+ * <p>The profile selects both the key-agreement family and the HKDF hash. NIST P-256, X25519, and
+ * ffdhe3072 profiles derive key material with HKDF-SHA-256; Brainpool P-384r1 profiles derive the
+ * same directional fields with HKDF-SHA-384. Callers should pass the negotiated {@link
+ * SecurityPolicyProfile} through this helper instead of selecting the hash from key length alone.
  */
 @NullMarked
 public final class EccKeyAgreementUtil {
 
-  /** The IV length used by current OPC UA ECC AEAD profiles. */
+  /** The IV length used by current OPC UA AEAD profiles. */
   public static final int AEAD_INITIALIZATION_VECTOR_LENGTH = 12;
 
   private EccKeyAgreementUtil() {}
@@ -172,20 +172,11 @@ public final class EccKeyAgreementUtil {
   }
 
   /**
-   * Derive directional ECC AEAD key material from an ECC shared secret.
+   * Derive directional AEAD key material for the current ECC policy families.
    *
-   * <p>The profile supplies the encryption-key length. The HKDF salt includes the total derived
-   * length, a direction label, and both ephemeral public keys in the order required for that
-   * direction. The same salt bytes are also used as HKDF {@code info}, matching the OPC UA
-   * SecureChannel derivation rules for these profiles.
-   *
-   * @param providerProfile the provider profile to use for the profile's HKDF HMAC.
-   * @param profile the ECC security-policy profile.
-   * @param sharedSecret the ECDH or X25519 shared secret.
-   * @param clientNonce the client ephemeral public key bytes.
-   * @param serverNonce the server ephemeral public key bytes.
-   * @return the derived client and server key material.
-   * @throws UaException if key derivation fails.
+   * <p>This entry point is retained for callers that are already on the ECC helper path. New shared
+   * SecureChannel strategy code that also handles RSA-DH should call {@link #deriveAeadKeyMaterial}
+   * so the method name matches the wider set of supported key-agreement families.
    */
   public static DerivedKeyMaterial deriveEccAeadKeyMaterial(
       ProviderProfile providerProfile,
@@ -195,27 +186,58 @@ public final class EccKeyAgreementUtil {
       ByteString serverNonce)
       throws UaException {
 
+    return deriveAeadKeyMaterial(providerProfile, profile, sharedSecret, clientNonce, serverNonce);
+  }
+
+  /**
+   * Derive directional AEAD key material from ephemeral key-agreement input key material.
+   *
+   * <p>The profile supplies the encryption-key length. The HKDF salt includes the total derived
+   * length, a direction label, and both ephemeral public keys in the order required for that
+   * direction. The same salt bytes are also used as HKDF {@code info}, matching the OPC UA
+   * SecureChannel derivation rules for ECC and RSA-DH AEAD profiles. Initial tokens use the fresh
+   * shared secret as the input key material. Renewed tokens use the Part 6 renewal material derived
+   * from the current token and the fresh shared secret.
+   *
+   * @param providerProfile the provider profile to use for the profile's HKDF HMAC.
+   * @param profile the security-policy profile.
+   * @param inputKeyMaterial the initial shared secret or renewal input key material.
+   * @param clientNonce the client ephemeral public key bytes.
+   * @param serverNonce the server ephemeral public key bytes.
+   * @return the derived client and server key material.
+   * @throws UaException if key derivation fails.
+   */
+  public static DerivedKeyMaterial deriveAeadKeyMaterial(
+      ProviderProfile providerProfile,
+      SecurityPolicyProfile profile,
+      byte[] inputKeyMaterial,
+      ByteString clientNonce,
+      ByteString serverNonce)
+      throws UaException {
+
     requireNonNull(providerProfile, "providerProfile");
     requireNonNull(profile, "profile");
-    requireNonNull(sharedSecret, "sharedSecret");
+    requireNonNull(inputKeyMaterial, "inputKeyMaterial");
     requireNonNull(clientNonce, "clientNonce");
     requireNonNull(serverNonce, "serverNonce");
 
     if (profile.keyAgreementAxis() != KeyAgreementAxis.ECDH_NIST_P256
         && profile.keyAgreementAxis() != KeyAgreementAxis.ECDH_BRAINPOOL_P384R1
-        && profile.keyAgreementAxis() != KeyAgreementAxis.X25519) {
+        && profile.keyAgreementAxis() != KeyAgreementAxis.X25519
+        && profile.keyAgreementAxis() != KeyAgreementAxis.FFDH_3072) {
       throw new UaException(
           StatusCodes.Bad_SecurityPolicyRejected,
-          "profile does not use an ECC key-agreement axis: " + profile.securityPolicy().getUri());
+          "profile does not use an AEAD HKDF key-agreement axis: "
+              + profile.securityPolicy().getUri());
     }
 
     int totalLength = profile.symmetricEncryptionKeySize() + AEAD_INITIALIZATION_VECTOR_LENGTH;
     byte[] clientSalt = hkdfSalt("opcua-client", totalLength, clientNonce, serverNonce);
     byte[] serverSalt = hkdfSalt("opcua-server", totalLength, serverNonce, clientNonce);
     byte[] clientMaterial =
-        hkdf(providerProfile, profile, sharedSecret, clientSalt, clientSalt, totalLength);
+        hkdf(providerProfile, profile, inputKeyMaterial, clientSalt, clientSalt, totalLength);
     byte[] serverMaterial =
-        hkdf(providerProfile, profile, sharedSecret, serverSalt, serverSalt, totalLength);
+        hkdf(providerProfile, profile, inputKeyMaterial, serverSalt, serverSalt, totalLength);
 
     return new DerivedKeyMaterial(
         Arrays.copyOfRange(clientMaterial, 0, profile.symmetricEncryptionKeySize()),
@@ -309,11 +331,12 @@ public final class EccKeyAgreementUtil {
 
       return switch (profile.keyAgreementAxis()) {
         case ECDH_BRAINPOOL_P384R1 -> HkdfUtil.hkdfSha384(ikm, salt, info, length, provider);
-        case ECDH_NIST_P256, X25519 -> HkdfUtil.hkdfSha256(ikm, salt, info, length, provider);
+        case ECDH_NIST_P256, X25519, FFDH_3072 ->
+            HkdfUtil.hkdfSha256(ikm, salt, info, length, provider);
         default ->
             throw new UaException(
                 StatusCodes.Bad_SecurityPolicyRejected,
-                "profile does not use an ECC HKDF axis: " + profile.securityPolicy().getUri());
+                "profile does not use an AEAD HKDF axis: " + profile.securityPolicy().getUri());
       };
     } catch (GeneralSecurityException e) {
       throw new UaException(StatusCodes.Bad_ConfigurationError, e);
@@ -323,11 +346,11 @@ public final class EccKeyAgreementUtil {
   private static String hkdfHmacTransformation(SecurityPolicyProfile profile) throws UaException {
     return switch (profile.keyAgreementAxis()) {
       case ECDH_BRAINPOOL_P384R1 -> "HmacSHA384";
-      case ECDH_NIST_P256, X25519 -> "HmacSHA256";
+      case ECDH_NIST_P256, X25519, FFDH_3072 -> "HmacSHA256";
       default ->
           throw new UaException(
               StatusCodes.Bad_SecurityPolicyRejected,
-              "profile does not use an ECC HKDF axis: " + profile.securityPolicy().getUri());
+              "profile does not use an AEAD HKDF axis: " + profile.securityPolicy().getUri());
     };
   }
 
@@ -342,7 +365,7 @@ public final class EccKeyAgreementUtil {
   }
 
   /**
-   * Directional symmetric key and IV bytes derived for an ECC AEAD policy.
+   * Directional symmetric key and IV bytes derived for an AEAD policy.
    *
    * <p>The record defensively copies all arrays on construction and access so callers can clear or
    * reuse their own buffers without changing installed channel material.

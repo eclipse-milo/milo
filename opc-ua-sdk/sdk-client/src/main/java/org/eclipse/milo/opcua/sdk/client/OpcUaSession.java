@@ -125,12 +125,14 @@ public class OpcUaSession extends ConcurrentHashMap<String, Object> implements U
   }
 
   /**
-   * Get the server session public key used for ECC username-token reactivation.
+   * Get the server session public key used for enhanced username-token reactivation.
    *
    * <p>The key is learned from the CreateSession additional header and reused when the session is
-   * reactivated on the same negotiated user-token policy.
+   * reactivated on the same negotiated user-token policy. The method name is retained for
+   * compatibility with earlier ECC-only support; RSA-DH policies use the same stored receiver key.
    *
-   * @return the receiver public key advertised by the server for ECC username-token encryption.
+   * @return the receiver public key advertised by the server for enhanced username-token
+   *     encryption.
    */
   public Optional<ByteString> getUserTokenReceiverEccPublicKey() {
     return userTokenReceiverEccPublicKey.isNotNull()
@@ -139,7 +141,7 @@ public class OpcUaSession extends ConcurrentHashMap<String, Object> implements U
   }
 
   /**
-   * Store the server session public key returned during ECC username-token negotiation.
+   * Store the server session public key returned during enhanced username-token negotiation.
    *
    * @param userTokenReceiverEccPublicKey the receiver public key advertised by the server.
    */

@@ -60,6 +60,7 @@ import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaBinaryEncoder;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
+import org.eclipse.milo.opcua.stack.core.security.FiniteFieldDhKeyAgreementUtil;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
@@ -117,51 +118,72 @@ class OpcTcpTransportTest extends SecurityFixture {
 
   // These policies deliberately recombine the same certificate and ephemeral-key families with both
   // AEAD chunk-protection strategies, so transport tests catch accidental policy-specific wiring.
-  private static Stream<EccSecurityParameters> provideCurrentEccSecurityParameters()
+  private static Stream<EnhancedSecurityParameters> provideCurrentEccSecurityParameters()
       throws Exception {
     return Stream.of(
-        new EccSecurityParameters(
+        new EnhancedSecurityParameters(
             SecurityPolicy.ECC_nistP256_AesGcm,
             nistP256Certificate("ecc-nist-client"),
             nistP256Certificate("ecc-nist-server"),
             nistP256Certificate("wrong-ecc-nist-server"),
             nistP256Certificate("wrong-ecc-nist-client-key"),
             malformedNistP256PublicKey()),
-        new EccSecurityParameters(
+        new EnhancedSecurityParameters(
             SecurityPolicy.ECC_nistP256_ChaChaPoly,
             nistP256Certificate("ecc-nist-chacha-client"),
             nistP256Certificate("ecc-nist-chacha-server"),
             nistP256Certificate("wrong-ecc-nist-chacha-server"),
             nistP256Certificate("wrong-ecc-nist-chacha-client-key"),
             malformedNistP256PublicKey()),
-        new EccSecurityParameters(
+        new EnhancedSecurityParameters(
             SecurityPolicy.ECC_curve25519_AesGcm,
             ed25519Certificate("ecc-curve25519-aes-client"),
             ed25519Certificate("ecc-curve25519-aes-server"),
             ed25519Certificate("wrong-ecc-curve25519-aes-server"),
             ed25519Certificate("wrong-ecc-curve25519-aes-client-key"),
             malformedX25519PublicKey()),
-        new EccSecurityParameters(
+        new EnhancedSecurityParameters(
             SecurityPolicy.ECC_curve25519_ChaChaPoly,
             ed25519Certificate("ecc-curve25519-client"),
             ed25519Certificate("ecc-curve25519-server"),
             ed25519Certificate("wrong-ecc-curve25519-server"),
             ed25519Certificate("wrong-ecc-curve25519-client-key"),
             malformedX25519PublicKey()),
-        new EccSecurityParameters(
+        new EnhancedSecurityParameters(
             SecurityPolicy.ECC_brainpoolP384r1_AesGcm,
             brainpoolP384Certificate("ecc-brainpool-aes-client"),
             brainpoolP384Certificate("ecc-brainpool-aes-server"),
             brainpoolP384Certificate("wrong-ecc-brainpool-aes-server"),
             brainpoolP384Certificate("wrong-ecc-brainpool-aes-client-key"),
             malformedBrainpoolP384PublicKey()),
-        new EccSecurityParameters(
+        new EnhancedSecurityParameters(
             SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly,
             brainpoolP384Certificate("ecc-brainpool-chacha-client"),
             brainpoolP384Certificate("ecc-brainpool-chacha-server"),
             brainpoolP384Certificate("wrong-ecc-brainpool-chacha-server"),
             brainpoolP384Certificate("wrong-ecc-brainpool-chacha-client-key"),
             malformedBrainpoolP384PublicKey()));
+  }
+
+  private static Stream<EnhancedSecurityParameters> provideCurrentEnhancedSecurityParameters()
+      throws Exception {
+    return Stream.concat(
+        provideCurrentEccSecurityParameters(),
+        Stream.of(
+            new EnhancedSecurityParameters(
+                SecurityPolicy.RSA_DH_AesGcm,
+                rsaCertificate("rsa-dh-aes-client"),
+                rsaCertificate("rsa-dh-aes-server"),
+                rsaCertificate("wrong-rsa-dh-aes-server"),
+                rsaCertificate("wrong-rsa-dh-aes-client-key"),
+                malformedFfdhe3072PublicKey()),
+            new EnhancedSecurityParameters(
+                SecurityPolicy.RSA_DH_ChaChaPoly,
+                rsaCertificate("rsa-dh-chacha-client"),
+                rsaCertificate("rsa-dh-chacha-server"),
+                rsaCertificate("wrong-rsa-dh-chacha-server"),
+                rsaCertificate("wrong-rsa-dh-chacha-client-key"),
+                malformedFfdhe3072PublicKey())));
   }
 
   @ParameterizedTest
@@ -350,8 +372,8 @@ class OpcTcpTransportTest extends SecurityFixture {
   }
 
   @ParameterizedTest
-  @MethodSource("provideCurrentEccSecurityParameters")
-  void connectThenDisconnectWithCurrentEccPolicies(EccSecurityParameters parameters)
+  @MethodSource("provideCurrentEnhancedSecurityParameters")
+  void connectThenDisconnectWithCurrentEnhancedPolicies(EnhancedSecurityParameters parameters)
       throws Exception {
 
     MessageSecurityMode messageSecurityMode = MessageSecurityMode.SignAndEncrypt;
@@ -385,11 +407,11 @@ class OpcTcpTransportTest extends SecurityFixture {
     }
   }
 
-  // Renewal must perform a second ECC ephemeral-key exchange and install a distinct token, not
+  // Renewal must perform a second enhanced ephemeral-key exchange and install a distinct token, not
   // reuse the Issue exchange key material.
   @ParameterizedTest
-  @MethodSource("provideCurrentEccSecurityParameters")
-  void secureChannelRenewsWithCurrentEccPolicies(EccSecurityParameters parameters)
+  @MethodSource("provideCurrentEnhancedSecurityParameters")
+  void secureChannelRenewsWithCurrentEnhancedPolicies(EnhancedSecurityParameters parameters)
       throws Exception {
 
     assertSecureChannelRenews(
@@ -418,11 +440,11 @@ class OpcTcpTransportTest extends SecurityFixture {
             .build());
   }
 
-  // A malformed ClientNonce for ECC policies is malformed key-agreement input; the server must
+  // A malformed ClientNonce for enhanced policies is malformed key-agreement input; the server must
   // reject it before issuing a usable token.
   @ParameterizedTest
-  @MethodSource("provideCurrentEccSecurityParameters")
-  void openSecureChannelRejectsMalformedEccEphemeralPublicKeys(EccSecurityParameters parameters)
+  @MethodSource("provideCurrentEnhancedSecurityParameters")
+  void openSecureChannelRejectsMalformedEphemeralPublicKeys(EnhancedSecurityParameters parameters)
       throws Exception {
 
     OpcServerTransport serverTransport =
@@ -453,8 +475,8 @@ class OpcTcpTransportTest extends SecurityFixture {
   // The asymmetric header thumbprint selects the server certificate identity. A client that points
   // at a different certificate must not be allowed to open a channel.
   @ParameterizedTest
-  @MethodSource("provideCurrentEccSecurityParameters")
-  void openSecureChannelRejectsWrongReceiverThumbprint(EccSecurityParameters parameters)
+  @MethodSource("provideCurrentEnhancedSecurityParameters")
+  void openSecureChannelRejectsWrongReceiverThumbprint(EnhancedSecurityParameters parameters)
       throws Exception {
 
     OpcServerTransport serverTransport =
@@ -481,8 +503,8 @@ class OpcTcpTransportTest extends SecurityFixture {
   // The OPN signature authenticates the sender certificate. Signing with a different private key
   // must fail even when the certificate itself is trusted.
   @ParameterizedTest
-  @MethodSource("provideCurrentEccSecurityParameters")
-  void openSecureChannelRejectsInvalidEccOpnSignatures(EccSecurityParameters parameters)
+  @MethodSource("provideCurrentEnhancedSecurityParameters")
+  void openSecureChannelRejectsInvalidOpnSignatures(EnhancedSecurityParameters parameters)
       throws Exception {
 
     OpcServerTransport serverTransport =
@@ -514,10 +536,11 @@ class OpcTcpTransportTest extends SecurityFixture {
     }
   }
 
-  // Local fallback identities still need to match the selected ECC authentication family.
+  // Local fallback identities still need to match the selected ECC authentication family. This
+  // check stays ECC-only because RSA certificates are the correct family for RSA-DH policies.
   @ParameterizedTest
   @MethodSource("provideCurrentEccSecurityParameters")
-  void openSecureChannelRejectsWrongLocalCertificateType(EccSecurityParameters parameters)
+  void openSecureChannelRejectsWrongLocalCertificateType(EnhancedSecurityParameters parameters)
       throws Exception {
 
     CertificateMaterial rsaClient =
@@ -987,6 +1010,10 @@ class OpcTcpTransportTest extends SecurityFixture {
     return ByteString.of(lowOrderPoint);
   }
 
+  private static ByteString malformedFfdhe3072PublicKey() {
+    return ByteString.of(new byte[FiniteFieldDhKeyAgreementUtil.FFDHE_3072_PUBLIC_KEY_LENGTH]);
+  }
+
   private EndpointDescription newEndpointDescription(
       SecurityPolicy securityPolicy, MessageSecurityMode messageSecurityMode) {
 
@@ -1029,6 +1056,18 @@ class OpcTcpTransportTest extends SecurityFixture {
         SelfSignedCertificateGenerator.generateBrainpoolP384r1KeyPair(), commonName);
   }
 
+  private static CertificateMaterial rsaCertificate(String commonName) throws Exception {
+    KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+    X509Certificate certificate =
+        new SelfSignedCertificateBuilder(keyPair)
+            .setCommonName(commonName)
+            .setOrganization("Eclipse Milo")
+            .setApplicationUri("urn:test:" + commonName)
+            .build();
+
+    return new CertificateMaterial(keyPair, certificate, certificate.getEncoded());
+  }
+
   private static CertificateMaterial eccCertificate(KeyPair keyPair, String commonName)
       throws Exception {
 
@@ -1042,7 +1081,7 @@ class OpcTcpTransportTest extends SecurityFixture {
     return new CertificateMaterial(keyPair, certificate, certificate.getEncoded());
   }
 
-  private record EccSecurityParameters(
+  private record EnhancedSecurityParameters(
       SecurityPolicy securityPolicy,
       CertificateMaterial client,
       CertificateMaterial server,

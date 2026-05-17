@@ -1406,7 +1406,7 @@ public class SessionFsmFactory {
 
       throw new UaException(
           StatusCodes.Bad_ConfigurationError,
-          "ECC user-token negotiation requires an advertised server certificate");
+          "enhanced user-token negotiation requires an advertised server certificate");
     }
 
     EphemeralKeyType ephemeralKey =
@@ -1418,7 +1418,7 @@ public class SessionFsmFactory {
                 () ->
                     new UaException(
                         StatusCodes.Bad_SecurityChecksFailed,
-                        "server did not return ECC user-token key material"));
+                        "server did not return enhanced user-token key material"));
 
     /*
      * The signed ephemeral key is only meaningful if it is anchored to the endpoint certificate the

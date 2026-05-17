@@ -36,12 +36,17 @@
  * those keys to sign, verify, pad, encrypt, or decrypt ordinary service chunks.
  *
  * <p>Existing RSA policies use RSA signatures, RSA-nonce P_SHA key derivation, RSA asymmetric
- * OpenSecureChannel encryption, and CBC/HMAC symmetric chunks. AEAD policies use the same chunk
- * boundary with different invariants: the secure message and symmetric security headers are
- * authenticated as additional data, the sequence header and message body are encrypted, and the
- * authentication tag is carried as the chunk signature footer. AEAD nonce state belongs to the
- * directional {@code SecretKeys} installed for each token; it combines the token id and
- * LastSequenceNumber with the derived IV base so encoders cannot reuse a key/nonce pair. New policy
+ * OpenSecureChannel encryption, and CBC/HMAC symmetric chunks. ECC and RSA-DH OpenSecureChannel
+ * policies carry ephemeral public keys in the nonce fields and keep the first OpenSecureChannel
+ * signed but unencrypted; RSA-DH combines RSA application-certificate authentication with ffdhe3072
+ * finite-field DH agreement. AEAD policies use the same chunk boundary with different invariants:
+ * the secure message and symmetric security headers are authenticated as additional data, the
+ * sequence header and message body are encrypted, and the authentication tag is carried as the
+ * chunk signature footer. AEAD nonce state belongs to the directional {@code SecretKeys} installed
+ * for each token; it combines the token id and LastSequenceNumber with the derived IV base so
+ * encoders cannot reuse a key/nonce pair. Enhanced SecureChannel renewals retain the current
+ * token's input key material so the next token can be derived from current material XOR fresh
+ * key-agreement material, which keeps both endpoints synchronized across token rollover. New policy
  * families should extend those strategy boundaries rather than adding policy-specific branches to
  * transport handlers or generic codecs.
  */

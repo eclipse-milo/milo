@@ -10,6 +10,8 @@
 
 package org.eclipse.milo.opcua.stack.core.channel;
 
+import static java.util.Objects.requireNonNull;
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -21,12 +23,15 @@ import java.nio.ByteBuffer;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.structured.ChannelSecurityToken;
 import org.eclipse.milo.opcua.stack.core.util.PShaUtil;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
@@ -78,8 +83,8 @@ class SecureChannelStrategiesTest {
     assertEquals(profile.symmetricSignatureSize(), chunks.signatureSize(profile));
   }
 
-  // Recognized ECC policies expose their primitive strategy pieces, while the legacy
-  // ChannelSecurity derivation entry point remains guarded because ECC needs retained ephemeral
+  // Recognized enhanced policies expose their primitive strategy pieces, while the legacy
+  // ChannelSecurity derivation entry point remains guarded because ephemeral policies need retained
   // private-key state before keys can be installed.
   @Test
   void eccProfilesExposePrimitiveStrategiesButRemainPartiallyGuarded() throws UaException {
@@ -107,7 +112,7 @@ class SecureChannelStrategiesTest {
                 .sign(channel, emptySecurityKeys(), ByteBuffer.allocate(0)));
   }
 
-  // ECC SecureChannel setup carries ephemeral public keys in ClientNonce/ServerNonce and both
+  // Enhanced SecureChannel setup carries ephemeral public keys in ClientNonce/ServerNonce and both
   // sides must derive the same directional AEAD key material from those exact wire values.
   @ParameterizedTest
   @EnumSource(
@@ -118,9 +123,11 @@ class SecureChannelStrategiesTest {
         "ECC_curve25519_AesGcm",
         "ECC_curve25519_ChaChaPoly",
         "ECC_brainpoolP384r1_AesGcm",
-        "ECC_brainpoolP384r1_ChaChaPoly"
+        "ECC_brainpoolP384r1_ChaChaPoly",
+        "RSA_DH_AesGcm",
+        "RSA_DH_ChaChaPoly"
       })
-  void eccEphemeralOpenSecureChannelDerivesMatchingAeadKeys(SecurityPolicy securityPolicy)
+  void ephemeralOpenSecureChannelDerivesMatchingAeadKeys(SecurityPolicy securityPolicy)
       throws Exception {
 
     SecurityPolicyProfile profile = securityPolicy.getProfile();
@@ -155,6 +162,41 @@ class SecureChannelStrategiesTest {
     assertArrayEquals(
         clientKeys.getServerKeys().getInitializationVector(),
         serverKeys.getServerKeys().getInitializationVector());
+  }
+
+  // Part 6 renewal derives the next token from current IKM XOR fresh IKM. Deriving from the fresh
+  // agreement alone works against itself but fails against a peer that applies the renewal rule.
+  @ParameterizedTest
+  @EnumSource(
+      value = SecurityPolicy.class,
+      names = {"ECC_nistP256_AesGcm", "RSA_DH_AesGcm"})
+  void ephemeralOpenSecureChannelRenewalCombinesCurrentAndFreshInputKeyMaterial(
+      SecurityPolicy securityPolicy) throws Exception {
+
+    EphemeralExchange issue = ephemeralExchange(securityPolicy.getProfile());
+    EphemeralExchange renew = ephemeralExchange(securityPolicy.getProfile());
+    ChannelSecurity.SecurityKeys issuedKeys =
+        deriveClientKeys(secureChannel(securityPolicy), issue);
+    ChannelSecurity.SecurityKeys freshOnlyKeys =
+        deriveClientKeys(secureChannel(securityPolicy), renew);
+    ChannelSecurity.SecurityKeys clientRenewedKeys =
+        deriveClientKeys(secureChannel(securityPolicy, issuedKeys), renew);
+    ChannelSecurity.SecurityKeys serverRenewedKeys =
+        deriveServerKeys(secureChannel(securityPolicy, issuedKeys), renew);
+
+    assertArrayEquals(
+        xor(inputKeyMaterial(issuedKeys), inputKeyMaterial(freshOnlyKeys)),
+        inputKeyMaterial(clientRenewedKeys));
+    assertArrayEquals(
+        clientRenewedKeys.getClientKeys().getEncryptionKey(),
+        serverRenewedKeys.getClientKeys().getEncryptionKey());
+    assertArrayEquals(
+        clientRenewedKeys.getServerKeys().getEncryptionKey(),
+        serverRenewedKeys.getServerKeys().getEncryptionKey());
+    assertFalse(
+        Arrays.equals(
+            freshOnlyKeys.getClientKeys().getEncryptionKey(),
+            clientRenewedKeys.getClientKeys().getEncryptionKey()));
   }
 
   // The client/server nonce order is part of the UASC wire contract for legacy RSA policies.
@@ -258,7 +300,9 @@ class SecureChannelStrategiesTest {
         "ECC_curve25519_AesGcm",
         "ECC_curve25519_ChaChaPoly",
         "ECC_brainpoolP384r1_AesGcm",
-        "ECC_brainpoolP384r1_ChaChaPoly"
+        "ECC_brainpoolP384r1_ChaChaPoly",
+        "RSA_DH_AesGcm",
+        "RSA_DH_ChaChaPoly"
       })
   void asymmetricAuthenticationBindsAdditionalOpenSecureChannelBytes(SecurityPolicy securityPolicy)
       throws Exception {
@@ -313,18 +357,88 @@ class SecureChannelStrategiesTest {
         new ChannelSecurity.SecretKeys(empty, empty, empty));
   }
 
+  private static ServerSecureChannel secureChannel(SecurityPolicy securityPolicy) {
+    ServerSecureChannel channel = new ServerSecureChannel();
+    channel.setSecurityPolicy(securityPolicy);
+
+    return channel;
+  }
+
+  private static ServerSecureChannel secureChannel(
+      SecurityPolicy securityPolicy, ChannelSecurity.SecurityKeys currentKeys) {
+
+    ServerSecureChannel channel = secureChannel(securityPolicy);
+    channel.setChannelSecurity(new ChannelSecurity(currentKeys, channelSecurityToken()));
+
+    return channel;
+  }
+
+  private static ChannelSecurity.SecurityKeys deriveClientKeys(
+      ServerSecureChannel channel, EphemeralExchange exchange) throws Exception {
+
+    return ChannelSecurity.generateKeyPair(
+        channel,
+        exchange.clientKeyPair(),
+        exchange.clientNonce(),
+        exchange.serverNonce(),
+        exchange.serverNonce());
+  }
+
+  private static ChannelSecurity.SecurityKeys deriveServerKeys(
+      ServerSecureChannel channel, EphemeralExchange exchange) throws Exception {
+
+    return ChannelSecurity.generateKeyPair(
+        channel,
+        exchange.serverKeyPair(),
+        exchange.clientNonce(),
+        exchange.serverNonce(),
+        exchange.clientNonce());
+  }
+
+  private static EphemeralExchange ephemeralExchange(SecurityPolicyProfile profile)
+      throws UaException {
+
+    KeyPair clientEphemeralKeyPair = ChannelSecurity.generateEphemeralKeyPair(profile);
+    KeyPair serverEphemeralKeyPair = ChannelSecurity.generateEphemeralKeyPair(profile);
+
+    return new EphemeralExchange(
+        clientEphemeralKeyPair,
+        serverEphemeralKeyPair,
+        ChannelSecurity.encodeEphemeralPublicKey(profile, clientEphemeralKeyPair),
+        ChannelSecurity.encodeEphemeralPublicKey(profile, serverEphemeralKeyPair));
+  }
+
+  private static ChannelSecurityToken channelSecurityToken() {
+    return new ChannelSecurityToken(uint(1), uint(1), DateTime.now(), uint(60_000));
+  }
+
+  private static byte[] inputKeyMaterial(ChannelSecurity.SecurityKeys securityKeys) {
+    return requireNonNull(securityKeys.inputKeyMaterial());
+  }
+
+  private static byte[] xor(byte[] left, byte[] right) {
+    byte[] result = new byte[left.length];
+
+    for (int i = 0; i < result.length; i++) {
+      result[i] = (byte) (left[i] ^ right[i]);
+    }
+
+    return result;
+  }
+
   private static KeyPair applicationKeyPair(SecurityPolicy securityPolicy) throws Exception {
     return switch (securityPolicy.getProfile().authAxis()) {
       case ECDSA_NIST_P256_SHA256 -> SelfSignedCertificateGenerator.generateNistP256KeyPair();
       case ECDSA_BRAINPOOL_P384R1_SHA384 ->
           SelfSignedCertificateGenerator.generateBrainpoolP384r1KeyPair();
       case ED25519 -> SelfSignedCertificateGenerator.generateEd25519KeyPair();
+      case RSA_PKCS1_SHA256 -> SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
       default -> throw new IllegalArgumentException("securityPolicy: " + securityPolicy);
     };
   }
 
   private static X509Certificate applicationCertificate(KeyPair keyPair) throws Exception {
-    return SelfSignedCertificateBuilder.forEccApplicationCertificate(keyPair)
+    return new SelfSignedCertificateBuilder(keyPair)
         .setCommonName("SecureChannelStrategiesTest")
         .setOrganization("Eclipse Milo")
         .setApplicationUri("urn:eclipse:milo:test")
@@ -341,4 +455,10 @@ class SecureChannelStrategiesTest {
     field.setAccessible(true);
     field.setLong(encoder, lastSequenceNumber);
   }
+
+  private record EphemeralExchange(
+      KeyPair clientKeyPair,
+      KeyPair serverKeyPair,
+      ByteString clientNonce,
+      ByteString serverNonce) {}
 }

@@ -13,7 +13,9 @@ package org.eclipse.milo.opcua.stack.core.security;
 import static java.util.Objects.requireNonNull;
 
 import java.security.GeneralSecurityException;
+import java.security.KeyFactory;
 import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
 import java.security.Security;
 import java.security.Signature;
@@ -38,16 +40,18 @@ import org.jspecify.annotations.Nullable;
 /**
  * Resolves the provider profile that can satisfy a security policy.
  *
- * <p>The default resolver prefers Bouncy Castle for ECC policies and falls back to the built-in
- * JDK/JCA providers when their primitives are available. Policies that do not require an ECC/AEAD
- * provider profile resolve to {@link ProviderProfile#JDK}. Resolver instances are thread-safe and
- * cache successful policy resolutions; create a new resolver after changing provider preferences or
- * JVM provider configuration.
+ * <p>The default resolver prefers Bouncy Castle for enhanced policies and falls back to the
+ * built-in JDK/JCA providers when their primitives are available. Policies that do not require
+ * enhanced authentication, key agreement, or AEAD chunk protection resolve to {@link
+ * ProviderProfile#JDK}. Resolver instances are thread-safe and cache successful policy resolutions;
+ * create a new resolver after changing provider preferences or JVM provider configuration.
  *
  * <p>A provider profile is a capability boundary, not just a provider name lookup. Some policy
  * families can use either Bouncy Castle or the JDK when all required transformations are present.
- * Brainpool P-384 policies are intentionally Bouncy Castle-only because Java's built-in providers
- * do not provide portable Brainpool curve support for ECDSA and ECDH.
+ * RSA-DH profiles are in that portable group when the provider can create ffdhe3072 DH keys and
+ * perform HKDF-SHA-256/AEAD operations. Brainpool P-384 policies are intentionally Bouncy
+ * Castle-only because Java's built-in providers do not provide portable Brainpool curve support for
+ * ECDSA and ECDH.
  */
 @NullMarked
 public final class SecurityProviderResolver {
@@ -131,7 +135,7 @@ public final class SecurityProviderResolver {
       case ECDSA_NIST_P256_SHA256, ECDSA_BRAINPOOL_P384R1_SHA384, ED25519 -> true;
       default ->
           switch (profile.keyAgreementAxis()) {
-            case ECDH_NIST_P256, ECDH_BRAINPOOL_P384R1, X25519 -> true;
+            case ECDH_NIST_P256, ECDH_BRAINPOOL_P384R1, X25519, FFDH_3072 -> true;
             default ->
                 switch (profile.chunkProtectionAxis()) {
                   case AES_GCM, CHACHA20_POLY1305 -> true;
@@ -176,6 +180,13 @@ public final class SecurityProviderResolver {
       throws GeneralSecurityException {
 
     switch (axis) {
+      case RSA_PKCS1_SHA256 -> {
+        if (providerProfile == ProviderProfile.BOUNCY_CASTLE) {
+          Signature.getInstance("SHA256withRSA", requireNonNull(provider, "provider"));
+        } else {
+          requireJdkProvider("SHA256withRSA", p -> Signature.getInstance("SHA256withRSA", p));
+        }
+      }
       case ECDSA_NIST_P256_SHA256 -> {
         if (providerProfile == ProviderProfile.BOUNCY_CASTLE) {
           Provider bouncyCastleProvider = requireNonNull(provider, "provider");
@@ -267,6 +278,15 @@ public final class SecurityProviderResolver {
               });
         }
       }
+      case FFDH_3072 -> {
+        if (providerProfile == ProviderProfile.BOUNCY_CASTLE) {
+          Provider bouncyCastleProvider = requireNonNull(provider, "provider");
+
+          validateFfdhe3072(bouncyCastleProvider);
+        } else {
+          requireJdkProvider("DiffieHellman", SecurityProviderResolver::validateFfdhe3072);
+        }
+      }
       default -> {}
     }
   }
@@ -276,7 +296,7 @@ public final class SecurityProviderResolver {
       throws GeneralSecurityException {
 
     switch (axis) {
-      case ECDH_NIST_P256, X25519 -> {
+      case ECDH_NIST_P256, X25519, FFDH_3072 -> {
         if (providerProfile == ProviderProfile.BOUNCY_CASTLE) {
           Provider bouncyCastleProvider = requireNonNull(provider, "provider");
 
@@ -327,6 +347,38 @@ public final class SecurityProviderResolver {
     KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC", provider);
 
     keyPairGenerator.initialize(new ECGenParameterSpec(curveName));
+  }
+
+  private static void validateFfdhe3072(Provider provider) throws GeneralSecurityException {
+    KeyPairGenerator keyPairGenerator = dhKeyPairGenerator(provider);
+    keyPairGenerator.initialize(FiniteFieldDhKeyAgreementUtil.ffdhe3072ParameterSpec());
+    validateDhKeyFactory(provider);
+    validateDhKeyAgreement(provider);
+  }
+
+  private static KeyPairGenerator dhKeyPairGenerator(Provider provider)
+      throws GeneralSecurityException {
+    try {
+      return KeyPairGenerator.getInstance("DiffieHellman", provider);
+    } catch (NoSuchAlgorithmException e) {
+      return KeyPairGenerator.getInstance("DH", provider);
+    }
+  }
+
+  private static void validateDhKeyAgreement(Provider provider) throws GeneralSecurityException {
+    try {
+      KeyAgreement.getInstance("DiffieHellman", provider);
+    } catch (NoSuchAlgorithmException e) {
+      KeyAgreement.getInstance("DH", provider);
+    }
+  }
+
+  private static void validateDhKeyFactory(Provider provider) throws GeneralSecurityException {
+    try {
+      KeyFactory.getInstance("DiffieHellman", provider);
+    } catch (NoSuchAlgorithmException e) {
+      KeyFactory.getInstance("DH", provider);
+    }
   }
 
   private static void requireJdkProvider(String name, ProviderCheck check)

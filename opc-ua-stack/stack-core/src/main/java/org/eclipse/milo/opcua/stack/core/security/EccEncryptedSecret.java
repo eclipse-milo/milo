@@ -15,13 +15,16 @@ import static java.util.Objects.requireNonNull;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.Provider;
 import java.security.PublicKey;
+import java.security.Signature;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.RSAPublicKey;
 import java.time.Duration;
 import java.util.Arrays;
 import javax.crypto.Cipher;
@@ -44,6 +47,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned;
 import org.eclipse.milo.opcua.stack.core.types.structured.EphemeralKeyType;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.eclipse.milo.opcua.stack.core.util.HkdfUtil;
+import org.eclipse.milo.opcua.stack.core.util.SignatureUtil;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -51,24 +55,30 @@ import org.jspecify.annotations.Nullable;
  * Encoder and decoder for OPC UA {@code EccEncryptedSecret} token-secret payloads.
  *
  * <p>The helper produces the opaque {@link ByteString} stored in username and issued-token identity
- * tokens when an ECC user-token security policy protects the token secret. Callers use {@link
- * EccUserTokenAdditionalHeader} during CreateSession to exchange the receiver's signed session
- * ephemeral public key, then use this type during ActivateSession to protect the password or token
- * secret. Decryption validates the receiver key, sender certificate or known sender certificate,
+ * tokens when an enhanced ECC or RSA-DH user-token security policy protects the token secret. The
+ * flow spans two services: CreateSession uses {@link EccUserTokenAdditionalHeader} to ask the
+ * receiver for a signed session ephemeral public key, then ActivateSession sends the encrypted
+ * password or issued-token secret in this structure.
+ *
+ * <p>The structure name and field names come from OPC UA's ECC token-secret definition, but current
+ * RSA-DH profiles reuse the same wrapper. The selected policy profile decides whether the ephemeral
+ * public keys are EC points, X25519 keys, or ffdhe3072 public values; the rest of the layout is the
+ * same. Decryption validates the receiver key, sender certificate or known sender certificate,
  * signature, authenticated payload, and session nonce before returning the plaintext secret.
  */
 @NullMarked
 public final class EccEncryptedSecret {
 
-  /** Additional-header parameter containing the requested ECC user-token security policy URI. */
+  /**
+   * Additional-header parameter containing the requested enhanced user-token security policy URI.
+   */
   public static final String ECDH_POLICY_URI_PARAMETER = "ECDHPolicyUri";
 
   /** Additional-header parameter containing the signed {@link EphemeralKeyType}. */
   public static final String ECDH_KEY_PARAMETER = "ECDHKey";
 
   private static final UByte BINARY_ENCODING_MASK = Unsigned.ubyte(0x01);
-  private static final byte[] SECRET_LABEL =
-      "opcua-secret".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+  private static final byte[] SECRET_LABEL = "opcua-secret".getBytes(StandardCharsets.UTF_8);
   private static final int AEAD_PADDING_BLOCK_SIZE = 16;
 
   /*
@@ -95,14 +105,13 @@ public final class EccEncryptedSecret {
   /**
    * Generates a user-token ephemeral key pair for {@code profile}.
    *
-   * @param profile the ECC user-token security policy profile.
+   * @param profile the user-token security policy profile.
    * @return the generated ephemeral key pair.
-   * @throws UaException if the profile is not supported for ECC token secrets or key generation
-   *     fails.
+   * @throws UaException if the profile is not supported for token secrets or key generation fails.
    */
   public static KeyPair generateEphemeralKeyPair(SecurityPolicyProfile profile) throws UaException {
 
-    requireEccProfile(profile);
+    requireEnhancedSecretProfile(profile);
 
     ProviderProfile providerProfile = PROVIDER_RESOLVER.resolve(profile);
 
@@ -111,6 +120,7 @@ public final class EccEncryptedSecret {
       case ECDH_BRAINPOOL_P384R1 ->
           EccKeyAgreementUtil.generateBrainpoolP384r1KeyPair(providerProfile);
       case X25519 -> EccKeyAgreementUtil.generateX25519KeyPair(providerProfile);
+      case FFDH_3072 -> FiniteFieldDhKeyAgreementUtil.generateFfdhe3072KeyPair(providerProfile);
       default -> throw unsupported(profile, "ephemeral key generation");
     };
   }
@@ -118,7 +128,7 @@ public final class EccEncryptedSecret {
   /**
    * Encodes a user-token ephemeral public key for {@code profile}.
    *
-   * @param profile the ECC user-token security policy profile.
+   * @param profile the user-token security policy profile.
    * @param publicKey the public key to encode.
    * @return the wire-encoded public key.
    * @throws UaException if the public key is incompatible with {@code profile}.
@@ -126,7 +136,7 @@ public final class EccEncryptedSecret {
   public static ByteString encodeEphemeralPublicKey(
       SecurityPolicyProfile profile, PublicKey publicKey) throws UaException {
 
-    requireEccProfile(profile);
+    requireEnhancedSecretProfile(profile);
 
     return encodePublicKey(profile, publicKey);
   }
@@ -134,7 +144,7 @@ public final class EccEncryptedSecret {
   /**
    * Creates an {@link EphemeralKeyType} signed by the application instance certificate key.
    *
-   * @param profile the ECC user-token security policy profile.
+   * @param profile the user-token security policy profile.
    * @param signingKeyPair the application instance key pair used to sign the key.
    * @param ephemeralKeyPair the ephemeral key pair whose public key is returned.
    * @return a signed ephemeral key structure.
@@ -157,7 +167,7 @@ public final class EccEncryptedSecret {
   /**
    * Verifies a signed {@link EphemeralKeyType}.
    *
-   * @param profile the ECC user-token security policy profile.
+   * @param profile the user-token security policy profile.
    * @param signingCertificate the application instance certificate that signed the key.
    * @param ephemeralKey the signed ephemeral key structure.
    * @throws UaException if the signature is invalid or the key is incompatible with {@code
@@ -185,7 +195,7 @@ public final class EccEncryptedSecret {
   /**
    * Encrypts a token secret using the receiver's session ephemeral public key.
    *
-   * @param profile the ECC user-token security policy profile.
+   * @param profile the user-token security policy profile.
    * @param senderApplicationKeyPair the sender application instance key pair.
    * @param senderCertificateChain the sender application instance certificate chain.
    * @param receiverPublicKey the receiver's encoded session ephemeral public key.
@@ -205,7 +215,7 @@ public final class EccEncryptedSecret {
       boolean omitSenderCertificate)
       throws UaException {
 
-    requireEccProfile(profile);
+    requireEnhancedSecretProfile(profile);
     requireNonNull(senderApplicationKeyPair, "senderApplicationKeyPair");
     requireNonNull(senderCertificateChain, "senderCertificateChain");
     requireNonNull(receiverPublicKey, "receiverPublicKey");
@@ -234,6 +244,7 @@ public final class EccEncryptedSecret {
           profile,
           providerProfile,
           senderApplicationKeyPair.getPrivate(),
+          senderApplicationPublicKey(senderApplicationKeyPair, senderCertificateChain),
           certificateChainBytes(senderCertificateChain, omitSenderCertificate),
           senderPublicKey,
           receiverPublicKey,
@@ -248,7 +259,7 @@ public final class EccEncryptedSecret {
   /**
    * Decrypts and validates an {@code EccEncryptedSecret} payload.
    *
-   * @param profile the expected ECC user-token security policy profile.
+   * @param profile the expected user-token security policy profile.
    * @param receiverEphemeralKeyPair the receiver ephemeral key pair issued for the session.
    * @param receiverPublicKey the encoded receiver public key that was advertised to the sender.
    * @param senderCertificate the sender application instance certificate known from the
@@ -267,7 +278,7 @@ public final class EccEncryptedSecret {
       ByteString encodedSecret)
       throws UaException {
 
-    requireEccProfile(profile);
+    requireEnhancedSecretProfile(profile);
     requireNonNull(receiverEphemeralKeyPair, "receiverEphemeralKeyPair");
     requireNonNull(receiverPublicKey, "receiverPublicKey");
     requireNonNull(expectedNonce, "expectedNonce");
@@ -312,6 +323,7 @@ public final class EccEncryptedSecret {
       SecurityPolicyProfile profile,
       ProviderProfile providerProfile,
       PrivateKey senderApplicationPrivateKey,
+      PublicKey senderApplicationPublicKey,
       ByteString senderCertificateBytes,
       ByteString senderPublicKey,
       ByteString receiverPublicKey,
@@ -325,8 +337,8 @@ public final class EccEncryptedSecret {
      *
      *   TypeId, EncodingMask, Length, common header, KeyData, encrypted payload, signature.
      *
-     * ECC KeyData is not encrypted; it is the two UA Binary ByteStrings that identify the sender's
-     * fresh ephemeral public key and the receiver's advertised ephemeral public key.
+     * EccEncryptedSecret KeyData is not encrypted. It holds two UA Binary ByteStrings: the sender's
+     * fresh ephemeral public key and the receiver's advertised session ephemeral public key.
      */
     ByteBuf buffer = Unpooled.buffer();
     OpcUaBinaryEncoder encoder = new OpcUaBinaryEncoder(DefaultEncodingContext.INSTANCE);
@@ -364,7 +376,7 @@ public final class EccEncryptedSecret {
         payloadStart
             - (lengthIndex + Integer.BYTES)
             + encryptedPayloadLength
-            + signatureSize(profile);
+            + signatureSize(profile, senderApplicationPublicKey);
     buffer.setIntLE(lengthIndex, length);
 
     byte[] headerBytes = copyBytes(buffer, payloadStart);
@@ -373,7 +385,7 @@ public final class EccEncryptedSecret {
         encryptPayload(profile, providerProfile, keyMaterial, headerBytes, plainText);
     buffer.writeBytes(encryptedPayload);
 
-    // Part 4 requires the signature after encryption; for ECC it signs all bytes before Signature.
+    // Part 4 requires the signature after encryption; it signs all bytes before Signature.
     byte[] bytesToSign = copyBytes(buffer, buffer.writerIndex());
     byte[] signature = sign(profile, senderApplicationPrivateKey, ByteBuffer.wrap(bytesToSign));
     buffer.writeBytes(signature);
@@ -449,7 +461,7 @@ public final class EccEncryptedSecret {
       }
 
       int encryptedPayloadStart = buffer.readerIndex();
-      int signatureSize = signatureSize(expectedProfile);
+      int signatureSize = signatureSize(expectedProfile, senderCertificate.getPublicKey());
       int signatureStart = bodyEndIndex - signatureSize;
 
       if (signatureStart <= encryptedPayloadStart) {
@@ -457,7 +469,7 @@ public final class EccEncryptedSecret {
       }
 
       /*
-       * ECC KeyData is unencrypted, so Part 4/6 require validating the signing certificate and
+       * KeyData is unencrypted, so Part 4/6 require validating the signing certificate and
        * signature before decrypting the payload.
        */
       byte[] signature = Arrays.copyOfRange(encodedBytes, signatureStart, bodyEndIndex);
@@ -480,7 +492,7 @@ public final class EccEncryptedSecret {
   }
 
   /**
-   * Builds the payload bytes that will be encrypted after the ECC KeyData.
+   * Builds the payload bytes that will be encrypted after the unencrypted KeyData.
    *
    * <p>The nonce and secret are UA Binary ByteStrings. Padding bytes follow the Secret, then the
    * UInt16 PayloadPaddingSize. The AEAD tag is not written here; the cipher appends it while
@@ -623,8 +635,8 @@ public final class EccEncryptedSecret {
    * Creates the AEAD cipher with EncryptedSecret header bytes as additional authenticated data.
    *
    * <p>Part 6 requires all headers in the EncryptedSecret to be AEAD additional data. In this
-   * helper, {@code headerBytes} covers TypeId through the unencrypted ECC KeyData, including the
-   * final Length value.
+   * helper, {@code headerBytes} covers TypeId through the unencrypted KeyData, including the final
+   * Length value.
    */
   private static Cipher initAeadCipher(
       SecurityPolicyProfile profile,
@@ -649,7 +661,7 @@ public final class EccEncryptedSecret {
   }
 
   /**
-   * Derives the encrypting key and initialization vector from the ECC shared secret.
+   * Derives the encrypting key and initialization vector from the profile-selected shared secret.
    *
    * <p>Part 6 defines both HKDF salt and info for token secrets as {@code UInt16LE(totalLength) ||
    * UTF8("opcua-secret") || SenderPublicKey || ReceiverPublicKey}. The derived bytes are then split
@@ -692,7 +704,7 @@ public final class EccEncryptedSecret {
     return salt;
   }
 
-  /** Runs profile-selected HKDF through the provider selected for the ECC policy profile. */
+  /** Runs profile-selected HKDF through the provider selected for the user-token profile. */
   private static byte[] hkdf(
       ProviderProfile providerProfile,
       SecurityPolicyProfile profile,
@@ -716,7 +728,8 @@ public final class EccEncryptedSecret {
 
       return switch (profile.keyAgreementAxis()) {
         case ECDH_BRAINPOOL_P384R1 -> HkdfUtil.hkdfSha384(ikm, salt, info, length, provider);
-        case ECDH_NIST_P256, X25519 -> HkdfUtil.hkdfSha256(ikm, salt, info, length, provider);
+        case ECDH_NIST_P256, X25519, FFDH_3072 ->
+            HkdfUtil.hkdfSha256(ikm, salt, info, length, provider);
         default -> throw unsupported(profile, "HKDF key derivation");
       };
     } catch (GeneralSecurityException e) {
@@ -727,12 +740,12 @@ public final class EccEncryptedSecret {
   private static String hkdfHmacTransformation(SecurityPolicyProfile profile) throws UaException {
     return switch (profile.keyAgreementAxis()) {
       case ECDH_BRAINPOOL_P384R1 -> "HmacSHA384";
-      case ECDH_NIST_P256, X25519 -> "HmacSHA256";
+      case ECDH_NIST_P256, X25519, FFDH_3072 -> "HmacSHA256";
       default -> throw unsupported(profile, "HKDF key derivation");
     };
   }
 
-  /** Performs the profile-specific ECDH/X25519 agreement for the token-secret ephemeral keys. */
+  /** Performs profile-specific agreement for the token-secret ephemeral keys. */
   private static byte[] agree(
       SecurityPolicyProfile profile,
       ProviderProfile providerProfile,
@@ -746,13 +759,13 @@ public final class EccEncryptedSecret {
       case ECDH_BRAINPOOL_P384R1 ->
           EccKeyAgreementUtil.agreeBrainpoolP384r1(providerProfile, privateKey, peerPublicKey);
       case X25519 -> EccKeyAgreementUtil.agreeX25519(providerProfile, privateKey, peerPublicKey);
+      case FFDH_3072 ->
+          FiniteFieldDhKeyAgreementUtil.agreeFfdhe3072(providerProfile, privateKey, peerPublicKey);
       default -> throw unsupported(profile, "key agreement");
     };
   }
 
-  /**
-   * Encodes the public-key bytes used in the ECC KeyData SenderPublicKey/ReceiverPublicKey fields.
-   */
+  /** Encodes the public-key bytes used in the KeyData SenderPublicKey/ReceiverPublicKey fields. */
   private static ByteString encodePublicKey(SecurityPolicyProfile profile, PublicKey publicKey)
       throws UaException {
 
@@ -760,13 +773,12 @@ public final class EccEncryptedSecret {
       case ECDH_NIST_P256 -> EccPublicKeyCodec.encodeNistP256(publicKey);
       case ECDH_BRAINPOOL_P384R1 -> EccPublicKeyCodec.encodeBrainpoolP384r1(publicKey);
       case X25519 -> EccPublicKeyCodec.encodeX25519(publicKey);
+      case FFDH_3072 -> FiniteFieldDhKeyAgreementUtil.encodeFfdhe3072(publicKey);
       default -> throw unsupported(profile, "public-key encoding");
     };
   }
 
-  /**
-   * Decodes the public-key bytes used in the ECC KeyData SenderPublicKey/ReceiverPublicKey fields.
-   */
+  /** Decodes the public-key bytes used in the KeyData SenderPublicKey/ReceiverPublicKey fields. */
   private static PublicKey decodePublicKey(
       SecurityPolicyProfile profile, ProviderProfile providerProfile, ByteString publicKey)
       throws UaException {
@@ -776,6 +788,7 @@ public final class EccEncryptedSecret {
       case ECDH_BRAINPOOL_P384R1 ->
           EccPublicKeyCodec.decodeBrainpoolP384r1(publicKey, providerProfile);
       case X25519 -> EccPublicKeyCodec.decodeX25519(publicKey, providerProfile);
+      case FFDH_3072 -> FiniteFieldDhKeyAgreementUtil.decodeFfdhe3072(publicKey, providerProfile);
       default -> throw unsupported(profile, "public-key decoding");
     };
   }
@@ -784,6 +797,10 @@ public final class EccEncryptedSecret {
   private static byte[] sign(SecurityPolicyProfile profile, PrivateKey privateKey, ByteBuffer data)
       throws UaException {
     try {
+      if (profile.authAxis() == SecurityPolicyProfile.AuthAxis.RSA_PKCS1_SHA256) {
+        return SignatureUtil.sign(SecurityAlgorithm.RsaSha256, privateKey, data);
+      }
+
       return EccSignatureUtil.sign(profile, privateKey, data);
     } catch (UaException e) {
       if (e.getStatusCode().getValue() == StatusCodes.Bad_SecurityPolicyRejected) {
@@ -799,6 +816,18 @@ public final class EccEncryptedSecret {
       SecurityPolicyProfile profile, PublicKey publicKey, byte[] signature, ByteBuffer data)
       throws UaException {
     try {
+      if (profile.authAxis() == SecurityPolicyProfile.AuthAxis.RSA_PKCS1_SHA256) {
+        Signature verifier = Signature.getInstance(SecurityAlgorithm.RsaSha256.getTransformation());
+        verifier.initVerify(publicKey);
+        verifier.update(data);
+
+        if (!verifier.verify(signature)) {
+          throw new UaException(StatusCodes.Bad_SecurityChecksFailed, "could not verify signature");
+        }
+
+        return;
+      }
+
       EccSignatureUtil.verify(profile, publicKey, signature, data);
     } catch (UaException e) {
       if (e.getStatusCode().getValue() == StatusCodes.Bad_SecurityPolicyRejected) {
@@ -806,15 +835,25 @@ public final class EccEncryptedSecret {
       }
 
       throw e;
+    } catch (GeneralSecurityException e) {
+      throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
     }
   }
 
-  private static int signatureSize(SecurityPolicyProfile profile) throws UaException {
+  private static int signatureSize(SecurityPolicyProfile profile, PublicKey publicKey)
+      throws UaException {
     return switch (profile.authAxis()) {
       case ECDSA_NIST_P256_SHA256 -> EccSignatureUtil.ECDSA_P256_SHA256_P1363_SIGNATURE_LENGTH;
       case ECDSA_BRAINPOOL_P384R1_SHA384 ->
           EccSignatureUtil.ECDSA_P384_SHA384_P1363_SIGNATURE_LENGTH;
       case ED25519 -> EccSignatureUtil.ED25519_SIGNATURE_LENGTH;
+      case RSA_PKCS1_SHA256 -> {
+        if (publicKey instanceof RSAPublicKey rsaPublicKey) {
+          yield (rsaPublicKey.getModulus().bitLength() + 7) / 8;
+        }
+
+        throw new UaException(StatusCodes.Bad_CertificateInvalid, "expected RSA public key");
+      }
       default -> throw unsupported(profile, "signature size");
     };
   }
@@ -877,6 +916,24 @@ public final class EccEncryptedSecret {
     return ByteString.of(bytes);
   }
 
+  private static PublicKey senderApplicationPublicKey(
+      KeyPair senderApplicationKeyPair, X509Certificate[] senderCertificateChain)
+      throws UaException {
+
+    if (senderCertificateChain.length > 0) {
+      return senderCertificateChain[0].getPublicKey();
+    }
+
+    PublicKey publicKey = senderApplicationKeyPair.getPublic();
+
+    if (publicKey == null) {
+      throw new UaException(
+          StatusCodes.Bad_ConfigurationError, "sender application public key is unavailable");
+    }
+
+    return publicKey;
+  }
+
   /**
    * Calculates Part 6 payload padding.
    *
@@ -898,16 +955,18 @@ public final class EccEncryptedSecret {
     return paddingSize;
   }
 
-  private static void requireEccProfile(SecurityPolicyProfile profile) throws UaException {
+  private static void requireEnhancedSecretProfile(SecurityPolicyProfile profile)
+      throws UaException {
     requireNonNull(profile, "profile");
 
     if ((profile.keyAgreementAxis() != KeyAgreementAxis.ECDH_NIST_P256
             && profile.keyAgreementAxis() != KeyAgreementAxis.ECDH_BRAINPOOL_P384R1
-            && profile.keyAgreementAxis() != KeyAgreementAxis.X25519)
+            && profile.keyAgreementAxis() != KeyAgreementAxis.X25519
+            && profile.keyAgreementAxis() != KeyAgreementAxis.FFDH_3072)
         || (profile.chunkProtectionAxis() != ChunkProtectionAxis.AES_GCM
             && profile.chunkProtectionAxis() != ChunkProtectionAxis.CHACHA20_POLY1305)) {
 
-      throw unsupported(profile, "EccEncryptedSecret profile");
+      throw unsupported(profile, "enhanced token-secret profile");
     }
   }
 

@@ -81,12 +81,13 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * End-to-end ECC session coverage through the Milo public client/server APIs.
+ * End-to-end enhanced-policy session coverage through the Milo public client/server APIs.
  *
  * <p>These tests deliberately sit above the helper-unit tests: they prove that endpoint
  * advertisement, SecureChannel issue/renew, CreateSession additional headers, ActivateSession
  * signatures, user-token encryption, and basic service calls all agree across SDK and stack module
- * boundaries.
+ * boundaries. The class name follows the original ECC coverage, but the matrix also includes the
+ * RSA-DH policies that reuse the same enhanced SecureChannel and token-secret boundaries.
  */
 class EccSessionIntegrationTest {
 
@@ -94,10 +95,12 @@ class EccSessionIntegrationTest {
   private static final String CLIENT_URI = "urn:eclipse:milo:ecc-session-test:client";
   private static final String USERNAME = "user1";
   private static final String PASSWORD = "password";
+  private static final int RENEWAL_TEST_LIFETIME_MILLIS = 1_500;
 
-  // Anonymous activation still exercises CreateSession/ActivateSession over each ECC SecureChannel.
+  // Anonymous activation still exercises CreateSession/ActivateSession over each enhanced
+  // SecureChannel.
   @ParameterizedTest
-  @MethodSource("currentEccPolicies")
+  @MethodSource("currentEnhancedPolicies")
   void activatesAnonymousSessionAndReadsWrites(
       SecurityPolicy securityPolicy, NodeId certificateTypeId) throws Exception {
 
@@ -120,9 +123,10 @@ class EccSessionIntegrationTest {
     }
   }
 
-  // Username activation proves the CreateSession additional header and EccEncryptedSecret path.
+  // Username activation proves the CreateSession additional header and EccEncryptedSecret
+  // token-secret path used by ECC and RSA-DH profiles.
   @ParameterizedTest
-  @MethodSource("currentEccPolicies")
+  @MethodSource("currentEnhancedPolicies")
   void activatesUsernameSessionAndReadsWrites(
       SecurityPolicy securityPolicy, NodeId certificateTypeId) throws Exception {
 
@@ -146,9 +150,11 @@ class EccSessionIntegrationTest {
   }
 
   // Renewal is profile-sensitive because nonces, sequence numbers, and AEAD keys are all
-  // profile-specific.
+  // profile-specific. The lifetime is short enough to force renewal in the test, but still leaves
+  // margin for RSA-DH finite-field key generation before the server lifetime timer closes the
+  // channel.
   @ParameterizedTest
-  @MethodSource("currentEccPolicies")
+  @MethodSource("currentEnhancedPolicies")
   void renewsSecureChannelWithActiveSession(SecurityPolicy securityPolicy, NodeId certificateTypeId)
       throws Exception {
 
@@ -159,8 +165,8 @@ class EccSessionIntegrationTest {
             securityPolicy,
             certificateTypeId,
             b ->
-                b.setMinimumSecureChannelLifetime(uint(300))
-                    .setMaximumSecureChannelLifetime(uint(300)))) {
+                b.setMinimumSecureChannelLifetime(uint(RENEWAL_TEST_LIFETIME_MILLIS))
+                    .setMaximumSecureChannelLifetime(uint(RENEWAL_TEST_LIFETIME_MILLIS)))) {
 
       CertificateManager clientCertificateManager =
           certificateManager(certificate(certificateTypeId, "client", CLIENT_URI));
@@ -169,7 +175,7 @@ class EccSessionIntegrationTest {
               running,
               securityPolicy,
               clientCertificateManager,
-              b -> b.setChannelLifetime(uint(300)),
+              b -> b.setChannelLifetime(uint(RENEWAL_TEST_LIFETIME_MILLIS)),
               b -> b.setSecurityKeysListener(keyset -> clientKeysCreated.countDown()));
 
       try {
@@ -186,7 +192,7 @@ class EccSessionIntegrationTest {
   // Reconnection reactivates the existing Session on a new SecureChannel; the ActivateSession
   // signature must be verified against the new channel thumbprint, not the stale channel.
   @ParameterizedTest
-  @MethodSource("currentEccPolicies")
+  @MethodSource("currentEnhancedPolicies")
   void reactivatesUsernameSessionOnNewSecureChannel(
       SecurityPolicy securityPolicy, NodeId certificateTypeId) throws Exception {
 
@@ -253,8 +259,8 @@ class EccSessionIntegrationTest {
     }
   }
 
-  // None endpoints using ECC username-token encryption must advertise a certificate for the signed
-  // receiver key; otherwise the client cannot anchor the password encryption target.
+  // None endpoints using enhanced username-token encryption must advertise a certificate for the
+  // signed receiver key; otherwise the client cannot anchor the password encryption target.
   @Test
   void noneEndpointWithEccUsernameTokenRequiresCertificate() throws Exception {
     SecurityPolicy tokenPolicy = SecurityPolicy.ECC_nistP256_AesGcm;
@@ -346,7 +352,7 @@ class EccSessionIntegrationTest {
                 .findFirst(),
         configureTransport,
         b -> {
-          b.setApplicationName(LocalizedText.english("Eclipse Milo ECC test client"))
+          b.setApplicationName(LocalizedText.english("Eclipse Milo enhanced-policy test client"))
               .setApplicationUri(CLIENT_URI)
               .setRequestTimeout(uint(5_000))
               .setCertificateManager(clientCertificateManager)
@@ -431,7 +437,7 @@ class EccSessionIntegrationTest {
     OpcUaServerConfig config =
         OpcUaServerConfig.builder()
             .setApplicationUri(SERVER_URI)
-            .setApplicationName(LocalizedText.english("Eclipse Milo ECC test server"))
+            .setApplicationName(LocalizedText.english("Eclipse Milo enhanced-policy test server"))
             .setProductUri("urn:eclipse:milo:ecc-session-test")
             .setEndpoints(endpoints)
             .setCertificateManager(certificateManager)
@@ -507,12 +513,14 @@ class EccSessionIntegrationTest {
       keyPair = SelfSignedCertificateGenerator.generateBrainpoolP384r1KeyPair();
     } else if (NodeIds.EccCurve25519ApplicationCertificateType.equals(certificateTypeId)) {
       keyPair = SelfSignedCertificateGenerator.generateEd25519KeyPair();
+    } else if (NodeIds.RsaSha256ApplicationCertificateType.equals(certificateTypeId)) {
+      keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
     } else {
       throw new IllegalArgumentException("certificateTypeId: " + certificateTypeId);
     }
 
     X509Certificate certificate =
-        SelfSignedCertificateBuilder.forEccApplicationCertificate(keyPair)
+        certificateBuilder(certificateTypeId, keyPair)
             .setCommonName(commonName)
             .setOrganization("Eclipse Milo")
             .setApplicationUri(applicationUri)
@@ -531,9 +539,19 @@ class EccSessionIntegrationTest {
         "username", UserTokenType.UserName, null, null, securityPolicy.getUri());
   }
 
-  // The matrix pairs each executable ECC policy with the application certificate type that should
-  // be selected for both endpoint advertisement and client identity selection.
-  private static Stream<Arguments> currentEccPolicies() {
+  private static SelfSignedCertificateBuilder certificateBuilder(
+      NodeId certificateTypeId, KeyPair keyPair) {
+
+    if (NodeIds.RsaSha256ApplicationCertificateType.equals(certificateTypeId)) {
+      return new SelfSignedCertificateBuilder(keyPair);
+    } else {
+      return SelfSignedCertificateBuilder.forEccApplicationCertificate(keyPair);
+    }
+  }
+
+  // The matrix pairs each executable enhanced policy with the application certificate type that
+  // should be selected for both endpoint advertisement and client identity selection.
+  private static Stream<Arguments> currentEnhancedPolicies() {
     return Stream.of(
         Arguments.of(
             SecurityPolicy.ECC_nistP256_AesGcm, NodeIds.EccNistP256ApplicationCertificateType),
@@ -549,7 +567,10 @@ class EccSessionIntegrationTest {
             NodeIds.EccBrainpoolP384r1ApplicationCertificateType),
         Arguments.of(
             SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly,
-            NodeIds.EccBrainpoolP384r1ApplicationCertificateType));
+            NodeIds.EccBrainpoolP384r1ApplicationCertificateType),
+        Arguments.of(SecurityPolicy.RSA_DH_AesGcm, NodeIds.RsaSha256ApplicationCertificateType),
+        Arguments.of(
+            SecurityPolicy.RSA_DH_ChaChaPoly, NodeIds.RsaSha256ApplicationCertificateType));
   }
 
   private static int freePort() throws Exception {

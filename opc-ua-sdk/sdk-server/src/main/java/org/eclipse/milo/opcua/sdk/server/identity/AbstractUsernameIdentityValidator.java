@@ -61,7 +61,7 @@ public abstract class AbstractUsernameIdentityValidator extends AbstractIdentity
     SecurityPolicy securityPolicy = getTokenSecurityPolicy(session, policy);
 
     if (EccUserTokenAdditionalHeader.isSupportedEccProfile(securityPolicy.getProfile())) {
-      return validateEccUsernameToken(session, token, securityPolicy, username);
+      return validateEnhancedUsernameToken(session, token, securityPolicy, username);
     }
 
     SecurityAlgorithm algorithm;
@@ -133,7 +133,7 @@ public abstract class AbstractUsernameIdentityValidator extends AbstractIdentity
     }
   }
 
-  private UsernameIdentity validateEccUsernameToken(
+  private UsernameIdentity validateEnhancedUsernameToken(
       Session session, UserNameIdentityToken token, SecurityPolicy securityPolicy, String username)
       throws UaException {
 
@@ -151,7 +151,7 @@ public abstract class AbstractUsernameIdentityValidator extends AbstractIdentity
                 () ->
                     new UaException(
                         StatusCodes.Bad_IdentityTokenInvalid,
-                        "missing ECC user-token key material"));
+                        "missing enhanced user-token key material"));
 
     ByteString receiverPublicKey =
         session
@@ -159,7 +159,8 @@ public abstract class AbstractUsernameIdentityValidator extends AbstractIdentity
             .orElseThrow(
                 () ->
                     new UaException(
-                        StatusCodes.Bad_IdentityTokenInvalid, "missing ECC user-token public key"));
+                        StatusCodes.Bad_IdentityTokenInvalid,
+                        "missing enhanced user-token public key"));
 
     X509Certificate clientCertificate = session.getSecurityConfiguration().getClientCertificate();
 

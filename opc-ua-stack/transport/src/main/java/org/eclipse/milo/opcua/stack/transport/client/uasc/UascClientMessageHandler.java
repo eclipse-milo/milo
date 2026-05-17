@@ -96,7 +96,7 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
   // because the server-issued token lifetime is close to expiring.
   private volatile boolean renewalRequestPending;
 
-  // For ECC OpenSecureChannel requests, createClientNonce() sends the ephemeral public key in
+  // For enhanced OpenSecureChannel requests, createClientNonce() sends the ephemeral public key in
   // ClientNonce and retains the matching private key here until the signed response arrives.
   // installSecurityToken() consumes it to derive symmetric keys, then clears the reference because
   // each Issue/Renew exchange must use fresh ephemeral key material.
@@ -890,7 +890,7 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
 
   private static boolean usesEphemeralKeyAgreement(SecurityPolicyProfile profile) {
     return switch (profile.keyAgreementAxis()) {
-      case ECDH_NIST_P256, ECDH_BRAINPOOL_P384R1, X25519 -> true;
+      case ECDH_NIST_P256, ECDH_BRAINPOOL_P384R1, X25519, FFDH_3072 -> true;
       default -> false;
     };
   }

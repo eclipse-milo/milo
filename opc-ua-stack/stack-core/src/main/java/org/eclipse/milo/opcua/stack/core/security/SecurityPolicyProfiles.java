@@ -23,6 +23,7 @@ import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.C
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.ChunkProtectionAxis.CHACHA20_POLY1305;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.ECDH_BRAINPOOL_P384R1;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.ECDH_NIST_P256;
+import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.FFDH_3072;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.RSA_NONCE;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.X25519;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.SequenceNumberMode.LEGACY;
@@ -120,8 +121,7 @@ public final class SecurityPolicyProfiles {
             0,
             1,
             0x00,
-            false,
-            true));
+            false));
 
     register(
         profiles,
@@ -148,8 +148,7 @@ public final class SecurityPolicyProfiles {
             16,
             16,
             0x01,
-            false,
-            true));
+            false));
 
     register(
         profiles,
@@ -176,8 +175,7 @@ public final class SecurityPolicyProfiles {
             32,
             16,
             0x01,
-            false,
-            true));
+            false));
 
     register(
         profiles,
@@ -202,8 +200,7 @@ public final class SecurityPolicyProfiles {
             32,
             16,
             0x08,
-            false,
-            true));
+            false));
 
     register(
         profiles,
@@ -228,8 +225,7 @@ public final class SecurityPolicyProfiles {
             16,
             16,
             0x04,
-            false,
-            true));
+            false));
 
     register(
         profiles,
@@ -254,8 +250,7 @@ public final class SecurityPolicyProfiles {
             32,
             16,
             0x08,
-            false,
-            true));
+            false));
 
     // The executable ECC policies below combine two certificate/key-agreement families with two
     // AEAD chunk protectors. NIST P-256 uses ECDSA certificates plus P-256 ECDH with a 64-byte
@@ -286,7 +281,6 @@ public final class SecurityPolicyProfiles {
             16,
             1,
             0x04,
-            true,
             true));
 
     register(
@@ -312,7 +306,6 @@ public final class SecurityPolicyProfiles {
             32,
             1,
             0x04,
-            true,
             true));
 
     register(
@@ -338,7 +331,6 @@ public final class SecurityPolicyProfiles {
             16,
             1,
             0x04,
-            true,
             true));
 
     register(
@@ -364,7 +356,6 @@ public final class SecurityPolicyProfiles {
             32,
             1,
             0x04,
-            true,
             true));
 
     // Brainpool P-384 policies are ECC B profiles. They use Brainpool P-384r1 ECDSA certificates
@@ -393,7 +384,6 @@ public final class SecurityPolicyProfiles {
             32,
             1,
             0x08,
-            true,
             true));
 
     register(
@@ -419,7 +409,60 @@ public final class SecurityPolicyProfiles {
             32,
             1,
             0x08,
-            true,
+            true));
+
+    // RSA-DH policies use RSA application certificates for OpenSecureChannel authentication but
+    // exchange RFC 7919 ffdhe3072 ephemeral public values in ClientNonce/ServerNonce. OPN chunks
+    // are signed only; ordinary service chunks use the same AEAD chunk-protection paths as the
+    // current ECC profiles.
+    register(
+        profiles,
+        profile(
+            SecurityPolicy.RSA_DH_AesGcm,
+            RSA_PKCS1_SHA256,
+            List.of(NodeIds.RsaSha256ApplicationCertificateType),
+            FFDH_3072,
+            AES_GCM,
+            NON_LEGACY,
+            null,
+            null,
+            SecurityAlgorithm.RsaSha256,
+            SecurityAlgorithm.None,
+            null,
+            null,
+            SecurityAlgorithm.Sha256,
+            SecurityAlgorithm.Sha256,
+            384,
+            16,
+            0,
+            16,
+            1,
+            0x04,
+            true));
+
+    register(
+        profiles,
+        profile(
+            SecurityPolicy.RSA_DH_ChaChaPoly,
+            RSA_PKCS1_SHA256,
+            List.of(NodeIds.RsaSha256ApplicationCertificateType),
+            FFDH_3072,
+            CHACHA20_POLY1305,
+            NON_LEGACY,
+            null,
+            null,
+            SecurityAlgorithm.RsaSha256,
+            SecurityAlgorithm.None,
+            null,
+            null,
+            SecurityAlgorithm.Sha256,
+            SecurityAlgorithm.Sha256,
+            384,
+            16,
+            0,
+            32,
+            1,
+            0x04,
             true));
 
     return Map.copyOf(profiles);
@@ -456,8 +499,7 @@ public final class SecurityPolicyProfiles {
       int symmetricEncryptionKeySize,
       int symmetricBlockSize,
       int securityLevel,
-      boolean secureChannelEnhancements,
-      boolean secureChannelSupported) {
+      boolean secureChannelEnhancements) {
 
     return new SecurityPolicyProfile(
         securityPolicy,
@@ -481,6 +523,6 @@ public final class SecurityPolicyProfiles {
         symmetricBlockSize,
         securityLevel,
         secureChannelEnhancements,
-        secureChannelSupported);
+        true);
   }
 }

@@ -52,10 +52,10 @@ class UsernameProviderTest {
             0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F
           });
 
-  // ECC username tokens must use the receiver key negotiated in CreateSession.
+  // Enhanced username tokens must use the receiver key negotiated in CreateSession.
   @ParameterizedTest
-  @MethodSource("supportedEccProfiles")
-  void encryptsEccPasswordWithNegotiatedReceiverKey(SecurityPolicyProfile profile)
+  @MethodSource("supportedEnhancedProfiles")
+  void encryptsEnhancedPasswordWithNegotiatedReceiverKey(SecurityPolicyProfile profile)
       throws Exception {
 
     ApplicationIdentity clientIdentity = applicationIdentity(profile);
@@ -148,9 +148,10 @@ class UsernameProviderTest {
             .orElseThrow());
   }
 
-  // ECC certificate-token auth does not need the username-secret ECDH negotiation header.
+  // Certificate-token auth does not need the username-secret enhanced negotiation header.
   @Test
-  void x509ProviderDoesNotRequestEccUsernameTokenHeaderForCertificatePolicy() throws Exception {
+  void x509ProviderDoesNotRequestEnhancedUsernameTokenHeaderForCertificatePolicy()
+      throws Exception {
     ApplicationIdentity identity =
         applicationIdentity(SecurityPolicy.ECC_nistP256_AesGcm.getProfile());
     EndpointDescription endpoint =
@@ -171,8 +172,8 @@ class UsernameProviderTest {
             .getCreateSessionAdditionalHeader(DefaultEncodingContext.INSTANCE, endpoint));
   }
 
-  // Composite providers should probe in order without letting an unusable first provider block ECC
-  // username auth.
+  // Composite providers should probe in order without letting an unusable first provider block
+  // enhanced username auth.
   @Test
   void compositeProviderSkipsUnavailableCertificateProviderAndNegotiatesUsername()
       throws Exception {
@@ -234,14 +235,16 @@ class UsernameProviderTest {
         ubyte(0));
   }
 
-  private static Stream<Arguments> supportedEccProfiles() {
+  private static Stream<Arguments> supportedEnhancedProfiles() {
     return Stream.of(
         Arguments.of(SecurityPolicy.ECC_nistP256_AesGcm.getProfile()),
         Arguments.of(SecurityPolicy.ECC_nistP256_ChaChaPoly.getProfile()),
         Arguments.of(SecurityPolicy.ECC_curve25519_AesGcm.getProfile()),
         Arguments.of(SecurityPolicy.ECC_curve25519_ChaChaPoly.getProfile()),
         Arguments.of(SecurityPolicy.ECC_brainpoolP384r1_AesGcm.getProfile()),
-        Arguments.of(SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly.getProfile()));
+        Arguments.of(SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly.getProfile()),
+        Arguments.of(SecurityPolicy.RSA_DH_AesGcm.getProfile()),
+        Arguments.of(SecurityPolicy.RSA_DH_ChaChaPoly.getProfile()));
   }
 
   private static ApplicationIdentity applicationIdentity(SecurityPolicyProfile profile)
@@ -253,18 +256,30 @@ class UsernameProviderTest {
           case ECDSA_BRAINPOOL_P384R1_SHA384 ->
               SelfSignedCertificateGenerator.generateBrainpoolP384r1KeyPair();
           case ED25519 -> SelfSignedCertificateGenerator.generateEd25519KeyPair();
+          case RSA_PKCS1_SHA256 -> SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
           default ->
               throw new IllegalArgumentException("unsupported auth axis: " + profile.authAxis());
         };
 
     X509Certificate certificate =
-        SelfSignedCertificateBuilder.forEccApplicationCertificate(keyPair)
+        certificateBuilder(profile, keyPair)
             .setCommonName("client-" + profile.securityPolicy().name())
             .setApplicationUri("urn:eclipse:milo:test:client")
             .addDnsName("localhost")
             .build();
 
     return new ApplicationIdentity(keyPair, certificate);
+  }
+
+  private static SelfSignedCertificateBuilder certificateBuilder(
+      SecurityPolicyProfile profile, KeyPair keyPair) {
+
+    return switch (profile.authAxis()) {
+      case ECDSA_NIST_P256_SHA256, ECDSA_BRAINPOOL_P384R1_SHA384, ED25519 ->
+          SelfSignedCertificateBuilder.forEccApplicationCertificate(keyPair);
+      case RSA_PKCS1_SHA256 -> new SelfSignedCertificateBuilder(keyPair);
+      default -> throw new IllegalArgumentException("unsupported auth axis: " + profile.authAxis());
+    };
   }
 
   private static ApplicationIdentity rsaApplicationIdentity() throws Exception {

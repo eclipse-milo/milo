@@ -55,10 +55,10 @@ class AbstractUsernameIdentityValidatorTest {
             0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F
           });
 
-  // The validator is the server-side bridge from opaque ECC token bytes to application auth.
+  // The validator is the server-side bridge from opaque enhanced token bytes to application auth.
   @ParameterizedTest
-  @MethodSource("supportedEccProfiles")
-  void decryptsEccUsernameToken(SecurityPolicyProfile profile) throws Exception {
+  @MethodSource("supportedEnhancedProfiles")
+  void decryptsEnhancedUsernameToken(SecurityPolicyProfile profile) throws Exception {
     TokenFixture fixture = tokenFixture(profile);
     TestUsernameValidator validator = new TestUsernameValidator("password");
 
@@ -75,8 +75,8 @@ class AbstractUsernameIdentityValidatorTest {
 
   // ActivateSession must fail clearly if CreateSession never issued receiver key material.
   @ParameterizedTest
-  @MethodSource("supportedEccProfiles")
-  void rejectsMissingEccSessionKeyMaterial(SecurityPolicyProfile profile) throws Exception {
+  @MethodSource("supportedEnhancedProfiles")
+  void rejectsMissingEnhancedSessionKeyMaterial(SecurityPolicyProfile profile) throws Exception {
     TokenFixture fixture = tokenFixture(profile);
     TestUsernameValidator validator = new TestUsernameValidator("password");
     Session session = session(fixture, SERVER_NONCE);
@@ -97,7 +97,7 @@ class AbstractUsernameIdentityValidatorTest {
 
   // The password secret is bound to the exact public key returned to the client.
   @ParameterizedTest
-  @MethodSource("supportedEccProfiles")
+  @MethodSource("supportedEnhancedProfiles")
   void rejectsWrongReceiverKey(SecurityPolicyProfile profile) throws Exception {
     TokenFixture fixture = tokenFixture(profile);
     KeyPair wrongReceiverEphemeralKeyPair = EccEncryptedSecret.generateEphemeralKeyPair(profile);
@@ -118,10 +118,10 @@ class AbstractUsernameIdentityValidatorTest {
                 new SignatureData(null, null)));
   }
 
-  // Malformed ECC token-secret bytes should fail token validation, not reach authentication.
+  // Malformed enhanced token-secret bytes should fail token validation, not reach authentication.
   @ParameterizedTest
-  @MethodSource("supportedEccProfiles")
-  void rejectsMalformedEccPayload(SecurityPolicyProfile profile) throws Exception {
+  @MethodSource("supportedEnhancedProfiles")
+  void rejectsMalformedEnhancedPayload(SecurityPolicyProfile profile) throws Exception {
     TokenFixture fixture = tokenFixture(profile);
     UserNameIdentityToken malformedToken =
         new UserNameIdentityToken(
@@ -141,10 +141,11 @@ class AbstractUsernameIdentityValidatorTest {
                 new SignatureData(null, null)));
   }
 
-  // ECC and RSA username-token paths should reject replayed secrets with the same service result.
+  // Enhanced token-secret nonce mismatches should map to the same service result as the legacy RSA
+  // username-token path.
   @ParameterizedTest
-  @MethodSource("supportedEccProfiles")
-  void mapsEccNonceMismatchLikeRsaPath(SecurityPolicyProfile profile) throws Exception {
+  @MethodSource("supportedEnhancedProfiles")
+  void mapsEnhancedNonceMismatchLikeRsaPath(SecurityPolicyProfile profile) throws Exception {
     TokenFixture fixture = tokenFixture(profile);
     TestUsernameValidator validator = new TestUsernameValidator("password");
 
@@ -161,7 +162,7 @@ class AbstractUsernameIdentityValidatorTest {
     assertEquals(StatusCodes.Bad_UserAccessDenied, exception.getStatusCode().getValue());
   }
 
-  // The ECC path must not disturb the long-standing unencrypted username token behavior.
+  // The enhanced path must not disturb the long-standing unencrypted username token behavior.
   @Test
   void preservesUnencryptedUsernameTokenPath() throws Exception {
     TestUsernameValidator validator = new TestUsernameValidator("password");
@@ -244,14 +245,16 @@ class AbstractUsernameIdentityValidatorTest {
         "username", UserTokenType.UserName, null, null, securityPolicy.getUri());
   }
 
-  private static Stream<Arguments> supportedEccProfiles() {
+  private static Stream<Arguments> supportedEnhancedProfiles() {
     return Stream.of(
         Arguments.of(SecurityPolicy.ECC_nistP256_AesGcm.getProfile()),
         Arguments.of(SecurityPolicy.ECC_nistP256_ChaChaPoly.getProfile()),
         Arguments.of(SecurityPolicy.ECC_curve25519_AesGcm.getProfile()),
         Arguments.of(SecurityPolicy.ECC_curve25519_ChaChaPoly.getProfile()),
         Arguments.of(SecurityPolicy.ECC_brainpoolP384r1_AesGcm.getProfile()),
-        Arguments.of(SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly.getProfile()));
+        Arguments.of(SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly.getProfile()),
+        Arguments.of(SecurityPolicy.RSA_DH_AesGcm.getProfile()),
+        Arguments.of(SecurityPolicy.RSA_DH_ChaChaPoly.getProfile()));
   }
 
   private static ApplicationIdentity applicationIdentity(SecurityPolicyProfile profile)
@@ -263,18 +266,30 @@ class AbstractUsernameIdentityValidatorTest {
           case ECDSA_BRAINPOOL_P384R1_SHA384 ->
               SelfSignedCertificateGenerator.generateBrainpoolP384r1KeyPair();
           case ED25519 -> SelfSignedCertificateGenerator.generateEd25519KeyPair();
+          case RSA_PKCS1_SHA256 -> SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
           default ->
               throw new IllegalArgumentException("unsupported auth axis: " + profile.authAxis());
         };
 
     X509Certificate certificate =
-        SelfSignedCertificateBuilder.forEccApplicationCertificate(keyPair)
+        certificateBuilder(profile, keyPair)
             .setCommonName("client-" + profile.securityPolicy().name())
             .setApplicationUri("urn:eclipse:milo:test:client")
             .addDnsName("localhost")
             .build();
 
     return new ApplicationIdentity(keyPair, certificate);
+  }
+
+  private static SelfSignedCertificateBuilder certificateBuilder(
+      SecurityPolicyProfile profile, KeyPair keyPair) {
+
+    return switch (profile.authAxis()) {
+      case ECDSA_NIST_P256_SHA256, ECDSA_BRAINPOOL_P384R1_SHA384, ED25519 ->
+          SelfSignedCertificateBuilder.forEccApplicationCertificate(keyPair);
+      case RSA_PKCS1_SHA256 -> new SelfSignedCertificateBuilder(keyPair);
+      default -> throw new IllegalArgumentException("unsupported auth axis: " + profile.authAxis());
+    };
   }
 
   private static final class TestUsernameValidator extends AbstractUsernameIdentityValidator {

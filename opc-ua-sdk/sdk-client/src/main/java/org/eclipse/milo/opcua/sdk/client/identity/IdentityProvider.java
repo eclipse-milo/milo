@@ -26,8 +26,8 @@ import org.eclipse.milo.opcua.stack.core.types.structured.UserIdentityToken;
  * <p>The SDK asks the configured provider whether CreateSession needs any identity-related
  * additional header, then asks for the token to send in ActivateSession. Providers that only need
  * the endpoint and server nonce can implement the legacy two-argument method. Providers that depend
- * on CreateSession output, such as ECC username-token providers, should override the context-based
- * method.
+ * on CreateSession output, such as enhanced username-token providers, should override the
+ * context-based method.
  */
 public interface IdentityProvider {
 
@@ -50,16 +50,19 @@ public interface IdentityProvider {
   }
 
   /**
-   * Return the ECC username-token security policy that needs CreateSession additional-header key
-   * negotiation, if this provider will use one.
+   * Return the enhanced username-token security policy that needs CreateSession additional-header
+   * key negotiation, if this provider will use one.
    *
    * <p>This is narrower than {@link #getUserTokenSecurityPolicy(EndpointDescription)}. Certificate
-   * and other token types may use ECC signatures without requiring username-secret ECDH key
-   * material.
+   * and other token types may use ECC or RSA-DH security policies without requiring the
+   * username-secret ephemeral-key exchange.
+   *
+   * <p>The method name is retained for source compatibility with earlier ECC-only support. RSA-DH
+   * username-token policies use the same CreateSession negotiation path.
    *
    * @param endpoint the {@link EndpointDescription} being connected to.
-   * @return the selected ECC username-token security policy, or empty if no ECC username-secret
-   *     negotiation is required.
+   * @return the selected enhanced username-token security policy, or empty if no username-secret
+   *     ephemeral-key negotiation is required.
    * @throws Exception if the endpoint does not advertise a token policy usable by this provider.
    */
   default Optional<SecurityPolicy> getEccUserTokenSecurityPolicy(EndpointDescription endpoint)

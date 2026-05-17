@@ -13,10 +13,12 @@ package org.eclipse.milo.opcua.stack.core.security;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.ECDSA_BRAINPOOL_P384R1_SHA384;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.ECDSA_NIST_P256_SHA256;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.ED25519;
+import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.RSA_PKCS1_SHA256;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.ChunkProtectionAxis.AES_GCM;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.ChunkProtectionAxis.CHACHA20_POLY1305;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.ECDH_BRAINPOOL_P384R1;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.ECDH_NIST_P256;
+import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.FFDH_3072;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.X25519;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.SequenceNumberMode.NON_LEGACY;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -44,7 +46,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 public class SecurityPolicyTest {
 
   @Test
-  public void testPolicyUriLookupRecognizesCurrentEccPolicies() throws UaException {
+  public void testPolicyUriLookupRecognizesCurrentEnhancedPolicies() throws UaException {
     assertSame(
         SecurityPolicy.ECC_nistP256_AesGcm,
         SecurityPolicy.fromUri(SecurityPolicy.ECC_nistP256_AesGcm.getUri()));
@@ -68,6 +70,14 @@ public class SecurityPolicyTest {
     assertSame(
         SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly,
         SecurityPolicy.fromUri(SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly.getUri()));
+
+    assertSame(
+        SecurityPolicy.RSA_DH_AesGcm,
+        SecurityPolicy.fromUri(SecurityPolicy.RSA_DH_AesGcm.getUri()));
+
+    assertSame(
+        SecurityPolicy.RSA_DH_ChaChaPoly,
+        SecurityPolicy.fromUri(SecurityPolicy.RSA_DH_ChaChaPoly.getUri()));
   }
 
   @Test
@@ -167,7 +177,7 @@ public class SecurityPolicyTest {
   // selection, OpenSecureChannel, chunk codecs, and username-token encryption all share.
   @ParameterizedTest
   @MethodSource("currentEccProfileExpectations")
-  void testCurrentEccProfileMetadata(EccProfileExpectation expectation) {
+  void testCurrentEccProfileMetadata(PolicyProfileExpectation expectation) {
     SecurityPolicyProfile profile = SecurityPolicyProfiles.get(expectation.securityPolicy());
 
     assertEquals(expectation.authAxis(), profile.authAxis());
@@ -179,6 +189,34 @@ public class SecurityPolicyTest {
     assertEquals(NON_LEGACY, profile.sequenceNumberMode());
     assertEquals(
         expectation.certificateThumbprintAlgorithm(), profile.certificateThumbprintAlgorithm());
+    assertEquals(expectation.secureChannelNonceLength(), profile.secureChannelNonceLength());
+    assertEquals(16, profile.symmetricSignatureSize());
+    assertEquals(0, profile.symmetricSignatureKeySize());
+    assertEquals(expectation.symmetricEncryptionKeySize(), profile.symmetricEncryptionKeySize());
+    assertEquals(1, profile.symmetricBlockSize());
+    assertEquals(
+        expectation.signAndEncryptSecurityLevel(),
+        profile.getSecurityLevel(MessageSecurityMode.SignAndEncrypt));
+    assertTrue(profile.secureChannelEnhancements());
+    assertTrue(profile.secureChannelSupported());
+  }
+
+  @ParameterizedTest
+  @MethodSource("rsaDhProfileExpectations")
+  void testRsaDhProfileMetadata(PolicyProfileExpectation expectation) {
+    SecurityPolicyProfile profile = SecurityPolicyProfiles.get(expectation.securityPolicy());
+
+    assertEquals(expectation.authAxis(), profile.authAxis());
+    assertEquals(List.of(expectation.certificateTypeId()), profile.certificateTypeIds());
+    assertEquals(
+        expectation.certificateTypeId(), profile.preferredCertificateTypeId().orElseThrow());
+    assertEquals(expectation.keyAgreementAxis(), profile.keyAgreementAxis());
+    assertEquals(expectation.chunkProtectionAxis(), profile.chunkProtectionAxis());
+    assertEquals(NON_LEGACY, profile.sequenceNumberMode());
+    assertEquals(SecurityAlgorithm.RsaSha256, profile.asymmetricSignatureAlgorithm());
+    assertEquals(SecurityAlgorithm.None, profile.asymmetricEncryptionAlgorithm());
+    assertEquals(SecurityAlgorithm.Sha256, profile.certificateSignatureAlgorithm());
+    assertEquals(SecurityAlgorithm.Sha256, profile.certificateThumbprintAlgorithm());
     assertEquals(expectation.secureChannelNonceLength(), profile.secureChannelNonceLength());
     assertEquals(16, profile.symmetricSignatureSize());
     assertEquals(0, profile.symmetricSignatureKeySize());
@@ -236,11 +274,16 @@ public class SecurityPolicyTest {
         () ->
             SecurityPolicyProfiles.requireSecureChannelSupported(
                 SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly));
+    assertDoesNotThrow(
+        () -> SecurityPolicyProfiles.requireSecureChannelSupported(SecurityPolicy.RSA_DH_AesGcm));
+    assertDoesNotThrow(
+        () ->
+            SecurityPolicyProfiles.requireSecureChannelSupported(SecurityPolicy.RSA_DH_ChaChaPoly));
   }
 
-  private static Stream<EccProfileExpectation> currentEccProfileExpectations() {
+  private static Stream<PolicyProfileExpectation> currentEccProfileExpectations() {
     return Stream.of(
-        new EccProfileExpectation(
+        new PolicyProfileExpectation(
             SecurityPolicy.ECC_nistP256_AesGcm,
             ECDSA_NIST_P256_SHA256,
             NodeIds.EccNistP256ApplicationCertificateType,
@@ -250,7 +293,7 @@ public class SecurityPolicyTest {
             16,
             SecurityAlgorithm.Sha256,
             (short) 0x84),
-        new EccProfileExpectation(
+        new PolicyProfileExpectation(
             SecurityPolicy.ECC_nistP256_ChaChaPoly,
             ECDSA_NIST_P256_SHA256,
             NodeIds.EccNistP256ApplicationCertificateType,
@@ -260,7 +303,7 @@ public class SecurityPolicyTest {
             32,
             SecurityAlgorithm.Sha256,
             (short) 0x84),
-        new EccProfileExpectation(
+        new PolicyProfileExpectation(
             SecurityPolicy.ECC_curve25519_AesGcm,
             ED25519,
             NodeIds.EccCurve25519ApplicationCertificateType,
@@ -270,7 +313,7 @@ public class SecurityPolicyTest {
             16,
             SecurityAlgorithm.Sha256,
             (short) 0x84),
-        new EccProfileExpectation(
+        new PolicyProfileExpectation(
             SecurityPolicy.ECC_curve25519_ChaChaPoly,
             ED25519,
             NodeIds.EccCurve25519ApplicationCertificateType,
@@ -280,7 +323,7 @@ public class SecurityPolicyTest {
             32,
             SecurityAlgorithm.Sha256,
             (short) 0x84),
-        new EccProfileExpectation(
+        new PolicyProfileExpectation(
             SecurityPolicy.ECC_brainpoolP384r1_AesGcm,
             ECDSA_BRAINPOOL_P384R1_SHA384,
             NodeIds.EccBrainpoolP384r1ApplicationCertificateType,
@@ -290,7 +333,7 @@ public class SecurityPolicyTest {
             32,
             SecurityAlgorithm.Sha384,
             (short) 0x88),
-        new EccProfileExpectation(
+        new PolicyProfileExpectation(
             SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly,
             ECDSA_BRAINPOOL_P384R1_SHA384,
             NodeIds.EccBrainpoolP384r1ApplicationCertificateType,
@@ -302,7 +345,31 @@ public class SecurityPolicyTest {
             (short) 0x88));
   }
 
-  private record EccProfileExpectation(
+  private static Stream<PolicyProfileExpectation> rsaDhProfileExpectations() {
+    return Stream.of(
+        new PolicyProfileExpectation(
+            SecurityPolicy.RSA_DH_AesGcm,
+            RSA_PKCS1_SHA256,
+            NodeIds.RsaSha256ApplicationCertificateType,
+            FFDH_3072,
+            AES_GCM,
+            384,
+            16,
+            SecurityAlgorithm.Sha256,
+            (short) 0x84),
+        new PolicyProfileExpectation(
+            SecurityPolicy.RSA_DH_ChaChaPoly,
+            RSA_PKCS1_SHA256,
+            NodeIds.RsaSha256ApplicationCertificateType,
+            FFDH_3072,
+            CHACHA20_POLY1305,
+            384,
+            32,
+            SecurityAlgorithm.Sha256,
+            (short) 0x84));
+  }
+
+  private record PolicyProfileExpectation(
       SecurityPolicy securityPolicy,
       SecurityPolicyProfile.AuthAxis authAxis,
       NodeId certificateTypeId,

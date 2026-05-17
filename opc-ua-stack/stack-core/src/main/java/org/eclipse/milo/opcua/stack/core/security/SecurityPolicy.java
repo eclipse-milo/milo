@@ -93,7 +93,19 @@ public enum SecurityPolicy {
    * agreement, and AES-GCM chunk protection.
    */
   ECC_brainpoolP384r1_AesGcm(
-      "http://opcfoundation.org/UA/SecurityPolicy#ECC_brainpoolP384r1_AesGcm");
+      "http://opcfoundation.org/UA/SecurityPolicy#ECC_brainpoolP384r1_AesGcm"),
+
+  /**
+   * An RSA-DH policy that uses RSA-SHA256 authentication, RFC 7919 ffdhe3072 key agreement, and
+   * AES-GCM chunk protection.
+   */
+  RSA_DH_AesGcm("http://opcfoundation.org/UA/SecurityPolicy#RSA_DH_AesGcm"),
+
+  /**
+   * An RSA-DH policy that uses RSA-SHA256 authentication, RFC 7919 ffdhe3072 key agreement, and
+   * ChaCha20-Poly1305 chunk protection.
+   */
+  RSA_DH_ChaChaPoly("http://opcfoundation.org/UA/SecurityPolicy#RSA_DH_ChaChaPoly");
 
   private final String securityPolicyUri;
 

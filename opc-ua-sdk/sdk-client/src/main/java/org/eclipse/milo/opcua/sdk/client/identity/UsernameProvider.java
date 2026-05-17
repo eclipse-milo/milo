@@ -54,9 +54,9 @@ import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
  *
  * <p>The provider protects the password according to the selected user-token security policy. For
  * legacy RSA policies it encrypts the password and server nonce with the endpoint certificate. For
- * supported ECC username-token policies it uses the CreateSession additional-header key material
- * carried in {@link IdentityProviderContext} and produces an {@link EccEncryptedSecret}. The
- * supplied password bytes are cleared after token construction.
+ * supported enhanced ECC or RSA-DH username-token policies it uses the CreateSession
+ * additional-header key material carried in {@link IdentityProviderContext} and produces an {@link
+ * EccEncryptedSecret}. The supplied password bytes are cleared after token construction.
  */
 public class UsernameProvider implements IdentityProvider {
 
@@ -264,7 +264,7 @@ public class UsernameProvider implements IdentityProvider {
         NonceUtil.validateNonce(serverNonce);
 
         ByteString encryptedSecret =
-            encryptEccPassword(
+            encryptEnhancedPassword(
                 context,
                 securityPolicy,
                 serverNonce,
@@ -405,7 +405,7 @@ public class UsernameProvider implements IdentityProvider {
     }
   }
 
-  private ByteString encryptEccPassword(
+  private ByteString encryptEnhancedPassword(
       IdentityProviderContext context,
       SecurityPolicy securityPolicy,
       ByteString serverNonce,
@@ -419,7 +419,7 @@ public class UsernameProvider implements IdentityProvider {
                 () ->
                     new UaException(
                         StatusCodes.Bad_SecurityChecksFailed,
-                        "server did not provide ECC user-token key material"));
+                        "server did not provide enhanced user-token key material"));
 
     KeyPair clientApplicationKeyPair =
         context
@@ -428,7 +428,7 @@ public class UsernameProvider implements IdentityProvider {
                 () ->
                     new UaException(
                         StatusCodes.Bad_ConfigurationError,
-                        "ECC username token requires a client application key pair"));
+                        "enhanced username token requires a client application key pair"));
 
     X509Certificate[] clientCertificateChain =
         context
@@ -437,7 +437,7 @@ public class UsernameProvider implements IdentityProvider {
                 () ->
                     new UaException(
                         StatusCodes.Bad_ConfigurationError,
-                        "ECC username token requires a client certificate chain"));
+                        "enhanced username token requires a client certificate chain"));
 
     return EccEncryptedSecret.encrypt(
         securityPolicy.getProfile(),

@@ -39,8 +39,8 @@ import org.eclipse.milo.opcua.stack.core.util.SignatureUtil;
  *
  * <p>The provider sends the configured certificate chain as the user identity token and signs the
  * server certificate plus nonce when the selected user-token security policy requires a signature.
- * Certificate-token policies do not use the ECC username-secret additional-header exchange, even
- * when the certificate-token policy itself uses an ECC security policy.
+ * Certificate-token policies do not use the enhanced username-secret additional-header exchange,
+ * even when the certificate-token policy itself uses an ECC or RSA-DH security policy.
  */
 public class X509IdentityProvider implements IdentityProvider {
 

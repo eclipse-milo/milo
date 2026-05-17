@@ -26,9 +26,9 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>The SDK creates this context after CreateSession and before ActivateSession. The endpoint and
  * server nonce are always present. The optional fields are populated when the selected token policy
- * needs extra material, such as an ECC username-token policy that requires the server's receiver
- * public key and the client's application certificate identity to produce an {@code
- * EccEncryptedSecret}.
+ * needs extra material, such as an enhanced ECC or RSA-DH username-token policy that requires the
+ * server's receiver public key and the client's application certificate identity to produce an
+ * {@code EccEncryptedSecret}.
  */
 public final class IdentityProviderContext {
 
@@ -50,12 +50,14 @@ public final class IdentityProviderContext {
   }
 
   /**
-   * Create a context with ECC receiver key material and client application identity.
+   * Create a context with enhanced username-token receiver key material and client application
+   * identity.
    *
    * @param endpoint the endpoint being activated.
    * @param serverNonce the server nonce returned by CreateSession or the latest ActivateSession.
-   * @param receiverEccPublicKey the server session public key returned for ECC username-token
-   *     encryption, or {@code null}.
+   * @param receiverEccPublicKey the server session public key returned for enhanced username-token
+   *     encryption, or {@code null}. The parameter name follows the existing public API and OPC UA
+   *     structure naming; RSA-DH profiles use the same field.
    * @param clientApplicationKeyPair the client application key pair selected for the token policy,
    *     or {@code null}.
    * @param clientCertificateChain the client application certificate chain selected for the token
@@ -83,8 +85,9 @@ public final class IdentityProviderContext {
    * @param endpoint the endpoint being activated.
    * @param serverNonce the server nonce returned by CreateSession or the latest ActivateSession.
    * @param userTokenSecurityPolicy the selected user-token security policy, or {@code null}.
-   * @param receiverEccPublicKey the server session public key returned for ECC username-token
-   *     encryption, or {@code null}.
+   * @param receiverEccPublicKey the server session public key returned for enhanced username-token
+   *     encryption, or {@code null}. The parameter name follows the existing public API and OPC UA
+   *     structure naming; RSA-DH profiles use the same field.
    * @param clientApplicationKeyPair the client application key pair selected for the token policy,
    *     or {@code null}.
    * @param clientCertificateChain the client application certificate chain selected for the token
@@ -132,7 +135,10 @@ public final class IdentityProviderContext {
   }
 
   /**
-   * Get the receiver public key used by ECC username-token encryption.
+   * Get the receiver public key used by enhanced username-token encryption.
+   *
+   * <p>The method name is retained for source compatibility with earlier ECC-only support. RSA-DH
+   * username-token policies use the same receiver-key field.
    *
    * @return the server session public key returned in the CreateSession additional header.
    */

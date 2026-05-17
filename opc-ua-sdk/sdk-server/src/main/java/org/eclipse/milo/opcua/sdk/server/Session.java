@@ -323,12 +323,13 @@ public class Session {
   }
 
   /**
-   * Get the server ephemeral key pair issued for ECC username-token encryption.
+   * Get the server ephemeral key pair issued for enhanced username-token encryption.
    *
-   * <p>The key pair is generated during CreateSession when the client asks for ECC user-token key
-   * material. The username validator uses it during ActivateSession to decrypt the password secret.
+   * <p>The key pair is generated during CreateSession when the client asks for enhanced user-token
+   * key material. The username validator uses it during ActivateSession to decrypt the password
+   * secret.
    *
-   * @return the session-scoped ECC user-token key pair.
+   * @return the session-scoped enhanced user-token key pair.
    */
   public Optional<KeyPair> getUserTokenEphemeralKeyPair() {
     return Optional.ofNullable(userTokenEphemeralKeyPair);
@@ -337,7 +338,7 @@ public class Session {
   /**
    * Get the encoded server public key that was returned to the client.
    *
-   * @return the encoded session public key advertised for ECC username-token encryption.
+   * @return the encoded session public key advertised for enhanced username-token encryption.
    */
   public Optional<ByteString> getUserTokenEphemeralPublicKey() {
     return userTokenEphemeralPublicKey.isNotNull()
@@ -346,7 +347,8 @@ public class Session {
   }
 
   /**
-   * Store the session-scoped key pair returned to the client for ECC username-token encryption.
+   * Store the session-scoped key pair returned to the client for enhanced username-token
+   * encryption.
    *
    * @param userTokenEphemeralKeyPair the private/public key pair retained for ActivateSession
    *     decryption.

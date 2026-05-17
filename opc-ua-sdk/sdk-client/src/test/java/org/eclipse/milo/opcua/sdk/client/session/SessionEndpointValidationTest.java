@@ -262,7 +262,8 @@ class SessionEndpointValidationTest {
     assertEquals(StatusCodes.Bad_SecurityChecksFailed, ex.getStatusCode().getValue());
   }
 
-  // CreateSession only asks for ECC key material when the chosen provider will use username auth.
+  // CreateSession only asks for enhanced key material when the chosen provider will use username
+  // auth.
   @Test
   void buildCreateSessionAdditionalHeaderRequestsEccUsernameTokenKey() throws Exception {
     EndpointDescription endpoint =
@@ -293,7 +294,7 @@ class SessionEndpointValidationTest {
             .orElseThrow());
   }
 
-  // Anonymous auth on an ECC endpoint must not trigger username-token key negotiation.
+  // Anonymous auth on an enhanced endpoint must not trigger username-token key negotiation.
   @Test
   void buildCreateSessionAdditionalHeaderSkipsEccWhenAnonymousProviderSelected() throws Exception {
 
@@ -322,8 +323,8 @@ class SessionEndpointValidationTest {
     assertNull(additionalHeader);
   }
 
-  // None endpoints that use ECC username tokens still need a concrete certificate anchor before
-  // the client encrypts the password.
+  // None endpoints that use enhanced username tokens still need a concrete certificate anchor
+  // before the client encrypts the password.
   @Test
   void verifyCreateSessionEccUserTokenKeyRejectsMissingCertificate() {
     EndpointDescription endpoint =

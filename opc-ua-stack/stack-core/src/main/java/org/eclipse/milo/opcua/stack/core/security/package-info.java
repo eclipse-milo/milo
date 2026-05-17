@@ -22,17 +22,20 @@
  * org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfiles} instead of hard-coding policy
  * switches.
  *
- * <h2>Current ECC profile families</h2>
+ * <h2>Current enhanced profile families</h2>
  *
  * <p>Current ECC policies split authentication, key agreement, and chunk protection into separate
  * profile axes. The NIST P-256 profiles use ECDSA application certificates and P-256 ECDH ephemeral
  * keys. The Curve25519 profiles use Ed25519 application certificates and X25519 ephemeral keys. The
  * Brainpool P-384 profiles use Brainpool P-384r1 ECDSA certificates, Brainpool P-384r1 ECDH
  * ephemeral keys, and SHA-384-based certificate/thumbprint and HKDF behavior. All of these profiles
- * protect normal service chunks with AEAD ciphers, either AES-GCM or ChaCha20-Poly1305.
+ * protect normal service chunks with AEAD ciphers, either AES-GCM or ChaCha20-Poly1305. RSA-DH
+ * profiles use RSA application certificates for OpenSecureChannel authentication, RFC 7919
+ * ffdhe3072 ephemeral public values in the nonce fields, HKDF-SHA-256 key derivation, and the same
+ * AEAD chunk-protection boundary.
  *
- * <p>For ECC OpenSecureChannel, the OPC UA nonce fields carry ephemeral public keys instead of
- * random nonce bytes. That means endpoint advertisement, certificate selection, provider
+ * <p>For enhanced OpenSecureChannel policies, the OPC UA nonce fields carry ephemeral public keys
+ * instead of random nonce bytes. That means endpoint advertisement, certificate selection, provider
  * resolution, nonce validation, and key derivation all need to agree on the same profile metadata.
  * Do not infer this from the policy URI string in a transport handler; use the profile model.
  *
@@ -56,16 +59,18 @@
  * selection so policy metadata does not depend on JVM provider order. The stack can recognize a
  * policy even when the current runtime cannot execute the corresponding SecureChannel strategy.
  *
- * <p>ECC SecureChannel setup uses a small set of primitive helpers at this layer. {@link
- * org.eclipse.milo.opcua.stack.core.security.EccPublicKeyCodec} translates between OPC UA's nonce
- * field wire bytes and JCA public keys, {@link
+ * <p>Enhanced SecureChannel setup uses a small set of primitive helpers at this layer. {@link
+ * org.eclipse.milo.opcua.stack.core.security.EccPublicKeyCodec} translates between OPC UA's ECC
+ * nonce-field wire bytes and JCA public keys, {@link
+ * org.eclipse.milo.opcua.stack.core.security.FiniteFieldDhKeyAgreementUtil} owns RSA-DH ffdhe3072
+ * key generation, public-value validation, and agreement, {@link
  * org.eclipse.milo.opcua.stack.core.security.EccSignatureUtil} owns the ECC signature wire formats,
  * and {@link org.eclipse.milo.opcua.stack.core.security.EccKeyAgreementUtil} derives the
  * directional client/server key material consumed by channel-security state. {@link
  * org.eclipse.milo.opcua.stack.core.security.AeadCipherUtil} keeps AES-GCM and ChaCha20-Poly1305
  * cipher creation behind the same provider-selection boundary. {@link
- * org.eclipse.milo.opcua.stack.core.security.EccEncryptedSecret} owns the ECC user-token secret
- * payload format used above SecureChannel during session activation. {@link
+ * org.eclipse.milo.opcua.stack.core.security.EccEncryptedSecret} owns the enhanced user-token
+ * secret payload format used above SecureChannel during session activation. {@link
  * org.eclipse.milo.opcua.stack.core.security.ChannelBoundSignatureData} owns the session signature
  * byte layout that binds CreateSession/ActivateSession to SecureChannel-enhancement context.
  * Transport handlers should go through SecureChannel strategies rather than calling those helpers

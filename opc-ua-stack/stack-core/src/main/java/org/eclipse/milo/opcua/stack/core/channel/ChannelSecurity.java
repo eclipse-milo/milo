@@ -175,8 +175,9 @@ public class ChannelSecurity {
    *
    * <p>{@code clientNonce} and {@code serverNonce} must be the exact wire values from the request
    * and response. {@code peerNonce} is decoded according to the profile, then combined with {@code
-   * localEphemeralKeyPair} to produce the shared secret used by profile-specific HKDF key
-   * derivation.
+   * localEphemeralKeyPair} to produce the fresh key-agreement secret. Initial tokens derive from
+   * that secret directly. Renewed tokens first XOR the fresh secret with the current token's input
+   * key material, matching the SecureChannel renewal rule from OPC UA Part 6.
    *
    * @param channel the channel carrying the selected security-policy profile.
    * @param localEphemeralKeyPair the local ephemeral key pair retained for this exchange.
@@ -202,17 +203,58 @@ public class ChannelSecurity {
     byte[] sharedSecret =
         keyAgreement.agree(profile, localEphemeralKeyPair.getPrivate(), peerPublicKey);
 
+    byte[] inputKeyMaterial = inputKeyMaterial(channel, sharedSecret);
+
     try {
       EccKeyAgreementUtil.DerivedKeyMaterial keyMaterial =
-          keyAgreement.deriveKeyMaterial(profile, sharedSecret, clientNonce, serverNonce);
+          keyAgreement.deriveKeyMaterial(profile, inputKeyMaterial, clientNonce, serverNonce);
 
       return createAeadKeyPair(
           keyMaterial.clientEncryptionKey(),
           keyMaterial.clientInitializationVector(),
           keyMaterial.serverEncryptionKey(),
-          keyMaterial.serverInitializationVector());
+          keyMaterial.serverInitializationVector(),
+          inputKeyMaterial);
     } finally {
       Arrays.fill(sharedSecret, (byte) 0);
+      Arrays.fill(inputKeyMaterial, (byte) 0);
+    }
+  }
+
+  private static byte[] inputKeyMaterial(SecureChannel channel, byte[] sharedSecret)
+      throws UaException {
+
+    ChannelSecurity currentSecurity = channel.getChannelSecurity();
+    SecurityKeys currentKeys = currentSecurity != null ? currentSecurity.getCurrentKeys() : null;
+
+    if (currentKeys == null) {
+      return sharedSecret.clone();
+    }
+
+    byte[] currentInputKeyMaterial = currentKeys.inputKeyMaterial();
+
+    if (currentInputKeyMaterial == null) {
+      throw new UaException(
+          StatusCodes.Bad_SecurityChecksFailed,
+          "missing current input key material for SecureChannel renewal");
+    }
+
+    try {
+      if (currentInputKeyMaterial.length != sharedSecret.length) {
+        throw new UaException(
+            StatusCodes.Bad_SecurityChecksFailed,
+            "current input key material length does not match fresh shared secret length");
+      }
+
+      byte[] renewedInputKeyMaterial = new byte[sharedSecret.length];
+
+      for (int i = 0; i < renewedInputKeyMaterial.length; i++) {
+        renewedInputKeyMaterial[i] = (byte) (currentInputKeyMaterial[i] ^ sharedSecret[i]);
+      }
+
+      return renewedInputKeyMaterial;
+    } finally {
+      Arrays.fill(currentInputKeyMaterial, (byte) 0);
     }
   }
 
@@ -235,13 +277,29 @@ public class ChannelSecurity {
       byte[] serverEncryptionKey,
       byte[] serverInitializationVector) {
 
+    return createAeadKeyPair(
+        clientEncryptionKey,
+        clientInitializationVector,
+        serverEncryptionKey,
+        serverInitializationVector,
+        null);
+  }
+
+  private static SecurityKeys createAeadKeyPair(
+      byte[] clientEncryptionKey,
+      byte[] clientInitializationVector,
+      byte[] serverEncryptionKey,
+      byte[] serverInitializationVector,
+      byte @Nullable [] inputKeyMaterial) {
+
     // SecretKeys keeps one shape for all symmetric policies. AEAD profiles do not use a separate
     // HMAC/signature key, so the signature-key slot is intentionally empty.
     byte[] emptySignatureKey = new byte[0];
 
     return new SecurityKeys(
         new SecretKeys(emptySignatureKey, clientEncryptionKey, clientInitializationVector),
-        new SecretKeys(emptySignatureKey, serverEncryptionKey, serverInitializationVector));
+        new SecretKeys(emptySignatureKey, serverEncryptionKey, serverInitializationVector),
+        inputKeyMaterial);
   }
 
   /**
@@ -249,14 +307,26 @@ public class ChannelSecurity {
    *
    * <p>The names are protocol directions, not local endpoint roles. Clients send with client keys;
    * servers send with server keys.
+   *
+   * <p>Enhanced AEAD SecureChannel renewals also need the input key material that produced the
+   * current token's keys. That value is retained with the token keys, not exposed to chunk codecs,
+   * so a Renew exchange can combine the current material with the fresh key-agreement secret before
+   * deriving the next token.
    */
   public static class SecurityKeys {
     private final SecretKeys clientKeys;
     private final SecretKeys serverKeys;
+    private final byte @Nullable [] inputKeyMaterial;
 
     SecurityKeys(SecretKeys clientKeys, SecretKeys serverKeys) {
+      this(clientKeys, serverKeys, null);
+    }
+
+    SecurityKeys(SecretKeys clientKeys, SecretKeys serverKeys, byte @Nullable [] inputKeyMaterial) {
+
       this.clientKeys = clientKeys;
       this.serverKeys = serverKeys;
+      this.inputKeyMaterial = inputKeyMaterial != null ? inputKeyMaterial.clone() : null;
     }
 
     /** Returns the key material used to protect chunks sent by the client. */
@@ -267,6 +337,11 @@ public class ChannelSecurity {
     /** Returns the key material used to protect chunks sent by the server. */
     public SecretKeys getServerKeys() {
       return serverKeys;
+    }
+
+    /** Returns a defensive copy of the enhanced-token input key material, when retained. */
+    byte @Nullable [] inputKeyMaterial() {
+      return inputKeyMaterial != null ? inputKeyMaterial.clone() : null;
     }
   }
 

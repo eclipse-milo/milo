@@ -33,7 +33,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 class EccUserTokenAdditionalHeaderTest {
 
-  // The client asks for ECC username-token key material by policy URI, not by endpoint order.
+  // The client asks for enhanced username-token key material by policy URI, not by endpoint order.
   @ParameterizedTest
   @EnumSource(
       value = SecurityPolicy.class,
@@ -41,7 +41,11 @@ class EccUserTokenAdditionalHeaderTest {
         "ECC_nistP256_AesGcm",
         "ECC_nistP256_ChaChaPoly",
         "ECC_curve25519_AesGcm",
-        "ECC_curve25519_ChaChaPoly"
+        "ECC_curve25519_ChaChaPoly",
+        "ECC_brainpoolP384r1_AesGcm",
+        "ECC_brainpoolP384r1_ChaChaPoly",
+        "RSA_DH_AesGcm",
+        "RSA_DH_ChaChaPoly"
       })
   void encodesAndDecodesCreateSessionRequestPolicy(SecurityPolicy securityPolicy) throws Exception {
     ExtensionObject additionalHeader =
@@ -62,7 +66,11 @@ class EccUserTokenAdditionalHeaderTest {
         "ECC_nistP256_AesGcm",
         "ECC_nistP256_ChaChaPoly",
         "ECC_curve25519_AesGcm",
-        "ECC_curve25519_ChaChaPoly"
+        "ECC_curve25519_ChaChaPoly",
+        "ECC_brainpoolP384r1_AesGcm",
+        "ECC_brainpoolP384r1_ChaChaPoly",
+        "RSA_DH_AesGcm",
+        "RSA_DH_ChaChaPoly"
       })
   void encodesAndDecodesCreateSessionResponseKey(SecurityPolicy securityPolicy) throws Exception {
     EphemeralKeyType ephemeralKey =
@@ -80,7 +88,7 @@ class EccUserTokenAdditionalHeaderTest {
   }
 
   // Part 6 defines ECDHPolicyUri as the request selector; interoperable servers return ECDHKey
-  // without echoing the selected policy URI.
+  // without echoing the selected policy URI. RSA-DH keeps these field names on the wire.
   @Test
   void createSessionResponseContainsOnlyEcdhKeyParameter() throws Exception {
     EphemeralKeyType ephemeralKey =
@@ -124,8 +132,8 @@ class EccUserTokenAdditionalHeaderTest {
     assertEquals(StatusCodes.Bad_SecurityPolicyRejected, exception.getStatusCode().getValue());
   }
 
-  // Anonymous and non-ECC username-token paths do not negotiate ECDH material, so a missing header
-  // must be distinguishable from a malformed one.
+  // Anonymous and unenhanced username-token paths do not negotiate ephemeral key material, so a
+  // missing header must be distinguishable from a malformed one.
   @Test
   void nullAdditionalHeaderDecodesAsEmpty() throws Exception {
     assertTrue(
