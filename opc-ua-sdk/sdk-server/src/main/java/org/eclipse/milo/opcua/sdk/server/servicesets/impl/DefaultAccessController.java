@@ -239,8 +239,7 @@ public class DefaultAccessController implements AccessController {
       RolePermissionType[] userRolePermissions = attributes.get(nodeId).userRolePermissions();
 
       if (roleIds != null && userRolePermissions != null) {
-        boolean hasAccess =
-            hasPermission(roleIds, userRolePermissions, PermissionType::getBrowse);
+        boolean hasAccess = hasPermission(roleIds, userRolePermissions, PermissionType::getBrowse);
 
         if (!hasAccess) {
           p.result = AccessResult.DENIED_USER_ACCESS;

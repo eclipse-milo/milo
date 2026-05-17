@@ -699,8 +699,7 @@ class DefaultAccessControllerTest {
 
     var readRolePermissionsNodeId = new NodeId(1, "readRolePermissions");
     var readValueId =
-        new ReadValueId(
-            readRolePermissionsNodeId, AttributeId.RolePermissions.uid(), null, null);
+        new ReadValueId(readRolePermissionsNodeId, AttributeId.RolePermissions.uid(), null, null);
     attributesMap.put(
         readRolePermissionsNodeId,
         new AccessControlAttributes(
@@ -747,12 +746,7 @@ class DefaultAccessControllerTest {
     attributesMap.put(
         writeHistorizingNodeId,
         new AccessControlAttributes(
-            null,
-            null,
-            null,
-            null,
-            null,
-            rolePermissions(PermissionType.Field.WriteHistorizing)));
+            null, null, null, null, null, rolePermissions(PermissionType.Field.WriteHistorizing)));
 
     assertEquals(
         AccessResult.DENIED_USER_ACCESS,
@@ -834,8 +828,7 @@ class DefaultAccessControllerTest {
 
     assertEquals(
         AccessResult.DENIED_USER_ACCESS,
-        DefaultAccessController.checkDeleteReferencesAccess(
-                context, List.of(deleteReferencesItem))
+        DefaultAccessController.checkDeleteReferencesAccess(context, List.of(deleteReferencesItem))
             .get(deleteReferencesItem));
   }
 
