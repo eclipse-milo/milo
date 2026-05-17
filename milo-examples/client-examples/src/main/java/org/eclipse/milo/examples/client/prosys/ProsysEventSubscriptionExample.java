@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -8,12 +8,15 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package org.eclipse.milo.examples.client;
+package org.eclipse.milo.examples.client.prosys;
 
-public class EventSubscriptionExampleProsys extends EventSubscriptionExample {
+import org.eclipse.milo.examples.client.ClientExampleRunner;
+import org.eclipse.milo.examples.client.EventSubscriptionExample;
+
+public class ProsysEventSubscriptionExample extends EventSubscriptionExample {
 
   public static void main(String[] args) throws Exception {
-    EventSubscriptionExampleProsys example = new EventSubscriptionExampleProsys();
+    ProsysEventSubscriptionExample example = new ProsysEventSubscriptionExample();
 
     new ClientExampleRunner(example, false).run();
   }

@@ -119,7 +119,7 @@ public class NodeFactory {
 
     AddressSpaceManager addressSpaceManager = context.getServer().getAddressSpaceManager();
 
-    if (!addressSpaceManager.getManagedNode(typeDefinitionId).isPresent()) {
+    if (addressSpaceManager.getManagedNode(typeDefinitionId).isEmpty()) {
       throw new UaException(
           StatusCodes.Bad_NodeIdUnknown, "unknown type definition: " + typeDefinitionId);
     }
@@ -309,12 +309,17 @@ public class NodeFactory {
           } else if (node instanceof UaObjectNode objectNode) {
             ObjectTypeNode objectTypeNode = objectNode.getTypeDefinitionNode();
 
-            instantiationCallback.onObjectAdded(parentNode, objectNode, objectTypeNode.getNodeId());
+            if (objectTypeNode != null) {
+              instantiationCallback.onObjectAdded(
+                  parentNode, objectNode, objectTypeNode.getNodeId());
+            }
           } else if (node instanceof UaVariableNode variableNode) {
             VariableTypeNode variableTypeNode = variableNode.getTypeDefinitionNode();
 
-            instantiationCallback.onVariableAdded(
-                parentNode, variableNode, variableTypeNode.getNodeId());
+            if (variableTypeNode != null) {
+              instantiationCallback.onVariableAdded(
+                  parentNode, variableNode, variableTypeNode.getNodeId());
+            }
           }
         });
   }

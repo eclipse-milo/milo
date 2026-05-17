@@ -20,7 +20,7 @@ public class EndpointUtil {
 
   private static final Pattern ENDPOINT_URL_PATTERN =
       Pattern.compile(
-          "(opc.tcp|http|https|opc.http|opc.https|opc.ws|opc.wss)://([^:/]+|\\[.*])(:\\d+)?(/.*)?");
+          "(opc.tcp|http|https|opc.http|opc.https|opc.ws|opc.wss)://([^:/]+|\\[[^]]*])(:\\d+)?(/.*)?");
 
   public static @Nullable String getScheme(String endpointUrl) {
     if (endpointUrl != null) {

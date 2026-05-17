@@ -52,9 +52,9 @@ public class UascServerHelloHandler extends ByteToMessageDecoder implements Head
 
   private volatile boolean receivedHello = false;
 
-  private final UascServerConfig config;
-  private final ServerApplicationContext application;
-  private final TransportProfile transportProfile;
+  protected final UascServerConfig config;
+  protected final ServerApplicationContext application;
+  protected final TransportProfile transportProfile;
 
   public UascServerHelloHandler(
       UascServerConfig config,
@@ -143,7 +143,7 @@ public class UascServerHelloHandler extends ByteToMessageDecoder implements Head
     }
   }
 
-  private void onHello(ChannelHandlerContext ctx, ByteBuf buffer) throws UaException {
+  protected void onHello(ChannelHandlerContext ctx, ByteBuf buffer) throws UaException {
     logger.debug("[remote={}] Received Hello message.", ctx.channel().remoteAddress());
 
     receivedHello = true;

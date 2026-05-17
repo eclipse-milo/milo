@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -156,6 +156,8 @@ public class OpcUaServer extends AbstractServiceHandler {
 
   private final Map<TransportProfile, OpcServerTransport> transports = new ConcurrentHashMap<>();
 
+  private volatile @Nullable ReverseConnectManager reverseConnectManager;
+
   private final EventBus eventBus = new EventBus("server");
   private final EventFactory eventFactory = new EventFactory(this);
   private final EventNotifier eventNotifier = new ServerEventNotifier();
@@ -271,6 +273,30 @@ public class OpcUaServer extends AbstractServiceHandler {
     accessController = new DefaultAccessController(this);
   }
 
+  /**
+   * Set the {@link ReverseConnectManager} for this server.
+   *
+   * <p>Must be called before {@link #startup()}.
+   *
+   * @param manager the {@link ReverseConnectManager} to use.
+   * @throws IllegalStateException if the server is already running.
+   */
+  public void setReverseConnectManager(ReverseConnectManager manager) {
+    if (!boundEndpoints.isEmpty()) {
+      throw new IllegalStateException("server is already started");
+    }
+    this.reverseConnectManager = manager;
+  }
+
+  /**
+   * Get the {@link ReverseConnectManager}, if one has been configured.
+   *
+   * @return the {@link ReverseConnectManager}, or {@code null} if none was set.
+   */
+  public @Nullable ReverseConnectManager getReverseConnectManager() {
+    return reverseConnectManager;
+  }
+
   public CompletableFuture<OpcUaServer> startup() {
     eventFactory.startup();
 
@@ -316,14 +342,81 @@ public class OpcUaServer extends AbstractServiceHandler {
             });
 
     if (boundEndpoints.isEmpty()) {
-      return CompletableFuture.failedFuture(
-          new UaException(StatusCodes.Bad_ConfigurationError, "No endpoints bound"));
+      var failure = new UaException(StatusCodes.Bad_ConfigurationError, "No endpoints bound");
+      rollbackStartup(failure);
+      return CompletableFuture.failedFuture(failure);
+    }
+
+    ReverseConnectManager manager = reverseConnectManager;
+    if (manager != null) {
+      return manager
+          .start(applicationContext, config.getApplicationUri())
+          .thenApply(v -> this)
+          .exceptionallyCompose(
+              ex -> {
+                Throwable failure = unwrapCompletion(ex);
+                return rollbackStartupAfterManagerFailure(manager, failure);
+              });
     } else {
       return CompletableFuture.completedFuture(this);
     }
   }
 
+  private CompletableFuture<OpcUaServer> rollbackStartupAfterManagerFailure(
+      ReverseConnectManager manager, Throwable cause) {
+
+    rollbackStartup(cause);
+
+    var future = new CompletableFuture<OpcUaServer>();
+    manager
+        .stop()
+        .whenComplete(
+            (v, stopEx) -> {
+              if (stopEx != null) {
+                cause.addSuppressed(unwrapCompletion(stopEx));
+              }
+
+              future.completeExceptionally(cause);
+            });
+
+    return future;
+  }
+
+  private void rollbackStartup(Throwable cause) {
+    transports
+        .values()
+        .forEach(
+            transport -> {
+              try {
+                transport.unbind();
+              } catch (Exception e) {
+                cause.addSuppressed(e);
+                logger.warn("Error unbinding transport after startup failure", e);
+              }
+            });
+    transports.clear();
+    boundEndpoints.clear();
+
+    try {
+      eventFactory.shutdown();
+    } catch (IllegalStateException e) {
+      cause.addSuppressed(e);
+      logger.warn("Error shutting down event factory after startup failure", e);
+    }
+  }
+
+  private static Throwable unwrapCompletion(Throwable failure) {
+    if ((failure instanceof CompletionException || failure instanceof ExecutionException)
+        && failure.getCause() != null) {
+      return failure.getCause();
+    }
+
+    return failure;
+  }
+
   public CompletableFuture<OpcUaServer> shutdown() {
+    // 1. Unbind transports first (mirrors startup order: transports bind before
+    //    reverse connect manager starts, so shutdown unbinds before stopping it).
     transports
         .values()
         .forEach(
@@ -336,6 +429,13 @@ public class OpcUaServer extends AbstractServiceHandler {
             });
     transports.clear();
 
+    // 2. Stop reverse connect manager (non-blocking to avoid deadlock when
+    //    shutdown() is called from an I/O or FSM executor thread).
+    ReverseConnectManager manager = reverseConnectManager;
+    CompletableFuture<Void> rcStopped =
+        manager != null ? manager.stop() : CompletableFuture.completedFuture(null);
+
+    // 3. Tear down namespaces and subscriptions.
     serverNamespace.shutdown();
     opcUaNamespace.shutdown();
 
@@ -343,7 +443,8 @@ public class OpcUaServer extends AbstractServiceHandler {
 
     subscriptions.values().forEach(Subscription::deleteSubscription);
 
-    return CompletableFuture.completedFuture(this);
+    // 4. Return a future that completes when the manager has stopped.
+    return rcStopped.thenApply(v -> this);
   }
 
   public OpcUaServerConfig getConfig() {
@@ -568,6 +669,54 @@ public class OpcUaServer extends AbstractServiceHandler {
    */
   public List<EndpointConfig> getBoundEndpoints() {
     return List.copyOf(boundEndpoints);
+  }
+
+  /**
+   * Register a client for Reverse Connect. The server endpoint URL sent in ReverseHello messages
+   * defaults to the server's primary (non-discovery) endpoint.
+   *
+   * @param clientEndpointUrl the client's OPC TCP listening address.
+   * @return a handle for removing this registration.
+   * @throws IllegalArgumentException if {@code clientEndpointUrl} does not use the {@code opc.tcp}
+   *     scheme.
+   * @throws IllegalStateException if no {@link ReverseConnectManager} is configured.
+   */
+  public ReverseConnectHandle addReverseConnect(String clientEndpointUrl) {
+    ReverseConnectManager manager = reverseConnectManager;
+    if (manager == null) {
+      throw new IllegalStateException("No ReverseConnectManager configured");
+    }
+    return manager.addReverseConnect(clientEndpointUrl);
+  }
+
+  /**
+   * Register a client for Reverse Connect with an explicit server endpoint URL.
+   *
+   * @param clientEndpointUrl the client's OPC TCP listening address.
+   * @param endpointUrl the server endpoint URL for the ReverseHello.
+   * @return a handle for removing this registration.
+   * @throws IllegalArgumentException if {@code clientEndpointUrl} does not use the {@code opc.tcp}
+   *     scheme.
+   * @throws IllegalStateException if no {@link ReverseConnectManager} is configured.
+   */
+  public ReverseConnectHandle addReverseConnect(String clientEndpointUrl, String endpointUrl) {
+    ReverseConnectManager manager = reverseConnectManager;
+    if (manager == null) {
+      throw new IllegalStateException("No ReverseConnectManager configured");
+    }
+    return manager.addReverseConnect(clientEndpointUrl, endpointUrl);
+  }
+
+  /**
+   * Remove a Reverse Connect registration.
+   *
+   * @param handle the handle returned by {@link #addReverseConnect}.
+   */
+  public void removeReverseConnect(ReverseConnectHandle handle) {
+    ReverseConnectManager manager = reverseConnectManager;
+    if (manager != null) {
+      manager.removeReverseConnect(handle);
+    }
   }
 
   /**

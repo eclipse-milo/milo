@@ -17,6 +17,12 @@ public enum MessageType {
   Hello,
   Acknowledge,
   Error,
+
+  /**
+   * A ReverseHello message sent by a server to initiate a reverse connection (wire bytes "RHE").
+   */
+  ReverseHello,
+
   OpenSecureChannel,
   CloseSecureChannel,
   SecureMessage;
@@ -24,6 +30,7 @@ public enum MessageType {
   private static final int HEL = ('L' << 16) | ('E' << 8) | 'H';
   private static final int ACK = ('K' << 16) | ('C' << 8) | 'A';
   private static final int ERR = ('R' << 16) | ('R' << 8) | 'E';
+  private static final int RHE = ('E' << 16) | ('H' << 8) | 'R';
   private static final int OPN = ('N' << 16) | ('P' << 8) | 'O';
   private static final int CLO = ('O' << 16) | ('L' << 8) | 'C';
   private static final int MSG = ('G' << 16) | ('S' << 8) | 'M';
@@ -33,6 +40,7 @@ public enum MessageType {
       case Hello -> HEL;
       case Acknowledge -> ACK;
       case Error -> ERR;
+      case ReverseHello -> RHE;
       case OpenSecureChannel -> OPN;
       case CloseSecureChannel -> CLO;
       case SecureMessage -> MSG;
@@ -44,6 +52,7 @@ public enum MessageType {
       case HEL -> Hello;
       case ACK -> Acknowledge;
       case ERR -> Error;
+      case RHE -> ReverseHello;
       case OPN -> OpenSecureChannel;
       case CLO -> CloseSecureChannel;
       case MSG -> SecureMessage;

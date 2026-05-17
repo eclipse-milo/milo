@@ -10,9 +10,11 @@
 
 package org.eclipse.milo.opcua.sdk.client.session;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -22,14 +24,30 @@ import org.eclipse.milo.opcua.sdk.client.OpcUaSession;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.test.TestClient;
 import org.eclipse.milo.opcua.sdk.test.TestServer;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
+import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
+import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
+import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
+import org.eclipse.milo.opcua.stack.core.util.Unit;
+import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
+import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransport;
+import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransportConfig;
+import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransportConfig;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
+@Timeout(value = 30, unit = TimeUnit.SECONDS)
 public class SessionFsmTest {
+
+  private static final Duration STATE_WAIT_TIMEOUT = Duration.ofSeconds(10);
 
   @Test
   public void testCloseSessionWhileInactive() throws Exception {
@@ -62,24 +80,23 @@ public class SessionFsmTest {
    */
   @Test
   public void testCloseSessionCompletesSessionFutureInCreatingWait() throws Exception {
-    OpcUaServer server = TestServer.create().getServer();
-    server.startup().get();
+    var transport = new CreateSessionFailureTransport();
+    OpcUaClient client = new OpcUaClient(newClientConfig(), transport);
 
-    OpcUaClient client = TestClient.create(server, cfg -> {});
+    try {
+      client.connectAsync();
 
-    server.shutdown().get();
-    client.connectAsync();
+      SessionFsm sessionFsm = client.getSessionFsm();
+      awaitState(sessionFsm, State.CreatingWait);
 
-    SessionFsm sessionFsm = client.getSessionFsm();
-    while (sessionFsm.getState() != State.CreatingWait) {
-      //noinspection BusyWait
-      Thread.sleep(100);
+      CompletableFuture<OpcUaSession> sessionFuture = sessionFsm.getSession();
+      CompletableFuture<?> closeFuture = sessionFsm.closeSession();
+
+      assertThrows(ExecutionException.class, () -> sessionFuture.get(5, TimeUnit.SECONDS));
+      assertNotNull(closeFuture.get(5, TimeUnit.SECONDS));
+    } finally {
+      disconnectQuietly(client);
     }
-
-    CompletableFuture<OpcUaSession> sessionFuture = sessionFsm.getSession();
-    sessionFsm.closeSession();
-
-    assertThrows(ExecutionException.class, () -> sessionFuture.get(5, TimeUnit.SECONDS));
   }
 
   /**
@@ -89,24 +106,114 @@ public class SessionFsmTest {
   @Test
   public void testCloseSessionCompletesSessionFutureInReactivatingWait() throws Exception {
     OpcUaServer server = TestServer.create().getServer();
-    server.startup().get();
+    OpcUaClient client = null;
 
-    OpcUaClient client = TestClient.create(server, cfg -> {});
-    client.connect();
+    try {
+      server.startup().get(10, TimeUnit.SECONDS);
 
-    Thread.sleep(1000);
+      client = TestClient.create(server, cfg -> {});
+      client.connect();
 
-    server.shutdown().get();
+      Thread.sleep(1000);
 
-    SessionFsm sessionFsm = client.getSessionFsm();
-    while (sessionFsm.getState() != State.ReactivatingWait) {
-      //noinspection BusyWait
-      Thread.sleep(100);
+      server.shutdown().get(10, TimeUnit.SECONDS);
+
+      SessionFsm sessionFsm = client.getSessionFsm();
+      awaitState(sessionFsm, State.ReactivatingWait);
+
+      CompletableFuture<OpcUaSession> sessionFuture = sessionFsm.getSession();
+      CompletableFuture<?> closeFuture = sessionFsm.closeSession();
+
+      assertThrows(ExecutionException.class, () -> sessionFuture.get(5, TimeUnit.SECONDS));
+      assertNotNull(closeFuture.get(5, TimeUnit.SECONDS));
+    } finally {
+      disconnectQuietly(client);
+      shutdownQuietly(server);
+    }
+  }
+
+  private static void awaitState(SessionFsm sessionFsm, State expected) throws Exception {
+    long deadline = System.nanoTime() + STATE_WAIT_TIMEOUT.toNanos();
+    while (System.nanoTime() < deadline && sessionFsm.getState() != expected) {
+      Thread.sleep(25);
     }
 
-    CompletableFuture<OpcUaSession> sessionFuture = sessionFsm.getSession();
-    sessionFsm.closeSession();
+    assertEquals(
+        expected,
+        sessionFsm.getState(),
+        "SessionFsm did not reach " + expected + " within " + STATE_WAIT_TIMEOUT);
+  }
 
-    assertThrows(ExecutionException.class, () -> sessionFuture.get(5, TimeUnit.SECONDS));
+  private static void disconnectQuietly(OpcUaClient client) {
+    if (client == null) {
+      return;
+    }
+
+    try {
+      client.disconnectAsync().get(5, TimeUnit.SECONDS);
+    } catch (Exception ignored) {
+      // don't mask the original failure
+    }
+  }
+
+  private static void shutdownQuietly(OpcUaServer server) {
+    try {
+      server.shutdown().get(5, TimeUnit.SECONDS);
+    } catch (Exception ignored) {
+      // don't mask the original failure
+    }
+  }
+
+  private static OpcUaClientConfig newClientConfig() {
+    return OpcUaClientConfig.builder()
+        .setEndpoint(
+            new EndpointDescription(
+                "opc.tcp://localhost:12685",
+                new ApplicationDescription(
+                    "urn:eclipse:milo:test:server",
+                    "urn:eclipse:milo:test:product",
+                    LocalizedText.english("Eclipse Milo Test Server"),
+                    ApplicationType.Server,
+                    null,
+                    null,
+                    new String[0]),
+                ByteString.NULL_VALUE,
+                MessageSecurityMode.None,
+                SecurityPolicy.None.getUri(),
+                null,
+                TransportProfile.TCP_UASC_UABINARY.getUri(),
+                null))
+        .setApplicationName(LocalizedText.english("Eclipse Milo Test Client"))
+        .setApplicationUri("urn:eclipse:milo:test:client")
+        .build();
+  }
+
+  private static final class CreateSessionFailureTransport implements OpcClientTransport {
+
+    private final OpcClientTransportConfig config =
+        OpcTcpClientTransportConfig.newBuilder().build();
+
+    @Override
+    public OpcClientTransportConfig getConfig() {
+      return config;
+    }
+
+    @Override
+    public CompletableFuture<Unit> connect(ClientApplicationContext applicationContext) {
+      return CompletableFuture.completedFuture(Unit.VALUE);
+    }
+
+    @Override
+    public CompletableFuture<Unit> disconnect() {
+      return CompletableFuture.completedFuture(Unit.VALUE);
+    }
+
+    @Override
+    public CompletableFuture<UaResponseMessageType> sendRequestMessage(
+        UaRequestMessageType requestMessage) {
+
+      return CompletableFuture.failedFuture(
+          new UaException(StatusCodes.Bad_ConnectionClosed, "create session failed"));
+    }
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -165,7 +165,8 @@ public class ClientExampleRunner {
               Thread.sleep(1000);
               System.exit(0);
             } catch (InterruptedException e) {
-              e.printStackTrace();
+              Thread.currentThread().interrupt();
+              logger.error("Interrupted during shutdown", e);
             }
           });
 
@@ -185,14 +186,15 @@ public class ClientExampleRunner {
         Thread.sleep(1000);
         System.exit(0);
       } catch (InterruptedException e) {
-        e.printStackTrace();
+        Thread.currentThread().interrupt();
+        logger.error("Interrupted during shutdown", e);
       }
     }
 
     try {
       Thread.sleep(999_999_999);
     } catch (InterruptedException e) {
-      e.printStackTrace();
+      Thread.currentThread().interrupt();
     }
   }
 }

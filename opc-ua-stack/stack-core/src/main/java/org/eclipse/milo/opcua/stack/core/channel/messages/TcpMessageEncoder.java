@@ -34,6 +34,13 @@ public class TcpMessageEncoder {
         MessageType.Error, (b) -> ErrorMessage.encode(errorMessage, b), Unpooled.buffer());
   }
 
+  public static ByteBuf encode(ReverseHelloMessage reverseHelloMessage) throws UaException {
+    return encode(
+        MessageType.ReverseHello,
+        b -> ReverseHelloMessage.encode(reverseHelloMessage, b),
+        Unpooled.buffer());
+  }
+
   /**
    * Encode a simple UA TCP message.
    *
@@ -43,8 +50,7 @@ public class TcpMessageEncoder {
    * @param buffer the {@link ByteBuf} to encode into.
    */
   private static ByteBuf encode(
-      MessageType messageType, Consumer<ByteBuf> messageEncoder, ByteBuf buffer)
-      throws UaException {
+      MessageType messageType, Consumer<ByteBuf> messageEncoder, ByteBuf buffer) {
 
     buffer.writeMediumLE(MessageType.toMediumInt(messageType));
     buffer.writeByte('F');
