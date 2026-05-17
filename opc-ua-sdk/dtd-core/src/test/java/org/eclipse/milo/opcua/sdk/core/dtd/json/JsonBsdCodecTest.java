@@ -18,11 +18,9 @@ import jakarta.xml.bind.JAXBException;
 import org.eclipse.milo.opcua.sdk.core.dtd.AbstractBsdCodecTest;
 import org.eclipse.milo.opcua.sdk.core.dtd.BinaryDataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.opcfoundation.opcua.binaryschema.StructuredType;
 
-@Disabled
 public class JsonBsdCodecTest extends AbstractBsdCodecTest {
 
   public JsonBsdCodecTest() throws JAXBException {}

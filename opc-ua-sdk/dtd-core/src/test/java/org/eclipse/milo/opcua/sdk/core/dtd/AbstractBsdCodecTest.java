@@ -130,16 +130,14 @@ public abstract class AbstractBsdCodecTest {
     LOGGER.debug("originalValue:\t{}", originalValue);
     ByteBuf buffer = Unpooled.buffer();
     codec.encodeBinary(
-        context,
-        new OpcUaBinaryEncoder(context).setBuffer(buffer),
-        (UaStructuredType) originalValue);
+        context, new OpcUaBinaryEncoder(context).setBuffer(buffer), wrap(type, originalValue));
 
     ByteBuf encodedValue = buffer.copy();
     LOGGER.debug("encodedValue:\t{}", ByteBufUtil.hexDump(encodedValue));
 
     Object decodedValue =
         codec.decodeBinary(context, new OpcUaBinaryDecoder(context).setBuffer(buffer));
-    assertEquals(originalValue, decodedValue);
+    assertEquals(originalValue, unwrap(decodedValue));
     LOGGER.debug("decodedValue:\t{}", decodedValue);
   }
 
@@ -159,16 +157,27 @@ public abstract class AbstractBsdCodecTest {
     LOGGER.debug("originalValue:\t{}", originalValue);
     ByteBuf buffer = Unpooled.buffer();
     codec.encodeBinary(
-        context,
-        new OpcUaBinaryEncoder(context).setBuffer(buffer),
-        (UaStructuredType) originalValue);
+        context, new OpcUaBinaryEncoder(context).setBuffer(buffer), wrap(type, originalValue));
 
     ByteBuf encodedValue = buffer.copy();
     LOGGER.debug("encodedValue:\t{}", ByteBufUtil.hexDump(encodedValue));
 
     Object decodedValue =
         codec.decodeBinary(context, new OpcUaBinaryDecoder(context).setBuffer(buffer));
-    assertEquals(originalValue.toString(), decodedValue.toString());
+    assertEquals(originalValue.toString(), unwrap(decodedValue).toString());
     LOGGER.debug("decodedValue:\t{}", decodedValue);
+  }
+
+  private UaStructuredType wrap(String type, Object value) {
+    DataTypeDictionary dictionary = dataTypeManager.getTypeDictionary(BSD_CODEC_TEST_NAMESPACE);
+    assertNotNull(dictionary);
+    DataTypeDictionary.Type t = dictionary.getType(type);
+    assertNotNull(t);
+    BsdDataType dataType = new BsdDataType(type, t.getDataTypeId(), t.getEncodingId());
+    return new BsdStructWrapper<>(dataType, value);
+  }
+
+  private static Object unwrap(Object value) {
+    return value instanceof BsdStructWrapper<?> w ? w.object() : value;
   }
 }
