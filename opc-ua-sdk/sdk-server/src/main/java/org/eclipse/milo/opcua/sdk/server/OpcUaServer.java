@@ -19,9 +19,9 @@ import java.net.InetSocketAddress;
 import java.security.KeyPair;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -857,8 +857,8 @@ public class OpcUaServer extends AbstractServiceHandler {
 
   private static class ServerEventNotifier implements EventNotifier {
 
-    private final List<EventListener> eventListeners =
-        Collections.synchronizedList(new ArrayList<>());
+    private final Set<EventListener> eventListeners =
+        Collections.synchronizedSet(new LinkedHashSet<>());
 
     @Override
     public void fire(BaseEventTypeNode event) {

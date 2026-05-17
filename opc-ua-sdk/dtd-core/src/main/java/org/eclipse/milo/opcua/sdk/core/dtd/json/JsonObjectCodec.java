@@ -26,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.eclipse.milo.opcua.sdk.core.dtd.AbstractBsdCodec;
+import org.eclipse.milo.opcua.sdk.core.dtd.BsdStructWrapper;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
@@ -112,6 +113,13 @@ public class JsonObjectCodec extends AbstractBsdCodec<JsonObject, JsonElement> {
     } else if (value instanceof StatusCode) {
       long code = ((StatusCode) value).value();
       return new JsonPrimitive(code);
+    } else if (value instanceof BsdStructWrapper<?> wrapper
+        && wrapper.object() instanceof JsonElement element) {
+      // Nested struct fields decoded by another JsonObjectCodec come back
+      // wrapped in BsdStructWrapper (AbstractBsdCodec.decodeBinary always wraps
+      // so the result satisfies the UaStructuredType return contract). Unwrap
+      // the JsonObject so it can sit directly inside the parent JsonObject.
+      return element;
     } else {
       throw new RuntimeException("could not create JsonElement for value: " + value);
     }

@@ -55,6 +55,8 @@ import org.slf4j.LoggerFactory;
 /** Field serialization logic shared by {@link DynamicStructCodec} and {@link DynamicUnionCodec}. */
 class FieldUtil {
 
+  private static final ThreadLocal<Integer> EAGER_DECODE_DEPTH = ThreadLocal.withInitial(() -> 0);
+
   private FieldUtil() {}
 
   static Object decodeFieldValue(
@@ -89,11 +91,11 @@ class FieldUtil {
 
     try {
       if (value instanceof ExtensionObject xo) {
-        return xo.decode(decoder.getEncodingContext());
+        return eagerlyDecodeExtensionObject(decoder, xo);
       } else if (value instanceof ExtensionObject[] xos) {
         Object decodedArray = null;
         for (int i = 0; i < xos.length; i++) {
-          Object decoded = xos[i].decode(decoder.getEncodingContext());
+          Object decoded = eagerlyDecodeExtensionObject(decoder, xos[i]);
           if (decodedArray == null) {
             decodedArray = Array.newInstance(decoded.getClass(), xos.length);
           }
@@ -106,7 +108,7 @@ class FieldUtil {
         Class<?> elementType = matrix.getElementType().orElse(Object.class);
 
         if (elementType == ExtensionObject.class) {
-          return matrix.transform(o -> ((ExtensionObject) o).decode(decoder.getEncodingContext()));
+          return matrix.transform(o -> eagerlyDecodeExtensionObject(decoder, (ExtensionObject) o));
         }
       }
     } catch (Exception e) {
@@ -120,6 +122,29 @@ class FieldUtil {
     }
 
     return value;
+  }
+
+  private static UaStructuredType eagerlyDecodeExtensionObject(
+      UaDecoder decoder, ExtensionObject xo) {
+    int depth = EAGER_DECODE_DEPTH.get();
+    int maxDepth = decoder.getEncodingContext().getEncodingLimits().getMaxRecursionDepth();
+
+    if (depth >= maxDepth) {
+      throw new UaSerializationException(
+          StatusCodes.Bad_EncodingLimitsExceeded,
+          "max eager ExtensionObject decode depth exceeded: " + maxDepth);
+    }
+
+    EAGER_DECODE_DEPTH.set(depth + 1);
+    try {
+      return xo.decode(decoder.getEncodingContext());
+    } finally {
+      if (depth == 0) {
+        EAGER_DECODE_DEPTH.remove();
+      } else {
+        EAGER_DECODE_DEPTH.set(depth);
+      }
+    }
   }
 
   private static Object _decodeFieldValue(
