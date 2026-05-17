@@ -193,7 +193,8 @@ public class DefaultAccessController implements AccessController {
 
           if (roleIds != null && userRolePermissions != null) {
             boolean hasAccess =
-                hasPermission(roleIds, userRolePermissions, PermissionType::getWriteRolePermissions);
+                hasPermission(
+                    roleIds, userRolePermissions, PermissionType::getWriteRolePermissions);
 
             if (!hasAccess) {
               p.result = AccessResult.DENIED_USER_ACCESS;
