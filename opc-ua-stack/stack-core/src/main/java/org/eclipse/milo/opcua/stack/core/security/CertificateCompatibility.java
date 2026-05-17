@@ -14,6 +14,7 @@ import static java.util.Objects.requireNonNull;
 
 import java.security.AlgorithmParameters;
 import java.security.GeneralSecurityException;
+import java.security.Provider;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPublicKey;
@@ -23,12 +24,14 @@ import java.security.spec.ECGenParameterSpec;
 import java.security.spec.ECParameterSpec;
 import java.security.spec.NamedParameterSpec;
 import java.util.Objects;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.util.validation.CertificateValidationUtil;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Checks whether application certificates and local identities are compatible with security policy
@@ -38,6 +41,8 @@ import org.jspecify.annotations.NullMarked;
 public final class CertificateCompatibility {
 
   private static final ECParameterSpec NIST_P256 = nistP256ParameterSpec();
+  private static final ECParameterSpec BRAINPOOL_P384R1 =
+      ecParameterSpec("brainpoolP384r1", new BouncyCastleProvider());
 
   private CertificateCompatibility() {}
 
@@ -141,7 +146,14 @@ public final class CertificateCompatibility {
       }
       case ECDSA_NIST_P256_SHA256 -> {
         if (!(publicKey instanceof ECPublicKey ecPublicKey)
-            || !isNistP256ParameterSpec(ecPublicKey.getParams())) {
+            || isDifferentParameterSpec(NIST_P256, ecPublicKey.getParams())) {
+
+          throw incompatiblePublicKey(authAxis, publicKey);
+        }
+      }
+      case ECDSA_BRAINPOOL_P384R1_SHA384 -> {
+        if (!(publicKey instanceof ECPublicKey ecPublicKey)
+            || isDifferentParameterSpec(BRAINPOOL_P384R1, ecPublicKey.getParams())) {
 
           throw incompatiblePublicKey(authAxis, publicKey);
         }
@@ -171,19 +183,29 @@ public final class CertificateCompatibility {
   }
 
   private static ECParameterSpec nistP256ParameterSpec() {
+    return ecParameterSpec("secp256r1", null);
+  }
+
+  private static ECParameterSpec ecParameterSpec(String curveName, @Nullable Provider provider) {
     try {
-      AlgorithmParameters parameters = AlgorithmParameters.getInstance("EC");
-      parameters.init(new ECGenParameterSpec("secp256r1"));
+      AlgorithmParameters parameters =
+          provider != null
+              ? AlgorithmParameters.getInstance("EC", provider)
+              : AlgorithmParameters.getInstance("EC");
+
+      parameters.init(new ECGenParameterSpec(curveName));
       return parameters.getParameterSpec(ECParameterSpec.class);
     } catch (GeneralSecurityException e) {
       throw new ExceptionInInitializerError(e);
     }
   }
 
-  private static boolean isNistP256ParameterSpec(ECParameterSpec parameterSpec) {
-    return Objects.equals(NIST_P256.getCurve(), parameterSpec.getCurve())
-        && Objects.equals(NIST_P256.getGenerator(), parameterSpec.getGenerator())
-        && Objects.equals(NIST_P256.getOrder(), parameterSpec.getOrder())
-        && NIST_P256.getCofactor() == parameterSpec.getCofactor();
+  private static boolean isDifferentParameterSpec(
+      ECParameterSpec expected, ECParameterSpec parameterSpec) {
+
+    return !Objects.equals(expected.getCurve(), parameterSpec.getCurve())
+        || !Objects.equals(expected.getGenerator(), parameterSpec.getGenerator())
+        || !Objects.equals(expected.getOrder(), parameterSpec.getOrder())
+        || expected.getCofactor() != parameterSpec.getCofactor();
   }
 }

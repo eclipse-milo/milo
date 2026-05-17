@@ -636,6 +636,8 @@ class EccEncryptedSecretTest {
         switch (profile.keyAgreementAxis()) {
           case ECDH_NIST_P256 ->
               EccPublicKeyCodec.decodeNistP256(parts.senderPublicKey(), providerProfile);
+          case ECDH_BRAINPOOL_P384R1 ->
+              EccPublicKeyCodec.decodeBrainpoolP384r1(parts.senderPublicKey(), providerProfile);
           case X25519 -> EccPublicKeyCodec.decodeX25519(parts.senderPublicKey(), providerProfile);
           default -> throw new IllegalArgumentException("unsupported key agreement axis");
         };
@@ -643,6 +645,9 @@ class EccEncryptedSecretTest {
         switch (profile.keyAgreementAxis()) {
           case ECDH_NIST_P256 ->
               EccKeyAgreementUtil.agreeNistP256(
+                  providerProfile, receiverEphemeralKeyPair.getPrivate(), senderEphemeralPublicKey);
+          case ECDH_BRAINPOOL_P384R1 ->
+              EccKeyAgreementUtil.agreeBrainpoolP384r1(
                   providerProfile, receiverEphemeralKeyPair.getPrivate(), senderEphemeralPublicKey);
           case X25519 ->
               EccKeyAgreementUtil.agreeX25519(
@@ -655,19 +660,36 @@ class EccEncryptedSecretTest {
             + EccKeyAgreementUtil.AEAD_INITIALIZATION_VECTOR_LENGTH;
     byte[] salt = secretSalt(totalLength, parts.senderPublicKey(), parts.receiverPublicKey());
     byte[] keyMaterial =
-        HkdfUtil.hkdfSha256(sharedSecret, salt, salt, totalLength, hmacProvider(providerProfile));
+        switch (profile.keyAgreementAxis()) {
+          case ECDH_BRAINPOOL_P384R1 ->
+              HkdfUtil.hkdfSha384(
+                  sharedSecret, salt, salt, totalLength, hmacProvider(providerProfile, profile));
+          case ECDH_NIST_P256, X25519 ->
+              HkdfUtil.hkdfSha256(
+                  sharedSecret, salt, salt, totalLength, hmacProvider(providerProfile, profile));
+          default -> throw new IllegalArgumentException("unsupported key agreement axis");
+        };
 
     return new SecretKeyMaterial(
         Arrays.copyOfRange(keyMaterial, 0, profile.symmetricEncryptionKeySize()),
         Arrays.copyOfRange(keyMaterial, profile.symmetricEncryptionKeySize(), totalLength));
   }
 
-  private static Provider hmacProvider(ProviderProfile providerProfile) throws Exception {
+  private static Provider hmacProvider(
+      ProviderProfile providerProfile, SecurityPolicyProfile profile) throws Exception {
+
+    String hmacTransformation =
+        switch (profile.keyAgreementAxis()) {
+          case ECDH_BRAINPOOL_P384R1 -> "HmacSHA384";
+          case ECDH_NIST_P256, X25519 -> "HmacSHA256";
+          default -> throw new IllegalArgumentException("unsupported key agreement axis");
+        };
+
     return SecurityProviderSupport.withProviderProfile(
         providerProfile,
-        "HmacSHA256",
+        hmacTransformation,
         provider -> {
-          Mac.getInstance("HmacSHA256", provider);
+          Mac.getInstance(hmacTransformation, provider);
           return provider;
         });
   }
@@ -698,6 +720,8 @@ class EccEncryptedSecretTest {
     return switch (profile.authAxis()) {
       case ECDSA_NIST_P256_SHA256 ->
           EccSignatureUtil.signEcdsaP256Sha256P1363(providerProfile, privateKey, data);
+      case ECDSA_BRAINPOOL_P384R1_SHA384 ->
+          EccSignatureUtil.signEcdsaP384Sha384P1363(providerProfile, privateKey, data);
       case ED25519 -> EccSignatureUtil.signEd25519(providerProfile, privateKey, data);
       default -> throw new IllegalArgumentException("unsupported auth axis");
     };
@@ -708,7 +732,9 @@ class EccEncryptedSecretTest {
         Arguments.of(SecurityPolicy.ECC_nistP256_AesGcm.getProfile()),
         Arguments.of(SecurityPolicy.ECC_nistP256_ChaChaPoly.getProfile()),
         Arguments.of(SecurityPolicy.ECC_curve25519_AesGcm.getProfile()),
-        Arguments.of(SecurityPolicy.ECC_curve25519_ChaChaPoly.getProfile()));
+        Arguments.of(SecurityPolicy.ECC_curve25519_ChaChaPoly.getProfile()),
+        Arguments.of(SecurityPolicy.ECC_brainpoolP384r1_AesGcm.getProfile()),
+        Arguments.of(SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly.getProfile()));
   }
 
   private static ApplicationIdentity applicationIdentity(SecurityPolicyProfile profile)
@@ -717,6 +743,8 @@ class EccEncryptedSecretTest {
     KeyPair keyPair =
         switch (profile.authAxis()) {
           case ECDSA_NIST_P256_SHA256 -> SelfSignedCertificateGenerator.generateNistP256KeyPair();
+          case ECDSA_BRAINPOOL_P384R1_SHA384 ->
+              SelfSignedCertificateGenerator.generateBrainpoolP384r1KeyPair();
           case ED25519 -> SelfSignedCertificateGenerator.generateEd25519KeyPair();
           default ->
               throw new IllegalArgumentException("unsupported auth axis: " + profile.authAxis());
@@ -736,6 +764,7 @@ class EccEncryptedSecretTest {
 
     return switch (keyAgreementAxis) {
       case ECDH_NIST_P256 -> EccPublicKeyCodec.NIST_P256_PUBLIC_KEY_LENGTH;
+      case ECDH_BRAINPOOL_P384R1 -> EccPublicKeyCodec.BRAINPOOL_P384R1_PUBLIC_KEY_LENGTH;
       case X25519 -> EccPublicKeyCodec.X25519_PUBLIC_KEY_LENGTH;
       default ->
           throw new IllegalArgumentException("unsupported key agreement axis: " + keyAgreementAxis);
@@ -747,6 +776,8 @@ class EccEncryptedSecretTest {
 
     return switch (authAxis) {
       case ECDSA_NIST_P256_SHA256 -> EccSignatureUtil.ECDSA_P256_SHA256_P1363_SIGNATURE_LENGTH;
+      case ECDSA_BRAINPOOL_P384R1_SHA384 ->
+          EccSignatureUtil.ECDSA_P384_SHA384_P1363_SIGNATURE_LENGTH;
       case ED25519 -> EccSignatureUtil.ED25519_SIGNATURE_LENGTH;
       default -> throw new IllegalArgumentException("unsupported auth axis: " + authAxis);
     };

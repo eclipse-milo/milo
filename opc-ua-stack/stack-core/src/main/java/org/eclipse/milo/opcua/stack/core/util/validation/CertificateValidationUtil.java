@@ -666,7 +666,9 @@ public class CertificateValidationUtil {
 
     AuthAxis authAxis = securityPolicyProfile.authAxis();
 
-    return authAxis == AuthAxis.ECDSA_NIST_P256_SHA256 || authAxis == AuthAxis.ED25519;
+    return authAxis == AuthAxis.ECDSA_NIST_P256_SHA256
+        || authAxis == AuthAxis.ECDSA_BRAINPOOL_P384R1_SHA384
+        || authAxis == AuthAxis.ED25519;
   }
 
   private static boolean hasKeyUsage(boolean[] keyUsage, int bitIndex) {

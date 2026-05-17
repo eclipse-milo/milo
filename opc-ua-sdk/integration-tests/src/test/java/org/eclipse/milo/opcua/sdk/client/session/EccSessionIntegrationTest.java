@@ -503,6 +503,8 @@ class EccSessionIntegrationTest {
     KeyPair keyPair;
     if (NodeIds.EccNistP256ApplicationCertificateType.equals(certificateTypeId)) {
       keyPair = SelfSignedCertificateGenerator.generateNistP256KeyPair();
+    } else if (NodeIds.EccBrainpoolP384r1ApplicationCertificateType.equals(certificateTypeId)) {
+      keyPair = SelfSignedCertificateGenerator.generateBrainpoolP384r1KeyPair();
     } else if (NodeIds.EccCurve25519ApplicationCertificateType.equals(certificateTypeId)) {
       keyPair = SelfSignedCertificateGenerator.generateEd25519KeyPair();
     } else {
@@ -541,7 +543,13 @@ class EccSessionIntegrationTest {
             SecurityPolicy.ECC_curve25519_AesGcm, NodeIds.EccCurve25519ApplicationCertificateType),
         Arguments.of(
             SecurityPolicy.ECC_curve25519_ChaChaPoly,
-            NodeIds.EccCurve25519ApplicationCertificateType));
+            NodeIds.EccCurve25519ApplicationCertificateType),
+        Arguments.of(
+            SecurityPolicy.ECC_brainpoolP384r1_AesGcm,
+            NodeIds.EccBrainpoolP384r1ApplicationCertificateType),
+        Arguments.of(
+            SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly,
+            NodeIds.EccBrainpoolP384r1ApplicationCertificateType));
   }
 
   private static int freePort() throws Exception {

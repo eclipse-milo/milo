@@ -890,7 +890,7 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
 
   private static boolean usesEphemeralKeyAgreement(SecurityPolicyProfile profile) {
     return switch (profile.keyAgreementAxis()) {
-      case ECDH_NIST_P256, X25519 -> true;
+      case ECDH_NIST_P256, ECDH_BRAINPOOL_P384R1, X25519 -> true;
       default -> false;
     };
   }

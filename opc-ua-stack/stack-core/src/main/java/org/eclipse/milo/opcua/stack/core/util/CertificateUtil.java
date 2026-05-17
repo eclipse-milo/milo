@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.security.KeyPair;
+import java.security.Provider;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
@@ -265,6 +266,49 @@ public class CertificateUtil {
       @Nullable List<KeyPurposeId> extendedKeyUsageIds)
       throws Exception {
 
+    return generateCsr(
+        keyPair,
+        subject,
+        sanUri,
+        sanDnsNames,
+        sanIpAddresses,
+        signatureAlgorithm,
+        keyUsageFlags,
+        extendedKeyUsageIds,
+        null);
+  }
+
+  /**
+   * Generate a {@link PKCS10CertificationRequest}.
+   *
+   * @param keyPair the {@link KeyPair} containing Public and Private keys.
+   * @param subject the subject name {@link X500Name}.
+   * @param sanUri the URI to request in the SAN.
+   * @param sanDnsNames the DNS names to request in the SAN.
+   * @param sanIpAddresses the IP addresses to request in the SAN.
+   * @param signatureAlgorithm the signature algorithm to use when generating the signature to
+   *     validate the certificate.
+   * @param keyUsageFlags the requested KeyUsage flags.
+   * @param extendedKeyUsageIds the requested ExtendedKeyUsage IDs, or {@code null} to omit the
+   *     extension.
+   * @param provider the JCA provider to use for signing, or {@code null} for normal provider
+   *     lookup. Use this when the private key or signature algorithm requires a provider that the
+   *     JVM would not reliably choose by default.
+   * @return a {@link PKCS10CertificationRequest}.
+   * @throws Exception if creating the signing request fails for any reason.
+   */
+  public static PKCS10CertificationRequest generateCsr(
+      KeyPair keyPair,
+      X500Name subject,
+      String sanUri,
+      List<String> sanDnsNames,
+      List<String> sanIpAddresses,
+      String signatureAlgorithm,
+      int keyUsageFlags,
+      @Nullable List<KeyPurposeId> extendedKeyUsageIds,
+      @Nullable Provider provider)
+      throws Exception {
+
     PKCS10CertificationRequestBuilder builder =
         new PKCS10CertificationRequestBuilder(
             subject, SubjectPublicKeyInfo.getInstance(keyPair.getPublic().getEncoded()));
@@ -303,6 +347,9 @@ public class CertificateUtil {
     builder.addAttribute(PKCSObjectIdentifiers.pkcs_9_at_extensionRequest, extGen.generate());
 
     JcaContentSignerBuilder signerBuilder = new JcaContentSignerBuilder(signatureAlgorithm);
+    if (provider != null) {
+      signerBuilder.setProvider(provider);
+    }
 
     ContentSigner signer = signerBuilder.build(keyPair.getPrivate());
 

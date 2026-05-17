@@ -33,7 +33,9 @@ import org.jspecify.annotations.Nullable;
 public final class HkdfUtil {
 
   private static final String HMAC_SHA256 = "HmacSHA256";
+  private static final String HMAC_SHA384 = "HmacSHA384";
   private static final int SHA256_LENGTH = 32;
+  private static final int SHA384_LENGTH = 48;
 
   private HkdfUtil() {}
 
@@ -74,6 +76,45 @@ public final class HkdfUtil {
       throws UaException {
 
     return hkdf(HMAC_SHA256, SHA256_LENGTH, ikm, salt, info, length, provider);
+  }
+
+  /**
+   * Derive key material with HKDF-SHA-384.
+   *
+   * <p>Use this overload when normal JCA provider lookup is acceptable.
+   *
+   * @param ikm the input keying material.
+   * @param salt the HKDF salt; an empty salt uses the RFC 5869 default.
+   * @param info the HKDF context information.
+   * @param length the number of output bytes to derive.
+   * @return the derived output keying material.
+   * @throws UaException if the configured provider cannot complete HMAC-SHA-384.
+   */
+  public static byte[] hkdfSha384(byte[] ikm, byte[] salt, byte[] info, int length)
+      throws UaException {
+
+    return hkdfSha384(ikm, salt, info, length, null);
+  }
+
+  /**
+   * Derive key material with HKDF-SHA-384 using a specific JCA provider.
+   *
+   * <p>Use this overload when policy/provider resolution has already selected the provider family
+   * that should perform HMAC-SHA-384.
+   *
+   * @param ikm the input keying material.
+   * @param salt the HKDF salt; an empty salt uses the RFC 5869 default.
+   * @param info the HKDF context information.
+   * @param length the number of output bytes to derive.
+   * @param provider the provider to use for HMAC-SHA-384, or {@code null} for normal JCA lookup.
+   * @return the derived output keying material.
+   * @throws UaException if the configured provider cannot complete HMAC-SHA-384.
+   */
+  public static byte[] hkdfSha384(
+      byte[] ikm, byte[] salt, byte[] info, int length, @Nullable Provider provider)
+      throws UaException {
+
+    return hkdf(HMAC_SHA384, SHA384_LENGTH, ikm, salt, info, length, provider);
   }
 
   private static byte[] hkdf(

@@ -71,6 +71,8 @@ final class SecureChannelStrategies {
   private static final AuthenticationStrategy RSA_AUTHENTICATION = new RsaAuthenticationStrategy();
   private static final AuthenticationStrategy ECDSA_P256_AUTHENTICATION =
       new EcdsaP256AuthenticationStrategy();
+  private static final AuthenticationStrategy ECDSA_P384_AUTHENTICATION =
+      new EcdsaP384AuthenticationStrategy();
   private static final AuthenticationStrategy ED25519_AUTHENTICATION =
       new Ed25519AuthenticationStrategy();
 
@@ -83,6 +85,8 @@ final class SecureChannelStrategies {
       new RsaNoncePShaKeyAgreementStrategy();
   private static final KeyAgreementStrategy ECDH_NIST_P256_KEY_AGREEMENT =
       new EcdhNistP256HkdfKeyAgreementStrategy();
+  private static final KeyAgreementStrategy ECDH_BRAINPOOL_P384R1_KEY_AGREEMENT =
+      new EcdhBrainpoolP384r1HkdfKeyAgreementStrategy();
   private static final KeyAgreementStrategy X25519_KEY_AGREEMENT =
       new X25519HkdfKeyAgreementStrategy();
 
@@ -116,6 +120,7 @@ final class SecureChannelStrategies {
       case NONE -> NO_AUTHENTICATION;
       case RSA_PKCS1_SHA1, RSA_PKCS1_SHA256, RSA_PSS_SHA256 -> RSA_AUTHENTICATION;
       case ECDSA_NIST_P256_SHA256 -> ECDSA_P256_AUTHENTICATION;
+      case ECDSA_BRAINPOOL_P384R1_SHA384 -> ECDSA_P384_AUTHENTICATION;
       case ED25519 -> ED25519_AUTHENTICATION;
     };
   }
@@ -128,6 +133,7 @@ final class SecureChannelStrategies {
       case NONE -> NO_KEY_AGREEMENT;
       case RSA_NONCE -> RSA_NONCE_KEY_AGREEMENT;
       case ECDH_NIST_P256 -> ECDH_NIST_P256_KEY_AGREEMENT;
+      case ECDH_BRAINPOOL_P384R1 -> ECDH_BRAINPOOL_P384R1_KEY_AGREEMENT;
       case X25519 -> X25519_KEY_AGREEMENT;
     };
   }
@@ -141,7 +147,6 @@ final class SecureChannelStrategies {
       case CBC_HMAC -> CBC_HMAC_CHUNK_PROTECTION;
       case AES_GCM -> AES_GCM_CHUNK_PROTECTION;
       case CHACHA20_POLY1305 -> CHACHA20_POLY1305_CHUNK_PROTECTION;
-      default -> UNSUPPORTED_CHUNK_PROTECTION;
     };
   }
 
@@ -439,6 +444,35 @@ final class SecureChannelStrategies {
     }
   }
 
+  private static final class EcdsaP384AuthenticationStrategy implements AuthenticationStrategy {
+
+    @Override
+    public byte[] sign(
+        SecurityPolicyProfile profile, PrivateKey privateKey, ByteBuffer... signedBytes)
+        throws UaException {
+
+      return EccSignatureUtil.signEcdsaP384Sha384P1363(
+          resolveProviderProfile(profile), privateKey, signedBytes);
+    }
+
+    @Override
+    public void verify(
+        SecurityPolicyProfile profile,
+        Certificate certificate,
+        byte[] signatureBytes,
+        ByteBuffer... signedBytes)
+        throws UaException {
+
+      EccSignatureUtil.verifyEcdsaP384Sha384P1363(
+          resolveProviderProfile(profile), certificate.getPublicKey(), signatureBytes, signedBytes);
+    }
+
+    @Override
+    public int signatureSize(Certificate certificate) {
+      return EccSignatureUtil.ECDSA_P384_SHA384_P1363_SIGNATURE_LENGTH;
+    }
+  }
+
   private static final class Ed25519AuthenticationStrategy implements AuthenticationStrategy {
 
     @Override
@@ -613,6 +647,64 @@ final class SecureChannelStrategies {
         throws UaException {
 
       return EccKeyAgreementUtil.agreeNistP256(
+          resolveProviderProfile(profile), privateKey, peerPublicKey);
+    }
+
+    @Override
+    public EccKeyAgreementUtil.DerivedKeyMaterial deriveKeyMaterial(
+        SecurityPolicyProfile profile,
+        byte[] sharedSecret,
+        ByteString clientNonce,
+        ByteString serverNonce)
+        throws UaException {
+
+      return EccKeyAgreementUtil.deriveEccAeadKeyMaterial(
+          resolveProviderProfile(profile), profile, sharedSecret, clientNonce, serverNonce);
+    }
+
+    @Override
+    public ChannelSecurity.SecurityKeys deriveKeys(
+        SecurityPolicyProfile profile,
+        ByteString clientNonce,
+        ByteString serverNonce,
+        int initializationVectorSize) {
+
+      throw new UaRuntimeException(
+          StatusCodes.Bad_SecurityPolicyRejected,
+          "ECC key agreement requires an ephemeral private key: "
+              + profile.securityPolicy().getUri());
+    }
+  }
+
+  private static final class EcdhBrainpoolP384r1HkdfKeyAgreementStrategy
+      implements KeyAgreementStrategy {
+
+    @Override
+    public KeyPair generateEphemeral(SecurityPolicyProfile profile) throws UaException {
+      return EccKeyAgreementUtil.generateBrainpoolP384r1KeyPair(resolveProviderProfile(profile));
+    }
+
+    @Override
+    public ByteString encodePublicKey(SecurityPolicyProfile profile, PublicKey publicKey)
+        throws UaException {
+
+      return EccPublicKeyCodec.encodeBrainpoolP384r1(publicKey);
+    }
+
+    @Override
+    public PublicKey decodePublicKey(SecurityPolicyProfile profile, ByteString wirePublicKey)
+        throws UaException {
+
+      return EccPublicKeyCodec.decodeBrainpoolP384r1(
+          wirePublicKey, resolveProviderProfile(profile));
+    }
+
+    @Override
+    public byte[] agree(
+        SecurityPolicyProfile profile, PrivateKey privateKey, PublicKey peerPublicKey)
+        throws UaException {
+
+      return EccKeyAgreementUtil.agreeBrainpoolP384r1(
           resolveProviderProfile(profile), privateKey, peerPublicKey);
     }
 

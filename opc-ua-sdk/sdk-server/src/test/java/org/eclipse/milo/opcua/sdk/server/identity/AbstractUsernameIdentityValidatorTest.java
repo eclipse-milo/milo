@@ -249,7 +249,9 @@ class AbstractUsernameIdentityValidatorTest {
         Arguments.of(SecurityPolicy.ECC_nistP256_AesGcm.getProfile()),
         Arguments.of(SecurityPolicy.ECC_nistP256_ChaChaPoly.getProfile()),
         Arguments.of(SecurityPolicy.ECC_curve25519_AesGcm.getProfile()),
-        Arguments.of(SecurityPolicy.ECC_curve25519_ChaChaPoly.getProfile()));
+        Arguments.of(SecurityPolicy.ECC_curve25519_ChaChaPoly.getProfile()),
+        Arguments.of(SecurityPolicy.ECC_brainpoolP384r1_AesGcm.getProfile()),
+        Arguments.of(SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly.getProfile()));
   }
 
   private static ApplicationIdentity applicationIdentity(SecurityPolicyProfile profile)
@@ -258,6 +260,8 @@ class AbstractUsernameIdentityValidatorTest {
     KeyPair keyPair =
         switch (profile.authAxis()) {
           case ECDSA_NIST_P256_SHA256 -> SelfSignedCertificateGenerator.generateNistP256KeyPair();
+          case ECDSA_BRAINPOOL_P384R1_SHA384 ->
+              SelfSignedCertificateGenerator.generateBrainpoolP384r1KeyPair();
           case ED25519 -> SelfSignedCertificateGenerator.generateEd25519KeyPair();
           default ->
               throw new IllegalArgumentException("unsupported auth axis: " + profile.authAxis());

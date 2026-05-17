@@ -665,7 +665,9 @@ public class OpcUaServer extends AbstractServiceHandler {
     return securityPolicy == SecurityPolicy.ECC_nistP256_AesGcm
         || securityPolicy == SecurityPolicy.ECC_nistP256_ChaChaPoly
         || securityPolicy == SecurityPolicy.ECC_curve25519_AesGcm
-        || securityPolicy == SecurityPolicy.ECC_curve25519_ChaChaPoly;
+        || securityPolicy == SecurityPolicy.ECC_curve25519_ChaChaPoly
+        || securityPolicy == SecurityPolicy.ECC_brainpoolP384r1_AesGcm
+        || securityPolicy == SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly;
   }
 
   private CertificateIdentity resolveCertificateIdentity(

@@ -48,24 +48,30 @@ class DefaultApplicationGroupTest {
         List.of(
             NodeIds.RsaSha256ApplicationCertificateType,
             NodeIds.EccNistP256ApplicationCertificateType,
+            NodeIds.EccBrainpoolP384r1ApplicationCertificateType,
             NodeIds.EccCurve25519ApplicationCertificateType);
     DefaultApplicationGroup group =
         new DefaultApplicationGroup(
             new MemoryTrustListManager(),
             new MemoryCertificateStore(),
-            new M1CertificateFactory(),
+            new CurrentEccCertificateFactory(),
             new CertificateValidator.InsecureCertificateValidator(),
             certificateTypeIds);
 
     group.initialize();
 
     assertEquals(certificateTypeIds, group.getSupportedCertificateTypeIds());
-    assertEquals(3, group.getCertificateEntries().size());
+    assertEquals(4, group.getCertificateEntries().size());
     assertTrue(group.getKeyPair(NodeIds.RsaSha256ApplicationCertificateType).isPresent());
     assertTrue(group.getKeyPair(NodeIds.EccNistP256ApplicationCertificateType).isPresent());
+    assertTrue(group.getKeyPair(NodeIds.EccBrainpoolP384r1ApplicationCertificateType).isPresent());
     assertTrue(group.getKeyPair(NodeIds.EccCurve25519ApplicationCertificateType).isPresent());
     assertTrue(
         group.getCertificateChain(NodeIds.EccNistP256ApplicationCertificateType).isPresent());
+    assertTrue(
+        group
+            .getCertificateChain(NodeIds.EccBrainpoolP384r1ApplicationCertificateType)
+            .isPresent());
     assertTrue(
         group.getCertificateChain(NodeIds.EccCurve25519ApplicationCertificateType).isPresent());
   }
@@ -90,13 +96,15 @@ class DefaultApplicationGroupTest {
     assertFalse(group.getKeyPair(NodeIds.EccNistP256ApplicationCertificateType).isPresent());
   }
 
-  private static final class M1CertificateFactory extends TestCertificateFactory {
+  private static final class CurrentEccCertificateFactory extends TestCertificateFactory {
 
     @Override
     public KeyPair createKeyPair(NodeId nodeId) {
       try {
         if (nodeId.equals(NodeIds.EccNistP256ApplicationCertificateType)) {
           return createEccNistP256KeyPair();
+        } else if (nodeId.equals(NodeIds.EccBrainpoolP384r1ApplicationCertificateType)) {
+          return createEccBrainpoolP384r1KeyPair();
         } else if (nodeId.equals(NodeIds.EccCurve25519ApplicationCertificateType)) {
           return createEccCurve25519KeyPair();
         } else {
@@ -110,6 +118,7 @@ class DefaultApplicationGroupTest {
     @Override
     public X509Certificate[] createCertificateChain(NodeId nodeId, KeyPair keyPair) {
       if (nodeId.equals(NodeIds.EccNistP256ApplicationCertificateType)
+          || nodeId.equals(NodeIds.EccBrainpoolP384r1ApplicationCertificateType)
           || nodeId.equals(NodeIds.EccCurve25519ApplicationCertificateType)) {
 
         return createEccApplicationCertificateChain(keyPair);

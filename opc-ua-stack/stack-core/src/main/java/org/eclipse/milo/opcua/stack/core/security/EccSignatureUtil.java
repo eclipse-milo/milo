@@ -36,9 +36,12 @@ public final class EccSignatureUtil {
 
   public static final String ECDSA_SHA256_URI =
       "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256";
+  public static final String ECDSA_SHA384_URI =
+      "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha384";
   public static final String ED25519_URI = "http://www.w3.org/2021/04/xmldsig-more#eddsa-ed25519";
 
   public static final int ECDSA_P256_SHA256_P1363_SIGNATURE_LENGTH = 64;
+  public static final int ECDSA_P384_SHA384_P1363_SIGNATURE_LENGTH = 96;
   public static final int ED25519_SIGNATURE_LENGTH = 64;
 
   private static final SecurityProviderResolver PROVIDER_RESOLVER =
@@ -56,6 +59,7 @@ public final class EccSignatureUtil {
   public static String getSignatureAlgorithmUri(SecurityPolicyProfile profile) throws UaException {
     return switch (profile.authAxis()) {
       case ECDSA_NIST_P256_SHA256 -> ECDSA_SHA256_URI;
+      case ECDSA_BRAINPOOL_P384R1_SHA384 -> ECDSA_SHA384_URI;
       case ED25519 -> ED25519_URI;
       default ->
           throw new UaException(
@@ -81,6 +85,8 @@ public final class EccSignatureUtil {
 
     return switch (profile.authAxis()) {
       case ECDSA_NIST_P256_SHA256 -> signEcdsaP256Sha256P1363(providerProfile, privateKey, buffers);
+      case ECDSA_BRAINPOOL_P384R1_SHA384 ->
+          signEcdsaP384Sha384P1363(providerProfile, privateKey, buffers);
       case ED25519 -> signEd25519(providerProfile, privateKey, buffers);
       default ->
           throw new UaException(
@@ -110,6 +116,8 @@ public final class EccSignatureUtil {
     switch (profile.authAxis()) {
       case ECDSA_NIST_P256_SHA256 ->
           verifyEcdsaP256Sha256P1363(providerProfile, publicKey, signatureBytes, buffers);
+      case ECDSA_BRAINPOOL_P384R1_SHA384 ->
+          verifyEcdsaP384Sha384P1363(providerProfile, publicKey, signatureBytes, buffers);
       case ED25519 -> verifyEd25519(providerProfile, publicKey, signatureBytes, buffers);
       default ->
           throw new UaException(
@@ -135,7 +143,7 @@ public final class EccSignatureUtil {
       throws UaException {
 
     byte[] signatureBytes =
-        sign(providerProfile, ecdsaTransformation(providerProfile), privateKey, buffers);
+        sign(providerProfile, ecdsaTransformation(providerProfile, "SHA256"), privateKey, buffers);
 
     if (signatureBytes.length != ECDSA_P256_SHA256_P1363_SIGNATURE_LENGTH) {
       throw new UaException(
@@ -166,10 +174,65 @@ public final class EccSignatureUtil {
 
     verify(
         providerProfile,
-        ecdsaTransformation(providerProfile),
+        ecdsaTransformation(providerProfile, "SHA256"),
         publicKey,
         signatureBytes,
         ECDSA_P256_SHA256_P1363_SIGNATURE_LENGTH,
+        buffers);
+  }
+
+  /**
+   * Sign data with ECDSA P-384 SHA-384 and return a P1363 {@code r || s} signature.
+   *
+   * <p>The returned signature is always 96 bytes: 48 bytes of {@code r} followed by 48 bytes of
+   * {@code s}.
+   *
+   * @param providerProfile the provider profile to use.
+   * @param privateKey the P-384 private key.
+   * @param buffers the data buffers to sign from their current positions to limits.
+   * @return the 96-byte P1363 signature.
+   * @throws UaException if signing fails.
+   */
+  public static byte[] signEcdsaP384Sha384P1363(
+      ProviderProfile providerProfile, PrivateKey privateKey, ByteBuffer... buffers)
+      throws UaException {
+
+    byte[] signatureBytes =
+        sign(providerProfile, ecdsaTransformation(providerProfile, "SHA384"), privateKey, buffers);
+
+    if (signatureBytes.length != ECDSA_P384_SHA384_P1363_SIGNATURE_LENGTH) {
+      throw new UaException(
+          StatusCodes.Bad_InternalError,
+          "ECDSA P-384 P1363 signature was " + signatureBytes.length + " bytes");
+    }
+
+    return signatureBytes;
+  }
+
+  /**
+   * Verify an ECDSA P-384 SHA-384 P1363 signature.
+   *
+   * <p>Signatures with any length other than 96 bytes are rejected before provider verification.
+   *
+   * @param providerProfile the provider profile to use.
+   * @param publicKey the P-384 public key.
+   * @param signatureBytes the 96-byte P1363 signature.
+   * @param buffers the signed data buffers from their current positions to limits.
+   * @throws UaException if verification fails.
+   */
+  public static void verifyEcdsaP384Sha384P1363(
+      ProviderProfile providerProfile,
+      PublicKey publicKey,
+      byte[] signatureBytes,
+      ByteBuffer... buffers)
+      throws UaException {
+
+    verify(
+        providerProfile,
+        ecdsaTransformation(providerProfile, "SHA384"),
+        publicKey,
+        signatureBytes,
+        ECDSA_P384_SHA384_P1363_SIGNATURE_LENGTH,
         buffers);
   }
 
@@ -291,10 +354,10 @@ public final class EccSignatureUtil {
     }
   }
 
-  private static String ecdsaTransformation(ProviderProfile providerProfile) {
+  private static String ecdsaTransformation(ProviderProfile providerProfile, String digestName) {
     return switch (providerProfile) {
-      case BOUNCY_CASTLE -> "SHA256WITHPLAIN-ECDSA";
-      case JDK -> "SHA256withECDSAinP1363Format";
+      case BOUNCY_CASTLE -> digestName + "WITHPLAIN-ECDSA";
+      case JDK -> digestName + "withECDSAinP1363Format";
     };
   }
 }

@@ -77,6 +77,9 @@ class KeyStoreCertificateStoreTest extends CertificateStoreTest {
           KeyStoreCertificateStore.ECC_NIST_P256_ALIAS,
           store.getAlias(NodeIds.EccNistP256ApplicationCertificateType));
       assertEquals(
+          KeyStoreCertificateStore.ECC_BRAINPOOL_P384R1_ALIAS,
+          store.getAlias(NodeIds.EccBrainpoolP384r1ApplicationCertificateType));
+      assertEquals(
           KeyStoreCertificateStore.ECC_CURVE25519_ALIAS,
           store.getAlias(NodeIds.EccCurve25519ApplicationCertificateType));
       assertEquals(
@@ -147,6 +150,7 @@ class KeyStoreCertificateStoreTest extends CertificateStoreTest {
     assertDoesNotThrow(store::initialize);
     assertTrue(store.contains(NodeIds.RsaSha256ApplicationCertificateType));
     assertFalse(store.contains(NodeIds.EccNistP256ApplicationCertificateType));
+    assertFalse(store.contains(NodeIds.EccBrainpoolP384r1ApplicationCertificateType));
     assertFalse(store.contains(NodeIds.EccCurve25519ApplicationCertificateType));
 
     store.close();

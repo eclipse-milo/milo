@@ -11,6 +11,7 @@
 package org.eclipse.milo.opcua.stack.core.security;
 
 import static java.util.Objects.requireNonNull;
+import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.ECDSA_BRAINPOOL_P384R1_SHA384;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.ECDSA_NIST_P256_SHA256;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.ED25519;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.NONE;
@@ -20,6 +21,7 @@ import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.A
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.ChunkProtectionAxis.AES_GCM;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.ChunkProtectionAxis.CBC_HMAC;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.ChunkProtectionAxis.CHACHA20_POLY1305;
+import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.ECDH_BRAINPOOL_P384R1;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.ECDH_NIST_P256;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.RSA_NONCE;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.X25519;
@@ -362,6 +364,61 @@ public final class SecurityPolicyProfiles {
             32,
             1,
             0x04,
+            true,
+            true));
+
+    // Brainpool P-384 policies are ECC B profiles. They use Brainpool P-384r1 ECDSA certificates
+    // and P-384r1 ECDH ephemeral public keys encoded as 96-byte x||y values, HKDF-SHA-384, and
+    // 256-bit AEAD encryption keys.
+    register(
+        profiles,
+        profile(
+            SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly,
+            ECDSA_BRAINPOOL_P384R1_SHA384,
+            List.of(NodeIds.EccBrainpoolP384r1ApplicationCertificateType),
+            ECDH_BRAINPOOL_P384R1,
+            CHACHA20_POLY1305,
+            NON_LEGACY,
+            null,
+            null,
+            SecurityAlgorithm.None,
+            SecurityAlgorithm.None,
+            null,
+            null,
+            null,
+            SecurityAlgorithm.Sha384,
+            96,
+            16,
+            0,
+            32,
+            1,
+            0x08,
+            true,
+            true));
+
+    register(
+        profiles,
+        profile(
+            SecurityPolicy.ECC_brainpoolP384r1_AesGcm,
+            ECDSA_BRAINPOOL_P384R1_SHA384,
+            List.of(NodeIds.EccBrainpoolP384r1ApplicationCertificateType),
+            ECDH_BRAINPOOL_P384R1,
+            AES_GCM,
+            NON_LEGACY,
+            null,
+            null,
+            SecurityAlgorithm.None,
+            SecurityAlgorithm.None,
+            null,
+            null,
+            null,
+            SecurityAlgorithm.Sha384,
+            96,
+            16,
+            0,
+            32,
+            1,
+            0x08,
             true,
             true));
 

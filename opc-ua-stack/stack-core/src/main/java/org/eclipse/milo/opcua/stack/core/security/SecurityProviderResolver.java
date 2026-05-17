@@ -43,6 +43,11 @@ import org.jspecify.annotations.Nullable;
  * provider profile resolve to {@link ProviderProfile#JDK}. Resolver instances are thread-safe and
  * cache successful policy resolutions; create a new resolver after changing provider preferences or
  * JVM provider configuration.
+ *
+ * <p>A provider profile is a capability boundary, not just a provider name lookup. Some policy
+ * families can use either Bouncy Castle or the JDK when all required transformations are present.
+ * Brainpool P-384 policies are intentionally Bouncy Castle-only because Java's built-in providers
+ * do not provide portable Brainpool curve support for ECDSA and ECDH.
  */
 @NullMarked
 public final class SecurityProviderResolver {
@@ -123,10 +128,10 @@ public final class SecurityProviderResolver {
 
   private static boolean needsNewProviderProfile(SecurityPolicyProfile profile) {
     return switch (profile.authAxis()) {
-      case ECDSA_NIST_P256_SHA256, ED25519 -> true;
+      case ECDSA_NIST_P256_SHA256, ECDSA_BRAINPOOL_P384R1_SHA384, ED25519 -> true;
       default ->
           switch (profile.keyAgreementAxis()) {
-            case ECDH_NIST_P256, X25519 -> true;
+            case ECDH_NIST_P256, ECDH_BRAINPOOL_P384R1, X25519 -> true;
             default ->
                 switch (profile.chunkProtectionAxis()) {
                   case AES_GCM, CHACHA20_POLY1305 -> true;
@@ -176,14 +181,25 @@ public final class SecurityProviderResolver {
           Provider bouncyCastleProvider = requireNonNull(provider, "provider");
 
           Signature.getInstance("SHA256WITHPLAIN-ECDSA", bouncyCastleProvider);
-          validateEcP256(bouncyCastleProvider);
+          validateEc("secp256r1", bouncyCastleProvider);
         } else {
           requireJdkProvider(
               "SHA256withECDSAinP1363Format",
               p -> {
                 Signature.getInstance("SHA256withECDSAinP1363Format", p);
-                validateEcP256(p);
+                validateEc("secp256r1", p);
               });
+        }
+      }
+      case ECDSA_BRAINPOOL_P384R1_SHA384 -> {
+        if (providerProfile == ProviderProfile.BOUNCY_CASTLE) {
+          Provider bouncyCastleProvider = requireNonNull(provider, "provider");
+
+          Signature.getInstance("SHA384WITHPLAIN-ECDSA", bouncyCastleProvider);
+          validateEc("brainpoolP384r1", bouncyCastleProvider);
+        } else {
+          throw new GeneralSecurityException(
+              "Brainpool P-384 ECDSA requires Bouncy Castle provider profile");
         }
       }
       case ED25519 -> {
@@ -215,14 +231,25 @@ public final class SecurityProviderResolver {
           Provider bouncyCastleProvider = requireNonNull(provider, "provider");
 
           KeyAgreement.getInstance("ECDH", bouncyCastleProvider);
-          validateEcP256(bouncyCastleProvider);
+          validateEc("secp256r1", bouncyCastleProvider);
         } else {
           requireJdkProvider(
               "ECDH",
               p -> {
                 KeyAgreement.getInstance("ECDH", p);
-                validateEcP256(p);
+                validateEc("secp256r1", p);
               });
+        }
+      }
+      case ECDH_BRAINPOOL_P384R1 -> {
+        if (providerProfile == ProviderProfile.BOUNCY_CASTLE) {
+          Provider bouncyCastleProvider = requireNonNull(provider, "provider");
+
+          KeyAgreement.getInstance("ECDH", bouncyCastleProvider);
+          validateEc("brainpoolP384r1", bouncyCastleProvider);
+        } else {
+          throw new GeneralSecurityException(
+              "Brainpool P-384 ECDH requires Bouncy Castle provider profile");
         }
       }
       case X25519 -> {
@@ -258,6 +285,15 @@ public final class SecurityProviderResolver {
           requireJdkProvider("HmacSHA256", p -> Mac.getInstance("HmacSHA256", p));
         }
       }
+      case ECDH_BRAINPOOL_P384R1 -> {
+        if (providerProfile == ProviderProfile.BOUNCY_CASTLE) {
+          Provider bouncyCastleProvider = requireNonNull(provider, "provider");
+
+          SecretKeyFactory.getInstance("HKDF-SHA384", bouncyCastleProvider);
+        } else {
+          requireJdkProvider("HmacSHA384", p -> Mac.getInstance("HmacSHA384", p));
+        }
+      }
       default -> {}
     }
   }
@@ -286,10 +322,11 @@ public final class SecurityProviderResolver {
     }
   }
 
-  private static void validateEcP256(Provider provider) throws GeneralSecurityException {
+  private static void validateEc(String curveName, Provider provider)
+      throws GeneralSecurityException {
     KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC", provider);
 
-    keyPairGenerator.initialize(new ECGenParameterSpec("secp256r1"));
+    keyPairGenerator.initialize(new ECGenParameterSpec(curveName));
   }
 
   private static void requireJdkProvider(String name, ProviderCheck check)

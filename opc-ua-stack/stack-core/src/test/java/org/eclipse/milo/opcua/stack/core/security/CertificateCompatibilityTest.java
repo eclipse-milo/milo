@@ -46,6 +46,22 @@ class CertificateCompatibilityTest {
                 certificate));
   }
 
+  // Brainpool policies must advertise and select certificates with the matching Brainpool
+  // application certificate type and curve.
+  @Test
+  void acceptsBrainpoolP384ApplicationCertificate() throws Exception {
+    X509Certificate certificate =
+        buildEccApplicationCertificate(
+            SelfSignedCertificateGenerator.generateBrainpoolP384r1KeyPair());
+
+    assertDoesNotThrow(
+        () ->
+            CertificateCompatibility.checkCompatible(
+                SecurityPolicy.ECC_brainpoolP384r1_AesGcm.getProfile(),
+                NodeIds.EccBrainpoolP384r1ApplicationCertificateType,
+                certificate));
+  }
+
   @Test
   void acceptsEd25519ApplicationCertificateForCurve25519Policy() throws Exception {
     X509Certificate certificate =
@@ -122,6 +138,46 @@ class CertificateCompatibilityTest {
                 CertificateCompatibility.checkCompatible(
                     SecurityPolicy.ECC_nistP256_AesGcm.getProfile(),
                     NodeIds.EccNistP384ApplicationCertificateType,
+                    certificate));
+
+    assertEquals(StatusCodes.Bad_CertificateUseNotAllowed, exception.getStatusCode().getValue());
+  }
+
+  // NIST P-384 and Brainpool P-384 have the same coordinate size but different curve parameters;
+  // accepting one for the other would advertise an endpoint that cannot complete ECC handshakes.
+  @Test
+  void rejectsNistP384CertificateForBrainpoolPolicy() throws Exception {
+    X509Certificate certificate =
+        buildEccApplicationCertificate(
+            SelfSignedCertificateGenerator.generateEcKeyPair("secp384r1"));
+
+    UaException exception =
+        assertThrows(
+            UaException.class,
+            () ->
+                CertificateCompatibility.checkCompatible(
+                    SecurityPolicy.ECC_brainpoolP384r1_AesGcm.getProfile(),
+                    NodeIds.EccBrainpoolP384r1ApplicationCertificateType,
+                    certificate));
+
+    assertEquals(StatusCodes.Bad_CertificateUseNotAllowed, exception.getStatusCode().getValue());
+  }
+
+  // Certificate selection must reject the reverse mismatch too, otherwise a Brainpool identity
+  // could be chosen for a NIST P-256 endpoint based only on being an EC certificate.
+  @Test
+  void rejectsBrainpoolP384CertificateForNistPolicy() throws Exception {
+    X509Certificate certificate =
+        buildEccApplicationCertificate(
+            SelfSignedCertificateGenerator.generateBrainpoolP384r1KeyPair());
+
+    UaException exception =
+        assertThrows(
+            UaException.class,
+            () ->
+                CertificateCompatibility.checkCompatible(
+                    SecurityPolicy.ECC_nistP256_AesGcm.getProfile(),
+                    NodeIds.EccNistP256ApplicationCertificateType,
                     certificate));
 
     assertEquals(StatusCodes.Bad_CertificateUseNotAllowed, exception.getStatusCode().getValue());

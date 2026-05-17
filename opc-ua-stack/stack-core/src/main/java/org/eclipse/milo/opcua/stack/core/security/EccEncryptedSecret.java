@@ -108,6 +108,8 @@ public final class EccEncryptedSecret {
 
     return switch (profile.keyAgreementAxis()) {
       case ECDH_NIST_P256 -> EccKeyAgreementUtil.generateNistP256KeyPair(providerProfile);
+      case ECDH_BRAINPOOL_P384R1 ->
+          EccKeyAgreementUtil.generateBrainpoolP384r1KeyPair(providerProfile);
       case X25519 -> EccKeyAgreementUtil.generateX25519KeyPair(providerProfile);
       default -> throw unsupported(profile, "ephemeral key generation");
     };
@@ -666,7 +668,7 @@ public final class EccEncryptedSecret {
             + EccKeyAgreementUtil.AEAD_INITIALIZATION_VECTOR_LENGTH;
 
     byte[] salt = secretSalt(totalLength, senderPublicKey, receiverPublicKey);
-    byte[] keyMaterial = hkdfSha256(providerProfile, sharedSecret, salt, salt, totalLength);
+    byte[] keyMaterial = hkdf(providerProfile, profile, sharedSecret, salt, salt, totalLength);
 
     return new SecretKeyMaterial(
         Arrays.copyOfRange(keyMaterial, 0, profile.symmetricEncryptionKeySize()),
@@ -690,25 +692,44 @@ public final class EccEncryptedSecret {
     return salt;
   }
 
-  /** Runs HKDF-SHA256 through the provider selected for the ECC policy profile. */
-  private static byte[] hkdfSha256(
-      ProviderProfile providerProfile, byte[] ikm, byte[] salt, byte[] info, int length)
+  /** Runs profile-selected HKDF through the provider selected for the ECC policy profile. */
+  private static byte[] hkdf(
+      ProviderProfile providerProfile,
+      SecurityPolicyProfile profile,
+      byte[] ikm,
+      byte[] salt,
+      byte[] info,
+      int length)
       throws UaException {
+
+    String hmacTransformation = hkdfHmacTransformation(profile);
 
     try {
       Provider provider =
           SecurityProviderSupport.withProviderProfile(
               providerProfile,
-              "HmacSHA256",
+              hmacTransformation,
               p -> {
-                Mac.getInstance("HmacSHA256", p);
+                Mac.getInstance(hmacTransformation, p);
                 return p;
               });
 
-      return HkdfUtil.hkdfSha256(ikm, salt, info, length, provider);
+      return switch (profile.keyAgreementAxis()) {
+        case ECDH_BRAINPOOL_P384R1 -> HkdfUtil.hkdfSha384(ikm, salt, info, length, provider);
+        case ECDH_NIST_P256, X25519 -> HkdfUtil.hkdfSha256(ikm, salt, info, length, provider);
+        default -> throw unsupported(profile, "HKDF key derivation");
+      };
     } catch (GeneralSecurityException e) {
       throw new UaException(StatusCodes.Bad_ConfigurationError, e);
     }
+  }
+
+  private static String hkdfHmacTransformation(SecurityPolicyProfile profile) throws UaException {
+    return switch (profile.keyAgreementAxis()) {
+      case ECDH_BRAINPOOL_P384R1 -> "HmacSHA384";
+      case ECDH_NIST_P256, X25519 -> "HmacSHA256";
+      default -> throw unsupported(profile, "HKDF key derivation");
+    };
   }
 
   /** Performs the profile-specific ECDH/X25519 agreement for the token-secret ephemeral keys. */
@@ -722,6 +743,8 @@ public final class EccEncryptedSecret {
     return switch (profile.keyAgreementAxis()) {
       case ECDH_NIST_P256 ->
           EccKeyAgreementUtil.agreeNistP256(providerProfile, privateKey, peerPublicKey);
+      case ECDH_BRAINPOOL_P384R1 ->
+          EccKeyAgreementUtil.agreeBrainpoolP384r1(providerProfile, privateKey, peerPublicKey);
       case X25519 -> EccKeyAgreementUtil.agreeX25519(providerProfile, privateKey, peerPublicKey);
       default -> throw unsupported(profile, "key agreement");
     };
@@ -735,6 +758,7 @@ public final class EccEncryptedSecret {
 
     return switch (profile.keyAgreementAxis()) {
       case ECDH_NIST_P256 -> EccPublicKeyCodec.encodeNistP256(publicKey);
+      case ECDH_BRAINPOOL_P384R1 -> EccPublicKeyCodec.encodeBrainpoolP384r1(publicKey);
       case X25519 -> EccPublicKeyCodec.encodeX25519(publicKey);
       default -> throw unsupported(profile, "public-key encoding");
     };
@@ -749,6 +773,8 @@ public final class EccEncryptedSecret {
 
     return switch (profile.keyAgreementAxis()) {
       case ECDH_NIST_P256 -> EccPublicKeyCodec.decodeNistP256(publicKey, providerProfile);
+      case ECDH_BRAINPOOL_P384R1 ->
+          EccPublicKeyCodec.decodeBrainpoolP384r1(publicKey, providerProfile);
       case X25519 -> EccPublicKeyCodec.decodeX25519(publicKey, providerProfile);
       default -> throw unsupported(profile, "public-key decoding");
     };
@@ -786,6 +812,8 @@ public final class EccEncryptedSecret {
   private static int signatureSize(SecurityPolicyProfile profile) throws UaException {
     return switch (profile.authAxis()) {
       case ECDSA_NIST_P256_SHA256 -> EccSignatureUtil.ECDSA_P256_SHA256_P1363_SIGNATURE_LENGTH;
+      case ECDSA_BRAINPOOL_P384R1_SHA384 ->
+          EccSignatureUtil.ECDSA_P384_SHA384_P1363_SIGNATURE_LENGTH;
       case ED25519 -> EccSignatureUtil.ED25519_SIGNATURE_LENGTH;
       default -> throw unsupported(profile, "signature size");
     };
@@ -874,6 +902,7 @@ public final class EccEncryptedSecret {
     requireNonNull(profile, "profile");
 
     if ((profile.keyAgreementAxis() != KeyAgreementAxis.ECDH_NIST_P256
+            && profile.keyAgreementAxis() != KeyAgreementAxis.ECDH_BRAINPOOL_P384R1
             && profile.keyAgreementAxis() != KeyAgreementAxis.X25519)
         || (profile.chunkProtectionAxis() != ChunkProtectionAxis.AES_GCM
             && profile.chunkProtectionAxis() != ChunkProtectionAxis.CHACHA20_POLY1305)) {

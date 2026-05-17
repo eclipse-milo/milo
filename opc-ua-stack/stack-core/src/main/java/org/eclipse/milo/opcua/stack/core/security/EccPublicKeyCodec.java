@@ -32,6 +32,8 @@ import java.util.Arrays;
 import org.bouncycastle.crypto.params.X25519PublicKeyParameters;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.bouncycastle.jcajce.interfaces.XDHPublicKey;
+import org.bouncycastle.jce.ECNamedCurveTable;
+import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.SecurityProviderResolver.ProviderProfile;
@@ -42,21 +44,26 @@ import org.jspecify.annotations.NullMarked;
  * Wire codecs for ECC ephemeral public keys carried in OpenSecureChannel nonce fields.
  *
  * <p>OPC UA ECC policies do not encode these public keys as X.509 {@code SubjectPublicKeyInfo}
- * values. NIST curve keys are sent as fixed-width big-endian {@code x || y} coordinates with no
- * leading X9.62 {@code 0x04} point marker. X25519 keys are sent as the 32-byte RFC 7748 public
- * value; when receiving X25519 bytes, the final byte's most-significant bit is ignored as required
- * by the curve definition. The JCA XEC interfaces can also represent other curves such as X448, so
- * encoding checks both the key shape and curve identity. Decode methods validate the wire shape
- * before returning a provider-backed {@link PublicKey} suitable for key agreement.
+ * values. NIST P-256 and Brainpool P-384r1 keys are sent as fixed-width big-endian {@code x || y}
+ * coordinates with no leading X9.62 {@code 0x04} point marker: 64 bytes for P-256 and 96 bytes for
+ * Brainpool P-384r1. X25519 keys are sent as the 32-byte RFC 7748 public value; when receiving
+ * X25519 bytes, the final byte's most-significant bit is ignored as required by the curve
+ * definition. The JCA XEC interfaces can also represent other curves such as X448, so encoding
+ * checks both the key shape and curve identity. Decode methods validate the wire shape before
+ * returning a provider-backed {@link PublicKey} suitable for key agreement.
  */
 @NullMarked
 public final class EccPublicKeyCodec {
 
   public static final int NIST_P256_PUBLIC_KEY_LENGTH = 64;
+  public static final int BRAINPOOL_P384R1_PUBLIC_KEY_LENGTH = 96;
   public static final int X25519_PUBLIC_KEY_LENGTH = 32;
 
   private static final int NIST_P256_COORDINATE_LENGTH = 32;
+  private static final int BRAINPOOL_P384R1_COORDINATE_LENGTH = 48;
+  private static final String BRAINPOOL_P384R1_CURVE_NAME = "brainpoolP384r1";
   private static final ECParameterSpec NIST_P256 = nistP256ParameterSpec();
+  private static final ECParameterSpec BRAINPOOL_P384R1 = brainpoolP384r1ParameterSpec();
   private static final NamedParameterSpec X25519 = new NamedParameterSpec("X25519");
 
   private EccPublicKeyCodec() {}
@@ -72,31 +79,32 @@ public final class EccPublicKeyCodec {
    * @throws UaException if the key is not a valid P-256 public key.
    */
   public static ByteString encodeNistP256(PublicKey publicKey) throws UaException {
-    requireNonNull(publicKey, "publicKey");
-
-    if (!(publicKey instanceof ECPublicKey ecPublicKey)) {
-      throw new UaException(StatusCodes.Bad_SecurityChecksFailed, "expected EC public key");
-    }
-
-    ECPoint point = ecPublicKey.getW();
-
-    validateNistP256Point(point, NIST_P256);
-
-    byte[] encoded = new byte[NIST_P256_PUBLIC_KEY_LENGTH];
-    System.arraycopy(
-        fixedWidthUnsigned(point.getAffineX(), NIST_P256_COORDINATE_LENGTH),
-        0,
-        encoded,
-        0,
-        NIST_P256_COORDINATE_LENGTH);
-    System.arraycopy(
-        fixedWidthUnsigned(point.getAffineY(), NIST_P256_COORDINATE_LENGTH),
-        0,
-        encoded,
+    return encodeEc(
+        publicKey,
+        NIST_P256,
         NIST_P256_COORDINATE_LENGTH,
-        NIST_P256_COORDINATE_LENGTH);
+        NIST_P256_PUBLIC_KEY_LENGTH,
+        "NIST P-256");
+  }
 
-    return ByteString.of(encoded);
+  /**
+   * Encode a Brainpool P-384r1 public key as fixed-width {@code x || y} coordinates.
+   *
+   * <p>The returned bytes are the exact OpenSecureChannel wire value for profiles that use
+   * Brainpool P-384r1 ECDH ephemeral keys. Current Brainpool policies resolve to the Bouncy Castle
+   * provider profile because the JDK EC providers do not consistently expose this curve.
+   *
+   * @param publicKey the Brainpool P-384r1 public key.
+   * @return the OPC UA wire encoding.
+   * @throws UaException if the key is not a valid Brainpool P-384r1 public key.
+   */
+  public static ByteString encodeBrainpoolP384r1(PublicKey publicKey) throws UaException {
+    return encodeEc(
+        publicKey,
+        BRAINPOOL_P384R1,
+        BRAINPOOL_P384R1_COORDINATE_LENGTH,
+        BRAINPOOL_P384R1_PUBLIC_KEY_LENGTH,
+        "Brainpool P-384r1");
   }
 
   /**
@@ -113,34 +121,38 @@ public final class EccPublicKeyCodec {
   public static PublicKey decodeNistP256(ByteString wire, ProviderProfile providerProfile)
       throws UaException {
 
-    requireNonNull(wire, "wire");
-    requireNonNull(providerProfile, "providerProfile");
+    return decodeEc(
+        wire,
+        providerProfile,
+        NIST_P256,
+        NIST_P256_COORDINATE_LENGTH,
+        NIST_P256_PUBLIC_KEY_LENGTH,
+        "NIST P-256");
+  }
 
-    byte[] bytes = wire.bytesOrEmpty();
-    if (bytes.length != NIST_P256_PUBLIC_KEY_LENGTH) {
-      throw new UaException(
-          StatusCodes.Bad_NonceInvalid,
-          "NIST P-256 public key must be " + NIST_P256_PUBLIC_KEY_LENGTH + " bytes");
-    }
+  /**
+   * Decode fixed-width {@code x || y} coordinates into a Brainpool P-384r1 public key.
+   *
+   * <p>The point must be on the Brainpool P-384r1 curve. The returned key is created through the
+   * requested provider profile, so subsequent key-agreement operations use the same provider
+   * family. Callers normally obtain that provider profile from {@link SecurityProviderResolver}
+   * rather than selecting a JCA provider directly.
+   *
+   * @param wire the OPC UA wire encoding.
+   * @param providerProfile the provider profile used to create the returned key.
+   * @return a Brainpool P-384r1 public key.
+   * @throws UaException if the bytes are the wrong length, off-curve, or unsupported.
+   */
+  public static PublicKey decodeBrainpoolP384r1(ByteString wire, ProviderProfile providerProfile)
+      throws UaException {
 
-    BigInteger x = unsignedBigInteger(bytes, 0, NIST_P256_COORDINATE_LENGTH);
-    BigInteger y =
-        unsignedBigInteger(bytes, NIST_P256_COORDINATE_LENGTH, NIST_P256_COORDINATE_LENGTH);
-    ECPoint point = new ECPoint(x, y);
-
-    validateNistP256Point(point, NIST_P256);
-
-    try {
-      KeyFactory keyFactory =
-          SecurityProviderSupport.withProviderProfile(
-              providerProfile, "EC KeyFactory", p -> KeyFactory.getInstance("EC", p));
-
-      return keyFactory.generatePublic(new ECPublicKeySpec(point, NIST_P256));
-    } catch (InvalidKeySpecException e) {
-      throw new UaException(StatusCodes.Bad_NonceInvalid, e);
-    } catch (GeneralSecurityException e) {
-      throw new UaException(StatusCodes.Bad_ConfigurationError, e);
-    }
+    return decodeEc(
+        wire,
+        providerProfile,
+        BRAINPOOL_P384R1,
+        BRAINPOOL_P384R1_COORDINATE_LENGTH,
+        BRAINPOOL_P384R1_PUBLIC_KEY_LENGTH,
+        "Brainpool P-384r1");
   }
 
   /**
@@ -164,7 +176,7 @@ public final class EccPublicKeyCodec {
     }
 
     if (publicKey instanceof XECPublicKey xecPublicKey && isX25519(xecPublicKey)) {
-      return ByteString.of(littleEndian(xecPublicKey.getU(), X25519_PUBLIC_KEY_LENGTH));
+      return ByteString.of(x25519LittleEndian(xecPublicKey.getU()));
     }
 
     throw new UaException(StatusCodes.Bad_SecurityChecksFailed, "expected X25519 public key");
@@ -209,24 +221,91 @@ public final class EccPublicKeyCodec {
             keyFactory.generatePublic(
                 new XECPublicKeySpec(X25519, littleEndianUnsigned(publicValue)));
       };
+    } catch (InvalidKeySpecException | IOException e) {
+      throw new UaException(StatusCodes.Bad_NonceInvalid, e);
+    } catch (GeneralSecurityException e) {
+      throw new UaException(StatusCodes.Bad_ConfigurationError, e);
+    }
+  }
+
+  private static ByteString encodeEc(
+      PublicKey publicKey,
+      ECParameterSpec spec,
+      int coordinateLength,
+      int publicKeyLength,
+      String curveLabel)
+      throws UaException {
+
+    requireNonNull(publicKey, "publicKey");
+
+    if (!(publicKey instanceof ECPublicKey ecPublicKey)) {
+      throw new UaException(StatusCodes.Bad_SecurityChecksFailed, "expected EC public key");
+    }
+
+    ECPoint point = ecPublicKey.getW();
+
+    validatePoint(point, spec, curveLabel);
+
+    byte[] encoded = new byte[publicKeyLength];
+    System.arraycopy(
+        fixedWidthUnsigned(point.getAffineX(), coordinateLength), 0, encoded, 0, coordinateLength);
+    System.arraycopy(
+        fixedWidthUnsigned(point.getAffineY(), coordinateLength),
+        0,
+        encoded,
+        coordinateLength,
+        coordinateLength);
+
+    return ByteString.of(encoded);
+  }
+
+  private static PublicKey decodeEc(
+      ByteString wire,
+      ProviderProfile providerProfile,
+      ECParameterSpec spec,
+      int coordinateLength,
+      int publicKeyLength,
+      String curveLabel)
+      throws UaException {
+
+    requireNonNull(wire, "wire");
+    requireNonNull(providerProfile, "providerProfile");
+
+    byte[] bytes = wire.bytesOrEmpty();
+    if (bytes.length != publicKeyLength) {
+      throw new UaException(
+          StatusCodes.Bad_NonceInvalid,
+          curveLabel + " public key must be " + publicKeyLength + " bytes");
+    }
+
+    BigInteger x = unsignedBigInteger(bytes, 0, coordinateLength);
+    BigInteger y = unsignedBigInteger(bytes, coordinateLength, coordinateLength);
+    ECPoint point = new ECPoint(x, y);
+
+    validatePoint(point, spec, curveLabel);
+
+    try {
+      KeyFactory keyFactory =
+          SecurityProviderSupport.withProviderProfile(
+              providerProfile, "EC KeyFactory", p -> KeyFactory.getInstance("EC", p));
+
+      return keyFactory.generatePublic(new ECPublicKeySpec(point, spec));
     } catch (InvalidKeySpecException e) {
       throw new UaException(StatusCodes.Bad_NonceInvalid, e);
     } catch (GeneralSecurityException e) {
       throw new UaException(StatusCodes.Bad_ConfigurationError, e);
-    } catch (IOException e) {
-      throw new UaException(StatusCodes.Bad_NonceInvalid, e);
     }
   }
 
-  private static void validateNistP256Point(ECPoint point, ECParameterSpec spec)
+  private static void validatePoint(ECPoint point, ECParameterSpec spec, String curveLabel)
       throws UaException {
 
     if (ECPoint.POINT_INFINITY.equals(point)) {
-      throw new UaException(StatusCodes.Bad_NonceInvalid, "NIST P-256 point at infinity");
+      throw new UaException(StatusCodes.Bad_NonceInvalid, curveLabel + " point at infinity");
     }
 
     if (!(spec.getCurve().getField() instanceof ECFieldFp field)) {
-      throw new UaException(StatusCodes.Bad_ConfigurationError, "NIST P-256 field is not prime");
+      throw new UaException(StatusCodes.Bad_ConfigurationError, curveLabel + " field is not prime");
     }
 
     BigInteger p = field.getP();
@@ -234,7 +313,7 @@ public final class EccPublicKeyCodec {
     BigInteger y = point.getAffineY();
 
     if (x.signum() < 0 || y.signum() < 0 || x.compareTo(p) >= 0 || y.compareTo(p) >= 0) {
-      throw new UaException(StatusCodes.Bad_NonceInvalid, "NIST P-256 point outside field");
+      throw new UaException(StatusCodes.Bad_NonceInvalid, curveLabel + " point outside field");
     }
 
     BigInteger left = y.modPow(BigInteger.TWO, p);
@@ -245,7 +324,7 @@ public final class EccPublicKeyCodec {
             .mod(p);
 
     if (!left.equals(right)) {
-      throw new UaException(StatusCodes.Bad_NonceInvalid, "NIST P-256 point is off curve");
+      throw new UaException(StatusCodes.Bad_NonceInvalid, curveLabel + " point is off curve");
     }
   }
 
@@ -317,7 +396,29 @@ public final class EccPublicKeyCodec {
         new EllipticCurve(new ECFieldFp(p), a, b), new ECPoint(gx, gy), n, 1);
   }
 
-  private static byte[] littleEndian(BigInteger value, int length) throws UaException {
+  private static ECParameterSpec brainpoolP384r1ParameterSpec() {
+    ECNamedCurveParameterSpec namedSpec =
+        ECNamedCurveTable.getParameterSpec(BRAINPOOL_P384R1_CURVE_NAME);
+
+    if (namedSpec == null) {
+      throw new ExceptionInInitializerError("unknown EC curve: " + BRAINPOOL_P384R1_CURVE_NAME);
+    }
+
+    org.bouncycastle.math.ec.ECPoint generator = namedSpec.getG().normalize();
+    BigInteger p = namedSpec.getCurve().getField().getCharacteristic();
+    BigInteger a = namedSpec.getCurve().getA().toBigInteger();
+    BigInteger b = namedSpec.getCurve().getB().toBigInteger();
+    BigInteger gx = generator.getAffineXCoord().toBigInteger();
+    BigInteger gy = generator.getAffineYCoord().toBigInteger();
+
+    return new ECParameterSpec(
+        new EllipticCurve(new ECFieldFp(p), a, b),
+        new ECPoint(gx, gy),
+        namedSpec.getN(),
+        namedSpec.getH().intValueExact());
+  }
+
+  private static byte[] x25519LittleEndian(BigInteger value) throws UaException {
     if (value.signum() < 0) {
       throw new UaException(StatusCodes.Bad_NonceInvalid, "negative X25519 public value");
     }
@@ -327,11 +428,11 @@ public final class EccPublicKeyCodec {
       bigEndian = Arrays.copyOfRange(bigEndian, 1, bigEndian.length);
     }
 
-    if (bigEndian.length > length) {
+    if (bigEndian.length > X25519_PUBLIC_KEY_LENGTH) {
       throw new UaException(StatusCodes.Bad_NonceInvalid, "X25519 public value is too large");
     }
 
-    byte[] littleEndian = new byte[length];
+    byte[] littleEndian = new byte[X25519_PUBLIC_KEY_LENGTH];
     for (int i = 0; i < bigEndian.length; i++) {
       littleEndian[i] = bigEndian[bigEndian.length - 1 - i];
     }

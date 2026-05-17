@@ -171,6 +171,7 @@ public record SecurityPolicyProfile(
     RSA_PKCS1_SHA256,
     RSA_PSS_SHA256,
     ECDSA_NIST_P256_SHA256,
+    ECDSA_BRAINPOOL_P384R1_SHA384,
     ED25519
   }
 
@@ -179,6 +180,7 @@ public record SecurityPolicyProfile(
     NONE,
     RSA_NONCE,
     ECDH_NIST_P256,
+    ECDH_BRAINPOOL_P384R1,
     X25519
   }
 

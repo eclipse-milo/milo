@@ -43,6 +43,11 @@ import org.jspecify.annotations.NullMarked;
  * <p>The returned key material keeps OPC UA's direction names: client keys protect chunks sent by
  * the client, and server keys protect chunks sent by the server. A concrete {@code SecureChannel}
  * maps those protocol directions onto local encryption and decryption roles.
+ *
+ * <p>The profile selects both the curve and the HKDF hash. NIST P-256 and X25519 profiles derive
+ * key material with HKDF-SHA-256; Brainpool P-384r1 profiles derive the same directional fields
+ * with HKDF-SHA-384. Callers should pass the negotiated {@link SecurityPolicyProfile} through this
+ * helper instead of selecting the hash from key length alone.
  */
 @NullMarked
 public final class EccKeyAgreementUtil {
@@ -62,19 +67,22 @@ public final class EccKeyAgreementUtil {
   public static KeyPair generateNistP256KeyPair(ProviderProfile providerProfile)
       throws UaException {
 
-    requireNonNull(providerProfile, "providerProfile");
+    return generateEcKeyPair(providerProfile, "secp256r1");
+  }
 
-    try {
-      KeyPairGenerator generator =
-          SecurityProviderSupport.withProviderProfile(
-              providerProfile, "EC KeyPairGenerator", p -> KeyPairGenerator.getInstance("EC", p));
+  /**
+   * Generate an ephemeral Brainpool P-384r1 ECDH key pair.
+   *
+   * <p>Current Brainpool P-384 policies require the Bouncy Castle provider profile.
+   *
+   * @param providerProfile the provider profile to use.
+   * @return an ephemeral Brainpool P-384r1 key pair.
+   * @throws UaException if the key generation fails.
+   */
+  public static KeyPair generateBrainpoolP384r1KeyPair(ProviderProfile providerProfile)
+      throws UaException {
 
-      generator.initialize(new ECGenParameterSpec("secp256r1"));
-
-      return generator.generateKeyPair();
-    } catch (GeneralSecurityException e) {
-      throw new UaException(StatusCodes.Bad_ConfigurationError, e);
-    }
+    return generateEcKeyPair(providerProfile, "brainpoolP384r1");
   }
 
   /**
@@ -119,6 +127,27 @@ public final class EccKeyAgreementUtil {
   }
 
   /**
+   * Compute a Brainpool P-384r1 ECDH shared secret.
+   *
+   * <p>The peer key is validated as a Brainpool P-384r1 public key before the JCA key agreement is
+   * invoked.
+   *
+   * @param providerProfile the provider profile to use.
+   * @param privateKey the local ephemeral private key.
+   * @param peerPublicKey the peer ephemeral public key.
+   * @return the shared secret.
+   * @throws UaException if agreement fails.
+   */
+  public static byte[] agreeBrainpoolP384r1(
+      ProviderProfile providerProfile, PrivateKey privateKey, PublicKey peerPublicKey)
+      throws UaException {
+
+    EccPublicKeyCodec.encodeBrainpoolP384r1(peerPublicKey);
+
+    return agree(providerProfile, "ECDH", privateKey, peerPublicKey);
+  }
+
+  /**
    * Compute an X25519 shared secret and reject all-zero results.
    *
    * @param providerProfile the provider profile to use.
@@ -150,7 +179,7 @@ public final class EccKeyAgreementUtil {
    * direction. The same salt bytes are also used as HKDF {@code info}, matching the OPC UA
    * SecureChannel derivation rules for these profiles.
    *
-   * @param providerProfile the provider profile to use for HMAC-SHA-256.
+   * @param providerProfile the provider profile to use for the profile's HKDF HMAC.
    * @param profile the ECC security-policy profile.
    * @param sharedSecret the ECDH or X25519 shared secret.
    * @param clientNonce the client ephemeral public key bytes.
@@ -173,6 +202,7 @@ public final class EccKeyAgreementUtil {
     requireNonNull(serverNonce, "serverNonce");
 
     if (profile.keyAgreementAxis() != KeyAgreementAxis.ECDH_NIST_P256
+        && profile.keyAgreementAxis() != KeyAgreementAxis.ECDH_BRAINPOOL_P384R1
         && profile.keyAgreementAxis() != KeyAgreementAxis.X25519) {
       throw new UaException(
           StatusCodes.Bad_SecurityPolicyRejected,
@@ -183,9 +213,9 @@ public final class EccKeyAgreementUtil {
     byte[] clientSalt = hkdfSalt("opcua-client", totalLength, clientNonce, serverNonce);
     byte[] serverSalt = hkdfSalt("opcua-server", totalLength, serverNonce, clientNonce);
     byte[] clientMaterial =
-        hkdfSha256(providerProfile, sharedSecret, clientSalt, clientSalt, totalLength);
+        hkdf(providerProfile, profile, sharedSecret, clientSalt, clientSalt, totalLength);
     byte[] serverMaterial =
-        hkdfSha256(providerProfile, sharedSecret, serverSalt, serverSalt, totalLength);
+        hkdf(providerProfile, profile, sharedSecret, serverSalt, serverSalt, totalLength);
 
     return new DerivedKeyMaterial(
         Arrays.copyOfRange(clientMaterial, 0, profile.symmetricEncryptionKeySize()),
@@ -238,24 +268,67 @@ public final class EccKeyAgreementUtil {
     }
   }
 
-  private static byte[] hkdfSha256(
-      ProviderProfile providerProfile, byte[] ikm, byte[] salt, byte[] info, int length)
+  private static KeyPair generateEcKeyPair(ProviderProfile providerProfile, String curveName)
       throws UaException {
+
+    requireNonNull(providerProfile, "providerProfile");
+
+    try {
+      KeyPairGenerator generator =
+          SecurityProviderSupport.withProviderProfile(
+              providerProfile, "EC KeyPairGenerator", p -> KeyPairGenerator.getInstance("EC", p));
+
+      generator.initialize(new ECGenParameterSpec(curveName));
+
+      return generator.generateKeyPair();
+    } catch (GeneralSecurityException e) {
+      throw new UaException(StatusCodes.Bad_ConfigurationError, e);
+    }
+  }
+
+  private static byte[] hkdf(
+      ProviderProfile providerProfile,
+      SecurityPolicyProfile profile,
+      byte[] ikm,
+      byte[] salt,
+      byte[] info,
+      int length)
+      throws UaException {
+
+    String hmacTransformation = hkdfHmacTransformation(profile);
 
     try {
       Provider provider =
           SecurityProviderSupport.withProviderProfile(
               providerProfile,
-              "HmacSHA256",
+              hmacTransformation,
               p -> {
-                Mac.getInstance("HmacSHA256", p);
+                Mac.getInstance(hmacTransformation, p);
                 return p;
               });
 
-      return HkdfUtil.hkdfSha256(ikm, salt, info, length, provider);
+      return switch (profile.keyAgreementAxis()) {
+        case ECDH_BRAINPOOL_P384R1 -> HkdfUtil.hkdfSha384(ikm, salt, info, length, provider);
+        case ECDH_NIST_P256, X25519 -> HkdfUtil.hkdfSha256(ikm, salt, info, length, provider);
+        default ->
+            throw new UaException(
+                StatusCodes.Bad_SecurityPolicyRejected,
+                "profile does not use an ECC HKDF axis: " + profile.securityPolicy().getUri());
+      };
     } catch (GeneralSecurityException e) {
       throw new UaException(StatusCodes.Bad_ConfigurationError, e);
     }
+  }
+
+  private static String hkdfHmacTransformation(SecurityPolicyProfile profile) throws UaException {
+    return switch (profile.keyAgreementAxis()) {
+      case ECDH_BRAINPOOL_P384R1 -> "HmacSHA384";
+      case ECDH_NIST_P256, X25519 -> "HmacSHA256";
+      default ->
+          throw new UaException(
+              StatusCodes.Bad_SecurityPolicyRejected,
+              "profile does not use an ECC HKDF axis: " + profile.securityPolicy().getUri());
+    };
   }
 
   private static boolean allZero(byte[] bytes) {

@@ -41,6 +41,11 @@ public class SecurityProviderResolverTest {
         BOUNCY_CASTLE, resolver.resolve(SecurityPolicy.ECC_curve25519_AesGcm.getProfile()));
     assertEquals(
         BOUNCY_CASTLE, resolver.resolve(SecurityPolicy.ECC_curve25519_ChaChaPoly.getProfile()));
+    assertEquals(
+        BOUNCY_CASTLE, resolver.resolve(SecurityPolicy.ECC_brainpoolP384r1_AesGcm.getProfile()));
+    assertEquals(
+        BOUNCY_CASTLE,
+        resolver.resolve(SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly.getProfile()));
   }
 
   // The same policy tuples should remain executable on the built-in JDK providers for deployments
@@ -53,6 +58,22 @@ public class SecurityProviderResolverTest {
     assertEquals(JDK, resolver.resolve(SecurityPolicy.ECC_nistP256_ChaChaPoly.getProfile()));
     assertEquals(JDK, resolver.resolve(SecurityPolicy.ECC_curve25519_AesGcm.getProfile()));
     assertEquals(JDK, resolver.resolve(SecurityPolicy.ECC_curve25519_ChaChaPoly.getProfile()));
+  }
+
+  // Brainpool P-384 is not a "try JDK if BC is absent" policy family; callers should get a clear
+  // configuration failure instead of a later curve or signature transformation error.
+  @Test
+  public void testBrainpoolPoliciesRequireBouncyCastleProviderProfile() {
+    SecurityProviderResolver resolver = SecurityProviderResolver.withProviderProfiles(List.of(JDK));
+
+    UaException exception =
+        assertThrows(
+            UaException.class,
+            () -> resolver.resolve(SecurityPolicy.ECC_brainpoolP384r1_AesGcm.getProfile()));
+
+    assertEquals(StatusCodes.Bad_ConfigurationError, exception.getStatusCode().getValue());
+    assertTrue(exception.getMessage().contains("Brainpool P-384"));
+    assertTrue(exception.getMessage().contains(JDK.name()));
   }
 
   @Test

@@ -45,6 +45,13 @@ public class SelfSignedCertificateBuilder {
    */
   public static final String SA_SHA256_ECDSA = "SHA256withECDSA";
 
+  /**
+   * Signature Algorithm for SHA384 with ECDSA.
+   *
+   * <p>May only be used with EC-based KeyPairs and security profiles.
+   */
+  public static final String SA_SHA384_ECDSA = "SHA384withECDSA";
+
   /** Signature Algorithm for Ed25519. */
   public static final String SA_ED25519 = "Ed25519";
 
@@ -84,8 +91,9 @@ public class SelfSignedCertificateBuilder {
         Logger logger = LoggerFactory.getLogger(getClass());
         logger.warn("Using legacy key size: {}", bitLength);
       }
-    } else if (keyPair.getPublic() instanceof ECPublicKey) {
-      signatureAlgorithm = SA_SHA256_ECDSA;
+    } else if (keyPair.getPublic() instanceof ECPublicKey ecPublicKey) {
+      signatureAlgorithm =
+          ecPublicKey.getParams().getOrder().bitLength() > 256 ? SA_SHA384_ECDSA : SA_SHA256_ECDSA;
     } else if (isEd25519PublicKey(keyPair.getPublic())) {
       signatureAlgorithm = SA_ED25519;
     }

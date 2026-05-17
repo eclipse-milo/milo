@@ -116,7 +116,9 @@ class SecureChannelStrategiesTest {
         "ECC_nistP256_AesGcm",
         "ECC_nistP256_ChaChaPoly",
         "ECC_curve25519_AesGcm",
-        "ECC_curve25519_ChaChaPoly"
+        "ECC_curve25519_ChaChaPoly",
+        "ECC_brainpoolP384r1_AesGcm",
+        "ECC_brainpoolP384r1_ChaChaPoly"
       })
   void eccEphemeralOpenSecureChannelDerivesMatchingAeadKeys(SecurityPolicy securityPolicy)
       throws Exception {
@@ -254,7 +256,9 @@ class SecureChannelStrategiesTest {
         "ECC_nistP256_AesGcm",
         "ECC_nistP256_ChaChaPoly",
         "ECC_curve25519_AesGcm",
-        "ECC_curve25519_ChaChaPoly"
+        "ECC_curve25519_ChaChaPoly",
+        "ECC_brainpoolP384r1_AesGcm",
+        "ECC_brainpoolP384r1_ChaChaPoly"
       })
   void asymmetricAuthenticationBindsAdditionalOpenSecureChannelBytes(SecurityPolicy securityPolicy)
       throws Exception {
@@ -312,6 +316,8 @@ class SecureChannelStrategiesTest {
   private static KeyPair applicationKeyPair(SecurityPolicy securityPolicy) throws Exception {
     return switch (securityPolicy.getProfile().authAxis()) {
       case ECDSA_NIST_P256_SHA256 -> SelfSignedCertificateGenerator.generateNistP256KeyPair();
+      case ECDSA_BRAINPOOL_P384R1_SHA384 ->
+          SelfSignedCertificateGenerator.generateBrainpoolP384r1KeyPair();
       case ED25519 -> SelfSignedCertificateGenerator.generateEd25519KeyPair();
       default -> throw new IllegalArgumentException("securityPolicy: " + securityPolicy);
     };

@@ -10,10 +10,12 @@
 
 package org.eclipse.milo.opcua.stack.core.security;
 
+import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.ECDSA_BRAINPOOL_P384R1_SHA384;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.ECDSA_NIST_P256_SHA256;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.ED25519;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.ChunkProtectionAxis.AES_GCM;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.ChunkProtectionAxis.CHACHA20_POLY1305;
+import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.ECDH_BRAINPOOL_P384R1;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.ECDH_NIST_P256;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.X25519;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.SequenceNumberMode.NON_LEGACY;
@@ -58,6 +60,14 @@ public class SecurityPolicyTest {
     assertSame(
         SecurityPolicy.ECC_curve25519_ChaChaPoly,
         SecurityPolicy.fromUri(SecurityPolicy.ECC_curve25519_ChaChaPoly.getUri()));
+
+    assertSame(
+        SecurityPolicy.ECC_brainpoolP384r1_AesGcm,
+        SecurityPolicy.fromUri(SecurityPolicy.ECC_brainpoolP384r1_AesGcm.getUri()));
+
+    assertSame(
+        SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly,
+        SecurityPolicy.fromUri(SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly.getUri()));
   }
 
   @Test
@@ -74,7 +84,9 @@ public class SecurityPolicyTest {
             "ECC_nistP256_AesGcm",
             "ECC_nistP256_ChaChaPoly",
             "ECC_curve25519_AesGcm",
-            "ECC_curve25519_ChaChaPoly"),
+            "ECC_curve25519_ChaChaPoly",
+            "ECC_brainpoolP384r1_AesGcm",
+            "ECC_brainpoolP384r1_ChaChaPoly"),
         eccPolicyNames);
 
     assertTrue(
@@ -82,6 +94,9 @@ public class SecurityPolicyTest {
             .isEmpty());
     assertTrue(
         SecurityPolicy.fromUriSafe("http://opcfoundation.org/UA/SecurityPolicy#ECC_curve25519")
+            .isEmpty());
+    assertTrue(
+        SecurityPolicy.fromUriSafe("http://opcfoundation.org/UA/SecurityPolicy#ECC_brainpoolP384r1")
             .isEmpty());
     assertTrue(
         SecurityPolicy.fromUriSafe(
@@ -152,7 +167,7 @@ public class SecurityPolicyTest {
   // selection, OpenSecureChannel, chunk codecs, and username-token encryption all share.
   @ParameterizedTest
   @MethodSource("currentEccProfileExpectations")
-  public void testCurrentEccProfileMetadata(EccProfileExpectation expectation) {
+  void testCurrentEccProfileMetadata(EccProfileExpectation expectation) {
     SecurityPolicyProfile profile = SecurityPolicyProfiles.get(expectation.securityPolicy());
 
     assertEquals(expectation.authAxis(), profile.authAxis());
@@ -162,13 +177,16 @@ public class SecurityPolicyTest {
     assertEquals(expectation.keyAgreementAxis(), profile.keyAgreementAxis());
     assertEquals(expectation.chunkProtectionAxis(), profile.chunkProtectionAxis());
     assertEquals(NON_LEGACY, profile.sequenceNumberMode());
-    assertEquals(SecurityAlgorithm.Sha256, profile.certificateThumbprintAlgorithm());
+    assertEquals(
+        expectation.certificateThumbprintAlgorithm(), profile.certificateThumbprintAlgorithm());
     assertEquals(expectation.secureChannelNonceLength(), profile.secureChannelNonceLength());
     assertEquals(16, profile.symmetricSignatureSize());
     assertEquals(0, profile.symmetricSignatureKeySize());
     assertEquals(expectation.symmetricEncryptionKeySize(), profile.symmetricEncryptionKeySize());
     assertEquals(1, profile.symmetricBlockSize());
-    assertEquals((short) 0x84, profile.getSecurityLevel(MessageSecurityMode.SignAndEncrypt));
+    assertEquals(
+        expectation.signAndEncryptSecurityLevel(),
+        profile.getSecurityLevel(MessageSecurityMode.SignAndEncrypt));
     assertTrue(profile.secureChannelEnhancements());
     assertTrue(profile.secureChannelSupported());
   }
@@ -210,6 +228,14 @@ public class SecurityPolicyTest {
         () ->
             SecurityPolicyProfiles.requireSecureChannelSupported(
                 SecurityPolicy.ECC_curve25519_ChaChaPoly));
+    assertDoesNotThrow(
+        () ->
+            SecurityPolicyProfiles.requireSecureChannelSupported(
+                SecurityPolicy.ECC_brainpoolP384r1_AesGcm));
+    assertDoesNotThrow(
+        () ->
+            SecurityPolicyProfiles.requireSecureChannelSupported(
+                SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly));
   }
 
   private static Stream<EccProfileExpectation> currentEccProfileExpectations() {
@@ -221,7 +247,9 @@ public class SecurityPolicyTest {
             ECDH_NIST_P256,
             AES_GCM,
             64,
-            16),
+            16,
+            SecurityAlgorithm.Sha256,
+            (short) 0x84),
         new EccProfileExpectation(
             SecurityPolicy.ECC_nistP256_ChaChaPoly,
             ECDSA_NIST_P256_SHA256,
@@ -229,7 +257,9 @@ public class SecurityPolicyTest {
             ECDH_NIST_P256,
             CHACHA20_POLY1305,
             64,
-            32),
+            32,
+            SecurityAlgorithm.Sha256,
+            (short) 0x84),
         new EccProfileExpectation(
             SecurityPolicy.ECC_curve25519_AesGcm,
             ED25519,
@@ -237,7 +267,9 @@ public class SecurityPolicyTest {
             X25519,
             AES_GCM,
             32,
-            16),
+            16,
+            SecurityAlgorithm.Sha256,
+            (short) 0x84),
         new EccProfileExpectation(
             SecurityPolicy.ECC_curve25519_ChaChaPoly,
             ED25519,
@@ -245,7 +277,29 @@ public class SecurityPolicyTest {
             X25519,
             CHACHA20_POLY1305,
             32,
-            32));
+            32,
+            SecurityAlgorithm.Sha256,
+            (short) 0x84),
+        new EccProfileExpectation(
+            SecurityPolicy.ECC_brainpoolP384r1_AesGcm,
+            ECDSA_BRAINPOOL_P384R1_SHA384,
+            NodeIds.EccBrainpoolP384r1ApplicationCertificateType,
+            ECDH_BRAINPOOL_P384R1,
+            AES_GCM,
+            96,
+            32,
+            SecurityAlgorithm.Sha384,
+            (short) 0x88),
+        new EccProfileExpectation(
+            SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly,
+            ECDSA_BRAINPOOL_P384R1_SHA384,
+            NodeIds.EccBrainpoolP384r1ApplicationCertificateType,
+            ECDH_BRAINPOOL_P384R1,
+            CHACHA20_POLY1305,
+            96,
+            32,
+            SecurityAlgorithm.Sha384,
+            (short) 0x88));
   }
 
   private record EccProfileExpectation(
@@ -255,5 +309,7 @@ public class SecurityPolicyTest {
       SecurityPolicyProfile.KeyAgreementAxis keyAgreementAxis,
       SecurityPolicyProfile.ChunkProtectionAxis chunkProtectionAxis,
       int secureChannelNonceLength,
-      int symmetricEncryptionKeySize) {}
+      int symmetricEncryptionKeySize,
+      SecurityAlgorithm certificateThumbprintAlgorithm,
+      short signAndEncryptSecurityLevel) {}
 }

@@ -22,6 +22,20 @@
  * org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfiles} instead of hard-coding policy
  * switches.
  *
+ * <h2>Current ECC profile families</h2>
+ *
+ * <p>Current ECC policies split authentication, key agreement, and chunk protection into separate
+ * profile axes. The NIST P-256 profiles use ECDSA application certificates and P-256 ECDH ephemeral
+ * keys. The Curve25519 profiles use Ed25519 application certificates and X25519 ephemeral keys. The
+ * Brainpool P-384 profiles use Brainpool P-384r1 ECDSA certificates, Brainpool P-384r1 ECDH
+ * ephemeral keys, and SHA-384-based certificate/thumbprint and HKDF behavior. All of these profiles
+ * protect normal service chunks with AEAD ciphers, either AES-GCM or ChaCha20-Poly1305.
+ *
+ * <p>For ECC OpenSecureChannel, the OPC UA nonce fields carry ephemeral public keys instead of
+ * random nonce bytes. That means endpoint advertisement, certificate selection, provider
+ * resolution, nonce validation, and key derivation all need to agree on the same profile metadata.
+ * Do not infer this from the policy URI string in a transport handler; use the profile model.
+ *
  * <h2>Certificate and trust material</h2>
  *
  * <p>Certificate managers and certificate groups remain the source of local certificate identity

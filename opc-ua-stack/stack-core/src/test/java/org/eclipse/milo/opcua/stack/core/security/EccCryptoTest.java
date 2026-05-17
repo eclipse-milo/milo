@@ -72,6 +72,36 @@ class EccCryptoTest {
     assertEquals(StatusCodes.Bad_SecurityChecksFailed, exception.getStatusCode().getValue());
   }
 
+  // Brainpool P-384 policies use ECDSA-SHA384 with the same fixed-width P1363 wire encoding,
+  // but require the BC provider profile because Java 17 built-ins do not provide Brainpool curves.
+  @Test
+  void ecdsaBrainpoolP384P1363SignsAndVerifies() throws Exception {
+    ProviderProfile providerProfile = ProviderProfile.BOUNCY_CASTLE;
+    KeyPair keyPair = EccKeyAgreementUtil.generateBrainpoolP384r1KeyPair(providerProfile);
+    byte[] message = hex("0102030405060708090a0b0c0d0e0f");
+
+    byte[] signature =
+        EccSignatureUtil.signEcdsaP384Sha384P1363(
+            providerProfile, keyPair.getPrivate(), ByteBuffer.wrap(message));
+
+    assertEquals(EccSignatureUtil.ECDSA_P384_SHA384_P1363_SIGNATURE_LENGTH, signature.length);
+    assertDoesNotThrow(
+        () ->
+            EccSignatureUtil.verifyEcdsaP384Sha384P1363(
+                providerProfile, keyPair.getPublic(), signature, ByteBuffer.wrap(message)));
+
+    signature[0] ^= 0x01;
+
+    UaException exception =
+        assertThrows(
+            UaException.class,
+            () ->
+                EccSignatureUtil.verifyEcdsaP384Sha384P1363(
+                    providerProfile, keyPair.getPublic(), signature, ByteBuffer.wrap(message)));
+
+    assertEquals(StatusCodes.Bad_SecurityChecksFailed, exception.getStatusCode().getValue());
+  }
+
   // The Curve25519 profile authenticates OpenSecureChannel chunks with Ed25519 application
   // certificates, so provider selection must produce normal Ed25519 signatures and reject tamper.
   @ParameterizedTest
@@ -169,6 +199,72 @@ class EccCryptoTest {
 
     assertEquals(32, aliceSecret.length);
     assertArrayEquals(aliceSecret, bobSecret);
+  }
+
+  // Brainpool P-384 public keys use the same x||y coordinate order as NIST curves, with 48-byte
+  // coordinates and BC-backed validation/key creation.
+  @Test
+  void brainpoolP384PublicKeyCodecRoundTripsAndAgreementMatches() throws Exception {
+    ProviderProfile providerProfile = ProviderProfile.BOUNCY_CASTLE;
+    ByteString basePoint =
+        ByteString.of(
+            hex(
+                "1d1c64f068cf45ffa2a63a81b7c13f6b8847a3e77ef14fe3"
+                    + "db7fcafe0cbd10e8e826e03436d646aaef87b2e247d4af1e"
+                    + "8abe1d7520f9c2a45cb1eb8e95cfd55262b70b29feec5864"
+                    + "e19c054ff99129280e4646217791811142820341263c5315"));
+    KeyPair alice = EccKeyAgreementUtil.generateBrainpoolP384r1KeyPair(providerProfile);
+    KeyPair bob = EccKeyAgreementUtil.generateBrainpoolP384r1KeyPair(providerProfile);
+    ByteString aliceWire = EccPublicKeyCodec.encodeBrainpoolP384r1(alice.getPublic());
+    ByteString bobWire = EccPublicKeyCodec.encodeBrainpoolP384r1(bob.getPublic());
+
+    assertEquals(
+        basePoint,
+        EccPublicKeyCodec.encodeBrainpoolP384r1(
+            EccPublicKeyCodec.decodeBrainpoolP384r1(basePoint, providerProfile)));
+    assertEquals(EccPublicKeyCodec.BRAINPOOL_P384R1_PUBLIC_KEY_LENGTH, aliceWire.length());
+    assertEquals(
+        aliceWire,
+        EccPublicKeyCodec.encodeBrainpoolP384r1(
+            EccPublicKeyCodec.decodeBrainpoolP384r1(aliceWire, providerProfile)));
+
+    byte[] aliceSecret =
+        EccKeyAgreementUtil.agreeBrainpoolP384r1(
+            providerProfile,
+            alice.getPrivate(),
+            EccPublicKeyCodec.decodeBrainpoolP384r1(bobWire, providerProfile));
+    byte[] bobSecret =
+        EccKeyAgreementUtil.agreeBrainpoolP384r1(
+            providerProfile,
+            bob.getPrivate(),
+            EccPublicKeyCodec.decodeBrainpoolP384r1(aliceWire, providerProfile));
+
+    assertEquals(48, aliceSecret.length);
+    assertArrayEquals(aliceSecret, bobSecret);
+  }
+
+  // Malformed Brainpool nonce bytes must be rejected before key installation so invalid peer input
+  // cannot reach SecureChannel key derivation.
+  @Test
+  void brainpoolP384PublicKeyCodecRejectsMalformedWireValues() {
+    assertThrows(
+        UaException.class,
+        () ->
+            EccPublicKeyCodec.decodeBrainpoolP384r1(
+                ByteString.of(new byte[95]), ProviderProfile.BOUNCY_CASTLE));
+
+    byte[] offCurve = new byte[EccPublicKeyCodec.BRAINPOOL_P384R1_PUBLIC_KEY_LENGTH];
+    offCurve[47] = 1;
+    offCurve[95] = 1;
+
+    UaException exception =
+        assertThrows(
+            UaException.class,
+            () ->
+                EccPublicKeyCodec.decodeBrainpoolP384r1(
+                    ByteString.of(offCurve), ProviderProfile.BOUNCY_CASTLE));
+
+    assertEquals(StatusCodes.Bad_NonceInvalid, exception.getStatusCode().getValue());
   }
 
   // Malformed P-256 nonce bytes must be rejected before key installation so off-curve peer input
@@ -338,6 +434,31 @@ class EccCryptoTest {
     assertArrayEquals(hex("b1ac39abcc179b49ffcb60c4"), keyMaterial.clientInitializationVector());
     assertArrayEquals(hex("4eb0d1af3f8721226f74735f7c9fee07"), keyMaterial.serverEncryptionKey());
     assertArrayEquals(hex("19cc7fe176cc8cb966070c37"), keyMaterial.serverInitializationVector());
+  }
+
+  // Brainpool P-384 derives the same AEAD fields as the other ECC profiles, but with 96-byte
+  // nonce inputs and HKDF-SHA384.
+  @Test
+  void brainpoolP384AeadHkdfKeyMaterialUsesSha384Sizing() throws Exception {
+    byte[] sharedSecret = ascending(48, 0x20);
+    ByteString clientNonce = ByteString.of(ascending(96, 0x00));
+    ByteString serverNonce = ByteString.of(ascending(96, 0x60));
+
+    DerivedKeyMaterial keyMaterial =
+        EccKeyAgreementUtil.deriveEccAeadKeyMaterial(
+            ProviderProfile.BOUNCY_CASTLE,
+            SecurityPolicy.ECC_brainpoolP384r1_AesGcm.getProfile(),
+            sharedSecret,
+            clientNonce,
+            serverNonce);
+
+    assertEquals(32, keyMaterial.clientEncryptionKey().length);
+    assertEquals(12, keyMaterial.clientInitializationVector().length);
+    assertEquals(32, keyMaterial.serverEncryptionKey().length);
+    assertEquals(12, keyMaterial.serverInitializationVector().length);
+    assertEquals(
+        2 + "opcua-client".length() + 96 + 96,
+        EccKeyAgreementUtil.hkdfSalt("opcua-client", 44, clientNonce, serverNonce).length);
   }
 
   // RSA nonce profiles still use P_SHA; the ECC HKDF helper must not silently accept them.

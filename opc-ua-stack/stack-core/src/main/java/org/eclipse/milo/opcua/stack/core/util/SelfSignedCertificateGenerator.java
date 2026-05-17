@@ -101,6 +101,19 @@ public class SelfSignedCertificateGenerator {
   }
 
   /**
+   * Generate a Brainpool P-384r1 EC {@link KeyPair}.
+   *
+   * @return a Brainpool P-384r1 {@link KeyPair}.
+   * @throws GeneralSecurityException if no provider supports Brainpool P-384r1 generation.
+   */
+  public static KeyPair generateBrainpoolP384r1KeyPair() throws GeneralSecurityException {
+    KeyPairGenerator generator = KeyPairGenerator.getInstance("EC", new BouncyCastleProvider());
+    generator.initialize(new ECGenParameterSpec("brainpoolP384r1"), new SecureRandom());
+
+    return generator.generateKeyPair();
+  }
+
+  /**
    * Generate an Ed25519 {@link KeyPair}.
    *
    * @return an Ed25519 {@link KeyPair}.

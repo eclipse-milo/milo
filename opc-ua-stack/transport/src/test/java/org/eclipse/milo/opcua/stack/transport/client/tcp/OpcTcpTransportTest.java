@@ -147,7 +147,21 @@ class OpcTcpTransportTest extends SecurityFixture {
             ed25519Certificate("ecc-curve25519-server"),
             ed25519Certificate("wrong-ecc-curve25519-server"),
             ed25519Certificate("wrong-ecc-curve25519-client-key"),
-            malformedX25519PublicKey()));
+            malformedX25519PublicKey()),
+        new EccSecurityParameters(
+            SecurityPolicy.ECC_brainpoolP384r1_AesGcm,
+            brainpoolP384Certificate("ecc-brainpool-aes-client"),
+            brainpoolP384Certificate("ecc-brainpool-aes-server"),
+            brainpoolP384Certificate("wrong-ecc-brainpool-aes-server"),
+            brainpoolP384Certificate("wrong-ecc-brainpool-aes-client-key"),
+            malformedBrainpoolP384PublicKey()),
+        new EccSecurityParameters(
+            SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly,
+            brainpoolP384Certificate("ecc-brainpool-chacha-client"),
+            brainpoolP384Certificate("ecc-brainpool-chacha-server"),
+            brainpoolP384Certificate("wrong-ecc-brainpool-chacha-server"),
+            brainpoolP384Certificate("wrong-ecc-brainpool-chacha-client-key"),
+            malformedBrainpoolP384PublicKey()));
   }
 
   @ParameterizedTest
@@ -959,6 +973,13 @@ class OpcTcpTransportTest extends SecurityFixture {
     return ByteString.of(offCurvePoint);
   }
 
+  private static ByteString malformedBrainpoolP384PublicKey() {
+    byte[] offCurvePoint = new byte[96];
+    offCurvePoint[95] = 1;
+
+    return ByteString.of(offCurvePoint);
+  }
+
   private static ByteString malformedX25519PublicKey() {
     byte[] lowOrderPoint = new byte[32];
     lowOrderPoint[0] = 1;
@@ -1001,6 +1022,11 @@ class OpcTcpTransportTest extends SecurityFixture {
 
   private static CertificateMaterial ed25519Certificate(String commonName) throws Exception {
     return eccCertificate(SelfSignedCertificateGenerator.generateEd25519KeyPair(), commonName);
+  }
+
+  private static CertificateMaterial brainpoolP384Certificate(String commonName) throws Exception {
+    return eccCertificate(
+        SelfSignedCertificateGenerator.generateBrainpoolP384r1KeyPair(), commonName);
   }
 
   private static CertificateMaterial eccCertificate(KeyPair keyPair, String commonName)
