@@ -9,8 +9,37 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    environment: maven-central-release
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out release ref
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate release commit
+        shell: bash
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+
+          if [[ "${GITHUB_REF_TYPE}" != "tag" ]]; then
+            echo "Release publishing must run from a tag ref, got '${GITHUB_REF_TYPE}'." >&2
+            exit 1
+          fi
+
+          release_commit="$(git rev-parse HEAD)"
+
+          git fetch --no-tags --prune origin \
+            "+refs/heads/${DEFAULT_BRANCH}:refs/remotes/origin/${DEFAULT_BRANCH}"
+
+          if ! git merge-base --is-ancestor \
+            "${release_commit}" \
+            "refs/remotes/origin/${DEFAULT_BRANCH}"; then
+            echo "Release commit ${release_commit} is not reachable from ${DEFAULT_BRANCH}." >&2
+            exit 1
+          fi
 
       - name: Set up Maven Central Repository
         uses: actions/setup-java@v4
