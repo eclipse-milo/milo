@@ -15,6 +15,7 @@ import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.A
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.ECDSA_NIST_P256_SHA256;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.ECDSA_NIST_P384_SHA384;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.ED25519;
+import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.ED448;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.RSA_PKCS1_SHA256;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.ChunkProtectionAxis.AES_GCM;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.ChunkProtectionAxis.CHACHA20_POLY1305;
@@ -24,6 +25,7 @@ import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.K
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.ECDH_NIST_P384;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.FFDH_3072;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.X25519;
+import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.X448;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.SequenceNumberMode.NON_LEGACY;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -84,6 +86,14 @@ public class SecurityPolicyTest {
         SecurityPolicy.fromUri(SecurityPolicy.ECC_curve25519_ChaChaPoly.getUri()));
 
     assertSame(
+        SecurityPolicy.ECC_curve448_AesGcm,
+        SecurityPolicy.fromUri(SecurityPolicy.ECC_curve448_AesGcm.getUri()));
+
+    assertSame(
+        SecurityPolicy.ECC_curve448_ChaChaPoly,
+        SecurityPolicy.fromUri(SecurityPolicy.ECC_curve448_ChaChaPoly.getUri()));
+
+    assertSame(
         SecurityPolicy.ECC_brainpoolP384r1_AesGcm,
         SecurityPolicy.fromUri(SecurityPolicy.ECC_brainpoolP384r1_AesGcm.getUri()));
 
@@ -100,6 +110,9 @@ public class SecurityPolicyTest {
         SecurityPolicy.fromUri(SecurityPolicy.RSA_DH_ChaChaPoly.getUri()));
   }
 
+  // The public enum intentionally exposes only executable target policies. Deprecated umbrella URIs
+  // remain unknown so endpoint discovery and policy selection cannot silently choose incomplete
+  // tuples.
   @Test
   @SuppressWarnings("HttpUrlsUsage")
   public void testDeprecatedEccPoliciesAreNotExposed() {
@@ -119,6 +132,8 @@ public class SecurityPolicyTest {
             "ECC_brainpoolP256r1_ChaChaPoly",
             "ECC_curve25519_AesGcm",
             "ECC_curve25519_ChaChaPoly",
+            "ECC_curve448_AesGcm",
+            "ECC_curve448_ChaChaPoly",
             "ECC_brainpoolP384r1_AesGcm",
             "ECC_brainpoolP384r1_ChaChaPoly"),
         eccPolicyNames);
@@ -133,6 +148,9 @@ public class SecurityPolicyTest {
         SecurityPolicy.fromUriSafe("http://opcfoundation.org/UA/SecurityPolicy#ECC_curve25519")
             .isEmpty());
     assertTrue(
+        SecurityPolicy.fromUriSafe("http://opcfoundation.org/UA/SecurityPolicy#ECC_curve448")
+            .isEmpty());
+    assertTrue(
         SecurityPolicy.fromUriSafe("http://opcfoundation.org/UA/SecurityPolicy#ECC_brainpoolP256r1")
             .isEmpty());
     assertTrue(
@@ -141,6 +159,10 @@ public class SecurityPolicyTest {
     assertTrue(
         SecurityPolicy.fromUriSafe(
                 "http://opcfoundation.org/UA/SecurityPolicy#ECC_curve25519_ChaCha20Poly1305")
+            .isEmpty());
+    assertTrue(
+        SecurityPolicy.fromUriSafe(
+                "http://opcfoundation.org/UA/SecurityPolicy#ECC_curve448_ChaCha20Poly1305")
             .isEmpty());
   }
 
@@ -315,6 +337,14 @@ public class SecurityPolicyTest {
     assertDoesNotThrow(
         () ->
             SecurityPolicyProfiles.requireSecureChannelSupported(
+                SecurityPolicy.ECC_curve448_AesGcm));
+    assertDoesNotThrow(
+        () ->
+            SecurityPolicyProfiles.requireSecureChannelSupported(
+                SecurityPolicy.ECC_curve448_ChaChaPoly));
+    assertDoesNotThrow(
+        () ->
+            SecurityPolicyProfiles.requireSecureChannelSupported(
                 SecurityPolicy.ECC_brainpoolP384r1_AesGcm));
     assertDoesNotThrow(
         () ->
@@ -409,6 +439,26 @@ public class SecurityPolicyTest {
             32,
             SecurityAlgorithm.Sha256,
             (short) 0x84),
+        new PolicyProfileExpectation(
+            SecurityPolicy.ECC_curve448_AesGcm,
+            ED448,
+            NodeIds.EccCurve448ApplicationCertificateType,
+            X448,
+            AES_GCM,
+            56,
+            32,
+            SecurityAlgorithm.Sha384,
+            (short) 0x88),
+        new PolicyProfileExpectation(
+            SecurityPolicy.ECC_curve448_ChaChaPoly,
+            ED448,
+            NodeIds.EccCurve448ApplicationCertificateType,
+            X448,
+            CHACHA20_POLY1305,
+            56,
+            32,
+            SecurityAlgorithm.Sha384,
+            (short) 0x88),
         new PolicyProfileExpectation(
             SecurityPolicy.ECC_brainpoolP384r1_AesGcm,
             ECDSA_BRAINPOOL_P384R1_SHA384,

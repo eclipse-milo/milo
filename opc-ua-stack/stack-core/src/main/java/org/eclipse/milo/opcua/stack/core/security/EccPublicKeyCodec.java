@@ -30,6 +30,7 @@ import java.security.spec.X509EncodedKeySpec;
 import java.security.spec.XECPublicKeySpec;
 import java.util.Arrays;
 import org.bouncycastle.crypto.params.X25519PublicKeyParameters;
+import org.bouncycastle.crypto.params.X448PublicKeyParameters;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.bouncycastle.jcajce.interfaces.XDHPublicKey;
 import org.bouncycastle.jce.ECNamedCurveTable;
@@ -46,11 +47,12 @@ import org.jspecify.annotations.NullMarked;
  * <p>OPC UA ECC policies do not encode these public keys as X.509 {@code SubjectPublicKeyInfo}
  * values. NIST and Brainpool keys are sent as fixed-width big-endian {@code x || y} coordinates
  * with no leading X9.62 {@code 0x04} point marker: 64 bytes for P-256 curves and 96 bytes for P-384
- * curves. X25519 keys are sent as the 32-byte RFC 7748 public value; when receiving X25519 bytes,
- * the final byte's most-significant bit is ignored as required by the curve definition. The JCA XEC
- * interfaces can also represent other curves such as X448, so encoding checks both the key shape
- * and curve identity. Decode methods validate the wire shape before returning a provider-backed
- * {@link PublicKey} suitable for key agreement.
+ * curves. X25519 and X448 keys are sent as the RFC 7748 public value: 32 bytes for X25519 and 56
+ * bytes for X448. When receiving X25519 bytes, the final byte's most-significant bit is ignored as
+ * required by the curve definition. The JCA XEC interfaces can represent either curve, so encoding
+ * checks both the key shape and curve identity. X448 has no X25519-style final-bit normalization;
+ * its 56-byte public value is used as-is. Decode methods validate the wire shape before returning a
+ * provider-backed {@link PublicKey} suitable for key agreement.
  */
 @NullMarked
 public final class EccPublicKeyCodec {
@@ -60,6 +62,7 @@ public final class EccPublicKeyCodec {
   public static final int BRAINPOOL_P256R1_PUBLIC_KEY_LENGTH = 64;
   public static final int BRAINPOOL_P384R1_PUBLIC_KEY_LENGTH = 96;
   public static final int X25519_PUBLIC_KEY_LENGTH = 32;
+  public static final int X448_PUBLIC_KEY_LENGTH = 56;
 
   private static final int NIST_P256_COORDINATE_LENGTH = 32;
   private static final int NIST_P384_COORDINATE_LENGTH = 48;
@@ -73,6 +76,7 @@ public final class EccPublicKeyCodec {
       brainpoolParameterSpec(BRAINPOOL_P256R1_CURVE_NAME);
   private static final ECParameterSpec BRAINPOOL_P384R1 = brainpoolP384r1ParameterSpec();
   private static final NamedParameterSpec X25519 = new NamedParameterSpec("X25519");
+  private static final NamedParameterSpec X448 = new NamedParameterSpec("X448");
 
   private EccPublicKeyCodec() {}
 
@@ -270,8 +274,10 @@ public final class EccPublicKeyCodec {
       }
     }
 
-    if (publicKey instanceof XECPublicKey xecPublicKey && isX25519(xecPublicKey)) {
-      return ByteString.of(x25519LittleEndian(xecPublicKey.getU()));
+    if (publicKey instanceof XECPublicKey xecPublicKey
+        && isNamedParameter(xecPublicKey, "X25519")) {
+      return ByteString.of(
+          xdhLittleEndian(xecPublicKey.getU(), X25519_PUBLIC_KEY_LENGTH, "X25519"));
     }
 
     throw new UaException(StatusCodes.Bad_SecurityChecksFailed, "expected X25519 public key");
@@ -315,6 +321,76 @@ public final class EccPublicKeyCodec {
         case JDK ->
             keyFactory.generatePublic(
                 new XECPublicKeySpec(X25519, littleEndianUnsigned(publicValue)));
+      };
+    } catch (InvalidKeySpecException | IOException e) {
+      throw new UaException(StatusCodes.Bad_NonceInvalid, e);
+    } catch (GeneralSecurityException e) {
+      throw new UaException(StatusCodes.Bad_ConfigurationError, e);
+    }
+  }
+
+  /**
+   * Encode an X448 public key as its 56-byte RFC 7748 public value.
+   *
+   * <p>The JDK and Bouncy Castle expose X448 public values through different key interfaces; this
+   * method normalizes either representation to the protocol byte layout.
+   *
+   * @param publicKey the X448 public key.
+   * @return the OPC UA wire encoding.
+   * @throws UaException if the key is not an X448 public key.
+   */
+  public static ByteString encodeX448(PublicKey publicKey) throws UaException {
+    requireNonNull(publicKey, "publicKey");
+
+    if (publicKey instanceof XDHPublicKey xdhPublicKey) {
+      byte[] encoded = xdhPublicKey.getUEncoding();
+      if (encoded.length == X448_PUBLIC_KEY_LENGTH) {
+        return ByteString.of(encoded);
+      }
+    }
+
+    if (publicKey instanceof XECPublicKey xecPublicKey && isNamedParameter(xecPublicKey, "X448")) {
+      return ByteString.of(xdhLittleEndian(xecPublicKey.getU(), X448_PUBLIC_KEY_LENGTH, "X448"));
+    }
+
+    throw new UaException(StatusCodes.Bad_SecurityChecksFailed, "expected X448 public key");
+  }
+
+  /**
+   * Decode a 56-byte RFC 7748 public value into an X448 public key.
+   *
+   * <p>The returned key is suitable for X448 agreement. Small-subgroup rejection happens after
+   * agreement by checking for an all-zero shared secret.
+   *
+   * @param wire the OPC UA wire encoding.
+   * @param providerProfile the provider profile used to create the returned key.
+   * @return an X448 public key.
+   * @throws UaException if the bytes are the wrong length or unsupported.
+   */
+  public static PublicKey decodeX448(ByteString wire, ProviderProfile providerProfile)
+      throws UaException {
+
+    requireNonNull(wire, "wire");
+    requireNonNull(providerProfile, "providerProfile");
+
+    byte[] publicValue = wire.bytesOrEmpty();
+    if (publicValue.length != X448_PUBLIC_KEY_LENGTH) {
+      throw new UaException(
+          StatusCodes.Bad_NonceInvalid,
+          "X448 public key must be " + X448_PUBLIC_KEY_LENGTH + " bytes");
+    }
+
+    try {
+      KeyFactory keyFactory =
+          SecurityProviderSupport.withProviderProfile(
+              providerProfile, "X448 KeyFactory", p -> KeyFactory.getInstance("X448", p));
+
+      return switch (providerProfile) {
+        case BOUNCY_CASTLE ->
+            keyFactory.generatePublic(new X509EncodedKeySpec(x448Spki(publicValue)));
+        case JDK ->
+            keyFactory.generatePublic(
+                new XECPublicKeySpec(X448, littleEndianUnsigned(publicValue)));
       };
     } catch (InvalidKeySpecException | IOException e) {
       throw new UaException(StatusCodes.Bad_NonceInvalid, e);
@@ -459,6 +535,12 @@ public final class EccPublicKeyCodec {
         .getEncoded();
   }
 
+  private static byte[] x448Spki(byte[] bytes) throws IOException {
+    return SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(
+            new X448PublicKeyParameters(bytes))
+        .getEncoded();
+  }
+
   private static byte[] normalizeX25519ReceivedPublicValue(byte[] bytes) {
     byte[] publicValue = bytes.clone();
 
@@ -468,9 +550,9 @@ public final class EccPublicKeyCodec {
     return publicValue;
   }
 
-  private static boolean isX25519(XECPublicKey publicKey) {
+  private static boolean isNamedParameter(XECPublicKey publicKey, String name) {
     return publicKey.getParams() instanceof NamedParameterSpec params
-        && "X25519".equalsIgnoreCase(params.getName());
+        && name.equalsIgnoreCase(params.getName());
   }
 
   private static ECParameterSpec nistP256ParameterSpec() {
@@ -552,9 +634,11 @@ public final class EccPublicKeyCodec {
         namedSpec.getH().intValueExact());
   }
 
-  private static byte[] x25519LittleEndian(BigInteger value) throws UaException {
+  private static byte[] xdhLittleEndian(BigInteger value, int length, String curveName)
+      throws UaException {
     if (value.signum() < 0) {
-      throw new UaException(StatusCodes.Bad_NonceInvalid, "negative X25519 public value");
+      throw new UaException(
+          StatusCodes.Bad_NonceInvalid, "negative " + curveName + " public value");
     }
 
     byte[] bigEndian = value.toByteArray();
@@ -562,11 +646,11 @@ public final class EccPublicKeyCodec {
       bigEndian = Arrays.copyOfRange(bigEndian, 1, bigEndian.length);
     }
 
-    if (bigEndian.length > X25519_PUBLIC_KEY_LENGTH) {
-      throw new UaException(StatusCodes.Bad_NonceInvalid, "X25519 public value is too large");
+    if (bigEndian.length > length) {
+      throw new UaException(StatusCodes.Bad_NonceInvalid, curveName + " public value is too large");
     }
 
-    byte[] littleEndian = new byte[X25519_PUBLIC_KEY_LENGTH];
+    byte[] littleEndian = new byte[length];
     for (int i = 0; i < bigEndian.length; i++) {
       littleEndian[i] = bigEndian[bigEndian.length - 1 - i];
     }

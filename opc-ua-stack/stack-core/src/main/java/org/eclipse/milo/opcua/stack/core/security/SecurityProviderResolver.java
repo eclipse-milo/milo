@@ -48,10 +48,10 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>A provider profile is a capability boundary, not just a provider name lookup. Some policy
  * families can use either Bouncy Castle or the JDK when all required transformations are present.
- * NIST ECC and RSA-DH profiles are in that portable group when the provider can create the required
- * curve or ffdhe3072 keys and perform the matching HKDF/AEAD operations. Brainpool policies are
- * intentionally Bouncy Castle-only because Java's built-in providers do not provide portable
- * Brainpool curve support for ECDSA and ECDH.
+ * NIST ECC, Curve25519/Curve448, and RSA-DH profiles are in that portable group when the provider
+ * can create the required curve or ffdhe3072 keys and perform the matching HKDF/AEAD operations.
+ * Brainpool policies are intentionally Bouncy Castle-only because Java's built-in providers do not
+ * provide portable Brainpool curve support for ECDSA and ECDH.
  */
 @NullMarked
 public final class SecurityProviderResolver {
@@ -136,7 +136,8 @@ public final class SecurityProviderResolver {
           ECDSA_NIST_P384_SHA384,
           ECDSA_BRAINPOOL_P256R1_SHA256,
           ECDSA_BRAINPOOL_P384R1_SHA384,
-          ED25519 ->
+          ED25519,
+          ED448 ->
           true;
       default ->
           switch (profile.keyAgreementAxis()) {
@@ -145,6 +146,7 @@ public final class SecurityProviderResolver {
                 ECDH_BRAINPOOL_P256R1,
                 ECDH_BRAINPOOL_P384R1,
                 X25519,
+                X448,
                 FFDH_3072 ->
                 true;
             default ->
@@ -265,6 +267,21 @@ public final class SecurityProviderResolver {
               });
         }
       }
+      case ED448 -> {
+        if (providerProfile == ProviderProfile.BOUNCY_CASTLE) {
+          Provider bouncyCastleProvider = requireNonNull(provider, "provider");
+
+          Signature.getInstance("Ed448", bouncyCastleProvider);
+          KeyPairGenerator.getInstance("Ed448", bouncyCastleProvider);
+        } else {
+          requireJdkProvider(
+              "Ed448",
+              p -> {
+                Signature.getInstance("Ed448", p);
+                KeyPairGenerator.getInstance("Ed448", p);
+              });
+        }
+      }
       default -> {}
     }
   }
@@ -341,6 +358,21 @@ public final class SecurityProviderResolver {
               });
         }
       }
+      case X448 -> {
+        if (providerProfile == ProviderProfile.BOUNCY_CASTLE) {
+          Provider bouncyCastleProvider = requireNonNull(provider, "provider");
+
+          KeyAgreement.getInstance("X448", bouncyCastleProvider);
+          KeyPairGenerator.getInstance("X448", bouncyCastleProvider);
+        } else {
+          requireJdkProvider(
+              "X448",
+              p -> {
+                KeyAgreement.getInstance("X448", p);
+                KeyPairGenerator.getInstance("X448", p);
+              });
+        }
+      }
       case FFDH_3072 -> {
         if (providerProfile == ProviderProfile.BOUNCY_CASTLE) {
           Provider bouncyCastleProvider = requireNonNull(provider, "provider");
@@ -368,7 +400,7 @@ public final class SecurityProviderResolver {
           requireJdkProvider("HmacSHA256", p -> Mac.getInstance("HmacSHA256", p));
         }
       }
-      case ECDH_NIST_P384, ECDH_BRAINPOOL_P384R1 -> {
+      case ECDH_NIST_P384, ECDH_BRAINPOOL_P384R1, X448 -> {
         if (providerProfile == ProviderProfile.BOUNCY_CASTLE) {
           Provider bouncyCastleProvider = requireNonNull(provider, "provider");
 

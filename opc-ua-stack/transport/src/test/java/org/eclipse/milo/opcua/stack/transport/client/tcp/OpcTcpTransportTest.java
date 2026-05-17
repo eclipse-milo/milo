@@ -96,6 +96,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@SuppressWarnings("LoggingSimilarMessage")
 class OpcTcpTransportTest extends SecurityFixture {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OpcTcpTransportTest.class);
@@ -177,6 +178,20 @@ class OpcTcpTransportTest extends SecurityFixture {
             ed25519Certificate("wrong-ecc-curve25519-server"),
             ed25519Certificate("wrong-ecc-curve25519-client-key"),
             malformedX25519PublicKey()),
+        new EnhancedSecurityParameters(
+            SecurityPolicy.ECC_curve448_AesGcm,
+            ed448Certificate("ecc-curve448-aes-client"),
+            ed448Certificate("ecc-curve448-aes-server"),
+            ed448Certificate("wrong-ecc-curve448-aes-server"),
+            ed448Certificate("wrong-ecc-curve448-aes-client-key"),
+            malformedX448PublicKey()),
+        new EnhancedSecurityParameters(
+            SecurityPolicy.ECC_curve448_ChaChaPoly,
+            ed448Certificate("ecc-curve448-client"),
+            ed448Certificate("ecc-curve448-server"),
+            ed448Certificate("wrong-ecc-curve448-server"),
+            ed448Certificate("wrong-ecc-curve448-client-key"),
+            malformedX448PublicKey()),
         new EnhancedSecurityParameters(
             SecurityPolicy.ECC_brainpoolP384r1_AesGcm,
             brainpoolP384Certificate("ecc-brainpool-aes-client"),
@@ -1148,6 +1163,13 @@ class OpcTcpTransportTest extends SecurityFixture {
     return ByteString.of(lowOrderPoint);
   }
 
+  private static ByteString malformedX448PublicKey() {
+    byte[] lowOrderPoint = new byte[56];
+    lowOrderPoint[0] = 1;
+
+    return ByteString.of(lowOrderPoint);
+  }
+
   private static ByteString malformedFfdhe3072PublicKey() {
     return ByteString.of(new byte[FiniteFieldDhKeyAgreementUtil.FFDHE_3072_PUBLIC_KEY_LENGTH]);
   }
@@ -1191,6 +1213,10 @@ class OpcTcpTransportTest extends SecurityFixture {
 
   private static CertificateMaterial ed25519Certificate(String commonName) throws Exception {
     return eccCertificate(SelfSignedCertificateGenerator.generateEd25519KeyPair(), commonName);
+  }
+
+  private static CertificateMaterial ed448Certificate(String commonName) throws Exception {
+    return eccCertificate(SelfSignedCertificateGenerator.generateEd448KeyPair(), commonName);
   }
 
   private static CertificateMaterial brainpoolP256Certificate(String commonName) throws Exception {

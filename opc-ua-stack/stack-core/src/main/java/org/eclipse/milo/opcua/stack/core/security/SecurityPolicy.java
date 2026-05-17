@@ -108,6 +108,17 @@ public enum SecurityPolicy {
   ECC_curve25519_ChaChaPoly("http://opcfoundation.org/UA/SecurityPolicy#ECC_curve25519_ChaChaPoly"),
 
   /**
+   * An ECC policy that uses Ed448 authentication, X448 key agreement, and AES-GCM chunk protection.
+   */
+  ECC_curve448_AesGcm("http://opcfoundation.org/UA/SecurityPolicy#ECC_curve448_AesGcm"),
+
+  /**
+   * An ECC policy that uses Ed448 authentication, X448 key agreement, and ChaCha20-Poly1305 chunk
+   * protection.
+   */
+  ECC_curve448_ChaChaPoly("http://opcfoundation.org/UA/SecurityPolicy#ECC_curve448_ChaChaPoly"),
+
+  /**
    * An ECC policy that uses Brainpool P-384r1 ECDSA authentication, Brainpool P-384r1 ECDH key
    * agreement, and ChaCha20-Poly1305 chunk protection.
    */

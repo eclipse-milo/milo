@@ -55,6 +55,9 @@ public class SelfSignedCertificateBuilder {
   /** Signature Algorithm for Ed25519. */
   public static final String SA_ED25519 = "Ed25519";
 
+  /** Signature Algorithm for Ed448. */
+  public static final String SA_ED448 = "Ed448";
+
   private Period validityPeriod = Period.ofYears(3);
 
   private String commonName = "not configured";
@@ -96,6 +99,8 @@ public class SelfSignedCertificateBuilder {
           ecPublicKey.getParams().getOrder().bitLength() > 256 ? SA_SHA384_ECDSA : SA_SHA256_ECDSA;
     } else if (isEd25519PublicKey(keyPair.getPublic())) {
       signatureAlgorithm = SA_ED25519;
+    } else if (isEd448PublicKey(keyPair.getPublic())) {
+      signatureAlgorithm = SA_ED448;
     }
   }
 
@@ -105,16 +110,18 @@ public class SelfSignedCertificateBuilder {
    * <p>This builder uses ECC application-certificate defaults: only the required self-signed
    * KeyUsage bits are generated and ExtendedKeyUsage is omitted.
    *
-   * @param keyPair a NIST EC or Ed25519 key pair.
+   * @param keyPair an EC, Ed25519, or Ed448 key pair.
    * @return a builder configured for an ECC application certificate.
-   * @throws IllegalArgumentException if {@code keyPair} is not an EC or Ed25519 key pair.
+   * @throws IllegalArgumentException if {@code keyPair} is not an EC, Ed25519, or Ed448 key pair.
    */
   public static SelfSignedCertificateBuilder forEccApplicationCertificate(KeyPair keyPair) {
     PublicKey publicKey = keyPair.getPublic();
 
-    if (!(publicKey instanceof ECPublicKey) && !isEd25519PublicKey(publicKey)) {
+    if (!(publicKey instanceof ECPublicKey)
+        && !isEd25519PublicKey(publicKey)
+        && !isEd448PublicKey(publicKey)) {
       throw new IllegalArgumentException(
-          "ECC application certificates require an EC or Ed25519 key pair");
+          "ECC application certificates require an EC, Ed25519, or Ed448 key pair");
     }
 
     return new SelfSignedCertificateBuilder(
@@ -205,6 +212,14 @@ public class SelfSignedCertificateBuilder {
       return NamedParameterSpec.ED25519.getName().equals(edPublicKey.getParams().getName());
     } else {
       return "Ed25519".equalsIgnoreCase(publicKey.getAlgorithm());
+    }
+  }
+
+  private static boolean isEd448PublicKey(PublicKey publicKey) {
+    if (publicKey instanceof EdECPublicKey edPublicKey) {
+      return NamedParameterSpec.ED448.getName().equals(edPublicKey.getParams().getName());
+    } else {
+      return "Ed448".equalsIgnoreCase(publicKey.getAlgorithm());
     }
   }
 }

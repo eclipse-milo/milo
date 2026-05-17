@@ -28,10 +28,11 @@ import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
 /**
  * Base {@link CertificateFactory} for Milo-managed application certificate types.
  *
- * <p>Subclasses provide the certificate chains for generated key pairs. The default key-pair and
- * signing-request helpers support RSA SHA-256 and the current ECC application certificate types.
- * Certificate stores call this factory with a certificate type {@link NodeId}; subclasses only need
- * to override the protected chain creation methods for the certificate types they can issue.
+ * <p>Subclasses provide the certificate chains for generated key pairs. The class name is
+ * historical: the default key-pair and signing-request helpers now support RSA SHA-256 and the
+ * current ECC application certificate types. Certificate stores call this factory with a
+ * certificate type {@link NodeId}; subclasses only need to override the protected chain creation
+ * methods for the certificate types they can issue.
  */
 public abstract class RsaSha256CertificateFactory implements CertificateFactory {
 
@@ -51,6 +52,8 @@ public abstract class RsaSha256CertificateFactory implements CertificateFactory 
       return createEccBrainpoolP384r1KeyPair();
     } else if (certificateTypeId.equals(NodeIds.EccCurve25519ApplicationCertificateType)) {
       return createEccCurve25519KeyPair();
+    } else if (certificateTypeId.equals(NodeIds.EccCurve448ApplicationCertificateType)) {
+      return createEccCurve448KeyPair();
     } else {
       throw new UnsupportedOperationException("certificateTypeId: " + certificateTypeId);
     }
@@ -71,6 +74,8 @@ public abstract class RsaSha256CertificateFactory implements CertificateFactory 
       return createEccBrainpoolP384r1CertificateChain(keyPair);
     } else if (certificateTypeId.equals(NodeIds.EccCurve25519ApplicationCertificateType)) {
       return createEccCurve25519CertificateChain(keyPair);
+    } else if (certificateTypeId.equals(NodeIds.EccCurve448ApplicationCertificateType)) {
+      return createEccCurve448CertificateChain(keyPair);
     } else {
       throw new UnsupportedOperationException("certificateTypeId: " + certificateTypeId);
     }
@@ -100,6 +105,8 @@ public abstract class RsaSha256CertificateFactory implements CertificateFactory 
           keyPair, subjectName, sanUri, dnsNames, ipAddresses);
     } else if (certificateTypeId.equals(NodeIds.EccCurve25519ApplicationCertificateType)) {
       return createEccCurve25519SigningRequest(keyPair, subjectName, sanUri, dnsNames, ipAddresses);
+    } else if (certificateTypeId.equals(NodeIds.EccCurve448ApplicationCertificateType)) {
+      return createEccCurve448SigningRequest(keyPair, subjectName, sanUri, dnsNames, ipAddresses);
     } else {
       throw new UnsupportedOperationException("certificateTypeId: " + certificateTypeId);
     }
@@ -172,6 +179,19 @@ public abstract class RsaSha256CertificateFactory implements CertificateFactory 
    */
   protected KeyPair createEccCurve25519KeyPair() throws NoSuchAlgorithmException {
     return SelfSignedCertificateGenerator.generateEd25519KeyPair();
+  }
+
+  /**
+   * Create a new Ed448 {@link KeyPair} for a {@link NodeIds#EccCurve448ApplicationCertificateType}
+   * type certificate.
+   *
+   * <p>The Curve448 certificate type uses Ed448 application certificates. X448 is only used as an
+   * ephemeral OpenSecureChannel key-agreement key.
+   *
+   * @return the new {@link KeyPair}.
+   */
+  protected KeyPair createEccCurve448KeyPair() throws NoSuchAlgorithmException {
+    return SelfSignedCertificateGenerator.generateEd448KeyPair();
   }
 
   /**
@@ -260,6 +280,21 @@ public abstract class RsaSha256CertificateFactory implements CertificateFactory 
 
     throw new UnsupportedOperationException(
         "certificateTypeId: " + NodeIds.EccCurve25519ApplicationCertificateType);
+  }
+
+  /**
+   * Create a new {@link X509Certificate} chain of type {@link
+   * NodeIds#EccCurve448ApplicationCertificateType}.
+   *
+   * @param keyPair the {@link KeyPair} to use when creating the certificate chain.
+   * @return the new {@link X509Certificate} chain.
+   * @throws Exception if an error occurs while creating the certificate chain.
+   */
+  @SuppressWarnings({"unused", "RedundantThrows"})
+  protected X509Certificate[] createEccCurve448CertificateChain(KeyPair keyPair) throws Exception {
+
+    throw new UnsupportedOperationException(
+        "certificateTypeId: " + NodeIds.EccCurve448ApplicationCertificateType);
   }
 
   /**
@@ -461,6 +496,40 @@ public abstract class RsaSha256CertificateFactory implements CertificateFactory 
             dnsNames,
             ipAddresses,
             "Ed25519",
+            KeyUsage.digitalSignature,
+            null);
+
+    return ByteString.of(csr.getEncoded());
+  }
+
+  /**
+   * Create a new PKCS10 certificate signing request for a {@link
+   * NodeIds#EccCurve448ApplicationCertificateType} type certificate.
+   *
+   * @param keyPair the {@link KeyPair} to use when creating the signing request.
+   * @param subjectName the {@link X500Name} to request.
+   * @param sanUri the URI to request in the Subject Alternative Name of the CSR.
+   * @param dnsNames the DNS names to request in the Subject Alternative Name of the CSR.
+   * @param ipAddresses the IP addresses to request in the Subject Alternative Name of the CSR.
+   * @return the new {@link ByteString} containing the DER-encoded PKCS10 signing request.
+   * @throws Exception if an error occurs while creating the signing request.
+   */
+  protected ByteString createEccCurve448SigningRequest(
+      KeyPair keyPair,
+      X500Name subjectName,
+      String sanUri,
+      List<String> dnsNames,
+      List<String> ipAddresses)
+      throws Exception {
+
+    PKCS10CertificationRequest csr =
+        CertificateUtil.generateCsr(
+            keyPair,
+            subjectName,
+            sanUri,
+            dnsNames,
+            ipAddresses,
+            "Ed448",
             KeyUsage.digitalSignature,
             null);
 

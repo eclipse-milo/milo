@@ -85,6 +85,8 @@ abstract class CertificateStoreTest {
     X509Certificate brainpoolP384Certificate = buildEccApplicationCertificate(brainpoolP384KeyPair);
     KeyPair ed25519KeyPair = SelfSignedCertificateGenerator.generateEd25519KeyPair();
     X509Certificate ed25519Certificate = buildEccApplicationCertificate(ed25519KeyPair);
+    KeyPair ed448KeyPair = SelfSignedCertificateGenerator.generateEd448KeyPair();
+    X509Certificate ed448Certificate = buildEccApplicationCertificate(ed448KeyPair);
 
     certificateStore.set(
         NodeIds.EccNistP256ApplicationCertificateType,
@@ -106,22 +108,29 @@ abstract class CertificateStoreTest {
         NodeIds.EccCurve25519ApplicationCertificateType,
         new CertificateStore.Entry(
             ed25519KeyPair.getPrivate(), new X509Certificate[] {ed25519Certificate}));
+    certificateStore.set(
+        NodeIds.EccCurve448ApplicationCertificateType,
+        new CertificateStore.Entry(
+            ed448KeyPair.getPrivate(), new X509Certificate[] {ed448Certificate}));
 
     assertTrue(certificateStore.contains(NodeIds.EccNistP256ApplicationCertificateType));
     assertTrue(certificateStore.contains(NodeIds.EccNistP384ApplicationCertificateType));
     assertTrue(certificateStore.contains(NodeIds.EccBrainpoolP256r1ApplicationCertificateType));
     assertTrue(certificateStore.contains(NodeIds.EccBrainpoolP384r1ApplicationCertificateType));
     assertTrue(certificateStore.contains(NodeIds.EccCurve25519ApplicationCertificateType));
+    assertTrue(certificateStore.contains(NodeIds.EccCurve448ApplicationCertificateType));
     assertNotNull(certificateStore.get(NodeIds.EccNistP256ApplicationCertificateType));
     assertNotNull(certificateStore.get(NodeIds.EccNistP384ApplicationCertificateType));
     assertNotNull(certificateStore.get(NodeIds.EccBrainpoolP256r1ApplicationCertificateType));
     assertNotNull(certificateStore.get(NodeIds.EccBrainpoolP384r1ApplicationCertificateType));
     assertNotNull(certificateStore.get(NodeIds.EccCurve25519ApplicationCertificateType));
+    assertNotNull(certificateStore.get(NodeIds.EccCurve448ApplicationCertificateType));
     assertNotNull(certificateStore.remove(NodeIds.EccNistP256ApplicationCertificateType));
     assertNotNull(certificateStore.remove(NodeIds.EccNistP384ApplicationCertificateType));
     assertNotNull(certificateStore.remove(NodeIds.EccBrainpoolP256r1ApplicationCertificateType));
     assertNotNull(certificateStore.remove(NodeIds.EccBrainpoolP384r1ApplicationCertificateType));
     assertNotNull(certificateStore.remove(NodeIds.EccCurve25519ApplicationCertificateType));
+    assertNotNull(certificateStore.remove(NodeIds.EccCurve448ApplicationCertificateType));
   }
 
   private static NodeId id(String id) {

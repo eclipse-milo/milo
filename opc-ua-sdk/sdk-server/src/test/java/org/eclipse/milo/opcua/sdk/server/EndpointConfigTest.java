@@ -299,6 +299,16 @@ public class EndpointConfigTest {
         NodeIds.EccCurve25519ApplicationCertificateType,
         ed25519Certificate());
     assertEndpointAdvertised(
+        SecurityPolicy.ECC_curve448_AesGcm,
+        MessageSecurityMode.Sign,
+        NodeIds.EccCurve448ApplicationCertificateType,
+        ed448Certificate());
+    assertEndpointAdvertised(
+        SecurityPolicy.ECC_curve448_ChaChaPoly,
+        MessageSecurityMode.Sign,
+        NodeIds.EccCurve448ApplicationCertificateType,
+        ed448Certificate());
+    assertEndpointAdvertised(
         SecurityPolicy.ECC_brainpoolP384r1_AesGcm,
         MessageSecurityMode.Sign,
         NodeIds.EccBrainpoolP384r1ApplicationCertificateType,
@@ -346,6 +356,14 @@ public class EndpointConfigTest {
         SecurityPolicy.ECC_curve25519_ChaChaPoly,
         NodeIds.EccCurve25519ApplicationCertificateType,
         ed25519Certificate());
+    assertEndpointAdvertised(
+        SecurityPolicy.ECC_curve448_AesGcm,
+        NodeIds.EccCurve448ApplicationCertificateType,
+        ed448Certificate());
+    assertEndpointAdvertised(
+        SecurityPolicy.ECC_curve448_ChaChaPoly,
+        NodeIds.EccCurve448ApplicationCertificateType,
+        ed448Certificate());
     assertEndpointAdvertised(
         SecurityPolicy.ECC_brainpoolP384r1_AesGcm,
         NodeIds.EccBrainpoolP384r1ApplicationCertificateType,
@@ -517,6 +535,13 @@ public class EndpointConfigTest {
         NodeIds.EccCurve25519ApplicationCertificateType,
         SelfSignedCertificateGenerator.generateEd25519KeyPair(),
         "ecc-curve25519");
+  }
+
+  private static CertificateMaterial ed448Certificate() throws Exception {
+    return eccCertificate(
+        NodeIds.EccCurve448ApplicationCertificateType,
+        SelfSignedCertificateGenerator.generateEd448KeyPair(),
+        "ecc-curve448");
   }
 
   private static CertificateMaterial brainpoolP384Certificate() throws Exception {

@@ -185,6 +185,11 @@ public final class CertificateCompatibility {
           throw incompatiblePublicKey(authAxis, publicKey);
         }
       }
+      case ED448 -> {
+        if (!isEd448(publicKey)) {
+          throw incompatiblePublicKey(authAxis, publicKey);
+        }
+      }
     }
   }
 
@@ -201,6 +206,14 @@ public final class CertificateCompatibility {
       return NamedParameterSpec.ED25519.getName().equals(edPublicKey.getParams().getName());
     } else {
       return "Ed25519".equalsIgnoreCase(publicKey.getAlgorithm());
+    }
+  }
+
+  private static boolean isEd448(PublicKey publicKey) {
+    if (publicKey instanceof EdECPublicKey edPublicKey) {
+      return NamedParameterSpec.ED448.getName().equals(edPublicKey.getParams().getName());
+    } else {
+      return "Ed448".equalsIgnoreCase(publicKey.getAlgorithm());
     }
   }
 

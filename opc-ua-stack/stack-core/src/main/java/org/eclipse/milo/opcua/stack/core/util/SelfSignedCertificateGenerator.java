@@ -149,6 +149,18 @@ public class SelfSignedCertificateGenerator {
   }
 
   /**
+   * Generate an Ed448 {@link KeyPair}.
+   *
+   * @return an Ed448 {@link KeyPair}.
+   * @throws NoSuchAlgorithmException if no provider supports Ed448 generation.
+   */
+  public static KeyPair generateEd448KeyPair() throws NoSuchAlgorithmException {
+    KeyPairGenerator generator = KeyPairGenerator.getInstance("Ed448");
+
+    return generator.generateKeyPair();
+  }
+
+  /**
    * Create a generator for ECC and Edwards-curve application instance certificates.
    *
    * <p>The generated certificates include only the ECC/Edwards application-certificate KeyUsage

@@ -27,9 +27,9 @@ import org.jspecify.annotations.NullMarked;
  *
  * <p>ECC policy signatures are appended to the unencrypted OpenSecureChannel chunk body in the same
  * place RSA signatures are appended for legacy policies. ECDSA signatures use the fixed-width P1363
- * {@code r || s} wire format instead of DER encoding, while Ed25519 signatures are already fixed
- * width. Callers pass buffers positioned over the exact bytes that are covered by the chunk
- * signature.
+ * {@code r || s} wire format instead of DER encoding, while Ed25519 and Ed448 signatures are
+ * already fixed width. Callers pass buffers positioned over the exact bytes that are covered by the
+ * chunk signature.
  */
 @NullMarked
 public final class EccSignatureUtil {
@@ -39,10 +39,12 @@ public final class EccSignatureUtil {
   public static final String ECDSA_SHA384_URI =
       "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha384";
   public static final String ED25519_URI = "http://www.w3.org/2021/04/xmldsig-more#eddsa-ed25519";
+  public static final String ED448_URI = "http://www.w3.org/2021/04/xmldsig-more#eddsa-ed448";
 
   public static final int ECDSA_P256_SHA256_P1363_SIGNATURE_LENGTH = 64;
   public static final int ECDSA_P384_SHA384_P1363_SIGNATURE_LENGTH = 96;
   public static final int ED25519_SIGNATURE_LENGTH = 64;
+  public static final int ED448_SIGNATURE_LENGTH = 114;
 
   private static final SecurityProviderResolver PROVIDER_RESOLVER =
       SecurityProviderResolver.create();
@@ -61,6 +63,7 @@ public final class EccSignatureUtil {
       case ECDSA_NIST_P256_SHA256, ECDSA_BRAINPOOL_P256R1_SHA256 -> ECDSA_SHA256_URI;
       case ECDSA_NIST_P384_SHA384, ECDSA_BRAINPOOL_P384R1_SHA384 -> ECDSA_SHA384_URI;
       case ED25519 -> ED25519_URI;
+      case ED448 -> ED448_URI;
       default ->
           throw new UaException(
               StatusCodes.Bad_SecurityPolicyRejected,
@@ -89,6 +92,7 @@ public final class EccSignatureUtil {
       case ECDSA_NIST_P384_SHA384, ECDSA_BRAINPOOL_P384R1_SHA384 ->
           signEcdsaP384Sha384P1363(providerProfile, privateKey, buffers);
       case ED25519 -> signEd25519(providerProfile, privateKey, buffers);
+      case ED448 -> signEd448(providerProfile, privateKey, buffers);
       default ->
           throw new UaException(
               StatusCodes.Bad_SecurityPolicyRejected,
@@ -120,6 +124,7 @@ public final class EccSignatureUtil {
       case ECDSA_NIST_P384_SHA384, ECDSA_BRAINPOOL_P384R1_SHA384 ->
           verifyEcdsaP384Sha384P1363(providerProfile, publicKey, signatureBytes, buffers);
       case ED25519 -> verifyEd25519(providerProfile, publicKey, signatureBytes, buffers);
+      case ED448 -> verifyEd448(providerProfile, publicKey, signatureBytes, buffers);
       default ->
           throw new UaException(
               StatusCodes.Bad_SecurityPolicyRejected,
@@ -283,6 +288,52 @@ public final class EccSignatureUtil {
 
     verify(
         providerProfile, "Ed25519", publicKey, signatureBytes, ED25519_SIGNATURE_LENGTH, buffers);
+  }
+
+  /**
+   * Sign data with Ed448.
+   *
+   * <p>Ed448 signs the message bytes directly; callers should not hash the data first.
+   *
+   * @param providerProfile the provider profile to use.
+   * @param privateKey the Ed448 private key.
+   * @param buffers the data buffers to sign from their current positions to limits.
+   * @return the 114-byte Ed448 signature.
+   * @throws UaException if signing fails.
+   */
+  public static byte[] signEd448(
+      ProviderProfile providerProfile, PrivateKey privateKey, ByteBuffer... buffers)
+      throws UaException {
+
+    byte[] signatureBytes = sign(providerProfile, "Ed448", privateKey, buffers);
+
+    if (signatureBytes.length != ED448_SIGNATURE_LENGTH) {
+      throw new UaException(
+          StatusCodes.Bad_InternalError, "Ed448 signature was " + signatureBytes.length + " bytes");
+    }
+
+    return signatureBytes;
+  }
+
+  /**
+   * Verify an Ed448 signature.
+   *
+   * <p>Signatures with any length other than 114 bytes are rejected before provider verification.
+   *
+   * @param providerProfile the provider profile to use.
+   * @param publicKey the Ed448 public key.
+   * @param signatureBytes the 114-byte Ed448 signature.
+   * @param buffers the signed data buffers from their current positions to limits.
+   * @throws UaException if verification fails.
+   */
+  public static void verifyEd448(
+      ProviderProfile providerProfile,
+      PublicKey publicKey,
+      byte[] signatureBytes,
+      ByteBuffer... buffers)
+      throws UaException {
+
+    verify(providerProfile, "Ed448", publicKey, signatureBytes, ED448_SIGNATURE_LENGTH, buffers);
   }
 
   private static byte[] sign(

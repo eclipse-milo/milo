@@ -126,6 +126,8 @@ class SecureChannelStrategiesTest {
         "ECC_brainpoolP256r1_ChaChaPoly",
         "ECC_curve25519_AesGcm",
         "ECC_curve25519_ChaChaPoly",
+        "ECC_curve448_AesGcm",
+        "ECC_curve448_ChaChaPoly",
         "ECC_brainpoolP384r1_AesGcm",
         "ECC_brainpoolP384r1_ChaChaPoly",
         "RSA_DH_AesGcm",
@@ -307,6 +309,8 @@ class SecureChannelStrategiesTest {
         "ECC_brainpoolP256r1_ChaChaPoly",
         "ECC_curve25519_AesGcm",
         "ECC_curve25519_ChaChaPoly",
+        "ECC_curve448_AesGcm",
+        "ECC_curve448_ChaChaPoly",
         "ECC_brainpoolP384r1_AesGcm",
         "ECC_brainpoolP384r1_ChaChaPoly",
         "RSA_DH_AesGcm",
@@ -443,6 +447,7 @@ class SecureChannelStrategiesTest {
       case ECDSA_BRAINPOOL_P384R1_SHA384 ->
           SelfSignedCertificateGenerator.generateBrainpoolP384r1KeyPair();
       case ED25519 -> SelfSignedCertificateGenerator.generateEd25519KeyPair();
+      case ED448 -> SelfSignedCertificateGenerator.generateEd448KeyPair();
       case RSA_PKCS1_SHA256 -> SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
       default -> throw new IllegalArgumentException("securityPolicy: " + securityPolicy);
     };

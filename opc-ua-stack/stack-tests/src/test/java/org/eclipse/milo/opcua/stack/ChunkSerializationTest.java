@@ -361,6 +361,8 @@ public class ChunkSerializationTest extends SecureChannelFixture {
       {SecurityPolicy.ECC_brainpoolP256r1_ChaChaPoly},
       {SecurityPolicy.ECC_curve25519_AesGcm},
       {SecurityPolicy.ECC_curve25519_ChaChaPoly},
+      {SecurityPolicy.ECC_curve448_AesGcm},
+      {SecurityPolicy.ECC_curve448_ChaChaPoly},
       {SecurityPolicy.ECC_brainpoolP384r1_AesGcm},
       {SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly},
       {SecurityPolicy.RSA_DH_AesGcm},

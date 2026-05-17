@@ -47,6 +47,7 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
   protected static final String ECC_BRAINPOOL_P256R1_ALIAS = "server-ecc-brainpoolp256r1";
   protected static final String ECC_BRAINPOOL_P384R1_ALIAS = "server-ecc-brainpoolp384r1";
   protected static final String ECC_CURVE25519_ALIAS = "server-ecc-curve25519";
+  protected static final String ECC_CURVE448_ALIAS = "server-ecc-curve448";
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -237,6 +238,8 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
       return ECC_BRAINPOOL_P384R1_ALIAS;
     } else if (certificateTypeId.equals(NodeIds.EccCurve25519ApplicationCertificateType)) {
       return ECC_CURVE25519_ALIAS;
+    } else if (certificateTypeId.equals(NodeIds.EccCurve448ApplicationCertificateType)) {
+      return ECC_CURVE448_ALIAS;
     } else {
       return certificateTypeId.toParseableString();
     }
@@ -265,7 +268,8 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
         NodeIds.EccNistP384ApplicationCertificateType,
         NodeIds.EccBrainpoolP256r1ApplicationCertificateType,
         NodeIds.EccBrainpoolP384r1ApplicationCertificateType,
-        NodeIds.EccCurve25519ApplicationCertificateType);
+        NodeIds.EccCurve25519ApplicationCertificateType,
+        NodeIds.EccCurve448ApplicationCertificateType);
   }
 
   private Entry loadEntry(String alias, Key key) throws Exception {
@@ -351,6 +355,8 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
     return store;
   }
 
+  // Keep this as a field-based class for source compatibility with existing callers.
+  @SuppressWarnings("ClassCanBeRecord")
   public static class Settings {
     public final Path keyStorePath;
     public final Supplier<char[]> getKeyStorePassword;

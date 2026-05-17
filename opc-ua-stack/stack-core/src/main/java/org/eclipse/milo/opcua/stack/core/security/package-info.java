@@ -29,13 +29,14 @@
  * certificates, 64-byte {@code x||y} ECDH ephemeral public keys, and HKDF-SHA-256. The NIST P-384
  * and Brainpool P-384 profiles use SHA-384 ECDSA application certificates, 96-byte {@code x||y}
  * ECDH ephemeral public keys, and HKDF-SHA-384. The Curve25519 profiles use Ed25519 application
- * certificates and X25519 ephemeral keys. NIST and Curve25519 profiles can resolve to either the
- * JDK or Bouncy Castle provider profile when the needed transformations are present; Brainpool
- * profiles require Bouncy Castle for portable curve support. All of these profiles protect normal
- * service chunks with AEAD ciphers, either AES-GCM or ChaCha20-Poly1305. RSA-DH profiles use RSA
- * application certificates for OpenSecureChannel authentication, RFC 7919 ffdhe3072 ephemeral
- * public values in the nonce fields, HKDF-SHA-256 key derivation, and the same AEAD
- * chunk-protection boundary.
+ * certificates and X25519 ephemeral keys. The Curve448 profiles use Ed448 application certificates,
+ * X448 ephemeral keys, and HKDF-SHA-384. NIST, Curve25519, and Curve448 profiles can resolve to
+ * either the JDK or Bouncy Castle provider profile when the needed transformations are present;
+ * Brainpool profiles require Bouncy Castle for portable curve support. All of these profiles
+ * protect normal service chunks with AEAD ciphers, either AES-GCM or ChaCha20-Poly1305. RSA-DH
+ * profiles use RSA application certificates for OpenSecureChannel authentication, RFC 7919
+ * ffdhe3072 ephemeral public values in the nonce fields, HKDF-SHA-256 key derivation, and the same
+ * AEAD chunk-protection boundary.
  *
  * <p>For enhanced OpenSecureChannel policies, the OPC UA nonce fields carry ephemeral public keys
  * instead of random nonce bytes. That means endpoint advertisement, certificate selection, provider

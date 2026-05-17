@@ -89,6 +89,9 @@ class KeyStoreCertificateStoreTest extends CertificateStoreTest {
           KeyStoreCertificateStore.ECC_CURVE25519_ALIAS,
           store.getAlias(NodeIds.EccCurve25519ApplicationCertificateType));
       assertEquals(
+          KeyStoreCertificateStore.ECC_CURVE448_ALIAS,
+          store.getAlias(NodeIds.EccCurve448ApplicationCertificateType));
+      assertEquals(
           new NodeId(2, "custom").toParseableString(), store.getAlias(new NodeId(2, "custom")));
     }
   }
@@ -160,6 +163,7 @@ class KeyStoreCertificateStoreTest extends CertificateStoreTest {
     assertFalse(store.contains(NodeIds.EccBrainpoolP256r1ApplicationCertificateType));
     assertFalse(store.contains(NodeIds.EccBrainpoolP384r1ApplicationCertificateType));
     assertFalse(store.contains(NodeIds.EccCurve25519ApplicationCertificateType));
+    assertFalse(store.contains(NodeIds.EccCurve448ApplicationCertificateType));
 
     store.close();
   }

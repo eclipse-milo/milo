@@ -674,6 +674,8 @@ class EccSessionIntegrationTest {
       keyPair = SelfSignedCertificateGenerator.generateBrainpoolP384r1KeyPair();
     } else if (NodeIds.EccCurve25519ApplicationCertificateType.equals(certificateTypeId)) {
       keyPair = SelfSignedCertificateGenerator.generateEd25519KeyPair();
+    } else if (NodeIds.EccCurve448ApplicationCertificateType.equals(certificateTypeId)) {
+      keyPair = SelfSignedCertificateGenerator.generateEd448KeyPair();
     } else if (NodeIds.RsaSha256ApplicationCertificateType.equals(certificateTypeId)) {
       keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
     } else {
@@ -737,6 +739,10 @@ class EccSessionIntegrationTest {
         Arguments.of(
             SecurityPolicy.ECC_curve25519_ChaChaPoly,
             NodeIds.EccCurve25519ApplicationCertificateType),
+        Arguments.of(
+            SecurityPolicy.ECC_curve448_AesGcm, NodeIds.EccCurve448ApplicationCertificateType),
+        Arguments.of(
+            SecurityPolicy.ECC_curve448_ChaChaPoly, NodeIds.EccCurve448ApplicationCertificateType),
         Arguments.of(
             SecurityPolicy.ECC_brainpoolP384r1_AesGcm,
             NodeIds.EccBrainpoolP384r1ApplicationCertificateType),

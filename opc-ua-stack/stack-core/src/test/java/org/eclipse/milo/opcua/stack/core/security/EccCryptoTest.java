@@ -219,6 +219,73 @@ class EccCryptoTest {
                 ProviderProfile.JDK, publicKey, signature, ByteBuffer.wrap(new byte[0])));
   }
 
+  // Curve448 profiles authenticate OpenSecureChannel chunks with Ed448 application certificates.
+  @ParameterizedTest
+  @EnumSource(ProviderProfile.class)
+  void ed448SignsAndVerifies(ProviderProfile providerProfile) throws Exception {
+    KeyPairGenerator generator =
+        SecurityProviderSupport.withProviderProfile(
+            providerProfile, "Ed448", p -> KeyPairGenerator.getInstance("Ed448", p));
+    KeyPair keyPair = generator.generateKeyPair();
+    byte[] message = hex("0a0b0c0d0e0f");
+
+    byte[] signature =
+        EccSignatureUtil.signEd448(providerProfile, keyPair.getPrivate(), ByteBuffer.wrap(message));
+
+    assertEquals(EccSignatureUtil.ED448_SIGNATURE_LENGTH, signature.length);
+    assertDoesNotThrow(
+        () ->
+            EccSignatureUtil.verifyEd448(
+                providerProfile, keyPair.getPublic(), signature, ByteBuffer.wrap(message)));
+
+    signature[signature.length - 1] ^= 0x01;
+
+    assertThrows(
+        UaException.class,
+        () ->
+            EccSignatureUtil.verifyEd448(
+                providerProfile, keyPair.getPublic(), signature, ByteBuffer.wrap(message)));
+  }
+
+  // RFC 8032 fixes the Ed448 empty-message signature result; this guards against accidentally
+  // pre-hashing, using the Ed25519 transform, or truncating the 114-byte signature.
+  @Test
+  void ed448MatchesRfc8032EmptyMessageVector() throws Exception {
+    PrivateKey privateKey =
+        ed448PrivateKey(
+            hex(
+                "6c82a562cb808d10d632be89c8513ebf"
+                    + "6c929f34ddfa8c9f63c9960ef6e348a3"
+                    + "528c8a3fcc2f044e39a3fc5b94492f8f"
+                    + "032e7549a20098f95b"));
+    PublicKey publicKey =
+        ed448PublicKey(
+            hex(
+                "5fd7449b59b461fd2ce787ec616ad46a"
+                    + "1da1342485a70e1f8a0ea75d80e96778"
+                    + "edf124769b46c7061bd6783df1e50f6c"
+                    + "d1fa1abeafe8256180"));
+
+    byte[] signature =
+        EccSignatureUtil.signEd448(ProviderProfile.JDK, privateKey, ByteBuffer.wrap(new byte[0]));
+
+    assertArrayEquals(
+        hex(
+            "533a37f6bbe457251f023c0d88f976ae"
+                + "2dfb504a843e34d2074fd823d41a591f"
+                + "2b233f034f628281f2fd7a22ddd47d78"
+                + "28c59bd0a21bfd3980ff0d2028d4b18a"
+                + "9df63e006c5d1c2d345b925d8dc00b41"
+                + "04852db99ac5c7cdda8530a113a0f4db"
+                + "b61149f05a7363268c71d95808ff2e65"
+                + "2600"),
+        signature);
+    assertDoesNotThrow(
+        () ->
+            EccSignatureUtil.verifyEd448(
+                ProviderProfile.JDK, publicKey, signature, ByteBuffer.wrap(new byte[0])));
+  }
+
   // P-256 public keys are encoded as raw x||y coordinates in nonce fields, not as
   // SubjectPublicKeyInfo or X9.62 points; the fixed base-point bytes guard the exact coordinate
   // order.
@@ -571,6 +638,89 @@ class EccCryptoTest {
             EccKeyAgreementUtil.agreeX25519(ProviderProfile.JDK, keyPair.getPrivate(), zeroPublic));
   }
 
+  // RFC 7748 fixes this X448 scalar/public-key agreement result; this protects 56-byte
+  // little-endian public-key handling independently from Milo-generated key pairs.
+  @Test
+  void x448MatchesRfc7748AgreementVector() throws Exception {
+    PrivateKey alicePrivate =
+        x448PrivateKey(
+            hex(
+                "9a8f4925d1519f5775cf46b04b5800d4ee9ee8bae8bc5565d498c28d"
+                    + "d9c9baf574a9419744897391006382a6f127ab1d9ac2d8c0a598726b"));
+    PublicKey bobPublic =
+        EccPublicKeyCodec.decodeX448(
+            ByteString.of(
+                hex(
+                    "3eb7a829b0cd20f5bcfc0b599b6feccf6da4627107bdb0d4f345b430"
+                        + "27d8b972fc3e34fb4232a13ca706dcb57aec3dae07bdc1c67bf33609")),
+            ProviderProfile.JDK);
+
+    byte[] sharedSecret =
+        EccKeyAgreementUtil.agreeX448(ProviderProfile.JDK, alicePrivate, bobPublic);
+
+    assertArrayEquals(
+        hex(
+            "07fff4181ac6cc95ec1c16a94a0f74d12da232ce40a77552281d282b"
+                + "b60c0b56fd2464c335543936521c24403085d59a449a5037514a879d"),
+        sharedSecret);
+  }
+
+  // X448 public keys in nonce fields are exactly 56 RFC 7748 bytes and must agree across provider
+  // profiles.
+  @ParameterizedTest
+  @EnumSource(ProviderProfile.class)
+  void x448PublicKeyCodecRoundTripsAndAgreementMatches(ProviderProfile providerProfile)
+      throws Exception {
+    KeyPair alice = EccKeyAgreementUtil.generateX448KeyPair(providerProfile);
+    KeyPair bob = EccKeyAgreementUtil.generateX448KeyPair(providerProfile);
+    ByteString aliceWire = EccPublicKeyCodec.encodeX448(alice.getPublic());
+    ByteString bobWire = EccPublicKeyCodec.encodeX448(bob.getPublic());
+
+    assertEquals(EccPublicKeyCodec.X448_PUBLIC_KEY_LENGTH, aliceWire.length());
+    assertEquals(
+        aliceWire,
+        EccPublicKeyCodec.encodeX448(EccPublicKeyCodec.decodeX448(aliceWire, providerProfile)));
+
+    byte[] aliceSecret =
+        EccKeyAgreementUtil.agreeX448(
+            providerProfile,
+            alice.getPrivate(),
+            EccPublicKeyCodec.decodeX448(bobWire, providerProfile));
+    byte[] bobSecret =
+        EccKeyAgreementUtil.agreeX448(
+            providerProfile,
+            bob.getPrivate(),
+            EccPublicKeyCodec.decodeX448(aliceWire, providerProfile));
+
+    assertEquals(EccPublicKeyCodec.X448_PUBLIC_KEY_LENGTH, aliceSecret.length);
+    assertArrayEquals(aliceSecret, bobSecret);
+  }
+
+  // JDK XEC keys can represent X25519 or X448. The X448 encoder must reject X25519 keys even
+  // though both expose the same XECPublicKey interface.
+  @Test
+  void x448PublicKeyCodecRejectsOtherXecCurves() {
+    assertThrows(UaException.class, () -> EccPublicKeyCodec.encodeX448(new X25519PublicKey()));
+  }
+
+  // Wrong-length X448 nonce fields are malformed, and all-zero shared secrets indicate invalid
+  // or small-subgroup peer input.
+  @Test
+  void x448RejectsWrongLengthAndAllZeroSharedSecret() throws Exception {
+    assertThrows(
+        UaException.class,
+        () -> EccPublicKeyCodec.decodeX448(ByteString.of(new byte[55]), ProviderProfile.JDK));
+
+    KeyPair keyPair = EccKeyAgreementUtil.generateX448KeyPair(ProviderProfile.JDK);
+    PublicKey zeroPublic =
+        EccPublicKeyCodec.decodeX448(
+            ByteString.of(new byte[EccPublicKeyCodec.X448_PUBLIC_KEY_LENGTH]), ProviderProfile.JDK);
+
+    assertThrows(
+        UaException.class,
+        () -> EccKeyAgreementUtil.agreeX448(ProviderProfile.JDK, keyPair.getPrivate(), zeroPublic));
+  }
+
   // OPC UA uses direction-specific HKDF salts that include both ephemeral public keys; swapping the
   // order would give each side different client/server keys.
   @Test
@@ -667,6 +817,31 @@ class EccCryptoTest {
     assertEquals(12, keyMaterial.serverInitializationVector().length);
   }
 
+  // Curve448 policies are ECC B profiles: 56-byte X448 public keys, HKDF-SHA384, and 256-bit AEAD
+  // key material.
+  @Test
+  void curve448AeadHkdfKeyMaterialUsesSha384Sizing() throws Exception {
+    byte[] sharedSecret = ascending(56, 0x20);
+    ByteString clientNonce = ByteString.of(ascending(56, 0x00));
+    ByteString serverNonce = ByteString.of(ascending(56, 0x38));
+
+    DerivedKeyMaterial keyMaterial =
+        EccKeyAgreementUtil.deriveEccAeadKeyMaterial(
+            ProviderProfile.JDK,
+            SecurityPolicy.ECC_curve448_AesGcm.getProfile(),
+            sharedSecret,
+            clientNonce,
+            serverNonce);
+
+    assertEquals(32, keyMaterial.clientEncryptionKey().length);
+    assertEquals(12, keyMaterial.clientInitializationVector().length);
+    assertEquals(32, keyMaterial.serverEncryptionKey().length);
+    assertEquals(12, keyMaterial.serverInitializationVector().length);
+    assertEquals(
+        2 + "opcua-client".length() + 56 + 56,
+        EccKeyAgreementUtil.hkdfSalt("opcua-client", 44, clientNonce, serverNonce).length);
+  }
+
   // Brainpool P-256 stays in the SHA-256/AES-128-size ECC A profile family even though its
   // provider support differs from NIST P-256.
   @Test
@@ -714,9 +889,53 @@ class EccCryptoTest {
         .generatePublic(new X509EncodedKeySpec(concat(hex("302a300506032b6570032100"), publicKey)));
   }
 
+  private static PrivateKey ed448PrivateKey(byte[] seed) throws Exception {
+    return KeyFactory.getInstance("Ed448")
+        .generatePrivate(
+            new PKCS8EncodedKeySpec(concat(hex("3047020100300506032b6571043b0439"), seed)));
+  }
+
+  private static PublicKey ed448PublicKey(byte[] publicKey) throws Exception {
+    return KeyFactory.getInstance("Ed448")
+        .generatePublic(new X509EncodedKeySpec(concat(hex("3043300506032b6571033a00"), publicKey)));
+  }
+
   private static PrivateKey x25519PrivateKey(byte[] scalar) throws Exception {
     return KeyFactory.getInstance("X25519")
         .generatePrivate(new XECPrivateKeySpec(new NamedParameterSpec("X25519"), scalar));
+  }
+
+  private static PrivateKey x448PrivateKey(byte[] scalar) throws Exception {
+    return KeyFactory.getInstance("X448")
+        .generatePrivate(new XECPrivateKeySpec(new NamedParameterSpec("X448"), scalar));
+  }
+
+  private static final class X25519PublicKey implements XECPublicKey {
+
+    @Override
+    public AlgorithmParameterSpec getParams() {
+      return new NamedParameterSpec("X25519");
+    }
+
+    @Override
+    public BigInteger getU() {
+      return BigInteger.ONE;
+    }
+
+    @Override
+    public String getAlgorithm() {
+      return "XDH";
+    }
+
+    @Override
+    public String getFormat() {
+      return "X.509";
+    }
+
+    @Override
+    public byte[] getEncoded() {
+      return new byte[0];
+    }
   }
 
   private static final class X448PublicKey implements XECPublicKey {

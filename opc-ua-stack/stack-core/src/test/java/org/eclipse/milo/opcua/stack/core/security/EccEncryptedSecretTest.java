@@ -645,6 +645,7 @@ class EccEncryptedSecretTest {
           case ECDH_BRAINPOOL_P384R1 ->
               EccPublicKeyCodec.decodeBrainpoolP384r1(parts.senderPublicKey(), providerProfile);
           case X25519 -> EccPublicKeyCodec.decodeX25519(parts.senderPublicKey(), providerProfile);
+          case X448 -> EccPublicKeyCodec.decodeX448(parts.senderPublicKey(), providerProfile);
           case FFDH_3072 ->
               FiniteFieldDhKeyAgreementUtil.decodeFfdhe3072(
                   parts.senderPublicKey(), providerProfile);
@@ -667,6 +668,9 @@ class EccEncryptedSecretTest {
           case X25519 ->
               EccKeyAgreementUtil.agreeX25519(
                   providerProfile, receiverEphemeralKeyPair.getPrivate(), senderEphemeralPublicKey);
+          case X448 ->
+              EccKeyAgreementUtil.agreeX448(
+                  providerProfile, receiverEphemeralKeyPair.getPrivate(), senderEphemeralPublicKey);
           case FFDH_3072 ->
               FiniteFieldDhKeyAgreementUtil.agreeFfdhe3072(
                   providerProfile, receiverEphemeralKeyPair.getPrivate(), senderEphemeralPublicKey);
@@ -679,7 +683,7 @@ class EccEncryptedSecretTest {
     byte[] salt = secretSalt(totalLength, parts.senderPublicKey(), parts.receiverPublicKey());
     byte[] keyMaterial =
         switch (profile.keyAgreementAxis()) {
-          case ECDH_NIST_P384, ECDH_BRAINPOOL_P384R1 ->
+          case ECDH_NIST_P384, ECDH_BRAINPOOL_P384R1, X448 ->
               HkdfUtil.hkdfSha384(
                   sharedSecret, salt, salt, totalLength, hmacProvider(providerProfile, profile));
           case ECDH_NIST_P256, ECDH_BRAINPOOL_P256R1, X25519, FFDH_3072 ->
@@ -698,7 +702,7 @@ class EccEncryptedSecretTest {
 
     String hmacTransformation =
         switch (profile.keyAgreementAxis()) {
-          case ECDH_NIST_P384, ECDH_BRAINPOOL_P384R1 -> "HmacSHA384";
+          case ECDH_NIST_P384, ECDH_BRAINPOOL_P384R1, X448 -> "HmacSHA384";
           case ECDH_NIST_P256, ECDH_BRAINPOOL_P256R1, X25519, FFDH_3072 -> "HmacSHA256";
           default -> throw new IllegalArgumentException("unsupported key agreement axis");
         };
@@ -741,6 +745,7 @@ class EccEncryptedSecretTest {
       case ECDSA_NIST_P384_SHA384, ECDSA_BRAINPOOL_P384R1_SHA384 ->
           EccSignatureUtil.signEcdsaP384Sha384P1363(providerProfile, privateKey, data);
       case ED25519 -> EccSignatureUtil.signEd25519(providerProfile, privateKey, data);
+      case ED448 -> EccSignatureUtil.signEd448(providerProfile, privateKey, data);
       case RSA_PKCS1_SHA256 -> SignatureUtil.sign(SecurityAlgorithm.RsaSha256, privateKey, data);
       default -> throw new IllegalArgumentException("unsupported auth axis");
     };
@@ -756,6 +761,8 @@ class EccEncryptedSecretTest {
         Arguments.of(SecurityPolicy.ECC_brainpoolP256r1_ChaChaPoly.getProfile()),
         Arguments.of(SecurityPolicy.ECC_curve25519_AesGcm.getProfile()),
         Arguments.of(SecurityPolicy.ECC_curve25519_ChaChaPoly.getProfile()),
+        Arguments.of(SecurityPolicy.ECC_curve448_AesGcm.getProfile()),
+        Arguments.of(SecurityPolicy.ECC_curve448_ChaChaPoly.getProfile()),
         Arguments.of(SecurityPolicy.ECC_brainpoolP384r1_AesGcm.getProfile()),
         Arguments.of(SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly.getProfile()),
         Arguments.of(SecurityPolicy.RSA_DH_AesGcm.getProfile()),
@@ -774,6 +781,7 @@ class EccEncryptedSecretTest {
           case ECDSA_BRAINPOOL_P384R1_SHA384 ->
               SelfSignedCertificateGenerator.generateBrainpoolP384r1KeyPair();
           case ED25519 -> SelfSignedCertificateGenerator.generateEd25519KeyPair();
+          case ED448 -> SelfSignedCertificateGenerator.generateEd448KeyPair();
           case RSA_PKCS1_SHA256 -> SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
           default ->
               throw new IllegalArgumentException("unsupported auth axis: " + profile.authAxis());
@@ -796,7 +804,8 @@ class EccEncryptedSecretTest {
           ECDSA_NIST_P384_SHA384,
           ECDSA_BRAINPOOL_P256R1_SHA256,
           ECDSA_BRAINPOOL_P384R1_SHA384,
-          ED25519 ->
+          ED25519,
+          ED448 ->
           SelfSignedCertificateBuilder.forEccApplicationCertificate(keyPair);
       case RSA_PKCS1_SHA256 -> new SelfSignedCertificateBuilder(keyPair);
       default -> throw new IllegalArgumentException("unsupported auth axis: " + profile.authAxis());
@@ -812,6 +821,7 @@ class EccEncryptedSecretTest {
       case ECDH_BRAINPOOL_P256R1 -> EccPublicKeyCodec.BRAINPOOL_P256R1_PUBLIC_KEY_LENGTH;
       case ECDH_BRAINPOOL_P384R1 -> EccPublicKeyCodec.BRAINPOOL_P384R1_PUBLIC_KEY_LENGTH;
       case X25519 -> EccPublicKeyCodec.X25519_PUBLIC_KEY_LENGTH;
+      case X448 -> EccPublicKeyCodec.X448_PUBLIC_KEY_LENGTH;
       case FFDH_3072 -> FiniteFieldDhKeyAgreementUtil.FFDHE_3072_PUBLIC_KEY_LENGTH;
       default ->
           throw new IllegalArgumentException("unsupported key agreement axis: " + keyAgreementAxis);
@@ -827,6 +837,7 @@ class EccEncryptedSecretTest {
       case ECDSA_NIST_P384_SHA384, ECDSA_BRAINPOOL_P384R1_SHA384 ->
           EccSignatureUtil.ECDSA_P384_SHA384_P1363_SIGNATURE_LENGTH;
       case ED25519 -> EccSignatureUtil.ED25519_SIGNATURE_LENGTH;
+      case ED448 -> EccSignatureUtil.ED448_SIGNATURE_LENGTH;
       case RSA_PKCS1_SHA256 -> RSA_2048_SIGNATURE_LENGTH;
       default -> throw new IllegalArgumentException("unsupported auth axis: " + authAxis);
     };

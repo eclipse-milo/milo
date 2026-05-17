@@ -45,8 +45,8 @@ import org.jspecify.annotations.NullMarked;
  * maps those protocol directions onto local encryption and decryption roles.
  *
  * <p>The profile selects both the key-agreement family and the HKDF hash. P-256 profile families,
- * X25519, and ffdhe3072 derive key material with HKDF-SHA-256; P-384 profile families derive the
- * same directional fields with HKDF-SHA-384. Callers should pass the negotiated {@link
+ * X25519, and ffdhe3072 derive key material with HKDF-SHA-256; P-384 profile families and X448
+ * derive the same directional fields with HKDF-SHA-384. Callers should pass the negotiated {@link
  * SecurityPolicyProfile} through this helper instead of selecting the hash from key length alone.
  */
 @NullMarked
@@ -127,6 +127,29 @@ public final class EccKeyAgreementUtil {
               providerProfile,
               "X25519 KeyPairGenerator",
               p -> KeyPairGenerator.getInstance("X25519", p));
+
+      return generator.generateKeyPair();
+    } catch (GeneralSecurityException e) {
+      throw new UaException(StatusCodes.Bad_ConfigurationError, e);
+    }
+  }
+
+  /**
+   * Generate an ephemeral X448 key pair.
+   *
+   * @param providerProfile the provider profile to use.
+   * @return an ephemeral X448 key pair.
+   * @throws UaException if key generation fails.
+   */
+  public static KeyPair generateX448KeyPair(ProviderProfile providerProfile) throws UaException {
+    requireNonNull(providerProfile, "providerProfile");
+
+    try {
+      KeyPairGenerator generator =
+          SecurityProviderSupport.withProviderProfile(
+              providerProfile,
+              "X448 KeyPairGenerator",
+              p -> KeyPairGenerator.getInstance("X448", p));
 
       return generator.generateKeyPair();
     } catch (GeneralSecurityException e) {
@@ -234,6 +257,30 @@ public final class EccKeyAgreementUtil {
   }
 
   /**
+   * Compute an X448 shared secret and reject all-zero results.
+   *
+   * @param providerProfile the provider profile to use.
+   * @param privateKey the local ephemeral private key.
+   * @param peerPublicKey the peer ephemeral public key.
+   * @return the shared secret.
+   * @throws UaException if agreement fails or produces an all-zero shared secret.
+   */
+  public static byte[] agreeX448(
+      ProviderProfile providerProfile, PrivateKey privateKey, PublicKey peerPublicKey)
+      throws UaException {
+
+    EccPublicKeyCodec.encodeX448(peerPublicKey);
+
+    byte[] sharedSecret = agree(providerProfile, "X448", privateKey, peerPublicKey);
+
+    if (allZero(sharedSecret)) {
+      throw new UaException(StatusCodes.Bad_SecurityChecksFailed, "X448 shared secret is zero");
+    }
+
+    return sharedSecret;
+  }
+
+  /**
    * Derive directional AEAD key material for the current ECC policy families.
    *
    * <p>This entry point is retained for callers that are already on the ECC helper path. New shared
@@ -288,6 +335,7 @@ public final class EccKeyAgreementUtil {
         && profile.keyAgreementAxis() != KeyAgreementAxis.ECDH_BRAINPOOL_P256R1
         && profile.keyAgreementAxis() != KeyAgreementAxis.ECDH_BRAINPOOL_P384R1
         && profile.keyAgreementAxis() != KeyAgreementAxis.X25519
+        && profile.keyAgreementAxis() != KeyAgreementAxis.X448
         && profile.keyAgreementAxis() != KeyAgreementAxis.FFDH_3072) {
       throw new UaException(
           StatusCodes.Bad_SecurityPolicyRejected,
@@ -394,7 +442,7 @@ public final class EccKeyAgreementUtil {
               });
 
       return switch (profile.keyAgreementAxis()) {
-        case ECDH_NIST_P384, ECDH_BRAINPOOL_P384R1 ->
+        case ECDH_NIST_P384, ECDH_BRAINPOOL_P384R1, X448 ->
             HkdfUtil.hkdfSha384(ikm, salt, info, length, provider);
         case ECDH_NIST_P256, ECDH_BRAINPOOL_P256R1, X25519, FFDH_3072 ->
             HkdfUtil.hkdfSha256(ikm, salt, info, length, provider);
@@ -410,7 +458,7 @@ public final class EccKeyAgreementUtil {
 
   private static String hkdfHmacTransformation(SecurityPolicyProfile profile) throws UaException {
     return switch (profile.keyAgreementAxis()) {
-      case ECDH_NIST_P384, ECDH_BRAINPOOL_P384R1 -> "HmacSHA384";
+      case ECDH_NIST_P384, ECDH_BRAINPOOL_P384R1, X448 -> "HmacSHA384";
       case ECDH_NIST_P256, ECDH_BRAINPOOL_P256R1, X25519, FFDH_3072 -> "HmacSHA256";
       default ->
           throw new UaException(

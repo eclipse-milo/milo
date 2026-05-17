@@ -161,6 +161,7 @@ public final class EccUserTokenAdditionalHeader {
             || profile.keyAgreementAxis() == KeyAgreementAxis.ECDH_BRAINPOOL_P256R1
             || profile.keyAgreementAxis() == KeyAgreementAxis.ECDH_BRAINPOOL_P384R1
             || profile.keyAgreementAxis() == KeyAgreementAxis.X25519
+            || profile.keyAgreementAxis() == KeyAgreementAxis.X448
             || profile.keyAgreementAxis() == KeyAgreementAxis.FFDH_3072)
         && (profile.chunkProtectionAxis() == ChunkProtectionAxis.AES_GCM
             || profile.chunkProtectionAxis() == ChunkProtectionAxis.CHACHA20_POLY1305);

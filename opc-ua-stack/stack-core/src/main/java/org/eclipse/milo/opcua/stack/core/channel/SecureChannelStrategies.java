@@ -76,6 +76,8 @@ final class SecureChannelStrategies {
       new EcdsaP384AuthenticationStrategy();
   private static final AuthenticationStrategy ED25519_AUTHENTICATION =
       new Ed25519AuthenticationStrategy();
+  private static final AuthenticationStrategy ED448_AUTHENTICATION =
+      new Ed448AuthenticationStrategy();
 
   @SuppressWarnings("unused")
   private static final AuthenticationStrategy UNSUPPORTED_AUTHENTICATION =
@@ -94,6 +96,7 @@ final class SecureChannelStrategies {
       new EcdhBrainpoolP384r1HkdfKeyAgreementStrategy();
   private static final KeyAgreementStrategy X25519_KEY_AGREEMENT =
       new X25519HkdfKeyAgreementStrategy();
+  private static final KeyAgreementStrategy X448_KEY_AGREEMENT = new X448HkdfKeyAgreementStrategy();
   private static final KeyAgreementStrategy FFDH_3072_KEY_AGREEMENT =
       new Ffdh3072HkdfKeyAgreementStrategy();
 
@@ -131,14 +134,15 @@ final class SecureChannelStrategies {
       case ECDSA_NIST_P256_SHA256, ECDSA_BRAINPOOL_P256R1_SHA256 -> ECDSA_P256_AUTHENTICATION;
       case ECDSA_NIST_P384_SHA384, ECDSA_BRAINPOOL_P384R1_SHA384 -> ECDSA_P384_AUTHENTICATION;
       case ED25519 -> ED25519_AUTHENTICATION;
+      case ED448 -> ED448_AUTHENTICATION;
     };
   }
 
   /** Returns the strategy that derives symmetric keys from negotiated channel nonces. */
+  @SuppressWarnings("DuplicatedCode")
   static KeyAgreementStrategy keyAgreement(SecurityPolicyProfile profile) {
     KeyAgreementAxis keyAgreementAxis = profile.keyAgreementAxis();
 
-    //noinspection DuplicatedCode
     return switch (keyAgreementAxis) {
       case NONE -> NO_KEY_AGREEMENT;
       case RSA_NONCE -> RSA_NONCE_KEY_AGREEMENT;
@@ -147,6 +151,7 @@ final class SecureChannelStrategies {
       case ECDH_BRAINPOOL_P256R1 -> ECDH_BRAINPOOL_P256R1_KEY_AGREEMENT;
       case ECDH_BRAINPOOL_P384R1 -> ECDH_BRAINPOOL_P384R1_KEY_AGREEMENT;
       case X25519 -> X25519_KEY_AGREEMENT;
+      case X448 -> X448_KEY_AGREEMENT;
       case FFDH_3072 -> FFDH_3072_KEY_AGREEMENT;
     };
   }
@@ -536,6 +541,34 @@ final class SecureChannelStrategies {
     }
   }
 
+  private static final class Ed448AuthenticationStrategy implements AuthenticationStrategy {
+
+    @Override
+    public byte[] sign(
+        SecurityPolicyProfile profile, PrivateKey privateKey, ByteBuffer... signedBytes)
+        throws UaException {
+
+      return EccSignatureUtil.signEd448(resolveProviderProfile(profile), privateKey, signedBytes);
+    }
+
+    @Override
+    public void verify(
+        SecurityPolicyProfile profile,
+        Certificate certificate,
+        byte[] signatureBytes,
+        ByteBuffer... signedBytes)
+        throws UaException {
+
+      EccSignatureUtil.verifyEd448(
+          resolveProviderProfile(profile), certificate.getPublicKey(), signatureBytes, signedBytes);
+    }
+
+    @Override
+    public int signatureSize(Certificate certificate) {
+      return EccSignatureUtil.ED448_SIGNATURE_LENGTH;
+    }
+  }
+
   @SuppressWarnings("unused")
   private static final class UnsupportedAuthenticationStrategy implements AuthenticationStrategy {
 
@@ -910,6 +943,62 @@ final class SecureChannelStrategies {
         throws UaException {
 
       return EccKeyAgreementUtil.agreeX25519(
+          resolveProviderProfile(profile), privateKey, peerPublicKey);
+    }
+
+    @Override
+    public EccKeyAgreementUtil.DerivedKeyMaterial deriveKeyMaterial(
+        SecurityPolicyProfile profile,
+        byte[] inputKeyMaterial,
+        ByteString clientNonce,
+        ByteString serverNonce)
+        throws UaException {
+
+      return EccKeyAgreementUtil.deriveAeadKeyMaterial(
+          resolveProviderProfile(profile), profile, inputKeyMaterial, clientNonce, serverNonce);
+    }
+
+    @Override
+    public ChannelSecurity.SecurityKeys deriveKeys(
+        SecurityPolicyProfile profile,
+        ByteString clientNonce,
+        ByteString serverNonce,
+        int initializationVectorSize) {
+
+      throw new UaRuntimeException(
+          StatusCodes.Bad_SecurityPolicyRejected,
+          "ECC key agreement requires an ephemeral private key: "
+              + profile.securityPolicy().getUri());
+    }
+  }
+
+  private static final class X448HkdfKeyAgreementStrategy implements KeyAgreementStrategy {
+
+    @Override
+    public KeyPair generateEphemeral(SecurityPolicyProfile profile) throws UaException {
+      return EccKeyAgreementUtil.generateX448KeyPair(resolveProviderProfile(profile));
+    }
+
+    @Override
+    public ByteString encodePublicKey(SecurityPolicyProfile profile, PublicKey publicKey)
+        throws UaException {
+
+      return EccPublicKeyCodec.encodeX448(publicKey);
+    }
+
+    @Override
+    public PublicKey decodePublicKey(SecurityPolicyProfile profile, ByteString wirePublicKey)
+        throws UaException {
+
+      return EccPublicKeyCodec.decodeX448(wirePublicKey, resolveProviderProfile(profile));
+    }
+
+    @Override
+    public byte[] agree(
+        SecurityPolicyProfile profile, PrivateKey privateKey, PublicKey peerPublicKey)
+        throws UaException {
+
+      return EccKeyAgreementUtil.agreeX448(
           resolveProviderProfile(profile), privateKey, peerPublicKey);
     }
 

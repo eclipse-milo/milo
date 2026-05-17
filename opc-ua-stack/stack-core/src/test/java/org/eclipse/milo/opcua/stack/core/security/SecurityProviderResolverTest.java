@@ -50,6 +50,9 @@ public class SecurityProviderResolverTest {
         BOUNCY_CASTLE, resolver.resolve(SecurityPolicy.ECC_curve25519_AesGcm.getProfile()));
     assertEquals(
         BOUNCY_CASTLE, resolver.resolve(SecurityPolicy.ECC_curve25519_ChaChaPoly.getProfile()));
+    assertEquals(BOUNCY_CASTLE, resolver.resolve(SecurityPolicy.ECC_curve448_AesGcm.getProfile()));
+    assertEquals(
+        BOUNCY_CASTLE, resolver.resolve(SecurityPolicy.ECC_curve448_ChaChaPoly.getProfile()));
     assertEquals(
         BOUNCY_CASTLE, resolver.resolve(SecurityPolicy.ECC_brainpoolP384r1_AesGcm.getProfile()));
     assertEquals(
@@ -71,6 +74,8 @@ public class SecurityProviderResolverTest {
     assertEquals(JDK, resolver.resolve(SecurityPolicy.ECC_nistP384_ChaChaPoly.getProfile()));
     assertEquals(JDK, resolver.resolve(SecurityPolicy.ECC_curve25519_AesGcm.getProfile()));
     assertEquals(JDK, resolver.resolve(SecurityPolicy.ECC_curve25519_ChaChaPoly.getProfile()));
+    assertEquals(JDK, resolver.resolve(SecurityPolicy.ECC_curve448_AesGcm.getProfile()));
+    assertEquals(JDK, resolver.resolve(SecurityPolicy.ECC_curve448_ChaChaPoly.getProfile()));
     assertEquals(JDK, resolver.resolve(SecurityPolicy.RSA_DH_AesGcm.getProfile()));
     assertEquals(JDK, resolver.resolve(SecurityPolicy.RSA_DH_ChaChaPoly.getProfile()));
   }

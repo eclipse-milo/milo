@@ -180,7 +180,8 @@ public record SecurityPolicyProfile(
     ECDSA_NIST_P384_SHA384,
     ECDSA_BRAINPOOL_P256R1_SHA256,
     ECDSA_BRAINPOOL_P384R1_SHA384,
-    ED25519
+    ED25519,
+    ED448
   }
 
   /** The OpenSecureChannel secret establishment family used by a policy. */
@@ -192,6 +193,7 @@ public record SecurityPolicyProfile(
     ECDH_BRAINPOOL_P256R1,
     ECDH_BRAINPOOL_P384R1,
     X25519,
+    X448,
     FFDH_3072
   }
 

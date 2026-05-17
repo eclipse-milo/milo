@@ -91,6 +91,9 @@ class CertificateCompatibilityTest {
                 certificate));
   }
 
+  // Curve25519 profiles use Ed25519 application certificates. X25519 belongs only in the ephemeral
+  // OpenSecureChannel key-agreement path, so accepting the application certificate proves that
+  // split.
   @Test
   void acceptsEd25519ApplicationCertificateForCurve25519Policy() throws Exception {
     X509Certificate certificate =
@@ -104,6 +107,25 @@ class CertificateCompatibilityTest {
                 certificate));
   }
 
+  // Curve448 follows the same split as Curve25519: Ed448 signs application-certificate material
+  // while
+  // X448 is reserved for nonce-field key agreement.
+  @Test
+  void acceptsEd448ApplicationCertificateForCurve448Policy() throws Exception {
+    X509Certificate certificate =
+        buildEccApplicationCertificate(SelfSignedCertificateGenerator.generateEd448KeyPair());
+
+    assertDoesNotThrow(
+        () ->
+            CertificateCompatibility.checkCompatible(
+                SecurityPolicy.ECC_curve448_ChaChaPoly.getProfile(),
+                NodeIds.EccCurve448ApplicationCertificateType,
+                certificate));
+  }
+
+  // An X25519 public key can be tempting because the policy name says Curve25519, but it cannot
+  // sign
+  // certificates or OpenSecureChannel chunks.
   @Test
   void rejectsX25519ApplicationCertificateForCurve25519Policy() throws Exception {
     X509Certificate certificate = buildX25519Certificate();
@@ -115,6 +137,25 @@ class CertificateCompatibilityTest {
                 CertificateCompatibility.checkCompatible(
                     SecurityPolicy.ECC_curve25519_ChaChaPoly.getProfile(),
                     NodeIds.EccCurve25519ApplicationCertificateType,
+                    certificate));
+
+    assertEquals(StatusCodes.Bad_CertificateUseNotAllowed, exception.getStatusCode().getValue());
+  }
+
+  // Likewise, Curve448 application identity is Ed448. X448 certificates must be rejected even if
+  // they
+  // are otherwise well-formed and signed by a trusted issuer.
+  @Test
+  void rejectsX448ApplicationCertificateForCurve448Policy() throws Exception {
+    X509Certificate certificate = buildX448Certificate();
+
+    UaException exception =
+        assertThrows(
+            UaException.class,
+            () ->
+                CertificateCompatibility.checkCompatible(
+                    SecurityPolicy.ECC_curve448_ChaChaPoly.getProfile(),
+                    NodeIds.EccCurve448ApplicationCertificateType,
                     certificate));
 
     assertEquals(StatusCodes.Bad_CertificateUseNotAllowed, exception.getStatusCode().getValue());
@@ -330,6 +371,21 @@ class CertificateCompatibilityTest {
         .setApplicationUri("urn:eclipse:milo:test:x25519")
         .setKeyUsage(KeyUsage.digitalSignature)
         .setSignatureAlgorithm(SelfSignedCertificateBuilder.SA_ED25519)
+        .build();
+  }
+
+  private static X509Certificate buildX448Certificate() throws Exception {
+    KeyPair issuerKeyPair = SelfSignedCertificateGenerator.generateEd448KeyPair();
+    X509Certificate issuerCertificate = buildEccApplicationCertificate(issuerKeyPair);
+    KeyPair x448KeyPair = KeyPairGenerator.getInstance("X448").generateKeyPair();
+
+    return new CaSignedCertificateBuilder(
+            x448KeyPair, issuerCertificate, issuerKeyPair.getPrivate())
+        .setCommonName("X448 Application Certificate")
+        .setOrganization("Eclipse Milo")
+        .setApplicationUri("urn:eclipse:milo:test:x448")
+        .setKeyUsage(KeyUsage.digitalSignature)
+        .setSignatureAlgorithm(SelfSignedCertificateBuilder.SA_ED448)
         .build();
   }
 

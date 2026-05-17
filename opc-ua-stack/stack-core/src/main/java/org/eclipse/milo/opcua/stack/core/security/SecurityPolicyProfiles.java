@@ -16,6 +16,7 @@ import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.A
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.ECDSA_NIST_P256_SHA256;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.ECDSA_NIST_P384_SHA384;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.ED25519;
+import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.ED448;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.NONE;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.RSA_PKCS1_SHA1;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis.RSA_PKCS1_SHA256;
@@ -30,6 +31,7 @@ import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.K
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.FFDH_3072;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.RSA_NONCE;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.X25519;
+import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.X448;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.SequenceNumberMode.LEGACY;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.SequenceNumberMode.NON_LEGACY;
 
@@ -256,12 +258,12 @@ public final class SecurityPolicyProfiles {
             0x08,
             false));
 
-    // The executable ECC policies below combine two certificate/key-agreement families with two
-    // AEAD chunk protectors. NIST P-256 uses ECDSA certificates plus P-256 ECDH with a 64-byte
-    // ephemeral public key in ClientNonce/ServerNonce. Curve25519 uses Ed25519 certificates plus
-    // X25519 with a 32-byte ephemeral public key. AES-GCM uses a 16-byte symmetric key;
-    // ChaCha20-Poly1305 uses a 32-byte symmetric key. Both use a 16-byte AEAD tag instead of a
-    // separate HMAC signature.
+    // The executable enhanced policies below keep certificate authentication, ephemeral key
+    // agreement, and AEAD chunk protection as explicit profile axes. This prevents similarly sized
+    // families from being interchanged. NIST and Brainpool use x||y ECDH encodings.
+    // Curve25519/Curve448 use EdDSA certificates but XDH nonce-field public keys. RSA-DH uses RSA
+    // certificates with ffdhe3072 nonce-field public values. The profile also selects the AEAD
+    // encryption-key size and HKDF hash.
     register(
         profiles,
         profile(
@@ -466,6 +468,59 @@ public final class SecurityPolicyProfiles {
             32,
             1,
             0x04,
+            true));
+
+    // Curve448 policies are ECC B profiles. They use Ed448 application certificates and X448
+    // ephemeral public keys encoded as 56 RFC 7748 bytes, HKDF-SHA-384, and 256-bit AEAD
+    // encryption keys.
+    register(
+        profiles,
+        profile(
+            SecurityPolicy.ECC_curve448_AesGcm,
+            ED448,
+            List.of(NodeIds.EccCurve448ApplicationCertificateType),
+            X448,
+            AES_GCM,
+            NON_LEGACY,
+            null,
+            null,
+            SecurityAlgorithm.None,
+            SecurityAlgorithm.None,
+            null,
+            null,
+            null,
+            SecurityAlgorithm.Sha384,
+            56,
+            16,
+            0,
+            32,
+            1,
+            0x08,
+            true));
+
+    register(
+        profiles,
+        profile(
+            SecurityPolicy.ECC_curve448_ChaChaPoly,
+            ED448,
+            List.of(NodeIds.EccCurve448ApplicationCertificateType),
+            X448,
+            CHACHA20_POLY1305,
+            NON_LEGACY,
+            null,
+            null,
+            SecurityAlgorithm.None,
+            SecurityAlgorithm.None,
+            null,
+            null,
+            null,
+            SecurityAlgorithm.Sha384,
+            56,
+            16,
+            0,
+            32,
+            1,
+            0x08,
             true));
 
     // Brainpool P-384 policies are ECC B profiles. They use Brainpool P-384r1 ECDSA certificates

@@ -63,6 +63,8 @@ class DefaultCertificateValidatorTest {
                 List.of(certificate), null, null, SecurityPolicy.ECC_nistP256_AesGcm.getProfile()));
   }
 
+  // The policy name says Curve25519, but the peer's application certificate must be Ed25519; X25519
+  // is only valid as the ephemeral key-agreement public key carried in nonce fields.
   @Test
   void defaultClientValidatorRejectsX25519CertificateForCurve25519Profile() throws Exception {
     CertificateChain certificateChain = createX25519CertificateChain();
@@ -80,6 +82,27 @@ class DefaultCertificateValidatorTest {
                 null,
                 null,
                 SecurityPolicy.ECC_curve25519_ChaChaPoly.getProfile()));
+  }
+
+  // Curve448 has the same certificate/key-agreement split: Ed448 authenticates the application, and
+  // X448 is limited to ephemeral OpenSecureChannel/user-token key agreement.
+  @Test
+  void defaultClientValidatorRejectsX448CertificateForCurve448Profile() throws Exception {
+    CertificateChain certificateChain = createX448CertificateChain();
+    DefaultClientCertificateValidator validator =
+        new DefaultClientCertificateValidator(
+            trustListManager(certificateChain.issuerCertificate()),
+            ValidationCheck.ALL_OPTIONAL_CHECKS,
+            new MemoryCertificateQuarantine());
+
+    assertThrows(
+        UaException.class,
+        () ->
+            validator.validateCertificateChain(
+                List.of(certificateChain.certificate(), certificateChain.issuerCertificate()),
+                null,
+                null,
+                SecurityPolicy.ECC_curve448_ChaChaPoly.getProfile()));
   }
 
   @Test
@@ -147,6 +170,26 @@ class DefaultCertificateValidatorTest {
             .setApplicationUri("urn:eclipse:milo:test:x25519")
             .setKeyUsage(KeyUsage.digitalSignature)
             .setSignatureAlgorithm(SelfSignedCertificateBuilder.SA_ED25519)
+            .build();
+
+    return new CertificateChain(certificate, issuerCertificate);
+  }
+
+  private static CertificateChain createX448CertificateChain() throws Exception {
+    KeyPair issuerKeyPair = SelfSignedCertificateGenerator.generateEd448KeyPair();
+    X509Certificate issuerCertificate =
+        SelfSignedCertificateBuilder.forEccApplicationCertificate(issuerKeyPair)
+            .setApplicationUri("urn:eclipse:milo:test:issuer")
+            .addDnsName("localhost")
+            .build();
+    KeyPair x448KeyPair = KeyPairGenerator.getInstance("X448").generateKeyPair();
+    X509Certificate certificate =
+        new CaSignedCertificateBuilder(x448KeyPair, issuerCertificate, issuerKeyPair.getPrivate())
+            .setCommonName("X448 Application Certificate")
+            .setOrganization("Eclipse Milo")
+            .setApplicationUri("urn:eclipse:milo:test:x448")
+            .setKeyUsage(KeyUsage.digitalSignature)
+            .setSignatureAlgorithm(SelfSignedCertificateBuilder.SA_ED448)
             .build();
 
     return new CertificateChain(certificate, issuerCertificate);

@@ -691,6 +691,8 @@ public class OpcUaServer extends AbstractServiceHandler {
         || securityPolicy == SecurityPolicy.ECC_brainpoolP256r1_ChaChaPoly
         || securityPolicy == SecurityPolicy.ECC_curve25519_AesGcm
         || securityPolicy == SecurityPolicy.ECC_curve25519_ChaChaPoly
+        || securityPolicy == SecurityPolicy.ECC_curve448_AesGcm
+        || securityPolicy == SecurityPolicy.ECC_curve448_ChaChaPoly
         || securityPolicy == SecurityPolicy.ECC_brainpoolP384r1_AesGcm
         || securityPolicy == SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly
         || securityPolicy == SecurityPolicy.RSA_DH_AesGcm

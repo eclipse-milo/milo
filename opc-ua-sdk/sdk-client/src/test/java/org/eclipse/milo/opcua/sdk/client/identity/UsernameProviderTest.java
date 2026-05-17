@@ -245,6 +245,8 @@ class UsernameProviderTest {
         Arguments.of(SecurityPolicy.ECC_brainpoolP256r1_ChaChaPoly.getProfile()),
         Arguments.of(SecurityPolicy.ECC_curve25519_AesGcm.getProfile()),
         Arguments.of(SecurityPolicy.ECC_curve25519_ChaChaPoly.getProfile()),
+        Arguments.of(SecurityPolicy.ECC_curve448_AesGcm.getProfile()),
+        Arguments.of(SecurityPolicy.ECC_curve448_ChaChaPoly.getProfile()),
         Arguments.of(SecurityPolicy.ECC_brainpoolP384r1_AesGcm.getProfile()),
         Arguments.of(SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly.getProfile()),
         Arguments.of(SecurityPolicy.RSA_DH_AesGcm.getProfile()),
@@ -263,6 +265,7 @@ class UsernameProviderTest {
           case ECDSA_BRAINPOOL_P384R1_SHA384 ->
               SelfSignedCertificateGenerator.generateBrainpoolP384r1KeyPair();
           case ED25519 -> SelfSignedCertificateGenerator.generateEd25519KeyPair();
+          case ED448 -> SelfSignedCertificateGenerator.generateEd448KeyPair();
           case RSA_PKCS1_SHA256 -> SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
           default ->
               throw new IllegalArgumentException("unsupported auth axis: " + profile.authAxis());
@@ -286,7 +289,8 @@ class UsernameProviderTest {
           ECDSA_NIST_P384_SHA384,
           ECDSA_BRAINPOOL_P256R1_SHA256,
           ECDSA_BRAINPOOL_P384R1_SHA384,
-          ED25519 ->
+          ED25519,
+          ED448 ->
           SelfSignedCertificateBuilder.forEccApplicationCertificate(keyPair);
       case RSA_PKCS1_SHA256 -> new SelfSignedCertificateBuilder(keyPair);
       default -> throw new IllegalArgumentException("unsupported auth axis: " + profile.authAxis());

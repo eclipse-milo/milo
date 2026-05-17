@@ -88,6 +88,8 @@ class SelfSignedCertificateGeneratorTest {
     assertTrue(certificate.getSigAlgName().contains("384"));
   }
 
+  // Curve25519 application certificates are Ed25519 certificates. The X25519 key pair is generated
+  // later for each OpenSecureChannel/user-token ephemeral agreement.
   @Test
   void generatesEd25519ApplicationCertificate() throws Exception {
     KeyPair keyPair = SelfSignedCertificateGenerator.generateEd25519KeyPair();
@@ -100,6 +102,22 @@ class SelfSignedCertificateGeneratorTest {
         certificate);
     assertMinimalEccKeyUsage(certificate);
     assertTrue(certificate.getSigAlgName().contains("Ed25519"));
+  }
+
+  // Curve448 mirrors Curve25519: Ed448 is the certificate/signature identity and X448 is only the
+  // ephemeral agreement key.
+  @Test
+  void generatesEd448ApplicationCertificate() throws Exception {
+    KeyPair keyPair = SelfSignedCertificateGenerator.generateEd448KeyPair();
+
+    X509Certificate certificate = buildEccApplicationCertificate(keyPair);
+
+    CertificateCompatibility.checkCompatible(
+        SecurityPolicy.ECC_curve448_ChaChaPoly.getProfile(),
+        NodeIds.EccCurve448ApplicationCertificateType,
+        certificate);
+    assertMinimalEccKeyUsage(certificate);
+    assertTrue(certificate.getSigAlgName().contains("Ed448"));
   }
 
   private static X509Certificate buildEccApplicationCertificate(KeyPair keyPair) throws Exception {

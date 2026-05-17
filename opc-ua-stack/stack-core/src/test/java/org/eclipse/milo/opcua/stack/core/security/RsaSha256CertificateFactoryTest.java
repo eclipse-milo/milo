@@ -71,4 +71,28 @@ class RsaSha256CertificateFactoryTest {
                 .setProvider(new BouncyCastleProvider())
                 .build(csr.getSubjectPublicKeyInfo())));
   }
+
+  // Curve448 CSRs use Ed448 signatures. X448 is the ephemeral key-agreement curve, not an
+  // application authentication key.
+  @Test
+  void curve448SigningRequestUsesEd448() throws Exception {
+    TestCertificateFactory factory = new TestCertificateFactory();
+    KeyPair keyPair = factory.createEccCurve448KeyPair();
+
+    ByteString csrBytes =
+        factory.createSigningRequest(
+            NodeIds.EccCurve448ApplicationCertificateType,
+            keyPair,
+            new X500Name("CN=curve448"),
+            "urn:eclipse:milo:test",
+            List.of("localhost"),
+            List.of("127.0.0.1"));
+    PKCS10CertificationRequest csr = new PKCS10CertificationRequest(csrBytes.bytesOrEmpty());
+
+    assertTrue(
+        csr.isSignatureValid(
+            new JcaContentVerifierProviderBuilder()
+                .setProvider(new BouncyCastleProvider())
+                .build(csr.getSubjectPublicKeyInfo())));
+  }
 }
