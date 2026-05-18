@@ -73,7 +73,7 @@
 
     <!-- Plugin Dependency Versions -->
     <central-publishing-maven-plugin.version>0.10.0</central-publishing-maven-plugin.version>
-    <checkstyle.version>13.4.2</checkstyle.version>
+    <checkstyle.version>11.0.1</checkstyle.version>
     <jaxb2-maven-plugin.version>4.1.0</jaxb2-maven-plugin.version>
     <license-tool-plugin.version>1.1.0</license-tool-plugin.version>
     <maven-bundle-plugin.version>6.0.2</maven-bundle-plugin.version>
