@@ -13,8 +13,22 @@ package org.eclipse.milo.opcua.stack.core.channel.messages;
 import io.netty.buffer.ByteBuf;
 import org.eclipse.milo.opcua.stack.core.UaException;
 
+/**
+ * Decoder for complete simple UA-TCP messages whose eight-byte UACP header is still present.
+ *
+ * <p>Callers choose the decode method after their transport pipeline has already determined which
+ * simple message is expected in the current handshake state. The methods consume the common header
+ * and then delegate payload decoding to the corresponding message value.
+ */
 public class TcpMessageDecoder {
 
+  /**
+   * Decode a complete UA-TCP {@code HEL/F} message.
+   *
+   * @param buffer the buffer positioned at the start of the UA-TCP header.
+   * @return the decoded hello payload.
+   * @throws UaException if the header type or payload cannot be decoded.
+   */
   public static HelloMessage decodeHello(ByteBuf buffer) throws UaException {
     MessageType messageType = MessageType.fromMediumInt(buffer.readMediumLE());
     char chunkType = (char) buffer.readByte();
@@ -25,6 +39,30 @@ public class TcpMessageDecoder {
     return HelloMessage.decode(buffer);
   }
 
+  /**
+   * Decode a complete UA-TCP {@code RHE/F} message.
+   *
+   * @param buffer the buffer positioned at the start of the UA-TCP header.
+   * @return the decoded reverse hello payload.
+   * @throws UaException if the header type or payload cannot be decoded.
+   */
+  public static ReverseHelloMessage decodeReverseHello(ByteBuf buffer) throws UaException {
+    MessageType messageType = MessageType.fromMediumInt(buffer.readMediumLE());
+    char chunkType = (char) buffer.readByte();
+    buffer.skipBytes(4); // length
+
+    assert (messageType == MessageType.ReverseHello && chunkType == 'F');
+
+    return ReverseHelloMessage.decode(buffer);
+  }
+
+  /**
+   * Decode a complete UA-TCP {@code ACK/F} message.
+   *
+   * @param buffer the buffer positioned at the start of the UA-TCP header.
+   * @return the decoded acknowledge payload.
+   * @throws UaException if the header type cannot be decoded.
+   */
   public static AcknowledgeMessage decodeAcknowledge(ByteBuf buffer) throws UaException {
     MessageType messageType = MessageType.fromMediumInt(buffer.readMediumLE());
     char chunkType = (char) buffer.readByte();
@@ -35,6 +73,13 @@ public class TcpMessageDecoder {
     return AcknowledgeMessage.decode(buffer);
   }
 
+  /**
+   * Decode a complete UA-TCP {@code ERR/F} message.
+   *
+   * @param buffer the buffer positioned at the start of the UA-TCP header.
+   * @return the decoded error payload.
+   * @throws UaException if the header type or payload cannot be decoded.
+   */
   public static ErrorMessage decodeError(ByteBuf buffer) throws UaException {
     MessageType messageType = MessageType.fromMediumInt(buffer.readMediumLE());
     char chunkType = (char) buffer.readByte();
