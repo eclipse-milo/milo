@@ -38,6 +38,16 @@ import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Handles the client side of the UA-TCP {@code Hello}/{@code Acknowledge} exchange before the
+ * SecureChannel is opened.
+ *
+ * <p>The handler sends {@code Hello} when an outbound TCP channel becomes active, and also when it
+ * is added to a channel that is already active. That second path lets transports attach the normal
+ * client UASC handshake to a channel whose socket was established elsewhere. After {@code
+ * Acknowledge} is received the handler installs {@link UascClientMessageHandler}, which continues
+ * with {@code OpenSecureChannel} and normal service request handling.
+ */
 public class UascClientAcknowledgeHandler extends ByteToMessageCodec<UaRequestMessageType> {
 
   private static final long PROTOCOL_VERSION = 0L;
@@ -52,6 +62,7 @@ public class UascClientAcknowledgeHandler extends ByteToMessageCodec<UaRequestMe
 
   private final UascClientConfig config;
   private final ClientApplicationContext application;
+  private final Supplier<String> endpointUrlSupplier;
   private final Supplier<Long> requestIdSupplier;
   private final CompletableFuture<ClientSecureChannel> handshakeFuture;
 
@@ -61,8 +72,40 @@ public class UascClientAcknowledgeHandler extends ByteToMessageCodec<UaRequestMe
       Supplier<Long> requestIdSupplier,
       CompletableFuture<ClientSecureChannel> handshakeFuture) {
 
+    this(
+        config,
+        application,
+        requestIdSupplier,
+        handshakeFuture,
+        () -> application.getEndpoint().getEndpointUrl());
+  }
+
+  /**
+   * Creates a handler that can source the endpoint URL encoded in {@code Hello} independently from
+   * the selected {@link ClientApplicationContext} endpoint.
+   *
+   * <p>Normal outbound clients use the constructor that reads the endpoint URL from {@link
+   * ClientApplicationContext#getEndpoint()}. Reverse-connect clients can use this form after a
+   * claimed reverse socket has supplied the endpoint URL from {@code ReverseHello}, while still
+   * sharing the same client UASC handshake and SecureChannel setup.
+   *
+   * @param config the client UASC transport configuration.
+   * @param application the client application context used for encoding limits, credentials, and
+   *     SecureChannel setup.
+   * @param requestIdSupplier the source of UASC request ids after {@code Acknowledge}.
+   * @param handshakeFuture the future completed when the SecureChannel handshake succeeds or fails.
+   * @param endpointUrlSupplier the source of the endpoint URL encoded in {@code Hello}.
+   */
+  public UascClientAcknowledgeHandler(
+      UascClientConfig config,
+      ClientApplicationContext application,
+      Supplier<Long> requestIdSupplier,
+      CompletableFuture<ClientSecureChannel> handshakeFuture,
+      Supplier<String> endpointUrlSupplier) {
+
     this.config = config;
     this.application = application;
+    this.endpointUrlSupplier = endpointUrlSupplier;
     this.requestIdSupplier = requestIdSupplier;
     this.handshakeFuture = handshakeFuture;
   }
@@ -118,7 +161,7 @@ public class UascClientAcknowledgeHandler extends ByteToMessageCodec<UaRequestMe
   private void sendHello(ChannelHandlerContext ctx) throws UaException {
     helloTimeout = startHelloTimeout(ctx);
 
-    String endpointUrl = application.getEndpoint().getEndpointUrl();
+    String endpointUrl = endpointUrlSupplier.get();
 
     EncodingLimits encodingLimits = application.getEncodingContext().getEncodingLimits();
 

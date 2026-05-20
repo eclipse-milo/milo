@@ -50,8 +50,6 @@ import org.eclipse.milo.opcua.stack.core.util.Unit;
 import org.eclipse.milo.opcua.stack.transport.client.AbstractUascClientTransport;
 import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.ClientSecureChannel;
-import org.eclipse.milo.opcua.stack.transport.client.uasc.InboundUascResponseHandler.DelegatingUascResponseHandler;
-import org.eclipse.milo.opcua.stack.transport.client.uasc.UascClientAcknowledgeHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -147,15 +145,13 @@ public class OpcTcpClientTransport extends AbstractUascClientTransport {
               new ChannelInitializer<SocketChannel>() {
                 @Override
                 protected void initChannel(SocketChannel ch) {
-                  var acknowledgeHandler =
-                      new UascClientAcknowledgeHandler(
-                          config, application, requestId::getAndIncrement, handshakeFuture);
-
-                  ch.pipeline()
-                      .addLast(new DelegatingUascResponseHandler(OpcTcpClientTransport.this));
-                  ch.pipeline().addLast(acknowledgeHandler);
-
-                  config.getChannelPipelineCustomizer().accept(ch.pipeline());
+                  OpcTcpClientChannelInitializer.initializeOutboundChannel(
+                      ch,
+                      config,
+                      application,
+                      OpcTcpClientTransport.this,
+                      requestId::getAndIncrement,
+                      handshakeFuture);
                 }
               });
 
