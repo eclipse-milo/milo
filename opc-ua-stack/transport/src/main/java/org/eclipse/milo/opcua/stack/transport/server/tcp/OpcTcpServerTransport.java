@@ -20,11 +20,9 @@ import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.util.Lazy;
 import org.eclipse.milo.opcua.stack.transport.server.OpcServerTransport;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
-import org.eclipse.milo.opcua.stack.transport.server.uasc.UascServerHelloHandler;
 import org.slf4j.LoggerFactory;
 
 public class OpcTcpServerTransport implements OpcServerTransport {
@@ -57,21 +55,8 @@ public class OpcTcpServerTransport implements OpcServerTransport {
                         new ChannelInitializer<SocketChannel>() {
                           @Override
                           protected void initChannel(SocketChannel channel) {
-                            channel.pipeline().addLast(RateLimitingHandler.getInstance());
-                            channel
-                                .pipeline()
-                                .addLast(
-                                    new UascServerHelloHandler(
-                                        config,
-                                        applicationContext,
-                                        TransportProfile.TCP_UASC_UABINARY));
-
-                            config.getChannelPipelineCustomizer().accept(channel.pipeline());
-
-                            childChannelReferences.add(channel);
-                            channel
-                                .closeFuture()
-                                .addListener(future -> childChannelReferences.remove(channel));
+                            OpcTcpServerChannelInitializer.initializePassiveChannel(
+                                channel, config, applicationContext, childChannelReferences);
                           }
                         }));
 
