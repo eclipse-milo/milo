@@ -270,8 +270,7 @@ class ReverseConnectManagerTest {
     manager = newManagerBuilder(new ManualScheduledExecutor()).build();
     ThrowingWriteChannel channel = new ThrowingWriteChannel();
 
-    invokeCloseWithError(
-        manager, channel, new StatusCode(StatusCodes.Bad_TcpInternalError), "write failed");
+    invokeCloseWithError(manager, channel, new StatusCode(StatusCodes.Bad_TcpInternalError));
 
     assertEquals(0, channel.errorBuffer().refCnt());
     assertFalse(channel.isOpen());
@@ -626,14 +625,13 @@ class ReverseConnectManagerTest {
   }
 
   private static void invokeCloseWithError(
-      ReverseConnectManager manager, Channel channel, StatusCode statusCode, String diagnostic)
-      throws Exception {
+      ReverseConnectManager manager, Channel channel, StatusCode statusCode) throws Exception {
 
     Method method =
         ReverseConnectManager.class.getDeclaredMethod(
             "closeWithError", Channel.class, StatusCode.class, String.class);
     method.setAccessible(true);
-    method.invoke(manager, channel, statusCode, diagnostic);
+    method.invoke(manager, channel, statusCode, "write failed");
   }
 
   private static void awaitVerifierRelease(CountDownLatch releaseVerifier) {
@@ -692,7 +690,7 @@ class ReverseConnectManagerTest {
     }
 
     @Override
-    public List<Runnable> shutdownNow() {
+    public @NonNull List<Runnable> shutdownNow() {
       shutdown.set(true);
       return List.of();
     }
@@ -708,7 +706,7 @@ class ReverseConnectManagerTest {
     }
 
     @Override
-    public boolean awaitTermination(long timeout, TimeUnit unit) {
+    public boolean awaitTermination(long timeout, @NonNull TimeUnit unit) {
       return true;
     }
 
@@ -718,12 +716,14 @@ class ReverseConnectManagerTest {
     }
 
     @Override
-    public ScheduledFuture<?> schedule(Runnable command, long delay, TimeUnit unit) {
+    public @NonNull ScheduledFuture<?> schedule(
+        @NonNull Runnable command, long delay, @NonNull TimeUnit unit) {
       return schedule(Executors.callable(command, null), delay, unit);
     }
 
     @Override
-    public <V> ScheduledFuture<V> schedule(Callable<V> callable, long delay, TimeUnit unit) {
+    public <V> @NonNull ScheduledFuture<V> schedule(
+        @NonNull Callable<V> callable, long delay, @NonNull TimeUnit unit) {
       ManualScheduledFuture<V> task = new ManualScheduledFuture<>(callable, delay, unit);
 
       tasks.add(task);
@@ -732,15 +732,15 @@ class ReverseConnectManagerTest {
     }
 
     @Override
-    public ScheduledFuture<?> scheduleAtFixedRate(
-        Runnable command, long initialDelay, long period, TimeUnit unit) {
+    public @NonNull ScheduledFuture<?> scheduleAtFixedRate(
+        @NonNull Runnable command, long initialDelay, long period, @NonNull TimeUnit unit) {
 
       throw new UnsupportedOperationException();
     }
 
     @Override
-    public ScheduledFuture<?> scheduleWithFixedDelay(
-        Runnable command, long initialDelay, long delay, TimeUnit unit) {
+    public @NonNull ScheduledFuture<?> scheduleWithFixedDelay(
+        @NonNull Runnable command, long initialDelay, long delay, @NonNull TimeUnit unit) {
 
       throw new UnsupportedOperationException();
     }
@@ -829,7 +829,7 @@ class ReverseConnectManagerTest {
     }
 
     @Override
-    public V get(long timeout, TimeUnit unit) throws ExecutionException, TimeoutException {
+    public V get(long timeout, @NonNull TimeUnit unit) throws ExecutionException, TimeoutException {
       if (!done.get()) {
         throw new TimeoutException();
       }

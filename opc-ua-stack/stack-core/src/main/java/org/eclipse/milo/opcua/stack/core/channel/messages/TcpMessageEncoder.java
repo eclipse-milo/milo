@@ -85,8 +85,7 @@ public class TcpMessageEncoder {
    * @param buffer the {@link ByteBuf} to encode into.
    */
   private static ByteBuf encode(
-      MessageType messageType, Consumer<ByteBuf> messageEncoder, ByteBuf buffer)
-      throws UaException {
+      MessageType messageType, Consumer<ByteBuf> messageEncoder, ByteBuf buffer) {
 
     buffer.writeMediumLE(MessageType.toMediumInt(messageType));
     buffer.writeByte('F');

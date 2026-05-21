@@ -47,6 +47,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import org.eclipse.milo.opcua.sdk.server.identity.AnonymousIdentityValidator;
@@ -528,7 +529,9 @@ class OpcUaServerReverseConnectTargetTest {
                     .orElse(false));
 
         ReverseConnectTargetSnapshot snapshot = handle.snapshot().orElseThrow();
-        assertTrue(snapshot.nextAttemptTime().isBefore(closedAt.plusMillis(3_000)));
+        Instant nextAttemptTime = snapshot.nextAttemptTime();
+        assertNotNull(nextAttemptTime);
+        assertTrue(nextAttemptTime.isBefore(closedAt.plusMillis(3_000)));
       }
     }
   }
@@ -802,8 +805,7 @@ class OpcUaServerReverseConnectTargetTest {
   }
 
   private static ReverseConnectAttemptEvent waitForEvent(
-      RecordingListener listener, Predicate<ReverseConnectAttemptEvent> predicate)
-      throws InterruptedException {
+      RecordingListener listener, Predicate<ReverseConnectAttemptEvent> predicate) {
 
     Instant deadline = Instant.now().plus(Duration.ofSeconds(5));
     while (Instant.now().isBefore(deadline)) {
@@ -812,7 +814,7 @@ class OpcUaServerReverseConnectTargetTest {
           return event;
         }
       }
-      Thread.sleep(10);
+      LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
     }
 
     throw new AssertionError("timed out waiting for Reverse Connect attempt event");
@@ -826,13 +828,13 @@ class OpcUaServerReverseConnectTargetTest {
         .orElse(0L);
   }
 
-  private static void waitUntil(BooleanSupplier condition) throws InterruptedException {
+  private static void waitUntil(BooleanSupplier condition) {
     Instant deadline = Instant.now().plus(Duration.ofSeconds(5));
     while (Instant.now().isBefore(deadline)) {
       if (condition.getAsBoolean()) {
         return;
       }
-      Thread.sleep(10);
+      LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
     }
 
     throw new AssertionError("timed out waiting for condition");

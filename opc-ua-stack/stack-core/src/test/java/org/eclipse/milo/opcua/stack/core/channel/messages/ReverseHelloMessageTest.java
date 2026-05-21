@@ -93,7 +93,7 @@ public class ReverseHelloMessageTest {
   @Test
   public void testDecodeFailsWhenEndpointUrlLengthIsNegative() {
     ByteBuf buffer = Unpooled.buffer();
-    writeString(SERVER_URI, buffer);
+    writeServerUri(buffer);
     buffer.writeIntLE(-2);
 
     assertUaException(StatusCodes.Bad_DecodingError, () -> ReverseHelloMessage.decode(buffer));
@@ -105,7 +105,7 @@ public class ReverseHelloMessageTest {
   @ValueSource(ints = {0, 1, 2, 3})
   public void testDecodeFailsWhenEndpointUrlLengthIsTruncated(int byteCount) {
     ByteBuf buffer = Unpooled.buffer();
-    writeString(SERVER_URI, buffer);
+    writeServerUri(buffer);
     buffer.writeZero(byteCount);
 
     assertUaException(StatusCodes.Bad_DecodingError, () -> ReverseHelloMessage.decode(buffer));
@@ -126,7 +126,7 @@ public class ReverseHelloMessageTest {
   @Test
   public void testDecodeFailsWhenEndpointUrlTooLarge() {
     ByteBuf buffer = Unpooled.buffer();
-    writeString(SERVER_URI, buffer);
+    writeServerUri(buffer);
     buffer.writeIntLE(ReverseHelloMessage.MAX_STRING_LENGTH + 1);
 
     assertThrows(UaException.class, () -> ReverseHelloMessage.decode(buffer));
@@ -149,7 +149,7 @@ public class ReverseHelloMessageTest {
   @Test
   public void testDecodeFailsWhenEndpointUrlLengthExceedsReadableBytes() {
     ByteBuf buffer = Unpooled.buffer();
-    writeString(SERVER_URI, buffer);
+    writeServerUri(buffer);
     buffer.writeIntLE(ENDPOINT_URL.getBytes(StandardCharsets.UTF_8).length);
     buffer.writeBytes(
         ENDPOINT_URL.substring(0, ENDPOINT_URL.length() - 1).getBytes(StandardCharsets.UTF_8));
@@ -207,8 +207,8 @@ public class ReverseHelloMessageTest {
     }
   }
 
-  private static void writeString(String s, ByteBuf buffer) {
-    byte[] bs = s.getBytes(StandardCharsets.UTF_8);
+  private static void writeServerUri(ByteBuf buffer) {
+    byte[] bs = SERVER_URI.getBytes(StandardCharsets.UTF_8);
     buffer.writeIntLE(bs.length);
     buffer.writeBytes(bs);
   }

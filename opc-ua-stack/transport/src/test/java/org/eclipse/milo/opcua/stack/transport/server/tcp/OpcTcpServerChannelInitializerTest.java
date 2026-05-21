@@ -133,7 +133,7 @@ class OpcTcpServerChannelInitializerTest {
 
       @Override
       public List<EndpointDescription> getEndpointDescriptions() {
-        return List.of(newEndpointDescription("opc.tcp://localhost:12685/milo"));
+        return List.of(newEndpointDescription());
       }
 
       @Override
@@ -165,7 +165,9 @@ class OpcTcpServerChannelInitializerTest {
     };
   }
 
-  private static EndpointDescription newEndpointDescription(String endpointUrl) {
+  private static EndpointDescription newEndpointDescription() {
+    String endpointUrl = "opc.tcp://localhost:12685/milo";
+
     return new EndpointDescription(
         endpointUrl,
         new ApplicationDescription(

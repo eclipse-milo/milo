@@ -146,7 +146,7 @@ public final class DiscoveryFirstReverseConnectClient {
       ReverseConnectDiscoveryResult discovery, EndpointDescription endpoint) {
 
     if (defaultProductionSelectorFactory
-        && !ReverseConnectProductionSelectors.hasRoutingHint(discovery.candidate())) {
+        && ReverseConnectProductionSelectors.missingRoutingHint(discovery.candidate())) {
       return CompletableFuture.failedFuture(
           ReverseConnectProductionSelectors.missingRoutingHintsException());
     }
