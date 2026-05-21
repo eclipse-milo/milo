@@ -16,10 +16,12 @@ import io.netty.channel.Channel;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -370,10 +372,17 @@ public final class ReverseConnectTargetManager {
 
       cancelScheduledLocked(record);
 
+      long attemptGeneration = record.generation;
       OpcTcpServerReverseConnectAttempt attempt = record.activeAttempt;
+      boolean handoffAccepted = attempt != null && isSuccessfulHandoff(attempt);
+
       record.activeAttempt = null;
       record.attemptInProgress = false;
-      record.generation++;
+      if (handoffAccepted) {
+        record.pendingHandoffAttempts.add(new AttemptKey(record.attemptCounter, attemptGeneration));
+      } else {
+        record.generation++;
+      }
 
       record.target = target;
       record.paused = target.isPaused();
@@ -386,7 +395,7 @@ public final class ReverseConnectTargetManager {
         scheduleLocked(record, 0L);
       }
 
-      action = new TargetAction(record.snapshot(), attempt);
+      action = new TargetAction(record.snapshot(), handoffAccepted ? null : attempt);
     }
 
     action.closeAttempt();
@@ -443,12 +452,19 @@ public final class ReverseConnectTargetManager {
   }
 
   private TargetAction clearActiveAttemptLocked(TargetRecord record) {
+    long attemptGeneration = record.generation;
     OpcTcpServerReverseConnectAttempt attempt = record.activeAttempt;
+    boolean handoffAccepted = attempt != null && isSuccessfulHandoff(attempt);
+
     record.activeAttempt = null;
     record.attemptInProgress = false;
-    record.generation++;
+    if (handoffAccepted) {
+      record.pendingHandoffAttempts.add(new AttemptKey(record.attemptCounter, attemptGeneration));
+    } else {
+      record.generation++;
+    }
 
-    return new TargetAction(record.snapshot(), attempt);
+    return new TargetAction(record.snapshot(), handoffAccepted ? null : attempt);
   }
 
   private void scheduleLocked(TargetRecord record, long delayMillis) {
@@ -468,9 +484,9 @@ public final class ReverseConnectTargetManager {
     if (record.scheduledFuture != null) {
       record.scheduledFuture.cancel(false);
       record.scheduledFuture = null;
+      record.generation++;
     }
     record.nextAttemptTime = null;
-    record.generation++;
   }
 
   private void runScheduledAttempt(UUID targetId, long generation) {
@@ -619,17 +635,24 @@ public final class ReverseConnectTargetManager {
     ReverseConnectTargetSnapshot snapshot = null;
     synchronized (lock) {
       TargetRecord record = records.get(targetId);
-      if (record == null
-          || record.attemptCounter != attemptNumber
-          || record.generation != attemptGeneration) {
+      if (record == null || record.attemptCounter != attemptNumber) {
         return;
       }
 
       if (isTerminal(event.state())) {
+        boolean handoff = event.state() == ReverseConnectAttemptState.HANDOFF;
+        if (handoff && shutdown) {
+          return;
+        }
+        if (record.generation != attemptGeneration && !handoff) {
+          return;
+        }
+
         record.activeAttempt = null;
         record.attemptInProgress = false;
 
-        if (event.state() == ReverseConnectAttemptState.HANDOFF) {
+        if (handoff) {
+          record.pendingHandoffAttempts.add(new AttemptKey(attemptNumber, attemptGeneration));
           record.lastSuccessTime = event.timestamp();
           record.lastStatusCode = null;
           record.lastError = null;
@@ -660,14 +683,20 @@ public final class ReverseConnectTargetManager {
 
     synchronized (lock) {
       TargetRecord record = records.get(targetId);
-      if (record == null
-          || record.attemptCounter != attemptNumber
-          || record.generation != attemptGeneration
-          || shutdown) {
+      if (record == null || shutdown) {
         closeChannel = true;
       } else {
-        record.activeChannels.put(channel.id().asLongText(), channel);
-        snapshot = record.snapshot();
+        var attemptKey = new AttemptKey(attemptNumber, attemptGeneration);
+        boolean currentAttempt =
+            record.attemptCounter == attemptNumber && record.generation == attemptGeneration;
+        boolean pendingHandoff = record.pendingHandoffAttempts.remove(attemptKey);
+
+        if (currentAttempt || pendingHandoff) {
+          record.activeChannels.put(channel.id().asLongText(), channel);
+          snapshot = record.snapshot();
+        } else {
+          closeChannel = true;
+        }
       }
     }
 
@@ -812,9 +841,10 @@ public final class ReverseConnectTargetManager {
   private static boolean isSuccessfulHandoff(OpcTcpServerReverseConnectAttempt attempt) {
     CompletableFuture<Channel> channelFuture = attempt.channelFuture();
 
-    return channelFuture.isDone()
-        && !channelFuture.isCancelled()
-        && !channelFuture.isCompletedExceptionally();
+    return attempt.state() == OpcTcpServerReverseConnectAttemptState.HANDOFF
+        || (channelFuture.isDone()
+            && !channelFuture.isCancelled()
+            && !channelFuture.isCompletedExceptionally());
   }
 
   private static ReverseConnectAttemptState mapState(OpcTcpServerReverseConnectAttemptState state) {
@@ -836,6 +866,7 @@ public final class ReverseConnectTargetManager {
 
     private ReverseConnectTarget target;
     private final Map<String, Channel> activeChannels = new LinkedHashMap<>();
+    private final Set<AttemptKey> pendingHandoffAttempts = new HashSet<>();
 
     private boolean paused;
     private long generation = 0L;
@@ -859,7 +890,7 @@ public final class ReverseConnectTargetManager {
     }
 
     private boolean hasPendingAttempt() {
-      return attemptInProgress || activeAttempt != null;
+      return attemptInProgress || activeAttempt != null || !pendingHandoffAttempts.isEmpty();
     }
 
     private ReverseConnectTargetSnapshot snapshot() {
@@ -885,6 +916,8 @@ public final class ReverseConnectTargetManager {
       long number,
       long generation,
       ReverseConnectTargetSnapshot snapshot) {}
+
+  private record AttemptKey(long number, long generation) {}
 
   private record TargetAction(
       ReverseConnectTargetSnapshot snapshot, @Nullable OpcTcpServerReverseConnectAttempt attempt) {
