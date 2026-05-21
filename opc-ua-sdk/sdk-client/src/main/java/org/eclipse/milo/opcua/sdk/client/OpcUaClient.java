@@ -252,11 +252,9 @@ public class OpcUaClient {
    * @param manager the running {@link ReverseConnectManager} that owns client listener sockets.
    * @param selector the one-shot selector used to claim a matching reverse connection.
    * @return a new {@link OpcUaClient} configured with reverse TCP transport.
-   * @throws UaException if the client could not be created.
    */
   public static OpcUaClient createReverseConnect(
-      OpcUaClientConfig config, ReverseConnectManager manager, ReverseConnectSelector selector)
-      throws UaException {
+      OpcUaClientConfig config, ReverseConnectManager manager, ReverseConnectSelector selector) {
 
     return createReverseConnect(config, manager, selector, b -> {});
   }
@@ -275,14 +273,12 @@ public class OpcUaClient {
    * @param configureTransport a Consumer that receives an {@link
    *     OpcTcpClientTransportConfigBuilder} that can be used to configure the reverse transport.
    * @return a new {@link OpcUaClient} configured with reverse TCP transport.
-   * @throws UaException if the client could not be created.
    */
   public static OpcUaClient createReverseConnect(
       OpcUaClientConfig config,
       ReverseConnectManager manager,
       ReverseConnectSelector selector,
-      Consumer<OpcTcpClientTransportConfigBuilder> configureTransport)
-      throws UaException {
+      Consumer<OpcTcpClientTransportConfigBuilder> configureTransport) {
 
     var transportConfigBuilder = OpcTcpClientTransportConfig.newBuilder();
     configureTransport.accept(transportConfigBuilder);
@@ -325,10 +321,9 @@ public class OpcUaClient {
    * @param config the {@link OpcUaClientConfig}.
    * @param connection the pre-claimed reverse-connect connection.
    * @return a new {@link OpcUaClient} configured with reverse TCP transport.
-   * @throws UaException if the client could not be created.
    */
   public static OpcUaClient createReverseConnect(
-      OpcUaClientConfig config, ReverseConnectConnection connection) throws UaException {
+      OpcUaClientConfig config, ReverseConnectConnection connection) {
 
     return createReverseConnect(config, connection, b -> {});
   }
@@ -349,13 +344,11 @@ public class OpcUaClient {
    * @param configureTransport a Consumer that receives an {@link
    *     OpcTcpClientTransportConfigBuilder} that can be used to configure the reverse transport.
    * @return a new {@link OpcUaClient} configured with reverse TCP transport.
-   * @throws UaException if the client could not be created.
    */
   public static OpcUaClient createReverseConnect(
       OpcUaClientConfig config,
       ReverseConnectConnection connection,
-      Consumer<OpcTcpClientTransportConfigBuilder> configureTransport)
-      throws UaException {
+      Consumer<OpcTcpClientTransportConfigBuilder> configureTransport) {
 
     var transportConfigBuilder = OpcTcpClientTransportConfig.newBuilder();
     configureTransport.accept(transportConfigBuilder);

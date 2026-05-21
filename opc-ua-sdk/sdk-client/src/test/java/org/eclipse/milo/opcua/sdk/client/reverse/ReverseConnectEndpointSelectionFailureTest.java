@@ -158,7 +158,7 @@ class ReverseConnectEndpointSelectionFailureTest {
     return (CompletableFuture<OpcUaClient>) method.invoke(acceptor, "key", discovery);
   }
 
-  private static UaException assertConfigurationError(
+  private static void assertConfigurationError(
       CompletableFuture<?> future, String expectedMessage) {
 
     CompletionException exception = assertThrows(CompletionException.class, future::join);
@@ -166,8 +166,6 @@ class ReverseConnectEndpointSelectionFailureTest {
 
     assertEquals(StatusCodes.Bad_ConfigurationError, cause.getStatusCode().value());
     assertEquals(expectedMessage, cause.getMessage());
-
-    return cause;
   }
 
   private static ReverseConnectDiscoveryResult discovery(List<EndpointDescription> endpoints) {

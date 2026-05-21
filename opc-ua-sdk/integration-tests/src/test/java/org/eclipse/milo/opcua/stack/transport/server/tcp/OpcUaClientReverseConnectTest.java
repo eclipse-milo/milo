@@ -15,6 +15,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -34,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import org.eclipse.milo.opcua.sdk.client.DiscoveryClient;
@@ -184,7 +186,6 @@ class OpcUaClientReverseConnectTest {
 
   @Test
   void sharedListenerRoutesEndpointSpecificClientsWithoutCrossHandoff() throws Exception {
-    TestServer secondTestServer = null;
     OpcUaServer secondServer = null;
     TestNamespace secondNamespace = null;
     OpcTcpServerReverseConnector secondConnector = null;
@@ -193,7 +194,7 @@ class OpcUaClientReverseConnectTest {
     try {
       startServerAndManager();
 
-      secondTestServer = TestServer.create();
+      TestServer secondTestServer = TestServer.create();
       secondServer = secondTestServer.getServer();
       secondNamespace = new TestNamespace(secondServer);
       secondNamespace.startup();
@@ -204,7 +205,7 @@ class OpcUaClientReverseConnectTest {
       EndpointDescription secondEndpoint =
           selectEndpoint(secondServer, SecurityPolicy.None, MessageSecurityMode.None);
 
-      assertFalse(endpointUrl(firstEndpoint).equals(endpointUrl(secondEndpoint)));
+      assertNotEquals(endpointUrl(firstEndpoint), endpointUrl(secondEndpoint));
 
       client =
           OpcUaClient.createReverseConnect(
@@ -308,7 +309,7 @@ class OpcUaClientReverseConnectTest {
         DiscoveryFirstReverseConnectClient.builder(manager).connectAsync();
 
     ReverseConnectTargetHandle handle =
-        server.addReverseConnectTarget(reverseTarget(advertisedEndpoint, uint(100), true));
+        server.addReverseConnectTarget(reverseTarget(advertisedEndpoint, uint(100)));
 
     handle.resume().get(5, TimeUnit.SECONDS);
 
@@ -338,7 +339,7 @@ class OpcUaClientReverseConnectTest {
                 (candidate, failure) -> connectedClient.completeExceptionally(failure))
             .build();
 
-    try {
+    try (acceptor) {
       startReverseConnect(endpoint);
       waitUntil(() -> !manager.snapshot().pendingCandidates().isEmpty());
 
@@ -354,8 +355,6 @@ class OpcUaClientReverseConnectTest {
       assertReadWorks();
       assertClaimedReverseHello(endpoint);
       waitUntil(() -> manager.snapshot().claimedCount() == 2);
-    } finally {
-      acceptor.close();
     }
   }
 
@@ -387,7 +386,7 @@ class OpcUaClientReverseConnectTest {
                 })
             .build();
 
-    try {
+    try (acceptor) {
       acceptor.start();
 
       startReverseConnect(endpoint);
@@ -414,8 +413,6 @@ class OpcUaClientReverseConnectTest {
       assertTrue(secondProductionAttempt.channelFuture().get(5, TimeUnit.SECONDS).isActive());
       assertReadWorks(secondClient);
       assertEquals(2, connectedCount.get());
-    } finally {
-      acceptor.close();
     }
   }
 
@@ -439,7 +436,7 @@ class OpcUaClientReverseConnectTest {
             .setErrorListener((candidate, failure) -> reportedFailure.complete(failure))
             .build();
 
-    try {
+    try (acceptor) {
       acceptor.start();
 
       startReverseConnect(endpoint);
@@ -456,8 +453,6 @@ class OpcUaClientReverseConnectTest {
       if (client == connected) {
         client = null;
       }
-    } finally {
-      acceptor.close();
     }
   }
 
@@ -484,7 +479,7 @@ class OpcUaClientReverseConnectTest {
             .setErrorListener((candidate, failure) -> reportedFailure.complete(unwrap(failure)))
             .build();
 
-    try {
+    try (acceptor) {
       acceptor.start();
 
       startReverseConnect(endpoint);
@@ -501,8 +496,6 @@ class OpcUaClientReverseConnectTest {
 
       assertThrows(TimeoutException.class, () -> deliveredClient.get(500, TimeUnit.MILLISECONDS));
       assertFalse(deliveredClient.isDone());
-    } finally {
-      acceptor.close();
     }
   }
 
@@ -551,7 +544,7 @@ class OpcUaClientReverseConnectTest {
         });
 
     ReverseConnectTargetHandle handle =
-        server.addReverseConnectTarget(reverseTarget(advertisedEndpoint, uint(100), true));
+        server.addReverseConnectTarget(reverseTarget(advertisedEndpoint, uint(100)));
     targetHandle.complete(handle);
 
     handle.resume().get(5, TimeUnit.SECONDS);
@@ -622,7 +615,7 @@ class OpcUaClientReverseConnectTest {
         });
 
     ReverseConnectTargetHandle handle =
-        server.addReverseConnectTarget(reverseTarget(advertisedEndpoint, uint(100), true));
+        server.addReverseConnectTarget(reverseTarget(advertisedEndpoint, uint(100)));
     targetHandle.complete(handle);
 
     handle.resume().get(5, TimeUnit.SECONDS);
@@ -725,8 +718,7 @@ class OpcUaClientReverseConnectTest {
     connector = new OpcTcpServerReverseConnector(OpcTcpServerTransportConfig.newBuilder().build());
   }
 
-  private OpcUaClient newReverseClient(EndpointDescription endpoint, boolean secure)
-      throws Exception {
+  private OpcUaClient newReverseClient(EndpointDescription endpoint, boolean secure) {
 
     return newReverseClient(endpoint, secure, transport -> {});
   }
@@ -734,8 +726,7 @@ class OpcUaClientReverseConnectTest {
   private OpcUaClient newReverseClient(
       EndpointDescription endpoint,
       boolean secure,
-      Consumer<OpcTcpClientTransportConfigBuilder> configureTransport)
-      throws Exception {
+      Consumer<OpcTcpClientTransportConfigBuilder> configureTransport) {
 
     OpcUaClientConfigBuilder builder = clientConfigBuilder(endpoint, secure);
 
@@ -825,14 +816,14 @@ class OpcUaClientReverseConnectTest {
   }
 
   private ReverseConnectTarget reverseTarget(
-      EndpointDescription endpoint, UInteger registrationPeriod, boolean paused) {
+      EndpointDescription endpoint, UInteger registrationPeriod) {
 
     return ReverseConnectTarget.builder()
         .setClientListenerUrl(listenerUrl())
         .setEndpointUrl(endpointUrl(endpoint))
         .setRegistrationPeriod(registrationPeriod)
         .setConnectTimeout(uint(5_000))
-        .setPaused(paused)
+        .setPaused(true)
         .build();
   }
 
@@ -927,13 +918,13 @@ class OpcUaClientReverseConnectTest {
         requireNonNull(endpoint.getServer(), "server").getApplicationUri(), "serverUri");
   }
 
-  private static void waitUntil(BooleanSupplier condition) throws Exception {
+  private static void waitUntil(BooleanSupplier condition) {
     long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
     while (System.nanoTime() < deadline) {
       if (condition.getAsBoolean()) {
         return;
       }
-      Thread.sleep(10);
+      LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
     }
 
     throw new AssertionError("timed out waiting for condition");

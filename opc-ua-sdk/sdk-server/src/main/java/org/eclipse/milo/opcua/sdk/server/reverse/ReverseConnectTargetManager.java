@@ -689,14 +689,9 @@ public final class ReverseConnectTargetManager {
 
     RetryContext retryContext = null;
     ReverseConnectTargetSnapshot snapshot = null;
-    boolean notifyAttemptEvent = true;
     synchronized (lock) {
       TargetRecord record = records.get(targetId);
-      if (record == null || record.attemptCounter != attemptNumber) {
-        // The target or attempt generation was invalidated after this transport attempt started.
-        // Preserve observability for the transition, but do not let stale attempts mutate state.
-        snapshot = null;
-      } else if (isTerminal(event.state())) {
+      if (record != null && record.attemptCounter == attemptNumber && isTerminal(event.state())) {
         boolean handoff = event.state() == ReverseConnectAttemptState.HANDOFF;
         if (handoff && shutdown) {
           return;
@@ -719,7 +714,6 @@ public final class ReverseConnectTargetManager {
           if (shouldRetry(record, event)) {
             retryContext =
                 new RetryContext(targetId, attemptNumber, attemptGeneration, record.target, event);
-            notifyAttemptEvent = false;
           }
 
           snapshot = record.snapshot();
@@ -729,11 +723,8 @@ public final class ReverseConnectTargetManager {
 
     if (retryContext != null) {
       scheduleRetryEvaluation(retryContext, snapshot);
-    } else if (notifyAttemptEvent) {
+    } else {
       notifyAttemptEvent(event);
-    }
-
-    if (retryContext == null) {
       if (snapshot != null) {
         notifyTargetUpdated(snapshot);
       }

@@ -106,10 +106,14 @@ public final class OpcTcpServerReverseConnectAttempt {
     return completed.get();
   }
 
-  boolean handoff(Channel channel, String message) {
+  boolean handoff(Channel channel) {
     if (completeTerminal(OpcTcpServerReverseConnectAttemptState.HANDOFF)) {
       connector.emitStateTransition(
-          this, OpcTcpServerReverseConnectAttemptState.HANDOFF, null, null, message);
+          this,
+          OpcTcpServerReverseConnectAttemptState.HANDOFF,
+          null,
+          null,
+          "client Hello received; channel handed off to server UASC path");
       channelFuture.complete(channel);
       return true;
     } else {
@@ -143,18 +147,14 @@ public final class OpcTcpServerReverseConnectAttempt {
     }
   }
 
-  void transition(
-      OpcTcpServerReverseConnectAttemptState nextState,
-      @Nullable StatusCode statusCode,
-      @Nullable Throwable exception,
-      @Nullable String message) {
+  void transition(OpcTcpServerReverseConnectAttemptState nextState, @Nullable String message) {
 
     if (!isTerminalState(nextState) && isTerminalState(state.get())) {
       return;
     }
 
     state.set(nextState);
-    connector.emitStateTransition(this, nextState, statusCode, exception, message);
+    connector.emitStateTransition(this, nextState, null, null, message);
   }
 
   private boolean completeTerminal(OpcTcpServerReverseConnectAttemptState terminalState) {

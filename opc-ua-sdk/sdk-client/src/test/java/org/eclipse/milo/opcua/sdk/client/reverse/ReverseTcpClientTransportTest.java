@@ -53,6 +53,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransportConfig;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -371,7 +372,7 @@ class ReverseTcpClientTransportTest {
     }
 
     @Override
-    public List<Runnable> shutdownNow() {
+    public @NonNull List<Runnable> shutdownNow() {
       shutdown = true;
 
       synchronized (tasks) {
@@ -392,12 +393,12 @@ class ReverseTcpClientTransportTest {
     }
 
     @Override
-    public boolean awaitTermination(long timeout, TimeUnit unit) {
+    public boolean awaitTermination(long timeout, @NonNull TimeUnit unit) {
       return shutdown;
     }
 
     @Override
-    public void execute(Runnable command) {
+    public void execute(@NonNull Runnable command) {
       tasks.add(command);
     }
 

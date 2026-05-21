@@ -136,8 +136,6 @@ final class OpcTcpServerReverseConnector implements AutoCloseable {
 
     attempt.transition(
         OpcTcpServerReverseConnectAttemptState.CONNECTING,
-        null,
-        null,
         "connecting to " + parameters.clientListenerAddress());
 
     connectFuture.addListener(
@@ -163,8 +161,6 @@ final class OpcTcpServerReverseConnector implements AutoCloseable {
 
               attempt.transition(
                   OpcTcpServerReverseConnectAttemptState.CONNECTED,
-                  null,
-                  null,
                   "connected to " + parameters.clientListenerAddress());
 
               channel.eventLoop().execute(() -> writeReverseHello(attempt, channel));
@@ -182,7 +178,7 @@ final class OpcTcpServerReverseConnector implements AutoCloseable {
    * channel so connector shutdown can close server-owned reverse sockets.
    */
   void onHelloReceived(OpcTcpServerReverseConnectAttempt attempt, Channel channel) {
-    if (attempt.handoff(channel, "client Hello received; channel handed off to server UASC path")) {
+    if (attempt.handoff(channel)) {
       removeAttempt(attempt);
     }
   }
@@ -375,8 +371,6 @@ final class OpcTcpServerReverseConnector implements AutoCloseable {
 
                   attempt.transition(
                       OpcTcpServerReverseConnectAttemptState.REVERSE_HELLO_SENT,
-                      null,
-                      null,
                       "ReverseHello sent");
 
                   installServerHelloPath(attempt, channel);
@@ -407,8 +401,6 @@ final class OpcTcpServerReverseConnector implements AutoCloseable {
 
     attempt.transition(
         OpcTcpServerReverseConnectAttemptState.HELLO_HANDLER_INSTALLED,
-        null,
-        null,
         "server Hello handler installed");
   }
 
@@ -459,10 +451,7 @@ final class OpcTcpServerReverseConnector implements AutoCloseable {
     removeChannel(channel);
 
     if (!attempt.isComplete()) {
-      failAttempt(
-          attempt,
-          new StatusCode(StatusCodes.Bad_ConnectionClosed),
-          "reverse-connect channel closed before Hello");
+      failClosedBeforeHello(attempt);
     }
   }
 
@@ -502,8 +491,9 @@ final class OpcTcpServerReverseConnector implements AutoCloseable {
    *
    * <p>This helper is used when the channel has already closed before the attempt reached handoff.
    */
-  private void failAttempt(
-      OpcTcpServerReverseConnectAttempt attempt, StatusCode statusCode, String message) {
+  private void failClosedBeforeHello(OpcTcpServerReverseConnectAttempt attempt) {
+    var statusCode = new StatusCode(StatusCodes.Bad_ConnectionClosed);
+    String message = "reverse-connect channel closed before Hello";
 
     var exception = new UaException(statusCode, message);
 

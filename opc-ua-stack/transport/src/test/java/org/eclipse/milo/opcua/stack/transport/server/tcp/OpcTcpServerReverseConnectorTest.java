@@ -218,10 +218,7 @@ class OpcTcpServerReverseConnectorTest {
 
       try (Socket socket = accept(listener)) {
         readReverseHello(socket);
-        writeMessage(
-            socket,
-            newHeaderOnlyMessage(
-                MessageType.Hello, UascServerHelloHandler.MAX_HELLO_MESSAGE_SIZE + 1));
+        writeMessage(socket, newOversizedHelloHeaderMessage());
 
         assertThrows(
             ExecutionException.class, () -> attempt.channelFuture().get(3, TimeUnit.SECONDS));
@@ -474,11 +471,11 @@ class OpcTcpServerReverseConnectorTest {
     }
   }
 
-  private static ByteBuf newHeaderOnlyMessage(MessageType messageType, int messageLength) {
+  private static ByteBuf newOversizedHelloHeaderMessage() {
     return Unpooled.buffer(8)
-        .writeMediumLE(MessageType.toMediumInt(messageType))
+        .writeMediumLE(MessageType.toMediumInt(MessageType.Hello))
         .writeByte('F')
-        .writeIntLE(messageLength);
+        .writeIntLE(UascServerHelloHandler.MAX_HELLO_MESSAGE_SIZE + 1);
   }
 
   private static HelloMessage newHelloMessage() {

@@ -18,14 +18,14 @@ final class ReverseConnectProductionSelectors {
 
   private ReverseConnectProductionSelectors() {}
 
-  static boolean hasRoutingHint(ReverseConnectCandidateSnapshot candidate) {
-    return candidate.serverUri() != null || candidate.endpointUrl() != null;
+  static boolean missingRoutingHint(ReverseConnectCandidateSnapshot candidate) {
+    return candidate.serverUri() == null && candidate.endpointUrl() == null;
   }
 
   static ReverseConnectSelector matchDiscoveryRoutingHints(
       ReverseConnectCandidateSnapshot discoveryCandidate) {
 
-    if (!hasRoutingHint(discoveryCandidate)) {
+    if (missingRoutingHint(discoveryCandidate)) {
       return candidate -> false;
     }
 

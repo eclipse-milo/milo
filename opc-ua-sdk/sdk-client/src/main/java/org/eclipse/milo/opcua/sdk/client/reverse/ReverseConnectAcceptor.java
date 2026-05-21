@@ -27,7 +27,6 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.transport.client.ChannelStateObservable;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransportConfigBuilder;
-import org.jspecify.annotations.NonNull;
 
 /**
  * Dynamic discovery-first acceptor for shared Reverse Connect listeners.
@@ -258,7 +257,7 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
     }
 
     if (defaultProductionSelectorFactory
-        && !ReverseConnectProductionSelectors.hasRoutingHint(discovery.candidate())) {
+        && ReverseConnectProductionSelectors.missingRoutingHint(discovery.candidate())) {
       return CompletableFuture.failedFuture(
           ReverseConnectProductionSelectors.missingRoutingHintsException());
     }
@@ -319,14 +318,11 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
   private void releaseKeyWhenProductionTransportDisconnects(String key, OpcUaClient client) {
     if (client.getTransport() instanceof ChannelStateObservable observable) {
       ChannelStateObservable.TransitionListener listener =
-          new ChannelStateObservable.TransitionListener() {
-            @Override
-            public void onStateTransition(boolean connected) {
-              if (connected) {
-                activeKeys.add(key);
-              } else {
-                releaseKeyAndProcessPendingCandidates(key);
-              }
+          connected -> {
+            if (connected) {
+              activeKeys.add(key);
+            } else {
+              releaseKeyAndProcessPendingCandidates(key);
             }
           };
 
@@ -378,7 +374,7 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
   private final class AcceptorListener implements ReverseConnectListener {
 
     @Override
-    public void onCandidatePending(@NonNull ReverseConnectCandidateSnapshot snapshot) {
+    public void onCandidatePending(ReverseConnectCandidateSnapshot snapshot) {
       if (running.get()) {
         ReverseConnectAcceptor.this.onCandidatePending(snapshot);
       }

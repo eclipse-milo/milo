@@ -54,7 +54,6 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
-import org.eclipse.milo.opcua.stack.transport.client.uasc.ClientSecureChannel;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.InboundUascResponseHandler.DelegatingUascResponseHandler;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.UascClientAcknowledgeHandler;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.UascResponseHandler;
@@ -75,7 +74,7 @@ class OpcTcpClientChannelInitializerTest {
           newClientApplicationContext(endpointUrl),
           NoopResponseHandler.INSTANCE,
           new AtomicLong(1)::getAndIncrement,
-          new CompletableFuture<ClientSecureChannel>());
+          new CompletableFuture<>());
 
       assertClientPipelineInitialized(channel);
       assertHelloEndpointUrl(channel, endpointUrl);
@@ -99,7 +98,7 @@ class OpcTcpClientChannelInitializerTest {
           newClientApplicationContext(applicationEndpointUrl),
           NoopResponseHandler.INSTANCE,
           new AtomicLong(1)::getAndIncrement,
-          new CompletableFuture<ClientSecureChannel>(),
+          new CompletableFuture<>(),
           reverseHelloEndpointUrl);
 
       assertClientPipelineInitialized(channel);
@@ -131,7 +130,7 @@ class OpcTcpClientChannelInitializerTest {
                       newClientApplicationContext(applicationEndpointUrl),
                       NoopResponseHandler.INSTANCE,
                       new AtomicLong(1)::getAndIncrement,
-                      new CompletableFuture<ClientSecureChannel>(),
+                      new CompletableFuture<>(),
                       reverseHelloEndpointUrl));
 
       assertEquals(
@@ -166,7 +165,7 @@ class OpcTcpClientChannelInitializerTest {
           newClientApplicationContext(applicationEndpointUrl),
           NoopResponseHandler.INSTANCE,
           new AtomicLong(1)::getAndIncrement,
-          new CompletableFuture<ClientSecureChannel>(),
+          new CompletableFuture<>(),
           reverseHelloEndpointUrl);
 
       assertTrue(helloObserved.get());
