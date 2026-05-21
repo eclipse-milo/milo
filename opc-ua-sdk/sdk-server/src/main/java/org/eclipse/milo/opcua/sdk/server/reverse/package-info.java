@@ -47,9 +47,9 @@
  *
  * <p>Attempt failures are translated into immutable {@link
  * org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectAttemptEvent}s and retained on target
- * snapshots as the last status or exception. Retry timing is delegated to {@link
- * org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectRetryPolicy}; the default policy uses the
- * target registration period.
+ * snapshots as the last status or a defensive copy of the last exception. Retry timing is delegated
+ * to {@link org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectRetryPolicy}; the default
+ * policy uses the target registration period.
  *
  * <p>Successful outbound UA-TCP connections are handed back to the normal server SecureChannel and
  * Session paths after the stack transport installs the standard server Hello handler. Client-side
