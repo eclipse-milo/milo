@@ -20,11 +20,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
@@ -412,6 +414,93 @@ class OpcUaClientReverseConnectTest {
       assertTrue(secondProductionAttempt.channelFuture().get(5, TimeUnit.SECONDS).isActive());
       assertReadWorks(secondClient);
       assertEquals(2, connectedCount.get());
+    } finally {
+      acceptor.close();
+    }
+  }
+
+  @Test
+  void reverseConnectAcceptorDisconnectsClientWhenClientListenerThrows() throws Exception {
+    startServerAndManager();
+
+    EndpointDescription endpoint = selectEndpoint(SecurityPolicy.None, MessageSecurityMode.None);
+    RuntimeException listenerFailure = new RuntimeException("listener failed");
+    CompletableFuture<OpcUaClient> deliveredClient = new CompletableFuture<>();
+    CompletableFuture<Throwable> reportedFailure = new CompletableFuture<>();
+
+    ReverseConnectAcceptor acceptor =
+        ReverseConnectAcceptor.builder(manager)
+            .setClientListener(
+                (discovery, discoveredEndpoint, connected) -> {
+                  client = connected;
+                  deliveredClient.complete(connected);
+                  throw listenerFailure;
+                })
+            .setErrorListener((candidate, failure) -> reportedFailure.complete(failure))
+            .build();
+
+    try {
+      acceptor.start();
+
+      startReverseConnect(endpoint);
+      waitUntil(() -> manager.snapshot().claimedCount() == 1);
+
+      OpcTcpServerReverseConnectAttempt productionAttempt = startReverseConnect(endpoint);
+      OpcUaClient connected = deliveredClient.get(10, TimeUnit.SECONDS);
+      Channel channel = productionAttempt.channelFuture().get(5, TimeUnit.SECONDS);
+
+      assertSame(listenerFailure, reportedFailure.get(10, TimeUnit.SECONDS));
+      waitUntil(() -> !channel.isActive());
+      assertFalse(channel.isActive());
+
+      if (client == connected) {
+        client = null;
+      }
+    } finally {
+      acceptor.close();
+    }
+  }
+
+  @Test
+  void reverseConnectAcceptorDoesNotDeliverClientAfterStopDuringInFlightFlow() throws Exception {
+    startServerAndManager();
+
+    EndpointDescription endpoint = selectEndpoint(SecurityPolicy.None, MessageSecurityMode.None);
+    CompletableFuture<Void> endpointSelectionEntered = new CompletableFuture<>();
+    CompletableFuture<Void> releaseEndpointSelection = new CompletableFuture<>();
+    CompletableFuture<OpcUaClient> deliveredClient = new CompletableFuture<>();
+    CompletableFuture<Throwable> reportedFailure = new CompletableFuture<>();
+
+    ReverseConnectAcceptor acceptor =
+        ReverseConnectAcceptor.builder(manager)
+            .setEndpointSelector(
+                (candidate, endpoints) -> {
+                  endpointSelectionEntered.complete(null);
+                  releaseEndpointSelection.orTimeout(5, TimeUnit.SECONDS).join();
+                  return Optional.of(selectNoSecurityEndpoint(endpoints));
+                })
+            .setClientListener(
+                (discovery, discoveredEndpoint, connected) -> deliveredClient.complete(connected))
+            .setErrorListener((candidate, failure) -> reportedFailure.complete(unwrap(failure)))
+            .build();
+
+    try {
+      acceptor.start();
+
+      startReverseConnect(endpoint);
+      endpointSelectionEntered.get(10, TimeUnit.SECONDS);
+
+      acceptor.stop();
+      releaseEndpointSelection.complete(null);
+
+      Throwable failure = reportedFailure.get(10, TimeUnit.SECONDS);
+      UaException uaException = assertInstanceOf(UaException.class, failure);
+      assertEquals(StatusCodes.Bad_Shutdown, uaException.getStatusCode().value());
+
+      startReverseConnect(endpoint);
+
+      assertThrows(TimeoutException.class, () -> deliveredClient.get(500, TimeUnit.MILLISECONDS));
+      assertFalse(deliveredClient.isDone());
     } finally {
       acceptor.close();
     }
