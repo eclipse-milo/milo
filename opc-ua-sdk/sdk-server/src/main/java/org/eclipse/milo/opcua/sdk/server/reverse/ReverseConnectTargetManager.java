@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -591,6 +592,7 @@ public final class ReverseConnectTargetManager {
             cause,
             cause.getMessage());
 
+    RetryContext retryContext = null;
     ReverseConnectTargetSnapshot snapshot = null;
     synchronized (lock) {
       TargetRecord record = records.get(start.target().getId());
@@ -603,16 +605,22 @@ public final class ReverseConnectTargetManager {
         record.lastError = cause;
 
         if (running && !shutdown && record.isSchedulable()) {
-          scheduleLocked(record, retryDelayMillis(record.target, event));
+          retryContext =
+              new RetryContext(
+                  start.target().getId(), start.number(), start.generation(), record.target, event);
         }
 
         snapshot = record.snapshot();
       }
     }
 
-    notifyAttemptEvent(event);
-    if (snapshot != null) {
-      notifyTargetUpdated(snapshot);
+    if (retryContext != null) {
+      scheduleRetryEvaluation(retryContext, snapshot);
+    } else {
+      notifyAttemptEvent(event);
+      if (snapshot != null) {
+        notifyTargetUpdated(snapshot);
+      }
     }
   }
 
@@ -632,6 +640,7 @@ public final class ReverseConnectTargetManager {
             transportEvent.exception(),
             transportEvent.message());
 
+    RetryContext retryContext = null;
     ReverseConnectTargetSnapshot snapshot = null;
     synchronized (lock) {
       TargetRecord record = records.get(targetId);
@@ -663,16 +672,21 @@ public final class ReverseConnectTargetManager {
         }
 
         if (shouldRetry(record, event)) {
-          scheduleLocked(record, retryDelayMillis(record.target, event));
+          retryContext =
+              new RetryContext(targetId, attemptNumber, attemptGeneration, record.target, event);
         }
 
         snapshot = record.snapshot();
       }
     }
 
-    notifyAttemptEvent(event);
-    if (snapshot != null) {
-      notifyTargetUpdated(snapshot);
+    if (retryContext != null) {
+      scheduleRetryEvaluation(retryContext, snapshot);
+    } else {
+      notifyAttemptEvent(event);
+      if (snapshot != null) {
+        notifyTargetUpdated(snapshot);
+      }
     }
   }
 
@@ -743,8 +757,66 @@ public final class ReverseConnectTargetManager {
             || event.state() == ReverseConnectAttemptState.CLIENT_ERROR);
   }
 
+  private void scheduleRetryEvaluation(
+      RetryContext retryContext, @Nullable ReverseConnectTargetSnapshot terminalSnapshot) {
+
+    try {
+      scheduler.execute(() -> evaluateRetry(retryContext));
+    } catch (RejectedExecutionException e) {
+      logger.warn("Unable to evaluate Reverse Connect retry policy.", e);
+      notifyAttemptEvent(retryContext.event());
+      if (terminalSnapshot != null) {
+        notifyTargetUpdated(terminalSnapshot);
+      }
+    }
+  }
+
+  private void evaluateRetry(RetryContext retryContext) {
+    if (!isRetryCurrent(retryContext)) {
+      notifyAttemptEvent(retryContext.event());
+      return;
+    }
+
+    long delayMillis = retryDelayMillis(retryContext.target(), retryContext.event());
+
+    ReverseConnectTargetSnapshot snapshot = null;
+    synchronized (lock) {
+      TargetRecord record = records.get(retryContext.targetId());
+      if (record != null && isRetryCurrent(record, retryContext)) {
+        scheduleLocked(record, delayMillis);
+        snapshot = record.snapshot();
+      }
+    }
+
+    notifyAttemptEvent(retryContext.event());
+    if (snapshot != null) {
+      notifyTargetUpdated(snapshot);
+    }
+  }
+
+  private boolean isRetryCurrent(RetryContext retryContext) {
+    synchronized (lock) {
+      TargetRecord record = records.get(retryContext.targetId());
+      return record != null && isRetryCurrent(record, retryContext);
+    }
+  }
+
+  private boolean isRetryCurrent(TargetRecord record, RetryContext retryContext) {
+    return record.attemptCounter == retryContext.attemptNumber()
+        && record.generation == retryContext.generation()
+        && shouldRetry(record, retryContext.event());
+  }
+
   private long retryDelayMillis(ReverseConnectTarget target, ReverseConnectAttemptEvent event) {
-    return Math.max(0L, target.getRetryPolicy().getRetryDelayMillis(target, event));
+    try {
+      return Math.max(0L, target.getRetryPolicy().getRetryDelayMillis(target, event));
+    } catch (Throwable t) {
+      logger.warn(
+          "Reverse Connect retry policy failed for target {}; using registration period.",
+          target.getId(),
+          t);
+      return target.getRegistrationPeriod().longValue();
+    }
   }
 
   private void validateTarget(ReverseConnectTarget target) {
@@ -918,6 +990,13 @@ public final class ReverseConnectTargetManager {
       ReverseConnectTargetSnapshot snapshot) {}
 
   private record AttemptKey(long number, long generation) {}
+
+  private record RetryContext(
+      UUID targetId,
+      long attemptNumber,
+      long generation,
+      ReverseConnectTarget target,
+      ReverseConnectAttemptEvent event) {}
 
   private record TargetAction(
       ReverseConnectTargetSnapshot snapshot, @Nullable OpcTcpServerReverseConnectAttempt attempt) {

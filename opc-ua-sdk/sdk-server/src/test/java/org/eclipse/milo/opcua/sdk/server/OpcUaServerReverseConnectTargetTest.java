@@ -37,6 +37,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
@@ -251,6 +252,110 @@ class OpcUaServerReverseConnectTargetTest {
 
     assertNotNull(nextAttemptTime);
     assertFalse(nextAttemptTime.isBefore(secondFailure.timestamp().plusMillis(200)));
+  }
+
+  @Test
+  void throwingRetryPolicyDoesNotSuppressTerminalNotifications() throws Exception {
+    EndpointConfig endpoint = endpoint();
+    CountDownLatch policyInvoked = new CountDownLatch(1);
+    RuntimeException policyFailure = new RuntimeException("retry policy failure");
+    ReverseConnectTarget target =
+        targetBuilder(endpoint, unusedPort(), uint(5_000))
+            .setRetryPolicy(
+                (retryTarget, event) -> {
+                  policyInvoked.countDown();
+                  throw policyFailure;
+                })
+            .build();
+
+    server = newServer(endpoint, Set.of(), false);
+
+    RecordingListener listener = new RecordingListener();
+    server.addReverseConnectTargetListener(listener);
+    server.startup().get(5, TimeUnit.SECONDS);
+
+    ReverseConnectTargetHandle handle = server.addReverseConnectTarget(target);
+
+    ReverseConnectAttemptEvent failure =
+        waitForEvent(
+            listener,
+            event ->
+                event.targetId().equals(target.getId())
+                    && event.attemptNumber() == 1L
+                    && event.state() == ReverseConnectAttemptState.FAILED);
+
+    assertTrue(policyInvoked.await(3, TimeUnit.SECONDS));
+    waitUntil(
+        () ->
+            listener.updated.stream()
+                .anyMatch(
+                    snapshot ->
+                        snapshot.targetId().equals(target.getId())
+                            && snapshot.lastError() != null
+                            && snapshot.nextAttemptTime() != null));
+
+    ReverseConnectTargetSnapshot snapshot = handle.snapshot().orElseThrow();
+    assertNotNull(snapshot.lastError());
+    assertNotNull(snapshot.nextAttemptTime());
+    assertFalse(snapshot.nextAttemptTime().isBefore(failure.timestamp().plusMillis(4_000)));
+
+    ReverseConnectTargetSnapshot paused = handle.pause().get(5, TimeUnit.SECONDS);
+    assertTrue(paused.paused());
+    assertNull(paused.nextAttemptTime());
+  }
+
+  @Test
+  void blockingRetryPolicyDoesNotHoldTargetManagerLock() throws Exception {
+    EndpointConfig endpoint = endpoint();
+    CountDownLatch policyEntered = new CountDownLatch(1);
+    CountDownLatch releasePolicy = new CountDownLatch(1);
+    ReverseConnectTarget target =
+        targetBuilder(endpoint, unusedPort(), uint(5_000))
+            .setRetryPolicy(
+                (retryTarget, event) -> {
+                  policyEntered.countDown();
+                  try {
+                    assertTrue(releasePolicy.await(5, TimeUnit.SECONDS));
+                  } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new AssertionError(e);
+                  }
+                  return retryTarget.getRegistrationPeriod().longValue();
+                })
+            .build();
+
+    server = newServer(endpoint, Set.of(), false);
+
+    RecordingListener listener = new RecordingListener();
+    server.addReverseConnectTargetListener(listener);
+    server.startup().get(5, TimeUnit.SECONDS);
+
+    ReverseConnectTargetHandle handle = server.addReverseConnectTarget(target);
+    assertTrue(policyEntered.await(5, TimeUnit.SECONDS));
+
+    ExecutorService controlExecutor = Executors.newSingleThreadExecutor();
+    try {
+      Future<ReverseConnectTargetSnapshot> pauseFuture =
+          controlExecutor.submit(() -> handle.pause().get(5, TimeUnit.SECONDS));
+
+      ReverseConnectTargetSnapshot paused = pauseFuture.get(1, TimeUnit.SECONDS);
+      assertTrue(paused.paused());
+      assertNull(paused.nextAttemptTime());
+    } finally {
+      releasePolicy.countDown();
+      controlExecutor.shutdownNow();
+    }
+
+    waitForEvent(
+        listener,
+        event ->
+            event.targetId().equals(target.getId())
+                && event.attemptNumber() == 1L
+                && event.state() == ReverseConnectAttemptState.FAILED);
+
+    ReverseConnectTargetSnapshot snapshot = handle.snapshot().orElseThrow();
+    assertTrue(snapshot.paused());
+    assertNull(snapshot.nextAttemptTime());
   }
 
   @Test
@@ -472,7 +577,13 @@ class OpcUaServerReverseConnectTargetTest {
   private static final class RecordingListener implements ReverseConnectTargetListener {
 
     private final List<ReverseConnectTargetSnapshot> removed = new CopyOnWriteArrayList<>();
+    private final List<ReverseConnectTargetSnapshot> updated = new CopyOnWriteArrayList<>();
     private final List<ReverseConnectAttemptEvent> events = new CopyOnWriteArrayList<>();
+
+    @Override
+    public void onTargetUpdated(@NonNull ReverseConnectTargetSnapshot snapshot) {
+      updated.add(snapshot);
+    }
 
     @Override
     public void onTargetRemoved(@NonNull ReverseConnectTargetSnapshot snapshot) {
