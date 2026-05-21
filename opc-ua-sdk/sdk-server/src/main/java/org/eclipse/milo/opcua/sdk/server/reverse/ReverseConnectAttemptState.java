@@ -8,12 +8,12 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package org.eclipse.milo.opcua.stack.transport.server.tcp;
+package org.eclipse.milo.opcua.sdk.server.reverse;
 
-/** Lifecycle state for one server-initiated reverse-connect attempt. */
-public enum OpcTcpServerReverseConnectAttemptState {
+/** Lifecycle state for one SDK-managed server reverse-connect attempt. */
+public enum ReverseConnectAttemptState {
 
-  /** The connector has started an outbound TCP connect to the client listener. */
+  /** The server has started an outbound TCP connect to the client listener. */
   CONNECTING,
 
   /** The outbound TCP socket connected successfully. */
@@ -34,7 +34,7 @@ public enum OpcTcpServerReverseConnectAttemptState {
   /** The attempt failed before the channel entered the normal server UASC path. */
   FAILED,
 
-  /** The attempt was cancelled by its caller before handoff. */
+  /** The attempt was cancelled by server target lifecycle control. */
   CANCELLED,
 
   /** The attempt or connector was closed before handoff. */

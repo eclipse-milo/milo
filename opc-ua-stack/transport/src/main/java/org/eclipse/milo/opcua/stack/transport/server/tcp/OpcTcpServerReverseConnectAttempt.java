@@ -21,8 +21,16 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.jspecify.annotations.Nullable;
 
-/** Handle for one server-initiated reverse-connect attempt. */
-final class OpcTcpServerReverseConnectAttempt implements AutoCloseable {
+/**
+ * Handle for one low-level server-initiated reverse-connect attempt.
+ *
+ * <p>An attempt owns the TCP connect, the initial {@code ReverseHello} write, and the transition
+ * into the normal server-side UASC {@code Hello} handler. Callers use the returned future to learn
+ * when handoff succeeds, or use {@link #cancel()} and {@link #close()} to stop work before handoff.
+ * After {@link OpcTcpServerReverseConnectAttemptState#HANDOFF}, the channel belongs to the normal
+ * server transport path rather than this attempt handle.
+ */
+public final class OpcTcpServerReverseConnectAttempt {
 
   private final UUID id = UUID.randomUUID();
   private final CompletableFuture<Channel> channelFuture = new CompletableFuture<>();
@@ -48,7 +56,7 @@ final class OpcTcpServerReverseConnectAttempt implements AutoCloseable {
    *
    * @return the attempt identifier.
    */
-  UUID id() {
+  public UUID id() {
     return id;
   }
 
@@ -57,16 +65,20 @@ final class OpcTcpServerReverseConnectAttempt implements AutoCloseable {
    *
    * @return the current attempt state.
    */
-  OpcTcpServerReverseConnectAttemptState state() {
+  public OpcTcpServerReverseConnectAttemptState state() {
     return state.get();
   }
 
   /**
    * Get the future completed when this attempt enters the normal server UASC path.
    *
+   * <p>The future completes with the handed-off channel after the client sends {@code Hello}. It is
+   * completed exceptionally or cancelled when the attempt fails before handoff, is cancelled, or is
+   * closed.
+   *
    * @return the channel future.
    */
-  CompletableFuture<Channel> channelFuture() {
+  public CompletableFuture<Channel> channelFuture() {
     return channelFuture;
   }
 
@@ -142,13 +154,24 @@ final class OpcTcpServerReverseConnectAttempt implements AutoCloseable {
     };
   }
 
-  /** Cancel this attempt and close any channel it opened. */
-  void cancel() {
+  /**
+   * Cancel this attempt and close any channel it opened before handoff.
+   *
+   * <p>Cancellation is a lifecycle decision by the caller, for example because a scheduler paused
+   * or removed the owning target. It emits a cancelled transition and completes the channel future
+   * as cancelled if the attempt has not already completed.
+   */
+  public void cancel() {
     connector.cancel(this);
   }
 
-  /** Close this attempt and close any channel it opened. */
-  @Override
+  /**
+   * Close this attempt and close any channel it opened.
+   *
+   * <p>Do not use this method as try-with-resources cleanup after a successful handoff; once the
+   * attempt reaches {@link OpcTcpServerReverseConnectAttemptState#HANDOFF}, the opened channel is
+   * owned by the normal server SecureChannel and Session path.
+   */
   public void close() {
     connector.close(this);
   }

@@ -21,6 +21,9 @@ public enum ReverseConnectRejectionReason {
   /** The configured {@link ReverseHelloVerifier} rejected the decoded {@code ReverseHello}. */
   VERIFIER_REJECTED,
 
+  /** Application code explicitly rejected the candidate before it was claimed. */
+  APPLICATION_REJECTED,
+
   /** The manager was already holding the maximum number of pending candidates. */
   PENDING_LIMIT_EXCEEDED,
 

@@ -18,12 +18,14 @@ import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A reverse-connect channel claimed by a selector.
+ * A reverse-connect channel claimed by a selector or explicit candidate claim.
  *
  * <p>Claiming transfers channel ownership out of the manager. The manager keeps immutable
  * observability snapshots, but it will not install the client UASC pipeline or close the claimed
  * channel during normal shutdown. Later transport integration code is expected to attach the normal
- * client pipeline and send {@code Hello} using {@link #endpointUrl()}.
+ * client pipeline and send {@code Hello} using {@link #endpointUrl()}. {@link
+ * org.eclipse.milo.opcua.sdk.client.OpcUaClient#createReverseConnect(org.eclipse.milo.opcua.sdk.client.OpcUaClientConfig,
+ * ReverseConnectConnection)} is the SDK entry point for consuming a pre-claimed connection.
  */
 public final class ReverseConnectConnection {
 

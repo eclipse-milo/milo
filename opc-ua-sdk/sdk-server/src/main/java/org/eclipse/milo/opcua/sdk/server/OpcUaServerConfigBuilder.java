@@ -17,6 +17,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import org.eclipse.milo.opcua.sdk.server.identity.AnonymousIdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.IdentityValidator;
+import org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectTarget;
 import org.eclipse.milo.opcua.stack.core.Stack;
 import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
 import org.eclipse.milo.opcua.stack.core.channel.SecurityKeysListener;
@@ -29,6 +30,7 @@ import org.jspecify.annotations.Nullable;
 public class OpcUaServerConfigBuilder {
 
   private Set<EndpointConfig> endpoints = new HashSet<>();
+  private Set<ReverseConnectTarget> reverseConnectTargets = new HashSet<>();
 
   private LocalizedText applicationName =
       LocalizedText.english("server application name not configured");
@@ -56,6 +58,33 @@ public class OpcUaServerConfigBuilder {
 
   public OpcUaServerConfigBuilder setEndpoints(Set<EndpointConfig> endpointConfigs) {
     this.endpoints = endpointConfigs;
+    return this;
+  }
+
+  /**
+   * Set the server-side Reverse Connect targets to register when the server starts.
+   *
+   * <p>The builder copies the supplied set so later changes to {@code reverseConnectTargets} do not
+   * affect the built configuration.
+   *
+   * @param reverseConnectTargets the complete set of initial Reverse Connect targets.
+   * @return this builder.
+   */
+  public OpcUaServerConfigBuilder setReverseConnectTargets(
+      Set<ReverseConnectTarget> reverseConnectTargets) {
+
+    this.reverseConnectTargets = new HashSet<>(reverseConnectTargets);
+    return this;
+  }
+
+  /**
+   * Add one server-side Reverse Connect target to the initial server configuration.
+   *
+   * @param target the target to register when the server starts.
+   * @return this builder.
+   */
+  public OpcUaServerConfigBuilder addReverseConnectTarget(ReverseConnectTarget target) {
+    this.reverseConnectTargets.add(target);
     return this;
   }
 
@@ -130,6 +159,7 @@ public class OpcUaServerConfigBuilder {
 
     return new OpcUaServerConfigImpl(
         endpoints,
+        reverseConnectTargets,
         applicationName,
         applicationUri,
         productUri,
@@ -147,6 +177,7 @@ public class OpcUaServerConfigBuilder {
   public static final class OpcUaServerConfigImpl implements OpcUaServerConfig {
 
     private final Set<EndpointConfig> endpoints;
+    private final Set<ReverseConnectTarget> reverseConnectTargets;
     private final LocalizedText applicationName;
     private final String applicationUri;
     private final String productUri;
@@ -162,6 +193,7 @@ public class OpcUaServerConfigBuilder {
 
     public OpcUaServerConfigImpl(
         Set<EndpointConfig> endpoints,
+        Set<ReverseConnectTarget> reverseConnectTargets,
         LocalizedText applicationName,
         String applicationUri,
         String productUri,
@@ -176,6 +208,7 @@ public class OpcUaServerConfigBuilder {
         ScheduledExecutorService scheduledExecutorService) {
 
       this.endpoints = endpoints;
+      this.reverseConnectTargets = Set.copyOf(reverseConnectTargets);
       this.applicationName = applicationName;
       this.applicationUri = applicationUri;
       this.productUri = productUri;
@@ -203,6 +236,11 @@ public class OpcUaServerConfigBuilder {
     @Override
     public Set<EndpointConfig> getEndpoints() {
       return endpoints;
+    }
+
+    @Override
+    public Set<ReverseConnectTarget> getReverseConnectTargets() {
+      return reverseConnectTargets;
     }
 
     @Override

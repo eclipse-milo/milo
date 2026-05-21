@@ -10,7 +10,10 @@
 
 package org.eclipse.milo.opcua.sdk.client.reverse;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Synchronous predicate used by {@link ReverseConnectManager} to decide whether a selector wants to
@@ -23,7 +26,7 @@ public interface ReverseConnectSelector {
    * Return {@code true} when this selector should claim {@code candidate}.
    *
    * @param candidate the candidate being evaluated.
-   * @return {@code true} if the candidate should be claimed.
+   * @return true if the candidate should be claimed.
    */
   boolean matches(ReverseConnectCandidateSnapshot candidate);
 
@@ -34,6 +37,18 @@ public interface ReverseConnectSelector {
    */
   static ReverseConnectSelector any() {
     return candidate -> true;
+  }
+
+  /**
+   * Match one exact candidate by manager-assigned candidate id.
+   *
+   * @param candidateId the candidate id to match.
+   * @return a selector that matches only the candidate with {@code candidateId}.
+   */
+  static ReverseConnectSelector byCandidateId(UUID candidateId) {
+    requireNonNull(candidateId, "candidateId");
+
+    return candidate -> candidateId.equals(candidate.id());
   }
 
   /**

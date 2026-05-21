@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import org.eclipse.milo.opcua.sdk.server.identity.AnonymousIdentityValidator;
+import org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectTarget;
 import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -27,11 +28,17 @@ public class OpcUaServerConfigTest {
   public void testCopy() {
     ScheduledExecutorService scheduledExecutorService =
         Executors.newSingleThreadScheduledExecutor();
+    ReverseConnectTarget reverseConnectTarget =
+        ReverseConnectTarget.builder()
+            .setClientListenerUrl("opc.tcp://localhost:4841")
+            .setEndpointUrl("opc.tcp://localhost:4840")
+            .build();
 
     OpcUaServerConfig original =
         OpcUaServerConfig.builder()
             .setCertificateManager(new DefaultCertificateManager(new MemoryCertificateQuarantine()))
             .setIdentityValidator(AnonymousIdentityValidator.INSTANCE)
+            .addReverseConnectTarget(reverseConnectTarget)
             .setBuildInfo(new BuildInfo("a", "b", "c", "d", "e", DateTime.MIN_VALUE))
             .setLimits(new OpcUaServerConfigLimits() {})
             .setScheduledExecutor(scheduledExecutorService)
@@ -42,6 +49,9 @@ public class OpcUaServerConfigTest {
     assertEquals(original.getIdentityValidator(), copy.getIdentityValidator());
     assertEquals(original.getBuildInfo(), copy.getBuildInfo());
     assertEquals(original.getLimits(), copy.getLimits());
+    assertEquals(original.getReverseConnectTargets(), copy.getReverseConnectTargets());
     assertEquals(original.getScheduledExecutorService(), copy.getScheduledExecutorService());
+
+    scheduledExecutorService.shutdownNow();
   }
 }

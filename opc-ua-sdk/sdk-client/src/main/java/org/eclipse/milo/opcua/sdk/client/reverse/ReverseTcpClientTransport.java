@@ -30,12 +30,13 @@ import org.eclipse.milo.opcua.stack.transport.client.uasc.ClientSecureChannel;
 import org.jspecify.annotations.Nullable;
 
 /**
- * UA-TCP client transport that waits for a {@link ReverseConnectManager} to claim inbound channels.
+ * UA-TCP client transport that waits for or receives claimed inbound reverse-connect channels.
  *
  * <p>The manager owns listener binding, {@code ReverseHello} decoding, selector matching, pending
- * holds, and channel handoff. This transport starts at that handoff point: it registers a selector,
- * waits for a claimed channel, installs the normal client UASC pipeline, and completes connection
- * only after the SecureChannel handshake is ready for Session creation.
+ * holds, and channel handoff. In manager/selector mode this transport registers a selector and
+ * waits for a claimed channel. In direct mode it consumes one pre-claimed {@link
+ * ReverseConnectConnection}. Both modes install the normal client UASC pipeline and complete
+ * connection only after the SecureChannel handshake is ready for Session creation.
  *
  * <p>Once connected, the Session FSM treats this transport like any other {@link
  * org.eclipse.milo.opcua.stack.transport.client.OpcClientTransport}. Channel-state notifications
@@ -47,8 +48,9 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
 
   private final Object lock = new Object();
 
-  private final ReverseConnectManager manager;
-  private final ReverseConnectSelector selector;
+  private final @Nullable ReverseConnectManager manager;
+  private final @Nullable ReverseConnectSelector selector;
+  private final @Nullable ReverseConnectConnection directConnection;
   private final OpcTcpClientTransportConfig config;
   private final List<ChannelStateObservable.TransitionListener> transitionListeners =
       new CopyOnWriteArrayList<>();
@@ -58,6 +60,7 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
   private boolean started = false;
   private boolean disconnecting = true;
   private boolean waitingForReverseConnection = false;
+  private boolean directConnectionConsumed = false;
 
   private @Nullable ClientApplicationContext applicationContext;
   private @Nullable ReverseConnectRegistration registration;
@@ -84,6 +87,29 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
     this.config = requireNonNull(config, "config");
     this.manager = requireNonNull(manager, "manager");
     this.selector = requireNonNull(selector, "selector");
+    this.directConnection = null;
+  }
+
+  /**
+   * Create a reverse TCP client transport from one pre-claimed reverse-connect connection.
+   *
+   * <p>Direct mode is one-shot. The transport consumes the supplied connection on the first {@link
+   * #connect(ClientApplicationContext)} call, does not register selectors with a manager, and does
+   * not rearm after handshake failure or later channel close. Reconnect requires a new claimed
+   * connection and client instance.
+   *
+   * @param config the TCP client transport configuration used after the channel is claimed.
+   * @param connection the pre-claimed reverse-connect connection.
+   */
+  public ReverseTcpClientTransport(
+      OpcTcpClientTransportConfig config, ReverseConnectConnection connection) {
+
+    super(config);
+
+    this.config = requireNonNull(config, "config");
+    this.manager = null;
+    this.selector = null;
+    this.directConnection = requireNonNull(connection, "connection");
   }
 
   @Override
@@ -106,6 +132,10 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
   @Override
   public CompletableFuture<Unit> connect(ClientApplicationContext applicationContext) {
     requireNonNull(applicationContext, "applicationContext");
+
+    if (directConnection != null) {
+      return connectDirect(applicationContext);
+    }
 
     CompletableFuture<Channel> futureToReturn;
     CompletableFuture<Channel> futureToRegister = null;
@@ -140,6 +170,43 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
     return futureToReturn.thenApply(channel -> Unit.VALUE);
   }
 
+  private CompletableFuture<Unit> connectDirect(ClientApplicationContext applicationContext) {
+    ReverseConnectConnection directConnection =
+        requireNonNull(this.directConnection, "directConnection");
+    CompletableFuture<Channel> futureToReturn;
+    ReverseConnectConnection connectionToInitialize;
+
+    synchronized (lock) {
+      this.applicationContext = applicationContext;
+      started = true;
+      disconnecting = false;
+
+      if (currentChannel != null && currentChannel.isActive()) {
+        return CompletableFuture.completedFuture(Unit.VALUE);
+      }
+
+      if (directConnectionConsumed) {
+        return CompletableFuture.failedFuture(
+            new UaException(
+                StatusCodes.Bad_ConnectionClosed,
+                "reverse-connect direct connection has already been consumed"));
+      }
+
+      directConnectionConsumed = true;
+
+      if (channelFuture.isDone()) {
+        channelFuture = new CompletableFuture<>();
+      }
+
+      futureToReturn = channelFuture;
+      connectionToInitialize = directConnection;
+    }
+
+    initializeClaimedConnection(connectionToInitialize, futureToReturn, false);
+
+    return futureToReturn.thenApply(channel -> Unit.VALUE);
+  }
+
   /**
    * Unregister any outstanding selector and close the currently claimed channel.
    *
@@ -163,6 +230,10 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
       registration = null;
 
       channelToClose = currentChannel;
+      if (channelToClose == null && directConnection != null && !directConnectionConsumed) {
+        channelToClose = directConnection.channel();
+        directConnectionConsumed = true;
+      }
       currentChannel = null;
 
       futureToCancel = channelFuture;
@@ -222,6 +293,15 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
 
   private void registerForNextChannel(CompletableFuture<Channel> targetFuture) {
     ReverseConnectRegistration nextRegistration;
+    ReverseConnectManager manager = this.manager;
+    ReverseConnectSelector selector = this.selector;
+
+    if (manager == null || selector == null) {
+      failRegistration(
+          targetFuture,
+          new UaException(StatusCodes.Bad_UnexpectedError, "reverse-connect manager is null"));
+      return;
+    }
 
     try {
       nextRegistration = manager.registerSelector(selector);
@@ -291,6 +371,14 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
       return;
     }
 
+    initializeClaimedConnection(connection, targetFuture, true);
+  }
+
+  private void initializeClaimedConnection(
+      ReverseConnectConnection connection,
+      CompletableFuture<Channel> targetFuture,
+      boolean rearmOnFailure) {
+
     String endpointUrl = connection.endpointUrl();
     if (endpointUrl == null || endpointUrl.isBlank()) {
       connection.close();
@@ -300,11 +388,14 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
       return;
     }
 
-    initializeClaimedChannel(connection.channel(), endpointUrl, targetFuture);
+    initializeClaimedChannel(connection.channel(), endpointUrl, targetFuture, rearmOnFailure);
   }
 
   private void initializeClaimedChannel(
-      Channel channel, String endpointUrl, CompletableFuture<Channel> targetFuture) {
+      Channel channel,
+      String endpointUrl,
+      CompletableFuture<Channel> targetFuture,
+      boolean rearmOnFailure) {
 
     ClientApplicationContext application;
     synchronized (lock) {
@@ -361,7 +452,9 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
                       } else {
                         Throwable failure = unwrap(ex);
                         CompletableFuture<Channel> nextFuture =
-                            rearmAfterFailedHandshake(targetFuture, channel);
+                            rearmOnFailure
+                                ? rearmAfterFailedHandshake(targetFuture, channel)
+                                : null;
 
                         targetFuture.completeExceptionally(failure);
                         channel.close();
@@ -422,9 +515,11 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
         if (started && !disconnecting) {
           notifyDisconnected = true;
           closedFuture = channelFuture;
-          channelFuture = new CompletableFuture<>();
-          waitingForReverseConnection = true;
-          nextFuture = channelFuture;
+          if (directConnection == null) {
+            channelFuture = new CompletableFuture<>();
+            waitingForReverseConnection = true;
+            nextFuture = channelFuture;
+          }
         }
       }
     }
