@@ -34,13 +34,27 @@
  *
  * <p>When a dynamic application does not have a usable {@link
  * org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription} before the first inbound
- * socket arrives, it can claim one pending candidate and pass the resulting {@link
- * org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectConnection} to {@link
- * org.eclipse.milo.opcua.sdk.client.DiscoveryClient#getEndpoints(org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectConnection)}.
- * That discovery helper consumes the claimed connection for a provisional no-security GetEndpoints
- * call and closes it. The application then selects an endpoint and creates a normal reverse {@link
- * org.eclipse.milo.opcua.sdk.client.OpcUaClient} with a selector so the production Session waits
- * for a later matching reverse connection.
+ * socket arrives, {@link
+ * org.eclipse.milo.opcua.sdk.client.reverse.DiscoveryFirstReverseConnectClient} provides the
+ * one-shot path: wait for one discovery candidate, run GetEndpoints over that consumed connection,
+ * select an endpoint with {@link
+ * org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectEndpointSelector}, create a normal
+ * reverse client, and wait for a later matching reverse connection for the production Session.
+ * Shared-listener applications that want to accept multiple unknown servers can use {@link
+ * org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectAcceptor} to repeat the same
+ * discovery-first flow per deduplicated candidate key. The default discovery-first endpoint policy
+ * selects no-security endpoints that allow anonymous Session activation; callers that configure
+ * certificates or another identity provider should supply a matching endpoint selector and client
+ * config factory.
+ *
+ * <p>The lower-level discovery primitive is {@link
+ * org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectDiscovery}. It registers a selector with
+ * the manager, consumes the first matching {@link
+ * org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectConnection} with {@link
+ * org.eclipse.milo.opcua.sdk.client.DiscoveryClient#getEndpoints(org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectConnection)},
+ * and returns a {@link org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectDiscoveryResult}
+ * containing the claim-time routing snapshot and discovered endpoints. The discovery connection is
+ * not reused for the production Session.
  *
  * <h2>Transport handoff</h2>
  *
