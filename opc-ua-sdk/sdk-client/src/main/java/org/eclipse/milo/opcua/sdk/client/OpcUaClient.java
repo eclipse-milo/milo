@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.client.model.ObjectTypeInitializer;
 import org.eclipse.milo.opcua.sdk.client.model.VariableTypeInitializer;
+import org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectConnection;
 import org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectManager;
 import org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectSelector;
 import org.eclipse.milo.opcua.sdk.client.reverse.ReverseTcpClientTransport;
@@ -271,6 +272,62 @@ public class OpcUaClient {
 
     return new OpcUaClient(
         config, new ReverseTcpClientTransport(transportConfig, manager, selector));
+  }
+
+  /**
+   * Create an {@link OpcUaClient} from one pre-claimed reverse-connect connection.
+   *
+   * <p>The returned client consumes {@code connection} when {@link #connectAsync()} is invoked.
+   * This mode is intended for dynamic inbound factories that observe a pending candidate, claim it
+   * with {@link ReverseConnectManager#claim(java.util.UUID)}, resolve a client config, and then
+   * attach the normal client SDK pipeline to the claimed channel. The connection is one-shot;
+   * reconnect requires a new reverse-connect candidate and client instance.
+   *
+   * <p>The supplied {@code config} must already contain the selected {@link EndpointDescription}.
+   * This factory consumes a reverse TCP channel; it does not perform endpoint discovery or endpoint
+   * selection.
+   *
+   * @param config the {@link OpcUaClientConfig}.
+   * @param connection the pre-claimed reverse-connect connection.
+   * @return a new {@link OpcUaClient} configured with reverse TCP transport.
+   * @throws UaException if the client could not be created.
+   */
+  public static OpcUaClient createReverseConnect(
+      OpcUaClientConfig config, ReverseConnectConnection connection) throws UaException {
+
+    return createReverseConnect(config, connection, b -> {});
+  }
+
+  /**
+   * Create an {@link OpcUaClient} from one pre-claimed reverse-connect connection.
+   *
+   * <p>The returned client consumes {@code connection} when {@link #connectAsync()} is invoked.
+   * This mode does not register selectors with a {@link ReverseConnectManager} and does not rearm
+   * after a failed handshake.
+   *
+   * <p>The caller remains responsible for endpoint discovery and client configuration before
+   * invoking this factory. The direct reverse transport only supplies the already-claimed channel
+   * used for the UASC handshake.
+   *
+   * @param config the {@link OpcUaClientConfig}.
+   * @param connection the pre-claimed reverse-connect connection.
+   * @param configureTransport a Consumer that receives an {@link
+   *     OpcTcpClientTransportConfigBuilder} that can be used to configure the reverse transport.
+   * @return a new {@link OpcUaClient} configured with reverse TCP transport.
+   * @throws UaException if the client could not be created.
+   */
+  public static OpcUaClient createReverseConnect(
+      OpcUaClientConfig config,
+      ReverseConnectConnection connection,
+      Consumer<OpcTcpClientTransportConfigBuilder> configureTransport)
+      throws UaException {
+
+    var transportConfigBuilder = OpcTcpClientTransportConfig.newBuilder();
+    configureTransport.accept(transportConfigBuilder);
+
+    OpcTcpClientTransportConfig transportConfig = transportConfigBuilder.build();
+
+    return new OpcUaClient(config, new ReverseTcpClientTransport(transportConfig, connection));
   }
 
   /**

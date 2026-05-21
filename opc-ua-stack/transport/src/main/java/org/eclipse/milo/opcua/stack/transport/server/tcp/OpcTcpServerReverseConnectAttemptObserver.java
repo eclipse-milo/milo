@@ -10,9 +10,15 @@
 
 package org.eclipse.milo.opcua.stack.transport.server.tcp;
 
-/** Receives state transitions from an internal server reverse-connect attempt. */
+/**
+ * Receives state transitions from a low-level server reverse-connect attempt.
+ *
+ * <p>Observers are part of the transport primitive used by higher SDK layers to build target-level
+ * snapshots and retry decisions. Implementations should return quickly because transitions may be
+ * emitted from a Netty event-loop thread.
+ */
 @FunctionalInterface
-interface OpcTcpServerReverseConnectAttemptObserver {
+public interface OpcTcpServerReverseConnectAttemptObserver {
 
   /**
    * Observe an attempt state transition.

@@ -21,6 +21,7 @@ import org.eclipse.milo.opcua.sdk.server.identity.CompositeValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.IdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.UsernameIdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.X509IdentityValidator;
+import org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectTarget;
 import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
 import org.eclipse.milo.opcua.stack.core.channel.SecurityKeysListener;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
@@ -55,6 +56,19 @@ public interface OpcUaServerConfig {
    * @return the {@link EndpointConfig}s for this server.
    */
   Set<EndpointConfig> getEndpoints();
+
+  /**
+   * Get the server-side Reverse Connect targets registered when the server starts.
+   *
+   * <p>These targets are loaded into the server's runtime target manager during construction.
+   * Additional targets may be registered later with {@link
+   * OpcUaServer#addReverseConnectTarget(ReverseConnectTarget)}.
+   *
+   * @return the initial server-side Reverse Connect targets for this server.
+   */
+  default Set<ReverseConnectTarget> getReverseConnectTargets() {
+    return Set.of();
+  }
 
   /**
    * Get the application name for the server.
@@ -166,6 +180,7 @@ public interface OpcUaServerConfig {
     var builder = new OpcUaServerConfigBuilder();
 
     builder.setEndpoints(config.getEndpoints());
+    builder.setReverseConnectTargets(config.getReverseConnectTargets());
     builder.setApplicationName(config.getApplicationName());
     builder.setApplicationUri(config.getApplicationUri());
     builder.setProductUri(config.getProductUri());

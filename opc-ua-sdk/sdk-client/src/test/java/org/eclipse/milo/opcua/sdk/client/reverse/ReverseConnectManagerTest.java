@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.client.reverse;
 
+import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -26,7 +27,10 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CyclicBarrier;
@@ -226,6 +230,120 @@ class ReverseConnectManagerTest {
   }
 
   @Test
+  void byCandidateIdMatchesOnlyTheRequestedCandidate() {
+    UUID candidateId = UUID.randomUUID();
+    UUID otherCandidateId = UUID.randomUUID();
+    ReverseConnectSelector selector = ReverseConnectSelector.byCandidateId(candidateId);
+
+    assertTrue(selector.matches(candidate(candidateId)));
+    assertFalse(selector.matches(candidate(otherCandidateId)));
+  }
+
+  @Test
+  void claimPendingCandidateTransfersOwnership() throws Exception {
+    RecordingListener listener = new RecordingListener();
+
+    manager = newManagerBuilder().setPendingConnectionHoldTime(Duration.ofSeconds(5)).build();
+    manager.addListener(listener);
+    manager.startup();
+
+    try (Socket ignored = sendReverseHello(boundAddress(manager), endpointUrl())) {
+      waitUntil(() -> !listener.pending.isEmpty());
+
+      ReverseConnectCandidateSnapshot pending = listener.pending.get(0);
+      Optional<ReverseConnectConnection> claimed = manager.claim(pending.id());
+
+      assertTrue(claimed.isPresent());
+      assertEquals(pending.id(), claimed.orElseThrow().candidateId());
+      waitUntil(() -> !listener.claimed.isEmpty());
+
+      ReverseConnectManagerSnapshot snapshot = manager.snapshot();
+      assertEquals(1, snapshot.claimedCount());
+      assertTrue(snapshot.pendingCandidates().isEmpty());
+      assertEquals(pending.id(), snapshot.acceptedCandidates().get(0).id());
+
+      assertTrue(manager.claim(pending.id()).isEmpty());
+
+      manager.shutdown();
+      assertTrue(claimed.orElseThrow().channel().isOpen());
+
+      claimed.orElseThrow().close().sync();
+    }
+  }
+
+  @Test
+  void claimReturnsEmptyForExpiredAndRejectedCandidates() throws Exception {
+    RecordingListener expiringListener = new RecordingListener();
+
+    manager = newManagerBuilder().setPendingConnectionHoldTime(Duration.ofMillis(50)).build();
+    manager.addListener(expiringListener);
+    manager.startup();
+
+    try (Socket ignored = sendReverseHello(boundAddress(manager), endpointUrl())) {
+      waitUntil(() -> !expiringListener.pending.isEmpty());
+      UUID expiredCandidateId = expiringListener.pending.get(0).id();
+      waitUntil(() -> !expiringListener.expired.isEmpty());
+      assertTrue(manager.claim(expiredCandidateId).isEmpty());
+    }
+
+    manager.shutdown();
+    eventLoop.shutdownGracefully(0, 0, TimeUnit.MILLISECONDS).sync();
+    scheduler.shutdownNow();
+    eventLoop = null;
+    scheduler = null;
+    RecordingListener rejectingListener = new RecordingListener();
+
+    manager =
+        newManagerBuilder()
+            .setReverseHelloVerifier(
+                candidate -> ReverseConnectVerificationResult.reject("blocked"))
+            .build();
+    manager.addListener(rejectingListener);
+    manager.startup();
+
+    try (Socket ignored = sendReverseHello(boundAddress(manager), endpointUrl())) {
+      waitUntil(() -> !rejectingListener.rejected.isEmpty());
+      assertTrue(manager.claim(rejectingListener.rejected.get(0).id()).isEmpty());
+    }
+  }
+
+  @Test
+  void rejectPendingCandidateClosesAndReportsApplicationRejection() throws Exception {
+    RecordingListener listener = new RecordingListener();
+
+    manager = newManagerBuilder().setPendingConnectionHoldTime(Duration.ofSeconds(5)).build();
+    manager.addListener(listener);
+    manager.startup();
+
+    try (Socket ignored = sendReverseHello(boundAddress(manager), endpointUrl())) {
+      waitUntil(() -> !listener.pending.isEmpty());
+      UUID candidateId = listener.pending.get(0).id();
+
+      assertTrue(
+          manager.reject(
+              candidateId,
+              new StatusCode(StatusCodes.Bad_TcpEndpointUrlInvalid),
+              "application rejected"));
+      assertFalse(
+          manager.reject(
+              candidateId,
+              new StatusCode(StatusCodes.Bad_TcpEndpointUrlInvalid),
+              "already rejected"));
+
+      waitUntil(() -> !listener.rejected.isEmpty());
+    }
+
+    ReverseConnectCandidateSnapshot rejected = listener.rejected.get(0);
+    assertEquals(ReverseConnectCandidateState.REJECTED, rejected.state());
+    assertEquals(ReverseConnectRejectionReason.APPLICATION_REJECTED, rejected.rejectionReason());
+    assertEquals(
+        StatusCodes.Bad_TcpEndpointUrlInvalid,
+        requireNonNull(rejected.rejectionStatusCode()).value());
+    assertEquals("application rejected", rejected.diagnostic());
+    assertTrue(manager.snapshot().pendingCandidates().isEmpty());
+  }
+
+  @Test
   void concurrentArrivalsOnlyClaimOneSelector() throws Exception {
     RecordingListener listener = new RecordingListener();
     ExecutorService arrivals = Executors.newFixedThreadPool(2);
@@ -317,6 +435,22 @@ class ReverseConnectManagerTest {
     return "opc.tcp://localhost:12685/milo";
   }
 
+  private static ReverseConnectCandidateSnapshot candidate(UUID candidateId) {
+    return new ReverseConnectCandidateSnapshot(
+        candidateId,
+        ReverseConnectCandidateState.PENDING,
+        SERVER_URI,
+        endpointUrl(),
+        null,
+        null,
+        Instant.now(),
+        Instant.now(),
+        null,
+        null,
+        null,
+        null);
+  }
+
   private static void waitUntil(BooleanSupplier condition) {
     long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(3);
 
@@ -331,6 +465,7 @@ class ReverseConnectManagerTest {
 
     final List<String> events = new CopyOnWriteArrayList<>();
     final List<ReverseConnectCandidateSnapshot> pending = new CopyOnWriteArrayList<>();
+    final List<ReverseConnectCandidateSnapshot> claimed = new CopyOnWriteArrayList<>();
     final List<ReverseConnectCandidateSnapshot> rejected = new CopyOnWriteArrayList<>();
     final List<ReverseConnectCandidateSnapshot> expired = new CopyOnWriteArrayList<>();
 
@@ -343,6 +478,12 @@ class ReverseConnectManagerTest {
     public void onCandidatePending(@NonNull ReverseConnectCandidateSnapshot snapshot) {
       events.add("pending");
       pending.add(snapshot);
+    }
+
+    @Override
+    public void onCandidateClaimed(@NonNull ReverseConnectCandidateSnapshot snapshot) {
+      events.add("claimed");
+      claimed.add(snapshot);
     }
 
     @Override

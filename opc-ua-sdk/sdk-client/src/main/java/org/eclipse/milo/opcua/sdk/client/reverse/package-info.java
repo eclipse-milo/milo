@@ -18,10 +18,28 @@
  * ReverseHello}, applies pre-SecureChannel admission policy, and either claims the channel for a
  * matching selector or holds it briefly as a pending candidate.
  *
+ * <h2>Client workflows</h2>
+ *
+ * <p>Applications that know their expected servers ahead of time can create clients with a shared
+ * manager and a {@link org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectSelector}. The
+ * client transport registers the selector during connect, waits for one matching candidate, and
+ * rejoins the normal client Session path after the channel is claimed.
+ *
+ * <p>Dynamic applications can observe pending candidates, claim one exact candidate with {@link
+ * org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectManager#claim(java.util.UUID)}, resolve
+ * application-specific client configuration, and create an {@link
+ * org.eclipse.milo.opcua.sdk.client.OpcUaClient} from the resulting {@link
+ * org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectConnection}. A direct claimed connection
+ * is one-shot: after it is consumed, reconnect requires a new reverse-connect candidate.
+ *
+ * <h2>Transport handoff</h2>
+ *
  * <p>{@link org.eclipse.milo.opcua.sdk.client.reverse.ReverseTcpClientTransport} is the bridge back
- * to the normal client SDK path. It waits for the manager to hand off a claimed channel, installs
- * the standard client UASC pipeline, and then lets the Session FSM create and maintain the Session
- * as it would for outbound TCP.
+ * to the normal client SDK path. It waits for the manager to hand off a claimed channel, or
+ * consumes one pre-claimed connection directly, installs the standard client UASC pipeline, and
+ * then lets the Session FSM create and maintain the Session as it would for outbound TCP.
+ *
+ * <h2>Security boundary</h2>
  *
  * <p>{@code ReverseHello} is only a routing and resource-admission hint. The types here
  * deliberately keep server identity validation in the normal Milo client certificate, endpoint,

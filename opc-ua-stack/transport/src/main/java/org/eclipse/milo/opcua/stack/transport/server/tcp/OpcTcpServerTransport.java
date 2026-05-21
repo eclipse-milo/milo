@@ -31,6 +31,7 @@ public class OpcTcpServerTransport implements OpcServerTransport {
   private final Set<Channel> channelReferences = new HashSet<>();
   private final Set<Channel> childChannelReferences = Collections.synchronizedSet(new HashSet<>());
   private final Lazy<ServerBootstrap> serverBootstrap = new Lazy<>();
+  private final Lazy<OpcTcpServerReverseConnector> reverseConnector = new Lazy<>();
 
   private final OpcTcpServerTransportConfig config;
 
@@ -74,6 +75,12 @@ public class OpcTcpServerTransport implements OpcServerTransport {
 
   @Override
   public synchronized void unbind() {
+    OpcTcpServerReverseConnector connector = reverseConnector.get(() -> null);
+    if (connector != null) {
+      connector.close();
+    }
+    reverseConnector.reset();
+
     boundAddresses.clear();
 
     channelReferences.forEach(
@@ -95,5 +102,23 @@ public class OpcTcpServerTransport implements OpcServerTransport {
     }
 
     serverBootstrap.reset();
+  }
+
+  /**
+   * Start one outbound UA-TCP reverse-connect attempt.
+   *
+   * <p>The attempt opens a client-direction socket, sends {@code ReverseHello}, and then hands a
+   * successful channel to the normal server-side UASC pipeline. This method does not bind or
+   * require a passive server listener. The returned attempt owns the channel only until handoff;
+   * after the client sends {@code Hello}, normal server transport and SecureChannel handling own
+   * the channel lifecycle.
+   *
+   * @param parameters the reverse-connect attempt parameters.
+   * @return a handle that observes and controls the attempt.
+   */
+  public OpcTcpServerReverseConnectAttempt connectReverse(
+      OpcTcpServerReverseConnectParameters parameters) {
+
+    return reverseConnector.get(() -> new OpcTcpServerReverseConnector(config)).connect(parameters);
   }
 }

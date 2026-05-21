@@ -21,6 +21,12 @@ import org.jspecify.annotations.Nullable;
 /**
  * Input for one server-initiated reverse-connect attempt.
  *
+ * <p>The parameters identify the client reverse listener to dial, the server endpoint URL and
+ * server URI encoded into {@code ReverseHello}, and the context required when a successful attempt
+ * rejoins the normal server UASC path. Factory methods accept either a listener URL or a resolved
+ * socket address; when {@code serverUri} is omitted they resolve it from the endpoint descriptions
+ * in the supplied {@link ServerApplicationContext}.
+ *
  * @param applicationContext the server application context used by the normal UASC server path.
  * @param clientListenerUrl the client reverse-listener URL, when the caller supplied one.
  * @param clientListenerAddress the resolved client reverse-listener socket address.
@@ -29,7 +35,7 @@ import org.jspecify.annotations.Nullable;
  * @param connectTimeoutMillis the TCP connect timeout, in milliseconds.
  * @param observer receives attempt state transitions.
  */
-record OpcTcpServerReverseConnectParameters(
+public record OpcTcpServerReverseConnectParameters(
     ServerApplicationContext applicationContext,
     @Nullable String clientListenerUrl,
     InetSocketAddress clientListenerAddress,
@@ -38,7 +44,7 @@ record OpcTcpServerReverseConnectParameters(
     int connectTimeoutMillis,
     OpcTcpServerReverseConnectAttemptObserver observer) {
 
-  OpcTcpServerReverseConnectParameters {
+  public OpcTcpServerReverseConnectParameters {
     requireNonNull(applicationContext, "applicationContext");
     requireNonNull(clientListenerAddress, "clientListenerAddress");
     requireNonNull(endpointUrl, "endpointUrl");
@@ -59,6 +65,10 @@ record OpcTcpServerReverseConnectParameters(
   /**
    * Create parameters from a client listener URL.
    *
+   * <p>The URL must use the {@code opc.tcp} scheme and include a host. The port is resolved with
+   * {@link EndpointUtil#getPort(String)}, matching the rest of the UA-TCP URL handling in this
+   * package.
+   *
    * @param applicationContext the server application context.
    * @param clientListenerUrl the client reverse-listener URL.
    * @param endpointUrl the server endpoint URL advertised in {@code ReverseHello}.
@@ -67,7 +77,7 @@ record OpcTcpServerReverseConnectParameters(
    * @param observer receives attempt state transitions.
    * @return reverse-connect parameters.
    */
-  static OpcTcpServerReverseConnectParameters fromUrl(
+  public static OpcTcpServerReverseConnectParameters fromUrl(
       ServerApplicationContext applicationContext,
       String clientListenerUrl,
       String endpointUrl,
@@ -99,6 +109,10 @@ record OpcTcpServerReverseConnectParameters(
   /**
    * Create parameters from a resolved client listener address.
    *
+   * <p>This form is useful when the caller has already resolved the listener address but still
+   * wants the attempt to advertise a server endpoint URL and optionally derive the server URI from
+   * the server application context.
+   *
    * @param applicationContext the server application context.
    * @param clientListenerAddress the resolved client reverse-listener socket address.
    * @param endpointUrl the server endpoint URL advertised in {@code ReverseHello}.
@@ -107,7 +121,7 @@ record OpcTcpServerReverseConnectParameters(
    * @param observer receives attempt state transitions.
    * @return reverse-connect parameters.
    */
-  static OpcTcpServerReverseConnectParameters fromAddress(
+  public static OpcTcpServerReverseConnectParameters fromAddress(
       ServerApplicationContext applicationContext,
       InetSocketAddress clientListenerAddress,
       String endpointUrl,

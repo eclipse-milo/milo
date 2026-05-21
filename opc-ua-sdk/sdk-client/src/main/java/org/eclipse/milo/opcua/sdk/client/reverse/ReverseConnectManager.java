@@ -10,6 +10,8 @@
 
 package org.eclipse.milo.opcua.sdk.client.reverse;
 
+import static java.util.Objects.requireNonNull;
+
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -33,6 +35,7 @@ import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
@@ -325,6 +328,63 @@ public final class ReverseConnectManager implements AutoCloseable {
     return new ReverseConnectRegistration(this, registration);
   }
 
+  /**
+   * Claim a specific pending reverse-connect candidate.
+   *
+   * <p>This is the primitive used by dynamic inbound-client factories. The application observes a
+   * pending candidate, claims that exact candidate by id, and then either resolves an {@link
+   * org.eclipse.milo.opcua.sdk.client.OpcUaClientConfig} for the returned {@link
+   * ReverseConnectConnection} or closes the connection itself. A successful claim cancels pending
+   * expiry, records the candidate as claimed, and transfers channel ownership out of the manager;
+   * later manager shutdown will not close the claimed channel.
+   *
+   * @param candidateId the manager-assigned candidate id.
+   * @return the claimed connection, or {@link Optional#empty()} if the candidate is unknown or is
+   *     no longer pending.
+   */
+  public Optional<ReverseConnectConnection> claim(UUID candidateId) {
+    requireNonNull(candidateId, "candidateId");
+
+    ClaimedCandidate claimedCandidate;
+
+    lock.lock();
+    try {
+      claimedCandidate = claimCandidateLocked(candidateId);
+      if (claimedCandidate == null) {
+        return Optional.empty();
+      }
+    } finally {
+      lock.unlock();
+    }
+
+    fireCandidateClaimed(claimedCandidate.snapshot());
+
+    return Optional.of(claimedCandidate.connection());
+  }
+
+  /**
+   * Explicitly reject an unclaimed candidate.
+   *
+   * <p>Applications can use this to fail an unknown or unauthorized inbound server immediately,
+   * including a candidate that is still waiting for its first {@code ReverseHello}, instead of
+   * letting the candidate remain pending until its hold time expires. A successful rejection writes
+   * an OPC UA TCP {@code ErrorMessage} when the channel is still open, closes the channel, records
+   * the diagnostic in retained snapshots, and emits a rejected-candidate event.
+   *
+   * @param candidateId the manager-assigned candidate id.
+   * @param statusCode the TCP error status sent to the peer when possible.
+   * @param diagnostic the diagnostic sent to the peer and retained in snapshots.
+   * @return true if a waiting or pending candidate was rejected.
+   */
+  public boolean reject(UUID candidateId, StatusCode statusCode, String diagnostic) {
+    requireNonNull(candidateId, "candidateId");
+    requireNonNull(statusCode, "statusCode");
+    requireNonNull(diagnostic, "diagnostic");
+
+    return rejectCandidate(
+        candidateId, ReverseConnectRejectionReason.APPLICATION_REJECTED, statusCode, diagnostic);
+  }
+
   void unregisterSelector(UUID registrationId) {
     SelectorRegistration registration;
 
@@ -359,7 +419,7 @@ public final class ReverseConnectManager implements AutoCloseable {
    * Remove a previously added listener.
    *
    * @param listener the listener to remove.
-   * @return {@code true} if the listener was registered.
+   * @return true if the listener was registered.
    */
   public boolean removeListener(ReverseConnectListener listener) {
     lock.lock();
@@ -627,42 +687,51 @@ public final class ReverseConnectManager implements AutoCloseable {
   }
 
   private ClaimResult claimCandidate(UUID candidateId, UUID registrationId) {
-    ReverseConnectConnection connection;
+    ClaimedCandidate claimedCandidate;
     SelectorRegistration registration;
-    ReverseConnectCandidateSnapshot claimedSnapshot;
 
     lock.lock();
     try {
-      Candidate candidate = candidates.get(candidateId);
       registration = selectorRegistrations.get(registrationId);
-
-      if (candidate == null || registration == null) {
+      if (registration == null) {
         return ClaimResult.notClaimed();
       }
-      if (candidate.state != ReverseConnectCandidateState.PENDING) {
+
+      claimedCandidate = claimCandidateLocked(candidateId);
+      if (claimedCandidate == null) {
         return ClaimResult.notClaimed();
       }
 
       selectorRegistrations.remove(registrationId);
-      pendingCandidates.remove(candidateId);
-      candidates.remove(candidateId);
-      cancelPendingExpiry(candidate);
-
-      candidate.state = ReverseConnectCandidateState.CLAIMED;
-      candidate.completedAt = Instant.now();
-
-      claimedCount++;
-      candidate.listenerState.claimedCount++;
-
-      claimedSnapshot = candidate.snapshot();
-      retainAcceptedCandidateLocked(claimedSnapshot);
-
-      connection = new ReverseConnectConnection(candidate.channel, claimedSnapshot);
     } finally {
       lock.unlock();
     }
 
-    return new ClaimResult(connection, registration, claimedSnapshot);
+    return new ClaimResult(
+        claimedCandidate.connection(), registration, claimedCandidate.snapshot());
+  }
+
+  private @Nullable ClaimedCandidate claimCandidateLocked(UUID candidateId) {
+    Candidate candidate = candidates.get(candidateId);
+    if (candidate == null || candidate.state != ReverseConnectCandidateState.PENDING) {
+      return null;
+    }
+
+    pendingCandidates.remove(candidateId);
+    candidates.remove(candidateId);
+    cancelPendingExpiry(candidate);
+
+    candidate.state = ReverseConnectCandidateState.CLAIMED;
+    candidate.completedAt = Instant.now();
+
+    claimedCount++;
+    candidate.listenerState.claimedCount++;
+
+    ReverseConnectCandidateSnapshot claimedSnapshot = candidate.snapshot();
+    retainAcceptedCandidateLocked(claimedSnapshot);
+
+    return new ClaimedCandidate(
+        new ReverseConnectConnection(candidate.channel, claimedSnapshot), claimedSnapshot);
   }
 
   private ParkResult parkCandidate(UUID candidateId) {
@@ -751,7 +820,7 @@ public final class ReverseConnectManager implements AutoCloseable {
     fireCandidateExpired(expiredSnapshot);
   }
 
-  private void rejectCandidate(
+  private boolean rejectCandidate(
       UUID candidateId,
       ReverseConnectRejectionReason reason,
       StatusCode statusCode,
@@ -768,7 +837,7 @@ public final class ReverseConnectManager implements AutoCloseable {
           || candidate.state == ReverseConnectCandidateState.REJECTED
           || candidate.state == ReverseConnectCandidateState.EXPIRED
           || candidate.state == ReverseConnectCandidateState.CLOSED) {
-        return;
+        return false;
       }
 
       pendingCandidates.remove(candidateId);
@@ -794,6 +863,8 @@ public final class ReverseConnectManager implements AutoCloseable {
     closeWithError(channelToClose, statusCode, diagnostic);
 
     fireCandidateRejected(rejectedSnapshot);
+
+    return true;
   }
 
   private List<SelectorRegistration> selectorRegistrationsSnapshot() {
@@ -1003,6 +1074,9 @@ public final class ReverseConnectManager implements AutoCloseable {
   }
 
   private record AcceptedCandidate(UUID candidateId, ReverseConnectCandidateSnapshot snapshot) {}
+
+  private record ClaimedCandidate(
+      ReverseConnectConnection connection, ReverseConnectCandidateSnapshot snapshot) {}
 
   static final class SelectorRegistration {
 
