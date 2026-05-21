@@ -68,6 +68,9 @@ public final class OpcTcpClientChannelInitializer {
    * after the pre-{@code Hello} {@code ReverseHello} exchange has selected the server endpoint for
    * this channel.
    *
+   * <p>This method must be invoked from {@code channel.eventLoop()} because it mutates the channel
+   * pipeline.
+   *
    * @param channel the already-connected Netty channel claimed for client use.
    * @param config the TCP client transport configuration.
    * @param application the client application context used for SecureChannel setup.
@@ -75,6 +78,7 @@ public final class OpcTcpClientChannelInitializer {
    * @param requestIdSupplier the supplier used for SecureChannel request ids.
    * @param handshakeFuture the future completed when SecureChannel setup succeeds or fails.
    * @param endpointUrl the endpoint URL to encode into the client {@code Hello} message.
+   * @throws IllegalStateException if invoked from a thread other than the channel's event loop.
    */
   public static void initializeConnectedChannel(
       Channel channel,
@@ -84,6 +88,11 @@ public final class OpcTcpClientChannelInitializer {
       Supplier<Long> requestIdSupplier,
       CompletableFuture<ClientSecureChannel> handshakeFuture,
       String endpointUrl) {
+
+    if (!channel.eventLoop().inEventLoop()) {
+      throw new IllegalStateException(
+          "initializeConnectedChannel must be invoked from the channel event loop");
+    }
 
     var acknowledgeHandler =
         new UascClientAcknowledgeHandler(

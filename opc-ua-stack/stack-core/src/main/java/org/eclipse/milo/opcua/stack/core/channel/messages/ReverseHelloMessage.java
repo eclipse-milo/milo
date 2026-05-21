@@ -28,10 +28,15 @@ import org.jspecify.annotations.Nullable;
  * the server application URI and the endpoint URL the client should use in its subsequent {@link
  * HelloMessage}. It does not authenticate the server; identity checks still belong to the normal
  * SecureChannel and Session negotiation that follows.
+ *
+ * <p>OPC UA Part 6 limits both {@code ReverseHello} string fields to 4096 encoded bytes. The
+ * constructor and decoder enforce that per-field limit independently from the normal {@link
+ * HelloMessage} endpoint URL limit.
  */
 public class ReverseHelloMessage {
 
-  static final int MAX_STRING_LENGTH = HelloMessage.MAX_ENDPOINT_URL_LENGTH;
+  // OPC UA Part 6 fixes each ReverseHello string field at a maximum of 4096 bytes.
+  static final int MAX_STRING_LENGTH = 4096;
 
   private final @Nullable String serverUri;
 
@@ -58,11 +63,21 @@ public class ReverseHelloMessage {
     this.endpointUrl = endpointUrl;
   }
 
+  /**
+   * Get the application URI advertised by the server that opened the reverse connection.
+   *
+   * @return the server application URI, or {@code null} if the sender encoded a null string.
+   */
   @Nullable
   public String getServerUri() {
     return serverUri;
   }
 
+  /**
+   * Get the endpoint URL the client should use in its following {@code Hello} message.
+   *
+   * @return the endpoint URL, or {@code null} if the sender encoded a null string.
+   */
   @Nullable
   public String getEndpointUrl() {
     return endpointUrl;
