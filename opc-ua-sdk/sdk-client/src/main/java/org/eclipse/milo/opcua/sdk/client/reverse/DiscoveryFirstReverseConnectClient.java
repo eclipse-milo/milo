@@ -12,7 +12,6 @@ package org.eclipse.milo.opcua.sdk.client.reverse;
 
 import static java.util.Objects.requireNonNull;
 
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -46,6 +45,7 @@ public final class DiscoveryFirstReverseConnectClient {
   private final BiFunction<
           ReverseConnectDiscoveryResult, EndpointDescription, ReverseConnectSelector>
       productionSelectorFactory;
+  private final boolean defaultProductionSelectorFactory;
   private final Consumer<OpcTcpClientTransportConfigBuilder> discoveryTransportCustomizer;
   private final Consumer<OpcTcpClientTransportConfigBuilder> productionTransportCustomizer;
 
@@ -55,6 +55,7 @@ public final class DiscoveryFirstReverseConnectClient {
     endpointSelector = builder.endpointSelector;
     clientConfigFactory = builder.clientConfigFactory;
     productionSelectorFactory = builder.productionSelectorFactory;
+    defaultProductionSelectorFactory = builder.defaultProductionSelectorFactory;
     discoveryTransportCustomizer = builder.discoveryTransportCustomizer;
     productionTransportCustomizer = builder.productionTransportCustomizer;
   }
@@ -102,6 +103,12 @@ public final class DiscoveryFirstReverseConnectClient {
   private CompletableFuture<OpcUaClient> connectProductionClient(
       ReverseConnectDiscoveryResult discovery, EndpointDescription endpoint) {
 
+    if (defaultProductionSelectorFactory
+        && !ReverseConnectProductionSelectors.hasRoutingHint(discovery.candidate())) {
+      return CompletableFuture.failedFuture(
+          ReverseConnectProductionSelectors.missingRoutingHintsException());
+    }
+
     OpcUaClient client;
     try {
       OpcUaClientConfig clientConfig =
@@ -130,11 +137,7 @@ public final class DiscoveryFirstReverseConnectClient {
   private static ReverseConnectSelector defaultProductionSelector(
       ReverseConnectDiscoveryResult discovery, EndpointDescription endpoint) {
 
-    ReverseConnectCandidateSnapshot candidate = discovery.candidate();
-
-    return snapshot ->
-        Objects.equals(candidate.serverUri(), snapshot.serverUri())
-            && Objects.equals(candidate.endpointUrl(), snapshot.endpointUrl());
+    return ReverseConnectProductionSelectors.matchDiscoveryRoutingHints(discovery.candidate());
   }
 
   /**
@@ -142,8 +145,9 @@ public final class DiscoveryFirstReverseConnectClient {
    *
    * <p>By default the helper accepts any discovery candidate, prefers an endpoint whose URL matches
    * the discovery {@code ReverseHello}, requires a no-security endpoint that allows anonymous
-   * activation, and builds a basic anonymous client config from the selected endpoint and full
-   * discovery endpoint list.
+   * activation, builds a basic anonymous client config from the selected endpoint and full
+   * discovery endpoint list, and requires the discovery {@code ReverseHello} to provide at least
+   * one production routing hint.
    */
   public static final class Builder {
 
@@ -162,6 +166,7 @@ public final class DiscoveryFirstReverseConnectClient {
                 .build();
     private BiFunction<ReverseConnectDiscoveryResult, EndpointDescription, ReverseConnectSelector>
         productionSelectorFactory = DiscoveryFirstReverseConnectClient::defaultProductionSelector;
+    private boolean defaultProductionSelectorFactory = true;
     private Consumer<OpcTcpClientTransportConfigBuilder> discoveryTransportCustomizer = b -> {};
     private Consumer<OpcTcpClientTransportConfigBuilder> productionTransportCustomizer = b -> {};
 
@@ -238,8 +243,9 @@ public final class DiscoveryFirstReverseConnectClient {
      * Set the selector used by the production reverse client.
      *
      * <p>The default selector matches the discovery candidate's {@code ServerUri} and {@code
-     * EndpointUrl}. Override this only when the server is expected to advertise different routing
-     * hints for the production connection.
+     * EndpointUrl}, and requires at least one of those routing hints to be present. Override this
+     * when the server is expected to advertise different routing hints for the production
+     * connection or to route candidates without {@code ReverseHello} hints.
      *
      * @param productionSelectorFactory the production selector factory.
      * @return this builder.
@@ -250,6 +256,7 @@ public final class DiscoveryFirstReverseConnectClient {
 
       this.productionSelectorFactory =
           requireNonNull(productionSelectorFactory, "productionSelectorFactory");
+      defaultProductionSelectorFactory = false;
       return this;
     }
 

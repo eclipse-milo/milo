@@ -51,6 +51,7 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
   private final BiFunction<
           ReverseConnectDiscoveryResult, EndpointDescription, ReverseConnectSelector>
       productionSelectorFactory;
+  private final boolean defaultProductionSelectorFactory;
   private final Function<ReverseConnectCandidateSnapshot, String> keyFunction;
   private final ReverseConnectAcceptorClientListener clientListener;
   private final ReverseConnectAcceptorErrorListener errorListener;
@@ -66,6 +67,7 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
     endpointSelector = builder.endpointSelector;
     clientConfigFactory = builder.clientConfigFactory;
     productionSelectorFactory = builder.productionSelectorFactory;
+    defaultProductionSelectorFactory = builder.defaultProductionSelectorFactory;
     keyFunction = builder.keyFunction;
     clientListener = builder.clientListener;
     errorListener = builder.errorListener;
@@ -173,6 +175,12 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
   private CompletableFuture<OpcUaClient> connectProductionClient(
       String key, ReverseConnectDiscoveryResult discovery, EndpointDescription endpoint) {
 
+    if (defaultProductionSelectorFactory
+        && !ReverseConnectProductionSelectors.hasRoutingHint(discovery.candidate())) {
+      return CompletableFuture.failedFuture(
+          ReverseConnectProductionSelectors.missingRoutingHintsException());
+    }
+
     OpcUaClient client;
     try {
       OpcUaClientConfig clientConfig =
@@ -234,11 +242,7 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
 
   private static ReverseConnectSelector productionSelector(
       ReverseConnectDiscoveryResult discovery) {
-    ReverseConnectCandidateSnapshot candidate = discovery.candidate();
-
-    return snapshot ->
-        java.util.Objects.equals(candidate.serverUri(), snapshot.serverUri())
-            && java.util.Objects.equals(candidate.endpointUrl(), snapshot.endpointUrl());
+    return ReverseConnectProductionSelectors.matchDiscoveryRoutingHints(discovery.candidate());
   }
 
   private static String defaultKey(ReverseConnectCandidateSnapshot candidate) {
@@ -274,8 +278,7 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
    *
    * <p>By default the acceptor considers any pending candidate, deduplicates discovery by {@code
    * ServerUri} then endpoint URL then candidate id, selects a no-security anonymous endpoint, and
-   * matches the production client with the discovery candidate's {@code ServerUri} and {@code
-   * EndpointUrl}.
+   * requires the discovery {@code ReverseHello} to provide at least one production routing hint.
    */
   public static final class Builder {
 
@@ -294,6 +297,7 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
                 .build();
     private BiFunction<ReverseConnectDiscoveryResult, EndpointDescription, ReverseConnectSelector>
         productionSelectorFactory = (discovery, endpoint) -> productionSelector(discovery);
+    private boolean defaultProductionSelectorFactory = true;
     private Function<ReverseConnectCandidateSnapshot, String> keyFunction =
         ReverseConnectAcceptor::defaultKey;
     private ReverseConnectAcceptorClientListener clientListener = (d, e, c) -> {};
@@ -373,8 +377,9 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
      * Set the selector factory used by production reverse clients.
      *
      * <p>The default selector matches the discovery candidate's {@code ServerUri} and {@code
-     * EndpointUrl}. Override this when the server is expected to use different routing hints for
-     * the later production connection.
+     * EndpointUrl}, and requires at least one of those routing hints to be present. Override this
+     * when the server is expected to use different routing hints for the later production
+     * connection or to route candidates without {@code ReverseHello} hints.
      *
      * @param productionSelectorFactory the production selector factory.
      * @return this builder.
@@ -385,6 +390,7 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
 
       this.productionSelectorFactory =
           requireNonNull(productionSelectorFactory, "productionSelectorFactory");
+      defaultProductionSelectorFactory = false;
       return this;
     }
 
