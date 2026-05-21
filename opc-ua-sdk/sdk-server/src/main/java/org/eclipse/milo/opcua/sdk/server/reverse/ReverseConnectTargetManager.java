@@ -136,14 +136,13 @@ public final class ReverseConnectTargetManager {
       TargetRecord record = new TargetRecord(target);
       records.put(target.getId(), record);
 
+      snapshot = record.snapshot();
+      notifyTargetAdded(snapshot);
+
       if (running && record.isSchedulable()) {
         scheduleLocked(record, 0L);
       }
-
-      snapshot = record.snapshot();
     }
-
-    notifyTargetAdded(snapshot);
 
     return new ReverseConnectTargetHandle(this, target.getId());
   }
@@ -291,62 +290,76 @@ public final class ReverseConnectTargetManager {
   }
 
   CompletableFuture<ReverseConnectTargetSnapshot> pause(UUID targetId) {
-    TargetAction action;
-    synchronized (lock) {
-      TargetRecord record = requireRecord(targetId);
+    try {
+      TargetAction action;
+      synchronized (lock) {
+        TargetRecord record = requireRecord(targetId);
 
-      record.paused = true;
-      cancelScheduledLocked(record);
+        record.paused = true;
+        cancelScheduledLocked(record);
 
-      action = clearActiveAttemptLocked(record);
+        action = clearActiveAttemptLocked(record);
+      }
+
+      action.closeAttempt();
+      notifyTargetUpdated(action.snapshot());
+
+      return CompletableFuture.completedFuture(action.snapshot());
+    } catch (RuntimeException e) {
+      return CompletableFuture.failedFuture(e);
     }
-
-    action.closeAttempt();
-    notifyTargetUpdated(action.snapshot());
-
-    return CompletableFuture.completedFuture(action.snapshot());
   }
 
   CompletableFuture<ReverseConnectTargetSnapshot> resume(UUID targetId) {
-    ReverseConnectTargetSnapshot snapshot;
-    synchronized (lock) {
-      TargetRecord record = requireRecord(targetId);
+    try {
+      ReverseConnectTargetSnapshot snapshot;
+      synchronized (lock) {
+        TargetRecord record = requireRecord(targetId);
 
-      record.paused = false;
+        if (running
+            && record.target.isEnabled()
+            && record.activeChannels.isEmpty()
+            && !record.hasPendingAttempt()) {
+          validateTarget(record.target);
+        }
 
-      if (running
-          && record.isSchedulable()
-          && record.activeChannels.isEmpty()
-          && !record.hasPendingAttempt()) {
-        scheduleLocked(record, 0L);
+        record.paused = false;
+
+        if (shouldScheduleLocked(record)) {
+          scheduleLocked(record, 0L);
+        }
+
+        snapshot = record.snapshot();
       }
 
-      snapshot = record.snapshot();
+      notifyTargetUpdated(snapshot);
+
+      return CompletableFuture.completedFuture(snapshot);
+    } catch (RuntimeException e) {
+      return CompletableFuture.failedFuture(e);
     }
-
-    notifyTargetUpdated(snapshot);
-
-    return CompletableFuture.completedFuture(snapshot);
   }
 
   CompletableFuture<ReverseConnectTargetSnapshot> trigger(UUID targetId) {
-    ReverseConnectTargetSnapshot snapshot;
-    synchronized (lock) {
-      TargetRecord record = requireRecord(targetId);
+    try {
+      ReverseConnectTargetSnapshot snapshot;
+      synchronized (lock) {
+        TargetRecord record = requireRecord(targetId);
 
-      if (running
-          && record.isSchedulable()
-          && record.activeChannels.isEmpty()
-          && !record.hasPendingAttempt()) {
-        scheduleLocked(record, 0L);
+        if (shouldScheduleLocked(record)) {
+          validateTarget(record.target);
+          scheduleLocked(record, 0L);
+        }
+
+        snapshot = record.snapshot();
       }
 
-      snapshot = record.snapshot();
+      notifyTargetUpdated(snapshot);
+
+      return CompletableFuture.completedFuture(snapshot);
+    } catch (RuntimeException e) {
+      return CompletableFuture.failedFuture(e);
     }
-
-    notifyTargetUpdated(snapshot);
-
-    return CompletableFuture.completedFuture(snapshot);
   }
 
   /**
@@ -357,89 +370,97 @@ public final class ReverseConnectTargetManager {
    * replacement applies only to future attempts.
    *
    * @param target the replacement target configuration.
-   * @return a completed future containing the updated target snapshot.
-   * @throws IllegalArgumentException if the target id is unknown or the running server cannot use
-   *     the replacement endpoint.
-   * @throws IllegalStateException if the manager has been shut down.
+   * @return a completed future containing the updated target snapshot, or a failed future if the
+   *     target id is unknown, the running server cannot use the replacement endpoint, or the
+   *     manager has been shut down.
    */
   public CompletableFuture<ReverseConnectTargetSnapshot> update(ReverseConnectTarget target) {
-    requireNonNull(target, "target");
+    try {
+      requireNonNull(target, "target");
 
-    TargetAction action;
-    synchronized (lock) {
-      if (shutdown) {
-        throw new IllegalStateException("ReverseConnectTargetManager is shut down");
+      TargetAction action;
+      synchronized (lock) {
+        if (shutdown) {
+          throw new IllegalStateException("ReverseConnectTargetManager is shut down");
+        }
+
+        TargetRecord record = requireRecord(target.getId());
+
+        if (running && target.isEnabled() && !target.isPaused()) {
+          validateTarget(target);
+        }
+
+        cancelScheduledLocked(record);
+
+        long attemptGeneration = record.generation;
+        OpcTcpServerReverseConnectAttempt attempt = record.activeAttempt;
+        boolean handoffAccepted = attempt != null && isSuccessfulHandoff(attempt);
+
+        record.activeAttempt = null;
+        record.attemptInProgress = false;
+        if (handoffAccepted) {
+          record.pendingHandoffAttempts.add(
+              new AttemptKey(record.attemptCounter, attemptGeneration));
+        } else {
+          record.generation++;
+        }
+
+        record.target = target;
+        record.paused = target.isPaused();
+
+        if (running
+            && record.isSchedulable()
+            && record.activeChannels.isEmpty()
+            && !record.hasPendingAttempt()) {
+
+          scheduleLocked(record, 0L);
+        }
+
+        action = new TargetAction(record.snapshot(), handoffAccepted ? null : attempt);
       }
 
-      TargetRecord record = requireRecord(target.getId());
+      action.closeAttempt();
+      notifyTargetUpdated(action.snapshot());
 
-      if (running && target.isEnabled() && !target.isPaused()) {
-        validateTarget(target);
-      }
-
-      cancelScheduledLocked(record);
-
-      long attemptGeneration = record.generation;
-      OpcTcpServerReverseConnectAttempt attempt = record.activeAttempt;
-      boolean handoffAccepted = attempt != null && isSuccessfulHandoff(attempt);
-
-      record.activeAttempt = null;
-      record.attemptInProgress = false;
-      if (handoffAccepted) {
-        record.pendingHandoffAttempts.add(new AttemptKey(record.attemptCounter, attemptGeneration));
-      } else {
-        record.generation++;
-      }
-
-      record.target = target;
-      record.paused = target.isPaused();
-
-      if (running
-          && record.isSchedulable()
-          && record.activeChannels.isEmpty()
-          && !record.hasPendingAttempt()) {
-
-        scheduleLocked(record, 0L);
-      }
-
-      action = new TargetAction(record.snapshot(), handoffAccepted ? null : attempt);
+      return CompletableFuture.completedFuture(action.snapshot());
+    } catch (RuntimeException e) {
+      return CompletableFuture.failedFuture(e);
     }
-
-    action.closeAttempt();
-    notifyTargetUpdated(action.snapshot());
-
-    return CompletableFuture.completedFuture(action.snapshot());
   }
 
   /**
    * Remove a target and close resources it owns.
    *
    * @param targetId the target id to remove.
-   * @return a completed future containing the final snapshot for the removed target.
-   * @throws IllegalArgumentException if the target id is unknown.
+   * @return a completed future containing the final snapshot for the removed target, or a failed
+   *     future if the target id is unknown.
    */
   public CompletableFuture<ReverseConnectTargetSnapshot> remove(UUID targetId) {
-    TargetAction action;
-    List<Channel> channels;
-    synchronized (lock) {
-      TargetRecord record = requireRecord(targetId);
-      records.remove(targetId);
+    try {
+      TargetAction action;
+      List<Channel> channels;
+      synchronized (lock) {
+        TargetRecord record = requireRecord(targetId);
+        records.remove(targetId);
 
-      cancelScheduledLocked(record);
-      OpcTcpServerReverseConnectAttempt attempt = record.activeAttempt;
-      record.activeAttempt = null;
-      record.attemptInProgress = false;
-      record.generation++;
-      channels = List.copyOf(record.activeChannels.values());
-      record.activeChannels.clear();
-      action = new TargetAction(record.snapshot(), attempt);
+        cancelScheduledLocked(record);
+        OpcTcpServerReverseConnectAttempt attempt = record.activeAttempt;
+        record.activeAttempt = null;
+        record.attemptInProgress = false;
+        record.generation++;
+        channels = List.copyOf(record.activeChannels.values());
+        record.activeChannels.clear();
+        action = new TargetAction(record.snapshot(), attempt);
+      }
+
+      action.closeAttempt();
+      channels.forEach(Channel::close);
+      notifyTargetRemoved(action.snapshot());
+
+      return CompletableFuture.completedFuture(action.snapshot());
+    } catch (RuntimeException e) {
+      return CompletableFuture.failedFuture(e);
     }
-
-    action.closeAttempt();
-    channels.forEach(Channel::close);
-    notifyTargetRemoved(action.snapshot());
-
-    return CompletableFuture.completedFuture(action.snapshot());
   }
 
   private void addInitialTarget(ReverseConnectTarget target) {
@@ -494,6 +515,13 @@ public final class ReverseConnectTargetManager {
       record.generation++;
     }
     record.nextAttemptTime = null;
+  }
+
+  private boolean shouldScheduleLocked(TargetRecord record) {
+    return running
+        && record.isSchedulable()
+        && record.activeChannels.isEmpty()
+        && !record.hasPendingAttempt();
   }
 
   private void runScheduledAttempt(UUID targetId, long generation) {
@@ -648,48 +676,51 @@ public final class ReverseConnectTargetManager {
 
     RetryContext retryContext = null;
     ReverseConnectTargetSnapshot snapshot = null;
+    boolean notifyAttemptEvent = true;
     synchronized (lock) {
       TargetRecord record = records.get(targetId);
       if (record == null || record.attemptCounter != attemptNumber) {
-        return;
-      }
-
-      if (isTerminal(event.state())) {
+        // The target or attempt generation was invalidated after this transport attempt started.
+        // Preserve observability for the transition, but do not let stale attempts mutate state.
+        snapshot = null;
+      } else if (isTerminal(event.state())) {
         boolean handoff = event.state() == ReverseConnectAttemptState.HANDOFF;
         if (handoff && shutdown) {
           return;
         }
-        if (record.generation != attemptGeneration && !handoff) {
-          return;
+        if (record.generation == attemptGeneration || handoff) {
+          record.activeAttempt = null;
+          record.attemptInProgress = false;
+
+          if (handoff) {
+            record.pendingHandoffAttempts.add(new AttemptKey(attemptNumber, attemptGeneration));
+            record.lastSuccessTime = event.timestamp();
+            record.lastStatusCode = null;
+            record.lastError = null;
+          } else if (event.state() == ReverseConnectAttemptState.FAILED
+              || event.state() == ReverseConnectAttemptState.CLIENT_ERROR) {
+            record.lastStatusCode = event.statusCode();
+            record.lastError = event.exception();
+          }
+
+          if (shouldRetry(record, event)) {
+            retryContext =
+                new RetryContext(targetId, attemptNumber, attemptGeneration, record.target, event);
+            notifyAttemptEvent = false;
+          }
+
+          snapshot = record.snapshot();
         }
-
-        record.activeAttempt = null;
-        record.attemptInProgress = false;
-
-        if (handoff) {
-          record.pendingHandoffAttempts.add(new AttemptKey(attemptNumber, attemptGeneration));
-          record.lastSuccessTime = event.timestamp();
-          record.lastStatusCode = null;
-          record.lastError = null;
-        } else if (event.state() == ReverseConnectAttemptState.FAILED
-            || event.state() == ReverseConnectAttemptState.CLIENT_ERROR) {
-          record.lastStatusCode = event.statusCode();
-          record.lastError = event.exception();
-        }
-
-        if (shouldRetry(record, event)) {
-          retryContext =
-              new RetryContext(targetId, attemptNumber, attemptGeneration, record.target, event);
-        }
-
-        snapshot = record.snapshot();
       }
     }
 
     if (retryContext != null) {
       scheduleRetryEvaluation(retryContext, snapshot);
-    } else {
+    } else if (notifyAttemptEvent) {
       notifyAttemptEvent(event);
+    }
+
+    if (retryContext == null) {
       if (snapshot != null) {
         notifyTargetUpdated(snapshot);
       }
@@ -731,6 +762,7 @@ public final class ReverseConnectTargetManager {
   }
 
   private void onActiveChannelClosed(UUID targetId, Channel channel) {
+    PostCloseRetryContext retryContext = null;
     ReverseConnectTargetSnapshot snapshot;
 
     synchronized (lock) {
@@ -746,13 +778,27 @@ public final class ReverseConnectTargetManager {
           && record.isSchedulable()
           && record.activeChannels.isEmpty()
           && !record.hasPendingAttempt()) {
-        scheduleLocked(record, record.target.getRegistrationPeriod().longValue());
+        ReverseConnectAttemptEvent event =
+            new ReverseConnectAttemptEvent(
+                targetId,
+                record.attemptCounter,
+                ReverseConnectAttemptState.CLOSED,
+                Instant.now(),
+                null,
+                null,
+                "reverse-connect active channel closed");
+
+        retryContext = new PostCloseRetryContext(targetId, record.generation, record.target, event);
       }
 
       snapshot = record.snapshot();
     }
 
-    notifyTargetUpdated(snapshot);
+    if (retryContext != null) {
+      schedulePostCloseRetryEvaluation(retryContext, snapshot);
+    } else {
+      notifyTargetUpdated(snapshot);
+    }
   }
 
   private boolean shouldRetry(TargetRecord record, ReverseConnectAttemptEvent event) {
@@ -774,6 +820,17 @@ public final class ReverseConnectTargetManager {
       if (terminalSnapshot != null) {
         notifyTargetUpdated(terminalSnapshot);
       }
+    }
+  }
+
+  private void schedulePostCloseRetryEvaluation(
+      PostCloseRetryContext retryContext, ReverseConnectTargetSnapshot closedSnapshot) {
+
+    try {
+      scheduler.execute(() -> evaluatePostCloseRetry(retryContext));
+    } catch (RejectedExecutionException e) {
+      logger.warn("Unable to evaluate Reverse Connect retry policy.", e);
+      notifyTargetUpdated(closedSnapshot);
     }
   }
 
@@ -800,6 +857,27 @@ public final class ReverseConnectTargetManager {
     }
   }
 
+  private void evaluatePostCloseRetry(PostCloseRetryContext retryContext) {
+    if (!isPostCloseRetryCurrent(retryContext)) {
+      return;
+    }
+
+    long delayMillis = retryDelayMillis(retryContext.target(), retryContext.event());
+
+    ReverseConnectTargetSnapshot snapshot = null;
+    synchronized (lock) {
+      TargetRecord record = records.get(retryContext.targetId());
+      if (record != null && isPostCloseRetryCurrent(record, retryContext)) {
+        scheduleLocked(record, delayMillis);
+        snapshot = record.snapshot();
+      }
+    }
+
+    if (snapshot != null) {
+      notifyTargetUpdated(snapshot);
+    }
+  }
+
   private boolean isRetryCurrent(RetryContext retryContext) {
     synchronized (lock) {
       TargetRecord record = records.get(retryContext.targetId());
@@ -811,6 +889,23 @@ public final class ReverseConnectTargetManager {
     return record.attemptCounter == retryContext.attemptNumber()
         && record.generation == retryContext.generation()
         && shouldRetry(record, retryContext.event());
+  }
+
+  private boolean isPostCloseRetryCurrent(PostCloseRetryContext retryContext) {
+    synchronized (lock) {
+      TargetRecord record = records.get(retryContext.targetId());
+      return record != null && isPostCloseRetryCurrent(record, retryContext);
+    }
+  }
+
+  private boolean isPostCloseRetryCurrent(TargetRecord record, PostCloseRetryContext retryContext) {
+
+    return record.generation == retryContext.generation()
+        && running
+        && !shutdown
+        && record.isSchedulable()
+        && record.activeChannels.isEmpty()
+        && !record.hasPendingAttempt();
   }
 
   private long retryDelayMillis(ReverseConnectTarget target, ReverseConnectAttemptEvent event) {
@@ -1000,6 +1095,12 @@ public final class ReverseConnectTargetManager {
   private record RetryContext(
       UUID targetId,
       long attemptNumber,
+      long generation,
+      ReverseConnectTarget target,
+      ReverseConnectAttemptEvent event) {}
+
+  private record PostCloseRetryContext(
+      UUID targetId,
       long generation,
       ReverseConnectTarget target,
       ReverseConnectAttemptEvent event) {}

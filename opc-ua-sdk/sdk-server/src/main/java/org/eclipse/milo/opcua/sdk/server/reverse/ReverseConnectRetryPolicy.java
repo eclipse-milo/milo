@@ -14,23 +14,23 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Calculates the delay before a server reverse-connect target retries after an unsuccessful
- * attempt.
+ * Calculates the delay before a server reverse-connect target retries after an unsuccessful attempt
+ * or reconnects after a reverse-opened channel closes.
  *
- * <p>Policies are called after terminal attempt events and return the delay before the next
- * scheduled attempt. Implementations should be deterministic from the immutable target
- * configuration and the attempt event; scheduling and lifecycle ownership remain with {@link
- * ReverseConnectTargetManager}.
+ * <p>Policies are called after terminal attempt events or active-channel close events and return
+ * the delay before the next scheduled attempt. Implementations should be deterministic from the
+ * immutable target configuration and the event; scheduling and lifecycle ownership remain with
+ * {@link ReverseConnectTargetManager}.
  */
 @FunctionalInterface
 public interface ReverseConnectRetryPolicy {
 
   /**
-   * Get the retry delay in milliseconds.
+   * Get the retry or reconnect delay in milliseconds.
    *
    * @param target the immutable target configuration.
-   * @param event the terminal attempt event that triggered the retry.
-   * @return the retry delay in milliseconds.
+   * @param event the attempt or active-channel close event that triggered the retry.
+   * @return the retry or reconnect delay in milliseconds.
    */
   long getRetryDelayMillis(ReverseConnectTarget target, ReverseConnectAttemptEvent event);
 

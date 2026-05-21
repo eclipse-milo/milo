@@ -37,6 +37,6 @@ public enum ReverseConnectAttemptState {
   /** The attempt was cancelled by server target lifecycle control. */
   CANCELLED,
 
-  /** The attempt or connector was closed before handoff. */
+  /** The attempt or reverse-opened channel was closed. */
   CLOSED
 }

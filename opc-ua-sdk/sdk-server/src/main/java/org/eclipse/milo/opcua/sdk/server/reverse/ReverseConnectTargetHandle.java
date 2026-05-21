@@ -55,7 +55,8 @@ public final class ReverseConnectTargetHandle {
    * <p>Existing reverse-opened channels remain open; pausing only prevents new attempts from being
    * scheduled.
    *
-   * @return a completed future containing the updated snapshot.
+   * @return a completed future containing the updated snapshot, or a failed future if the target
+   *     has been removed.
    */
   public CompletableFuture<ReverseConnectTargetSnapshot> pause() {
     return manager.pause(targetId);
@@ -64,7 +65,8 @@ public final class ReverseConnectTargetHandle {
   /**
    * Resume the target and schedule an attempt if the server is running.
    *
-   * @return a completed future containing the updated snapshot.
+   * @return a completed future containing the updated snapshot, or a failed future if the target
+   *     has been removed or cannot be scheduled.
    */
   public CompletableFuture<ReverseConnectTargetSnapshot> resume() {
     return manager.resume(targetId);
@@ -76,7 +78,8 @@ public final class ReverseConnectTargetHandle {
    * <p>The request is ignored when the target is disabled, paused, the server is stopped, or an
    * attempt is already pending.
    *
-   * @return a completed future containing the updated snapshot.
+   * @return a completed future containing the updated snapshot, or a failed future if the target
+   *     has been removed or cannot be scheduled.
    */
   public CompletableFuture<ReverseConnectTargetSnapshot> trigger() {
     return manager.trigger(targetId);
@@ -88,7 +91,8 @@ public final class ReverseConnectTargetHandle {
    * <p>Removal cancels scheduled work, closes any in-flight attempt, and closes active
    * reverse-opened channels for this target.
    *
-   * @return a completed future containing the final snapshot.
+   * @return a completed future containing the final snapshot, or a failed future if the target has
+   *     already been removed.
    */
   public CompletableFuture<ReverseConnectTargetSnapshot> remove() {
     return manager.remove(targetId);
