@@ -67,6 +67,23 @@ import org.slf4j.LoggerFactory;
  * observability. A claimed {@link ReverseConnectConnection} still needs later transport code to
  * attach the standard Milo client pipeline and continue with {@code Hello}, {@code Acknowledge},
  * SecureChannel, and Session negotiation.
+ *
+ * <p>The candidate state machine is intentionally small: an accepted socket is {@link
+ * ReverseConnectCandidateState#WAITING_FOR_REVERSE_HELLO} until the first frame is decoded, then
+ * becomes {@link ReverseConnectCandidateState#PENDING} if the {@link ReverseHelloVerifier} accepts
+ * the decoded {@code ReverseHello}. From pending, exactly one terminal manager state is retained:
+ * {@link ReverseConnectCandidateState#CLAIMED}, {@link ReverseConnectCandidateState#REJECTED},
+ * {@link ReverseConnectCandidateState#EXPIRED}, or {@link ReverseConnectCandidateState#CLOSED}.
+ * Claiming cancels pending expiry and transfers channel ownership to the caller; rejection, expiry,
+ * shutdown, selector errors, malformed first messages, verifier rejection, and peer close keep
+ * ownership in the manager long enough to close the channel and emit the terminal snapshot.
+ *
+ * <p>Selectors are one-shot registrations. A new registration first checks current pending
+ * candidates, then future verified candidates. Listener callbacks are serialized on the configured
+ * callback executor and receive immutable snapshots: accepted before either claimed or pending,
+ * pending before a later claim or expiry, and exactly one terminal rejected or expired callback for
+ * unclaimed candidates. The bounded accepted and rejected snapshot histories are observability
+ * records only; they do not imply continued channel ownership after claim.
  */
 public final class ReverseConnectManager implements AutoCloseable {
 

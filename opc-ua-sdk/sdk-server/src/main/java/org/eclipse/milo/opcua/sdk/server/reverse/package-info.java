@@ -38,6 +38,15 @@
  * are scheduled. Each target owns its scheduled retry task, at most one in-flight attempt, and the
  * active reverse-opened channels associated with successful handoffs.
  *
+ * <p>The target lifecycle is: registered, optionally enabled and unpaused, scheduled, in-flight,
+ * handed off, active channel, retry, update/remove, and shutdown. Disabled targets remain
+ * registered but are not scheduled. Paused targets remain observable and can be resumed later.
+ * Scheduling creates one future attempt time; when it fires, the manager starts one low-level
+ * transport attempt and marks the target in flight. A successful transport handoff moves the
+ * channel into the normal server UASC path and increments the target's active channel count. A
+ * failed attempt or later active-channel close asks the target's retry policy for the next delay
+ * before scheduling again.
+ *
  * <p>Updating a target replaces the future-attempt configuration, including enabled and paused
  * state, without closing reverse-opened channels that have already been handed to the normal server
  * path. Removing a target is stronger: it cancels scheduled work, closes an in-flight attempt, and

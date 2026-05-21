@@ -55,6 +55,18 @@ import org.slf4j.LoggerFactory;
  * reverse connector. Application code normally reaches it through {@link
  * org.eclipse.milo.opcua.sdk.server.OpcUaServer}; the manager owns target validation, retry
  * scheduling, listener dispatch, and cleanup of in-flight attempts and reverse-opened channels.
+ *
+ * <p>For each target the manager tracks whether it is enabled, paused, scheduled, in-flight, in
+ * handoff, or represented by one or more active reverse-opened channels. Enabled and unpaused
+ * targets schedule at most one attempt at a time. A low-level {@code HANDOFF} event clears the
+ * in-flight attempt and is followed by channel registration when the transport future completes.
+ * Failed attempts and later active-channel closes consult the target retry policy before a new
+ * schedule is created.
+ *
+ * <p>Updates replace only future scheduling state: scheduled work is cancelled, non-handoff
+ * attempts are closed, and active channels already handed to the server path remain open. Removal
+ * and shutdown are stronger lifecycle operations; both cancel scheduled work, close in-flight
+ * attempts, and close active channels owned by the target.
  */
 public final class ReverseConnectTargetManager {
 

@@ -35,6 +35,22 @@ import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
  * because their default client configuration uses the anonymous identity provider. Applications
  * that configure a different identity provider or security policy should choose a matching
  * predicate.
+ *
+ * <p>The endpoint selector and client configuration should agree. For example, a username client
+ * that requires signed and encrypted {@link SecurityPolicy#Basic256Sha256} endpoints can use a
+ * predicate shaped like its configured security and identity:
+ *
+ * <pre>{@code
+ * ReverseConnectEndpointSelector endpointSelector =
+ *     ReverseConnectEndpointSelectors.preferReverseHelloEndpointUrl(
+ *         endpoint ->
+ *             SecurityPolicy.Basic256Sha256.getUri().equals(endpoint.getSecurityPolicyUri())
+ *                 && endpoint.getSecurityMode() == MessageSecurityMode.SignAndEncrypt
+ *                 && Stream.of(
+ *                         Objects.requireNonNullElse(
+ *                             endpoint.getUserIdentityTokens(), new UserTokenPolicy[0]))
+ *                     .anyMatch(policy -> policy.getTokenType() == UserTokenType.UserName));
+ * }</pre>
  */
 public final class ReverseConnectEndpointSelectors {
 

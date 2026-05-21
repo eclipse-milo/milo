@@ -27,6 +27,16 @@ import org.jspecify.annotations.Nullable;
  * endpoint URL advertised in the OPC UA {@code ReverseHello}, and the timing used for repeated
  * connection attempts. The target id is the stable lifecycle key used by {@link OpcUaServer} when
  * updating snapshots, listeners, and runtime control handles.
+ *
+ * <pre>{@code
+ * ReverseConnectTarget target =
+ *     ReverseConnectTarget.builder()
+ *         .setClientListenerUrl("opc.tcp://client.example.com:48060")
+ *         .setEndpointUrl("opc.tcp://server.example.com:12686/milo")
+ *         .setRegistrationPeriod(uint(1_000))
+ *         .setConnectTimeout(uint(5_000))
+ *         .build();
+ * }</pre>
  */
 public final class ReverseConnectTarget {
 

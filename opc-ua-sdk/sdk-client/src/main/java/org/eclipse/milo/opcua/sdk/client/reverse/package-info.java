@@ -25,6 +25,37 @@
  * client transport registers the selector during connect, waits for one matching candidate, and
  * rejoins the normal client Session path after the channel is claimed.
  *
+ * <h2>Candidate lifecycle</h2>
+ *
+ * <p>Every accepted server-opened socket starts in {@link
+ * org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectCandidateState#WAITING_FOR_REVERSE_HELLO}.
+ * If the first message is a valid {@code ReverseHello} and the configured {@link
+ * org.eclipse.milo.opcua.sdk.client.reverse.ReverseHelloVerifier} accepts the candidate, the
+ * candidate becomes {@link
+ * org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectCandidateState#PENDING}. From pending,
+ * exactly one terminal manager outcome is recorded: {@link
+ * org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectCandidateState#CLAIMED}, {@link
+ * org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectCandidateState#REJECTED}, {@link
+ * org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectCandidateState#EXPIRED}, or {@link
+ * org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectCandidateState#CLOSED}.
+ *
+ * <p>Selector matching is one-shot. A registered selector is evaluated against already-pending
+ * candidates and later candidates after their {@code ReverseHello} has been verified. The first
+ * selector that matches claims the channel and transfers ownership to the returned {@link
+ * org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectConnection}; after that handoff, manager
+ * shutdown will not close the claimed child channel. Candidates that do not match remain pending
+ * for the configured hold time. Rejection snapshots preserve whether the candidate failed because
+ * the first message timed out, the {@code ReverseHello} was malformed, a verifier rejected it, an
+ * application rejected it, the pending limit was exceeded, the hold time expired, the manager
+ * stopped, the peer closed the channel, or a selector threw.
+ *
+ * <p>Listener callbacks are serialized on the manager callback executor. For a successfully claimed
+ * candidate the callback order is accepted, then claimed if a selector was already waiting, or
+ * accepted, pending, then claimed when the candidate first has to be parked. Rejected, expired, and
+ * closed candidates are reported with the terminal snapshot. Manager snapshots expose current
+ * pending candidates plus bounded retained histories of claimed and rejected terminal snapshots;
+ * snapshots are immutable and can be safely retained by application code.
+ *
  * <p>Dynamic applications can observe pending candidates, claim one exact candidate with {@link
  * org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectManager#claim(java.util.UUID)}, resolve
  * application-specific client configuration, and create an {@link

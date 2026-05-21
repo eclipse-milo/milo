@@ -55,6 +55,18 @@ import org.slf4j.LoggerFactory;
  * cancel the attempt. Attempt observers receive a monotonic state stream; once a terminal state is
  * observed, later asynchronous Netty callbacks are ignored rather than regressing the state.
  *
+ * <p>The successful attempt state sequence is {@link
+ * OpcTcpServerReverseConnectAttemptState#CONNECTING} to {@link
+ * OpcTcpServerReverseConnectAttemptState#CONNECTED} to {@link
+ * OpcTcpServerReverseConnectAttemptState#REVERSE_HELLO_SENT} to {@link
+ * OpcTcpServerReverseConnectAttemptState#HELLO_HANDLER_INSTALLED} to terminal {@link
+ * OpcTcpServerReverseConnectAttemptState#HANDOFF}. The terminal error sequence is one of {@link
+ * OpcTcpServerReverseConnectAttemptState#CLIENT_ERROR}, {@link
+ * OpcTcpServerReverseConnectAttemptState#FAILED}, {@link
+ * OpcTcpServerReverseConnectAttemptState#CANCELLED}, or {@link
+ * OpcTcpServerReverseConnectAttemptState#CLOSED}. A terminal state completes, fails, or cancels the
+ * attempt future and prevents later Netty callbacks from publishing another terminal state.
+ *
  * <p>The connector remains responsible for channels it opened until it is closed, even after an
  * attempt reaches handoff. Connector shutdown closes connector-owned reverse sockets without making
  * attempt handles or target lifecycle operations responsible for channels that already entered the

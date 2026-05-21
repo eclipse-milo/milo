@@ -23,7 +23,32 @@ import org.eclipse.milo.opcua.stack.core.Stack;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.jspecify.annotations.Nullable;
 
-/** Builder for {@link ReverseConnectManager}. */
+/**
+ * Builder for {@link ReverseConnectManager}.
+ *
+ * <p>A manager must be built with at least one bind address, started before clients wait for
+ * reverse connections, and shut down by the application when the listener is no longer needed:
+ *
+ * <pre>{@code
+ * ReverseConnectManager manager =
+ *     ReverseConnectManager.builder()
+ *         .addBindAddress(new InetSocketAddress("0.0.0.0", 48060))
+ *         .setPendingConnectionHoldTime(Duration.ofSeconds(30))
+ *         .setReverseHelloVerifier(
+ *             candidate ->
+ *                 expectedServerUri.equals(candidate.serverUri())
+ *                     ? ReverseConnectVerificationResult.accept()
+ *                     : ReverseConnectVerificationResult.reject("unexpected ServerUri"))
+ *         .build();
+ *
+ * manager.startup();
+ * try {
+ *   // Create reverse-connect clients or a ReverseConnectAcceptor using this manager.
+ * } finally {
+ *   manager.shutdown();
+ * }
+ * }</pre>
+ */
 public final class ReverseConnectManagerBuilder {
 
   private final List<InetSocketAddress> bindAddresses = new ArrayList<>();

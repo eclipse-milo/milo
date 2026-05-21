@@ -18,6 +18,23 @@ import java.util.UUID;
 /**
  * Synchronous predicate used by {@link ReverseConnectManager} to decide whether a selector wants to
  * claim a decoded reverse-connect candidate.
+ *
+ * <p>Selectors are evaluated after {@code ReverseHello} has been decoded and accepted by the
+ * manager verifier. They should use {@code ReverseHello} values only as routing hints; the
+ * production client still performs normal endpoint, certificate, SecureChannel, and Session
+ * validation after the channel is claimed.
+ *
+ * <pre>{@code
+ * ReverseConnectSelector byServer =
+ *     ReverseConnectSelector.byServerUri("urn:example:server");
+ *
+ * ReverseConnectSelector byEndpoint =
+ *     ReverseConnectSelector.byEndpointUrl("opc.tcp://server.example.com:4840/milo");
+ *
+ * ReverseConnectSelector exactRoute =
+ *     ReverseConnectSelector.byServerUriAndEndpointUrl(
+ *         "urn:example:server", "opc.tcp://server.example.com:4840/milo");
+ * }</pre>
  */
 @FunctionalInterface
 public interface ReverseConnectSelector {

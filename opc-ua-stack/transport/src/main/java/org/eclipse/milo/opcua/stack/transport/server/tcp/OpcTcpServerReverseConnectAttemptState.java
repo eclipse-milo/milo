@@ -10,7 +10,15 @@
 
 package org.eclipse.milo.opcua.stack.transport.server.tcp;
 
-/** Lifecycle state for one server-initiated reverse-connect attempt. */
+/**
+ * Lifecycle state for one server-initiated reverse-connect attempt.
+ *
+ * <p>A successful attempt progresses through {@link #CONNECTING}, {@link #CONNECTED}, {@link
+ * #REVERSE_HELLO_SENT}, {@link #HELLO_HANDLER_INSTALLED}, and terminal {@link #HANDOFF}. Terminal
+ * non-handoff states are {@link #CLIENT_ERROR}, {@link #FAILED}, {@link #CANCELLED}, and {@link
+ * #CLOSED}; once any terminal state is recorded, later asynchronous callbacks cannot move the
+ * attempt back to a non-terminal state.
+ */
 public enum OpcTcpServerReverseConnectAttemptState {
 
   /** The connector has started an outbound TCP connect to the client listener. */

@@ -227,6 +227,27 @@ public class OpcUaClient {
    * connections. Once connected, Session creation and service requests use the normal client SDK
    * path.
    *
+   * <pre>{@code
+   * ReverseConnectManager manager =
+   *     ReverseConnectManager.builder()
+   *         .addBindAddress(new InetSocketAddress("0.0.0.0", 48060))
+   *         .build();
+   *
+   * manager.startup();
+   * OpcUaClient client =
+   *     OpcUaClient.createReverseConnect(
+   *         config,
+   *         manager,
+   *         ReverseConnectSelector.byServerUriAndEndpointUrl(serverUri, endpointUrl));
+   *
+   * try {
+   *   client.connectAsync().get();
+   * } finally {
+   *   client.disconnectAsync().get();
+   *   manager.shutdown();
+   * }
+   * }</pre>
+   *
    * @param config the {@link OpcUaClientConfig}.
    * @param manager the running {@link ReverseConnectManager} that owns client listener sockets.
    * @param selector the one-shot selector used to claim a matching reverse connection.
@@ -287,6 +308,19 @@ public class OpcUaClient {
    * socket, use {@link DiscoveryFirstReverseConnectClient} for the discovery-first flow or call
    * {@link DiscoveryClient#getEndpoints(ReverseConnectConnection)} directly before creating the
    * production reverse client from a later matching connection.
+   *
+   * <pre>{@code
+   * ReverseConnectCandidateSnapshot candidate = manager.snapshot().pendingCandidates().get(0);
+   * ReverseConnectConnection connection =
+   *     manager.claim(candidate.id()).orElseThrow();
+   *
+   * OpcUaClient client = OpcUaClient.createReverseConnect(config, connection);
+   * try {
+   *   client.connectAsync().get();
+   * } finally {
+   *   client.disconnectAsync().get();
+   * }
+   * }</pre>
    *
    * @param config the {@link OpcUaClientConfig}.
    * @param connection the pre-claimed reverse-connect connection.
