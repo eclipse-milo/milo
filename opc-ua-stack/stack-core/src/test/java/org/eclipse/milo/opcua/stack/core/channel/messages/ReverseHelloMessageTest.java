@@ -29,6 +29,11 @@ public class ReverseHelloMessageTest {
   private static final String ENDPOINT_URL = "opc.tcp://localhost:4840/milo";
 
   @Test
+  public void testStringLimitIsPart6ReverseHelloLimit() {
+    assertEquals(4096, ReverseHelloMessage.MAX_STRING_LENGTH);
+  }
+
+  @Test
   public void testTcpMessageRoundTrip() throws UaException {
     ReverseHelloMessage message = new ReverseHelloMessage(SERVER_URI, ENDPOINT_URL);
     ByteBuf buffer = TcpMessageEncoder.encode(message);
