@@ -390,19 +390,17 @@ public final class ReverseConnectTargetManager {
           validateTarget(target);
         }
 
-        cancelScheduledLocked(record);
-
         long attemptGeneration = record.generation;
         OpcTcpServerReverseConnectAttempt attempt = record.activeAttempt;
         boolean handoffAccepted = attempt != null && isSuccessfulHandoff(attempt);
+
+        cancelScheduledLocked(record);
 
         record.activeAttempt = null;
         record.attemptInProgress = false;
         if (handoffAccepted) {
           record.pendingHandoffAttempts.add(
               new AttemptKey(record.attemptCounter, attemptGeneration));
-        } else {
-          record.generation++;
         }
 
         record.target = target;
@@ -414,6 +412,8 @@ public final class ReverseConnectTargetManager {
             && !record.hasPendingAttempt()) {
 
           scheduleLocked(record, 0L);
+        } else if (!handoffAccepted) {
+          record.generation++;
         }
 
         action = new TargetAction(record.snapshot(), handoffAccepted ? null : attempt);
@@ -447,7 +447,9 @@ public final class ReverseConnectTargetManager {
         OpcTcpServerReverseConnectAttempt attempt = record.activeAttempt;
         record.activeAttempt = null;
         record.attemptInProgress = false;
-        record.generation++;
+        if (attempt == null || !isSuccessfulHandoff(attempt)) {
+          record.generation++;
+        }
         channels = List.copyOf(record.activeChannels.values());
         record.activeChannels.clear();
         action = new TargetAction(record.snapshot(), attempt);
@@ -512,7 +514,6 @@ public final class ReverseConnectTargetManager {
     if (record.scheduledFuture != null) {
       record.scheduledFuture.cancel(false);
       record.scheduledFuture = null;
-      record.generation++;
     }
     record.nextAttemptTime = null;
   }

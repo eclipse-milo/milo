@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.sdk.server.reverse;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -23,13 +24,17 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.lang.reflect.Field;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
@@ -53,6 +58,80 @@ class ReverseConnectTargetManagerTest {
     if (scheduler != null) {
       scheduler.shutdownNow();
     }
+  }
+
+  @Test
+  void updateWithScheduledAttemptAdvancesGenerationOnce() throws Exception {
+    String endpointUrl = "opc.tcp://localhost:12686/reverse-target-test";
+
+    ReverseConnectTarget target = target(endpointUrl, "opc.tcp://localhost:12687");
+    ReverseConnectTarget replacement = target(endpointUrl, "opc.tcp://localhost:12688");
+    replacement =
+        ReverseConnectTarget.builder()
+            .setId(target.getId())
+            .setClientListenerUrl(replacement.getClientListenerUrl())
+            .setEndpointUrl(replacement.getEndpointUrl())
+            .setRegistrationPeriod(replacement.getRegistrationPeriod())
+            .setConnectTimeout(replacement.getConnectTimeout())
+            .build();
+
+    EndpointDescription endpointDescription = endpointDescription(endpointUrl);
+
+    listenerExecutor = Executors.newSingleThreadExecutor();
+    scheduler = mock(ScheduledExecutorService.class);
+    ScheduledFuture<?> scheduledFuture = mock(ScheduledFuture.class);
+    when(scheduler.schedule(any(Runnable.class), anyLong(), any(TimeUnit.class)))
+        .thenAnswer(invocation -> scheduledFuture);
+
+    ReverseConnectTargetManager manager =
+        new ReverseConnectTargetManager(
+            mock(ServerApplicationContext.class),
+            () -> List.of(endpointDescription),
+            transportProfile ->
+                new OpcTcpServerTransport(OpcTcpServerTransportConfig.newBuilder().build()),
+            "urn:eclipse:milo:test:server:reverse-targets",
+            listenerExecutor,
+            scheduler,
+            Set.of(target));
+
+    manager.startup();
+    long generationBeforeUpdate = generation(manager, target.getId());
+
+    manager.update(replacement).get(5, TimeUnit.SECONDS);
+
+    assertEquals(generationBeforeUpdate + 1L, generation(manager, target.getId()));
+  }
+
+  @Test
+  void pauseWithScheduledAttemptAdvancesGenerationOnce() throws Exception {
+    String endpointUrl = "opc.tcp://localhost:12686/reverse-target-test";
+
+    ReverseConnectTarget target = target(endpointUrl, "opc.tcp://localhost:12687");
+    EndpointDescription endpointDescription = endpointDescription(endpointUrl);
+
+    listenerExecutor = Executors.newSingleThreadExecutor();
+    scheduler = mock(ScheduledExecutorService.class);
+    ScheduledFuture<?> scheduledFuture = mock(ScheduledFuture.class);
+    when(scheduler.schedule(any(Runnable.class), anyLong(), any(TimeUnit.class)))
+        .thenAnswer(invocation -> scheduledFuture);
+
+    ReverseConnectTargetManager manager =
+        new ReverseConnectTargetManager(
+            mock(ServerApplicationContext.class),
+            () -> List.of(endpointDescription),
+            transportProfile ->
+                new OpcTcpServerTransport(OpcTcpServerTransportConfig.newBuilder().build()),
+            "urn:eclipse:milo:test:server:reverse-targets",
+            listenerExecutor,
+            scheduler,
+            Set.of(target));
+
+    manager.startup();
+    long generationBeforePause = generation(manager, target.getId());
+
+    new ReverseConnectTargetHandle(manager, target.getId()).pause().get(5, TimeUnit.SECONDS);
+
+    assertEquals(generationBeforePause + 1L, generation(manager, target.getId()));
   }
 
   @Test
@@ -152,5 +231,38 @@ class ReverseConnectTargetManagerTest {
     CompletableFuture<ReverseConnectTargetSnapshot> future = assertDoesNotThrow(operation::get);
 
     return assertThrows(ExecutionException.class, () -> future.get(5, TimeUnit.SECONDS));
+  }
+
+  private static ReverseConnectTarget target(String endpointUrl, String clientListenerUrl) {
+    return ReverseConnectTarget.builder()
+        .setClientListenerUrl(clientListenerUrl)
+        .setEndpointUrl(endpointUrl)
+        .setRegistrationPeriod(uint(1_000))
+        .setConnectTimeout(uint(100))
+        .build();
+  }
+
+  private static EndpointDescription endpointDescription(String endpointUrl) {
+    EndpointDescription endpointDescription = mock(EndpointDescription.class);
+    when(endpointDescription.getEndpointUrl()).thenReturn(endpointUrl);
+    when(endpointDescription.getTransportProfileUri())
+        .thenReturn(TransportProfile.TCP_UASC_UABINARY.getUri());
+    return endpointDescription;
+  }
+
+  private static long generation(ReverseConnectTargetManager manager, UUID targetId)
+      throws ReflectiveOperationException {
+
+    Field recordsField = ReverseConnectTargetManager.class.getDeclaredField("records");
+    recordsField.setAccessible(true);
+
+    @SuppressWarnings("unchecked")
+    Map<UUID, ?> records = (Map<UUID, ?>) recordsField.get(manager);
+
+    Object record = records.get(targetId);
+    Field generationField = record.getClass().getDeclaredField("generation");
+    generationField.setAccessible(true);
+
+    return generationField.getLong(record);
   }
 }
