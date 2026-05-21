@@ -65,6 +65,7 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
   private @Nullable ClientApplicationContext applicationContext;
   private @Nullable ReverseConnectRegistration registration;
   private @Nullable Channel currentChannel;
+  private @Nullable Throwable directTerminalFailure;
 
   /**
    * Create a reverse TCP client transport that uses a shared manager for channel acquisition.
@@ -185,11 +186,19 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
         return CompletableFuture.completedFuture(Unit.VALUE);
       }
 
+      if (directTerminalFailure != null) {
+        return CompletableFuture.failedFuture(directTerminalFailure);
+      }
+
       if (directConnectionConsumed) {
-        return CompletableFuture.failedFuture(
+        UaException failure =
             new UaException(
                 StatusCodes.Bad_ConnectionClosed,
-                "reverse-connect direct connection has already been consumed"));
+                "reverse-connect direct connection has already been consumed");
+
+        enterDirectTerminalStateLocked(failure);
+
+        return CompletableFuture.failedFuture(failure);
       }
 
       directConnectionConsumed = true;
@@ -244,7 +253,14 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
       }
       currentChannel = null;
 
-      channelFuture = new CompletableFuture<>();
+      if (directConnection != null) {
+        enterDirectTerminalStateLocked(
+            new UaException(
+                StatusCodes.Bad_ConnectionClosed,
+                "reverse-connect direct connection has been disconnected"));
+      } else {
+        channelFuture = new CompletableFuture<>();
+      }
     }
 
     if (registrationToClose != null) {
@@ -514,6 +530,8 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
   }
 
   private void onChannelClosed(Channel closedChannel) {
+    var failure =
+        new UaException(StatusCodes.Bad_ConnectionClosed, "reverse-connect channel closed");
     CompletableFuture<Channel> closedFuture = null;
     CompletableFuture<Channel> nextFuture = null;
     boolean notifyDisconnected = false;
@@ -529,14 +547,15 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
             channelFuture = new CompletableFuture<>();
             waitingForReverseConnection = true;
             nextFuture = channelFuture;
+          } else {
+            enterDirectTerminalStateLocked(failure);
           }
         }
       }
     }
 
     if (closedFuture != null && !closedFuture.isDone()) {
-      closedFuture.completeExceptionally(
-          new UaException(StatusCodes.Bad_ConnectionClosed, "reverse-connect channel closed"));
+      closedFuture.completeExceptionally(failure);
     }
 
     if (notifyDisconnected) {
@@ -556,6 +575,17 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
     }
 
     targetFuture.completeExceptionally(t);
+  }
+
+  private void enterDirectTerminalStateLocked(Throwable failure) {
+    directTerminalFailure = failure;
+    waitingForReverseConnection = false;
+
+    if (!channelFuture.isDone()) {
+      channelFuture.completeExceptionally(failure);
+    }
+
+    channelFuture = CompletableFuture.failedFuture(failure);
   }
 
   private void notifyTransitionListeners(boolean connected) {
