@@ -285,7 +285,9 @@ public class OpcUaClient {
    *
    * <p>The supplied {@code config} must already contain the selected {@link EndpointDescription}.
    * This factory consumes a reverse TCP channel; it does not perform endpoint discovery or endpoint
-   * selection.
+   * selection. If a dynamic application needs to discover endpoints from an initial inbound reverse
+   * socket, use {@link DiscoveryClient#getEndpoints(ReverseConnectConnection)} first, close that
+   * discovery flow, and create the production reverse client from a later matching connection.
    *
    * @param config the {@link OpcUaClientConfig}.
    * @param connection the pre-claimed reverse-connect connection.
