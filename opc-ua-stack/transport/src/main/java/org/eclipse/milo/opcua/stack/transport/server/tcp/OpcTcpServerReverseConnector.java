@@ -56,9 +56,9 @@ import org.slf4j.LoggerFactory;
  * observed, later asynchronous Netty callbacks are ignored rather than regressing the state.
  *
  * <p>The connector remains responsible for channels it opened until it is closed, even after an
- * attempt reaches handoff. That lets later scheduling code shut down connector-owned reverse
- * sockets without needing to know whether a particular attempt failed before {@code Hello} or
- * already entered the server UASC path.
+ * attempt reaches handoff. Connector shutdown closes connector-owned reverse sockets without making
+ * attempt handles or target lifecycle operations responsible for channels that already entered the
+ * server UASC path.
  *
  * <p>Threading is deliberately narrow. Netty writes and pipeline mutations happen on the channel's
  * event loop. The connector lock protects only lifecycle bookkeeping: the closed flag, open
@@ -170,13 +170,7 @@ final class OpcTcpServerReverseConnector implements AutoCloseable {
    * channel so connector shutdown can close server-owned reverse sockets.
    */
   void onHelloReceived(OpcTcpServerReverseConnectAttempt attempt, Channel channel) {
-    if (attempt.complete(channel)) {
-      attempt.transition(
-          OpcTcpServerReverseConnectAttemptState.HANDOFF,
-          null,
-          null,
-          "client Hello received; channel handed off to server UASC path");
-
+    if (attempt.handoff(channel, "client Hello received; channel handed off to server UASC path")) {
       removeAttempt(attempt);
     }
   }
@@ -201,9 +195,8 @@ final class OpcTcpServerReverseConnector implements AutoCloseable {
 
     var exception = new UaException(statusCode, message);
 
-    if (attempt.fail(exception)) {
-      attempt.transition(
-          OpcTcpServerReverseConnectAttemptState.CLIENT_ERROR, statusCode, exception, message);
+    if (attempt.fail(
+        OpcTcpServerReverseConnectAttemptState.CLIENT_ERROR, exception, statusCode, message)) {
       removeAttempt(attempt);
     }
 
@@ -237,21 +230,21 @@ final class OpcTcpServerReverseConnector implements AutoCloseable {
    * failure.
    */
   void cancel(OpcTcpServerReverseConnectAttempt attempt) {
-    if (attempt.cancelFuture()) {
-      attempt.transition(
-          OpcTcpServerReverseConnectAttemptState.CANCELLED,
-          new StatusCode(StatusCodes.Bad_RequestCancelledByClient),
-          new CancellationException("reverse-connect attempt cancelled"),
-          "reverse-connect attempt cancelled");
-    }
+    var statusCode = new StatusCode(StatusCodes.Bad_RequestCancelledByClient);
+    var exception = new CancellationException("reverse-connect attempt cancelled");
+    String message = "reverse-connect attempt cancelled";
 
-    ChannelFuture connectFuture = attempt.connectFuture();
-    if (connectFuture != null) {
-      connectFuture.cancel(false);
-    }
+    if (attempt.cancelFuture(statusCode, exception, message)) {
+      ChannelFuture connectFuture = attempt.connectFuture();
+      if (connectFuture != null) {
+        connectFuture.cancel(false);
+      }
 
-    closeChannel(attempt.channel());
-    removeAttempt(attempt);
+      closeChannel(attempt.channel());
+      removeAttempt(attempt);
+    } else if (attempt.state() == OpcTcpServerReverseConnectAttemptState.HANDOFF) {
+      removeAttempt(attempt);
+    }
   }
 
   /**
@@ -433,15 +426,13 @@ final class OpcTcpServerReverseConnector implements AutoCloseable {
             ? new UaException(statusCode.value(), "reverse-connect TCP connect failed", cause)
             : new UaException(statusCode, "reverse-connect TCP connect failed");
 
-    if (attempt.fail(exception)) {
-      attempt.transition(
-          OpcTcpServerReverseConnectAttemptState.FAILED,
-          statusCode,
-          exception,
-          exception.getMessage());
+    if (attempt.fail(
+        OpcTcpServerReverseConnectAttemptState.FAILED,
+        exception,
+        statusCode,
+        exception.getMessage())) {
+      removeAttempt(attempt);
     }
-
-    removeAttempt(attempt);
   }
 
   /**
@@ -472,21 +463,26 @@ final class OpcTcpServerReverseConnector implements AutoCloseable {
   private void closeAttempt(
       OpcTcpServerReverseConnectAttempt attempt, StatusCode statusCode, String message) {
 
+    if (attempt.state() == OpcTcpServerReverseConnectAttemptState.HANDOFF) {
+      removeAttempt(attempt);
+      return;
+    }
+
     var exception = new UaException(statusCode, message);
-    boolean completed = attempt.fail(exception);
+    boolean completed =
+        attempt.fail(OpcTcpServerReverseConnectAttemptState.CLOSED, exception, statusCode, message);
 
     if (completed) {
-      attempt.transition(
-          OpcTcpServerReverseConnectAttemptState.CLOSED, statusCode, exception, message);
-    }
+      ChannelFuture connectFuture = attempt.connectFuture();
+      if (connectFuture != null) {
+        connectFuture.cancel(false);
+      }
 
-    ChannelFuture connectFuture = attempt.connectFuture();
-    if (connectFuture != null) {
-      connectFuture.cancel(false);
+      closeChannel(attempt.channel());
+      removeAttempt(attempt);
+    } else if (attempt.state() == OpcTcpServerReverseConnectAttemptState.HANDOFF) {
+      removeAttempt(attempt);
     }
-
-    closeChannel(attempt.channel());
-    removeAttempt(attempt);
   }
 
   /**
@@ -499,12 +495,10 @@ final class OpcTcpServerReverseConnector implements AutoCloseable {
 
     var exception = new UaException(statusCode, message);
 
-    if (attempt.fail(exception)) {
-      attempt.transition(
-          OpcTcpServerReverseConnectAttemptState.FAILED, statusCode, exception, message);
+    if (attempt.fail(
+        OpcTcpServerReverseConnectAttemptState.FAILED, exception, statusCode, message)) {
+      removeAttempt(attempt);
     }
-
-    removeAttempt(attempt);
   }
 
   /**
@@ -522,13 +516,14 @@ final class OpcTcpServerReverseConnector implements AutoCloseable {
 
     var exception = new UaException(statusCode.value(), message, cause);
 
-    if (attempt.fail(exception)) {
-      attempt.transition(
-          OpcTcpServerReverseConnectAttemptState.FAILED, statusCode, exception, message);
+    if (attempt.fail(
+        OpcTcpServerReverseConnectAttemptState.FAILED, exception, statusCode, message)) {
+      closeChannel(channel);
+      removeAttempt(attempt);
+    } else if (attempt.state() != OpcTcpServerReverseConnectAttemptState.HANDOFF) {
+      closeChannel(channel);
+      removeAttempt(attempt);
     }
-
-    closeChannel(channel);
-    removeAttempt(attempt);
   }
 
   private boolean isClosed() {

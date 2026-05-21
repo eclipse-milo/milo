@@ -106,8 +106,10 @@ public final class OpcTcpServerReverseConnectAttempt {
     return completed.get();
   }
 
-  boolean complete(Channel channel) {
-    if (completed.compareAndSet(false, true)) {
+  boolean handoff(Channel channel, String message) {
+    if (completeTerminal(OpcTcpServerReverseConnectAttemptState.HANDOFF)) {
+      connector.emitStateTransition(
+          this, OpcTcpServerReverseConnectAttemptState.HANDOFF, null, null, message);
       channelFuture.complete(channel);
       return true;
     } else {
@@ -115,18 +117,26 @@ public final class OpcTcpServerReverseConnectAttempt {
     }
   }
 
-  boolean fail(Throwable cause) {
-    if (completed.compareAndSet(false, true)) {
+  boolean fail(
+      OpcTcpServerReverseConnectAttemptState state,
+      Throwable cause,
+      @Nullable StatusCode statusCode,
+      @Nullable String message) {
+
+    if (completeTerminal(state)) {
       channelFuture.completeExceptionally(cause);
+      connector.emitStateTransition(this, state, statusCode, cause, message);
       return true;
     } else {
       return false;
     }
   }
 
-  boolean cancelFuture() {
-    if (completed.compareAndSet(false, true)) {
+  boolean cancelFuture(StatusCode statusCode, Throwable cause, String message) {
+    if (completeTerminal(OpcTcpServerReverseConnectAttemptState.CANCELLED)) {
       channelFuture.cancel(false);
+      connector.emitStateTransition(
+          this, OpcTcpServerReverseConnectAttemptState.CANCELLED, statusCode, cause, message);
       return true;
     } else {
       return false;
@@ -139,12 +149,29 @@ public final class OpcTcpServerReverseConnectAttempt {
       @Nullable Throwable exception,
       @Nullable String message) {
 
-    if (isComplete() && !isTerminalState(nextState)) {
+    if (!isTerminalState(nextState) && isTerminalState(state.get())) {
       return;
     }
 
     state.set(nextState);
     connector.emitStateTransition(this, nextState, statusCode, exception, message);
+  }
+
+  private boolean completeTerminal(OpcTcpServerReverseConnectAttemptState terminalState) {
+    if (!isTerminalState(terminalState)) {
+      throw new IllegalArgumentException("not a terminal state: " + terminalState);
+    }
+
+    while (true) {
+      OpcTcpServerReverseConnectAttemptState currentState = state.get();
+      if (isTerminalState(currentState)) {
+        return false;
+      }
+      if (state.compareAndSet(currentState, terminalState)) {
+        completed.set(true);
+        return true;
+      }
+    }
   }
 
   private static boolean isTerminalState(OpcTcpServerReverseConnectAttemptState state) {
