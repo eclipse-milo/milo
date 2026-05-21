@@ -398,6 +398,73 @@ class OpcUaServerReverseConnectTargetTest {
   }
 
   @Test
+  void triggerDoesNotScheduleAttemptWithActiveChannel() throws Exception {
+    EndpointConfig endpoint = endpoint();
+
+    server = newServer(endpoint, Set.of(), false);
+
+    RecordingListener listener = new RecordingListener();
+    server.addReverseConnectTargetListener(listener);
+    server.startup().get(5, TimeUnit.SECONDS);
+
+    try (ServerSocket clientListener = newListener()) {
+      ReverseConnectTarget target = target(endpoint, clientListener.getLocalPort(), uint(5_000));
+      ReverseConnectTargetHandle handle = server.addReverseConnectTarget(target);
+
+      try (Socket ignored = establishActiveChannel(clientListener, endpoint, handle)) {
+        waitForEvent(
+            listener,
+            event ->
+                event.targetId().equals(target.getId())
+                    && event.attemptNumber() == 1L
+                    && event.state() == ReverseConnectAttemptState.HANDOFF);
+
+        ReverseConnectTargetSnapshot triggered = handle.trigger().get(5, TimeUnit.SECONDS);
+
+        assertEquals(1, triggered.activeChannelCount());
+        assertNull(triggered.nextAttemptTime());
+        assertEquals(1L, maxAttemptNumber(listener, target.getId()));
+      }
+    }
+  }
+
+  @Test
+  void resumeDoesNotScheduleAttemptWithActiveChannel() throws Exception {
+    EndpointConfig endpoint = endpoint();
+
+    server = newServer(endpoint, Set.of(), false);
+
+    RecordingListener listener = new RecordingListener();
+    server.addReverseConnectTargetListener(listener);
+    server.startup().get(5, TimeUnit.SECONDS);
+
+    try (ServerSocket clientListener = newListener()) {
+      ReverseConnectTarget target = target(endpoint, clientListener.getLocalPort(), uint(5_000));
+      ReverseConnectTargetHandle handle = server.addReverseConnectTarget(target);
+
+      try (Socket ignored = establishActiveChannel(clientListener, endpoint, handle)) {
+        waitForEvent(
+            listener,
+            event ->
+                event.targetId().equals(target.getId())
+                    && event.attemptNumber() == 1L
+                    && event.state() == ReverseConnectAttemptState.HANDOFF);
+
+        ReverseConnectTargetSnapshot paused = handle.pause().get(5, TimeUnit.SECONDS);
+        assertTrue(paused.paused());
+        assertEquals(1, paused.activeChannelCount());
+
+        ReverseConnectTargetSnapshot resumed = handle.resume().get(5, TimeUnit.SECONDS);
+
+        assertFalse(resumed.paused());
+        assertEquals(1, resumed.activeChannelCount());
+        assertNull(resumed.nextAttemptTime());
+        assertEquals(1L, maxAttemptNumber(listener, target.getId()));
+      }
+    }
+  }
+
+  @Test
   void updateUnknownTargetThrows() throws Exception {
     EndpointConfig endpoint = endpoint();
     server = newServer(endpoint, Set.of(), false);
@@ -528,6 +595,31 @@ class OpcUaServerReverseConnectTargetTest {
     return Unpooled.wrappedBuffer(header, body);
   }
 
+  private static Socket establishActiveChannel(
+      ServerSocket listener, EndpointConfig endpoint, ReverseConnectTargetHandle handle)
+      throws Exception {
+
+    Socket socket = accept(listener);
+    try {
+      ReverseHelloMessage reverseHello = readReverseHello(socket);
+      assertEquals(endpoint.getEndpointUrl(), reverseHello.getEndpointUrl());
+
+      writeMessage(socket, TcpMessageEncoder.encode(newHelloMessage(endpoint)));
+
+      AcknowledgeMessage acknowledge = readAcknowledge(socket);
+      assertEquals(0L, acknowledge.getProtocolVersion());
+
+      waitUntil(
+          () ->
+              handle.snapshot().map(snapshot -> snapshot.activeChannelCount() == 1).orElse(false));
+
+      return socket;
+    } catch (Throwable t) {
+      socket.close();
+      throw t;
+    }
+  }
+
   private static void writeMessage(Socket socket, ByteBuf buffer) throws Exception {
     try {
       byte[] bytes = new byte[buffer.readableBytes()];
@@ -560,6 +652,14 @@ class OpcUaServerReverseConnectTargetTest {
     }
 
     throw new AssertionError("timed out waiting for Reverse Connect attempt event");
+  }
+
+  private static long maxAttemptNumber(RecordingListener listener, UUID targetId) {
+    return listener.events.stream()
+        .filter(event -> event.targetId().equals(targetId))
+        .mapToLong(ReverseConnectAttemptEvent::attemptNumber)
+        .max()
+        .orElse(0L);
   }
 
   private static void waitUntil(BooleanSupplier condition) throws InterruptedException {

@@ -314,7 +314,10 @@ public final class ReverseConnectTargetManager {
 
       record.paused = false;
 
-      if (running && record.isSchedulable() && !record.hasPendingAttempt()) {
+      if (running
+          && record.isSchedulable()
+          && record.activeChannels.isEmpty()
+          && !record.hasPendingAttempt()) {
         scheduleLocked(record, 0L);
       }
 
@@ -331,7 +334,10 @@ public final class ReverseConnectTargetManager {
     synchronized (lock) {
       TargetRecord record = requireRecord(targetId);
 
-      if (running && record.isSchedulable() && !record.hasPendingAttempt()) {
+      if (running
+          && record.isSchedulable()
+          && record.activeChannels.isEmpty()
+          && !record.hasPendingAttempt()) {
         scheduleLocked(record, 0L);
       }
 
