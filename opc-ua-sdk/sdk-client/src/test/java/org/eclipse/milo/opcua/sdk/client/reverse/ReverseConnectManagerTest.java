@@ -22,6 +22,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import java.io.OutputStream;
+import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -33,6 +34,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -154,6 +156,44 @@ class ReverseConnectManagerTest {
     ReverseConnectCandidateSnapshot rejected = listener.rejected.get(0);
     assertEquals(ReverseConnectCandidateState.REJECTED, rejected.state());
     assertEquals(ReverseConnectRejectionReason.FIRST_MESSAGE_TIMEOUT, rejected.rejectionReason());
+  }
+
+  @Test
+  void firstMessageTimeoutDoesNotRejectCandidateAfterReverseHelloReceived() throws Exception {
+    RecordingListener listener = new RecordingListener();
+    CountDownLatch verifierEntered = new CountDownLatch(1);
+    CountDownLatch releaseVerifier = new CountDownLatch(1);
+
+    manager =
+        newManagerBuilder()
+            .setPendingConnectionHoldTime(Duration.ofSeconds(5))
+            .setReverseHelloVerifier(
+                candidate -> {
+                  verifierEntered.countDown();
+                  awaitVerifierRelease(releaseVerifier);
+                  return ReverseConnectVerificationResult.accept();
+                })
+            .build();
+    manager.addListener(listener);
+    manager.startup();
+
+    try (Socket ignored = sendReverseHello(boundAddress(manager), endpointUrl())) {
+      assertTrue(verifierEntered.await(3, TimeUnit.SECONDS));
+
+      UUID candidateId = listener.accepted.get(0).id();
+      invokeFirstMessageTimeout(manager, candidateId);
+
+      ReverseConnectManagerSnapshot snapshot = manager.snapshot();
+      assertEquals(0, snapshot.rejectedCount());
+      assertTrue(listener.rejected.isEmpty());
+
+      releaseVerifier.countDown();
+      waitUntil(() -> !listener.pending.isEmpty());
+
+      assertEquals(candidateId, listener.pending.get(0).id());
+    } finally {
+      releaseVerifier.countDown();
+    }
   }
 
   @Test
@@ -451,6 +491,26 @@ class ReverseConnectManagerTest {
         null);
   }
 
+  private static void invokeFirstMessageTimeout(ReverseConnectManager manager, UUID candidateId)
+      throws Exception {
+
+    Method method =
+        ReverseConnectManager.class.getDeclaredMethod("onFirstMessageTimeout", UUID.class);
+    method.setAccessible(true);
+    method.invoke(manager, candidateId);
+  }
+
+  private static void awaitVerifierRelease(CountDownLatch releaseVerifier) {
+    try {
+      if (!releaseVerifier.await(3, TimeUnit.SECONDS)) {
+        throw new AssertionError("verifier was not released");
+      }
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new AssertionError(e);
+    }
+  }
+
   private static void waitUntil(BooleanSupplier condition) {
     long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(3);
 
@@ -464,6 +524,7 @@ class ReverseConnectManagerTest {
   private static final class RecordingListener implements ReverseConnectListener {
 
     final List<String> events = new CopyOnWriteArrayList<>();
+    final List<ReverseConnectCandidateSnapshot> accepted = new CopyOnWriteArrayList<>();
     final List<ReverseConnectCandidateSnapshot> pending = new CopyOnWriteArrayList<>();
     final List<ReverseConnectCandidateSnapshot> claimed = new CopyOnWriteArrayList<>();
     final List<ReverseConnectCandidateSnapshot> rejected = new CopyOnWriteArrayList<>();
@@ -472,6 +533,7 @@ class ReverseConnectManagerTest {
     @Override
     public void onCandidateAccepted(@NonNull ReverseConnectCandidateSnapshot snapshot) {
       events.add("accepted");
+      accepted.add(snapshot);
     }
 
     @Override

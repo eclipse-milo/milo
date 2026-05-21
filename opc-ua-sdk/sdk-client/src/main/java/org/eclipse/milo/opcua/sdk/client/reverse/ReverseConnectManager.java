@@ -575,7 +575,9 @@ public final class ReverseConnectManager implements AutoCloseable {
         candidateId,
         ReverseConnectRejectionReason.FIRST_MESSAGE_TIMEOUT,
         new StatusCode(StatusCodes.Bad_Timeout),
-        "timed out waiting for ReverseHello");
+        "timed out waiting for ReverseHello",
+        ReverseConnectCandidateState.WAITING_FOR_REVERSE_HELLO,
+        true);
   }
 
   private void onFirstMessageException(UUID candidateId, Throwable cause) {
@@ -825,6 +827,16 @@ public final class ReverseConnectManager implements AutoCloseable {
       ReverseConnectRejectionReason reason,
       StatusCode statusCode,
       String diagnostic) {
+    return rejectCandidate(candidateId, reason, statusCode, diagnostic, null, false);
+  }
+
+  private boolean rejectCandidate(
+      UUID candidateId,
+      ReverseConnectRejectionReason reason,
+      StatusCode statusCode,
+      String diagnostic,
+      @Nullable ReverseConnectCandidateState requiredState,
+      boolean requireReverseHelloNotReceived) {
 
     Channel channelToClose;
     ReverseConnectCandidateSnapshot rejectedSnapshot;
@@ -836,7 +848,9 @@ public final class ReverseConnectManager implements AutoCloseable {
           || candidate.state == ReverseConnectCandidateState.CLAIMED
           || candidate.state == ReverseConnectCandidateState.REJECTED
           || candidate.state == ReverseConnectCandidateState.EXPIRED
-          || candidate.state == ReverseConnectCandidateState.CLOSED) {
+          || candidate.state == ReverseConnectCandidateState.CLOSED
+          || (requiredState != null && candidate.state != requiredState)
+          || (requireReverseHelloNotReceived && candidate.reverseHelloReceivedAt != null)) {
         return false;
       }
 
