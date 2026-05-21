@@ -11,6 +11,7 @@
 package org.eclipse.milo.opcua.stack.core.channel.messages;
 
 import io.netty.buffer.ByteBuf;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 
 /**
@@ -47,11 +48,26 @@ public class TcpMessageDecoder {
    * @throws UaException if the header type or payload cannot be decoded.
    */
   public static ReverseHelloMessage decodeReverseHello(ByteBuf buffer) throws UaException {
+    if (buffer.readableBytes() < 8) {
+      throw new UaException(
+          StatusCodes.Bad_DecodingError, "not enough bytes to read ReverseHello message header");
+    }
+
     MessageType messageType = MessageType.fromMediumInt(buffer.readMediumLE());
     char chunkType = (char) buffer.readByte();
     buffer.skipBytes(4); // length
 
-    assert (messageType == MessageType.ReverseHello && chunkType == 'F');
+    if (messageType != MessageType.ReverseHello) {
+      throw new UaException(
+          StatusCodes.Bad_TcpMessageTypeInvalid,
+          "expected ReverseHello message type, received " + messageType);
+    }
+
+    if (chunkType != 'F') {
+      throw new UaException(
+          StatusCodes.Bad_TcpMessageTypeInvalid,
+          "expected final ReverseHello chunk, received " + chunkType);
+    }
 
     return ReverseHelloMessage.decode(buffer);
   }

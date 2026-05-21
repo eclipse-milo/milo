@@ -21,6 +21,7 @@ import org.eclipse.milo.opcua.stack.core.channel.headers.HeaderDecoder;
 import org.eclipse.milo.opcua.stack.core.channel.messages.ErrorMessage;
 import org.eclipse.milo.opcua.stack.core.channel.messages.MessageType;
 import org.eclipse.milo.opcua.stack.core.channel.messages.TcpMessageDecoder;
+import org.eclipse.milo.opcua.stack.transport.server.uasc.UascServerHelloHandler;
 
 /**
  * Handles the first client response after a server-initiated {@code ReverseHello}.
@@ -49,7 +50,14 @@ final class OpcTcpServerReverseConnectResponseHandler extends ByteToMessageDecod
       return;
     }
 
-    int messageLength = getMessageLength(buffer, EncodingLimits.DEFAULT_MAX_MESSAGE_SIZE);
+    MessageType messageType = MessageType.fromMediumInt(buffer.getMediumLE(buffer.readerIndex()));
+    char chunkType = (char) buffer.getByte(buffer.readerIndex() + 3);
+    int maxMessageLength =
+        messageType == MessageType.Hello
+            ? UascServerHelloHandler.MAX_HELLO_MESSAGE_SIZE
+            : EncodingLimits.DEFAULT_MAX_MESSAGE_SIZE;
+
+    int messageLength = getMessageLength(buffer, maxMessageLength);
     if (messageLength < HEADER_LENGTH) {
       throw new UaException(
           StatusCodes.Bad_DecodingError,
@@ -58,9 +66,6 @@ final class OpcTcpServerReverseConnectResponseHandler extends ByteToMessageDecod
     if (buffer.readableBytes() < messageLength) {
       return;
     }
-
-    MessageType messageType = MessageType.fromMediumInt(buffer.getMediumLE(buffer.readerIndex()));
-    char chunkType = (char) buffer.getByte(buffer.readerIndex() + 3);
 
     if (chunkType != 'F') {
       throw new UaException(

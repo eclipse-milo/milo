@@ -56,7 +56,7 @@ public class UascServerHelloHandler extends ByteToMessageDecoder implements Head
   @SuppressWarnings("WeakerAccess")
   public static final AtomicLong CUMULATIVE_DEADLINES_MISSED = new AtomicLong(0L);
 
-  private static final int MAX_HELLO_MESSAGE_SIZE = 8 + 20 + 4 + 4096;
+  public static final int MAX_HELLO_MESSAGE_SIZE = 8 + 20 + 4 + 4096;
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
 

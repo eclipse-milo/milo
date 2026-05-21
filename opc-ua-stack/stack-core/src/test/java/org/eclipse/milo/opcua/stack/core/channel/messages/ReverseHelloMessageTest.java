@@ -16,8 +16,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import java.nio.charset.StandardCharsets;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class ReverseHelloMessageTest {
 
@@ -66,7 +69,18 @@ public class ReverseHelloMessageTest {
     ByteBuf buffer = Unpooled.buffer();
     buffer.writeIntLE(-2);
 
-    assertThrows(UaException.class, () -> ReverseHelloMessage.decode(buffer));
+    assertUaException(StatusCodes.Bad_DecodingError, () -> ReverseHelloMessage.decode(buffer));
+
+    buffer.release();
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {0, 1, 2, 3})
+  public void testDecodeFailsWhenServerUriLengthIsTruncated(int byteCount) {
+    ByteBuf buffer = Unpooled.buffer();
+    buffer.writeZero(byteCount);
+
+    assertUaException(StatusCodes.Bad_DecodingError, () -> ReverseHelloMessage.decode(buffer));
 
     buffer.release();
   }
@@ -77,7 +91,19 @@ public class ReverseHelloMessageTest {
     writeString(SERVER_URI, buffer);
     buffer.writeIntLE(-2);
 
-    assertThrows(UaException.class, () -> ReverseHelloMessage.decode(buffer));
+    assertUaException(StatusCodes.Bad_DecodingError, () -> ReverseHelloMessage.decode(buffer));
+
+    buffer.release();
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {0, 1, 2, 3})
+  public void testDecodeFailsWhenEndpointUrlLengthIsTruncated(int byteCount) {
+    ByteBuf buffer = Unpooled.buffer();
+    writeString(SERVER_URI, buffer);
+    buffer.writeZero(byteCount);
+
+    assertUaException(StatusCodes.Bad_DecodingError, () -> ReverseHelloMessage.decode(buffer));
 
     buffer.release();
   }
@@ -110,7 +136,7 @@ public class ReverseHelloMessageTest {
     buffer.writeBytes(
         SERVER_URI.substring(0, SERVER_URI.length() - 1).getBytes(StandardCharsets.UTF_8));
 
-    assertThrows(UaException.class, () -> ReverseHelloMessage.decode(buffer));
+    assertUaException(StatusCodes.Bad_DecodingError, () -> ReverseHelloMessage.decode(buffer));
 
     buffer.release();
   }
@@ -123,7 +149,27 @@ public class ReverseHelloMessageTest {
     buffer.writeBytes(
         ENDPOINT_URL.substring(0, ENDPOINT_URL.length() - 1).getBytes(StandardCharsets.UTF_8));
 
-    assertThrows(UaException.class, () -> ReverseHelloMessage.decode(buffer));
+    assertUaException(StatusCodes.Bad_DecodingError, () -> ReverseHelloMessage.decode(buffer));
+
+    buffer.release();
+  }
+
+  @Test
+  public void testTcpDecodeFailsWhenMessageTypeIsNotReverseHello() {
+    ByteBuf buffer = newTcpMessage(MessageType.Hello, 'F');
+
+    assertUaException(
+        StatusCodes.Bad_TcpMessageTypeInvalid, () -> TcpMessageDecoder.decodeReverseHello(buffer));
+
+    buffer.release();
+  }
+
+  @Test
+  public void testTcpDecodeFailsWhenChunkTypeIsNotFinal() {
+    ByteBuf buffer = newTcpMessage(MessageType.ReverseHello, 'C');
+
+    assertUaException(
+        StatusCodes.Bad_TcpMessageTypeInvalid, () -> TcpMessageDecoder.decodeReverseHello(buffer));
 
     buffer.release();
   }
@@ -161,4 +207,20 @@ public class ReverseHelloMessageTest {
     buffer.writeIntLE(bs.length);
     buffer.writeBytes(bs);
   }
+
+  private static ByteBuf newTcpMessage(MessageType messageType, char chunkType) {
+    ByteBuf buffer = Unpooled.buffer();
+    buffer.writeMediumLE(MessageType.toMediumInt(messageType));
+    buffer.writeByte(chunkType);
+    buffer.writeIntLE(8);
+    return buffer;
+  }
+
+  private static void assertUaException(long statusCode, ThrowingRunnable runnable) {
+    UaException exception = assertThrows(UaException.class, runnable);
+
+    assertEquals(statusCode, exception.getStatusCode().value());
+  }
+
+  private interface ThrowingRunnable extends org.junit.jupiter.api.function.Executable {}
 }
