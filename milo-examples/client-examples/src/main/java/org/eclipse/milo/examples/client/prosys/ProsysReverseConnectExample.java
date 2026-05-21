@@ -21,6 +21,8 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfig;
 import org.eclipse.milo.opcua.sdk.client.reverse.DiscoveryFirstReverseConnectClient;
+import org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectEndpointSelector;
+import org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectEndpointSelectors;
 import org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectManager;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.Stack;
@@ -39,8 +41,13 @@ import org.slf4j.LoggerFactory;
  * <p>Configure Prosys Simulation Server to dial {@code opc.tcp://localhost:48060}: open the server
  * settings for reverse connections, add that client URL, then restart or trigger the server so it
  * opens the first reverse socket. This example uses {@link DiscoveryFirstReverseConnectClient} to
- * consume the first reverse connection for {@code GetEndpoints}, select a no-security endpoint,
- * then wait for a later matching reverse connection to establish the production Session.
+ * consume the first reverse connection for {@code GetEndpoints}, select a no-security anonymous
+ * endpoint while preferring the URL from {@code ReverseHello}, then wait for a later matching
+ * reverse connection to establish the production Session.
+ *
+ * <p>The selected endpoint still comes from the {@code GetEndpoints} response. The endpoint URL in
+ * {@code ReverseHello} is only a routing hint, so the selector below prefers that URL but still
+ * requires an endpoint compatible with this example's no-security anonymous client configuration.
  *
  * <p>The first connection is deliberately not reused for the Session. After endpoint discovery, the
  * production {@link OpcUaClient} registers a selector with the same {@link ReverseConnectManager}
@@ -66,6 +73,8 @@ public class ProsysReverseConnectExample {
 
       CompletableFuture<OpcUaClient> connectedClient =
           DiscoveryFirstReverseConnectClient.builder(manager)
+              // Make the endpoint-selection policy visible for readers of the example.
+              .setEndpointSelector(noSecurityAnonymousEndpointSelector())
               .setClientConfig(
                   (discovery, endpoint) -> clientConfig(endpoint, discovery.endpoints()))
               .connectAsync();
@@ -95,6 +104,23 @@ public class ProsysReverseConnectExample {
         .setApplicationUri("urn:eclipse:milo:examples:client:prosys:reverse-connect")
         .setRequestTimeout(uint(10_000))
         .build();
+  }
+
+  /**
+   * Select the production endpoint after the temporary discovery connection returns the server's
+   * endpoint descriptions.
+   *
+   * <p>The selector first tries to find a discovered endpoint whose URL matches the URL sent in the
+   * discovery connection's {@code ReverseHello}. That URL is useful for routing, but it is not
+   * trusted as proof of identity, so the discovered endpoint must still be no-security and allow
+   * anonymous activation. If the URL does not match any compatible endpoint, the selector falls
+   * back to the first discovered endpoint with that same no-security anonymous shape.
+   *
+   * @return the endpoint selector used by this example.
+   */
+  private static ReverseConnectEndpointSelector noSecurityAnonymousEndpointSelector() {
+    return ReverseConnectEndpointSelectors.preferReverseHelloEndpointUrl(
+        ReverseConnectEndpointSelectors::isNoSecurityAndAnonymous);
   }
 
   private static void readServerStatus(OpcUaClient client) throws Exception {
