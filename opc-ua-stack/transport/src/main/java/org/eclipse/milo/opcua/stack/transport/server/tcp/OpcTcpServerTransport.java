@@ -35,6 +35,8 @@ public class OpcTcpServerTransport implements OpcServerTransport {
 
   private final OpcTcpServerTransportConfig config;
 
+  private boolean reverseConnectsClosed = false;
+
   public OpcTcpServerTransport(OpcTcpServerTransportConfig config) {
     this.config = config;
   }
@@ -70,11 +72,14 @@ public class OpcTcpServerTransport implements OpcServerTransport {
 
       boundAddresses.add(bindAddress);
       channelReferences.add(bindFuture.channel());
+      reverseConnectsClosed = false;
     }
   }
 
   @Override
   public synchronized void unbind() {
+    reverseConnectsClosed = true;
+
     OpcTcpServerReverseConnector connector = reverseConnector.get(() -> null);
     if (connector != null) {
       connector.close();
@@ -119,6 +124,16 @@ public class OpcTcpServerTransport implements OpcServerTransport {
   public OpcTcpServerReverseConnectAttempt connectReverse(
       OpcTcpServerReverseConnectParameters parameters) {
 
-    return reverseConnector.get(() -> new OpcTcpServerReverseConnector(config)).connect(parameters);
+    OpcTcpServerReverseConnector connector;
+
+    synchronized (this) {
+      if (reverseConnectsClosed) {
+        throw new IllegalStateException("transport is unbound");
+      }
+
+      connector = reverseConnector.get(() -> new OpcTcpServerReverseConnector(config));
+    }
+
+    return connector.connect(parameters);
   }
 }

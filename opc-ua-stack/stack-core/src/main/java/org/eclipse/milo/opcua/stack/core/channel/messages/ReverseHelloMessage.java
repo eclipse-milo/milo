@@ -129,6 +129,14 @@ public class ReverseHelloMessage {
 
   private static @Nullable String decodeString(ByteBuf buffer, String fieldName)
       throws UaException {
+    if (buffer.readableBytes() < Integer.BYTES) {
+      throw new UaException(
+          StatusCodes.Bad_DecodingError,
+          String.format(
+              "not enough bytes to read %s length (remaining=%s)",
+              fieldName, buffer.readableBytes()));
+    }
+
     int length = buffer.readIntLE();
     if (length < 0) {
       if (length == -1) {

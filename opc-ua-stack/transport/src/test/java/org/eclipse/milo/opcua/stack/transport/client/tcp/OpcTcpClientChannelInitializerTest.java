@@ -14,18 +14,24 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelOutboundHandlerAdapter;
+import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.HashedWheelTimer;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.channel.messages.HelloMessage;
+import org.eclipse.milo.opcua.stack.core.channel.messages.MessageType;
 import org.eclipse.milo.opcua.stack.core.channel.messages.TcpMessageDecoder;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
@@ -91,6 +97,39 @@ class OpcTcpClientChannelInitializerTest {
           reverseHelloEndpointUrl);
 
       assertClientPipelineInitialized(channel);
+      assertHelloEndpointUrl(channel, reverseHelloEndpointUrl);
+    } finally {
+      channel.finishAndReleaseAll();
+      wheelTimer.stop();
+    }
+  }
+
+  @Test
+  void connectedInitializerRunsCustomizerBeforeSendingHello() throws Exception {
+    String applicationEndpointUrl = "opc.tcp://configured.example:12685/milo";
+    String reverseHelloEndpointUrl = "opc.tcp://reverse.example:12685/milo";
+    AtomicBoolean helloObserved = new AtomicBoolean(false);
+    EmbeddedChannel channel = new EmbeddedChannel();
+    HashedWheelTimer wheelTimer = new HashedWheelTimer();
+
+    try {
+      OpcTcpClientTransportConfig config =
+          OpcTcpClientTransportConfig.newBuilder()
+              .setWheelTimer(wheelTimer)
+              .setChannelPipelineCustomizer(
+                  pipeline -> pipeline.addLast(new HelloObservingHandler(helloObserved)))
+              .build();
+
+      OpcTcpClientChannelInitializer.initializeConnectedChannel(
+          channel,
+          config,
+          newClientApplicationContext(applicationEndpointUrl),
+          NoopResponseHandler.INSTANCE,
+          new AtomicLong(1)::getAndIncrement,
+          new CompletableFuture<ClientSecureChannel>(),
+          reverseHelloEndpointUrl);
+
+      assertTrue(helloObserved.get());
       assertHelloEndpointUrl(channel, reverseHelloEndpointUrl);
     } finally {
       channel.finishAndReleaseAll();
@@ -184,6 +223,31 @@ class OpcTcpClientChannelInitializerTest {
   }
 
   private static final class MarkerHandler extends ChannelInboundHandlerAdapter {}
+
+  private static final class HelloObservingHandler extends ChannelOutboundHandlerAdapter {
+
+    private final AtomicBoolean helloObserved;
+
+    private HelloObservingHandler(AtomicBoolean helloObserved) {
+      this.helloObserved = helloObserved;
+    }
+
+    @Override
+    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise)
+        throws Exception {
+
+      if (msg instanceof ByteBuf byteBuf) {
+        MessageType messageType =
+            MessageType.fromMediumInt(byteBuf.getMediumLE(byteBuf.readerIndex()));
+
+        if (messageType == MessageType.Hello) {
+          helloObserved.set(true);
+        }
+      }
+
+      super.write(ctx, msg, promise);
+    }
+  }
 
   private enum NoopResponseHandler implements UascResponseHandler {
     INSTANCE;

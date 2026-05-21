@@ -45,6 +45,7 @@ import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.channel.messages.AcknowledgeMessage;
 import org.eclipse.milo.opcua.stack.core.channel.messages.ErrorMessage;
 import org.eclipse.milo.opcua.stack.core.channel.messages.HelloMessage;
+import org.eclipse.milo.opcua.stack.core.channel.messages.MessageType;
 import org.eclipse.milo.opcua.stack.core.channel.messages.ReverseHelloMessage;
 import org.eclipse.milo.opcua.stack.core.channel.messages.TcpMessageDecoder;
 import org.eclipse.milo.opcua.stack.core.channel.messages.TcpMessageEncoder;
@@ -68,6 +69,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.server.ServiceRequestContext;
+import org.eclipse.milo.opcua.stack.transport.server.uasc.UascServerHelloHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -201,6 +203,36 @@ class OpcTcpServerReverseConnectorTest {
       var event = observer.last();
       assertNotNull(event.statusCode());
       assertEquals(StatusCodes.Bad_ConnectionClosed, event.statusCode().value());
+    }
+  }
+
+  @Test
+  void oversizedHelloHeaderFailsAttemptWithoutWaitingForBody() throws Exception {
+    RecordingObserver observer = new RecordingObserver();
+
+    try (ServerSocket listener = newListener()) {
+      connector = newConnector(5_000);
+
+      OpcTcpServerReverseConnectAttempt attempt =
+          connector.connect(newParameters(boundAddress(listener), SERVER_URI, observer));
+
+      try (Socket socket = accept(listener)) {
+        readReverseHello(socket);
+        writeMessage(
+            socket,
+            newHeaderOnlyMessage(
+                MessageType.Hello, UascServerHelloHandler.MAX_HELLO_MESSAGE_SIZE + 1));
+
+        assertThrows(
+            ExecutionException.class, () -> attempt.channelFuture().get(3, TimeUnit.SECONDS));
+        waitUntil(() -> observer.states().contains(OpcTcpServerReverseConnectAttemptState.FAILED));
+
+        assertEquals(-1, socket.getInputStream().read());
+        assertEquals(OpcTcpServerReverseConnectAttemptState.FAILED, attempt.state());
+        var event = observer.last();
+        assertNotNull(event.statusCode());
+        assertEquals(StatusCodes.Bad_TcpMessageTooLarge, event.statusCode().value());
+      }
     }
   }
 
@@ -440,6 +472,13 @@ class OpcTcpServerReverseConnectorTest {
     } finally {
       buffer.release();
     }
+  }
+
+  private static ByteBuf newHeaderOnlyMessage(MessageType messageType, int messageLength) {
+    return Unpooled.buffer(8)
+        .writeMediumLE(MessageType.toMediumInt(messageType))
+        .writeByte('F')
+        .writeIntLE(messageLength);
   }
 
   private static HelloMessage newHelloMessage() {
