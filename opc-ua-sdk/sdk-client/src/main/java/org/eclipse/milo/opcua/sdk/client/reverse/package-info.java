@@ -32,6 +32,16 @@
  * org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectConnection}. A direct claimed connection
  * is one-shot: after it is consumed, reconnect requires a new reverse-connect candidate.
  *
+ * <p>When a dynamic application does not have a usable {@link
+ * org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription} before the first inbound
+ * socket arrives, it can claim one pending candidate and pass the resulting {@link
+ * org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectConnection} to {@link
+ * org.eclipse.milo.opcua.sdk.client.DiscoveryClient#getEndpoints(org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectConnection)}.
+ * That discovery helper consumes the claimed connection for a provisional no-security GetEndpoints
+ * call and closes it. The application then selects an endpoint and creates a normal reverse {@link
+ * org.eclipse.milo.opcua.sdk.client.OpcUaClient} with a selector so the production Session waits
+ * for a later matching reverse connection.
+ *
  * <h2>Transport handoff</h2>
  *
  * <p>{@link org.eclipse.milo.opcua.sdk.client.reverse.ReverseTcpClientTransport} is the bridge back

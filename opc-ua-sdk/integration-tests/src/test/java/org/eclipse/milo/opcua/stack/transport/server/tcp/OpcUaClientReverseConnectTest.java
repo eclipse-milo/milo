@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.netty.buffer.ByteBuf;
@@ -25,9 +26,14 @@ import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import org.eclipse.milo.opcua.sdk.client.DiscoveryClient;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfig;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfigBuilder;
@@ -43,12 +49,15 @@ import org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectTargetHandle;
 import org.eclipse.milo.opcua.sdk.test.TestNamespace;
 import org.eclipse.milo.opcua.sdk.test.TestServer;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.channel.messages.ReverseHelloMessage;
 import org.eclipse.milo.opcua.stack.core.channel.messages.TcpMessageEncoder;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
@@ -201,6 +210,199 @@ class OpcUaClientReverseConnectTest {
 
     assertReadWorks();
     assertClaimedReverseHello(endpoint);
+  }
+
+  @Test
+  void discoveryFirstDynamicClientFactoryConnectsOnLaterReverseConnection() throws Exception {
+    startServerAndManager();
+
+    EndpointDescription advertisedEndpoint =
+        selectEndpoint(SecurityPolicy.None, MessageSecurityMode.None);
+    CompletableFuture<OpcUaClient> connectedClient = new CompletableFuture<>();
+    AtomicBoolean discoveryStarted = new AtomicBoolean(false);
+
+    manager.addListener(
+        new ReverseConnectListener() {
+          @Override
+          public void onCandidatePending(@NonNull ReverseConnectCandidateSnapshot snapshot) {
+            if (!discoveryStarted.compareAndSet(false, true)) {
+              return;
+            }
+
+            try {
+              ReverseConnectConnection connection = manager.claim(snapshot.id()).orElseThrow();
+
+              DiscoveryClient.getEndpoints(connection)
+                  .thenApply(OpcUaClientReverseConnectTest::selectNoSecurityEndpoint)
+                  .whenComplete(
+                      (endpoint, ex) -> {
+                        if (ex != null) {
+                          connectedClient.completeExceptionally(unwrap(ex));
+                          return;
+                        }
+
+                        try {
+                          OpcUaClient dynamicClient =
+                              OpcUaClient.createReverseConnect(
+                                  clientConfig(endpoint),
+                                  manager,
+                                  ReverseConnectSelector.byServerUriAndEndpointUrl(
+                                      requireNonNull(snapshot.serverUri()),
+                                      requireNonNull(snapshot.endpointUrl())));
+
+                          client = dynamicClient;
+                          dynamicClient
+                              .connectAsync()
+                              .whenComplete(
+                                  (c, connectEx) -> complete(connectedClient, c, connectEx));
+                        } catch (Throwable t) {
+                          connectedClient.completeExceptionally(t);
+                        }
+                      });
+            } catch (Throwable t) {
+              connectedClient.completeExceptionally(t);
+            }
+          }
+        });
+
+    ReverseConnectTargetHandle handle =
+        server.addReverseConnectTarget(reverseTarget(advertisedEndpoint, uint(100), true));
+
+    handle.resume().get(5, TimeUnit.SECONDS);
+
+    client = connectedClient.get(10, TimeUnit.SECONDS);
+
+    assertReadWorks();
+    assertClaimedReverseHello(advertisedEndpoint);
+    waitUntil(() -> manager.snapshot().claimedCount() == 2);
+  }
+
+  @Test
+  void discoveryFirstEndpointSelectionFailureClosesDiscoveryConnection() throws Exception {
+    startServerAndManager();
+
+    EndpointDescription advertisedEndpoint =
+        selectEndpoint(SecurityPolicy.None, MessageSecurityMode.None);
+    CompletableFuture<Throwable> selectionFailure = new CompletableFuture<>();
+    CompletableFuture<ReverseConnectTargetHandle> targetHandle = new CompletableFuture<>();
+    AtomicBoolean discoveryStarted = new AtomicBoolean(false);
+
+    manager.addListener(
+        new ReverseConnectListener() {
+          @Override
+          public void onCandidatePending(@NonNull ReverseConnectCandidateSnapshot snapshot) {
+            if (!discoveryStarted.compareAndSet(false, true)) {
+              return;
+            }
+
+            try {
+              ReverseConnectConnection connection = manager.claim(snapshot.id()).orElseThrow();
+
+              DiscoveryClient.getEndpoints(connection)
+                  .thenApply(
+                      endpoints -> {
+                        throw new CompletionException(
+                            new UaException(
+                                StatusCodes.Bad_ConfigurationError, "no endpoint selected"));
+                      })
+                  .whenComplete(
+                      (endpoint, ex) -> {
+                        targetHandle.thenCompose(ReverseConnectTargetHandle::pause);
+                        if (ex != null) {
+                          selectionFailure.complete(unwrap(ex));
+                        } else {
+                          selectionFailure.completeExceptionally(
+                              new AssertionError("endpoint selection unexpectedly succeeded"));
+                        }
+                      });
+            } catch (Throwable t) {
+              selectionFailure.complete(t);
+            }
+          }
+        });
+
+    ReverseConnectTargetHandle handle =
+        server.addReverseConnectTarget(reverseTarget(advertisedEndpoint, uint(100), true));
+    targetHandle.complete(handle);
+
+    handle.resume().get(5, TimeUnit.SECONDS);
+
+    Throwable failure = selectionFailure.get(10, TimeUnit.SECONDS);
+    UaException uaException = assertInstanceOf(UaException.class, failure);
+
+    assertEquals(StatusCodes.Bad_ConfigurationError, uaException.getStatusCode().value());
+    waitUntil(() -> handle.snapshot().orElseThrow().activeChannelCount() == 0);
+    assertEquals(1, manager.snapshot().claimedCount());
+  }
+
+  @Test
+  void productionReverseClientRemainsPendingWhenNoLaterReverseConnectionArrives() throws Exception {
+
+    startServerAndManager();
+
+    EndpointDescription advertisedEndpoint =
+        selectEndpoint(SecurityPolicy.None, MessageSecurityMode.None);
+    CompletableFuture<CompletableFuture<OpcUaClient>> pendingConnect = new CompletableFuture<>();
+    CompletableFuture<ReverseConnectTargetHandle> targetHandle = new CompletableFuture<>();
+    AtomicBoolean discoveryStarted = new AtomicBoolean(false);
+
+    manager.addListener(
+        new ReverseConnectListener() {
+          @Override
+          public void onCandidatePending(@NonNull ReverseConnectCandidateSnapshot snapshot) {
+            if (!discoveryStarted.compareAndSet(false, true)) {
+              return;
+            }
+
+            try {
+              ReverseConnectConnection connection = manager.claim(snapshot.id()).orElseThrow();
+
+              DiscoveryClient.getEndpoints(connection)
+                  .thenApply(OpcUaClientReverseConnectTest::selectNoSecurityEndpoint)
+                  .thenCompose(
+                      endpoint ->
+                          targetHandle
+                              .thenCompose(ReverseConnectTargetHandle::pause)
+                              .thenApply(ignored -> endpoint))
+                  .whenComplete(
+                      (endpoint, ex) -> {
+                        if (ex != null) {
+                          pendingConnect.completeExceptionally(unwrap(ex));
+                          return;
+                        }
+
+                        try {
+                          OpcUaClient dynamicClient =
+                              OpcUaClient.createReverseConnect(
+                                  clientConfig(endpoint),
+                                  manager,
+                                  ReverseConnectSelector.byServerUriAndEndpointUrl(
+                                      requireNonNull(snapshot.serverUri()),
+                                      requireNonNull(snapshot.endpointUrl())));
+
+                          client = dynamicClient;
+                          pendingConnect.complete(dynamicClient.connectAsync());
+                        } catch (Throwable t) {
+                          pendingConnect.completeExceptionally(t);
+                        }
+                      });
+            } catch (Throwable t) {
+              pendingConnect.completeExceptionally(t);
+            }
+          }
+        });
+
+    ReverseConnectTargetHandle handle =
+        server.addReverseConnectTarget(reverseTarget(advertisedEndpoint, uint(100), true));
+    targetHandle.complete(handle);
+
+    handle.resume().get(5, TimeUnit.SECONDS);
+
+    CompletableFuture<OpcUaClient> connectFuture = pendingConnect.get(10, TimeUnit.SECONDS);
+
+    assertThrows(TimeoutException.class, () -> connectFuture.get(500, TimeUnit.MILLISECONDS));
+    assertFalse(connectFuture.isDone());
+    assertEquals(1, manager.snapshot().claimedCount());
   }
 
   @Test
@@ -384,6 +586,18 @@ class OpcUaClientReverseConnectTest {
     return connector.connect(parameters);
   }
 
+  private ReverseConnectTarget reverseTarget(
+      EndpointDescription endpoint, UInteger registrationPeriod, boolean paused) {
+
+    return ReverseConnectTarget.builder()
+        .setClientListenerUrl(listenerUrl())
+        .setEndpointUrl(endpointUrl(endpoint))
+        .setRegistrationPeriod(registrationPeriod)
+        .setConnectTimeout(uint(5_000))
+        .setPaused(paused)
+        .build();
+  }
+
   private InetSocketAddress listenerAddress() {
     SocketAddress boundAddress = manager.snapshot().listeners().get(0).boundAddress();
 
@@ -401,6 +615,15 @@ class OpcUaClientReverseConnectTest {
         .filter(endpoint -> !endpointUrl(endpoint).endsWith("/discovery"))
         .filter(endpoint -> policy.getUri().equals(endpoint.getSecurityPolicyUri()))
         .filter(endpoint -> mode == endpoint.getSecurityMode())
+        .findFirst()
+        .orElseThrow();
+  }
+
+  private static EndpointDescription selectNoSecurityEndpoint(List<EndpointDescription> endpoints) {
+    return endpoints.stream()
+        .filter(endpoint -> !endpointUrl(endpoint).endsWith("/discovery"))
+        .filter(endpoint -> SecurityPolicy.None.getUri().equals(endpoint.getSecurityPolicyUri()))
+        .filter(endpoint -> endpoint.getSecurityMode() == MessageSecurityMode.None)
         .findFirst()
         .orElseThrow();
   }
@@ -453,5 +676,14 @@ class OpcUaClientReverseConnectTest {
     } else {
       future.complete(value);
     }
+  }
+
+  private static Throwable unwrap(Throwable ex) {
+    Throwable cause = ex;
+    while ((cause instanceof CompletionException || cause instanceof ExecutionException)
+        && cause.getCause() != null) {
+      cause = cause.getCause();
+    }
+    return cause;
   }
 }
