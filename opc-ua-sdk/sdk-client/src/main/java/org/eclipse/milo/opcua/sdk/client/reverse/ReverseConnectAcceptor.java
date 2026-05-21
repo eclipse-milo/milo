@@ -58,8 +58,12 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
   private final Consumer<OpcTcpClientTransportConfigBuilder> discoveryTransportCustomizer;
   private final Consumer<OpcTcpClientTransportConfigBuilder> productionTransportCustomizer;
   private final Set<String> activeKeys = ConcurrentHashMap.newKeySet();
+  private final Set<ReverseConnectConnection> inFlightDiscoveryConnections =
+      ConcurrentHashMap.newKeySet();
+  private final Set<OpcUaClient> inFlightProductionClients = ConcurrentHashMap.newKeySet();
   private final ReverseConnectListener listener = new AcceptorListener();
   private final AtomicBoolean running = new AtomicBoolean(false);
+  private final Object clientDeliveryLock = new Object();
 
   private ReverseConnectAcceptor(Builder builder) {
     manager = builder.manager;
@@ -107,13 +111,19 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
   /**
    * Stop observing new candidates.
    *
-   * <p>The method is idempotent. It removes the manager listener but does not cancel discovery
-   * requests or production client connections that are already in progress, and it does not
-   * disconnect clients that were previously delivered to the client listener.
+   * <p>The method is idempotent. It removes the manager listener, closes discovery connections and
+   * disconnects production clients that are still waiting to be delivered, and prevents in-flight
+   * discovery flows from delivering a client after stop returns. It does not disconnect clients
+   * that were previously delivered to the client listener.
    */
   public void stop() {
     if (running.compareAndSet(true, false)) {
       manager.removeListener(listener);
+
+      synchronized (clientDeliveryLock) {
+        inFlightDiscoveryConnections.forEach(ReverseConnectConnection::close);
+        inFlightProductionClients.forEach(OpcUaClient::disconnectAsync);
+      }
     }
   }
 
@@ -139,6 +149,11 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
       return;
     }
 
+    if (!running.get()) {
+      activeKeys.remove(key);
+      return;
+    }
+
     ReverseConnectConnection connection = manager.claim(candidate.id()).orElse(null);
 
     if (connection == null) {
@@ -146,7 +161,16 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
       return;
     }
 
+    inFlightDiscoveryConnections.add(connection);
+    if (!running.get()) {
+      inFlightDiscoveryConnections.remove(connection);
+      activeKeys.remove(key);
+      connection.close();
+      return;
+    }
+
     DiscoveryClient.getEndpoints(connection, discoveryTransportCustomizer)
+        .whenComplete((endpoints, ex) -> inFlightDiscoveryConnections.remove(connection))
         .thenApply(endpoints -> new ReverseConnectDiscoveryResult(connection.snapshot(), endpoints))
         .thenCompose(discovery -> connectProductionClient(key, discovery))
         .whenComplete(
@@ -161,6 +185,10 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
   private CompletableFuture<OpcUaClient> connectProductionClient(
       String key, ReverseConnectDiscoveryResult discovery) {
 
+    if (!running.get()) {
+      return CompletableFuture.failedFuture(acceptorStoppedException());
+    }
+
     return endpointSelector
         .select(discovery)
         .map(endpoint -> connectProductionClient(key, discovery, endpoint))
@@ -174,6 +202,10 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
 
   private CompletableFuture<OpcUaClient> connectProductionClient(
       String key, ReverseConnectDiscoveryResult discovery, EndpointDescription endpoint) {
+
+    if (!running.get()) {
+      return CompletableFuture.failedFuture(acceptorStoppedException());
+    }
 
     if (defaultProductionSelectorFactory
         && !ReverseConnectProductionSelectors.hasRoutingHint(discovery.candidate())) {
@@ -195,17 +227,43 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
       return CompletableFuture.failedFuture(t);
     }
 
+    inFlightProductionClients.add(client);
+    if (!running.get()) {
+      inFlightProductionClients.remove(client);
+      client.disconnectAsync();
+      return CompletableFuture.failedFuture(acceptorStoppedException());
+    }
+
     return client
         .connectAsync()
-        .whenComplete(
+        .handle(
             (c, ex) -> {
               if (ex != null) {
                 client.disconnectAsync();
-              } else {
-                releaseKeyWhenProductionTransportDisconnects(key, c);
-                clientListener.onClientConnected(discovery, endpoint, c);
+                return CompletableFuture.<OpcUaClient>failedFuture(ex);
               }
-            });
+
+              synchronized (clientDeliveryLock) {
+                if (!running.get()) {
+                  c.disconnectAsync();
+                  return CompletableFuture.<OpcUaClient>failedFuture(acceptorStoppedException());
+                }
+
+                releaseKeyWhenProductionTransportDisconnects(key, c);
+                inFlightProductionClients.remove(client);
+
+                try {
+                  clientListener.onClientConnected(discovery, endpoint, c);
+                } catch (Throwable t) {
+                  c.disconnectAsync();
+                  return CompletableFuture.<OpcUaClient>failedFuture(t);
+                }
+
+                return CompletableFuture.completedFuture(c);
+              }
+            })
+        .thenCompose(Function.identity())
+        .whenComplete((c, ex) -> inFlightProductionClients.remove(client));
   }
 
   private void releaseKeyWhenProductionTransportDisconnects(String key, OpcUaClient client) {
@@ -261,6 +319,10 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
       cause = cause.getCause();
     }
     return cause;
+  }
+
+  private static UaException acceptorStoppedException() {
+    return new UaException(StatusCodes.Bad_Shutdown, "Reverse Connect acceptor stopped");
   }
 
   private final class AcceptorListener implements ReverseConnectListener {

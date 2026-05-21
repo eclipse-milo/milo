@@ -407,10 +407,19 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
 
     String endpointUrl = connection.endpointUrl();
     if (endpointUrl == null || endpointUrl.isBlank()) {
-      connection.close();
-      targetFuture.completeExceptionally(
+      var failure =
           new UaException(
-              StatusCodes.Bad_TcpEndpointUrlInvalid, "ReverseHello endpointUrl is null"));
+              StatusCodes.Bad_TcpEndpointUrlInvalid, "ReverseHello endpointUrl is null or blank");
+      CompletableFuture<Channel> nextFuture =
+          rearmOnFailure ? rearmAfterFailedClaim(targetFuture, null) : null;
+
+      connection.close();
+      targetFuture.completeExceptionally(failure);
+
+      if (nextFuture != null) {
+        registerForNextChannel(nextFuture);
+      }
+
       return;
     }
 
@@ -478,9 +487,7 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
                       } else {
                         Throwable failure = unwrap(ex);
                         CompletableFuture<Channel> nextFuture =
-                            rearmOnFailure
-                                ? rearmAfterFailedHandshake(targetFuture, channel)
-                                : null;
+                            rearmOnFailure ? rearmAfterFailedClaim(targetFuture, channel) : null;
 
                         targetFuture.completeExceptionally(failure);
                         channel.close();
@@ -492,8 +499,8 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
                     }));
   }
 
-  private @Nullable CompletableFuture<Channel> rearmAfterFailedHandshake(
-      CompletableFuture<Channel> failedFuture, Channel failedChannel) {
+  private @Nullable CompletableFuture<Channel> rearmAfterFailedClaim(
+      CompletableFuture<Channel> failedFuture, @Nullable Channel failedChannel) {
 
     synchronized (lock) {
       if (disconnecting || !started || failedFuture != channelFuture) {
@@ -590,7 +597,7 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
 
   private void notifyTransitionListeners(boolean connected) {
     for (ChannelStateObservable.TransitionListener listener : transitionListeners) {
-      config.getExecutor().execute(() -> listener.onStateTransition(connected));
+      listener.onStateTransition(connected);
     }
   }
 

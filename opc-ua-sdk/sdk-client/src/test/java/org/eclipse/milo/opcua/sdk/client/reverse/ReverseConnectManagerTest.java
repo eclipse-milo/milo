@@ -118,6 +118,28 @@ class ReverseConnectManagerTest {
   }
 
   @Test
+  void partialStartupFailureDoesNotEmitOrphanListenerUnbound() throws Exception {
+    RecordingListener listener = new RecordingListener();
+
+    try (ServerSocket occupiedSocket = new ServerSocket()) {
+      occupiedSocket.bind(new InetSocketAddress("127.0.0.1", 0));
+      InetSocketAddress occupiedAddress =
+          assertInstanceOf(InetSocketAddress.class, occupiedSocket.getLocalSocketAddress());
+
+      manager = newManagerBuilder().addBindAddress(occupiedAddress).build();
+      manager.addListener(listener);
+
+      assertThrows(Exception.class, () -> manager.startup());
+    }
+
+    assertEquals(List.of("bound", "unbound"), listener.listenerEvents);
+    assertEquals(1, listener.boundListeners.size());
+    assertEquals(1, listener.unboundListeners.size());
+    assertTrue(listener.boundListeners.get(0).bound());
+    assertFalse(listener.unboundListeners.get(0).bound());
+  }
+
+  @Test
   void malformedFirstMessageIsRejected() throws Exception {
     RecordingListener listener = new RecordingListener();
 
@@ -529,6 +551,21 @@ class ReverseConnectManagerTest {
     final List<ReverseConnectCandidateSnapshot> claimed = new CopyOnWriteArrayList<>();
     final List<ReverseConnectCandidateSnapshot> rejected = new CopyOnWriteArrayList<>();
     final List<ReverseConnectCandidateSnapshot> expired = new CopyOnWriteArrayList<>();
+    final List<String> listenerEvents = new CopyOnWriteArrayList<>();
+    final List<ReverseConnectListenerSnapshot> boundListeners = new CopyOnWriteArrayList<>();
+    final List<ReverseConnectListenerSnapshot> unboundListeners = new CopyOnWriteArrayList<>();
+
+    @Override
+    public void onListenerBound(@NonNull ReverseConnectListenerSnapshot snapshot) {
+      listenerEvents.add("bound");
+      boundListeners.add(snapshot);
+    }
+
+    @Override
+    public void onListenerUnbound(@NonNull ReverseConnectListenerSnapshot snapshot) {
+      listenerEvents.add("unbound");
+      unboundListeners.add(snapshot);
+    }
 
     @Override
     public void onCandidateAccepted(@NonNull ReverseConnectCandidateSnapshot snapshot) {

@@ -181,8 +181,6 @@ public final class ReverseConnectManager implements AutoCloseable {
       lock.unlock();
     }
 
-    List<ReverseConnectListenerSnapshot> boundSnapshots = new ArrayList<>();
-
     try {
       for (ListenerState listenerState : listenerStates) {
         ServerBootstrap bootstrap = newServerBootstrap(listenerState);
@@ -190,16 +188,19 @@ public final class ReverseConnectManager implements AutoCloseable {
         bootstrapCustomizer.accept(bootstrap);
 
         ChannelFuture bindFuture = bootstrap.bind(listenerState.bindAddress).sync();
+        ReverseConnectListenerSnapshot boundSnapshot;
 
         lock.lock();
         try {
           listenerState.bindChannel = bindFuture.channel();
           listenerState.boundAddress = bindFuture.channel().localAddress();
 
-          boundSnapshots.add(listenerSnapshotLocked(listenerState));
+          boundSnapshot = listenerSnapshotLocked(listenerState);
         } finally {
           lock.unlock();
         }
+
+        fireListenerBound(boundSnapshot);
       }
     } catch (Exception e) {
       recordError(e);
@@ -212,8 +213,6 @@ public final class ReverseConnectManager implements AutoCloseable {
 
       throw e;
     }
-
-    boundSnapshots.forEach(this::fireListenerBound);
   }
 
   /** Stop all listeners synchronously and close unclaimed candidates. */
@@ -234,12 +233,14 @@ public final class ReverseConnectManager implements AutoCloseable {
           Channel bindChannel = listenerState.bindChannel;
           if (bindChannel != null) {
             channelsToClose.add(bindChannel);
+
+            listenerState.bindChannel = null;
+            listenerState.boundAddress = null;
+
+            unboundSnapshots.add(listenerSnapshotLocked(listenerState));
+          } else {
+            listenerState.boundAddress = null;
           }
-
-          listenerState.bindChannel = null;
-          listenerState.boundAddress = null;
-
-          unboundSnapshots.add(listenerSnapshotLocked(listenerState));
         }
 
         for (Candidate candidate : candidates.values()) {

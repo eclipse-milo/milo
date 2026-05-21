@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.sdk.client.reverse;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -22,9 +23,13 @@ import io.netty.channel.Channel;
 import io.netty.channel.embedded.EmbeddedChannel;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.InetSocketAddress;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
@@ -120,13 +125,75 @@ class ReverseTcpClientTransportTest {
     assertEquals(StatusCodes.Bad_ConnectionClosed, cause.getStatusCode().value());
   }
 
+  @Test
+  void blankManagerClaimRearmsBeforeFailingOldFuture() throws Exception {
+    ReverseConnectManager manager =
+        ReverseConnectManager.builder()
+            .addBindAddress(new InetSocketAddress("127.0.0.1", 0))
+            .setExecutor(executor())
+            .setScheduler(scheduledExecutor())
+            .build();
+    ReverseTcpClientTransport transport =
+        new ReverseTcpClientTransport(transportConfig(), manager, ReverseConnectSelector.any());
+    CompletableFuture<Channel> originalFuture = new CompletableFuture<>();
+    EmbeddedChannel channel = new EmbeddedChannel();
+
+    try {
+      setField(transport, "started", true);
+      setField(transport, "disconnecting", false);
+      setField(transport, "channelFuture", originalFuture);
+
+      invokeInitializeClaimedConnection(transport, newConnection(channel, " "), originalFuture);
+
+      ExecutionException exception =
+          assertThrows(ExecutionException.class, () -> originalFuture.get(5, TimeUnit.SECONDS));
+      UaException cause = assertInstanceOf(UaException.class, unwrap(exception.getCause()));
+
+      assertEquals(StatusCodes.Bad_TcpEndpointUrlInvalid, cause.getStatusCode().value());
+      assertFalse(channel.isOpen());
+
+      CompletableFuture<Channel> nextFuture = channelFuture(transport);
+      assertNotSame(originalFuture, nextFuture);
+      assertFalse(nextFuture.isDone());
+    } finally {
+      manager.shutdown();
+    }
+  }
+
+  @Test
+  void transitionListenersAreNotReorderedByExecutorDispatch() throws Exception {
+    QueuingExecutorService queuedExecutor = new QueuingExecutorService();
+    executor = queuedExecutor;
+    EmbeddedChannel channel = new EmbeddedChannel();
+    ReverseTcpClientTransport transport =
+        new ReverseTcpClientTransport(transportConfig(queuedExecutor), newConnection(channel));
+    CompletableFuture<Channel> activeFuture = new CompletableFuture<>();
+    List<Boolean> transitions = new ArrayList<>();
+
+    setField(transport, "started", true);
+    setField(transport, "disconnecting", false);
+    setField(transport, "channelFuture", activeFuture);
+
+    transport.addTransitionListener(transitions::add);
+
+    invokeCompleteHandshake(transport, activeFuture, channel);
+    invokeOnChannelClosed(transport, channel);
+
+    assertEquals(List.of(true, false), transitions);
+    assertEquals(0, queuedExecutor.pendingTaskCount());
+  }
+
   private ReverseTcpClientTransport newTransport(EmbeddedChannel channel) {
     return new ReverseTcpClientTransport(transportConfig(), newConnection(channel));
   }
 
   private OpcTcpClientTransportConfig transportConfig() {
+    return transportConfig(executor());
+  }
+
+  private OpcTcpClientTransportConfig transportConfig(ExecutorService executor) {
     return OpcTcpClientTransportConfig.newBuilder()
-        .setExecutor(executor())
+        .setExecutor(executor)
         .setScheduledExecutor(scheduledExecutor())
         .build();
   }
@@ -146,6 +213,10 @@ class ReverseTcpClientTransportTest {
   }
 
   private static ReverseConnectConnection newConnection(Channel channel) {
+    return newConnection(channel, ENDPOINT_URL);
+  }
+
+  private static ReverseConnectConnection newConnection(Channel channel, String endpointUrl) {
     Instant now = Instant.now();
 
     return new ReverseConnectConnection(
@@ -154,7 +225,7 @@ class ReverseTcpClientTransportTest {
             UUID.randomUUID(),
             ReverseConnectCandidateState.CLAIMED,
             SERVER_URI,
-            ENDPOINT_URL,
+            endpointUrl,
             null,
             null,
             now,
@@ -214,6 +285,33 @@ class ReverseTcpClientTransportTest {
     method.invoke(transport, channel);
   }
 
+  private static void invokeCompleteHandshake(
+      ReverseTcpClientTransport transport, CompletableFuture<Channel> targetFuture, Channel channel)
+      throws Exception {
+
+    Method method =
+        ReverseTcpClientTransport.class.getDeclaredMethod(
+            "completeHandshake", CompletableFuture.class, Channel.class);
+    method.setAccessible(true);
+    method.invoke(transport, targetFuture, channel);
+  }
+
+  private static void invokeInitializeClaimedConnection(
+      ReverseTcpClientTransport transport,
+      ReverseConnectConnection connection,
+      CompletableFuture<Channel> targetFuture)
+      throws Exception {
+
+    Method method =
+        ReverseTcpClientTransport.class.getDeclaredMethod(
+            "initializeClaimedConnection",
+            ReverseConnectConnection.class,
+            CompletableFuture.class,
+            boolean.class);
+    method.setAccessible(true);
+    method.invoke(transport, connection, targetFuture, true);
+  }
+
   private static void setField(Object target, String name, Object value) throws Exception {
     Field field = ReverseTcpClientTransport.class.getDeclaredField(name);
     field.setAccessible(true);
@@ -234,6 +332,53 @@ class ReverseTcpClientTransportTest {
       return unwrap(t.getCause());
     } else {
       return t;
+    }
+  }
+
+  private static final class QueuingExecutorService extends AbstractExecutorService {
+
+    private final List<Runnable> tasks = Collections.synchronizedList(new ArrayList<>());
+
+    private volatile boolean shutdown;
+
+    @Override
+    public void shutdown() {
+      shutdown = true;
+    }
+
+    @Override
+    public List<Runnable> shutdownNow() {
+      shutdown = true;
+
+      synchronized (tasks) {
+        List<Runnable> queued = new ArrayList<>(tasks);
+        tasks.clear();
+        return queued;
+      }
+    }
+
+    @Override
+    public boolean isShutdown() {
+      return shutdown;
+    }
+
+    @Override
+    public boolean isTerminated() {
+      return shutdown;
+    }
+
+    @Override
+    public boolean awaitTermination(long timeout, TimeUnit unit) {
+      return shutdown;
+    }
+
+    @Override
+    public void execute(Runnable command) {
+      tasks.add(command);
+    }
+
+    int pendingTaskCount() {
+      return tasks.size();
     }
   }
 }
