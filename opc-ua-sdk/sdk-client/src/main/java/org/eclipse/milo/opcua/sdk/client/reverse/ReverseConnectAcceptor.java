@@ -41,6 +41,10 @@ import org.jspecify.annotations.NonNull;
  * <p>The acceptor owns only discovery and client creation. It does not own the manager lifecycle
  * and it does not disconnect clients delivered to {@link ReverseConnectAcceptorClientListener};
  * applications should retain and close those clients according to their own lifecycle.
+ *
+ * <p>A candidate whose discovery request returns no endpoints fails before endpoint selection. That
+ * failure is reported to the configured {@link ReverseConnectAcceptorErrorListener}, and the
+ * candidate key is released so a later candidate can retry the discovery-first flow.
  */
 public final class ReverseConnectAcceptor implements AutoCloseable {
 
@@ -187,6 +191,13 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
 
     if (!running.get()) {
       return CompletableFuture.failedFuture(acceptorStoppedException());
+    }
+
+    if (discovery.endpoints().isEmpty()) {
+      return CompletableFuture.failedFuture(
+          new UaException(
+              StatusCodes.Bad_ConfigurationError,
+              "Reverse Connect discovery returned no endpoints"));
     }
 
     return endpointSelector
@@ -505,8 +516,9 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
      * Set the callback for failed acceptor flows.
      *
      * <p>The callback is invoked for discovery selection failures, endpoint-selection failures,
-     * client-config failures, and production connection failures. If a key fails before a client is
-     * delivered, the acceptor releases that key so a later candidate can retry.
+     * empty discovery endpoint lists, client-config failures, and production connection failures.
+     * If a key fails before a client is delivered, the acceptor releases that key so a later
+     * candidate can retry.
      *
      * @param errorListener the error callback.
      * @return this builder.

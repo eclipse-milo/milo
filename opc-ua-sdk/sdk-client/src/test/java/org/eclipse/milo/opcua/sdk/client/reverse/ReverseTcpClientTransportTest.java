@@ -183,6 +183,30 @@ class ReverseTcpClientTransportTest {
     assertEquals(0, queuedExecutor.pendingTaskCount());
   }
 
+  @Test
+  void channelCloseDuringExplicitDisconnectEmitsTerminalDisconnectedTransition() throws Exception {
+    EmbeddedChannel channel = new EmbeddedChannel();
+    ReverseTcpClientTransport transport = newTransport(channel);
+    CompletableFuture<Channel> activeFuture = new CompletableFuture<>();
+    List<Boolean> transitions = new ArrayList<>();
+
+    setField(transport, "started", true);
+    setField(transport, "disconnecting", false);
+    setField(transport, "channelFuture", activeFuture);
+
+    transport.addTransitionListener(transitions::add);
+
+    invokeCompleteHandshake(transport, activeFuture, channel);
+
+    setField(transport, "started", false);
+    setField(transport, "disconnecting", true);
+
+    invokeOnChannelClosed(transport, channel);
+
+    assertEquals(List.of(true, false), transitions);
+    assertNull(transport.getCurrentChannel());
+  }
+
   private ReverseTcpClientTransport newTransport(EmbeddedChannel channel) {
     return new ReverseTcpClientTransport(transportConfig(), newConnection(channel));
   }

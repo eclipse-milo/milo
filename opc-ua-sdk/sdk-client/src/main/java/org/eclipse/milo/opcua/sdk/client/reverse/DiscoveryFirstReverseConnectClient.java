@@ -78,6 +78,10 @@ public final class DiscoveryFirstReverseConnectClient {
    * after that production client opens its Session. Cancelling the future returned by the discovery
    * stage unregisters the one-shot discovery selector.
    *
+   * <p>If discovery returns no endpoints, or if the endpoint selector cannot choose one, the
+   * returned future fails with {@link StatusCodes#Bad_ConfigurationError} and no production client
+   * is created.
+   *
    * @return a future that completes with the connected production client.
    */
   public CompletableFuture<OpcUaClient> connectAsync() {
@@ -88,6 +92,13 @@ public final class DiscoveryFirstReverseConnectClient {
 
   private CompletableFuture<OpcUaClient> connectProductionClient(
       ReverseConnectDiscoveryResult discovery) {
+
+    if (discovery.endpoints().isEmpty()) {
+      return CompletableFuture.failedFuture(
+          new UaException(
+              StatusCodes.Bad_ConfigurationError,
+              "Reverse Connect discovery returned no endpoints"));
+    }
 
     return endpointSelector
         .select(discovery)

@@ -19,7 +19,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
@@ -32,15 +35,23 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Delayed;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -49,6 +60,7 @@ import org.eclipse.milo.opcua.stack.core.channel.messages.ReverseHelloMessage;
 import org.eclipse.milo.opcua.stack.core.channel.messages.TcpMessageEncoder;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -130,6 +142,15 @@ class ReverseConnectManagerTest {
       manager.addListener(listener);
 
       assertThrows(Exception.class, () -> manager.startup());
+
+      ReverseConnectListenerSnapshot failedListener =
+          manager.snapshot().listeners().stream()
+              .filter(snapshot -> occupiedAddress.equals(snapshot.bindAddress()))
+              .findFirst()
+              .orElseThrow();
+
+      assertFalse(failedListener.bound());
+      assertNotNull(failedListener.lastError());
     }
 
     assertEquals(List.of("bound", "unbound"), listener.listenerEvents);
@@ -242,6 +263,83 @@ class ReverseConnectManagerTest {
     assertEquals(ReverseConnectRejectionReason.VERIFIER_REJECTED, rejected.rejectionReason());
     assertEquals(SERVER_URI, rejected.serverUri());
     assertEquals(endpointUrl(), rejected.endpointUrl());
+  }
+
+  @Test
+  void closeWithErrorReleasesEncodedBufferWhenWriteAndFlushThrows() throws Exception {
+    manager = newManagerBuilder(new ManualScheduledExecutor()).build();
+    ThrowingWriteChannel channel = new ThrowingWriteChannel();
+
+    invokeCloseWithError(
+        manager, channel, new StatusCode(StatusCodes.Bad_TcpInternalError), "write failed");
+
+    assertEquals(0, channel.errorBuffer().refCnt());
+    assertFalse(channel.isOpen());
+  }
+
+  @Test
+  void forcedCloseTimeoutIsCancelledAfterErrorCloseCompletes() throws Exception {
+    ManualScheduledExecutor manualScheduler = new ManualScheduledExecutor();
+    RecordingListener listener = new RecordingListener();
+
+    manager =
+        newManagerBuilder(manualScheduler)
+            .setFirstMessageTimeout(Duration.ofSeconds(10))
+            .setReverseHelloVerifier(
+                candidate -> ReverseConnectVerificationResult.reject("blocked"))
+            .build();
+    manager.addListener(listener);
+    manager.startup();
+
+    try (Socket ignored = sendReverseHello(boundAddress(manager), endpointUrl())) {
+      waitUntil(() -> !listener.rejected.isEmpty());
+      waitUntil(
+          () ->
+              manualScheduler
+                  .taskWithDelay(Duration.ofSeconds(2))
+                  .map(ManualScheduledFuture::isCancelled)
+                  .orElse(false));
+    }
+
+    ManualScheduledFuture<?> forcedCloseFuture =
+        manualScheduler.taskWithDelay(Duration.ofSeconds(2)).orElseThrow();
+
+    assertFalse(forcedCloseFuture.runIfPending());
+    assertEquals(0, forcedCloseFuture.runCount());
+  }
+
+  @Test
+  void firstMessageTimeoutIsCancelledWhenChannelClosesBeforeReverseHello() throws Exception {
+    Duration firstMessageTimeout = Duration.ofSeconds(10);
+    ManualScheduledExecutor manualScheduler = new ManualScheduledExecutor();
+    RecordingListener listener = new RecordingListener();
+
+    manager =
+        newManagerBuilder(manualScheduler).setFirstMessageTimeout(firstMessageTimeout).build();
+    manager.addListener(listener);
+    manager.startup();
+
+    try (Socket socket = new Socket()) {
+      socket.connect(boundAddress(manager));
+      waitUntil(() -> manualScheduler.taskWithDelay(firstMessageTimeout).isPresent());
+    }
+
+    waitUntil(() -> !listener.rejected.isEmpty());
+    waitUntil(
+        () ->
+            manualScheduler
+                .taskWithDelay(firstMessageTimeout)
+                .map(ManualScheduledFuture::isCancelled)
+                .orElse(false));
+
+    ReverseConnectCandidateSnapshot rejected = listener.rejected.get(0);
+    assertEquals(ReverseConnectRejectionReason.CHANNEL_CLOSED, rejected.rejectionReason());
+
+    ManualScheduledFuture<?> timeoutFuture =
+        manualScheduler.taskWithDelay(firstMessageTimeout).orElseThrow();
+
+    assertFalse(timeoutFuture.runIfPending());
+    assertEquals(0, timeoutFuture.runCount());
   }
 
   @Test
@@ -448,8 +546,13 @@ class ReverseConnectManagerTest {
   }
 
   private ReverseConnectManagerBuilder newManagerBuilder() {
+    return newManagerBuilder(Executors.newSingleThreadScheduledExecutor());
+  }
+
+  private ReverseConnectManagerBuilder newManagerBuilder(
+      ScheduledExecutorService scheduledExecutor) {
     eventLoop = new NioEventLoopGroup(1);
-    scheduler = Executors.newSingleThreadScheduledExecutor();
+    scheduler = scheduledExecutor;
 
     return ReverseConnectManager.builder()
         .addBindAddress(new InetSocketAddress("127.0.0.1", 0))
@@ -522,6 +625,17 @@ class ReverseConnectManagerTest {
     method.invoke(manager, candidateId);
   }
 
+  private static void invokeCloseWithError(
+      ReverseConnectManager manager, Channel channel, StatusCode statusCode, String diagnostic)
+      throws Exception {
+
+    Method method =
+        ReverseConnectManager.class.getDeclaredMethod(
+            "closeWithError", Channel.class, StatusCode.class, String.class);
+    method.setAccessible(true);
+    method.invoke(manager, channel, statusCode, diagnostic);
+  }
+
   private static void awaitVerifierRelease(CountDownLatch releaseVerifier) {
     try {
       if (!releaseVerifier.await(3, TimeUnit.SECONDS)) {
@@ -541,6 +655,187 @@ class ReverseConnectManagerTest {
     }
 
     assertTrue(condition.getAsBoolean());
+  }
+
+  private static final class ThrowingWriteChannel extends EmbeddedChannel {
+
+    private @Nullable ByteBuf errorBuffer;
+
+    @Override
+    public ChannelFuture writeAndFlush(Object msg) {
+      errorBuffer = (ByteBuf) msg;
+      throw new IllegalStateException("write failed");
+    }
+
+    ByteBuf errorBuffer() {
+      ByteBuf captured = errorBuffer;
+      assertNotNull(captured);
+      return captured;
+    }
+  }
+
+  private static final class ManualScheduledExecutor extends AbstractExecutorService
+      implements ScheduledExecutorService {
+
+    private final List<ManualScheduledFuture<?>> tasks = new CopyOnWriteArrayList<>();
+    private final AtomicBoolean shutdown = new AtomicBoolean(false);
+
+    Optional<ManualScheduledFuture<?>> taskWithDelay(Duration delay) {
+      long delayNanos = delay.toNanos();
+
+      return tasks.stream().filter(task -> task.delayNanos == delayNanos).findFirst();
+    }
+
+    @Override
+    public void shutdown() {
+      shutdown.set(true);
+    }
+
+    @Override
+    public List<Runnable> shutdownNow() {
+      shutdown.set(true);
+      return List.of();
+    }
+
+    @Override
+    public boolean isShutdown() {
+      return shutdown.get();
+    }
+
+    @Override
+    public boolean isTerminated() {
+      return shutdown.get();
+    }
+
+    @Override
+    public boolean awaitTermination(long timeout, TimeUnit unit) {
+      return true;
+    }
+
+    @Override
+    public void execute(Runnable command) {
+      command.run();
+    }
+
+    @Override
+    public ScheduledFuture<?> schedule(Runnable command, long delay, TimeUnit unit) {
+      return schedule(Executors.callable(command, null), delay, unit);
+    }
+
+    @Override
+    public <V> ScheduledFuture<V> schedule(Callable<V> callable, long delay, TimeUnit unit) {
+      ManualScheduledFuture<V> task = new ManualScheduledFuture<>(callable, delay, unit);
+
+      tasks.add(task);
+
+      return task;
+    }
+
+    @Override
+    public ScheduledFuture<?> scheduleAtFixedRate(
+        Runnable command, long initialDelay, long period, TimeUnit unit) {
+
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ScheduledFuture<?> scheduleWithFixedDelay(
+        Runnable command, long initialDelay, long delay, TimeUnit unit) {
+
+      throw new UnsupportedOperationException();
+    }
+  }
+
+  private static final class ManualScheduledFuture<V> implements ScheduledFuture<V> {
+
+    private final Callable<V> callable;
+    private final long delayNanos;
+    private final AtomicBoolean cancelled = new AtomicBoolean(false);
+    private final AtomicBoolean done = new AtomicBoolean(false);
+    private final AtomicInteger runCount = new AtomicInteger();
+
+    private @Nullable V value;
+    private @Nullable Throwable failure;
+
+    ManualScheduledFuture(Callable<V> callable, long delay, TimeUnit unit) {
+      this.callable = callable;
+      this.delayNanos = unit.toNanos(delay);
+    }
+
+    boolean runIfPending() {
+      if (cancelled.get() || !done.compareAndSet(false, true)) {
+        return false;
+      }
+
+      runCount.incrementAndGet();
+
+      try {
+        value = callable.call();
+      } catch (Throwable t) {
+        failure = t;
+      }
+
+      return true;
+    }
+
+    int runCount() {
+      return runCount.get();
+    }
+
+    @Override
+    public long getDelay(TimeUnit unit) {
+      return unit.convert(delayNanos, TimeUnit.NANOSECONDS);
+    }
+
+    @Override
+    public int compareTo(Delayed other) {
+      return Long.compare(getDelay(TimeUnit.NANOSECONDS), other.getDelay(TimeUnit.NANOSECONDS));
+    }
+
+    @Override
+    public boolean cancel(boolean mayInterruptIfRunning) {
+      if (!done.compareAndSet(false, true)) {
+        return false;
+      }
+
+      cancelled.set(true);
+
+      return true;
+    }
+
+    @Override
+    public boolean isCancelled() {
+      return cancelled.get();
+    }
+
+    @Override
+    public boolean isDone() {
+      return done.get();
+    }
+
+    @Override
+    public V get() throws ExecutionException {
+      if (cancelled.get()) {
+        throw new CancellationException();
+      }
+      if (!done.get()) {
+        throw new IllegalStateException("task has not run");
+      }
+      if (failure != null) {
+        throw new ExecutionException(failure);
+      }
+
+      return value;
+    }
+
+    @Override
+    public V get(long timeout, TimeUnit unit) throws ExecutionException, TimeoutException {
+      if (!done.get()) {
+        throw new TimeoutException();
+      }
+
+      return get();
+    }
   }
 
   private static final class RecordingListener implements ReverseConnectListener {

@@ -42,6 +42,11 @@ import org.jspecify.annotations.Nullable;
  * org.eclipse.milo.opcua.stack.transport.client.OpcClientTransport}. Channel-state notifications
  * are exposed through {@link ChannelStateObservable}, and keep-alive failure recovery can close the
  * active channel through {@link CurrentChannelProvider}.
+ *
+ * <p>Transition listeners observe completed transport state, not every claimed socket. A listener
+ * receives {@code true} after a claimed channel completes client UASC setup, and receives {@code
+ * false} when that connected channel later closes or is explicitly disconnected. Claims that fail
+ * before the handshake completes do not emit a disconnected transition.
  */
 public final class ReverseTcpClientTransport extends AbstractUascClientTransport
     implements ChannelStateObservable, CurrentChannelProvider {
@@ -547,8 +552,12 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
       if (currentChannel == closedChannel) {
         currentChannel = null;
 
+        notifyDisconnected =
+            channelFuture.isDone()
+                && !channelFuture.isCompletedExceptionally()
+                && !channelFuture.isCancelled();
+
         if (started && !disconnecting) {
-          notifyDisconnected = true;
           closedFuture = channelFuture;
           if (directConnection == null) {
             channelFuture = new CompletableFuture<>();

@@ -164,6 +164,9 @@ public final class ReverseConnectManager implements AutoCloseable {
   /**
    * Bind all configured listener addresses synchronously.
    *
+   * <p>If one listener fails to bind, its snapshot records the bind diagnostic, any listeners that
+   * were already bound are shut down, and the startup exception is rethrown to the caller.
+   *
    * @throws Exception if any listener fails to bind.
    */
   public void startup() throws Exception {
@@ -183,21 +186,28 @@ public final class ReverseConnectManager implements AutoCloseable {
 
     try {
       for (ListenerState listenerState : listenerStates) {
-        ServerBootstrap bootstrap = newServerBootstrap(listenerState);
-
-        bootstrapCustomizer.accept(bootstrap);
-
-        ChannelFuture bindFuture = bootstrap.bind(listenerState.bindAddress).sync();
         ReverseConnectListenerSnapshot boundSnapshot;
 
-        lock.lock();
         try {
-          listenerState.bindChannel = bindFuture.channel();
-          listenerState.boundAddress = bindFuture.channel().localAddress();
+          ServerBootstrap bootstrap = newServerBootstrap(listenerState);
 
-          boundSnapshot = listenerSnapshotLocked(listenerState);
-        } finally {
-          lock.unlock();
+          bootstrapCustomizer.accept(bootstrap);
+
+          ChannelFuture bindFuture = bootstrap.bind(listenerState.bindAddress).sync();
+
+          lock.lock();
+          try {
+            listenerState.bindChannel = bindFuture.channel();
+            listenerState.boundAddress = bindFuture.channel().localAddress();
+            listenerState.lastError = null;
+
+            boundSnapshot = listenerSnapshotLocked(listenerState);
+          } finally {
+            lock.unlock();
+          }
+        } catch (Exception e) {
+          recordListenerError(listenerState, e);
+          throw e;
         }
 
         fireListenerBound(boundSnapshot);
@@ -920,8 +930,25 @@ public final class ReverseConnectManager implements AutoCloseable {
     fireError(t);
   }
 
+  private void recordListenerError(ListenerState listenerState, Throwable t) {
+    lock.lock();
+    try {
+      recordListenerErrorLocked(listenerState, t);
+    } finally {
+      lock.unlock();
+    }
+  }
+
   private void recordErrorLocked(Throwable t) {
-    lastError = t.getMessage() != null ? t.getMessage() : t.toString();
+    lastError = errorDiagnostic(t);
+  }
+
+  private void recordListenerErrorLocked(ListenerState listenerState, Throwable t) {
+    listenerState.lastError = errorDiagnostic(t);
+  }
+
+  private static String errorDiagnostic(Throwable t) {
+    return t.getMessage() != null ? t.getMessage() : t.toString();
   }
 
   private ReverseConnectManagerSnapshot managerSnapshotLocked() {
@@ -1054,13 +1081,24 @@ public final class ReverseConnectManager implements AutoCloseable {
         statusCode != null ? statusCode : new StatusCode(StatusCodes.Bad_TcpInternalError);
     String actualDiagnostic = diagnostic != null ? diagnostic : "reverse-connect candidate closed";
 
+    ByteBuf errorBuffer = null;
+
     try {
-      ByteBuf errorBuffer =
+      errorBuffer =
           TcpMessageEncoder.encode(new ErrorMessage(actualStatusCode.value(), actualDiagnostic));
 
-      channel.writeAndFlush(errorBuffer).addListener((ChannelFutureListener) f -> channel.close());
-      scheduler.schedule(() -> channel.close(), 2, TimeUnit.SECONDS);
+      ScheduledFuture<?> forcedCloseFuture =
+          scheduler.schedule(() -> channel.close(), 2, TimeUnit.SECONDS);
+
+      channel.closeFuture().addListener(f -> forcedCloseFuture.cancel(false));
+      ChannelFuture writeFuture = channel.writeAndFlush(errorBuffer);
+      errorBuffer = null;
+      writeFuture.addListener((ChannelFutureListener) f -> channel.close());
     } catch (Exception e) {
+      if (errorBuffer != null && errorBuffer.refCnt() > 0) {
+        errorBuffer.release();
+      }
+
       logger.debug("Error while writing reverse-connect TCP error message.", e);
       channel.close();
     }
@@ -1237,6 +1275,22 @@ public final class ReverseConnectManager implements AutoCloseable {
               },
               firstMessageTimeout.toMillis(),
               TimeUnit.MILLISECONDS);
+    }
+
+    @Override
+    protected void handlerRemoved0(ChannelHandlerContext ctx) throws Exception {
+      firstMessageReceived.set(true);
+      cancelFirstMessageTimeout();
+
+      super.handlerRemoved0(ctx);
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+      firstMessageReceived.set(true);
+      cancelFirstMessageTimeout();
+
+      super.channelInactive(ctx);
     }
 
     @Override
