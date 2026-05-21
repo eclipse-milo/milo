@@ -89,8 +89,8 @@ public final class ReverseConnectTarget {
   /**
    * Get the target registration period.
    *
-   * <p>The registration period is used as the default retry delay and as the delay before
-   * reconnecting after a reverse-opened channel closes.
+   * <p>The registration period is used as the default retry delay by {@link
+   * ReverseConnectRetryPolicy#registrationPeriod()}.
    *
    * @return the target registration period, in milliseconds.
    */
@@ -239,8 +239,8 @@ public final class ReverseConnectTarget {
     /**
      * Set the target registration period in milliseconds.
      *
-     * <p>The registration period is used as the default retry delay and as the delay before
-     * reconnecting after a reverse-opened channel closes.
+     * <p>The registration period is used as the default retry delay by {@link
+     * ReverseConnectRetryPolicy#registrationPeriod()}.
      *
      * @param registrationPeriod the target registration period.
      * @return this builder.
@@ -290,7 +290,8 @@ public final class ReverseConnectTarget {
     }
 
     /**
-     * Set the retry policy used after failed reverse-connect attempts.
+     * Set the retry policy used after failed reverse-connect attempts and after a reverse-opened
+     * channel closes.
      *
      * @param retryPolicy the retry policy.
      * @return this builder.

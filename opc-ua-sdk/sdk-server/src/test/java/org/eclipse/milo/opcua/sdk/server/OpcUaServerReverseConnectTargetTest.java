@@ -18,6 +18,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -32,6 +36,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -39,12 +44,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import org.eclipse.milo.opcua.sdk.server.identity.AnonymousIdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectAttemptEvent;
 import org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectAttemptState;
+import org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectRetryPolicy;
 import org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectTarget;
 import org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectTargetHandle;
 import org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectTargetListener;
@@ -113,6 +121,47 @@ class OpcUaServerReverseConnectTargetTest {
 
     UaException cause = assertInstanceOf(UaException.class, ex.getCause());
     assertEquals(StatusCodes.Bad_ConfigurationError, cause.getStatusCode().value());
+  }
+
+  @Test
+  void addTargetNotifiesAddedBeforeZeroDelayScheduleUpdate() throws Exception {
+    EndpointConfig endpoint = endpoint();
+    listenerExecutor = mock(ExecutorService.class);
+    doAnswer(
+            invocation -> {
+              invocation.getArgument(0, Runnable.class).run();
+              return null;
+            })
+        .when(listenerExecutor)
+        .execute(any(Runnable.class));
+
+    scheduler = mock(ScheduledExecutorService.class);
+    ScheduledFuture<?> scheduledFuture = mock(ScheduledFuture.class);
+    doAnswer(
+            invocation -> {
+              invocation.getArgument(0, Runnable.class).run();
+              return scheduledFuture;
+            })
+        .when(scheduler)
+        .schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
+
+    server =
+        newServer(
+            endpoint,
+            Set.of(),
+            new TestTcpServerTransport(OpcTcpServerTransportConfig.newBuilder().build(), false),
+            listenerExecutor,
+            scheduler);
+
+    RecordingListener listener = new RecordingListener();
+    server.addReverseConnectTargetListener(listener);
+    server.startup().get(5, TimeUnit.SECONDS);
+
+    ReverseConnectTarget target = target(endpoint, unusedPort(), uint(250));
+    server.addReverseConnectTarget(target);
+
+    assertTrue(listener.notifications.contains("updated"));
+    assertEquals("added", listener.notifications.get(0));
   }
 
   @Test
@@ -429,6 +478,62 @@ class OpcUaServerReverseConnectTargetTest {
   }
 
   @Test
+  void activeChannelCloseSchedulesReconnectWithRetryPolicy() throws Exception {
+    EndpointConfig endpoint = endpoint();
+    CountDownLatch policyInvoked = new CountDownLatch(1);
+    AtomicReference<ReverseConnectAttemptEvent> policyEvent = new AtomicReference<>();
+
+    server = newServer(endpoint, Set.of(), false);
+
+    RecordingListener listener = new RecordingListener();
+    server.addReverseConnectTargetListener(listener);
+    server.startup().get(5, TimeUnit.SECONDS);
+
+    try (ServerSocket clientListener = newListener()) {
+      ReverseConnectTarget target =
+          targetBuilder(endpoint, clientListener.getLocalPort(), uint(10_000))
+              .setRetryPolicy(
+                  (retryTarget, event) -> {
+                    policyEvent.set(event);
+                    policyInvoked.countDown();
+                    return ReverseConnectRetryPolicy.fixedDelay(uint(1_000))
+                        .getRetryDelayMillis(retryTarget, event);
+                  })
+              .build();
+      ReverseConnectTargetHandle handle = server.addReverseConnectTarget(target);
+
+      try (Socket socket = establishActiveChannel(clientListener, endpoint, handle)) {
+        waitForEvent(
+            listener,
+            event ->
+                event.targetId().equals(target.getId())
+                    && event.attemptNumber() == 1L
+                    && event.state() == ReverseConnectAttemptState.HANDOFF);
+
+        Instant closedAt = Instant.now();
+        socket.close();
+
+        assertTrue(policyInvoked.await(3, TimeUnit.SECONDS));
+        assertEquals(ReverseConnectAttemptState.CLOSED, policyEvent.get().state());
+        assertEquals(1L, policyEvent.get().attemptNumber());
+
+        waitUntil(
+            () ->
+                handle
+                    .snapshot()
+                    .map(
+                        snapshot ->
+                            snapshot.activeChannelCount() == 0
+                                && snapshot.nextAttemptTime() != null)
+                    .orElse(false));
+
+        ReverseConnectTargetSnapshot snapshot = handle.snapshot().orElseThrow();
+        assertTrue(snapshot.nextAttemptTime().isBefore(closedAt.plusMillis(3_000)));
+      }
+    }
+  }
+
+  @Test
   void resumeDoesNotScheduleAttemptWithActiveChannel() throws Exception {
     EndpointConfig endpoint = endpoint();
 
@@ -465,7 +570,46 @@ class OpcUaServerReverseConnectTargetTest {
   }
 
   @Test
-  void updateUnknownTargetThrows() throws Exception {
+  void pauseEmitsTerminalEventForInvalidatedAttemptGeneration() throws Exception {
+    EndpointConfig endpoint = endpoint();
+
+    server = newServer(endpoint, Set.of(), false);
+
+    RecordingListener listener = new RecordingListener();
+    server.addReverseConnectTargetListener(listener);
+    server.startup().get(5, TimeUnit.SECONDS);
+
+    try (ServerSocket clientListener = newListener()) {
+      ReverseConnectTarget target = target(endpoint, clientListener.getLocalPort(), uint(5_000));
+      ReverseConnectTargetHandle handle = server.addReverseConnectTarget(target);
+
+      try (Socket socket = accept(clientListener)) {
+        ReverseHelloMessage reverseHello = readReverseHello(socket);
+        assertEquals(endpoint.getEndpointUrl(), reverseHello.getEndpointUrl());
+
+        waitForEvent(
+            listener,
+            event ->
+                event.targetId().equals(target.getId())
+                    && event.attemptNumber() == 1L
+                    && event.state() == ReverseConnectAttemptState.HELLO_HANDLER_INSTALLED);
+
+        ReverseConnectTargetSnapshot paused = handle.pause().get(5, TimeUnit.SECONDS);
+        assertTrue(paused.paused());
+        assertNull(paused.nextAttemptTime());
+
+        waitForEvent(
+            listener,
+            event ->
+                event.targetId().equals(target.getId())
+                    && event.attemptNumber() == 1L
+                    && event.state() == ReverseConnectAttemptState.CLOSED);
+      }
+    }
+  }
+
+  @Test
+  void updateUnknownTargetReturnsFailedFuture() throws Exception {
     EndpointConfig endpoint = endpoint();
     server = newServer(endpoint, Set.of(), false);
     server.startup().get(5, TimeUnit.SECONDS);
@@ -473,7 +617,12 @@ class OpcUaServerReverseConnectTargetTest {
     ReverseConnectTarget target =
         targetBuilder(endpoint, unusedPort(), uint(250)).setId(UUID.randomUUID()).build();
 
-    assertThrows(IllegalArgumentException.class, () -> server.updateReverseConnectTarget(target));
+    CompletableFuture<ReverseConnectTargetSnapshot> future =
+        server.updateReverseConnectTarget(target);
+
+    ExecutionException exception =
+        assertThrows(ExecutionException.class, () -> future.get(5, TimeUnit.SECONDS));
+    assertInstanceOf(IllegalArgumentException.class, exception.getCause());
   }
 
   private OpcUaServer newServer(
@@ -488,8 +637,23 @@ class OpcUaServerReverseConnectTargetTest {
   private OpcUaServer newServer(
       EndpointConfig endpoint, Set<ReverseConnectTarget> targets, OpcTcpServerTransport transport) {
 
-    listenerExecutor = Executors.newSingleThreadExecutor();
-    scheduler = Executors.newSingleThreadScheduledExecutor();
+    return newServer(
+        endpoint,
+        targets,
+        transport,
+        Executors.newSingleThreadExecutor(),
+        Executors.newSingleThreadScheduledExecutor());
+  }
+
+  private OpcUaServer newServer(
+      EndpointConfig endpoint,
+      Set<ReverseConnectTarget> targets,
+      OpcTcpServerTransport transport,
+      ExecutorService executor,
+      ScheduledExecutorService scheduledExecutor) {
+
+    listenerExecutor = executor;
+    scheduler = scheduledExecutor;
 
     OpcUaServerConfig config =
         OpcUaServerConfig.builder()
@@ -500,8 +664,8 @@ class OpcUaServerReverseConnectTargetTest {
             .setIdentityValidator(AnonymousIdentityValidator.INSTANCE)
             .setEndpoints(Set.of(endpoint))
             .setReverseConnectTargets(targets)
-            .setExecutor(listenerExecutor)
-            .setScheduledExecutor(scheduler)
+            .setExecutor(executor)
+            .setScheduledExecutor(scheduledExecutor)
             .build();
 
     return new OpcUaServer(
@@ -679,10 +843,17 @@ class OpcUaServerReverseConnectTargetTest {
     private final List<ReverseConnectTargetSnapshot> removed = new CopyOnWriteArrayList<>();
     private final List<ReverseConnectTargetSnapshot> updated = new CopyOnWriteArrayList<>();
     private final List<ReverseConnectAttemptEvent> events = new CopyOnWriteArrayList<>();
+    private final List<String> notifications = new CopyOnWriteArrayList<>();
+
+    @Override
+    public void onTargetAdded(@NonNull ReverseConnectTargetSnapshot snapshot) {
+      notifications.add("added");
+    }
 
     @Override
     public void onTargetUpdated(@NonNull ReverseConnectTargetSnapshot snapshot) {
       updated.add(snapshot);
+      notifications.add("updated");
     }
 
     @Override

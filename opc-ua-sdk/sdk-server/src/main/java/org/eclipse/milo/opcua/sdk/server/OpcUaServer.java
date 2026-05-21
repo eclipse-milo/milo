@@ -630,10 +630,9 @@ public class OpcUaServer extends AbstractServiceHandler {
    * scheduling. Active reverse-opened channels already handed to the server path remain open.
    *
    * @param target the replacement target configuration.
-   * @return a completed future containing the updated target snapshot.
-   * @throws IllegalArgumentException if the target id is not registered or the running server
-   *     cannot use the replacement endpoint.
-   * @throws IllegalStateException if the server's reverse target manager has already shut down.
+   * @return a completed future containing the updated target snapshot, or a failed future if the
+   *     target id is not registered, the running server cannot use the replacement endpoint, or the
+   *     server's reverse target manager has already shut down.
    */
   public CompletableFuture<ReverseConnectTargetSnapshot> updateReverseConnectTarget(
       ReverseConnectTarget target) {
@@ -648,8 +647,8 @@ public class OpcUaServer extends AbstractServiceHandler {
    * reverse-opened channels associated with the target.
    *
    * @param targetId the target id to remove.
-   * @return a completed future containing the final snapshot for the removed target.
-   * @throws IllegalArgumentException if the target id is not registered.
+   * @return a completed future containing the final snapshot for the removed target, or a failed
+   *     future if the target id is not registered.
    */
   public CompletableFuture<ReverseConnectTargetSnapshot> removeReverseConnectTarget(UUID targetId) {
     return reverseConnectTargetManager.remove(targetId);
