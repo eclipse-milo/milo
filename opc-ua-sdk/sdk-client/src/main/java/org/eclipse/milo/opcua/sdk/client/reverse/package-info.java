@@ -45,7 +45,9 @@
  * discovery-first flow per deduplicated candidate key. The default discovery-first endpoint policy
  * selects no-security endpoints that allow anonymous Session activation; callers that configure
  * certificates or another identity provider should supply a matching endpoint selector and client
- * config factory.
+ * config factory. A discovery result with no endpoints is treated as a configuration failure before
+ * endpoint selection runs, so applications can distinguish an empty server response from an
+ * endpoint selector that inspected the response but chose no endpoint.
  *
  * <p>The lower-level discovery primitive is {@link
  * org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectDiscovery}. It registers a selector with

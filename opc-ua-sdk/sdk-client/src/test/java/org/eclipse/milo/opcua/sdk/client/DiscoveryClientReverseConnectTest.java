@@ -14,6 +14,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -85,6 +86,26 @@ class DiscoveryClientReverseConnectTest {
     UaException cause = assertInstanceOf(UaException.class, exception.getCause());
 
     assertEquals(StatusCodes.Bad_TcpEndpointUrlInvalid, cause.getStatusCode().value());
+
+    waitUntil(() -> !connection.channel().isOpen());
+  }
+
+  @Test
+  void reverseGetEndpointsClosesConnectionWhenSynchronousSetupFails() throws Exception {
+    ReverseConnectConnection connection = claimConnection(ENDPOINT_URL);
+    RuntimeException failure = new RuntimeException("setup failed");
+
+    CompletableFuture<?> endpoints =
+        DiscoveryClient.getEndpoints(
+            connection,
+            transport -> {
+              throw failure;
+            });
+
+    ExecutionException exception =
+        assertThrows(ExecutionException.class, () -> endpoints.get(5, TimeUnit.SECONDS));
+
+    assertSame(failure, exception.getCause());
 
     waitUntil(() -> !connection.channel().isOpen());
   }

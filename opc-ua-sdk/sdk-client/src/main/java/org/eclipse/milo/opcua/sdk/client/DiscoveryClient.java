@@ -376,22 +376,20 @@ public class DiscoveryClient {
               StatusCodes.Bad_TcpEndpointUrlInvalid, "ReverseHello endpointUrl is null"));
     }
 
-    EndpointDescription endpoint =
-        newDiscoveryEndpoint(endpointUrl, Stack.TCP_UASC_UABINARY_TRANSPORT_URI);
-
     OpcTcpClientTransportConfigBuilder configBuilder = OpcTcpClientTransportConfig.newBuilder();
+    DiscoveryClient discoveryClient;
 
     try {
       customizer.accept(configBuilder);
+      EndpointDescription endpoint =
+          newDiscoveryEndpoint(endpointUrl, Stack.TCP_UASC_UABINARY_TRANSPORT_URI);
+      OpcTcpClientTransportConfig config = configBuilder.build();
+      var transport = new ReverseTcpClientTransport(config, connection);
+      discoveryClient = new DiscoveryClient(endpoint, transport);
     } catch (RuntimeException e) {
       connection.close();
       return failedFuture(e);
     }
-
-    OpcTcpClientTransportConfig config = configBuilder.build();
-    var transport = new ReverseTcpClientTransport(config, connection);
-
-    DiscoveryClient discoveryClient = new DiscoveryClient(endpoint, transport);
 
     return discoveryClient
         .connectAsync()
