@@ -66,20 +66,56 @@ public final class TestServer {
   }
 
   private final OpcUaServer opcUaServer;
+  private final X509Certificate clientCertificate;
+  private final X509Certificate[] clientCertificateChain;
+  private final KeyPair clientKeyPair;
   private final TestIdentityCertificate identityCert1;
   private final TestIdentityCertificate identityCert2;
 
   private TestServer(
       OpcUaServer opcUaServer,
+      X509Certificate clientCertificate,
+      X509Certificate[] clientCertificateChain,
+      KeyPair clientKeyPair,
       TestIdentityCertificate identityCert1,
       TestIdentityCertificate identityCert2) {
     this.opcUaServer = opcUaServer;
+    this.clientCertificate = clientCertificate;
+    this.clientCertificateChain = clientCertificateChain;
+    this.clientKeyPair = clientKeyPair;
     this.identityCert1 = identityCert1;
     this.identityCert2 = identityCert2;
   }
 
   public OpcUaServer getServer() {
     return opcUaServer;
+  }
+
+  /**
+   * Get the test client certificate trusted by this server.
+   *
+   * @return the trusted test client certificate.
+   */
+  public X509Certificate getClientCertificate() {
+    return clientCertificate;
+  }
+
+  /**
+   * Get the test client certificate chain trusted by this server.
+   *
+   * @return the trusted test client certificate chain.
+   */
+  public X509Certificate[] getClientCertificateChain() {
+    return clientCertificateChain;
+  }
+
+  /**
+   * Get the key pair for the test client certificate trusted by this server.
+   *
+   * @return the trusted test client key pair.
+   */
+  public KeyPair getClientKeyPair() {
+    return clientKeyPair;
   }
 
   public TestIdentityCertificate getIdentityCertificate1() {
@@ -121,7 +157,17 @@ public final class TestServer {
 
     KeyStoreLoader loader = new KeyStoreLoader().load(securityTempDir);
 
+    KeyPair clientKeyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+    SelfSignedCertificateBuilder clientCertBuilder =
+        new SelfSignedCertificateBuilder(clientKeyPair);
+    clientCertBuilder.setCommonName("TestClient");
+    clientCertBuilder.setApplicationUri("urn:eclipse:milo:test:reverse:client");
+    X509Certificate clientCertificate = clientCertBuilder.build();
+    X509Certificate[] clientCertificateChain = new X509Certificate[] {clientCertificate};
+
     var trustListManager = new MemoryTrustListManager();
+    trustListManager.addTrustedCertificate(clientCertificate);
+
     var certificateStore = new MemoryCertificateStore();
     var certificateQuarantine = new MemoryCertificateQuarantine();
 
@@ -248,6 +294,9 @@ public final class TestServer {
 
     return new TestServer(
         opcUaServer,
+        clientCertificate,
+        clientCertificateChain,
+        clientKeyPair,
         new TestIdentityCertificate(identityCertificate1, identityKeyPair1),
         new TestIdentityCertificate(identityCertificate2, identityKeyPair2));
   }

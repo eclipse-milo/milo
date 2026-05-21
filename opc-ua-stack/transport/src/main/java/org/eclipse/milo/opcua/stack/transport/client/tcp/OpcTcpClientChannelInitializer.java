@@ -28,7 +28,7 @@ import org.eclipse.milo.opcua.stack.transport.client.uasc.UascResponseHandler;
  * already-active channel after {@code ReverseHello} validation and attach the same response and
  * acknowledge handlers before SecureChannel setup begins.
  */
-final class OpcTcpClientChannelInitializer {
+public final class OpcTcpClientChannelInitializer {
 
   private OpcTcpClientChannelInitializer() {}
 
@@ -38,8 +38,15 @@ final class OpcTcpClientChannelInitializer {
    * <p>The {@code Hello} endpoint URL continues to come from {@link
    * ClientApplicationContext#getEndpoint()}, preserving the existing outbound behavior while
    * sharing the same handler installation path as already-connected channels.
+   *
+   * @param channel the Netty channel created by the outbound TCP bootstrap.
+   * @param config the TCP client transport configuration.
+   * @param application the client application context used for SecureChannel setup.
+   * @param responseHandler the response handler that receives decoded UASC responses.
+   * @param requestIdSupplier the supplier used for SecureChannel request ids.
+   * @param handshakeFuture the future completed when SecureChannel setup succeeds or fails.
    */
-  static void initializeOutboundChannel(
+  public static void initializeOutboundChannel(
       Channel channel,
       OpcTcpClientTransportConfig config,
       ClientApplicationContext application,
@@ -60,8 +67,16 @@ final class OpcTcpClientChannelInitializer {
    * <p>The supplied endpoint URL is encoded into {@code Hello}. Reverse-connect callers use this
    * after the pre-{@code Hello} {@code ReverseHello} exchange has selected the server endpoint for
    * this channel.
+   *
+   * @param channel the already-connected Netty channel claimed for client use.
+   * @param config the TCP client transport configuration.
+   * @param application the client application context used for SecureChannel setup.
+   * @param responseHandler the response handler that receives decoded UASC responses.
+   * @param requestIdSupplier the supplier used for SecureChannel request ids.
+   * @param handshakeFuture the future completed when SecureChannel setup succeeds or fails.
+   * @param endpointUrl the endpoint URL to encode into the client {@code Hello} message.
    */
-  static void initializeConnectedChannel(
+  public static void initializeConnectedChannel(
       Channel channel,
       OpcTcpClientTransportConfig config,
       ClientApplicationContext application,
