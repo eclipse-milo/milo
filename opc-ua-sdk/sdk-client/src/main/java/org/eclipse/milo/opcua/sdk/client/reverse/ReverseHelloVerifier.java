@@ -16,6 +16,27 @@ package org.eclipse.milo.opcua.sdk.client.reverse;
  * <p>Acceptance by this verifier is not authentication. It only decides whether a server-opened
  * socket should be allowed to proceed to selector matching before normal SecureChannel and Session
  * validation can authenticate the peer.
+ *
+ * <p>A verifier is useful for cheap admission checks before a candidate consumes pending capacity:
+ *
+ * <pre>{@code
+ * ReverseHelloVerifier verifier =
+ *     candidate -> {
+ *       if (!expectedServerUri.equals(candidate.serverUri())) {
+ *         return ReverseConnectVerificationResult.reject("unexpected ServerUri");
+ *       }
+ *       if (!expectedEndpointUrl.equals(candidate.endpointUrl())) {
+ *         return ReverseConnectVerificationResult.reject("unexpected EndpointUrl");
+ *       }
+ *       return ReverseConnectVerificationResult.accept();
+ *     };
+ *
+ * ReverseConnectManager manager =
+ *     ReverseConnectManager.builder()
+ *         .addBindAddress(new InetSocketAddress("0.0.0.0", 48060))
+ *         .setReverseHelloVerifier(verifier)
+ *         .build();
+ * }</pre>
  */
 @FunctionalInterface
 public interface ReverseHelloVerifier {

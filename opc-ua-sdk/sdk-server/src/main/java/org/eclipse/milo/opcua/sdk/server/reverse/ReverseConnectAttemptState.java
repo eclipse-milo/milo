@@ -10,7 +10,15 @@
 
 package org.eclipse.milo.opcua.sdk.server.reverse;
 
-/** Lifecycle state for one SDK-managed server reverse-connect attempt. */
+/**
+ * Lifecycle state for one SDK-managed server reverse-connect attempt.
+ *
+ * <p>The SDK maps the low-level transport state stream directly: {@link #CONNECTING}, {@link
+ * #CONNECTED}, {@link #REVERSE_HELLO_SENT}, and {@link #HELLO_HANDLER_INSTALLED} are non-terminal.
+ * {@link #HANDOFF}, {@link #CLIENT_ERROR}, {@link #FAILED}, {@link #CANCELLED}, and {@link #CLOSED}
+ * are terminal for the attempt. After handoff, the target manager tracks the reverse-opened channel
+ * separately from the completed attempt.
+ */
 public enum ReverseConnectAttemptState {
 
   /** The server has started an outbound TCP connect to the client listener. */

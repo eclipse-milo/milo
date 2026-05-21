@@ -34,6 +34,29 @@
  * schedule and observe: connection parameters, attempt futures, attempt state transitions, Netty
  * pipeline handoff, and connector-owned channel cleanup.
  *
+ * <h2>Reverse-connect attempt state machine</h2>
+ *
+ * <p>A low-level attempt emits the non-terminal progression {@link
+ * org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerReverseConnectAttemptState#CONNECTING}
+ * to {@link
+ * org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerReverseConnectAttemptState#CONNECTED}
+ * to {@link
+ * org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerReverseConnectAttemptState#REVERSE_HELLO_SENT}
+ * to {@link
+ * org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerReverseConnectAttemptState#HELLO_HANDLER_INSTALLED}.
+ * When the client sends {@code Hello}, the attempt enters terminal {@link
+ * org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerReverseConnectAttemptState#HANDOFF}
+ * and the channel future completes with the channel now running the normal server UASC path.
+ * Terminal failure states are {@link
+ * org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerReverseConnectAttemptState#CLIENT_ERROR}
+ * when the client listener returns {@code ERR/F}, {@link
+ * org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerReverseConnectAttemptState#FAILED}
+ * for connect, encode, write, protocol, or premature-close failures, {@link
+ * org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerReverseConnectAttemptState#CANCELLED}
+ * for caller cancellation, and {@link
+ * org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerReverseConnectAttemptState#CLOSED}
+ * for connector or attempt shutdown before handoff.
+ *
  * <p>Pipeline mutation and protocol I/O are performed on each Netty channel's event loop. Small
  * synchronized sections protect connector bookkeeping such as open attempts, open channels, and
  * shutdown state; observers must stay lightweight because attempt events may be emitted from an

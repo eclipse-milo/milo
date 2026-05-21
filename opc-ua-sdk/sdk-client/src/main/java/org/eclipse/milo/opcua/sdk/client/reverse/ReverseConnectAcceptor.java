@@ -42,9 +42,46 @@ import org.jspecify.annotations.NonNull;
  * and it does not disconnect clients delivered to {@link ReverseConnectAcceptorClientListener};
  * applications should retain and close those clients according to their own lifecycle.
  *
+ * <p>While running, the acceptor derives a key for each matching pending candidate and keeps that
+ * key active across discovery, production-client connection, and the delivered client's active
+ * transport channel. Duplicate candidates with the same active key are ignored so they remain
+ * available for the production reverse client selector. If discovery, endpoint selection, client
+ * configuration, or production connection fails before delivery, the key is released and a later
+ * pending candidate can retry. After a delivered production transport disconnects, the key is
+ * released and currently pending candidates are scanned again.
+ *
  * <p>A candidate whose discovery request returns no endpoints fails before endpoint selection. That
  * failure is reported to the configured {@link ReverseConnectAcceptorErrorListener}, and the
  * candidate key is released so a later candidate can retry the discovery-first flow.
+ *
+ * <p>A shared-listener application typically keeps the manager and delivered clients in its own
+ * lifecycle:
+ *
+ * <pre>{@code
+ * ReverseConnectAcceptor acceptor =
+ *     ReverseConnectAcceptor.builder(manager)
+ *         .setDiscoverySelector(candidate -> expectedServerUris.contains(candidate.serverUri()))
+ *         .setClientConfig(
+ *             (discovery, endpoint) ->
+ *                 OpcUaClientConfig.builder()
+ *                     .setEndpoint(endpoint)
+ *                     .setDiscoveryEndpoints(discovery.endpoints())
+ *                     .build())
+ *         .setClientListener((discovery, endpoint, client) -> clients.add(client))
+ *         .build();
+ *
+ * manager.startup();
+ * acceptor.start();
+ * try {
+ *   // Register server-side ReverseConnectTarget instances that dial the manager listener.
+ * } finally {
+ *   acceptor.close();
+ *   for (OpcUaClient client : clients) {
+ *     client.disconnectAsync().get();
+ *   }
+ *   manager.shutdown();
+ * }
+ * }</pre>
  */
 public final class ReverseConnectAcceptor implements AutoCloseable {
 
@@ -117,8 +154,10 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
    *
    * <p>The method is idempotent. It removes the manager listener, closes discovery connections and
    * disconnects production clients that are still waiting to be delivered, and prevents in-flight
-   * discovery flows from delivering a client after stop returns. It does not disconnect clients
-   * that were previously delivered to the client listener.
+   * discovery flows from delivering a client after stop returns. It does not stop the manager,
+   * reject pending candidates still held by the manager, cancel server-side targets that may open
+   * future reverse sockets, or disconnect clients that were previously delivered to the client
+   * listener.
    */
   public void stop() {
     if (running.compareAndSet(true, false)) {

@@ -704,6 +704,23 @@ public class OpcUaServer extends AbstractServiceHandler {
    * returned handle can pause, resume, trigger, remove, or inspect the target after it has been
    * registered.
    *
+   * <pre>{@code
+   * ReverseConnectTarget target =
+   *     ReverseConnectTarget.builder()
+   *         .setClientListenerUrl("opc.tcp://client.example.com:48060")
+   *         .setEndpointUrl("opc.tcp://server.example.com:12686/milo")
+   *         .setRegistrationPeriod(uint(1_000))
+   *         .setConnectTimeout(uint(5_000))
+   *         .build();
+   *
+   * ReverseConnectTargetHandle handle = server.addReverseConnectTarget(target);
+   * try {
+   *   handle.trigger().get();
+   * } finally {
+   *   handle.remove().get();
+   * }
+   * }</pre>
+   *
    * @param target the immutable target configuration to register.
    * @return a runtime handle for the registered target.
    * @throws IllegalArgumentException if another target with the same id is already registered or

@@ -20,6 +20,15 @@ import java.util.concurrent.CompletableFuture;
  * <p>Handles are returned when a target is registered with the server. Each operation addresses the
  * target by its stable id and returns the resulting runtime snapshot when the manager has applied
  * the change.
+ *
+ * <pre>{@code
+ * ReverseConnectTargetHandle handle = server.addReverseConnectTarget(target);
+ * try {
+ *   handle.trigger().get();
+ * } finally {
+ *   handle.remove().get();
+ * }
+ * }</pre>
  */
 public final class ReverseConnectTargetHandle {
 

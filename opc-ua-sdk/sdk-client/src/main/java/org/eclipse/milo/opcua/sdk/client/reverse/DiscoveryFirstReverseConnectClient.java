@@ -35,6 +35,37 @@ import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransportCo
  * GetEndpoints}; the production Session always waits for a later matching reverse connection. The
  * caller owns the {@link ReverseConnectManager} lifecycle and remains responsible for disconnecting
  * the returned client.
+ *
+ * <p>For a no-security anonymous client, the helper can build the production client directly from
+ * the discovered endpoint:
+ *
+ * <pre>{@code
+ * ReverseConnectManager manager =
+ *     ReverseConnectManager.builder()
+ *         .addBindAddress(new InetSocketAddress("0.0.0.0", 48060))
+ *         .build();
+ *
+ * manager.startup();
+ * OpcUaClient client = null;
+ * try {
+ *   client =
+ *       DiscoveryFirstReverseConnectClient.builder(manager)
+ *           .setEndpointSelector(ReverseConnectEndpointSelectors.noSecurityAnonymous())
+ *           .setClientConfig(
+ *               (discovery, endpoint) ->
+ *                   OpcUaClientConfig.builder()
+ *                       .setEndpoint(endpoint)
+ *                       .setDiscoveryEndpoints(discovery.endpoints())
+ *                       .build())
+ *           .connectAsync()
+ *           .get();
+ * } finally {
+ *   if (client != null) {
+ *     client.disconnectAsync().get();
+ *   }
+ *   manager.shutdown();
+ * }
+ * }</pre>
  */
 public final class DiscoveryFirstReverseConnectClient {
 

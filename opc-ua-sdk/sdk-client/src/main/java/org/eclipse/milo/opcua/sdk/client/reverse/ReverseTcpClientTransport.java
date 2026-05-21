@@ -43,6 +43,14 @@ import org.jspecify.annotations.Nullable;
  * are exposed through {@link ChannelStateObservable}, and keep-alive failure recovery can close the
  * active channel through {@link CurrentChannelProvider}.
  *
+ * <p>Manager/selector mode is reusable for the lifetime of the client transport. If a claimed
+ * candidate fails before the client SecureChannel handshake completes, or if an established
+ * reverse-opened channel later closes while the client is still started, the transport registers a
+ * fresh one-shot selector and waits for the next matching candidate. Direct pre-claimed connection
+ * mode is deliberately one-shot: the supplied {@link ReverseConnectConnection} is consumed by the
+ * first connect attempt, and any later failure leaves the transport terminal until the application
+ * creates a new client from a new claimed connection.
+ *
  * <p>Transition listeners observe completed transport state, not every claimed socket. A listener
  * receives {@code true} after a claimed channel completes client UASC setup, and receives {@code
  * false} when that connected channel later closes or is explicitly disconnected. Claims that fail
