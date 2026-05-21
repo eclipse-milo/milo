@@ -25,6 +25,7 @@ import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfig;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
+import org.eclipse.milo.opcua.stack.transport.client.ChannelStateObservable;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransportConfigBuilder;
 import org.jspecify.annotations.NonNull;
 
@@ -145,7 +146,7 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
 
     DiscoveryClient.getEndpoints(connection, discoveryTransportCustomizer)
         .thenApply(endpoints -> new ReverseConnectDiscoveryResult(connection.snapshot(), endpoints))
-        .thenCompose(this::connectProductionClient)
+        .thenCompose(discovery -> connectProductionClient(key, discovery))
         .whenComplete(
             (connected, ex) -> {
               if (ex != null) {
@@ -156,11 +157,11 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
   }
 
   private CompletableFuture<OpcUaClient> connectProductionClient(
-      ReverseConnectDiscoveryResult discovery) {
+      String key, ReverseConnectDiscoveryResult discovery) {
 
     return endpointSelector
         .select(discovery)
-        .map(endpoint -> connectProductionClient(discovery, endpoint))
+        .map(endpoint -> connectProductionClient(key, discovery, endpoint))
         .orElseGet(
             () ->
                 CompletableFuture.failedFuture(
@@ -170,7 +171,7 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
   }
 
   private CompletableFuture<OpcUaClient> connectProductionClient(
-      ReverseConnectDiscoveryResult discovery, EndpointDescription endpoint) {
+      String key, ReverseConnectDiscoveryResult discovery, EndpointDescription endpoint) {
 
     OpcUaClient client;
     try {
@@ -193,9 +194,42 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
               if (ex != null) {
                 client.disconnectAsync();
               } else {
+                releaseKeyWhenProductionTransportDisconnects(key, c);
                 clientListener.onClientConnected(discovery, endpoint, c);
               }
             });
+  }
+
+  private void releaseKeyWhenProductionTransportDisconnects(String key, OpcUaClient client) {
+    if (client.getTransport() instanceof ChannelStateObservable observable) {
+      ChannelStateObservable.TransitionListener listener =
+          new ChannelStateObservable.TransitionListener() {
+            @Override
+            public void onStateTransition(boolean connected) {
+              if (connected) {
+                activeKeys.add(key);
+              } else {
+                releaseKeyAndProcessPendingCandidates(key);
+              }
+            }
+          };
+
+      observable.addTransitionListener(listener);
+    }
+  }
+
+  private void releaseKeyAndProcessPendingCandidates(String key) {
+    if (!activeKeys.remove(key) || !running.get()) {
+      return;
+    }
+
+    for (ReverseConnectCandidateSnapshot candidate : manager.snapshot().pendingCandidates()) {
+      if (!running.get()) {
+        return;
+      }
+
+      onCandidatePending(candidate);
+    }
   }
 
   private static ReverseConnectSelector productionSelector(

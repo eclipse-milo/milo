@@ -220,6 +220,7 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
     ReverseConnectRegistration registrationToClose;
     Channel channelToClose;
     CompletableFuture<Channel> futureToCancel;
+    boolean notifyDisconnected;
 
     synchronized (lock) {
       started = false;
@@ -230,13 +231,19 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
       registration = null;
 
       channelToClose = currentChannel;
+      futureToCancel = channelFuture;
+      notifyDisconnected =
+          channelToClose != null
+              && futureToCancel.isDone()
+              && !futureToCancel.isCompletedExceptionally()
+              && !futureToCancel.isCancelled();
+
       if (channelToClose == null && directConnection != null && !directConnectionConsumed) {
         channelToClose = directConnection.channel();
         directConnectionConsumed = true;
       }
       currentChannel = null;
 
-      futureToCancel = channelFuture;
       channelFuture = new CompletableFuture<>();
     }
 
@@ -258,6 +265,9 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
         .addListener(
             future -> {
               if (future.isSuccess()) {
+                if (notifyDisconnected) {
+                  notifyTransitionListeners(false);
+                }
                 disconnectFuture.complete(Unit.VALUE);
               } else {
                 disconnectFuture.completeExceptionally(future.cause());

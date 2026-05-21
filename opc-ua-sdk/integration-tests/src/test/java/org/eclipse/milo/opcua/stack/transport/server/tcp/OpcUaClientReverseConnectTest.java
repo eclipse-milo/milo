@@ -31,6 +31,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import org.eclipse.milo.opcua.sdk.client.DiscoveryClient;
@@ -351,6 +352,66 @@ class OpcUaClientReverseConnectTest {
       assertReadWorks();
       assertClaimedReverseHello(endpoint);
       waitUntil(() -> manager.snapshot().claimedCount() == 2);
+    } finally {
+      acceptor.close();
+    }
+  }
+
+  @Test
+  void reverseConnectAcceptorReleasesKeyWhenProductionClientDisconnects() throws Exception {
+    startServerAndManager();
+
+    EndpointDescription endpoint = selectEndpoint(SecurityPolicy.None, MessageSecurityMode.None);
+    CompletableFuture<OpcUaClient> firstConnected = new CompletableFuture<>();
+    CompletableFuture<OpcUaClient> secondConnected = new CompletableFuture<>();
+    AtomicInteger connectedCount = new AtomicInteger();
+
+    ReverseConnectAcceptor acceptor =
+        ReverseConnectAcceptor.builder(manager)
+            .setClientListener(
+                (discovery, discoveredEndpoint, connected) -> {
+                  client = connected;
+                  int count = connectedCount.incrementAndGet();
+                  if (count == 1) {
+                    firstConnected.complete(connected);
+                  } else if (count == 2) {
+                    secondConnected.complete(connected);
+                  }
+                })
+            .setErrorListener(
+                (candidate, failure) -> {
+                  firstConnected.completeExceptionally(failure);
+                  secondConnected.completeExceptionally(failure);
+                })
+            .build();
+
+    try {
+      acceptor.start();
+
+      startReverseConnect(endpoint);
+      waitUntil(() -> manager.snapshot().claimedCount() == 1);
+
+      OpcTcpServerReverseConnectAttempt firstProductionAttempt = startReverseConnect(endpoint);
+      OpcUaClient firstClient = firstConnected.get(10, TimeUnit.SECONDS);
+
+      assertTrue(firstProductionAttempt.channelFuture().get(5, TimeUnit.SECONDS).isActive());
+      assertReadWorks(firstClient);
+
+      firstClient.disconnectAsync().get(5, TimeUnit.SECONDS);
+      if (client == firstClient) {
+        client = null;
+      }
+
+      startReverseConnect(endpoint);
+      waitUntil(() -> manager.snapshot().claimedCount() == 3);
+
+      OpcTcpServerReverseConnectAttempt secondProductionAttempt = startReverseConnect(endpoint);
+      OpcUaClient secondClient = secondConnected.get(10, TimeUnit.SECONDS);
+
+      assertSame(client, secondClient);
+      assertTrue(secondProductionAttempt.channelFuture().get(5, TimeUnit.SECONDS).isActive());
+      assertReadWorks(secondClient);
+      assertEquals(2, connectedCount.get());
     } finally {
       acceptor.close();
     }
