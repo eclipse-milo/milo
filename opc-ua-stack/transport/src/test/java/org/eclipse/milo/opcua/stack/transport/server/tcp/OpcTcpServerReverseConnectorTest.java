@@ -18,6 +18,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.netty.bootstrap.AbstractBootstrap;
+import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
@@ -28,6 +30,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -36,6 +39,7 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -593,6 +597,47 @@ class OpcTcpServerReverseConnectorTest {
                 "opc.tcp://localhost:12685/unknown",
                 null,
                 new RecordingObserver()));
+  }
+
+  @Test
+  void bootstrapConnectThrowingSynchronouslyDoesNotLeakAttempt() throws Exception {
+    // A misbehaving reverseConnectBootstrapCustomizer can leave the Bootstrap in a state that
+    // causes Bootstrap.connect() to throw synchronously (for example, by clearing the configured
+    // EventLoopGroup so that validate() throws "group not set"). The connector must not retain
+    // the leaked attempt in its bookkeeping set when that happens.
+    Consumer<Bootstrap> brokenCustomizer =
+        bootstrap -> {
+          try {
+            Field groupField = AbstractBootstrap.class.getDeclaredField("group");
+            groupField.setAccessible(true);
+            groupField.set(bootstrap, null);
+          } catch (ReflectiveOperationException e) {
+            throw new AssertionError("unable to corrupt bootstrap for test", e);
+          }
+        };
+
+    eventLoop = new NioEventLoopGroup(1);
+
+    OpcTcpServerTransportConfig config =
+        OpcTcpServerTransportConfig.newBuilder()
+            .setEventLoop(eventLoop)
+            .setHelloDeadline(uint(1_000))
+            .setReverseConnectBootstrapCustomizer(brokenCustomizer)
+            .setChannelPipelineCustomizer(pipeline -> pipeline.addLast(new MarkerHandler()))
+            .build();
+
+    connector = new OpcTcpServerReverseConnector(config);
+
+    RecordingObserver observer = new RecordingObserver();
+    OpcTcpServerReverseConnectParameters parameters =
+        newParameters(new InetSocketAddress("127.0.0.1", 4840), SERVER_URI, observer);
+
+    assertThrows(IllegalStateException.class, () -> connector.connect(parameters));
+
+    Field attemptsField = OpcTcpServerReverseConnector.class.getDeclaredField("attempts");
+    attemptsField.setAccessible(true);
+    Set<?> attempts = (Set<?>) attemptsField.get(connector);
+    assertTrue(attempts.isEmpty(), "attempts set should not retain leaked attempt");
   }
 
   private OpcTcpServerReverseConnector newConnector(int helloDeadlineMs) {

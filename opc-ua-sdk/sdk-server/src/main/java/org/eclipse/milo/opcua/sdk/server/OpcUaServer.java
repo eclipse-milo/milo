@@ -188,7 +188,10 @@ public class OpcUaServer extends AbstractServiceHandler {
         new ReverseConnectTargetManager(
             applicationContext,
             applicationContext::getEndpointDescriptions,
-            this::getOrCreateTransport,
+            // Use a non-mutating lookup so target validation does not eagerly install transports
+            // into the server's cache. Transports are populated by getOrCreateTransport during
+            // endpoint binding, before the reverse-connect manager starts scheduling attempts.
+            transports::get,
             config.getApplicationUri(),
             config.getExecutor(),
             config.getScheduledExecutorService(),
@@ -288,13 +291,6 @@ public class OpcUaServer extends AbstractServiceHandler {
   }
 
   public CompletableFuture<OpcUaServer> startup() {
-    try {
-      reverseConnectTargetManager.validateTargets();
-    } catch (Throwable t) {
-      unbindTransports();
-      return CompletableFuture.failedFuture(t);
-    }
-
     eventFactory.startup();
 
     config.getEndpoints().stream()
@@ -336,6 +332,15 @@ public class OpcUaServer extends AbstractServiceHandler {
                 logger.warn("No OpcServerTransport for TransportProfile: {}", transportProfile);
               }
             });
+
+    try {
+      // Validate after binding so the reverse-connect transport lookup finds the bound transport
+      // without having to create one as a side effect.
+      reverseConnectTargetManager.validateTargets();
+    } catch (Throwable t) {
+      rollbackStartup();
+      return CompletableFuture.failedFuture(t);
+    }
 
     try {
       reverseConnectTargetManager.startup();

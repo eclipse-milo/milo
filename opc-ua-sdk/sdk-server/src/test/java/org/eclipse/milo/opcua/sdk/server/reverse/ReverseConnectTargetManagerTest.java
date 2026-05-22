@@ -238,6 +238,44 @@ class ReverseConnectTargetManagerTest {
   }
 
   @Test
+  void shutdownClearsPendingHandoffAttempts() throws Exception {
+    String endpointUrl = "opc.tcp://localhost:12686/reverse-target-test";
+
+    ReverseConnectTarget target = target(endpointUrl, "opc.tcp://localhost:12687");
+    EndpointDescription endpointDescription = endpointDescription(endpointUrl);
+
+    listenerExecutor = Executors.newSingleThreadExecutor();
+    scheduler = mock(ScheduledExecutorService.class);
+    ScheduledFuture<?> scheduledFuture = mock(ScheduledFuture.class);
+    when(scheduler.schedule(any(Runnable.class), anyLong(), any(TimeUnit.class)))
+        .thenAnswer(invocation -> scheduledFuture);
+
+    ReverseConnectTargetManager manager =
+        new ReverseConnectTargetManager(
+            mock(ServerApplicationContext.class),
+            () -> List.of(endpointDescription),
+            transportProfile ->
+                new OpcTcpServerTransport(OpcTcpServerTransportConfig.newBuilder().build()),
+            "urn:eclipse:milo:test:server:reverse-targets",
+            listenerExecutor,
+            scheduler,
+            Set.of(target));
+
+    manager.startup();
+
+    addPendingHandoffAttempt(manager, target.getId(), 1L, 0L);
+    assertEquals(1, pendingHandoffAttemptCount(manager, target.getId()));
+
+    manager.shutdown();
+
+    assertEquals(
+        0,
+        pendingHandoffAttemptCount(manager, target.getId()),
+        "shutdown must clear pendingHandoffAttempts so a subsequent startup can schedule the"
+            + " target again");
+  }
+
+  @Test
   void removedHandleMethodsReturnFailedFutures() throws Exception {
     ReverseConnectTarget target =
         ReverseConnectTarget.builder()
@@ -327,6 +365,37 @@ class ReverseConnectTargetManagerTest {
         (Map<String, EmbeddedChannel>) activeChannelsField.get(record);
 
     activeChannels.put(channel.id().asLongText(), channel);
+  }
+
+  @SuppressWarnings("unchecked")
+  private static void addPendingHandoffAttempt(
+      ReverseConnectTargetManager manager, UUID targetId, long number, long generation)
+      throws ReflectiveOperationException {
+
+    Object record = record(manager, targetId);
+    Field pendingField = record.getClass().getDeclaredField("pendingHandoffAttempts");
+    pendingField.setAccessible(true);
+    Set<Object> pending = (Set<Object>) pendingField.get(record);
+
+    Class<?> attemptKeyClass =
+        Class.forName(ReverseConnectTargetManager.class.getName() + "$AttemptKey");
+    var ctor = attemptKeyClass.getDeclaredConstructor(long.class, long.class);
+    ctor.setAccessible(true);
+    Object attemptKey = ctor.newInstance(number, generation);
+
+    pending.add(attemptKey);
+  }
+
+  @SuppressWarnings("unchecked")
+  private static int pendingHandoffAttemptCount(ReverseConnectTargetManager manager, UUID targetId)
+      throws ReflectiveOperationException {
+
+    Object record = record(manager, targetId);
+    Field pendingField = record.getClass().getDeclaredField("pendingHandoffAttempts");
+    pendingField.setAccessible(true);
+    Set<Object> pending = (Set<Object>) pendingField.get(record);
+
+    return pending.size();
   }
 
   @SuppressWarnings("unchecked")
