@@ -84,7 +84,7 @@ final class OpcTcpServerReverseConnectResponseHandler extends ByteToMessageDecod
       ErrorMessage errorMessage = TcpMessageDecoder.decodeError(buffer.readSlice(messageLength));
 
       connector.onClientError(attempt, ctx, errorMessage);
-    } else if (messageType == MessageType.Hello) {
+    } else {
       ByteBuf helloBuffer = buffer.readRetainedSlice(messageLength);
       boolean forwarded = false;
 

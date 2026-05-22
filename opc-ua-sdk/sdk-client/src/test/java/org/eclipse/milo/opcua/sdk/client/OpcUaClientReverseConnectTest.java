@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
 class OpcUaClientReverseConnectTest {
 
   @Test
-  void createReverseConnectUsesReverseTcpTransport() throws Exception {
+  void createReverseConnectUsesReverseTcpTransport() {
     try (ReverseConnectManager manager =
         ReverseConnectManager.builder()
             .addBindAddress(new InetSocketAddress("localhost", 0))

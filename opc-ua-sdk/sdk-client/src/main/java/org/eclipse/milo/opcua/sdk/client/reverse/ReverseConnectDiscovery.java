@@ -19,6 +19,7 @@ import java.util.function.Consumer;
 import org.eclipse.milo.opcua.sdk.client.DiscoveryClient;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransportConfigBuilder;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Helpers for running {@code GetEndpoints} over one claimed Reverse Connect candidate.
@@ -78,7 +79,7 @@ public final class ReverseConnectDiscovery {
     requireNonNull(configureTransport, "configureTransport");
 
     ReverseConnectRegistration registration = manager.registerSelector(selector);
-    AtomicReference<ReverseConnectConnection> claimedConnection = new AtomicReference<>();
+    AtomicReference<@Nullable ReverseConnectConnection> claimedConnection = new AtomicReference<>();
 
     CompletableFuture<ReverseConnectDiscoveryResult> result = new CompletableFuture<>();
     result.whenComplete(
