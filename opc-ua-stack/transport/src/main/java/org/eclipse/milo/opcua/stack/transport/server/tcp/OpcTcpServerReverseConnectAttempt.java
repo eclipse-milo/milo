@@ -152,11 +152,17 @@ public final class OpcTcpServerReverseConnectAttempt {
   }
 
   void transition(OpcTcpServerReverseConnectAttemptState nextState, @Nullable String message) {
+    if (isTerminalState(nextState)) {
+      throw new IllegalArgumentException(
+          "transition cannot be used to enter terminal state "
+              + nextState
+              + "; use handoff, fail, or cancelFuture");
+    }
 
     synchronized (stateLock) {
       while (true) {
         OpcTcpServerReverseConnectAttemptState currentState = state.get();
-        if (!isTerminalState(nextState) && isTerminalState(currentState)) {
+        if (isTerminalState(currentState)) {
           return;
         }
         if (state.compareAndSet(currentState, nextState)) {

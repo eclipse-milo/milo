@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.stack.transport.server.tcp;
 import static java.util.Objects.requireNonNull;
 
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
@@ -44,6 +45,9 @@ public record OpcTcpServerReverseConnectParameters(
     int connectTimeoutMillis,
     OpcTcpServerReverseConnectAttemptObserver observer) {
 
+  // OPC UA Part 6 limits each ReverseHello string field to 4096 encoded bytes.
+  private static final int MAX_REVERSE_HELLO_STRING_LENGTH = 4096;
+
   public OpcTcpServerReverseConnectParameters {
     requireNonNull(applicationContext, "applicationContext");
     requireNonNull(clientListenerAddress, "clientListenerAddress");
@@ -56,6 +60,14 @@ public record OpcTcpServerReverseConnectParameters(
     }
     if (endpointUrl.isBlank()) {
       throw new IllegalArgumentException("endpointUrl cannot be blank");
+    }
+    if (serverUri.getBytes(StandardCharsets.UTF_8).length > MAX_REVERSE_HELLO_STRING_LENGTH) {
+      throw new IllegalArgumentException(
+          "serverUri encoded length cannot be greater than 4096 bytes");
+    }
+    if (endpointUrl.getBytes(StandardCharsets.UTF_8).length > MAX_REVERSE_HELLO_STRING_LENGTH) {
+      throw new IllegalArgumentException(
+          "endpointUrl encoded length cannot be greater than 4096 bytes");
     }
     if (connectTimeoutMillis <= 0) {
       throw new IllegalArgumentException("connectTimeoutMillis must be greater than 0");
