@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.netty.channel.Channel;
 import io.netty.channel.embedded.EmbeddedChannel;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
@@ -28,6 +29,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.CompletableFuture;
@@ -208,6 +211,53 @@ class ReverseTcpClientTransportTest {
     assertNull(transport.getCurrentChannel());
   }
 
+  @Test
+  void channelCloseRearmsBeforeDisconnectListenersScanPendingCandidates() throws Exception {
+    QueuingExecutorService queuedExecutor = new QueuingExecutorService();
+    executor = queuedExecutor;
+    ReverseConnectManager manager =
+        ReverseConnectManager.builder()
+            .addBindAddress(new InetSocketAddress("127.0.0.1", 0))
+            .setExecutor(queuedExecutor)
+            .setScheduler(scheduledExecutor())
+            .build();
+    EmbeddedChannel activeChannel = new EmbeddedChannel();
+    EmbeddedChannel pendingChannel = new EmbeddedChannel();
+    ReverseTcpClientTransport transport =
+        new ReverseTcpClientTransport(
+            transportConfig(queuedExecutor),
+            manager,
+            candidate -> Objects.equals(ENDPOINT_URL, candidate.endpointUrl()));
+    CompletableFuture<Channel> activeFuture = CompletableFuture.completedFuture(activeChannel);
+    List<Integer> pendingCountsSeenByListeners = new ArrayList<>();
+
+    try {
+      setField(transport, "started", true);
+      setField(transport, "disconnecting", false);
+      setField(transport, "currentChannel", activeChannel);
+      setField(transport, "channelFuture", activeFuture);
+      addPendingCandidate(manager, pendingChannel);
+
+      assertEquals(1, manager.snapshot().pendingCandidates().size());
+
+      transport.addTransitionListener(
+          connected -> {
+            if (!connected) {
+              pendingCountsSeenByListeners.add(manager.snapshot().pendingCandidates().size());
+            }
+          });
+
+      invokeOnChannelClosed(transport, activeChannel);
+
+      assertEquals(List.of(0), pendingCountsSeenByListeners);
+      assertTrue(manager.snapshot().pendingCandidates().isEmpty());
+      assertFalse(channelFuture(transport).isDone());
+      assertEquals(1, queuedExecutor.pendingTaskCount());
+    } finally {
+      manager.shutdown();
+    }
+  }
+
   private ReverseTcpClientTransport newTransport(EmbeddedChannel channel) {
     return new ReverseTcpClientTransport(transportConfig(), newConnection(channel));
   }
@@ -341,6 +391,48 @@ class ReverseTcpClientTransportTest {
     Field field = ReverseTcpClientTransport.class.getDeclaredField(name);
     field.setAccessible(true);
     field.set(target, value);
+  }
+
+  @SuppressWarnings("unchecked")
+  private static void addPendingCandidate(ReverseConnectManager manager, Channel channel)
+      throws Exception {
+
+    Field listenerStatesField = declaredField(ReverseConnectManager.class, "listenerStates");
+    List<Object> listenerStates = (List<Object>) listenerStatesField.get(manager);
+    Object listenerState = listenerStates.get(0);
+
+    Class<?> candidateClass =
+        Class.forName("org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectManager$Candidate");
+    Constructor<?> constructor =
+        candidateClass.getDeclaredConstructor(listenerState.getClass(), Channel.class);
+    constructor.setAccessible(true);
+    Object candidate = constructor.newInstance(listenerState, channel);
+
+    setDeclaredField(candidate, "state", ReverseConnectCandidateState.PENDING);
+    setDeclaredField(candidate, "serverUri", SERVER_URI);
+    setDeclaredField(candidate, "endpointUrl", ENDPOINT_URL);
+    setDeclaredField(candidate, "reverseHelloReceivedAt", Instant.now());
+
+    UUID candidateId = (UUID) declaredField(candidateClass, "id").get(candidate);
+    Map<UUID, Object> candidates =
+        (Map<UUID, Object>) declaredField(ReverseConnectManager.class, "candidates").get(manager);
+    Map<UUID, Object> pendingCandidates =
+        (Map<UUID, Object>)
+            declaredField(ReverseConnectManager.class, "pendingCandidates").get(manager);
+
+    candidates.put(candidateId, candidate);
+    pendingCandidates.put(candidateId, candidate);
+  }
+
+  private static void setDeclaredField(Object target, String name, Object value) throws Exception {
+    Field field = declaredField(target.getClass(), name);
+    field.set(target, value);
+  }
+
+  private static Field declaredField(Class<?> targetClass, String name) throws Exception {
+    Field field = targetClass.getDeclaredField(name);
+    field.setAccessible(true);
+    return field;
   }
 
   @SuppressWarnings("unchecked")

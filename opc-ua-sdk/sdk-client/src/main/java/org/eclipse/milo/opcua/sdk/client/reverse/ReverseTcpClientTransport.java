@@ -582,12 +582,12 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
       closedFuture.completeExceptionally(failure);
     }
 
-    if (notifyDisconnected) {
-      notifyTransitionListeners(false);
-    }
-
     if (nextFuture != null) {
       registerForNextChannel(nextFuture);
+    }
+
+    if (notifyDisconnected) {
+      notifyTransitionListeners(false);
     }
   }
 

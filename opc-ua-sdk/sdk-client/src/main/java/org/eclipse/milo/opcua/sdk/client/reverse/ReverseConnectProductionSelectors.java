@@ -30,8 +30,10 @@ final class ReverseConnectProductionSelectors {
     }
 
     return candidate ->
-        Objects.equals(discoveryCandidate.serverUri(), candidate.serverUri())
-            && Objects.equals(discoveryCandidate.endpointUrl(), candidate.endpointUrl());
+        (discoveryCandidate.serverUri() == null
+                || Objects.equals(discoveryCandidate.serverUri(), candidate.serverUri()))
+            && (discoveryCandidate.endpointUrl() == null
+                || Objects.equals(discoveryCandidate.endpointUrl(), candidate.endpointUrl()));
   }
 
   static UaException missingRoutingHintsException() {

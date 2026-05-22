@@ -12,7 +12,9 @@ package org.eclipse.milo.opcua.sdk.client.reverse;
 
 import static java.util.Objects.requireNonNull;
 
+import io.netty.channel.Channel;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -26,7 +28,9 @@ import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.transport.client.ChannelStateObservable;
+import org.eclipse.milo.opcua.stack.transport.client.CurrentChannelProvider;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransportConfigBuilder;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Dynamic discovery-first acceptor for shared Reverse Connect listeners.
@@ -218,7 +222,7 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
         .whenComplete(
             (connected, ex) -> {
               if (ex != null) {
-                activeKeys.remove(key);
+                releaseKeyAndProcessPendingCandidates(key, candidate.id());
                 errorListener.onError(candidate, unwrap(ex));
               }
             });
@@ -327,10 +331,23 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
           };
 
       observable.addTransitionListener(listener);
+
+      if (client.getTransport() instanceof CurrentChannelProvider channelProvider) {
+        Channel channel = channelProvider.getCurrentChannel();
+        if (channel == null || !channel.isActive()) {
+          releaseKeyAndProcessPendingCandidates(key);
+        }
+      }
     }
   }
 
   private void releaseKeyAndProcessPendingCandidates(String key) {
+    releaseKeyAndProcessPendingCandidates(key, null);
+  }
+
+  private void releaseKeyAndProcessPendingCandidates(
+      String key, @Nullable UUID excludedCandidateId) {
+
     if (!activeKeys.remove(key) || !running.get()) {
       return;
     }
@@ -338,6 +355,9 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
     for (ReverseConnectCandidateSnapshot candidate : manager.snapshot().pendingCandidates()) {
       if (!running.get()) {
         return;
+      }
+      if (candidate.id().equals(excludedCandidateId)) {
+        continue;
       }
 
       onCandidatePending(candidate);

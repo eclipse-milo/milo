@@ -22,6 +22,7 @@ import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransportConfigBuilder;
+import org.jspecify.annotations.Nullable;
 
 /**
  * One-shot helper for creating a reverse client when the endpoint is not known up front.
@@ -116,9 +117,43 @@ public final class DiscoveryFirstReverseConnectClient {
    * @return a future that completes with the connected production client.
    */
   public CompletableFuture<OpcUaClient> connectAsync() {
-    return ReverseConnectDiscovery.getEndpoints(
-            manager, discoverySelector, discoveryTransportCustomizer)
-        .thenCompose(this::connectProductionClient);
+    CompletableFuture<ReverseConnectDiscoveryResult> discoveryFuture =
+        ReverseConnectDiscovery.getEndpoints(
+            manager, discoverySelector, discoveryTransportCustomizer);
+    var result = new DiscoveryFirstConnectFuture(discoveryFuture);
+
+    discoveryFuture.whenComplete(
+        (discovery, discoveryFailure) -> {
+          if (result.isDone()) {
+            return;
+          }
+
+          if (discoveryFailure != null) {
+            result.completeExceptionally(discoveryFailure);
+            return;
+          }
+
+          CompletableFuture<OpcUaClient> productionFuture;
+          try {
+            productionFuture = connectProductionClient(discovery);
+          } catch (Throwable t) {
+            result.completeExceptionally(t);
+            return;
+          }
+
+          result.setProductionFuture(productionFuture);
+
+          productionFuture.whenComplete(
+              (client, productionFailure) -> {
+                if (productionFailure != null) {
+                  result.completeExceptionally(productionFailure);
+                } else {
+                  result.completeProduction(client);
+                }
+              });
+        });
+
+    return result;
   }
 
   private CompletableFuture<OpcUaClient> connectProductionClient(
@@ -166,20 +201,108 @@ public final class DiscoveryFirstReverseConnectClient {
       return CompletableFuture.failedFuture(t);
     }
 
-    return client
-        .connectAsync()
-        .whenComplete(
-            (c, ex) -> {
-              if (ex != null) {
-                client.disconnectAsync();
-              }
-            });
+    return new ProductionConnectFuture(client, client.connectAsync());
   }
 
   private static ReverseConnectSelector defaultProductionSelector(
       ReverseConnectDiscoveryResult discovery, EndpointDescription endpoint) {
 
     return ReverseConnectProductionSelectors.matchDiscoveryRoutingHints(discovery.candidate());
+  }
+
+  private static final class DiscoveryFirstConnectFuture extends CompletableFuture<OpcUaClient> {
+
+    private final CompletableFuture<ReverseConnectDiscoveryResult> discoveryFuture;
+
+    private final Object lock = new Object();
+    private @Nullable CompletableFuture<OpcUaClient> productionFuture;
+
+    DiscoveryFirstConnectFuture(CompletableFuture<ReverseConnectDiscoveryResult> discoveryFuture) {
+      this.discoveryFuture = discoveryFuture;
+    }
+
+    void setProductionFuture(CompletableFuture<OpcUaClient> productionFuture) {
+      boolean cancelProduction;
+
+      synchronized (lock) {
+        this.productionFuture = productionFuture;
+        cancelProduction = isCancelled();
+      }
+
+      if (cancelProduction) {
+        cancelProductionFuture(productionFuture, false);
+      }
+    }
+
+    void completeProduction(OpcUaClient client) {
+      if (!complete(client) && isCancelled()) {
+        client.disconnectAsync();
+      }
+    }
+
+    @Override
+    public boolean cancel(boolean mayInterruptIfRunning) {
+      boolean cancelled = super.cancel(mayInterruptIfRunning);
+      if (cancelled) {
+        discoveryFuture.cancel(mayInterruptIfRunning);
+
+        CompletableFuture<OpcUaClient> productionFuture;
+        synchronized (lock) {
+          productionFuture = this.productionFuture;
+        }
+
+        if (productionFuture != null) {
+          cancelProductionFuture(productionFuture, mayInterruptIfRunning);
+        }
+      }
+
+      return cancelled;
+    }
+
+    private static void cancelProductionFuture(
+        CompletableFuture<OpcUaClient> productionFuture, boolean mayInterruptIfRunning) {
+
+      if (!productionFuture.cancel(mayInterruptIfRunning)) {
+        productionFuture.whenComplete(
+            (client, failure) -> {
+              if (failure == null && client != null) {
+                client.disconnectAsync();
+              }
+            });
+      }
+    }
+  }
+
+  private static final class ProductionConnectFuture extends CompletableFuture<OpcUaClient> {
+
+    private final OpcUaClient client;
+    private final CompletableFuture<OpcUaClient> connectFuture;
+
+    ProductionConnectFuture(OpcUaClient client, CompletableFuture<OpcUaClient> connectFuture) {
+      this.client = client;
+      this.connectFuture = connectFuture;
+
+      connectFuture.whenComplete(
+          (connectedClient, failure) -> {
+            if (failure != null) {
+              client.disconnectAsync();
+              completeExceptionally(failure);
+            } else {
+              complete(connectedClient);
+            }
+          });
+    }
+
+    @Override
+    public boolean cancel(boolean mayInterruptIfRunning) {
+      boolean cancelled = super.cancel(mayInterruptIfRunning);
+      if (cancelled) {
+        connectFuture.cancel(mayInterruptIfRunning);
+        client.disconnectAsync();
+      }
+
+      return cancelled;
+    }
   }
 
   /**
