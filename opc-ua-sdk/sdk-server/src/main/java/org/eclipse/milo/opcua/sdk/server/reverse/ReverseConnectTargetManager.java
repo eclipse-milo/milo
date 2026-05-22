@@ -133,6 +133,7 @@ public final class ReverseConnectTargetManager {
     requireNonNull(target, "target");
 
     ReverseConnectTargetSnapshot snapshot;
+    boolean shouldSchedule;
     synchronized (lock) {
       if (shutdown) {
         throw new IllegalStateException("ReverseConnectTargetManager is shut down");
@@ -149,10 +150,21 @@ public final class ReverseConnectTargetManager {
       records.put(target.getId(), record);
 
       snapshot = record.snapshot();
-      notifyTargetAdded(snapshot);
+      shouldSchedule = running && record.isSchedulable();
+    }
 
-      if (running && record.isSchedulable()) {
-        scheduleLocked(record, 0L);
+    // Notify "added" before scheduling so the schedule's first "updated" event cannot be observed
+    // before the "added" event. Critical when callers wire a synchronous scheduler and listener
+    // executor (e.g., in tests) — scheduleLocked could otherwise drive an immediate
+    // notifyTargetUpdated under the manager lock.
+    notifyTargetAdded(snapshot);
+
+    if (shouldSchedule) {
+      synchronized (lock) {
+        TargetRecord record = records.get(target.getId());
+        if (record != null && running && record.isSchedulable()) {
+          scheduleLocked(record, 0L);
+        }
       }
     }
 
@@ -291,6 +303,7 @@ public final class ReverseConnectTargetManager {
 
                 channels.addAll(record.activeChannels.values());
                 record.activeChannels.clear();
+                record.pendingHandoffAttempts.clear();
 
                 snapshots.add(record.snapshot());
               });
@@ -407,9 +420,14 @@ public final class ReverseConnectTargetManager {
 
         record.activeAttempt = null;
         record.attemptInProgress = false;
-        if (handoffAccepted) {
-          record.pendingHandoffAttempts.add(
-              new AttemptKey(record.attemptCounter, attemptGeneration));
+        if (attempt != null) {
+          // Always record the AttemptKey so a racing HANDOFF (e.g., attempt currently in
+          // HELLO_HANDLER_INSTALLED when the client's Hello arrives during this update) still
+          // surfaces as an active channel rather than being closed by onAttemptChannel. The
+          // cleanup callback removes the key if the attempt actually fails.
+          AttemptKey rescueKey = new AttemptKey(record.attemptCounter, attemptGeneration);
+          record.pendingHandoffAttempts.add(rescueKey);
+          installHandoffRescueCleanup(target.getId(), attempt, rescueKey);
         }
 
         record.target = target;
@@ -497,13 +515,57 @@ public final class ReverseConnectTargetManager {
 
     record.activeAttempt = null;
     record.attemptInProgress = false;
-    if (handoffAccepted) {
-      record.pendingHandoffAttempts.add(new AttemptKey(record.attemptCounter, attemptGeneration));
-    } else {
+    if (attempt != null) {
+      // Always record the AttemptKey, not just when isSuccessfulHandoff returned true. The attempt
+      // may still race to HANDOFF after the lock is released (e.g., when it is in
+      // HELLO_HANDLER_INSTALLED and the client's Hello arrives during the cancel). Recording the
+      // key ensures onAttemptChannel can recognize and accept that handed-off channel rather than
+      // closing it. The companion cleanup callback below removes the key if the attempt actually
+      // fails so the target does not remain stuck with phantom pending state.
+      AttemptKey rescueKey = new AttemptKey(record.attemptCounter, attemptGeneration);
+      record.pendingHandoffAttempts.add(rescueKey);
+      installHandoffRescueCleanup(record.target.getId(), attempt, rescueKey);
+    }
+    if (!handoffAccepted) {
       record.generation++;
     }
 
     return new TargetAction(record.snapshot(), handoffAccepted ? null : attempt);
+  }
+
+  private void installHandoffRescueCleanup(
+      UUID targetId, OpcTcpServerReverseConnectAttempt attempt, AttemptKey rescueKey) {
+
+    attempt
+        .channelFuture()
+        .whenComplete(
+            (channel, ex) -> {
+              if (ex == null) {
+                return;
+              }
+              ReverseConnectTargetSnapshot updatedSnapshot = null;
+              synchronized (lock) {
+                TargetRecord record = records.get(targetId);
+                if (record == null) {
+                  return;
+                }
+                if (!record.pendingHandoffAttempts.remove(rescueKey)) {
+                  return;
+                }
+                if (running
+                    && !shutdown
+                    && record.isSchedulable()
+                    && record.activeChannels.isEmpty()
+                    && !record.hasPendingAttempt()
+                    && record.scheduledFuture == null) {
+                  scheduleLocked(record, 0L);
+                  updatedSnapshot = record.snapshot();
+                }
+              }
+              if (updatedSnapshot != null) {
+                notifyTargetUpdated(updatedSnapshot);
+              }
+            });
   }
 
   private void scheduleLocked(TargetRecord record, long delayMillis) {
@@ -646,7 +708,7 @@ public final class ReverseConnectTargetManager {
         record.attemptInProgress = false;
         record.activeAttempt = null;
         record.lastStatusCode = statusCode;
-        record.lastError = cause;
+        record.lastError = ReverseConnectTargetSnapshot.copyThrowable(cause);
 
         if (running && !shutdown && record.isSchedulable()) {
           retryContext =
@@ -705,7 +767,7 @@ public final class ReverseConnectTargetManager {
           } else if (event.state() == ReverseConnectAttemptState.FAILED
               || event.state() == ReverseConnectAttemptState.CLIENT_ERROR) {
             record.lastStatusCode = event.statusCode();
-            record.lastError = event.exception();
+            record.lastError = ReverseConnectTargetSnapshot.copyThrowable(event.exception());
           }
 
           if (shouldRetry(record, event)) {

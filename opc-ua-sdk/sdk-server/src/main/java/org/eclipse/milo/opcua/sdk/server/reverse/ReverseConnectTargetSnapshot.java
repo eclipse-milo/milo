@@ -72,7 +72,7 @@ public record ReverseConnectTargetSnapshot(
     return copyThrowable(lastError);
   }
 
-  private static @Nullable Throwable copyThrowable(@Nullable Throwable throwable) {
+  static @Nullable Throwable copyThrowable(@Nullable Throwable throwable) {
     return throwable != null ? copyThrowable(throwable, new IdentityHashMap<>()) : null;
   }
 

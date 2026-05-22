@@ -129,9 +129,13 @@ final class OpcTcpServerReverseConnector implements AutoCloseable {
         throw new IllegalStateException("OpcTcpServerReverseConnector is closed");
       }
 
-      attempts.add(attempt);
+      // Start the connect attempt before registering it. If bootstrap.connect() throws
+      // synchronously (for example, a misconfigured reverseConnectBootstrapCustomizer or a
+      // shutting-down event loop), the exception propagates to the caller without leaking the
+      // attempt into the bookkeeping set.
       connectFuture = bootstrap.connect(parameters.clientListenerAddress());
       attempt.setConnectFuture(connectFuture);
+      attempts.add(attempt);
     }
 
     attempt.transition(
@@ -242,15 +246,16 @@ final class OpcTcpServerReverseConnector implements AutoCloseable {
     var exception = new CancellationException("reverse-connect attempt cancelled");
     String message = "reverse-connect attempt cancelled";
 
-    if (attempt.cancelFuture(statusCode, exception, message)) {
-      ChannelFuture connectFuture = attempt.connectFuture();
-      if (connectFuture != null) {
-        connectFuture.cancel(false);
-      }
+    try {
+      if (attempt.cancelFuture(statusCode, exception, message)) {
+        ChannelFuture connectFuture = attempt.connectFuture();
+        if (connectFuture != null) {
+          connectFuture.cancel(false);
+        }
 
-      closeChannel(attempt.channel());
-      removeAttempt(attempt);
-    } else if (attempt.state() == OpcTcpServerReverseConnectAttemptState.HANDOFF) {
+        closeChannel(attempt.channel());
+      }
+    } finally {
       removeAttempt(attempt);
     }
   }
@@ -287,6 +292,7 @@ final class OpcTcpServerReverseConnector implements AutoCloseable {
       closed = true;
       attemptsSnapshot = Set.copyOf(attempts);
       channelsSnapshot = Set.copyOf(channels);
+      attempts.clear();
       channels.clear();
     }
 
@@ -477,18 +483,21 @@ final class OpcTcpServerReverseConnector implements AutoCloseable {
     }
 
     var exception = new UaException(statusCode, message);
-    boolean completed =
-        attempt.fail(OpcTcpServerReverseConnectAttemptState.CLOSED, exception, statusCode, message);
 
-    if (completed) {
-      ChannelFuture connectFuture = attempt.connectFuture();
-      if (connectFuture != null) {
-        connectFuture.cancel(false);
+    try {
+      boolean completed =
+          attempt.fail(
+              OpcTcpServerReverseConnectAttemptState.CLOSED, exception, statusCode, message);
+
+      if (completed) {
+        ChannelFuture connectFuture = attempt.connectFuture();
+        if (connectFuture != null) {
+          connectFuture.cancel(false);
+        }
+
+        closeChannel(attempt.channel());
       }
-
-      closeChannel(attempt.channel());
-      removeAttempt(attempt);
-    } else if (attempt.state() == OpcTcpServerReverseConnectAttemptState.HANDOFF) {
+    } finally {
       removeAttempt(attempt);
     }
   }
@@ -525,12 +534,14 @@ final class OpcTcpServerReverseConnector implements AutoCloseable {
 
     var exception = new UaException(statusCode.value(), message, cause);
 
-    if (attempt.fail(
-        OpcTcpServerReverseConnectAttemptState.FAILED, exception, statusCode, message)) {
-      closeChannel(channel);
-      removeAttempt(attempt);
-    } else if (attempt.state() != OpcTcpServerReverseConnectAttemptState.HANDOFF) {
-      closeChannel(channel);
+    try {
+      if (attempt.fail(
+          OpcTcpServerReverseConnectAttemptState.FAILED, exception, statusCode, message)) {
+        closeChannel(channel);
+      } else if (attempt.state() != OpcTcpServerReverseConnectAttemptState.HANDOFF) {
+        closeChannel(channel);
+      }
+    } finally {
       removeAttempt(attempt);
     }
   }

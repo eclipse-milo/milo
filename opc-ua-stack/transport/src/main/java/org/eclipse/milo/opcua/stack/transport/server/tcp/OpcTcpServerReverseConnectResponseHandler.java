@@ -86,10 +86,18 @@ final class OpcTcpServerReverseConnectResponseHandler extends ByteToMessageDecod
       connector.onClientError(attempt, ctx, errorMessage);
     } else if (messageType == MessageType.Hello) {
       ByteBuf helloBuffer = buffer.readRetainedSlice(messageLength);
+      boolean forwarded = false;
 
-      ctx.pipeline().remove(this);
-      connector.onHelloReceived(attempt, ctx.channel());
-      ctx.fireChannelRead(helloBuffer);
+      try {
+        ctx.pipeline().remove(this);
+        connector.onHelloReceived(attempt, ctx.channel());
+        ctx.fireChannelRead(helloBuffer);
+        forwarded = true;
+      } finally {
+        if (!forwarded && helloBuffer.refCnt() > 0) {
+          helloBuffer.release();
+        }
+      }
     }
   }
 
