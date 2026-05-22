@@ -34,21 +34,22 @@ class OpcUaClientReverseConnectTest {
 
   @Test
   void createReverseConnectUsesReverseTcpTransport() throws Exception {
-    ReverseConnectManager manager =
+    try (ReverseConnectManager manager =
         ReverseConnectManager.builder()
             .addBindAddress(new InetSocketAddress("localhost", 0))
-            .build();
+            .build()) {
 
-    OpcUaClientConfig config =
-        OpcUaClientConfig.builder()
-            .setEndpoint(endpoint())
-            .setDiscoveryEndpoints(List.of())
-            .build();
+      OpcUaClientConfig config =
+          OpcUaClientConfig.builder()
+              .setEndpoint(endpoint())
+              .setDiscoveryEndpoints(List.of())
+              .build();
 
-    OpcUaClient client =
-        OpcUaClient.createReverseConnect(config, manager, ReverseConnectSelector.any());
+      OpcUaClient client =
+          OpcUaClient.createReverseConnect(config, manager, ReverseConnectSelector.any());
 
-    assertInstanceOf(ReverseTcpClientTransport.class, client.getTransport());
+      assertInstanceOf(ReverseTcpClientTransport.class, client.getTransport());
+    }
   }
 
   private static EndpointDescription endpoint() {

@@ -472,9 +472,17 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
     }
 
     if (application == null) {
+      var failure =
+          new UaException(StatusCodes.Bad_UnexpectedError, "client application context is null");
+
+      if (!rearmOnFailure) {
+        synchronized (lock) {
+          enterDirectTerminalStateLocked(failure);
+        }
+      }
+
       channel.close();
-      targetFuture.completeExceptionally(
-          new UaException(StatusCodes.Bad_UnexpectedError, "client application context is null"));
+      targetFuture.completeExceptionally(failure);
       return;
     }
 
@@ -488,6 +496,21 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
 
       currentChannel = channel;
     }
+
+    // Fail handshakeFuture if the channel closes before or while the initializer dispatches its
+    // pipeline. Otherwise handshakeFuture could remain pending forever when the close listener
+    // fires before UascClientAcknowledgeHandler.handlerAdded had a chance to schedule its timer.
+    channel
+        .closeFuture()
+        .addListener(
+            future -> {
+              if (!handshakeFuture.isDone()) {
+                handshakeFuture.completeExceptionally(
+                    new UaException(
+                        StatusCodes.Bad_ConnectionClosed,
+                        "reverse-connect channel closed before handshake completed"));
+              }
+            });
 
     channel.closeFuture().addListener(future -> onChannelClosed(channel));
 
@@ -504,6 +527,13 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
                     requestId::getAndIncrement,
                     handshakeFuture,
                     endpointUrl);
+
+                if (!channel.isActive() && !handshakeFuture.isDone()) {
+                  handshakeFuture.completeExceptionally(
+                      new UaException(
+                          StatusCodes.Bad_ConnectionClosed,
+                          "reverse-connect channel closed before initializer dispatch"));
+                }
               } catch (Throwable t) {
                 handshakeFuture.completeExceptionally(t);
                 channel.close();
@@ -628,6 +658,13 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
   }
 
   private void enterDirectTerminalStateLocked(Throwable failure) {
+    // Preserve the first terminal cause; later calls (for example, disconnect() after
+    // onChannelClosed already recorded "channel closed") must not overwrite the earlier, more
+    // specific failure.
+    if (directTerminalFailure != null) {
+      return;
+    }
+
     directTerminalFailure = failure;
     waitingForReverseConnection = false;
 
