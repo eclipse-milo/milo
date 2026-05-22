@@ -64,6 +64,26 @@ class ReverseConnectProductionSelectorsTest {
   }
 
   @Test
+  void defaultProductionSelectorMatchesEndpointOnlyRoutingHint() {
+    ReverseConnectSelector selector =
+        ReverseConnectProductionSelectors.matchDiscoveryRoutingHints(candidate(null, ENDPOINT_URL));
+
+    assertTrue(selector.matches(candidate(SERVER_URI, ENDPOINT_URL)));
+    assertTrue(selector.matches(candidate(null, ENDPOINT_URL)));
+    assertFalse(selector.matches(candidate(SERVER_URI, "opc.tcp://localhost:12686/other")));
+  }
+
+  @Test
+  void defaultProductionSelectorMatchesServerUriOnlyRoutingHint() {
+    ReverseConnectSelector selector =
+        ReverseConnectProductionSelectors.matchDiscoveryRoutingHints(candidate(SERVER_URI, null));
+
+    assertTrue(selector.matches(candidate(SERVER_URI, ENDPOINT_URL)));
+    assertTrue(selector.matches(candidate(SERVER_URI, null)));
+    assertFalse(selector.matches(candidate("urn:other", ENDPOINT_URL)));
+  }
+
+  @Test
   void discoveryFirstDefaultProductionSelectorFailsWhenRoutingHintsAreMissing() throws Exception {
     ReverseConnectManager manager = newManager();
 
@@ -85,9 +105,10 @@ class ReverseConnectProductionSelectorsTest {
   @Test
   void acceptorDefaultProductionSelectorFailsWhenRoutingHintsAreMissing() throws Exception {
     ReverseConnectManager manager = newManager();
+    ReverseConnectAcceptor acceptor = ReverseConnectAcceptor.builder(manager).build();
 
     try {
-      ReverseConnectAcceptor acceptor = ReverseConnectAcceptor.builder(manager).build();
+      acceptor.start();
 
       CompletableFuture<OpcUaClient> future =
           invokeAcceptorConnectProductionClient(
@@ -96,6 +117,7 @@ class ReverseConnectProductionSelectorsTest {
 
       assertConfigurationError(future);
     } finally {
+      acceptor.stop();
       manager.shutdown();
     }
   }
