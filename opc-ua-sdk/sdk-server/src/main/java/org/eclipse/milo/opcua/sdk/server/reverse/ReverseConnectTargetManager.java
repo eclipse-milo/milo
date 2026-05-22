@@ -328,10 +328,7 @@ public final class ReverseConnectTargetManager {
       synchronized (lock) {
         TargetRecord record = requireRecord(targetId);
 
-        if (running
-            && record.target.isEnabled()
-            && record.activeChannels.isEmpty()
-            && !record.hasPendingAttempt()) {
+        if (running && record.target.isEnabled()) {
           validateTarget(record.target);
         }
 
@@ -834,6 +831,7 @@ public final class ReverseConnectTargetManager {
       scheduler.execute(() -> evaluatePostCloseRetry(retryContext));
     } catch (RejectedExecutionException e) {
       logger.warn("Unable to evaluate Reverse Connect retry policy.", e);
+      notifyAttemptEvent(retryContext.event());
       notifyTargetUpdated(closedSnapshot);
     }
   }
@@ -863,6 +861,7 @@ public final class ReverseConnectTargetManager {
 
   private void evaluatePostCloseRetry(PostCloseRetryContext retryContext) {
     if (!isPostCloseRetryCurrent(retryContext)) {
+      notifyAttemptEvent(retryContext.event());
       return;
     }
 
@@ -877,6 +876,7 @@ public final class ReverseConnectTargetManager {
       }
     }
 
+    notifyAttemptEvent(retryContext.event());
     if (snapshot != null) {
       notifyTargetUpdated(snapshot);
     }
