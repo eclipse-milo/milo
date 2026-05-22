@@ -55,7 +55,40 @@ public abstract class AbstractUascClientTransport
   @Override
   public CompletableFuture<UaResponseMessageType> sendRequestMessage(
       UaRequestMessageType requestMessage) {
-    return getChannel().thenCompose(ch -> sendRequestMessage(requestMessage, ch));
+
+    var request = new UascRequest(requestId.getAndIncrement(), requestMessage);
+    var responseFuture = new CompletableFuture<UaResponseMessageType>();
+
+    pendingRequests.put(request.getRequestId(), responseFuture);
+    // Schedule the request timeout up front so a never-arriving channel (e.g., a reverse-connect
+    // transport whose server is offline) still fails the future when the timeout hint elapses.
+    // Without this, getChannel() can park forever waiting on the next claimed reverse connection.
+    scheduleRequestTimeout(request);
+
+    getChannel()
+        .whenComplete(
+            (channel, ex) -> {
+              if (ex != null) {
+                CompletableFuture<UaResponseMessageType> pending =
+                    pendingRequests.remove(request.getRequestId());
+                if (pending != null) {
+                  cancelRequestTimeout(request.getRequestId());
+                  pending.completeExceptionally(ex);
+                }
+                return;
+              }
+
+              // If the request already timed out while we were waiting for a channel, the
+              // response future is no longer in pendingRequests. Skip the write to avoid
+              // emitting a request the caller has already given up on.
+              if (!pendingRequests.containsKey(request.getRequestId())) {
+                return;
+              }
+
+              writeRequest(request, channel, responseFuture);
+            });
+
+    return responseFuture;
   }
 
   protected CompletableFuture<UaResponseMessageType> sendRequestMessage(
@@ -67,31 +100,41 @@ public abstract class AbstractUascClientTransport
     pendingRequests.put(request.getRequestId(), responseFuture);
     scheduleRequestTimeout(request);
 
+    writeRequest(request, channel, responseFuture);
+
+    return responseFuture;
+  }
+
+  private void writeRequest(
+      UascRequest request,
+      Channel channel,
+      CompletableFuture<UaResponseMessageType> responseFuture) {
+
     channel
         .writeAndFlush(request)
         .addListener(
             f -> {
               if (!f.isSuccess()) {
-                pendingRequests.remove(request.getRequestId());
-                cancelRequestTimeout(request.getRequestId());
+                CompletableFuture<UaResponseMessageType> pending =
+                    pendingRequests.remove(request.getRequestId());
+                if (pending != null) {
+                  cancelRequestTimeout(request.getRequestId());
+                  pending.completeExceptionally(f.cause());
 
-                responseFuture.completeExceptionally(f.cause());
-
-                logger.debug(
-                    "Write failed, request={}, requestHandle={}",
-                    requestMessage.getClass().getSimpleName(),
-                    request.getRequestId());
+                  logger.debug(
+                      "Write failed, request={}, requestHandle={}",
+                      request.getRequestMessage().getClass().getSimpleName(),
+                      request.getRequestId());
+                }
               } else {
                 if (logger.isTraceEnabled()) {
                   logger.trace(
                       "Write succeeded, request={}, requestId={}",
-                      requestMessage.getClass().getSimpleName(),
+                      request.getRequestMessage().getClass().getSimpleName(),
                       request.getRequestId());
                 }
               }
             });
-
-    return responseFuture;
   }
 
   private void scheduleRequestTimeout(UascRequest request) {
