@@ -14,6 +14,8 @@ import static java.util.Objects.requireNonNull;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -33,6 +35,8 @@ import org.jspecify.annotations.Nullable;
 public final class OpcTcpServerReverseConnectAttempt {
 
   private final UUID id = UUID.randomUUID();
+  private final Object stateLock = new Object();
+  private final Deque<PendingTransition> pendingTransitions = new ArrayDeque<>();
   private final CompletableFuture<Channel> channelFuture = new CompletableFuture<>();
   private final AtomicBoolean completed = new AtomicBoolean(false);
   private final AtomicReference<OpcTcpServerReverseConnectAttemptState> state =
@@ -41,6 +45,7 @@ public final class OpcTcpServerReverseConnectAttempt {
   private final OpcTcpServerReverseConnector connector;
   private final OpcTcpServerReverseConnectParameters parameters;
 
+  private boolean emittingTransitions = false;
   private volatile @Nullable Channel channel;
   private volatile @Nullable ChannelFuture connectFuture;
 
@@ -107,13 +112,12 @@ public final class OpcTcpServerReverseConnectAttempt {
   }
 
   boolean handoff(Channel channel) {
-    if (completeTerminal(OpcTcpServerReverseConnectAttemptState.HANDOFF)) {
-      connector.emitStateTransition(
-          this,
-          OpcTcpServerReverseConnectAttemptState.HANDOFF,
-          null,
-          null,
-          "client Hello received; channel handed off to server UASC path");
+    if (completeTerminal(
+        OpcTcpServerReverseConnectAttemptState.HANDOFF,
+        null,
+        null,
+        "client Hello received; channel handed off to server UASC path")) {
+      emitPendingTransitions();
       channelFuture.complete(channel);
       return true;
     } else {
@@ -127,9 +131,9 @@ public final class OpcTcpServerReverseConnectAttempt {
       @Nullable StatusCode statusCode,
       @Nullable String message) {
 
-    if (completeTerminal(state)) {
+    if (completeTerminal(state, statusCode, cause, message)) {
       channelFuture.completeExceptionally(cause);
-      connector.emitStateTransition(this, state, statusCode, cause, message);
+      emitPendingTransitions();
       return true;
     } else {
       return false;
@@ -137,10 +141,10 @@ public final class OpcTcpServerReverseConnectAttempt {
   }
 
   boolean cancelFuture(StatusCode statusCode, Throwable cause, String message) {
-    if (completeTerminal(OpcTcpServerReverseConnectAttemptState.CANCELLED)) {
+    if (completeTerminal(
+        OpcTcpServerReverseConnectAttemptState.CANCELLED, statusCode, cause, message)) {
       channelFuture.cancel(false);
-      connector.emitStateTransition(
-          this, OpcTcpServerReverseConnectAttemptState.CANCELLED, statusCode, cause, message);
+      emitPendingTransitions();
       return true;
     } else {
       return false;
@@ -149,27 +153,76 @@ public final class OpcTcpServerReverseConnectAttempt {
 
   void transition(OpcTcpServerReverseConnectAttemptState nextState, @Nullable String message) {
 
-    if (!isTerminalState(nextState) && isTerminalState(state.get())) {
-      return;
+    synchronized (stateLock) {
+      while (true) {
+        OpcTcpServerReverseConnectAttemptState currentState = state.get();
+        if (!isTerminalState(nextState) && isTerminalState(currentState)) {
+          return;
+        }
+        if (state.compareAndSet(currentState, nextState)) {
+          pendingTransitions.addLast(new PendingTransition(nextState, null, null, message));
+          break;
+        }
+      }
     }
 
-    state.set(nextState);
-    connector.emitStateTransition(this, nextState, null, null, message);
+    emitPendingTransitions();
   }
 
-  private boolean completeTerminal(OpcTcpServerReverseConnectAttemptState terminalState) {
+  private boolean completeTerminal(
+      OpcTcpServerReverseConnectAttemptState terminalState,
+      @Nullable StatusCode statusCode,
+      @Nullable Throwable cause,
+      @Nullable String message) {
+
     if (!isTerminalState(terminalState)) {
       throw new IllegalArgumentException("not a terminal state: " + terminalState);
     }
 
-    while (true) {
-      OpcTcpServerReverseConnectAttemptState currentState = state.get();
-      if (isTerminalState(currentState)) {
-        return false;
+    synchronized (stateLock) {
+      while (true) {
+        OpcTcpServerReverseConnectAttemptState currentState = state.get();
+        if (isTerminalState(currentState)) {
+          return false;
+        }
+        if (state.compareAndSet(currentState, terminalState)) {
+          completed.set(true);
+          pendingTransitions.addLast(
+              new PendingTransition(terminalState, statusCode, cause, message));
+          return true;
+        }
       }
-      if (state.compareAndSet(currentState, terminalState)) {
-        completed.set(true);
-        return true;
+    }
+  }
+
+  private void emitPendingTransitions() {
+    while (true) {
+      PendingTransition transition;
+
+      synchronized (stateLock) {
+        if (emittingTransitions) {
+          return;
+        }
+
+        transition = pendingTransitions.pollFirst();
+        if (transition == null) {
+          return;
+        }
+
+        emittingTransitions = true;
+      }
+
+      try {
+        connector.emitStateTransition(
+            this,
+            transition.state(),
+            transition.statusCode(),
+            transition.exception(),
+            transition.message());
+      } finally {
+        synchronized (stateLock) {
+          emittingTransitions = false;
+        }
       }
     }
   }
@@ -202,4 +255,10 @@ public final class OpcTcpServerReverseConnectAttempt {
   public void close() {
     connector.close(this);
   }
+
+  private record PendingTransition(
+      OpcTcpServerReverseConnectAttemptState state,
+      @Nullable StatusCode statusCode,
+      @Nullable Throwable exception,
+      @Nullable String message) {}
 }

@@ -22,6 +22,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import java.io.IOException;
@@ -32,15 +33,23 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.channel.messages.AcknowledgeMessage;
 import org.eclipse.milo.opcua.stack.core.channel.messages.ErrorMessage;
@@ -62,6 +71,7 @@ import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
@@ -234,6 +244,95 @@ class OpcTcpServerReverseConnectorTest {
   }
 
   @Test
+  void invalidMessageTypeHeaderFailsAttemptWithoutWaitingForBody() throws Exception {
+    RecordingObserver observer = new RecordingObserver();
+
+    try (ServerSocket listener = newListener()) {
+      connector = newConnector(5_000);
+
+      OpcTcpServerReverseConnectAttempt attempt =
+          connector.connect(newParameters(boundAddress(listener), SERVER_URI, observer));
+
+      try (Socket socket = accept(listener)) {
+        readReverseHello(socket);
+        writeMessage(socket, newHeaderMessage(MessageType.SecureMessage, 'F', 1024));
+
+        assertThrows(
+            ExecutionException.class, () -> attempt.channelFuture().get(3, TimeUnit.SECONDS));
+        waitUntil(() -> observer.states().contains(OpcTcpServerReverseConnectAttemptState.FAILED));
+
+        assertEquals(-1, socket.getInputStream().read());
+        assertEquals(OpcTcpServerReverseConnectAttemptState.FAILED, attempt.state());
+        var event = observer.last();
+        assertNotNull(event.statusCode());
+        assertEquals(StatusCodes.Bad_TcpMessageTypeInvalid, event.statusCode().value());
+      }
+    }
+  }
+
+  @Test
+  void nonFinalHelloHeaderFailsAttemptWithoutWaitingForBody() throws Exception {
+    RecordingObserver observer = new RecordingObserver();
+
+    try (ServerSocket listener = newListener()) {
+      connector = newConnector(5_000);
+
+      OpcTcpServerReverseConnectAttempt attempt =
+          connector.connect(newParameters(boundAddress(listener), SERVER_URI, observer));
+
+      try (Socket socket = accept(listener)) {
+        readReverseHello(socket);
+        writeMessage(
+            socket,
+            newHeaderMessage(
+                MessageType.Hello, 'C', UascServerHelloHandler.MAX_HELLO_MESSAGE_SIZE));
+
+        assertThrows(
+            ExecutionException.class, () -> attempt.channelFuture().get(3, TimeUnit.SECONDS));
+        waitUntil(() -> observer.states().contains(OpcTcpServerReverseConnectAttemptState.FAILED));
+
+        assertEquals(-1, socket.getInputStream().read());
+        assertEquals(OpcTcpServerReverseConnectAttemptState.FAILED, attempt.state());
+        var event = observer.last();
+        assertNotNull(event.statusCode());
+        assertEquals(StatusCodes.Bad_TcpMessageTypeInvalid, event.statusCode().value());
+      }
+    }
+  }
+
+  @Test
+  void throwingPipelineCustomizerFailsAttemptAndClosesChannel() throws Exception {
+    RecordingObserver observer = new RecordingObserver();
+
+    try (ServerSocket listener = newListener()) {
+      connector =
+          newConnector(
+              5_000,
+              pipeline -> {
+                throw new IllegalStateException("customizer failed");
+              });
+
+      OpcTcpServerReverseConnectAttempt attempt =
+          connector.connect(newParameters(boundAddress(listener), SERVER_URI, observer));
+
+      try (Socket socket = accept(listener)) {
+        readReverseHello(socket);
+
+        assertThrows(
+            ExecutionException.class, () -> attempt.channelFuture().get(3, TimeUnit.SECONDS));
+        waitUntil(() -> observer.states().contains(OpcTcpServerReverseConnectAttemptState.FAILED));
+
+        assertEquals(-1, socket.getInputStream().read());
+        assertEquals(OpcTcpServerReverseConnectAttemptState.FAILED, attempt.state());
+        assertFalse(observer.states().contains(OpcTcpServerReverseConnectAttemptState.HANDOFF));
+        var event = observer.last();
+        assertNotNull(event.statusCode());
+        assertEquals(StatusCodes.Bad_TcpInternalError, event.statusCode().value());
+      }
+    }
+  }
+
+  @Test
   void closeBeforeHelloClosesAttemptAndChannel() throws Exception {
     RecordingObserver observer = new RecordingObserver();
 
@@ -332,6 +431,131 @@ class OpcTcpServerReverseConnectorTest {
   }
 
   @Test
+  void terminalStateSurvivesConcurrentNonTerminalTransitions() throws Exception {
+    connector = newConnector(1_000);
+
+    int transitionThreads = 8;
+    int iterations = 50;
+
+    for (int i = 0; i < iterations; i++) {
+      TerminalStickinessObserver observer = new TerminalStickinessObserver();
+      OpcTcpServerReverseConnectAttempt attempt =
+          new OpcTcpServerReverseConnectAttempt(
+              connector,
+              newParameters(new InetSocketAddress("127.0.0.1", 4840), SERVER_URI, observer));
+
+      AtomicBoolean running = new AtomicBoolean(true);
+      CountDownLatch start = new CountDownLatch(1);
+      CountDownLatch ready = new CountDownLatch(transitionThreads);
+      ExecutorService executor = Executors.newFixedThreadPool(transitionThreads);
+      List<Future<?>> transitions = new ArrayList<>();
+
+      try {
+        for (int j = 0; j < transitionThreads; j++) {
+          transitions.add(
+              executor.submit(
+                  () -> {
+                    try {
+                      start.await();
+                    } catch (InterruptedException e) {
+                      Thread.currentThread().interrupt();
+                      return;
+                    }
+
+                    ready.countDown();
+
+                    while (running.get()) {
+                      attempt.transition(
+                          OpcTcpServerReverseConnectAttemptState.CONNECTED, "connected");
+                      attempt.transition(
+                          OpcTcpServerReverseConnectAttemptState.REVERSE_HELLO_SENT,
+                          "ReverseHello sent");
+                      attempt.transition(
+                          OpcTcpServerReverseConnectAttemptState.HELLO_HANDLER_INSTALLED,
+                          "Hello handler installed");
+                    }
+                  }));
+        }
+
+        start.countDown();
+
+        assertTrue(ready.await(3, TimeUnit.SECONDS));
+
+        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1));
+
+        assertTrue(
+            attempt.cancelFuture(
+                new StatusCode(StatusCodes.Bad_RequestCancelledByClient),
+                new CancellationException("cancelled"),
+                "cancelled"));
+      } finally {
+        running.set(false);
+
+        try {
+          for (Future<?> transition : transitions) {
+            transition.get(3, TimeUnit.SECONDS);
+          }
+        } finally {
+          executor.shutdownNow();
+        }
+      }
+
+      assertEquals(OpcTcpServerReverseConnectAttemptState.CANCELLED, attempt.state());
+      assertTrue(observer.terminalSeen());
+      assertFalse(observer.nonTerminalAfterTerminalSeen());
+    }
+  }
+
+  @Test
+  void reentrantObserverCancellationIsNotNestedInsideTransitionCallback() {
+    connector = newConnector(1_000);
+
+    List<OpcTcpServerReverseConnectAttemptState> states = new CopyOnWriteArrayList<>();
+    AtomicBoolean insideCallback = new AtomicBoolean(false);
+    AtomicBoolean nestedCallback = new AtomicBoolean(false);
+    AtomicReference<OpcTcpServerReverseConnectAttempt> attemptRef = new AtomicReference<>();
+
+    OpcTcpServerReverseConnectAttemptObserver observer =
+        event -> {
+          if (!insideCallback.compareAndSet(false, true)) {
+            nestedCallback.set(true);
+          }
+
+          try {
+            states.add(event.state());
+
+            if (event.state() == OpcTcpServerReverseConnectAttemptState.CONNECTED) {
+              assertTrue(
+                  attemptRef
+                      .get()
+                      .cancelFuture(
+                          new StatusCode(StatusCodes.Bad_RequestCancelledByClient),
+                          new CancellationException("cancelled"),
+                          "cancelled"));
+            }
+          } finally {
+            insideCallback.set(false);
+          }
+        };
+
+    OpcTcpServerReverseConnectAttempt attempt =
+        new OpcTcpServerReverseConnectAttempt(
+            connector,
+            newParameters(new InetSocketAddress("127.0.0.1", 4840), SERVER_URI, observer));
+    attemptRef.set(attempt);
+
+    attempt.transition(OpcTcpServerReverseConnectAttemptState.CONNECTED, "connected");
+
+    assertEquals(
+        List.of(
+            OpcTcpServerReverseConnectAttemptState.CONNECTED,
+            OpcTcpServerReverseConnectAttemptState.CANCELLED),
+        states);
+    assertFalse(nestedCallback.get());
+    assertEquals(OpcTcpServerReverseConnectAttemptState.CANCELLED, attempt.state());
+  }
+
+  @Test
   void connectorCloseAfterHandoffDoesNotRegressAttemptState() throws Exception {
     RecordingObserver observer = new RecordingObserver();
 
@@ -372,13 +596,19 @@ class OpcTcpServerReverseConnectorTest {
   }
 
   private OpcTcpServerReverseConnector newConnector(int helloDeadlineMs) {
+    return newConnector(helloDeadlineMs, pipeline -> pipeline.addLast(new MarkerHandler()));
+  }
+
+  private OpcTcpServerReverseConnector newConnector(
+      int helloDeadlineMs, Consumer<ChannelPipeline> channelPipelineCustomizer) {
+
     eventLoop = new NioEventLoopGroup(1);
 
     OpcTcpServerTransportConfig config =
         OpcTcpServerTransportConfig.newBuilder()
             .setEventLoop(eventLoop)
             .setHelloDeadline(uint(helloDeadlineMs))
-            .setChannelPipelineCustomizer(pipeline -> pipeline.addLast(new MarkerHandler()))
+            .setChannelPipelineCustomizer(channelPipelineCustomizer)
             .build();
 
     return new OpcTcpServerReverseConnector(config);
@@ -388,7 +618,7 @@ class OpcTcpServerReverseConnectorTest {
       InetSocketAddress clientListenerAddress,
       String endpointUrl,
       String serverUri,
-      RecordingObserver observer) {
+      OpcTcpServerReverseConnectAttemptObserver observer) {
 
     return OpcTcpServerReverseConnectParameters.fromAddress(
         newServerApplicationContext(),
@@ -400,7 +630,9 @@ class OpcTcpServerReverseConnectorTest {
   }
 
   private static OpcTcpServerReverseConnectParameters newParameters(
-      InetSocketAddress clientListenerAddress, String serverUri, RecordingObserver observer) {
+      InetSocketAddress clientListenerAddress,
+      String serverUri,
+      OpcTcpServerReverseConnectAttemptObserver observer) {
 
     return newParameters(clientListenerAddress, ENDPOINT_URL, serverUri, observer);
   }
@@ -472,10 +704,15 @@ class OpcTcpServerReverseConnectorTest {
   }
 
   private static ByteBuf newOversizedHelloHeaderMessage() {
+    return newHeaderMessage(
+        MessageType.Hello, 'F', UascServerHelloHandler.MAX_HELLO_MESSAGE_SIZE + 1);
+  }
+
+  private static ByteBuf newHeaderMessage(MessageType messageType, char chunkType, int length) {
     return Unpooled.buffer(8)
-        .writeMediumLE(MessageType.toMediumInt(MessageType.Hello))
-        .writeByte('F')
-        .writeIntLE(UascServerHelloHandler.MAX_HELLO_MESSAGE_SIZE + 1);
+        .writeMediumLE(MessageType.toMediumInt(messageType))
+        .writeByte(chunkType)
+        .writeIntLE(length);
   }
 
   private static HelloMessage newHelloMessage() {
@@ -568,6 +805,37 @@ class OpcTcpServerReverseConnectorTest {
     OpcTcpServerReverseConnectAttemptEvent last() {
       assertFalse(events.isEmpty());
       return events.get(events.size() - 1);
+    }
+  }
+
+  private static final class TerminalStickinessObserver
+      implements OpcTcpServerReverseConnectAttemptObserver {
+
+    private final AtomicBoolean terminalSeen = new AtomicBoolean(false);
+    private final AtomicBoolean nonTerminalAfterTerminalSeen = new AtomicBoolean(false);
+
+    @Override
+    public void onStateTransition(OpcTcpServerReverseConnectAttemptEvent event) {
+      if (isTerminalState(event.state())) {
+        terminalSeen.set(true);
+      } else if (terminalSeen.get()) {
+        nonTerminalAfterTerminalSeen.set(true);
+      }
+    }
+
+    boolean terminalSeen() {
+      return terminalSeen.get();
+    }
+
+    boolean nonTerminalAfterTerminalSeen() {
+      return nonTerminalAfterTerminalSeen.get();
+    }
+
+    private static boolean isTerminalState(OpcTcpServerReverseConnectAttemptState state) {
+      return switch (state) {
+        case HANDOFF, CLIENT_ERROR, FAILED, CANCELLED, CLOSED -> true;
+        case CONNECTING, CONNECTED, REVERSE_HELLO_SENT, HELLO_HANDLER_INSTALLED -> false;
+      };
     }
   }
 
