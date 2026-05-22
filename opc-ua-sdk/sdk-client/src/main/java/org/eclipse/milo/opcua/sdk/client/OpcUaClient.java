@@ -28,6 +28,8 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -179,6 +181,9 @@ import org.slf4j.LoggerFactory;
 public class OpcUaClient {
 
   public static final String SDK_VERSION = ManifestUtil.read("X-SDK-Version").orElse("dev");
+
+  // Package-private and non-final so tests can shorten the bound. See disconnectAsync().
+  static long disconnectCloseSessionTimeoutMillis = 5_000L;
 
   static {
     Logger logger = LoggerFactory.getLogger(OpcUaClient.class);
@@ -727,14 +732,39 @@ public class OpcUaClient {
   /**
    * Close the session, if it's open, and disconnect the underlying transport.
    *
+   * <p>The wait for session closure is bounded; if the SessionFsm cannot fire {@code CloseSession}
+   * (for example, while shelved during {@code Creating}/{@code Activating} with a hung transport),
+   * the transport is disconnected after the bound to unblock the FSM.
+   *
    * @return a {@link CompletableFuture} that completes successfully with this {@link OpcUaClient},
    *     or completes exceptionally if an unexpected error occurs. Errors closing the session or the
    *     disconnecting the transport are swallowed.
    */
   public CompletableFuture<OpcUaClient> disconnectAsync() {
-    return sessionFsm
-        .closeSession()
-        .exceptionally(ex -> Unit.VALUE)
+    CompletableFuture<Unit> closeSession =
+        sessionFsm.closeSession().exceptionally(ex -> Unit.VALUE);
+
+    // If the SessionFsm is in a non-terminal state with a pending CreateSession or
+    // ActivateSession request (e.g. reverse-connect transport whose server has vanished
+    // without notifying the client), the CloseSession event is shelved and closeSession()
+    // never resolves on its own. Bound the wait so transport.disconnect() can run and
+    // fail the pending channelFuture, which unblocks the FSM.
+    var disconnectTrigger = new CompletableFuture<Unit>();
+    ScheduledFuture<?> timeoutTask =
+        transport
+            .getConfig()
+            .getScheduledExecutor()
+            .schedule(
+                () -> disconnectTrigger.complete(Unit.VALUE),
+                disconnectCloseSessionTimeoutMillis,
+                TimeUnit.MILLISECONDS);
+    closeSession.whenComplete(
+        (u, ex) -> {
+          timeoutTask.cancel(false);
+          disconnectTrigger.complete(Unit.VALUE);
+        });
+
+    return disconnectTrigger
         .thenCompose(u -> transport.disconnect().thenApply(c -> OpcUaClient.this))
         .exceptionally(ex -> OpcUaClient.this)
         .whenComplete(
