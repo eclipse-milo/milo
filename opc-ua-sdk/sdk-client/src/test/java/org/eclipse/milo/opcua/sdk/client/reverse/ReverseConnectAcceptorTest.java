@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.sdk.client.reverse;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.netty.channel.Channel;
@@ -112,8 +113,11 @@ class ReverseConnectAcceptorTest {
       acceptor.start();
       addActiveKey(acceptor, key);
 
-      invokeReleaseKeyWhenProductionTransportDisconnects(acceptor, key, client);
+      boolean transportLive = invokeObserveProductionTransportForKeyRelease(acceptor, key, client);
 
+      assertFalse(
+          transportLive,
+          "observeProductionTransportForKeyRelease should report inactive transport");
       assertEquals(1, transport.listenerCount());
       assertEquals(0, activeKeyCount(acceptor));
     } finally {
@@ -187,14 +191,14 @@ class ReverseConnectAcceptorTest {
     activeKeys.add(key);
   }
 
-  private static void invokeReleaseKeyWhenProductionTransportDisconnects(
+  private static boolean invokeObserveProductionTransportForKeyRelease(
       ReverseConnectAcceptor acceptor, String key, OpcUaClient client) throws Exception {
 
     Method method =
         ReverseConnectAcceptor.class.getDeclaredMethod(
-            "releaseKeyWhenProductionTransportDisconnects", String.class, OpcUaClient.class);
+            "observeProductionTransportForKeyRelease", String.class, OpcUaClient.class);
     method.setAccessible(true);
-    method.invoke(acceptor, key, client);
+    return (boolean) method.invoke(acceptor, key, client);
   }
 
   private static OpcUaClientConfig clientConfig() {

@@ -153,6 +153,7 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
 
     CompletableFuture<Channel> futureToReturn;
     CompletableFuture<Channel> futureToRegister = null;
+    boolean emitSyntheticDisconnect = false;
 
     synchronized (lock) {
       this.applicationContext = applicationContext;
@@ -162,6 +163,16 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
       if (currentChannel != null && currentChannel.isActive()) {
         return CompletableFuture.completedFuture(Unit.VALUE);
       }
+
+      // If the previous channel completed its handshake (channelFuture done normally) but its
+      // close listener has not yet fired, emit the matching connected=false synthetically before
+      // we null currentChannel. After nulling, onChannelClosed will see currentChannel != closed
+      // and return silently, which would otherwise drop the pending disconnect notification.
+      emitSyntheticDisconnect =
+          currentChannel != null
+              && channelFuture.isDone()
+              && !channelFuture.isCompletedExceptionally()
+              && !channelFuture.isCancelled();
 
       currentChannel = null;
 
@@ -175,6 +186,10 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
         waitingForReverseConnection = true;
         futureToRegister = channelFuture;
       }
+    }
+
+    if (emitSyntheticDisconnect) {
+      notifyTransitionListeners(false);
     }
 
     if (futureToRegister != null) {
@@ -426,6 +441,12 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
       CompletableFuture<Channel> nextFuture =
           rearmOnFailure ? rearmAfterFailedClaim(targetFuture, null) : null;
 
+      if (!rearmOnFailure) {
+        synchronized (lock) {
+          enterDirectTerminalStateLocked(failure);
+        }
+      }
+
       connection.close();
       targetFuture.completeExceptionally(failure);
 
@@ -538,13 +559,18 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
       stale = disconnecting || targetFuture != channelFuture;
       if (!stale) {
         currentChannel = channel;
+        // Complete inside the lock so a concurrent disconnect() observes futureToCancel.isDone()
+        // and emits a matching connected=false transition. Completing outside the lock allows the
+        // disconnect to interleave between the publish of currentChannel and the future
+        // completion, suppressing its matching disconnect notification and producing an orphan
+        // connected=true event.
+        targetFuture.complete(channel);
       }
     }
 
     if (stale) {
       channel.close();
     } else {
-      targetFuture.complete(channel);
       notifyTransitionListeners(true);
     }
   }

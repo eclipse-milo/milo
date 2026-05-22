@@ -14,6 +14,7 @@ import static java.util.Objects.requireNonNull;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.eclipse.milo.opcua.sdk.client.DiscoveryClient;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
@@ -77,18 +78,35 @@ public final class ReverseConnectDiscovery {
     requireNonNull(configureTransport, "configureTransport");
 
     ReverseConnectRegistration registration = manager.registerSelector(selector);
+    AtomicReference<ReverseConnectConnection> claimedConnection = new AtomicReference<>();
 
     CompletableFuture<ReverseConnectDiscoveryResult> result = new CompletableFuture<>();
-    result.whenComplete((r, ex) -> registration.close());
+    result.whenComplete(
+        (r, ex) -> {
+          registration.close();
+          if (ex != null) {
+            // If cancellation arrives after a connection was claimed, the in-flight discovery
+            // pipeline holds the socket and will not observe the cancellation on its own. Closing
+            // the connection here makes the in-flight GetEndpoints fail promptly instead of
+            // running to completion on a future that no caller is reading.
+            ReverseConnectConnection connection = claimedConnection.getAndSet(null);
+            if (connection != null) {
+              connection.close();
+            }
+          }
+        });
 
     registration
         .connectionFuture()
         .thenCompose(
-            connection ->
-                DiscoveryClient.getEndpoints(connection, configureTransport)
-                    .thenApply(endpoints -> result(connection.snapshot(), endpoints)))
+            connection -> {
+              claimedConnection.set(connection);
+              return DiscoveryClient.getEndpoints(connection, configureTransport)
+                  .thenApply(endpoints -> result(connection.snapshot(), endpoints));
+            })
         .whenComplete(
             (discovery, ex) -> {
+              claimedConnection.set(null);
               if (ex != null) {
                 result.completeExceptionally(ex);
               } else {
