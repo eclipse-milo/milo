@@ -21,12 +21,12 @@ import org.eclipse.milo.opcua.stack.core.UaException;
  */
 public enum MessageType {
   Hello,
-  ReverseHello,
   Acknowledge,
   Error,
   OpenSecureChannel,
   CloseSecureChannel,
-  SecureMessage;
+  SecureMessage,
+  ReverseHello;
 
   private static final int HEL = ('L' << 16) | ('E' << 8) | 'H';
   private static final int RHE = ('E' << 16) | ('H' << 8) | 'R';

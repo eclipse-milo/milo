@@ -42,4 +42,15 @@ public class MessageTypeTest {
       buffer.release();
     }
   }
+
+  @Test
+  public void testExistingMessageTypeOrdinalsRemainStable() {
+    assertEquals(0, MessageType.Hello.ordinal());
+    assertEquals(1, MessageType.Acknowledge.ordinal());
+    assertEquals(2, MessageType.Error.ordinal());
+    assertEquals(3, MessageType.OpenSecureChannel.ordinal());
+    assertEquals(4, MessageType.CloseSecureChannel.ordinal());
+    assertEquals(5, MessageType.SecureMessage.ordinal());
+    assertEquals(6, MessageType.ReverseHello.ordinal());
+  }
 }
