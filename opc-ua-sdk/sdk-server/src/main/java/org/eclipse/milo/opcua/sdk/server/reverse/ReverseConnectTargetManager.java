@@ -67,6 +67,15 @@ import org.slf4j.LoggerFactory;
  * attempts are closed, and active channels already handed to the server path remain open. Removal
  * and shutdown are stronger lifecycle operations; both cancel scheduled work, close in-flight
  * attempts, and close active channels owned by the target.
+ *
+ * <p>The manager supports a {@code startup → shutdown → startup} restart cycle so the surrounding
+ * {@link org.eclipse.milo.opcua.sdk.server.OpcUaServer} can stop and start without rebuilding the
+ * target registry. {@link #shutdown()} cancels scheduled work, closes in-flight attempts, and
+ * clears handoff bookkeeping but retains target registrations. A subsequent {@link #startup()}
+ * re-schedules schedulable targets against the freshly bound transports. Between {@code shutdown()}
+ * and the next {@code startup()}, structure-changing operations ({@link #addTarget}, {@code
+ * update}, and the channel- and attempt-side event handlers) throw {@link IllegalStateException};
+ * configure or remove targets while the manager is running or before the first startup.
  */
 public final class ReverseConnectTargetManager {
 

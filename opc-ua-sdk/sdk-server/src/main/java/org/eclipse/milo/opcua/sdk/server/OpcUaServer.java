@@ -810,7 +810,12 @@ public class OpcUaServer extends AbstractServiceHandler {
   /**
    * Get the {@link EndpointConfig}s that were successfully bound during {@link #startup()}.
    *
-   * @return the {@link EndpointConfig}s that were successfully bound during {@link #startup()}.
+   * <p>The returned list is populated during {@link #startup()} and cleared by {@link #shutdown()}
+   * (and on a failed startup that rolls back). Callers querying after shutdown observe an empty
+   * list. A subsequent successful {@link #startup()} repopulates the list.
+   *
+   * @return the {@link EndpointConfig}s that are currently bound, or an empty list when the server
+   *     is not running.
    */
   public List<EndpointConfig> getBoundEndpoints() {
     return List.copyOf(boundEndpoints);
