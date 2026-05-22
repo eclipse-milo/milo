@@ -65,6 +65,13 @@ public record ReverseConnectTargetSnapshot(
    * message, stack trace, cause chain, and suppressed exceptions, but it is not the same object or
    * necessarily the same concrete exception type as the source throwable.
    *
+   * <p><b>Type loss:</b> the returned value is a generic placeholder throwable rather than a {@link
+   * org.eclipse.milo.opcua.stack.core.UaException} or other source type. Consumers that need the
+   * original concrete type (for example, via {@code instanceof UaException}) cannot recover it from
+   * this accessor; rely on {@link #lastStatusCode()} for the OPC UA status and {@link
+   * Throwable#toString()} on the returned value for the original class name and message. Each
+   * invocation allocates a fresh defensive copy.
+   *
    * @return the copied last error, or {@code null} if no attempt error is retained.
    */
   @Override

@@ -11,6 +11,7 @@
 package org.eclipse.milo.opcua.sdk.server;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -73,6 +74,8 @@ public class OpcUaServerConfigBuilder {
   public OpcUaServerConfigBuilder setReverseConnectTargets(
       Set<ReverseConnectTarget> reverseConnectTargets) {
 
+    Objects.requireNonNull(reverseConnectTargets, "reverseConnectTargets");
+    reverseConnectTargets.forEach(t -> Objects.requireNonNull(t, "reverseConnectTargets[i]"));
     this.reverseConnectTargets = new HashSet<>(reverseConnectTargets);
     return this;
   }
@@ -84,6 +87,7 @@ public class OpcUaServerConfigBuilder {
    * @return this builder.
    */
   public OpcUaServerConfigBuilder addReverseConnectTarget(ReverseConnectTarget target) {
+    Objects.requireNonNull(target, "target");
     this.reverseConnectTargets.add(target);
     return this;
   }
@@ -221,6 +225,44 @@ public class OpcUaServerConfigBuilder {
       this.securityKeysListener = securityKeysListener;
       this.executor = executor;
       this.scheduledExecutorService = scheduledExecutorService;
+    }
+
+    /**
+     * Source-compatibility overload for callers that pre-date Reverse Connect target support.
+     *
+     * <p>Equivalent to the canonical constructor with {@link Set#of()} as the {@code
+     * reverseConnectTargets} set.
+     */
+    public OpcUaServerConfigImpl(
+        Set<EndpointConfig> endpoints,
+        LocalizedText applicationName,
+        String applicationUri,
+        String productUri,
+        BuildInfo buildInfo,
+        IdentityValidator identityValidator,
+        EncodingLimits encodingLimits,
+        OpcUaServerConfigLimits limits,
+        CertificateManager certificateManager,
+        RoleMapper roleMapper,
+        @Nullable SecurityKeysListener securityKeysListener,
+        ExecutorService executor,
+        ScheduledExecutorService scheduledExecutorService) {
+
+      this(
+          endpoints,
+          Set.of(),
+          applicationName,
+          applicationUri,
+          productUri,
+          buildInfo,
+          identityValidator,
+          encodingLimits,
+          limits,
+          certificateManager,
+          roleMapper,
+          securityKeysListener,
+          executor,
+          scheduledExecutorService);
     }
 
     @Override
