@@ -529,6 +529,15 @@ public final class ReverseConnectManager implements AutoCloseable {
         return;
       }
 
+      // Avoid invoking the verifier for a channel that has already closed. If the peer closed the
+      // socket between the decode call and our re-acquisition of the lock, onCandidateChannelClosed
+      // has typically already removed the candidate and emitted a rejected snapshot. Returning
+      // before the verifier runs prevents the documented contract violation where a verifier
+      // observes a candidate that is no longer claimable.
+      if (!candidate.channel.isActive()) {
+        return;
+      }
+
       candidate.serverUri = reverseHello.getServerUri();
       candidate.endpointUrl = reverseHello.getEndpointUrl();
       candidate.reverseHelloReceivedAt = Instant.now();

@@ -313,6 +313,15 @@ public final class DiscoveryFirstReverseConnectClient {
    * activation, builds a basic anonymous client config from the selected endpoint and full
    * discovery endpoint list, and requires the discovery {@code ReverseHello} to provide at least
    * one production routing hint.
+   *
+   * <p>The default client-config factory explicitly disables session endpoint validation so that
+   * the CreateSession endpoint list returned by the server is not compared against the discovery
+   * endpoints. This default matches {@link OpcUaClientConfig}'s own default but is set explicitly
+   * here so callers that override the factory remain aware of the trade-off. Applications that
+   * expect discovery and production endpoint lists to agree should override {@link
+   * #setClientConfig(ReverseConnectClientConfigFactory)} and call {@link
+   * org.eclipse.milo.opcua.sdk.client.OpcUaClientConfigBuilder#setSessionEndpointValidationEnabled
+   * setSessionEndpointValidationEnabled(true)}.
    */
   public static final class Builder {
 

@@ -195,37 +195,45 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
       return;
     }
 
-    if (!running.get()) {
-      activeKeys.remove(key);
-      return;
+    boolean keyHandedOff = false;
+    try {
+      if (!running.get()) {
+        return;
+      }
+
+      ReverseConnectConnection connection = manager.claim(candidate.id()).orElse(null);
+
+      if (connection == null) {
+        return;
+      }
+
+      inFlightDiscoveryConnections.add(connection);
+      if (!running.get()) {
+        inFlightDiscoveryConnections.remove(connection);
+        connection.close();
+        return;
+      }
+
+      DiscoveryClient.getEndpoints(connection, discoveryTransportCustomizer)
+          .whenComplete((endpoints, ex) -> inFlightDiscoveryConnections.remove(connection))
+          .thenApply(
+              endpoints -> new ReverseConnectDiscoveryResult(connection.snapshot(), endpoints))
+          .thenCompose(discovery -> connectProductionClient(key, discovery))
+          .whenComplete(
+              (connected, ex) -> {
+                if (ex != null) {
+                  releaseKeyAndProcessPendingCandidates(key, candidate.id());
+                  errorListener.onError(candidate, unwrap(ex));
+                }
+              });
+      keyHandedOff = true;
+    } catch (Throwable t) {
+      errorListener.onError(candidate, t);
+    } finally {
+      if (!keyHandedOff) {
+        activeKeys.remove(key);
+      }
     }
-
-    ReverseConnectConnection connection = manager.claim(candidate.id()).orElse(null);
-
-    if (connection == null) {
-      activeKeys.remove(key);
-      return;
-    }
-
-    inFlightDiscoveryConnections.add(connection);
-    if (!running.get()) {
-      inFlightDiscoveryConnections.remove(connection);
-      activeKeys.remove(key);
-      connection.close();
-      return;
-    }
-
-    DiscoveryClient.getEndpoints(connection, discoveryTransportCustomizer)
-        .whenComplete((endpoints, ex) -> inFlightDiscoveryConnections.remove(connection))
-        .thenApply(endpoints -> new ReverseConnectDiscoveryResult(connection.snapshot(), endpoints))
-        .thenCompose(discovery -> connectProductionClient(key, discovery))
-        .whenComplete(
-            (connected, ex) -> {
-              if (ex != null) {
-                releaseKeyAndProcessPendingCandidates(key, candidate.id());
-                errorListener.onError(candidate, unwrap(ex));
-              }
-            });
   }
 
   private CompletableFuture<OpcUaClient> connectProductionClient(
@@ -302,7 +310,14 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
                   return CompletableFuture.<OpcUaClient>failedFuture(acceptorStoppedException());
                 }
 
-                releaseKeyWhenProductionTransportDisconnects(key, c);
+                if (!observeProductionTransportForKeyRelease(key, c)) {
+                  inFlightProductionClients.remove(client);
+                  c.disconnectAsync();
+                  return CompletableFuture.<OpcUaClient>failedFuture(
+                      new UaException(
+                          StatusCodes.Bad_ConnectionClosed,
+                          "Reverse Connect production transport disconnected before delivery"));
+                }
                 inFlightProductionClients.remove(client);
 
                 try {
@@ -319,26 +334,41 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
         .whenComplete((c, ex) -> inFlightProductionClients.remove(client));
   }
 
-  private void releaseKeyWhenProductionTransportDisconnects(String key, OpcUaClient client) {
-    if (client.getTransport() instanceof ChannelStateObservable observable) {
-      ChannelStateObservable.TransitionListener listener =
-          connected -> {
-            if (connected) {
-              activeKeys.add(key);
-            } else {
-              releaseKeyAndProcessPendingCandidates(key);
-            }
-          };
+  /**
+   * Install a transition listener that releases {@code key} when the production transport
+   * disconnects, and report whether the transport is still live.
+   *
+   * <p>Returns {@code false} if the transport has already disconnected before the listener could
+   * observe it; the caller must treat this as a delivery failure (no {@code onClientConnected}
+   * dispatch). Returning the key was already handled by the synchronous check itself. Returns
+   * {@code true} when the listener is installed and the channel is still live, or when the
+   * transport does not expose a channel for inspection.
+   */
+  private boolean observeProductionTransportForKeyRelease(String key, OpcUaClient client) {
+    if (!(client.getTransport() instanceof ChannelStateObservable observable)) {
+      return true;
+    }
 
-      observable.addTransitionListener(listener);
+    ChannelStateObservable.TransitionListener listener =
+        connected -> {
+          if (connected) {
+            activeKeys.add(key);
+          } else {
+            releaseKeyAndProcessPendingCandidates(key);
+          }
+        };
 
-      if (client.getTransport() instanceof CurrentChannelProvider channelProvider) {
-        Channel channel = channelProvider.getCurrentChannel();
-        if (channel == null || !channel.isActive()) {
-          releaseKeyAndProcessPendingCandidates(key);
-        }
+    observable.addTransitionListener(listener);
+
+    if (client.getTransport() instanceof CurrentChannelProvider channelProvider) {
+      Channel channel = channelProvider.getCurrentChannel();
+      if (channel == null || !channel.isActive()) {
+        releaseKeyAndProcessPendingCandidates(key);
+        return false;
       }
     }
+
+    return true;
   }
 
   private void releaseKeyAndProcessPendingCandidates(String key) {
@@ -407,6 +437,15 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
    * <p>By default the acceptor considers any pending candidate, deduplicates discovery by {@code
    * ServerUri} then endpoint URL then candidate id, selects a no-security anonymous endpoint, and
    * requires the discovery {@code ReverseHello} to provide at least one production routing hint.
+   *
+   * <p>The default client-config factory explicitly disables session endpoint validation so that
+   * the CreateSession endpoint list returned by the server is not compared against the discovery
+   * endpoints. This default matches {@link OpcUaClientConfig}'s own default but is set explicitly
+   * here so callers that override the factory remain aware of the trade-off. Applications that
+   * expect discovery and production endpoint lists to agree should override {@link
+   * #setClientConfig(ReverseConnectClientConfigFactory)} and call {@link
+   * org.eclipse.milo.opcua.sdk.client.OpcUaClientConfigBuilder#setSessionEndpointValidationEnabled
+   * setSessionEndpointValidationEnabled(true)}.
    */
   public static final class Builder {
 
@@ -505,9 +544,15 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
      * Set the selector factory used by production reverse clients.
      *
      * <p>The default selector matches the discovery candidate's {@code ServerUri} and {@code
-     * EndpointUrl}, and requires at least one of those routing hints to be present. Override this
-     * when the server is expected to use different routing hints for the later production
-     * connection or to route candidates without {@code ReverseHello} hints.
+     * EndpointUrl}, and requires at least one of those routing hints to be present. A {@code null}
+     * routing hint on the discovery candidate is treated as "no constraint" by the default
+     * selector, so a production candidate that supplies a different non-null value for that hint
+     * can still match; identity is verified later by the production SecureChannel handshake.
+     * Applications that front multiple application instances behind one endpoint URL and require
+     * strict identity binding should override this with a tighter selector.
+     *
+     * <p>Override this when the server is expected to use different routing hints for the later
+     * production connection or to route candidates without {@code ReverseHello} hints.
      *
      * @param productionSelectorFactory the production selector factory.
      * @return this builder.

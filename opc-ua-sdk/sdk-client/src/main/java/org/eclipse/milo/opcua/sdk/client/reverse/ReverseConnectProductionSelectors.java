@@ -22,6 +22,21 @@ final class ReverseConnectProductionSelectors {
     return candidate.serverUri() == null && candidate.endpointUrl() == null;
   }
 
+  /**
+   * Build a production selector that loosely matches the discovery candidate's routing hints.
+   *
+   * <p>The returned selector treats a {@code null} {@code ServerUri} or {@code EndpointUrl} on the
+   * discovery candidate as "no constraint": a production candidate that supplies a different
+   * non-null value for the unset hint will still match. For example, a discovery candidate {@code
+   * (serverUri=null, endpointUrl="opc.tcp://A:4840/x")} will match a production candidate {@code
+   * (serverUri="urn:any", endpointUrl="opc.tcp://A:4840/x")}. Identity is verified later by the
+   * production SecureChannel handshake regardless of this loose match.
+   *
+   * <p>Applications that need strict identity matching (for example, a load balancer fronting
+   * multiple application instances with the same endpoint URL) should configure {@link
+   * ReverseConnectAcceptor.Builder#setProductionSelector} with a tighter selector that requires
+   * both hints to be present and equal.
+   */
   static ReverseConnectSelector matchDiscoveryRoutingHints(
       ReverseConnectCandidateSnapshot discoveryCandidate) {
 

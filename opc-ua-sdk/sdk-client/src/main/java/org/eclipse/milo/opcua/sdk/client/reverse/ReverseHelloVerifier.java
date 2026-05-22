@@ -17,6 +17,13 @@ package org.eclipse.milo.opcua.sdk.client.reverse;
  * socket should be allowed to proceed to selector matching before normal SecureChannel and Session
  * validation can authenticate the peer.
  *
+ * <p>Verifier acceptance does not guarantee that a matching {@code pending} listener event will
+ * fire. The verifier runs after the manager lock is released, so a peer that closes the channel
+ * before the manager re-acquires the lock will be rejected by the channel-close path (emitting a
+ * {@code rejected} event with reason {@code CHANNEL_CLOSED}) even though the verifier already
+ * accepted. Verifiers with observable side effects (logging, metrics, rate limiting) should not
+ * assume a successful return implies the candidate later transitioned to {@code PENDING}.
+ *
  * <p>A verifier is useful for cheap admission checks before a candidate consumes pending capacity:
  *
  * <pre>{@code
