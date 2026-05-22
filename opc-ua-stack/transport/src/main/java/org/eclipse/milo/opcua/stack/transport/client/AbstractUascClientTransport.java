@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -85,7 +85,7 @@ public abstract class AbstractUascClientTransport
                 return;
               }
 
-              writeRequest(request, channel, responseFuture);
+              writeRequest(request, channel);
             });
 
     return responseFuture;
@@ -100,16 +100,12 @@ public abstract class AbstractUascClientTransport
     pendingRequests.put(request.getRequestId(), responseFuture);
     scheduleRequestTimeout(request);
 
-    writeRequest(request, channel, responseFuture);
+    writeRequest(request, channel);
 
     return responseFuture;
   }
 
-  private void writeRequest(
-      UascRequest request,
-      Channel channel,
-      CompletableFuture<UaResponseMessageType> responseFuture) {
-
+  private void writeRequest(UascRequest request, Channel channel) {
     channel
         .writeAndFlush(request)
         .addListener(

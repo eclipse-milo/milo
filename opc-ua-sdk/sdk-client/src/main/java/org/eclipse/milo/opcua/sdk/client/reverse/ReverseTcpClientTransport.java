@@ -153,7 +153,7 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
 
     CompletableFuture<Channel> futureToReturn;
     CompletableFuture<Channel> futureToRegister = null;
-    boolean emitSyntheticDisconnect = false;
+    boolean emitSyntheticDisconnect;
 
     synchronized (lock) {
       this.applicationContext = applicationContext;
