@@ -23,6 +23,8 @@ import io.netty.channel.ConnectTimeoutException;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import java.net.ConnectException;
+import java.net.NoRouteToHostException;
+import java.net.UnknownHostException;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
@@ -579,7 +581,9 @@ final class OpcTcpServerReverseConnector implements AutoCloseable {
   private static StatusCode connectFailureStatusCode(@Nullable Throwable cause) {
     if (cause instanceof ConnectTimeoutException) {
       return new StatusCode(StatusCodes.Bad_Timeout);
-    } else if (cause instanceof ConnectException) {
+    } else if (cause instanceof ConnectException
+        || cause instanceof UnknownHostException
+        || cause instanceof NoRouteToHostException) {
       return new StatusCode(StatusCodes.Bad_ConnectionRejected);
     } else {
       return new StatusCode(StatusCodes.Bad_ConnectionClosed);

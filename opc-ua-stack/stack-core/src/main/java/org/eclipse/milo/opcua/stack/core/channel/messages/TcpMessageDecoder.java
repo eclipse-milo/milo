@@ -31,11 +31,26 @@ public class TcpMessageDecoder {
    * @throws UaException if the header type or payload cannot be decoded.
    */
   public static HelloMessage decodeHello(ByteBuf buffer) throws UaException {
+    if (buffer.readableBytes() < 8) {
+      throw new UaException(
+          StatusCodes.Bad_DecodingError, "not enough bytes to read Hello message header");
+    }
+
     MessageType messageType = MessageType.fromMediumInt(buffer.readMediumLE());
     char chunkType = (char) buffer.readByte();
     buffer.skipBytes(4); // length
 
-    assert (messageType == MessageType.Hello && chunkType == 'F');
+    if (messageType != MessageType.Hello) {
+      throw new UaException(
+          StatusCodes.Bad_TcpMessageTypeInvalid,
+          "expected Hello message type, received " + messageType);
+    }
+
+    if (chunkType != 'F') {
+      throw new UaException(
+          StatusCodes.Bad_TcpMessageTypeInvalid,
+          "expected final Hello chunk, received " + chunkType);
+    }
 
     return HelloMessage.decode(buffer);
   }
@@ -80,11 +95,26 @@ public class TcpMessageDecoder {
    * @throws UaException if the header type cannot be decoded.
    */
   public static AcknowledgeMessage decodeAcknowledge(ByteBuf buffer) throws UaException {
+    if (buffer.readableBytes() < 8) {
+      throw new UaException(
+          StatusCodes.Bad_DecodingError, "not enough bytes to read Acknowledge message header");
+    }
+
     MessageType messageType = MessageType.fromMediumInt(buffer.readMediumLE());
     char chunkType = (char) buffer.readByte();
     buffer.skipBytes(4); // length
 
-    assert (messageType == MessageType.Acknowledge && chunkType == 'F');
+    if (messageType != MessageType.Acknowledge) {
+      throw new UaException(
+          StatusCodes.Bad_TcpMessageTypeInvalid,
+          "expected Acknowledge message type, received " + messageType);
+    }
+
+    if (chunkType != 'F') {
+      throw new UaException(
+          StatusCodes.Bad_TcpMessageTypeInvalid,
+          "expected final Acknowledge chunk, received " + chunkType);
+    }
 
     return AcknowledgeMessage.decode(buffer);
   }
@@ -97,11 +127,26 @@ public class TcpMessageDecoder {
    * @throws UaException if the header type or payload cannot be decoded.
    */
   public static ErrorMessage decodeError(ByteBuf buffer) throws UaException {
+    if (buffer.readableBytes() < 8) {
+      throw new UaException(
+          StatusCodes.Bad_DecodingError, "not enough bytes to read Error message header");
+    }
+
     MessageType messageType = MessageType.fromMediumInt(buffer.readMediumLE());
     char chunkType = (char) buffer.readByte();
     buffer.skipBytes(4); // length
 
-    assert (messageType == MessageType.Error && chunkType == 'F');
+    if (messageType != MessageType.Error) {
+      throw new UaException(
+          StatusCodes.Bad_TcpMessageTypeInvalid,
+          "expected Error message type, received " + messageType);
+    }
+
+    if (chunkType != 'F') {
+      throw new UaException(
+          StatusCodes.Bad_TcpMessageTypeInvalid,
+          "expected final Error chunk, received " + chunkType);
+    }
 
     return ErrorMessage.decode(buffer);
   }

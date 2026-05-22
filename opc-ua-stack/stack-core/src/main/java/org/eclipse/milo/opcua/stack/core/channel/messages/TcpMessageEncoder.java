@@ -87,21 +87,29 @@ public class TcpMessageEncoder {
   private static ByteBuf encode(
       MessageType messageType, Consumer<ByteBuf> messageEncoder, ByteBuf buffer) {
 
-    buffer.writeMediumLE(MessageType.toMediumInt(messageType));
-    buffer.writeByte('F');
+    boolean success = false;
+    try {
+      buffer.writeMediumLE(MessageType.toMediumInt(messageType));
+      buffer.writeByte('F');
 
-    int lengthIndex = buffer.writerIndex();
-    buffer.writeIntLE(0);
+      int lengthIndex = buffer.writerIndex();
+      buffer.writeIntLE(0);
 
-    int indexBefore = buffer.writerIndex();
-    messageEncoder.accept(buffer);
-    int indexAfter = buffer.writerIndex();
-    int bytesWritten = indexAfter - indexBefore;
+      int indexBefore = buffer.writerIndex();
+      messageEncoder.accept(buffer);
+      int indexAfter = buffer.writerIndex();
+      int bytesWritten = indexAfter - indexBefore;
 
-    buffer.writerIndex(lengthIndex);
-    buffer.writeIntLE(8 + bytesWritten);
-    buffer.writerIndex(indexAfter);
+      buffer.writerIndex(lengthIndex);
+      buffer.writeIntLE(8 + bytesWritten);
+      buffer.writerIndex(indexAfter);
 
-    return buffer;
+      success = true;
+      return buffer;
+    } finally {
+      if (!success) {
+        buffer.release();
+      }
+    }
   }
 }

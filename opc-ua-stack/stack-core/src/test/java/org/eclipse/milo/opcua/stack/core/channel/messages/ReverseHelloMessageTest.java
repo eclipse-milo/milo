@@ -118,7 +118,8 @@ public class ReverseHelloMessageTest {
     ByteBuf buffer = Unpooled.buffer();
     buffer.writeIntLE(ReverseHelloMessage.MAX_STRING_LENGTH + 1);
 
-    assertThrows(UaException.class, () -> ReverseHelloMessage.decode(buffer));
+    assertUaException(
+        StatusCodes.Bad_EncodingLimitsExceeded, () -> ReverseHelloMessage.decode(buffer));
 
     buffer.release();
   }
@@ -129,7 +130,8 @@ public class ReverseHelloMessageTest {
     writeServerUri(buffer);
     buffer.writeIntLE(ReverseHelloMessage.MAX_STRING_LENGTH + 1);
 
-    assertThrows(UaException.class, () -> ReverseHelloMessage.decode(buffer));
+    assertUaException(
+        StatusCodes.Bad_EncodingLimitsExceeded, () -> ReverseHelloMessage.decode(buffer));
 
     buffer.release();
   }
@@ -205,6 +207,54 @@ public class ReverseHelloMessageTest {
     } finally {
       buffer.release();
     }
+  }
+
+  @Test
+  public void testRoundTripWithMixedNullServerUri() throws UaException {
+    ReverseHelloMessage message = new ReverseHelloMessage(null, ENDPOINT_URL);
+    ByteBuf buffer = TcpMessageEncoder.encode(message);
+
+    try {
+      assertEquals(message, TcpMessageDecoder.decodeReverseHello(buffer));
+    } finally {
+      buffer.release();
+    }
+  }
+
+  @Test
+  public void testRoundTripWithMixedNullEndpointUrl() throws UaException {
+    ReverseHelloMessage message = new ReverseHelloMessage(SERVER_URI, null);
+    ByteBuf buffer = TcpMessageEncoder.encode(message);
+
+    try {
+      assertEquals(message, TcpMessageDecoder.decodeReverseHello(buffer));
+    } finally {
+      buffer.release();
+    }
+  }
+
+  @Test
+  public void testRoundTripWithEmptyStringFields() throws UaException {
+    ReverseHelloMessage message = new ReverseHelloMessage("", "");
+    ByteBuf buffer = TcpMessageEncoder.encode(message);
+
+    try {
+      assertEquals(message, TcpMessageDecoder.decodeReverseHello(buffer));
+    } finally {
+      buffer.release();
+    }
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {0, 1, 2, 3, 4, 5, 6, 7})
+  public void testTcpDecodeFailsWhenHeaderTruncated(int byteCount) {
+    ByteBuf buffer = Unpooled.buffer();
+    buffer.writeZero(byteCount);
+
+    assertUaException(
+        StatusCodes.Bad_DecodingError, () -> TcpMessageDecoder.decodeReverseHello(buffer));
+
+    buffer.release();
   }
 
   private static void writeServerUri(ByteBuf buffer) {

@@ -124,16 +124,18 @@ public class OpcTcpServerTransport implements OpcServerTransport {
   public OpcTcpServerReverseConnectAttempt connectReverse(
       OpcTcpServerReverseConnectParameters parameters) {
 
-    OpcTcpServerReverseConnector connector;
-
     synchronized (this) {
       if (reverseConnectsClosed) {
         throw new IllegalStateException("transport is unbound");
       }
 
-      connector = reverseConnector.get(() -> new OpcTcpServerReverseConnector(config));
-    }
+      OpcTcpServerReverseConnector connector =
+          reverseConnector.get(() -> new OpcTcpServerReverseConnector(config));
 
-    return connector.connect(parameters);
+      // Issue the connect under the transport lock so a concurrent unbind cannot close the
+      // connector and surface a misleading "OpcTcpServerReverseConnector is closed" message from
+      // a freshly issued connect.
+      return connector.connect(parameters);
+    }
   }
 }
