@@ -658,6 +658,18 @@ public class SessionFsmFactory {
 
                 observable.addTransitionListener(listener);
                 KEY_CHANNEL_STATE_TRANSITION_LISTENER.set(ctx, listener);
+
+                // The listener is registered only on the transition into Active. If the channel
+                // went inactive between the SecureChannel handshake and reaching Active, the
+                // transport already emitted connected=false before the listener was attached and
+                // recovery would otherwise wait for the next request to fail. Fire the lost-event
+                // synthetically so the FSM begins recovery immediately.
+                if (transport instanceof CurrentChannelProvider channelProvider) {
+                  Channel currentChannel = channelProvider.getCurrentChannel();
+                  if (currentChannel == null || !currentChannel.isActive()) {
+                    ctx.fireEvent(new Event.ConnectionLost());
+                  }
+                }
               }
 
               client
