@@ -518,6 +518,13 @@ class OpcUaServerReverseConnectTargetTest {
         assertEquals(ReverseConnectAttemptState.CLOSED, policyEvent.get().state());
         assertEquals(1L, policyEvent.get().attemptNumber());
 
+        waitForEvent(
+            listener,
+            event ->
+                event.targetId().equals(target.getId())
+                    && event.attemptNumber() == 1L
+                    && event.state() == ReverseConnectAttemptState.CLOSED);
+
         waitUntil(
             () ->
                 handle

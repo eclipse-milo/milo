@@ -24,6 +24,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.netty.channel.embedded.EmbeddedChannel;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
@@ -183,6 +184,60 @@ class ReverseConnectTargetManagerTest {
   }
 
   @Test
+  void resumeValidatesPausedTargetEvenWithActiveChannel() throws Exception {
+    String configuredEndpointUrl = "opc.tcp://localhost:12686/reverse-target-test";
+    String invalidEndpointUrl = "opc.tcp://localhost:12686/not-configured";
+
+    ReverseConnectTarget target = target(configuredEndpointUrl, "opc.tcp://localhost:12687");
+    ReverseConnectTarget replacement =
+        ReverseConnectTarget.builder()
+            .setId(target.getId())
+            .setClientListenerUrl(target.getClientListenerUrl())
+            .setEndpointUrl(invalidEndpointUrl)
+            .setRegistrationPeriod(target.getRegistrationPeriod())
+            .setConnectTimeout(target.getConnectTimeout())
+            .setPaused(true)
+            .build();
+
+    listenerExecutor = Executors.newSingleThreadExecutor();
+    scheduler = mock(ScheduledExecutorService.class);
+    ScheduledFuture<?> scheduledFuture = mock(ScheduledFuture.class);
+    when(scheduler.schedule(any(Runnable.class), anyLong(), any(TimeUnit.class)))
+        .thenAnswer(invocation -> scheduledFuture);
+
+    ReverseConnectTargetManager manager =
+        new ReverseConnectTargetManager(
+            mock(ServerApplicationContext.class),
+            () -> List.of(endpointDescription(configuredEndpointUrl)),
+            transportProfile ->
+                new OpcTcpServerTransport(OpcTcpServerTransportConfig.newBuilder().build()),
+            "urn:eclipse:milo:test:server:reverse-targets",
+            listenerExecutor,
+            scheduler,
+            Set.of(target));
+    EmbeddedChannel activeChannel = new EmbeddedChannel();
+
+    try {
+      manager.startup();
+      addActiveChannel(manager, target.getId(), activeChannel);
+
+      manager.update(replacement).get(5, TimeUnit.SECONDS);
+
+      ReverseConnectTargetHandle handle = new ReverseConnectTargetHandle(manager, target.getId());
+      ExecutionException exception = assertFailedFuture(handle::resume);
+
+      assertInstanceOf(IllegalArgumentException.class, exception.getCause());
+      assertTrue(exception.getCause().getMessage().contains(invalidEndpointUrl));
+
+      ReverseConnectTargetSnapshot snapshot = handle.snapshot().orElseThrow();
+      assertTrue(snapshot.paused());
+      assertEquals(1, snapshot.activeChannelCount());
+    } finally {
+      activeChannel.close();
+    }
+  }
+
+  @Test
   void removedHandleMethodsReturnFailedFutures() throws Exception {
     ReverseConnectTarget target =
         ReverseConnectTarget.builder()
@@ -253,16 +308,36 @@ class ReverseConnectTargetManagerTest {
   private static long generation(ReverseConnectTargetManager manager, UUID targetId)
       throws ReflectiveOperationException {
 
-    Field recordsField = ReverseConnectTargetManager.class.getDeclaredField("records");
-    recordsField.setAccessible(true);
-
-    @SuppressWarnings("unchecked")
-    Map<UUID, ?> records = (Map<UUID, ?>) recordsField.get(manager);
-
-    Object record = records.get(targetId);
+    Object record = record(manager, targetId);
     Field generationField = record.getClass().getDeclaredField("generation");
     generationField.setAccessible(true);
 
     return generationField.getLong(record);
+  }
+
+  @SuppressWarnings("unchecked")
+  private static void addActiveChannel(
+      ReverseConnectTargetManager manager, UUID targetId, EmbeddedChannel channel)
+      throws ReflectiveOperationException {
+
+    Object record = record(manager, targetId);
+    Field activeChannelsField = record.getClass().getDeclaredField("activeChannels");
+    activeChannelsField.setAccessible(true);
+    Map<String, EmbeddedChannel> activeChannels =
+        (Map<String, EmbeddedChannel>) activeChannelsField.get(record);
+
+    activeChannels.put(channel.id().asLongText(), channel);
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Object record(ReverseConnectTargetManager manager, UUID targetId)
+      throws ReflectiveOperationException {
+
+    Field recordsField = ReverseConnectTargetManager.class.getDeclaredField("records");
+    recordsField.setAccessible(true);
+
+    Map<UUID, ?> records = (Map<UUID, ?>) recordsField.get(manager);
+
+    return records.get(targetId);
   }
 }
