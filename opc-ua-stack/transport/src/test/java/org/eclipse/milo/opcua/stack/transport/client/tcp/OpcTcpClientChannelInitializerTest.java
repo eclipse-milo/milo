@@ -13,12 +13,14 @@ package org.eclipse.milo.opcua.stack.transport.client.tcp;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
@@ -30,6 +32,9 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.HashedWheelTimer;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -144,36 +149,79 @@ class OpcTcpClientChannelInitializerTest {
   }
 
   @Test
-  void connectedInitializerRunsCustomizerBeforeSendingHello() throws Exception {
+  void initializersInstallCustomizerAfterAcknowledgeHandlerInBothPaths() throws Exception {
     String applicationEndpointUrl = "opc.tcp://configured.example:12685/milo";
     String reverseHelloEndpointUrl = "opc.tcp://reverse.example:12685/milo";
-    AtomicBoolean helloObserved = new AtomicBoolean(false);
-    EmbeddedChannel channel = new EmbeddedChannel();
     HashedWheelTimer wheelTimer = new HashedWheelTimer();
 
+    AtomicBoolean outboundHelloSeenByCustomizer = new AtomicBoolean(false);
+    AtomicBoolean connectedHelloSeenByCustomizer = new AtomicBoolean(false);
+
+    EmbeddedChannel outboundChannel = new EmbeddedChannel();
+    EmbeddedChannel connectedChannel = new EmbeddedChannel();
+
     try {
-      OpcTcpClientTransportConfig config =
-          OpcTcpClientTransportConfig.newBuilder()
-              .setWheelTimer(wheelTimer)
-              .setChannelPipelineCustomizer(
-                  pipeline -> pipeline.addLast(new HelloObservingHandler(helloObserved)))
-              .build();
+      OpcTcpClientChannelInitializer.initializeOutboundChannel(
+          outboundChannel,
+          customizerConfig(wheelTimer, outboundHelloSeenByCustomizer),
+          newClientApplicationContext(applicationEndpointUrl),
+          NoopResponseHandler.INSTANCE,
+          new AtomicLong(1)::getAndIncrement,
+          new CompletableFuture<>());
 
       OpcTcpClientChannelInitializer.initializeConnectedChannel(
-          channel,
-          config,
+          connectedChannel,
+          customizerConfig(wheelTimer, connectedHelloSeenByCustomizer),
           newClientApplicationContext(applicationEndpointUrl),
           NoopResponseHandler.INSTANCE,
           new AtomicLong(1)::getAndIncrement,
           new CompletableFuture<>(),
           reverseHelloEndpointUrl);
 
-      assertTrue(helloObserved.get());
-      assertHelloEndpointUrl(channel, reverseHelloEndpointUrl);
+      assertEquals(
+          handlerClassesAfter(outboundChannel, UascClientAcknowledgeHandler.class),
+          handlerClassesAfter(connectedChannel, UascClientAcknowledgeHandler.class));
+
+      // The customizer runs after the AcknowledgeHandler in both paths, so an outbound handler
+      // installed via the customizer must NOT observe writes initiated by the AcknowledgeHandler.
+      assertFalse(outboundHelloSeenByCustomizer.get());
+      assertFalse(connectedHelloSeenByCustomizer.get());
+
+      assertHelloEndpointUrl(outboundChannel, applicationEndpointUrl);
+      assertHelloEndpointUrl(connectedChannel, reverseHelloEndpointUrl);
     } finally {
-      channel.finishAndReleaseAll();
+      outboundChannel.finishAndReleaseAll();
+      connectedChannel.finishAndReleaseAll();
       wheelTimer.stop();
     }
+  }
+
+  private static OpcTcpClientTransportConfig customizerConfig(
+      HashedWheelTimer wheelTimer, AtomicBoolean helloObserved) {
+
+    return OpcTcpClientTransportConfig.newBuilder()
+        .setWheelTimer(wheelTimer)
+        .setChannelPipelineCustomizer(
+            pipeline -> pipeline.addLast(new HelloObservingHandler(helloObserved)))
+        .build();
+  }
+
+  private static List<String> handlerClassesAfter(
+      EmbeddedChannel channel, Class<? extends ChannelHandler> anchor) {
+
+    List<Map.Entry<String, ChannelHandler>> entries =
+        new ArrayList<>(channel.pipeline().toMap().entrySet());
+    int anchorIndex = -1;
+    for (int i = 0; i < entries.size(); i++) {
+      if (anchor.isInstance(entries.get(i).getValue())) {
+        anchorIndex = i;
+        break;
+      }
+    }
+    assertTrue(anchorIndex >= 0, "anchor handler " + anchor.getSimpleName() + " not in pipeline");
+    return entries.subList(anchorIndex + 1, entries.size()).stream()
+        .map(entry -> entry.getValue().getClass().getName())
+        .toList();
   }
 
   private static OpcTcpClientTransportConfig newClientConfig(HashedWheelTimer wheelTimer) {
