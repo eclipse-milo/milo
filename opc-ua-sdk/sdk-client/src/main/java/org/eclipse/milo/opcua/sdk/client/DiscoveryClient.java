@@ -373,7 +373,7 @@ public class DiscoveryClient {
       connection.close();
       return failedFuture(
           new UaException(
-              StatusCodes.Bad_TcpEndpointUrlInvalid, "ReverseHello endpointUrl is null"));
+              StatusCodes.Bad_TcpEndpointUrlInvalid, "ReverseHello endpointUrl is null or blank"));
     }
 
     OpcTcpClientTransportConfigBuilder configBuilder = OpcTcpClientTransportConfig.newBuilder();

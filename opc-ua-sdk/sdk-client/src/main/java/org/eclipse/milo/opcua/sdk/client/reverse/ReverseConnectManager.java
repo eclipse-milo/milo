@@ -203,8 +203,6 @@ public final class ReverseConnectManager implements AutoCloseable {
 
     try {
       for (ListenerState listenerState : listenerStates) {
-        ReverseConnectListenerSnapshot boundSnapshot;
-
         try {
           ServerBootstrap bootstrap = newServerBootstrap(listenerState);
 
@@ -218,7 +216,11 @@ public final class ReverseConnectManager implements AutoCloseable {
             listenerState.boundAddress = bindFuture.channel().localAddress();
             listenerState.lastError = null;
 
-            boundSnapshot = listenerSnapshotLocked(listenerState);
+            // Submit the bound listener event inside the lock so an inbound connection accepted
+            // between the bind returning and the bound event being enqueued cannot deliver its
+            // accepted event ahead of bound. listenerQueue.submit is non-blocking, and the lock
+            // is reentrant, so this does not invoke user code under the manager lock.
+            fireListenerBound(listenerSnapshotLocked(listenerState));
           } finally {
             lock.unlock();
           }
@@ -226,8 +228,6 @@ public final class ReverseConnectManager implements AutoCloseable {
           recordListenerError(listenerState, e);
           throw e;
         }
-
-        fireListenerBound(boundSnapshot);
       }
     } catch (Exception e) {
       recordError(e);
@@ -1327,6 +1327,13 @@ public final class ReverseConnectManager implements AutoCloseable {
         return;
       }
 
+      // Mark the first message as received before any validation throw so a concurrent
+      // first-message timeout cannot race the malformed-frame path and rewrite the rejection
+      // reason from MALFORMED_REVERSE_HELLO to FIRST_MESSAGE_TIMEOUT. Leave the scheduled timeout
+      // running; it now becomes a no-op when it fires, and channelInactive/handlerRemoved cancel
+      // it on the normal teardown paths.
+      firstMessageReceived.set(true);
+
       int messageLength = getMessageLength(buffer);
       if (buffer.readableBytes() < messageLength) {
         return;
@@ -1341,7 +1348,6 @@ public final class ReverseConnectManager implements AutoCloseable {
             "expected ReverseHello RHE/F, received " + messageType + "/" + chunkType);
       }
 
-      firstMessageReceived.set(true);
       cancelFirstMessageTimeout();
 
       ReverseHelloMessage reverseHello =

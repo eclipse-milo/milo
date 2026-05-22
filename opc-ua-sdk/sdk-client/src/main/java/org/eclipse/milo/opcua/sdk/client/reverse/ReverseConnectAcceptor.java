@@ -351,6 +351,11 @@ public final class ReverseConnectAcceptor implements AutoCloseable {
 
     ChannelStateObservable.TransitionListener listener =
         connected -> {
+          // After acceptor.stop() the listener is no longer removed from the transport, but it
+          // must not mutate bookkeeping for a stopped acceptor.
+          if (!running.get()) {
+            return;
+          }
           if (connected) {
             activeKeys.add(key);
           } else {
