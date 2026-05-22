@@ -57,7 +57,7 @@ public final class OpcTcpClientChannelInitializer {
     var acknowledgeHandler =
         new UascClientAcknowledgeHandler(config, application, requestIdSupplier, handshakeFuture);
 
-    initializeChannel(channel, config, responseHandler, acknowledgeHandler, false);
+    initializeChannel(channel, config, responseHandler, acknowledgeHandler);
   }
 
   /**
@@ -98,24 +98,17 @@ public final class OpcTcpClientChannelInitializer {
         new UascClientAcknowledgeHandler(
             config, application, requestIdSupplier, handshakeFuture, () -> endpointUrl);
 
-    initializeChannel(channel, config, responseHandler, acknowledgeHandler, true);
+    initializeChannel(channel, config, responseHandler, acknowledgeHandler);
   }
 
   private static void initializeChannel(
       Channel channel,
       OpcTcpClientTransportConfig config,
       UascResponseHandler responseHandler,
-      UascClientAcknowledgeHandler acknowledgeHandler,
-      boolean customizeBeforeAcknowledgeHandler) {
+      UascClientAcknowledgeHandler acknowledgeHandler) {
 
     channel.pipeline().addLast(new DelegatingUascResponseHandler(responseHandler));
-
-    if (customizeBeforeAcknowledgeHandler) {
-      config.getChannelPipelineCustomizer().accept(channel.pipeline());
-      channel.pipeline().addLast(acknowledgeHandler);
-    } else {
-      channel.pipeline().addLast(acknowledgeHandler);
-      config.getChannelPipelineCustomizer().accept(channel.pipeline());
-    }
+    channel.pipeline().addLast(acknowledgeHandler);
+    config.getChannelPipelineCustomizer().accept(channel.pipeline());
   }
 }
