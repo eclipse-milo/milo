@@ -395,9 +395,16 @@ final class OpcTcpServerReverseConnector implements AutoCloseable {
       return;
     }
 
-    channel.pipeline().addLast(new OpcTcpServerReverseConnectResponseHandler(this, attempt));
-    OpcTcpServerChannelInitializer.initializeReverseChannel(
-        channel, config, attempt.parameters().applicationContext());
+    try {
+      channel.pipeline().addLast(new OpcTcpServerReverseConnectResponseHandler(this, attempt));
+      OpcTcpServerChannelInitializer.initializeReverseChannel(
+          channel, config, attempt.parameters().applicationContext());
+    } catch (Throwable t) {
+      StatusCode statusCode =
+          UaException.extractStatusCode(t).orElse(new StatusCode(StatusCodes.Bad_TcpInternalError));
+      failAndClose(attempt, statusCode, t, "failed to initialize reverse server pipeline", channel);
+      return;
+    }
 
     attempt.transition(
         OpcTcpServerReverseConnectAttemptState.HELLO_HANDLER_INSTALLED,

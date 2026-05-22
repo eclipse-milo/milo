@@ -52,6 +52,19 @@ final class OpcTcpServerReverseConnectResponseHandler extends ByteToMessageDecod
 
     MessageType messageType = MessageType.fromMediumInt(buffer.getMediumLE(buffer.readerIndex()));
     char chunkType = (char) buffer.getByte(buffer.readerIndex() + 3);
+
+    if (chunkType != 'F') {
+      throw new UaException(
+          StatusCodes.Bad_TcpMessageTypeInvalid,
+          "expected final chunk after ReverseHello, received " + messageType + "/" + chunkType);
+    }
+
+    if (messageType != MessageType.Hello && messageType != MessageType.Error) {
+      throw new UaException(
+          StatusCodes.Bad_TcpMessageTypeInvalid,
+          "expected Hello or Error after ReverseHello, received " + messageType + "/" + chunkType);
+    }
+
     int maxMessageLength =
         messageType == MessageType.Hello
             ? UascServerHelloHandler.MAX_HELLO_MESSAGE_SIZE
@@ -67,12 +80,6 @@ final class OpcTcpServerReverseConnectResponseHandler extends ByteToMessageDecod
       return;
     }
 
-    if (chunkType != 'F') {
-      throw new UaException(
-          StatusCodes.Bad_TcpMessageTypeInvalid,
-          "expected final chunk after ReverseHello, received " + messageType + "/" + chunkType);
-    }
-
     if (messageType == MessageType.Error) {
       ErrorMessage errorMessage = TcpMessageDecoder.decodeError(buffer.readSlice(messageLength));
 
@@ -83,10 +90,6 @@ final class OpcTcpServerReverseConnectResponseHandler extends ByteToMessageDecod
       ctx.pipeline().remove(this);
       connector.onHelloReceived(attempt, ctx.channel());
       ctx.fireChannelRead(helloBuffer);
-    } else {
-      throw new UaException(
-          StatusCodes.Bad_TcpMessageTypeInvalid,
-          "expected Hello or Error after ReverseHello, received " + messageType + "/" + chunkType);
     }
   }
 
