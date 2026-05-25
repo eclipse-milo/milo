@@ -13,7 +13,9 @@ package org.eclipse.milo.opcua.sdk.server.reverse;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -31,16 +33,21 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
+import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerReverseConnectAttempt;
+import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerReverseConnectParameters;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransport;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransportConfig;
 import org.junit.jupiter.api.AfterEach;
@@ -276,6 +283,68 @@ class ReverseConnectTargetManagerTest {
   }
 
   @Test
+  void targetAddedCannotBeOvertakenByFirstUpdateOnConcurrentExecutor() throws Exception {
+    String endpointUrl = "opc.tcp://localhost:12686/reverse-target-test";
+    ReverseConnectTarget target = target(endpointUrl, "opc.tcp://localhost:12687");
+    AtomicReference<Runnable> scheduledAttempt = new AtomicReference<>();
+    CountDownLatch addedEntered = new CountDownLatch(1);
+    CountDownLatch releaseAdded = new CountDownLatch(1);
+    CountDownLatch updatedEntered = new CountDownLatch(1);
+    List<String> events = new CopyOnWriteArrayList<>();
+
+    listenerExecutor = Executors.newFixedThreadPool(2);
+    scheduler = mock(ScheduledExecutorService.class);
+    ScheduledFuture<?> scheduledFuture = mock(ScheduledFuture.class);
+    when(scheduler.schedule(any(Runnable.class), anyLong(), any(TimeUnit.class)))
+        .thenAnswer(
+            invocation -> {
+              scheduledAttempt.set(invocation.getArgument(0));
+              return scheduledFuture;
+            });
+
+    ReverseConnectTargetManager manager =
+        new ReverseConnectTargetManager(
+            mock(ServerApplicationContext.class),
+            () -> List.of(endpointDescription(endpointUrl)),
+            transportProfile -> new FailingReverseTransport(),
+            "urn:eclipse:milo:test:server:reverse-targets",
+            listenerExecutor,
+            scheduler,
+            Set.of());
+
+    manager.addListener(
+        new ReverseConnectTargetListener() {
+          @Override
+          public void onTargetAdded(ReverseConnectTargetSnapshot snapshot) {
+            addedEntered.countDown();
+            await(releaseAdded);
+            events.add("added");
+          }
+
+          @Override
+          public void onTargetUpdated(ReverseConnectTargetSnapshot snapshot) {
+            events.add("updated");
+            updatedEntered.countDown();
+          }
+        });
+
+    manager.startup();
+    manager.addTarget(target);
+
+    assertTrue(addedEntered.await(3, TimeUnit.SECONDS));
+    assertNotNull(scheduledAttempt.get());
+
+    scheduledAttempt.get().run();
+
+    assertFalse(updatedEntered.await(200, TimeUnit.MILLISECONDS));
+
+    releaseAdded.countDown();
+
+    assertTrue(updatedEntered.await(3, TimeUnit.SECONDS));
+    assertEquals(List.of("added", "updated"), events);
+  }
+
+  @Test
   void removedHandleMethodsReturnFailedFutures() throws Exception {
     ReverseConnectTarget target =
         ReverseConnectTarget.builder()
@@ -324,6 +393,15 @@ class ReverseConnectTargetManagerTest {
     CompletableFuture<ReverseConnectTargetSnapshot> future = assertDoesNotThrow(operation::get);
 
     return assertThrows(ExecutionException.class, () -> future.get(5, TimeUnit.SECONDS));
+  }
+
+  private static void await(CountDownLatch latch) {
+    try {
+      latch.await(3, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new AssertionError(e);
+    }
   }
 
   private static ReverseConnectTarget target(String endpointUrl, String clientListenerUrl) {
@@ -408,5 +486,19 @@ class ReverseConnectTargetManagerTest {
     Map<UUID, ?> records = (Map<UUID, ?>) recordsField.get(manager);
 
     return records.get(targetId);
+  }
+
+  private static final class FailingReverseTransport extends OpcTcpServerTransport {
+
+    private FailingReverseTransport() {
+      super(OpcTcpServerTransportConfig.newBuilder().build());
+    }
+
+    @Override
+    public OpcTcpServerReverseConnectAttempt connectReverse(
+        OpcTcpServerReverseConnectParameters parameters) {
+
+      throw new IllegalStateException("reverse attempt intentionally disabled");
+    }
   }
 }

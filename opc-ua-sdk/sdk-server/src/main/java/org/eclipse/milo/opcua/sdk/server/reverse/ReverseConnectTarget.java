@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.server.reverse;
 
+import static java.util.Objects.requireNonNull;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
 import com.google.common.base.MoreObjects;
@@ -217,7 +218,7 @@ public final class ReverseConnectTarget {
      * @return this builder.
      */
     public Builder setId(UUID id) {
-      this.id = id;
+      this.id = requireNonNull(id, "id");
       return this;
     }
 

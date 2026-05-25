@@ -208,21 +208,21 @@ public final class ReverseConnectManager implements AutoCloseable {
 
           bootstrapCustomizer.accept(bootstrap);
 
-          ChannelFuture bindFuture = bootstrap.bind(listenerState.bindAddress).sync();
-
+          listenerQueue.pause();
           lock.lock();
           try {
+            ChannelFuture bindFuture = bootstrap.bind(listenerState.bindAddress).sync();
+
             listenerState.bindChannel = bindFuture.channel();
             listenerState.boundAddress = bindFuture.channel().localAddress();
             listenerState.lastError = null;
 
-            // Submit the bound listener event inside the lock so an inbound connection accepted
-            // between the bind returning and the bound event being enqueued cannot deliver its
-            // accepted event ahead of bound. listenerQueue.submit is non-blocking, and the lock
-            // is reentrant, so this does not invoke user code under the manager lock.
+            // Queue the bound event while accepted channels are still blocked on the manager lock,
+            // but keep listenerQueue paused so direct executors cannot invoke user code here.
             fireListenerBound(listenerSnapshotLocked(listenerState));
           } finally {
             lock.unlock();
+            listenerQueue.resume();
           }
         } catch (Exception e) {
           recordListenerError(listenerState, e);
@@ -1327,17 +1327,16 @@ public final class ReverseConnectManager implements AutoCloseable {
         return;
       }
 
-      // Mark the first message as received before any validation throw so a concurrent
-      // first-message timeout cannot race the malformed-frame path and rewrite the rejection
-      // reason from MALFORMED_REVERSE_HELLO to FIRST_MESSAGE_TIMEOUT. Leave the scheduled timeout
-      // running; it now becomes a no-op when it fires, and channelInactive/handlerRemoved cancel
-      // it on the normal teardown paths.
-      firstMessageReceived.set(true);
-
       int messageLength = getMessageLength(buffer);
       if (buffer.readableBytes() < messageLength) {
         return;
       }
+
+      // Only a complete first frame satisfies the first-message deadline. Once the full declared
+      // frame is available, mark it before validation so malformed complete frames cannot race a
+      // concurrent timeout and be reported as FIRST_MESSAGE_TIMEOUT.
+      firstMessageReceived.set(true);
+      cancelFirstMessageTimeout();
 
       MessageType messageType = MessageType.fromMediumInt(buffer.getMediumLE(buffer.readerIndex()));
       char chunkType = (char) buffer.getByte(buffer.readerIndex() + 3);
@@ -1347,8 +1346,6 @@ public final class ReverseConnectManager implements AutoCloseable {
             StatusCodes.Bad_TcpMessageTypeInvalid,
             "expected ReverseHello RHE/F, received " + messageType + "/" + chunkType);
       }
-
-      cancelFirstMessageTimeout();
 
       ReverseHelloMessage reverseHello =
           TcpMessageDecoder.decodeReverseHello(buffer.readSlice(messageLength));
@@ -1378,11 +1375,15 @@ public final class ReverseConnectManager implements AutoCloseable {
       long messageLength = buffer.getUnsignedIntLE(buffer.readerIndex() + 4);
 
       if (messageLength < UACP_HEADER_LENGTH) {
+        firstMessageReceived.set(true);
+        cancelFirstMessageTimeout();
         throw new UaException(
             StatusCodes.Bad_DecodingError, "invalid ReverseHello message length: " + messageLength);
       }
 
       if (messageLength > MAX_REVERSE_HELLO_MESSAGE_SIZE) {
+        firstMessageReceived.set(true);
+        cancelFirstMessageTimeout();
         throw new UaException(
             StatusCodes.Bad_TcpMessageTooLarge,
             "ReverseHello message length exceeds maximum: " + messageLength);
