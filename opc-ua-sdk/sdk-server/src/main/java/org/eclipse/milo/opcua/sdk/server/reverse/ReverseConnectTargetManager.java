@@ -29,6 +29,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -37,6 +38,7 @@ import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
+import org.eclipse.milo.opcua.stack.core.util.ExecutionQueue;
 import org.eclipse.milo.opcua.stack.transport.server.OpcServerTransport;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerReverseConnectAttempt;
@@ -89,7 +91,7 @@ public final class ReverseConnectTargetManager {
   private final Supplier<List<EndpointDescription>> endpointDescriptions;
   private final Function<TransportProfile, OpcServerTransport> transportSupplier;
   private final String serverUri;
-  private final ExecutorService listenerExecutor;
+  private final ExecutionQueue listenerQueue;
   private final ScheduledExecutorService scheduler;
 
   private boolean running = false;
@@ -119,7 +121,7 @@ public final class ReverseConnectTargetManager {
     this.endpointDescriptions = requireNonNull(endpointDescriptions, "endpointDescriptions");
     this.transportSupplier = requireNonNull(transportSupplier, "transportSupplier");
     this.serverUri = requireNonNull(serverUri, "serverUri");
-    this.listenerExecutor = requireNonNull(listenerExecutor, "listenerExecutor");
+    this.listenerQueue = new ExecutionQueue(requireNonNull(listenerExecutor, "listenerExecutor"));
     this.scheduler = requireNonNull(scheduler, "scheduler");
 
     requireNonNull(initialTargets, "initialTargets");
@@ -1035,34 +1037,30 @@ public final class ReverseConnectTargetManager {
   }
 
   private void notifyTargetAdded(ReverseConnectTargetSnapshot snapshot) {
-    listenersSnapshot()
-        .forEach(
-            listener ->
-                listenerExecutor.execute(
-                    () -> safelyNotify(() -> listener.onTargetAdded(snapshot))));
+    notifyListeners(listener -> listener.onTargetAdded(snapshot));
   }
 
   private void notifyTargetUpdated(ReverseConnectTargetSnapshot snapshot) {
-    listenersSnapshot()
-        .forEach(
-            listener ->
-                listenerExecutor.execute(
-                    () -> safelyNotify(() -> listener.onTargetUpdated(snapshot))));
+    notifyListeners(listener -> listener.onTargetUpdated(snapshot));
   }
 
   private void notifyTargetRemoved(ReverseConnectTargetSnapshot snapshot) {
-    listenersSnapshot()
-        .forEach(
-            listener ->
-                listenerExecutor.execute(
-                    () -> safelyNotify(() -> listener.onTargetRemoved(snapshot))));
+    notifyListeners(listener -> listener.onTargetRemoved(snapshot));
   }
 
   private void notifyAttemptEvent(ReverseConnectAttemptEvent event) {
-    listenersSnapshot()
-        .forEach(
-            listener ->
-                listenerExecutor.execute(() -> safelyNotify(() -> listener.onAttemptEvent(event))));
+    notifyListeners(listener -> listener.onAttemptEvent(event));
+  }
+
+  private void notifyListeners(Consumer<ReverseConnectTargetListener> consumer) {
+    List<ReverseConnectTargetListener> listenersSnapshot = listenersSnapshot();
+
+    if (listenersSnapshot.isEmpty()) {
+      return;
+    }
+
+    listenerQueue.submit(
+        () -> listenersSnapshot.forEach(listener -> safelyNotify(() -> consumer.accept(listener))));
   }
 
   private List<ReverseConnectTargetListener> listenersSnapshot() {

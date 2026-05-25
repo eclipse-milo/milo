@@ -35,6 +35,7 @@ import org.eclipse.milo.opcua.stack.core.channel.messages.TcpMessageEncoder;
 import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,6 +66,9 @@ public class UascClientAcknowledgeHandler extends ByteToMessageCodec<UaRequestMe
   private final Supplier<String> endpointUrlSupplier;
   private final Supplier<Long> requestIdSupplier;
   private final CompletableFuture<ClientSecureChannel> handshakeFuture;
+  private final boolean sendHelloWhenAddedToActiveChannel;
+
+  private @Nullable ChannelHandlerContext handlerContext;
 
   public UascClientAcknowledgeHandler(
       UascClientConfig config,
@@ -77,7 +81,8 @@ public class UascClientAcknowledgeHandler extends ByteToMessageCodec<UaRequestMe
         application,
         requestIdSupplier,
         handshakeFuture,
-        () -> application.getEndpoint().getEndpointUrl());
+        () -> application.getEndpoint().getEndpointUrl(),
+        true);
   }
 
   /**
@@ -103,11 +108,35 @@ public class UascClientAcknowledgeHandler extends ByteToMessageCodec<UaRequestMe
       CompletableFuture<ClientSecureChannel> handshakeFuture,
       Supplier<String> endpointUrlSupplier) {
 
+    this(config, application, requestIdSupplier, handshakeFuture, endpointUrlSupplier, true);
+  }
+
+  /**
+   * Creates a handler with explicit control over active-channel {@code Hello} timing.
+   *
+   * @param config the client UASC transport configuration.
+   * @param application the client application context used for encoding limits, credentials, and
+   *     SecureChannel setup.
+   * @param requestIdSupplier the source of UASC request ids after {@code Acknowledge}.
+   * @param handshakeFuture the future completed when the SecureChannel handshake succeeds or fails.
+   * @param endpointUrlSupplier the source of the endpoint URL encoded in {@code Hello}.
+   * @param sendHelloWhenAddedToActiveChannel true to send {@code Hello} immediately when this
+   *     handler is added to an already-active channel.
+   */
+  public UascClientAcknowledgeHandler(
+      UascClientConfig config,
+      ClientApplicationContext application,
+      Supplier<Long> requestIdSupplier,
+      CompletableFuture<ClientSecureChannel> handshakeFuture,
+      Supplier<String> endpointUrlSupplier,
+      boolean sendHelloWhenAddedToActiveChannel) {
+
     this.config = config;
     this.application = application;
     this.endpointUrlSupplier = endpointUrlSupplier;
     this.requestIdSupplier = requestIdSupplier;
     this.handshakeFuture = handshakeFuture;
+    this.sendHelloWhenAddedToActiveChannel = sendHelloWhenAddedToActiveChannel;
   }
 
   /*
@@ -135,11 +164,39 @@ public class UascClientAcknowledgeHandler extends ByteToMessageCodec<UaRequestMe
 
   @Override
   public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
-    if (ctx.channel().isActive() && helloSent.compareAndSet(false, true)) {
-      sendHello(ctx);
+    handlerContext = ctx;
+
+    if (sendHelloWhenAddedToActiveChannel) {
+      sendHelloIfChannelActive(ctx);
     }
 
     super.handlerAdded(ctx);
+  }
+
+  @Override
+  public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
+    handlerContext = null;
+
+    super.handlerRemoved(ctx);
+  }
+
+  /**
+   * Send {@code Hello} if this handler has been added to an already-active channel.
+   *
+   * <p>This lets TCP initializers install pipeline customizers after the acknowledge handler but
+   * before active reverse channels emit their initial {@code Hello}.
+   */
+  public void sendHelloIfChannelActive() {
+    ChannelHandlerContext ctx = handlerContext;
+    if (ctx == null) {
+      throw new IllegalStateException("UascClientAcknowledgeHandler is not in a pipeline");
+    }
+
+    try {
+      sendHelloIfChannelActive(ctx);
+    } catch (Throwable t) {
+      exceptionCaught(ctx, t);
+    }
   }
 
   @Override
@@ -179,6 +236,12 @@ public class UascClientAcknowledgeHandler extends ByteToMessageCodec<UaRequestMe
     ctx.writeAndFlush(messageBuffer, ctx.voidPromise());
 
     logger.debug("Sent Hello message on channel={}.", ctx.channel());
+  }
+
+  private void sendHelloIfChannelActive(ChannelHandlerContext ctx) throws UaException {
+    if (ctx.channel().isActive() && helloSent.compareAndSet(false, true)) {
+      sendHello(ctx);
+    }
   }
 
   private Timeout startHelloTimeout(ChannelHandlerContext ctx) {

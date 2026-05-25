@@ -1390,8 +1390,8 @@ executor knobs.
 ### 8.1 Wire Format
 
 ```bash
-mvn -q verify -pl opc-ua-stack/stack-core -Dtest=ReverseHelloMessageTest
-mvn -q verify -pl opc-ua-stack/stack-core -Dtest=MessageTypeTest
+mvn -q verify -pl opc-ua-stack/stack-core -am -Dtest=ReverseHelloMessageTest
+mvn -q verify -pl opc-ua-stack/stack-core -am -Dtest=MessageTypeTest
 ```
 
 `ReverseHelloMessageTest` covers round-trips, null and empty fields,
@@ -1404,10 +1404,10 @@ persisted state.
 ### 8.2 Transport Unit Tests
 
 ```bash
-mvn -q verify -pl opc-ua-stack/transport -Dtest=OpcTcpServerReverseConnectorTest
-mvn -q verify -pl opc-ua-stack/transport -Dtest=OpcTcpServerTransportTest
-mvn -q verify -pl opc-ua-stack/transport -Dtest=OpcTcpClientChannelInitializerTest
-mvn -q verify -pl opc-ua-stack/transport -Dtest=OpcTcpServerChannelInitializerTest
+mvn -q verify -pl opc-ua-stack/transport -am -Dtest=OpcTcpServerReverseConnectorTest
+mvn -q verify -pl opc-ua-stack/transport -am -Dtest=OpcTcpServerTransportTest
+mvn -q verify -pl opc-ua-stack/transport -am -Dtest=OpcTcpClientChannelInitializerTest
+mvn -q verify -pl opc-ua-stack/transport -am -Dtest=OpcTcpServerChannelInitializerTest
 ```
 
 `OpcTcpServerReverseConnectorTest` exercises the per-attempt FSM end-to-end:
@@ -1421,14 +1421,14 @@ leaking attempts.
 ### 8.3 Client SDK Unit Tests
 
 ```bash
-mvn -q verify -pl opc-ua-sdk/sdk-client -Dtest=ReverseConnectManagerTest
-mvn -q verify -pl opc-ua-sdk/sdk-client -Dtest=ReverseConnectAcceptorTest
-mvn -q verify -pl opc-ua-sdk/sdk-client -Dtest=ReverseConnectEndpointSelectorsTest
-mvn -q verify -pl opc-ua-sdk/sdk-client -Dtest=ReverseConnectProductionSelectorsTest
-mvn -q verify -pl opc-ua-sdk/sdk-client -Dtest=ReverseConnectEndpointSelectionFailureTest
-mvn -q verify -pl opc-ua-sdk/sdk-client -Dtest=DiscoveryFirstReverseConnectClientCancellationTest
-mvn -q verify -pl opc-ua-sdk/sdk-client -Dtest=ReverseTcpClientTransportTest
-mvn -q verify -pl opc-ua-sdk/sdk-client -Dtest=OpcUaClientReverseConnectTest
+mvn -q verify -pl opc-ua-sdk/sdk-client -am -Dtest=ReverseConnectManagerTest
+mvn -q verify -pl opc-ua-sdk/sdk-client -am -Dtest=ReverseConnectAcceptorTest
+mvn -q verify -pl opc-ua-sdk/sdk-client -am -Dtest=ReverseConnectEndpointSelectorsTest
+mvn -q verify -pl opc-ua-sdk/sdk-client -am -Dtest=ReverseConnectProductionSelectorsTest
+mvn -q verify -pl opc-ua-sdk/sdk-client -am -Dtest=ReverseConnectEndpointSelectionFailureTest
+mvn -q verify -pl opc-ua-sdk/sdk-client -am -Dtest=DiscoveryFirstReverseConnectClientCancellationTest
+mvn -q verify -pl opc-ua-sdk/sdk-client -am -Dtest=ReverseTcpClientTransportTest
+mvn -q verify -pl opc-ua-sdk/sdk-client -am -Dtest=OpcUaClientReverseConnectTest
 ```
 
 `ReverseConnectManagerTest` exercises bind/unbind ordering (no orphan
@@ -1451,9 +1451,9 @@ the race where production completes after cancellation arrives.
 ### 8.4 Server SDK Unit Tests
 
 ```bash
-mvn -q verify -pl opc-ua-sdk/sdk-server -Dtest=OpcUaServerReverseConnectTargetTest
-mvn -q verify -pl opc-ua-sdk/sdk-server -Dtest=ReverseConnectTargetManagerTest
-mvn -q verify -pl opc-ua-sdk/sdk-server -Dtest=ReverseConnectTargetSnapshotTest
+mvn -q verify -pl opc-ua-sdk/sdk-server -am -Dtest=OpcUaServerReverseConnectTargetTest
+mvn -q verify -pl opc-ua-sdk/sdk-server -am -Dtest=ReverseConnectTargetManagerTest
+mvn -q verify -pl opc-ua-sdk/sdk-server -am -Dtest=ReverseConnectTargetSnapshotTest
 ```
 
 `OpcUaServerReverseConnectTargetTest` exercises reverse-only startup,
@@ -1474,11 +1474,11 @@ list.
 ### 8.5 Integration Tests
 
 ```bash
-mvn -q verify -pl opc-ua-sdk/integration-tests \
+mvn -q verify -pl opc-ua-sdk/integration-tests -am \
     -Dtest=OpcUaClientReverseConnectTest
-mvn -q verify -pl opc-ua-sdk/sdk-client \
+mvn -q verify -pl opc-ua-sdk/sdk-client -am \
     -Dtest=DiscoveryClientReverseConnectTest
-mvn -q verify -pl opc-ua-sdk/sdk-client \
+mvn -q verify -pl opc-ua-sdk/sdk-client -am \
     -Dtest=OpcUaClientDisconnectTest
 ```
 

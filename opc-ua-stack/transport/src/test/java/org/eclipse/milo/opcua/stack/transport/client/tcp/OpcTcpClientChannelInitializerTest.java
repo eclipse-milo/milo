@@ -196,6 +196,32 @@ class OpcTcpClientChannelInitializerTest {
     }
   }
 
+  @Test
+  void connectedInitializerAddFirstCustomizerObservesInitialHello() throws Exception {
+    String applicationEndpointUrl = "opc.tcp://configured.example:12685/milo";
+    String reverseHelloEndpointUrl = "opc.tcp://reverse.example:12685/milo";
+    HashedWheelTimer wheelTimer = new HashedWheelTimer();
+    AtomicBoolean helloSeenByCustomizer = new AtomicBoolean(false);
+    EmbeddedChannel channel = new EmbeddedChannel();
+
+    try {
+      OpcTcpClientChannelInitializer.initializeConnectedChannel(
+          channel,
+          addFirstCustomizerConfig(wheelTimer, helloSeenByCustomizer),
+          newClientApplicationContext(applicationEndpointUrl),
+          NoopResponseHandler.INSTANCE,
+          new AtomicLong(1)::getAndIncrement,
+          new CompletableFuture<>(),
+          reverseHelloEndpointUrl);
+
+      assertTrue(helloSeenByCustomizer.get());
+      assertHelloEndpointUrl(channel, reverseHelloEndpointUrl);
+    } finally {
+      channel.finishAndReleaseAll();
+      wheelTimer.stop();
+    }
+  }
+
   private static OpcTcpClientTransportConfig customizerConfig(
       HashedWheelTimer wheelTimer, AtomicBoolean helloObserved) {
 
@@ -203,6 +229,16 @@ class OpcTcpClientChannelInitializerTest {
         .setWheelTimer(wheelTimer)
         .setChannelPipelineCustomizer(
             pipeline -> pipeline.addLast(new HelloObservingHandler(helloObserved)))
+        .build();
+  }
+
+  private static OpcTcpClientTransportConfig addFirstCustomizerConfig(
+      HashedWheelTimer wheelTimer, AtomicBoolean helloObserved) {
+
+    return OpcTcpClientTransportConfig.newBuilder()
+        .setWheelTimer(wheelTimer)
+        .setChannelPipelineCustomizer(
+            pipeline -> pipeline.addFirst(new HelloObservingHandler(helloObserved)))
         .build();
   }
 

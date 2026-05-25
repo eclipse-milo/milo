@@ -12,8 +12,10 @@ package org.eclipse.milo.opcua.sdk.client.reverse;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.netty.channel.embedded.EmbeddedChannel;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -141,6 +143,19 @@ class DiscoveryFirstReverseConnectClientCancellationTest {
     completeProduction(bridge, client);
 
     assertEquals(1, client.disconnectCount());
+  }
+
+  @Test
+  void cancellingDiscoveryGuardClosesLateClaimedConnection() {
+    ReverseConnectDiscovery.ClaimedConnectionGuard guard =
+        new ReverseConnectDiscovery.ClaimedConnectionGuard();
+    EmbeddedChannel channel = new EmbeddedChannel();
+    ReverseConnectConnection connection = new ReverseConnectConnection(channel, candidate());
+
+    guard.cancel();
+
+    assertFalse(guard.claim(connection));
+    assertFalse(channel.isOpen());
   }
 
   @SuppressWarnings("unchecked")

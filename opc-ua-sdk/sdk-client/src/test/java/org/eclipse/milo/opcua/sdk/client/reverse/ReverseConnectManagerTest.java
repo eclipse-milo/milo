@@ -25,6 +25,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import java.io.OutputStream;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -53,6 +54,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.channel.messages.HelloMessage;
@@ -161,6 +163,24 @@ class ReverseConnectManagerTest {
   }
 
   @Test
+  void directExecutorListenerBoundCallbackRunsOutsideManagerLock() throws Exception {
+    AtomicBoolean lockHeldDuringCallback = new AtomicBoolean(true);
+
+    manager = newManagerBuilder().build();
+    manager.addListener(
+        new ReverseConnectListener() {
+          @Override
+          public void onListenerBound(@NonNull ReverseConnectListenerSnapshot snapshot) {
+            lockHeldDuringCallback.set(managerLock(manager).isHeldByCurrentThread());
+          }
+        });
+
+    manager.startup();
+
+    assertFalse(lockHeldDuringCallback.get());
+  }
+
+  @Test
   void malformedFirstMessageIsRejected() throws Exception {
     RecordingListener listener = new RecordingListener();
 
@@ -199,6 +219,28 @@ class ReverseConnectManagerTest {
     ReverseConnectCandidateSnapshot rejected = listener.rejected.get(0);
     assertEquals(ReverseConnectCandidateState.REJECTED, rejected.state());
     assertEquals(ReverseConnectRejectionReason.FIRST_MESSAGE_TIMEOUT, rejected.rejectionReason());
+  }
+
+  @Test
+  void partialFirstFrameIsRejectedByFirstMessageTimeout() throws Exception {
+    RecordingListener listener = new RecordingListener();
+
+    manager = newManagerBuilder().setFirstMessageTimeout(Duration.ofMillis(50)).build();
+    manager.addListener(listener);
+    manager.startup();
+
+    try (Socket socket = new Socket()) {
+      socket.connect(boundAddress(manager));
+      writePartialReverseHelloHeader(socket, 32);
+
+      waitUntil(() -> !listener.rejected.isEmpty());
+
+      ReverseConnectCandidateSnapshot rejected = listener.rejected.get(0);
+      assertEquals(ReverseConnectCandidateState.REJECTED, rejected.state());
+      assertEquals(ReverseConnectRejectionReason.FIRST_MESSAGE_TIMEOUT, rejected.rejectionReason());
+
+      assertPeerClosed(socket);
+    }
   }
 
   @Test
@@ -591,6 +633,30 @@ class ReverseConnectManagerTest {
     }
   }
 
+  private static void writePartialReverseHelloHeader(Socket socket, int messageLength)
+      throws Exception {
+
+    byte[] header = {
+      'R',
+      'H',
+      'E',
+      'F',
+      (byte) messageLength,
+      (byte) (messageLength >>> 8),
+      (byte) (messageLength >>> 16),
+      (byte) (messageLength >>> 24)
+    };
+
+    OutputStream outputStream = socket.getOutputStream();
+    outputStream.write(header);
+    outputStream.flush();
+  }
+
+  private static void assertPeerClosed(Socket socket) throws Exception {
+    socket.setSoTimeout(1_000);
+    while (socket.getInputStream().read() != -1) {}
+  }
+
   private static HelloMessage newHelloMessage() {
     return new HelloMessage(0L, 8192L, 8192L, 8192L, 8L, endpointUrl());
   }
@@ -622,6 +688,17 @@ class ReverseConnectManagerTest {
         ReverseConnectManager.class.getDeclaredMethod("onFirstMessageTimeout", UUID.class);
     method.setAccessible(true);
     method.invoke(manager, candidateId);
+  }
+
+  private static ReentrantLock managerLock(ReverseConnectManager manager) {
+    try {
+      Field field = ReverseConnectManager.class.getDeclaredField("lock");
+      field.setAccessible(true);
+
+      return (ReentrantLock) field.get(manager);
+    } catch (ReflectiveOperationException e) {
+      throw new AssertionError(e);
+    }
   }
 
   private static void invokeCloseWithError(

@@ -13,8 +13,8 @@ package org.eclipse.milo.opcua.sdk.client.reverse;
 import static java.util.Objects.requireNonNull;
 
 import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.eclipse.milo.opcua.sdk.client.DiscoveryClient;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
@@ -79,7 +79,7 @@ public final class ReverseConnectDiscovery {
     requireNonNull(configureTransport, "configureTransport");
 
     ReverseConnectRegistration registration = manager.registerSelector(selector);
-    AtomicReference<@Nullable ReverseConnectConnection> claimedConnection = new AtomicReference<>();
+    ClaimedConnectionGuard claimedConnection = new ClaimedConnectionGuard();
 
     CompletableFuture<ReverseConnectDiscoveryResult> result = new CompletableFuture<>();
     result.whenComplete(
@@ -90,10 +90,7 @@ public final class ReverseConnectDiscovery {
             // pipeline holds the socket and will not observe the cancellation on its own. Closing
             // the connection here makes the in-flight GetEndpoints fail promptly instead of
             // running to completion on a future that no caller is reading.
-            ReverseConnectConnection connection = claimedConnection.getAndSet(null);
-            if (connection != null) {
-              connection.close();
-            }
+            claimedConnection.cancel();
           }
         });
 
@@ -101,13 +98,17 @@ public final class ReverseConnectDiscovery {
         .connectionFuture()
         .thenCompose(
             connection -> {
-              claimedConnection.set(connection);
+              if (!claimedConnection.claim(connection)) {
+                return CompletableFuture.failedFuture(
+                    new CancellationException("Reverse Connect discovery cancelled"));
+              }
+
               return DiscoveryClient.getEndpoints(connection, configureTransport)
-                  .thenApply(endpoints -> result(connection.snapshot(), endpoints));
+                  .thenApply(endpoints -> result(connection.snapshot(), endpoints))
+                  .whenComplete((discovery, ex) -> claimedConnection.release(connection));
             })
         .whenComplete(
             (discovery, ex) -> {
-              claimedConnection.set(null);
               if (ex != null) {
                 result.completeExceptionally(ex);
               } else {
@@ -122,5 +123,53 @@ public final class ReverseConnectDiscovery {
       ReverseConnectCandidateSnapshot candidate, List<EndpointDescription> endpoints) {
 
     return new ReverseConnectDiscoveryResult(candidate, List.copyOf(endpoints));
+  }
+
+  static final class ClaimedConnectionGuard {
+
+    private final Object lock = new Object();
+
+    private boolean cancelled = false;
+    private @Nullable ReverseConnectConnection claimedConnection;
+
+    boolean claim(ReverseConnectConnection connection) {
+      boolean closeConnection = false;
+
+      synchronized (lock) {
+        if (cancelled) {
+          closeConnection = true;
+        } else {
+          claimedConnection = connection;
+          return true;
+        }
+      }
+
+      if (closeConnection) {
+        connection.close();
+      }
+
+      return false;
+    }
+
+    void release(ReverseConnectConnection connection) {
+      synchronized (lock) {
+        if (claimedConnection == connection) {
+          claimedConnection = null;
+        }
+      }
+    }
+
+    void cancel() {
+      ReverseConnectConnection connection;
+      synchronized (lock) {
+        cancelled = true;
+        connection = claimedConnection;
+        claimedConnection = null;
+      }
+
+      if (connection != null) {
+        connection.close();
+      }
+    }
   }
 }

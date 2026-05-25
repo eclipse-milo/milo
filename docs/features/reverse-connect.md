@@ -524,20 +524,20 @@ reverse-connect lifecycle, and matches the existing layering used for normal con
 
 ```bash
 # Wire protocol
-mvn -q verify -pl opc-ua-stack/stack-core -Dtest=ReverseHelloMessageTest,MessageTypeTest
+mvn -q verify -pl opc-ua-stack/stack-core -am -Dtest=ReverseHelloMessageTest,MessageTypeTest
 
 # Stack transport (both sides)
-mvn -q verify -pl opc-ua-stack/transport \
+mvn -q verify -pl opc-ua-stack/transport -am \
     -Dtest=OpcTcpServerReverseConnectorTest,OpcTcpServerChannelInitializerTest,OpcTcpClientChannelInitializerTest
 
 # Client SDK
-mvn -q verify -pl opc-ua-sdk/sdk-client -Dtest='ReverseConnect*,DiscoveryFirstReverseConnect*,OpcUaClientReverseConnectTest,DiscoveryClientReverseConnectTest,ReverseTcpClientTransportTest'
+mvn -q verify -pl opc-ua-sdk/sdk-client -am -Dtest='ReverseConnect*,DiscoveryFirstReverseConnect*,OpcUaClientReverseConnectTest,DiscoveryClientReverseConnectTest,ReverseTcpClientTransportTest'
 
 # Server SDK
-mvn -q verify -pl opc-ua-sdk/sdk-server -Dtest='ReverseConnect*,OpcUaServerReverseConnectTargetTest,OpcUaServerConfigTest'
+mvn -q verify -pl opc-ua-sdk/sdk-server -am -Dtest='ReverseConnect*,OpcUaServerReverseConnectTargetTest,OpcUaServerConfigTest'
 
 # Full-stack integration
-mvn -q verify -pl opc-ua-sdk/integration-tests -Dtest=OpcUaClientReverseConnectTest
+mvn -q verify -pl opc-ua-sdk/integration-tests -am -Dtest=OpcUaClientReverseConnectTest
 ```
 
 | Test Class | What It Covers |
