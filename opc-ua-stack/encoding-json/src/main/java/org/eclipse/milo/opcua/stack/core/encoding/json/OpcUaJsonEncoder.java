@@ -40,6 +40,10 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUI16;
+import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUI32;
+import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUI64;
+import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUI8;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
@@ -851,12 +855,10 @@ public class OpcUaJsonEncoder implements UaEncoder, AutoCloseable {
     } else if (typeHint == TypeHint.STRUCT) {
       typeId = OpcUaDataType.ExtensionObject.getTypeId();
     } else if (typeHint == TypeHint.OPTION_SET) {
-      // TODO this would fail on empty array
-      //  would be better to have size-specific OptionSetUI subclasses, e.g. OptionSetUI8,
-      // OptionSetUI16, etc...
-      Object os = Array.get(value, 0);
-      Object osv = ((OptionSetUInteger<?>) os).getValue();
-      typeId = OpcUaDataType.getBuiltinTypeId(osv.getClass());
+      // Derive typeId from the OptionSet subclass. This works for single values,
+      // non-empty arrays, and empty arrays alike (the previous implementation peeked
+      // at element 0, which threw on empty arrays and on non-array values).
+      typeId = optionSetBuiltinTypeId(valueClass);
     } else {
       typeId = OpcUaDataType.getBuiltinTypeId(valueClass);
     }
@@ -1032,6 +1034,21 @@ public class OpcUaJsonEncoder implements UaEncoder, AutoCloseable {
       return ArrayUtil.getType(o);
     } else {
       return o.getClass();
+    }
+  }
+
+  private static int optionSetBuiltinTypeId(Class<?> optionSetClass) {
+    if (OptionSetUI8.class.isAssignableFrom(optionSetClass)) {
+      return OpcUaDataType.Byte.getTypeId();
+    } else if (OptionSetUI16.class.isAssignableFrom(optionSetClass)) {
+      return OpcUaDataType.UInt16.getTypeId();
+    } else if (OptionSetUI32.class.isAssignableFrom(optionSetClass)) {
+      return OpcUaDataType.UInt32.getTypeId();
+    } else if (OptionSetUI64.class.isAssignableFrom(optionSetClass)) {
+      return OpcUaDataType.UInt64.getTypeId();
+    } else {
+      throw new UaSerializationException(
+          StatusCodes.Bad_EncodingError, "unknown OptionSet subclass: " + optionSetClass.getName());
     }
   }
 

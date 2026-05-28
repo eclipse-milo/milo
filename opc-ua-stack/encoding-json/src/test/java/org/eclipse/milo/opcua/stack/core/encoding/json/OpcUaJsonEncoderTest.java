@@ -977,6 +977,56 @@ class OpcUaJsonEncoderTest {
   }
 
   @Test
+  void encodeVariantOptionSet() throws Exception {
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      // Single OptionSet value: typeId is taken from the subclass (OptionSetUI8 -> Byte=3).
+      encoder.encodeVariant(null, new Variant(new AccessLevelType(ubyte(5))));
+      assertEquals("{\"Type\":3,\"Body\":5}", encoder.getOutputString());
+
+      // Non-empty UI8 array: regression coverage for the existing path.
+      encoder.reset();
+      var nonEmptyUi8 =
+          new AccessLevelType[] {new AccessLevelType(ubyte(1)), new AccessLevelType(ubyte(2))};
+      encoder.encodeVariant(null, new Variant(nonEmptyUi8));
+      assertEquals("{\"Type\":3,\"Body\":[1,2]}", encoder.getOutputString());
+
+      // Non-empty UI16 array: confirms element encoding for 16-bit OptionSets.
+      encoder.reset();
+      var nonEmptyUi16 =
+          new AccessRestrictionType[] {
+            new AccessRestrictionType(ushort(1)), new AccessRestrictionType(ushort(2))
+          };
+      encoder.encodeVariant(null, new Variant(nonEmptyUi16));
+      assertEquals("{\"Type\":5,\"Body\":[1,2]}", encoder.getOutputString());
+
+      // Non-empty UI32 array: confirms element encoding for 32-bit OptionSets.
+      encoder.reset();
+      var nonEmptyUi32 =
+          new AttributeWriteMask[] {
+            new AttributeWriteMask(uint(1)), new AttributeWriteMask(uint(2))
+          };
+      encoder.encodeVariant(null, new Variant(nonEmptyUi32));
+      assertEquals("{\"Type\":7,\"Body\":[1,2]}", encoder.getOutputString());
+
+      // Empty UI8 array: previously threw ArrayIndexOutOfBoundsException because
+      // the encoder peeked at element 0 to derive the typeId.
+      encoder.reset();
+      encoder.encodeVariant(null, new Variant(new AccessLevelType[0]));
+      assertEquals("{\"Type\":3,\"Body\":[]}", encoder.getOutputString());
+
+      // Empty UI16 array: confirms typeId derivation via subclass for 16-bit OptionSets.
+      encoder.reset();
+      encoder.encodeVariant(null, new Variant(new AccessRestrictionType[0]));
+      assertEquals("{\"Type\":5,\"Body\":[]}", encoder.getOutputString());
+
+      // Empty UI32 array: confirms typeId derivation via subclass for 32-bit OptionSets.
+      encoder.reset();
+      encoder.encodeVariant(null, new Variant(new AttributeWriteMask[0]));
+      assertEquals("{\"Type\":7,\"Body\":[]}", encoder.getOutputString());
+    }
+  }
+
+  @Test
   void encodeDiagnosticInfo() throws Exception {
     try (var encoder = new OpcUaJsonEncoder(context)) {
       var diagnosticInfo = new DiagnosticInfo(0, 1, 2, 3, "foo", null, null);
