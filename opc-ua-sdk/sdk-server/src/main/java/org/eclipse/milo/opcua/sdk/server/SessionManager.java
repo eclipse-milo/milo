@@ -25,6 +25,7 @@ import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -82,6 +83,13 @@ public class SessionManager {
 
   private final Map<NodeId, Session> createdSessions = new ConcurrentHashMap<>();
   private final Map<NodeId, Session> activeSessions = new ConcurrentHashMap<>();
+
+  /**
+   * Guards the session-count limit check together with the eviction, registration, and activation
+   * of sessions so that concurrent requests cannot exceed the configured maximum or evict a session
+   * that is being activated.
+   */
+  private final Object sessionLock = new Object();
 
   private final List<SessionListener> sessionListeners = new CopyOnWriteArrayList<>();
   private final TaskQueue sessionListenerTaskQueue;
@@ -195,11 +203,6 @@ public class SessionManager {
 
   public CreateSessionResponse createSession(
       ServiceRequestContext context, CreateSessionRequest request) throws UaException {
-
-    long maxSessionCount = server.getConfig().getLimits().getMaxSessions().longValue();
-    if (createdSessions.size() + activeSessions.size() >= maxSessionCount) {
-      throw new UaException(StatusCodes.Bad_TooManySessions);
-    }
 
     ByteString serverNonce = NonceUtil.generateNonce(32);
     NodeId authenticationToken = new NodeId(0, NonceUtil.generateNonce(32));
@@ -343,16 +346,41 @@ public class SessionManager {
     session.setLastNonce(serverNonce);
     session.setClientAddress(context.clientAddress());
 
-    session.addLifecycleListener(
-        (s, remove) -> {
-          createdSessions.remove(authenticationToken);
-          activeSessions.remove(authenticationToken);
+    // Enforce the session limit and register the new session atomically so that concurrent
+    // CreateSession requests cannot exceed the maximum. Done after validation so that a request
+    // which is going to fail never evicts another client's pending session.
+    synchronized (sessionLock) {
+      long maxSessionCount = server.getConfig().getLimits().getMaxSessions().longValue();
+      if (createdSessions.size() + activeSessions.size() >= maxSessionCount) {
+        // OPC UA Part 4, 5.7.2: at the session limit the Server shall close the oldest Session
+        // that has not yet been activated before rejecting a new request. Only if every existing
+        // Session has already been activated is Bad_TooManySessions returned.
+        Session oldestUnactivated =
+            createdSessions.values().stream()
+                .min(Comparator.comparingLong(s -> s.getConnectionTime().getUtcTime()))
+                .orElse(null);
 
-          sessionListenerTaskQueue.execute(
-              () -> sessionListeners.forEach(l -> l.onSessionClosed(s)));
-        });
+        if (oldestUnactivated == null) {
+          // Release the timeout task of the session we are not going to register. No lifecycle
+          // listener has been added yet, so this fires no session-closed notifications.
+          session.close(false);
+          throw new UaException(StatusCodes.Bad_TooManySessions);
+        }
 
-    createdSessions.put(authenticationToken, session);
+        oldestUnactivated.close(false);
+      }
+
+      session.addLifecycleListener(
+          (s, remove) -> {
+            createdSessions.remove(authenticationToken);
+            activeSessions.remove(authenticationToken);
+
+            sessionListenerTaskQueue.execute(
+                () -> sessionListeners.forEach(l -> l.onSessionClosed(s)));
+          });
+
+      createdSessions.put(authenticationToken, session);
+    }
 
     sessionListenerTaskQueue.execute(
         () -> sessionListeners.forEach(l -> l.onSessionCreated(session)));
@@ -579,8 +607,15 @@ public class SessionManager {
       Identity identity =
           validateIdentityToken(session, identityToken, request.getUserTokenSignature());
 
-      createdSessions.remove(authToken);
-      activeSessions.put(authToken, session);
+      // Move the session from created to active atomically with respect to the limit check in
+      // createSession, so a concurrent CreateSession cannot evict a session that is activating.
+      synchronized (sessionLock) {
+        if (createdSessions.remove(authToken) == null) {
+          // The session was closed (e.g. evicted at the session limit) during activation.
+          throw new UaException(StatusCodes.Bad_SessionIdInvalid);
+        }
+        activeSessions.put(authToken, session);
+      }
 
       StatusCode[] results = new StatusCode[clientSoftwareCertificates.length];
       Arrays.fill(results, StatusCode.GOOD);
