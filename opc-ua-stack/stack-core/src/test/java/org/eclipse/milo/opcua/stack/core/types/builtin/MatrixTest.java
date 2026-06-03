@@ -85,6 +85,15 @@ class MatrixTest {
   }
 
   @Test
+  void nullMatrixToString() {
+    // A null Matrix has no flatArray; toString() must not throw (previously NPE'd in
+    // ArrayUtil.getType).
+    assertEquals(
+        "Matrix{dataType=null, dataTypeId=null, dimensions=[], flatArray=null}",
+        Matrix.ofNull().toString());
+  }
+
+  @Test
   void getDataType() {
     assertEquals(OpcUaDataType.Int32, primitiveMatrix2d.getDataType().orElse(null));
     assertEquals(OpcUaDataType.ExtensionObject, vectorMatrix2d.getDataType().orElse(null));
