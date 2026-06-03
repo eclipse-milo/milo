@@ -1210,18 +1210,82 @@ public class OpcUaXmlDecoder implements UaDecoder, AutoCloseable {
 
   @Override
   public Matrix decodeMatrix(String field, OpcUaDataType dataType) throws UaSerializationException {
-    // TODO implement decodeMatrix
     if (currentNode(field)) {
-      currentNode = currentNode.getNextSibling();
+      Node node = currentNode;
+
+      try {
+        Node dimensionsNode = firstElementChild(node);
+
+        if (dimensionsNode == null) {
+          // A null Matrix encodes as an empty/nil field with no Dimensions or Elements.
+          return Matrix.ofNull();
+        }
+
+        int[] dimensions = decodeMatrixDimensions(dimensionsNode);
+
+        List<Object> elements = new ArrayList<>();
+        Node elementsNode = nextElementSibling(dimensionsNode);
+
+        if (elementsNode != null) {
+          NodeList children = elementsNode.getChildNodes();
+
+          for (int i = 0; i < children.getLength(); i++) {
+            currentNode = children.item(i);
+
+            if (currentNode.getNodeType() == Node.ELEMENT_NODE) {
+              elements.add(readBuiltinType(currentNode.getLocalName(), dataType.name()));
+            }
+          }
+        }
+
+        Object array = Array.newInstance(builtinTypeClass(dataType.name()), elements.size());
+        for (int i = 0; i < elements.size(); i++) {
+          Array.set(array, i, elements.get(i));
+        }
+
+        return new Matrix(array, dimensions, dataType);
+      } finally {
+        currentNode = node.getNextSibling();
+      }
+    } else {
+      return Matrix.ofNull();
     }
-    return Matrix.ofNull();
   }
 
   @Override
   public Matrix decodeEnumMatrix(String field) {
     if (currentNode(field)) {
-      // TODO implement decodeEnumMatrix
-      return Matrix.ofNull();
+      Node node = currentNode;
+
+      try {
+        Node dimensionsNode = firstElementChild(node);
+
+        if (dimensionsNode == null) {
+          return Matrix.ofNull();
+        }
+
+        int[] dimensions = decodeMatrixDimensions(dimensionsNode);
+
+        List<Integer> elements = new ArrayList<>();
+        Node elementsNode = nextElementSibling(dimensionsNode);
+
+        if (elementsNode != null) {
+          NodeList children = elementsNode.getChildNodes();
+
+          for (int i = 0; i < children.getLength(); i++) {
+            currentNode = children.item(i);
+
+            if (currentNode.getNodeType() == Node.ELEMENT_NODE) {
+              elements.add(decodeEnum(currentNode.getLocalName()));
+            }
+          }
+        }
+
+        // Enumerations reduce to Int32, mirroring OpcUaBinaryDecoder.decodeEnumMatrix.
+        return new Matrix(elements.toArray(Integer[]::new), dimensions, OpcUaDataType.Int32);
+      } finally {
+        currentNode = node.getNextSibling();
+      }
     } else {
       return Matrix.ofNull();
     }
@@ -1229,20 +1293,74 @@ public class OpcUaXmlDecoder implements UaDecoder, AutoCloseable {
 
   @Override
   public Matrix decodeStructMatrix(String field, NodeId dataTypeId) {
-    // TODO implement decodeStructMatrix
-    if (currentNode(field)) {
-      currentNode = currentNode.getNextSibling();
-    }
-    return Matrix.ofNull();
+    return decodeStructMatrix(field);
   }
 
   @Override
   public Matrix decodeStructMatrix(String field, ExpandedNodeId dataTypeId) {
-    // TODO implement decodeStructMatrix
-    if (currentNode(field)) {
-      currentNode = currentNode.getNextSibling();
+    return decodeStructMatrix(field);
+  }
+
+  /**
+   * {@code OpcUaXmlEncoder.encodeStructMatrix} transforms each structure into a self-describing
+   * {@link ExtensionObject} before writing, so the elements are read back as ExtensionObjects and
+   * neither the NodeId nor the ExpandedNodeId form of the dataTypeId is needed to decode them. Each
+   * ExtensionObject is decoded into its structure so the result is a Matrix of {@code
+   * UaStructuredType}, mirroring {@code OpcUaBinaryDecoder.decodeStructMatrix} and {@link
+   * #decodeStructArray}; returning the raw ExtensionObjects would break the decode-encode
+   * round-trip, since {@code encodeStructMatrix} casts each element to {@code UaStructuredType}.
+   */
+  private Matrix decodeStructMatrix(String field) {
+    Matrix matrix = decodeMatrix(field, OpcUaDataType.ExtensionObject);
+
+    if (matrix.isNull()) {
+      return matrix;
     }
-    return Matrix.ofNull();
+
+    return matrix.transform(o -> ((ExtensionObject) o).decode(context));
+  }
+
+  private int[] decodeMatrixDimensions(Node dimensionsNode) {
+    List<Integer> dimensions = new ArrayList<>();
+    NodeList children = dimensionsNode.getChildNodes();
+
+    for (int i = 0; i < children.getLength(); i++) {
+      currentNode = children.item(i);
+
+      if (currentNode.getNodeType() == Node.ELEMENT_NODE) {
+        dimensions.add(decodeInt32("Int32"));
+      }
+    }
+
+    int[] dims = new int[dimensions.size()];
+    for (int i = 0; i < dims.length; i++) {
+      dims[i] = dimensions.get(i);
+    }
+    return dims;
+  }
+
+  /**
+   * @return the first child of {@code node} that is an element, skipping any intervening text nodes
+   *     (e.g. whitespace in indented XML), or {@code null} if there is none.
+   */
+  private static @Nullable Node firstElementChild(Node node) {
+    Node child = node.getFirstChild();
+    while (child != null && child.getNodeType() != Node.ELEMENT_NODE) {
+      child = child.getNextSibling();
+    }
+    return child;
+  }
+
+  /**
+   * @return the next sibling of {@code node} that is an element, skipping any intervening text
+   *     nodes (e.g. whitespace in indented XML), or {@code null} if there is none.
+   */
+  private static @Nullable Node nextElementSibling(Node node) {
+    Node sibling = node.getNextSibling();
+    while (sibling != null && sibling.getNodeType() != Node.ELEMENT_NODE) {
+      sibling = sibling.getNextSibling();
+    }
+    return sibling;
   }
 
   /**
