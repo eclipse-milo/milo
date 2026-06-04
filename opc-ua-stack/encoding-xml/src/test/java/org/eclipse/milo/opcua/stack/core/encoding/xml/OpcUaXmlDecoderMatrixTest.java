@@ -13,11 +13,13 @@ package org.eclipse.milo.opcua.stack.core.encoding.xml;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.StringReader;
 import java.lang.reflect.Array;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
@@ -27,6 +29,8 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.XmlElement;
+import org.eclipse.milo.opcua.stack.core.types.structured.ThreeDVector;
+import org.eclipse.milo.opcua.stack.core.types.structured.XVType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -254,6 +258,110 @@ public class OpcUaXmlDecoderMatrixTest {
     }
 
     assertTrue(decoded.isNull());
+  }
+
+  // ---------------------------------------------------------------------------
+  // Malformed Matrix XML must fail instead of constructing an invalid Matrix.
+  // ---------------------------------------------------------------------------
+
+  @Test
+  void decodeMatrixRejectsMismatchedDimensions() throws Exception {
+    // OPC 10000-6 5.3.1.17 requires the product of Dimensions to match the number of
+    // flattened Elements. A 2x2 matrix must therefore contain exactly 4 elements.
+    String xml =
+        """
+        <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+          <uax:Dimensions>
+            <uax:Int32>2</uax:Int32>
+            <uax:Int32>2</uax:Int32>
+          </uax:Dimensions>
+          <uax:Elements>
+            <uax:Int32>1</uax:Int32>
+          </uax:Elements>
+        </Test>
+        """;
+
+    try (var decoder = new OpcUaXmlDecoder(context)) {
+      decoder.setInput(new StringReader(xml));
+
+      assertThrows(
+          UaSerializationException.class,
+          () -> decoder.decodeMatrix("Test", OpcUaDataType.Int32),
+          "Matrix dimensions [2, 2] describe 4 elements, but the XML contains only 1");
+    }
+  }
+
+  @Test
+  void decodeMatrixRejectsNonPositiveDimensions() throws Exception {
+    // OPC 10000-6 5.3.1.17 says all Matrix dimensions shall be greater than zero.
+    // A zero dimension is not a valid compact representation of an empty Matrix.
+    String xml =
+        """
+        <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+          <uax:Dimensions>
+            <uax:Int32>0</uax:Int32>
+            <uax:Int32>1</uax:Int32>
+          </uax:Dimensions>
+          <uax:Elements>
+            <uax:Int32>1</uax:Int32>
+          </uax:Elements>
+        </Test>
+        """;
+
+    try (var decoder = new OpcUaXmlDecoder(context)) {
+      decoder.setInput(new StringReader(xml));
+
+      assertThrows(
+          UaSerializationException.class,
+          () -> decoder.decodeMatrix("Test", OpcUaDataType.Int32),
+          "Matrix dimensions must be greater than zero");
+    }
+  }
+
+  @Test
+  void decodeMatrixRejectsElementWithWrongXmlTypeName() throws Exception {
+    // OPC 10000-6 5.3.4 says array element names shall be the type name. Since the
+    // caller requested an Int32 matrix, each element in <Elements> must be <Int32>.
+    String xml =
+        """
+        <Test xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
+          <uax:Dimensions>
+            <uax:Int32>1</uax:Int32>
+            <uax:Int32>1</uax:Int32>
+          </uax:Dimensions>
+          <uax:Elements>
+            <uax:String>123</uax:String>
+          </uax:Elements>
+        </Test>
+        """;
+
+    try (var decoder = new OpcUaXmlDecoder(context)) {
+      decoder.setInput(new StringReader(xml));
+
+      assertThrows(
+          UaSerializationException.class,
+          () -> decoder.decodeMatrix("Test", OpcUaDataType.Int32),
+          "An Int32 Matrix must not accept elements named String");
+    }
+  }
+
+  @Test
+  void decodeStructMatrixRejectsUnexpectedStructType() throws Exception {
+    // The dataTypeId argument is the declared/expected structure type for the field.
+    // A decoder should not silently accept ExtensionObjects for a different structure type.
+    Matrix threeDVectorMatrix =
+        Matrix.ofStruct(new ThreeDVector[][] {{new ThreeDVector(1.0, 2.0, 3.0)}});
+    String encoded =
+        encode(e -> e.encodeStructMatrix("Test", threeDVectorMatrix, ThreeDVector.TYPE_ID));
+
+    try (var decoder = new OpcUaXmlDecoder(context)) {
+      decoder.setInput(new StringReader(encoded));
+
+      assertThrows(
+          UaSerializationException.class,
+          () -> decoder.decodeStructMatrix("Test", XVType.TYPE_ID),
+          "decodeStructMatrix(..., XVType.TYPE_ID) must reject ThreeDVector elements");
+    }
   }
 
   // ---------------------------------------------------------------------------
