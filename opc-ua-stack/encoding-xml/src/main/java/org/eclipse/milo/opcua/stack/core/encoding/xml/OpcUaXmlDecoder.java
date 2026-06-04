@@ -1233,10 +1233,26 @@ public class OpcUaXmlDecoder implements UaDecoder, AutoCloseable {
             currentNode = children.item(i);
 
             if (currentNode.getNodeType() == Node.ELEMENT_NODE) {
-              elements.add(readBuiltinType(currentNode.getLocalName(), dataType.name()));
+              String elementName = currentNode.getLocalName();
+
+              // OPC 10000-6 5.3.4: the element name shall be the type name. The caller asked for a
+              // dataType Matrix, so every element under <Elements> must carry that type's name.
+              if (!dataType.name().equals(elementName)) {
+                throw new UaSerializationException(
+                    StatusCodes.Bad_DecodingError,
+                    "expected Matrix element <"
+                        + dataType.name()
+                        + "> but found <"
+                        + elementName
+                        + ">");
+              }
+
+              elements.add(readBuiltinType(elementName, dataType.name()));
             }
           }
         }
+
+        checkMatrixElementCount(dimensions, elements.size());
 
         Object array = Array.newInstance(builtinTypeClass(dataType.name()), elements.size());
         for (int i = 0; i < elements.size(); i++) {
@@ -1281,6 +1297,8 @@ public class OpcUaXmlDecoder implements UaDecoder, AutoCloseable {
           }
         }
 
+        checkMatrixElementCount(dimensions, elements.size());
+
         // Enumerations reduce to Int32, mirroring OpcUaBinaryDecoder.decodeEnumMatrix.
         return new Matrix(elements.toArray(Integer[]::new), dimensions, OpcUaDataType.Int32);
       } finally {
@@ -1291,33 +1309,63 @@ public class OpcUaXmlDecoder implements UaDecoder, AutoCloseable {
     }
   }
 
+  /**
+   * {@code OpcUaXmlEncoder.encodeStructMatrix} writes each structure as a self-describing {@link
+   * ExtensionObject}, so the elements are read back as ExtensionObjects and then decoded into their
+   * structures — the result is a Matrix of {@code UaStructuredType}, mirroring {@code
+   * OpcUaBinaryDecoder.decodeStructMatrix} and {@link #decodeStructArray}. (Returning the raw
+   * ExtensionObjects would break the decode-encode round-trip, since {@code encodeStructMatrix}
+   * casts each element to {@code UaStructuredType}.)
+   *
+   * <p>{@code dataTypeId} is the expected structure type for this field; for a non-subtyped field
+   * the decoded type must match it, so an ExtensionObject of any other type is rejected rather than
+   * handing the caller a Matrix with unexpected element types.
+   */
   @Override
   public Matrix decodeStructMatrix(String field, NodeId dataTypeId) {
-    return decodeStructMatrix(field);
-  }
-
-  @Override
-  public Matrix decodeStructMatrix(String field, ExpandedNodeId dataTypeId) {
-    return decodeStructMatrix(field);
-  }
-
-  /**
-   * {@code OpcUaXmlEncoder.encodeStructMatrix} transforms each structure into a self-describing
-   * {@link ExtensionObject} before writing, so the elements are read back as ExtensionObjects and
-   * neither the NodeId nor the ExpandedNodeId form of the dataTypeId is needed to decode them. Each
-   * ExtensionObject is decoded into its structure so the result is a Matrix of {@code
-   * UaStructuredType}, mirroring {@code OpcUaBinaryDecoder.decodeStructMatrix} and {@link
-   * #decodeStructArray}; returning the raw ExtensionObjects would break the decode-encode
-   * round-trip, since {@code encodeStructMatrix} casts each element to {@code UaStructuredType}.
-   */
-  private Matrix decodeStructMatrix(String field) {
     Matrix matrix = decodeMatrix(field, OpcUaDataType.ExtensionObject);
 
     if (matrix.isNull()) {
       return matrix;
     }
 
-    return matrix.transform(o -> ((ExtensionObject) o).decode(context));
+    DataTypeCodec codec = context.getDataTypeManager().getCodec(dataTypeId);
+
+    if (codec == null) {
+      throw new UaSerializationException(
+          StatusCodes.Bad_DecodingError, "no codec registered: " + dataTypeId);
+    }
+
+    Class<?> expectedType = codec.getType();
+
+    return matrix.transform(
+        o -> {
+          Object struct = ((ExtensionObject) o).decode(context);
+
+          if (!expectedType.isInstance(struct)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_DecodingError,
+                "expected struct type "
+                    + dataTypeId
+                    + " but decoded "
+                    + (struct != null ? struct.getClass().getName() : "null"));
+          }
+
+          return struct;
+        });
+  }
+
+  @Override
+  public Matrix decodeStructMatrix(String field, ExpandedNodeId dataTypeId) {
+    NodeId localDataTypeId =
+        dataTypeId
+            .toNodeId(context.getNamespaceTable())
+            .orElseThrow(
+                () ->
+                    new UaSerializationException(
+                        StatusCodes.Bad_DecodingError, "namespace not registered: " + dataTypeId));
+
+    return decodeStructMatrix(field, localDataTypeId);
   }
 
   private int[] decodeMatrixDimensions(Node dimensionsNode) {
@@ -1328,7 +1376,16 @@ public class OpcUaXmlDecoder implements UaDecoder, AutoCloseable {
       currentNode = children.item(i);
 
       if (currentNode.getNodeType() == Node.ELEMENT_NODE) {
-        dimensions.add(decodeInt32("Int32"));
+        int dimension = decodeInt32("Int32");
+
+        // OPC 10000-6 5.3.1.17: all Matrix dimensions shall be greater than zero.
+        if (dimension <= 0) {
+          throw new UaSerializationException(
+              StatusCodes.Bad_DecodingError,
+              "Matrix dimension must be greater than zero: " + dimension);
+        }
+
+        dimensions.add(dimension);
       }
     }
 
@@ -1337,6 +1394,33 @@ public class OpcUaXmlDecoder implements UaDecoder, AutoCloseable {
       dims[i] = dimensions.get(i);
     }
     return dims;
+  }
+
+  /**
+   * Validate that the product of {@code dimensions} equals {@code elementCount}.
+   *
+   * <p>OPC 10000-6 5.3.1.17 requires the Matrix dimensions to be consistent with the number of
+   * flattened elements; a mismatch is a decoding error rather than a silently-malformed Matrix.
+   *
+   * @throws UaSerializationException if the dimensions do not describe exactly {@code elementCount}
+   *     elements.
+   */
+  private static void checkMatrixElementCount(int[] dimensions, int elementCount) {
+    long product = 1;
+    for (int dimension : dimensions) {
+      product *= dimension;
+    }
+
+    if (product != elementCount) {
+      throw new UaSerializationException(
+          StatusCodes.Bad_DecodingError,
+          "Matrix dimensions "
+              + Arrays.toString(dimensions)
+              + " describe "
+              + product
+              + " elements but found "
+              + elementCount);
+    }
   }
 
   /**
