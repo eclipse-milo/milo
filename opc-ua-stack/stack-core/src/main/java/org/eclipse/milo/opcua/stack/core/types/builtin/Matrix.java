@@ -250,6 +250,10 @@ public class Matrix {
             .add("dataTypeId=" + (dataTypeId != null ? dataTypeId.toParseableString() : null))
             .add("dimensions=" + Arrays.toString(dimensions));
 
+    if (flatArray == null) {
+      return joiner.add("flatArray=null").toString();
+    }
+
     Class<?> clazz = ArrayUtil.getType(flatArray);
 
     if (clazz.isPrimitive()) {
