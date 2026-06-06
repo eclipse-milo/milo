@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -264,18 +264,33 @@ public class ServerConfigurationTypeNode extends BaseObjectTypeNode
   }
 
   @Override
-  public CertificateGroupFolderTypeNode getCertificateGroupsNode() {
-    Optional<ObjectNode> component =
-        getObjectComponent("http://opcfoundation.org/UA/", "CertificateGroups");
-    return (CertificateGroupFolderTypeNode) component.orElse(null);
-  }
-
-  @Override
   public UaMethodNode getUpdateCertificateMethodNode() {
     Optional<UaNode> methodNode =
         findNode(
             "http://opcfoundation.org/UA/",
             "UpdateCertificate",
+            node -> node instanceof UaMethodNode,
+            Reference.HAS_COMPONENT_PREDICATE);
+    return (UaMethodNode) methodNode.orElse(null);
+  }
+
+  @Override
+  public UaMethodNode getCreateSelfSignedCertificateMethodNode() {
+    Optional<UaNode> methodNode =
+        findNode(
+            "http://opcfoundation.org/UA/",
+            "CreateSelfSignedCertificate",
+            node -> node instanceof UaMethodNode,
+            Reference.HAS_COMPONENT_PREDICATE);
+    return (UaMethodNode) methodNode.orElse(null);
+  }
+
+  @Override
+  public UaMethodNode getDeleteCertificateMethodNode() {
+    Optional<UaNode> methodNode =
+        findNode(
+            "http://opcfoundation.org/UA/",
+            "DeleteCertificate",
             node -> node instanceof UaMethodNode,
             Reference.HAS_COMPONENT_PREDICATE);
     return (UaMethodNode) methodNode.orElse(null);
@@ -348,9 +363,23 @@ public class ServerConfigurationTypeNode extends BaseObjectTypeNode
   }
 
   @Override
+  public CertificateGroupFolderTypeNode getCertificateGroupsNode() {
+    Optional<ObjectNode> component =
+        getObjectComponent("http://opcfoundation.org/UA/", "CertificateGroups");
+    return (CertificateGroupFolderTypeNode) component.orElse(null);
+  }
+
+  @Override
   public TransactionDiagnosticsTypeNode getTransactionDiagnosticsNode() {
     Optional<ObjectNode> component =
         getObjectComponent("http://opcfoundation.org/UA/", "TransactionDiagnostics");
     return (TransactionDiagnosticsTypeNode) component.orElse(null);
+  }
+
+  @Override
+  public ApplicationConfigurationFileTypeNode getConfigurationFileNode() {
+    Optional<ObjectNode> component =
+        getObjectComponent("http://opcfoundation.org/UA/", "ConfigurationFile");
+    return (ApplicationConfigurationFileTypeNode) component.orElse(null);
   }
 }

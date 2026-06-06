@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -28,7 +28,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/12.2.12/#12.2.12.5">https://reference.opcfoundation.org/v105/Core/docs/Part5/12.2.12/#12.2.12.5</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part3/8.48">https://reference.opcfoundation.org/v105/Core/docs/Part3/8.48</a>
  */
 public class StructureDefinition extends DataTypeDefinition implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=99");

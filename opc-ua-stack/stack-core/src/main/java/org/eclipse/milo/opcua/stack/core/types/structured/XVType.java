@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -27,7 +27,7 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.6.8">https://reference.opcfoundation.org/v105/Core/docs/Part8/5.6.8</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part8/5.6.9">https://reference.opcfoundation.org/v105/Core/docs/Part8/5.6.9</a>
  */
 public class XVType extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=12080");

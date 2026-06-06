@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -40,19 +40,33 @@ public interface CertificateGroupType extends BaseObjectType {
           1,
           NodeId[].class);
 
+  QualifiedProperty<NodeId> PURPOSE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "Purpose",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
+          -1,
+          NodeId.class);
+
   NodeId[] getCertificateTypes();
 
   void setCertificateTypes(NodeId[] value);
 
   PropertyType getCertificateTypesNode();
 
-  TrustListType getTrustListNode();
+  NodeId getPurpose();
 
-  MethodNode getGetRejectedListMethodNode();
+  void setPurpose(NodeId value);
+
+  PropertyType getPurposeNode();
+
+  TrustListType getTrustListNode();
 
   CertificateExpirationAlarmType getCertificateExpiredNode();
 
   TrustListOutOfDateAlarmType getTrustListOutOfDateNode();
+
+  MethodNode getGetRejectedListMethodNode();
 
   abstract class GetRejectedListMethod extends AbstractMethodInvocationHandler {
     private final Lazy<Argument[]> outputArguments = new Lazy<>();

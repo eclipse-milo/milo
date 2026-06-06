@@ -1,18 +1,18 @@
 /*
- *  Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
- *  This program and the accompanying materials are made
- *  available under the terms of the Eclipse Public License 2.0
- *  which is available at https://www.eclipse.org/legal/epl-2.0/
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
  *
- *  SPDX-License-Identifier: EPL-2.0
+ * SPDX-License-Identifier: EPL-2.0
  */
 
 package org.eclipse.milo.opcua.stack.core;
 
 import org.eclipse.milo.opcua.stack.core.util.annotations.Description;
 
-public abstract class StatusCodes0 {
+abstract class StatusCodes0 {
   /** The operation succeeded. */
   @Description("The operation succeeded.")
   public static final long Good = 0x00000000L;
@@ -341,6 +341,14 @@ public abstract class StatusCodes0 {
   /** The value was out of range. */
   @Description("The value was out of range.")
   public static final long Bad_OutOfRange = 0x803C0000L;
+
+  /** The value is over the allowed range. */
+  @Description("The value is over the allowed range.")
+  public static final long Uncertain_OverRange = 0x40F20000L;
+
+  /** The value is under the allowed range. */
+  @Description("The value is under the allowed range.")
+  public static final long Uncertain_UnderRange = 0x40F30000L;
 
   /** The requested operation is not supported. */
   @Description("The requested operation is not supported.")
@@ -1043,6 +1051,11 @@ public abstract class StatusCodes0 {
   @Description("The operation is not allowed because a transaction is in progress.")
   public static final long Bad_TransactionPending = 0x80E80000L;
 
+  /** The operation failed and all changes which were part of the transaction are rolled back. */
+  @Description(
+      "The operation failed and all changes which were part of the transaction are rolled back.")
+  public static final long Bad_TransactionFailed = 0x80F10000L;
+
   /** The device identity needs a ticket before it can be accepted. */
   @Description("The device identity needs a ticket before it can be accepted.")
   public static final long Bad_TicketRequired = 0x811F0000L;
@@ -1305,11 +1318,11 @@ public abstract class StatusCodes0 {
   public static final long Good_CascadeInitializationRequest = 0x04020000L;
 
   /**
-   * The value source supports cascade handshaking, however, the source’s current state does not
+   * The value source supports cascade handshaking, however, the source's current state does not
    * allow for cascade.
    */
   @Description(
-      "The value source supports cascade handshaking, however, the source’s current state does not"
+      "The value source supports cascade handshaking, however, the source's current state does not"
           + " allow for cascade.")
   public static final long Good_CascadeNotInvited = 0x04030000L;
 

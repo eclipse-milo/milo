@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -21,6 +21,8 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.PermissionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 
 class ObjectTypeNodeLoader {
   private final UaNodeContext context;
@@ -227,6 +229,9 @@ class ObjectTypeNodeLoader {
     node.addReference(
         new Reference(
             new NodeId(0, 2013), new NodeId(0, 46), new NodeId(0, 2734).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 2013), new NodeId(0, 46), new NodeId(0, 19809).expanded(), true));
     node.addReference(
         new Reference(
             new NodeId(0, 2013), new NodeId(0, 46), new NodeId(0, 3049).expanded(), true));
@@ -812,7 +817,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -833,6 +843,9 @@ class ObjectTypeNodeLoader {
             new NodeId(0, 2052), new NodeId(0, 46), new NodeId(0, 2057).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 2052), new NodeId(0, 46), new NodeId(0, 19811).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 2052), new NodeId(0, 45), new NodeId(0, 2041).expanded(), false));
     this.nodeManager.addNode(node);
   }
@@ -847,7 +860,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -870,7 +888,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -893,7 +916,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -934,7 +962,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -957,7 +990,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -989,7 +1027,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -1012,7 +1055,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -1044,7 +1092,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -1067,7 +1120,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -1090,7 +1148,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -1116,7 +1179,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -1136,7 +1204,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -1156,7 +1229,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -1176,7 +1254,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -1196,7 +1279,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -1216,7 +1304,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -1236,7 +1329,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -1259,7 +1357,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -1282,7 +1385,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -1305,7 +1413,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -1328,7 +1441,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -1348,7 +1466,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -1380,7 +1503,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -1403,7 +1531,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -1610,7 +1743,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -1633,7 +1771,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -1681,6 +1824,52 @@ class ObjectTypeNodeLoader {
     var node =
         new UaObjectTypeNode(
             this.context,
+            new NodeId(0, 19820),
+            new QualifiedName(0, "DataTypeRefinementType"),
+            new LocalizedText("", "DataTypeRefinementType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19820), new NodeId(0, 19815), new NodeId(0, 19821).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19820), new NodeId(0, 45), new NodeId(0, 58).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode59() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 19822),
+            new QualifiedName(0, "SubtypeRestrictionType"),
+            new LocalizedText("", "SubtypeRestrictionType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19822), new NodeId(0, 19819), new NodeId(0, 19823).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19822), new NodeId(0, 45), new NodeId(0, 58).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode60() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
             new NodeId(0, 2299),
             new QualifiedName(0, "StateMachineType"),
             new LocalizedText("", "StateMachineType"),
@@ -1702,7 +1891,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode59() {
+  void loadNode61() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1734,7 +1923,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode60() {
+  void loadNode62() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1756,7 +1945,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode61() {
+  void loadNode63() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1776,7 +1965,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode62() {
+  void loadNode64() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1798,7 +1987,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode63() {
+  void loadNode65() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1818,7 +2007,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode64() {
+  void loadNode66() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1847,7 +2036,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode65() {
+  void loadNode67() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1857,7 +2046,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -1873,7 +2067,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode66() {
+  void loadNode68() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1911,7 +2105,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode67() {
+  void loadNode69() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -1946,7 +2140,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode68() {
+  void loadNode70() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2011,7 +2205,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode69() {
+  void loadNode71() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2040,7 +2234,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode70() {
+  void loadNode72() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2096,7 +2290,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode71() {
+  void loadNode73() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2116,7 +2310,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode72() {
+  void loadNode74() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2139,7 +2333,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode73() {
+  void loadNode75() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2165,7 +2359,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode74() {
+  void loadNode76() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2185,7 +2379,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode75() {
+  void loadNode77() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2205,7 +2399,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode76() {
+  void loadNode78() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2225,7 +2419,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode77() {
+  void loadNode79() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2248,7 +2442,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode78() {
+  void loadNode80() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2277,7 +2471,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode79() {
+  void loadNode81() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2300,7 +2494,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode80() {
+  void loadNode82() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2329,7 +2523,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode81() {
+  void loadNode83() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2358,7 +2552,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode82() {
+  void loadNode84() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2387,7 +2581,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode83() {
+  void loadNode85() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2422,30 +2616,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode84() {
-    var node =
-        new UaObjectTypeNode(
-            this.context,
-            new NodeId(0, 32502),
-            new QualifiedName(0, "QuantitiesFolderType"),
-            new LocalizedText("", "QuantitiesFolderType"),
-            LocalizedText.NULL_VALUE,
-            UInteger.valueOf(0),
-            UInteger.valueOf(0),
-            null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
-            false);
-    node.addReference(
-        new Reference(
-            new NodeId(0, 32502), new NodeId(0, 35), new NodeId(0, 32503).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 32502), new NodeId(0, 45), new NodeId(0, 61).expanded(), false));
-    this.nodeManager.addNode(node);
-  }
-
-  void loadNode85() {
+  void loadNode86() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2519,7 +2690,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode86() {
+  void loadNode87() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2569,7 +2740,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode87() {
+  void loadNode88() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2604,7 +2775,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode88() {
+  void loadNode89() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2717,7 +2888,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode89() {
+  void loadNode90() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2740,7 +2911,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode90() {
+  void loadNode91() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2759,11 +2930,14 @@ class ObjectTypeNodeLoader {
             new NodeId(0, 32064), new NodeId(0, 32059), new NodeId(0, 32226).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 32064), new NodeId(0, 32059), new NodeId(0, 19847).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 32064), new NodeId(0, 45), new NodeId(0, 16405).expanded(), false));
     this.nodeManager.addNode(node);
   }
 
-  void loadNode91() {
+  void loadNode92() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2831,7 +3005,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode92() {
+  void loadNode93() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2899,7 +3073,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode93() {
+  void loadNode94() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2943,7 +3117,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode94() {
+  void loadNode95() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -2969,7 +3143,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode95() {
+  void loadNode96() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3004,7 +3178,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode96() {
+  void loadNode97() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3024,7 +3198,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode97() {
+  void loadNode98() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3044,7 +3218,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode98() {
+  void loadNode99() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3070,7 +3244,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode99() {
+  void loadNode100() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3093,7 +3267,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode100() {
+  void loadNode101() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3119,7 +3293,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode101() {
+  void loadNode102() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3142,7 +3316,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode102() {
+  void loadNode103() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3162,7 +3336,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode103() {
+  void loadNode104() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3185,7 +3359,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode104() {
+  void loadNode105() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3205,7 +3379,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode105() {
+  void loadNode106() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3225,7 +3399,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode106() {
+  void loadNode107() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3245,7 +3419,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode107() {
+  void loadNode108() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3265,7 +3439,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode108() {
+  void loadNode109() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3297,7 +3471,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode109() {
+  void loadNode110() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3326,7 +3500,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode110() {
+  void loadNode111() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3346,7 +3520,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode111() {
+  void loadNode112() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3366,7 +3540,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode112() {
+  void loadNode113() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3386,7 +3560,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode113() {
+  void loadNode114() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3406,7 +3580,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode114() {
+  void loadNode115() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3426,7 +3600,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode115() {
+  void loadNode116() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3446,7 +3620,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode116() {
+  void loadNode117() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3466,7 +3640,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode117() {
+  void loadNode118() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3486,7 +3660,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode118() {
+  void loadNode119() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3506,7 +3680,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode119() {
+  void loadNode120() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3516,7 +3690,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             false);
@@ -3526,7 +3705,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode120() {
+  void loadNode121() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3536,7 +3715,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             false);
@@ -3546,7 +3730,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode121() {
+  void loadNode122() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3556,7 +3740,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             false);
@@ -3572,7 +3761,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode122() {
+  void loadNode123() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3582,7 +3771,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             false);
@@ -3595,7 +3789,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode123() {
+  void loadNode124() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3605,7 +3799,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             false);
@@ -3621,7 +3820,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode124() {
+  void loadNode125() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3631,7 +3830,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             false);
@@ -3647,7 +3851,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode125() {
+  void loadNode126() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3657,7 +3861,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             false);
@@ -3670,7 +3879,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode126() {
+  void loadNode127() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3680,7 +3889,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             false);
@@ -3690,7 +3904,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode127() {
+  void loadNode128() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3700,7 +3914,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             false);
@@ -3710,7 +3929,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode128() {
+  void loadNode129() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3720,7 +3939,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             false);
@@ -3730,7 +3954,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode129() {
+  void loadNode130() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3740,7 +3964,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             false);
@@ -3750,7 +3979,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode130() {
+  void loadNode131() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3770,7 +3999,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode131() {
+  void loadNode132() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3790,7 +4019,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode132() {
+  void loadNode133() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3810,7 +4039,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode133() {
+  void loadNode134() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3857,7 +4086,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode134() {
+  void loadNode135() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3964,7 +4193,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode135() {
+  void loadNode136() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3987,7 +4216,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode136() {
+  void loadNode137() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -3997,7 +4226,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -4010,7 +4244,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode137() {
+  void loadNode138() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4033,7 +4267,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode138() {
+  void loadNode139() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4091,7 +4325,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode139() {
+  void loadNode140() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4123,7 +4357,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode140() {
+  void loadNode141() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4164,7 +4398,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode141() {
+  void loadNode142() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4231,7 +4465,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode142() {
+  void loadNode143() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4241,7 +4475,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -4266,7 +4505,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode143() {
+  void loadNode144() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4276,7 +4515,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -4298,7 +4542,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode144() {
+  void loadNode145() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4308,7 +4552,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -4327,7 +4576,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode145() {
+  void loadNode146() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4337,7 +4586,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -4350,7 +4604,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode146() {
+  void loadNode147() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4360,7 +4614,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -4382,7 +4641,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode147() {
+  void loadNode148() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4392,7 +4651,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -4408,7 +4672,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode148() {
+  void loadNode149() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4418,7 +4682,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -4434,7 +4703,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode149() {
+  void loadNode150() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4444,7 +4713,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -4454,7 +4728,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode150() {
+  void loadNode151() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4464,7 +4738,12 @@ class ObjectTypeNodeLoader {
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
-            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  new NodeId(0, 15644), new PermissionType(UInteger.valueOf(33))),
+              new RolePermissionType(
+                  new NodeId(0, 15704), new PermissionType(UInteger.valueOf(65535)))
+            },
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             true);
@@ -4483,7 +4762,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode151() {
+  void loadNode152() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4527,7 +4806,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode152() {
+  void loadNode153() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4556,7 +4835,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode153() {
+  void loadNode154() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4578,7 +4857,7 @@ class ObjectTypeNodeLoader {
             new NodeId(0, 12555), new NodeId(0, 46), new NodeId(0, 13631).expanded(), true));
     node.addReference(
         new Reference(
-            new NodeId(0, 12555), new NodeId(0, 47), new NodeId(0, 23526).expanded(), true));
+            new NodeId(0, 12555), new NodeId(0, 46), new NodeId(0, 19398).expanded(), true));
     node.addReference(
         new Reference(
             new NodeId(0, 12555), new NodeId(0, 47), new NodeId(0, 19450).expanded(), true));
@@ -4587,14 +4866,20 @@ class ObjectTypeNodeLoader {
             new NodeId(0, 12555), new NodeId(0, 47), new NodeId(0, 20143).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 12555), new NodeId(0, 47), new NodeId(0, 23526).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 12555), new NodeId(0, 9006), new NodeId(0, 13225).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 12555), new NodeId(0, 9006), new NodeId(0, 19297).expanded(), true));
     node.addReference(
         new Reference(
             new NodeId(0, 12555), new NodeId(0, 45), new NodeId(0, 58).expanded(), false));
     this.nodeManager.addNode(node);
   }
 
-  void loadNode154() {
+  void loadNode155() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4626,7 +4911,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode155() {
+  void loadNode156() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4646,7 +4931,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode156() {
+  void loadNode157() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4666,7 +4951,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode157() {
+  void loadNode158() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4686,13 +4971,53 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode158() {
+  void loadNode159() {
     var node =
         new UaObjectTypeNode(
             this.context,
-            new NodeId(0, 15181),
-            new QualifiedName(0, "UserCredentialCertificateType"),
-            new LocalizedText("", "UserCredentialCertificateType"),
+            new NodeId(0, 19323),
+            new QualifiedName(0, "UserCertificateType"),
+            new LocalizedText("", "UserCertificateType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19323), new NodeId(0, 45), new NodeId(0, 12556).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode160() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 19324),
+            new QualifiedName(0, "TlsCertificateType"),
+            new LocalizedText("", "TlsCertificateType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19324), new NodeId(0, 45), new NodeId(0, 12556).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode161() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 19325),
+            new QualifiedName(0, "TlsServerCertificateType"),
+            new LocalizedText("", "TlsServerCertificateType"),
             LocalizedText.NULL_VALUE,
             UInteger.valueOf(0),
             UInteger.valueOf(0),
@@ -4702,11 +5027,31 @@ class ObjectTypeNodeLoader {
             false);
     node.addReference(
         new Reference(
-            new NodeId(0, 15181), new NodeId(0, 45), new NodeId(0, 12556).expanded(), false));
+            new NodeId(0, 19325), new NodeId(0, 45), new NodeId(0, 19324).expanded(), false));
     this.nodeManager.addNode(node);
   }
 
-  void loadNode159() {
+  void loadNode162() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 19326),
+            new QualifiedName(0, "TlsClientCertificateType"),
+            new LocalizedText("", "TlsClientCertificateType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19326), new NodeId(0, 45), new NodeId(0, 19324).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode163() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4726,7 +5071,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode160() {
+  void loadNode164() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4746,7 +5091,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode161() {
+  void loadNode165() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4759,14 +5104,14 @@ class ObjectTypeNodeLoader {
             null,
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
-            false);
+            true);
     node.addReference(
         new Reference(
             new NodeId(0, 23537), new NodeId(0, 45), new NodeId(0, 12557).expanded(), false));
     this.nodeManager.addNode(node);
   }
 
-  void loadNode162() {
+  void loadNode166() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4786,7 +5131,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode163() {
+  void loadNode167() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4806,7 +5151,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode164() {
+  void loadNode168() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4826,7 +5171,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode165() {
+  void loadNode169() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4846,7 +5191,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode166() {
+  void loadNode170() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4866,7 +5211,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode167() {
+  void loadNode171() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4886,7 +5231,71 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode168() {
+  void loadNode172() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 15437),
+            new QualifiedName(0, "ConfigurationFileType"),
+            new LocalizedText("", "ConfigurationFileType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15437), new NodeId(0, 46), new NodeId(0, 15438).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15437), new NodeId(0, 46), new NodeId(0, 15439).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15437), new NodeId(0, 46), new NodeId(0, 15503).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15437), new NodeId(0, 46), new NodeId(0, 15504).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15437), new NodeId(0, 47), new NodeId(0, 15508).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15437), new NodeId(0, 47), new NodeId(0, 15505).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15437), new NodeId(0, 45), new NodeId(0, 11575).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode173() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 15541),
+            new QualifiedName(0, "ConfigurationUpdatedAuditEventType"),
+            new LocalizedText("", "ConfigurationUpdatedAuditEventType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15541), new NodeId(0, 46), new NodeId(0, 15542).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15541), new NodeId(0, 46), new NodeId(0, 15543).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15541), new NodeId(0, 45), new NodeId(0, 2052).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode174() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4906,7 +5315,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode169() {
+  void loadNode175() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4929,7 +5338,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode170() {
+  void loadNode176() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4967,7 +5376,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode171() {
+  void loadNode177() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -4990,7 +5399,51 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode172() {
+  void loadNode178() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 15550),
+            new QualifiedName(0, "ApplicationConfigurationFileType"),
+            new LocalizedText("", "ApplicationConfigurationFileType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15550), new NodeId(0, 46), new NodeId(0, 15551).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15550), new NodeId(0, 46), new NodeId(0, 15552).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15550), new NodeId(0, 46), new NodeId(0, 19414).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15550), new NodeId(0, 46), new NodeId(0, 19415).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15550), new NodeId(0, 46), new NodeId(0, 15553).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15550), new NodeId(0, 46), new NodeId(0, 15554).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15550), new NodeId(0, 46), new NodeId(0, 15555).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15550), new NodeId(0, 46), new NodeId(0, 19416).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15550), new NodeId(0, 45), new NodeId(0, 15437).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode179() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5004,9 +5457,6 @@ class ObjectTypeNodeLoader {
             null,
             new AccessRestrictionType(UShort.valueOf(0)),
             false);
-    node.addReference(
-        new Reference(
-            new NodeId(0, 12581), new NodeId(0, 47), new NodeId(0, 13950).expanded(), true));
     node.addReference(
         new Reference(
             new NodeId(0, 12581), new NodeId(0, 46), new NodeId(0, 25696).expanded(), true));
@@ -5045,6 +5495,12 @@ class ObjectTypeNodeLoader {
             new NodeId(0, 12581), new NodeId(0, 47), new NodeId(0, 12616).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 12581), new NodeId(0, 47), new NodeId(0, 19337).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 12581), new NodeId(0, 47), new NodeId(0, 19340).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 12581), new NodeId(0, 47), new NodeId(0, 32296).expanded(), true));
     node.addReference(
         new Reference(
@@ -5063,14 +5519,61 @@ class ObjectTypeNodeLoader {
             new NodeId(0, 12581), new NodeId(0, 47), new NodeId(0, 25699).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 12581), new NodeId(0, 47), new NodeId(0, 13950).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 12581), new NodeId(0, 47), new NodeId(0, 32299).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 12581), new NodeId(0, 47), new NodeId(0, 15564).expanded(), true));
     node.addReference(
         new Reference(
             new NodeId(0, 12581), new NodeId(0, 45), new NodeId(0, 58).expanded(), false));
     this.nodeManager.addNode(node);
   }
 
-  void loadNode173() {
+  void loadNode180() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 25731),
+            new QualifiedName(0, "ApplicationConfigurationType"),
+            new LocalizedText("", "ApplicationConfigurationType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25731), new NodeId(0, 46), new NodeId(0, 26850).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25731), new NodeId(0, 46), new NodeId(0, 26851).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25731), new NodeId(0, 46), new NodeId(0, 26852).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25731), new NodeId(0, 46), new NodeId(0, 26849).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25731), new NodeId(0, 46), new NodeId(0, 23741).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25731), new NodeId(0, 47), new NodeId(0, 19423).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25731), new NodeId(0, 47), new NodeId(0, 19427).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 25731), new NodeId(0, 45), new NodeId(0, 12581).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode181() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5090,7 +5593,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode174() {
+  void loadNode182() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5116,7 +5619,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode175() {
+  void loadNode183() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5142,7 +5645,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode176() {
+  void loadNode184() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5186,7 +5689,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode177() {
+  void loadNode185() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5209,7 +5712,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode178() {
+  void loadNode186() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5229,7 +5732,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode179() {
+  void loadNode187() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5252,7 +5755,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode180() {
+  void loadNode188() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5275,7 +5778,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode181() {
+  void loadNode189() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5304,7 +5807,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode182() {
+  void loadNode190() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5336,7 +5839,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode183() {
+  void loadNode191() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5368,7 +5871,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode184() {
+  void loadNode192() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5409,7 +5912,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode185() {
+  void loadNode193() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5450,7 +5953,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode186() {
+  void loadNode194() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5506,7 +6009,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode187() {
+  void loadNode195() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5544,7 +6047,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode188() {
+  void loadNode196() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5612,7 +6115,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode189() {
+  void loadNode197() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5638,7 +6141,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode190() {
+  void loadNode198() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5676,7 +6179,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode191() {
+  void loadNode199() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5705,7 +6208,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode192() {
+  void loadNode200() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5734,7 +6237,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode193() {
+  void loadNode201() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5766,7 +6269,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode194() {
+  void loadNode202() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5813,7 +6316,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode195() {
+  void loadNode203() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5869,7 +6372,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode196() {
+  void loadNode204() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5889,7 +6392,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode197() {
+  void loadNode205() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5927,7 +6430,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode198() {
+  void loadNode206() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -5983,7 +6486,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode199() {
+  void loadNode207() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6003,7 +6506,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode200() {
+  void loadNode208() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6023,7 +6526,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode201() {
+  void loadNode209() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6061,7 +6564,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode202() {
+  void loadNode210() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6081,7 +6584,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode203() {
+  void loadNode211() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6101,7 +6604,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode204() {
+  void loadNode212() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6145,7 +6648,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode205() {
+  void loadNode213() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6165,7 +6668,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode206() {
+  void loadNode214() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6185,7 +6688,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode207() {
+  void loadNode215() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6262,7 +6765,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode208() {
+  void loadNode216() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6282,7 +6785,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode209() {
+  void loadNode217() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6302,7 +6805,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode210() {
+  void loadNode218() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6322,7 +6825,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode211() {
+  void loadNode219() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6351,7 +6854,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode212() {
+  void loadNode220() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6371,7 +6874,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode213() {
+  void loadNode221() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6409,7 +6912,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode214() {
+  void loadNode222() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6438,7 +6941,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode215() {
+  void loadNode223() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6467,7 +6970,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode216() {
+  void loadNode224() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6508,7 +7011,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode217() {
+  void loadNode225() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6531,7 +7034,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode218() {
+  void loadNode226() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6554,7 +7057,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode219() {
+  void loadNode227() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6580,7 +7083,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode220() {
+  void loadNode228() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6606,7 +7109,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode221() {
+  void loadNode229() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6632,7 +7135,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode222() {
+  void loadNode230() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6658,7 +7161,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode223() {
+  void loadNode231() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6726,7 +7229,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode224() {
+  void loadNode232() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6755,7 +7258,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode225() {
+  void loadNode233() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6781,7 +7284,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode226() {
+  void loadNode234() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6804,7 +7307,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode227() {
+  void loadNode235() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6839,7 +7342,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode228() {
+  void loadNode236() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6871,7 +7374,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode229() {
+  void loadNode237() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6918,7 +7421,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode230() {
+  void loadNode238() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6941,7 +7444,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode231() {
+  void loadNode239() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6964,7 +7467,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode232() {
+  void loadNode240() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -6990,7 +7493,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode233() {
+  void loadNode241() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7025,7 +7528,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode234() {
+  void loadNode242() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7066,7 +7569,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode235() {
+  void loadNode243() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7098,7 +7601,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode236() {
+  void loadNode244() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7124,7 +7627,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode237() {
+  void loadNode245() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7156,7 +7659,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode238() {
+  void loadNode246() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7194,7 +7697,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode239() {
+  void loadNode247() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7229,7 +7732,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode240() {
+  void loadNode248() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7252,7 +7755,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode241() {
+  void loadNode249() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7275,7 +7778,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode242() {
+  void loadNode250() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7295,7 +7798,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode243() {
+  void loadNode251() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7320,14 +7823,23 @@ class ObjectTypeNodeLoader {
             new NodeId(0, 23456), new NodeId(0, 47), new NodeId(0, 23462).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 23456), new NodeId(0, 47), new NodeId(0, 23963).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 23456), new NodeId(0, 46), new NodeId(0, 32850).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 23456), new NodeId(0, 47), new NodeId(0, 23972).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 23456), new NodeId(0, 47), new NodeId(0, 23975).expanded(), true));
     node.addReference(
         new Reference(
             new NodeId(0, 23456), new NodeId(0, 45), new NodeId(0, 61).expanded(), false));
     this.nodeManager.addNode(node);
   }
 
-  void loadNode244() {
+  void loadNode252() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7371,39 +7883,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode245() {
-    var node =
-        new UaObjectTypeNode(
-            this.context,
-            new NodeId(0, 25731),
-            new QualifiedName(0, "ApplicationConfigurationType"),
-            new LocalizedText("", "ApplicationConfigurationType"),
-            LocalizedText.NULL_VALUE,
-            UInteger.valueOf(0),
-            UInteger.valueOf(0),
-            null,
-            null,
-            new AccessRestrictionType(UShort.valueOf(0)),
-            false);
-    node.addReference(
-        new Reference(
-            new NodeId(0, 25731), new NodeId(0, 46), new NodeId(0, 26850).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 25731), new NodeId(0, 46), new NodeId(0, 26851).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 25731), new NodeId(0, 46), new NodeId(0, 26852).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 25731), new NodeId(0, 46), new NodeId(0, 26849).expanded(), true));
-    node.addReference(
-        new Reference(
-            new NodeId(0, 25731), new NodeId(0, 45), new NodeId(0, 12581).expanded(), false));
-    this.nodeManager.addNode(node);
-  }
-
-  void loadNode246() {
+  void loadNode253() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7435,7 +7915,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode247() {
+  void loadNode254() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7467,7 +7947,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode248() {
+  void loadNode255() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7496,7 +7976,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode249() {
+  void loadNode256() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7519,7 +7999,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode250() {
+  void loadNode257() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7542,7 +8022,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode251() {
+  void loadNode258() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7565,7 +8045,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode252() {
+  void loadNode259() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7594,7 +8074,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode253() {
+  void loadNode260() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7629,7 +8109,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode254() {
+  void loadNode261() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7658,7 +8138,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode255() {
+  void loadNode262() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7690,7 +8170,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode256() {
+  void loadNode263() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7716,7 +8196,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode257() {
+  void loadNode264() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7739,7 +8219,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode258() {
+  void loadNode265() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7762,7 +8242,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode259() {
+  void loadNode266() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7788,7 +8268,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode260() {
+  void loadNode267() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7814,7 +8294,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode261() {
+  void loadNode268() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7846,7 +8326,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode262() {
+  void loadNode269() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7884,7 +8364,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode263() {
+  void loadNode270() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7913,7 +8393,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode264() {
+  void loadNode271() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7942,7 +8422,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode265() {
+  void loadNode272() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -7977,7 +8457,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode266() {
+  void loadNode273() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -8015,7 +8495,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode267() {
+  void loadNode274() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -8056,7 +8536,7 @@ class ObjectTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode268() {
+  void loadNode275() {
     var node =
         new UaObjectTypeNode(
             this.context,
@@ -8118,6 +8598,169 @@ class ObjectTypeNodeLoader {
     node.addReference(
         new Reference(
             new NodeId(0, 19033), new NodeId(0, 45), new NodeId(0, 58).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode276() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 19824),
+            new QualifiedName(0, "SerializationEntityType"),
+            new LocalizedText("", "SerializationEntityType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19824), new NodeId(0, 47), new NodeId(0, 19825).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19824), new NodeId(0, 46), new NodeId(0, 19826).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19824), new NodeId(0, 46), new NodeId(0, 19827).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19824), new NodeId(0, 46), new NodeId(0, 19828).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19824), new NodeId(0, 46), new NodeId(0, 19829).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19824), new NodeId(0, 46), new NodeId(0, 19830).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19824), new NodeId(0, 46), new NodeId(0, 19835).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19824), new NodeId(0, 46), new NodeId(0, 19836).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19824), new NodeId(0, 46), new NodeId(0, 19837).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19824), new NodeId(0, 46), new NodeId(0, 19838).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19824), new NodeId(0, 47), new NodeId(0, 19839).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19824), new NodeId(0, 45), new NodeId(0, 58).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode277() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 19352),
+            new QualifiedName(0, "LogObjectType"),
+            new LocalizedText("", "LogObjectType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19352), new NodeId(0, 47), new NodeId(0, 19353).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19352), new NodeId(0, 46), new NodeId(0, 19356).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19352), new NodeId(0, 46), new NodeId(0, 19357).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19352), new NodeId(0, 46), new NodeId(0, 19744).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19352), new NodeId(0, 47), new NodeId(0, 24372).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19352), new NodeId(0, 45), new NodeId(0, 58).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode278() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 19362),
+            new QualifiedName(0, "BaseLogEventType"),
+            new LocalizedText("", "BaseLogEventType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19362), new NodeId(0, 46), new NodeId(0, 19363).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19362), new NodeId(0, 46), new NodeId(0, 19364).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19362), new NodeId(0, 46), new NodeId(0, 19365).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19362), new NodeId(0, 46), new NodeId(0, 19366).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19362), new NodeId(0, 46), new NodeId(0, 24376).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19362), new NodeId(0, 45), new NodeId(0, 2041).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode279() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 19369),
+            new QualifiedName(0, "LogOverflowEventType"),
+            new LocalizedText("", "LogOverflowEventType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19369), new NodeId(0, 45), new NodeId(0, 2041).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode280() {
+    var node =
+        new UaObjectTypeNode(
+            this.context,
+            new NodeId(0, 19370),
+            new QualifiedName(0, "LogEntryConditionClassType"),
+            new LocalizedText("", "LogEntryConditionClassType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19370), new NodeId(0, 45), new NodeId(0, 11163).expanded(), false));
     this.nodeManager.addNode(node);
   }
 
@@ -8391,5 +9034,17 @@ class ObjectTypeNodeLoader {
     loadNode266();
     loadNode267();
     loadNode268();
+    loadNode269();
+    loadNode270();
+    loadNode271();
+    loadNode272();
+    loadNode273();
+    loadNode274();
+    loadNode275();
+    loadNode276();
+    loadNode277();
+    loadNode278();
+    loadNode279();
+    loadNode280();
   }
 }

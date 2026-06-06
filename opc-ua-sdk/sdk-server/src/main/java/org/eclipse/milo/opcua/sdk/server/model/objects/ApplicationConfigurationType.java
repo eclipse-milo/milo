@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -17,7 +17,7 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.12">https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.12</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.14">https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.14</a>
  */
 public interface ApplicationConfigurationType extends ServerConfigurationType {
   QualifiedProperty<String> APPLICATION_URI =
@@ -52,6 +52,14 @@ public interface ApplicationConfigurationType extends ServerConfigurationType {
           -1,
           Boolean.class);
 
+  QualifiedProperty<Boolean> IS_NON_UA_APPLICATION =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "IsNonUaApplication",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=1"),
+          -1,
+          Boolean.class);
+
   String getApplicationUri();
 
   void setApplicationUri(String value);
@@ -75,4 +83,14 @@ public interface ApplicationConfigurationType extends ServerConfigurationType {
   void setEnabled(Boolean value);
 
   PropertyType getEnabledNode();
+
+  Boolean getIsNonUaApplication();
+
+  void setIsNonUaApplication(Boolean value);
+
+  PropertyType getIsNonUaApplicationNode();
+
+  KeyCredentialConfigurationFolderType getKeyCredentialsNode();
+
+  AuthorizationServicesConfigurationFolderType getAuthorizationServicesNode();
 }
