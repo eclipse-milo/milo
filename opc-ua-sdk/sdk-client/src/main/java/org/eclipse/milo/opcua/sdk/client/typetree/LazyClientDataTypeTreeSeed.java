@@ -13,7 +13,6 @@ package org.eclipse.milo.opcua.sdk.client.typetree;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
-import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.StructureType;
@@ -574,7 +573,7 @@ public final class LazyClientDataTypeTreeSeed {
         uInt32.addChild(
             new ClientDataType(
                 QualifiedName.parse("0:LogRecordMask"),
-                new NodeId(0, 19749),
+                NodeIds.LogRecordMask,
                 null,
                 null,
                 null,
@@ -5961,12 +5960,12 @@ public final class LazyClientDataTypeTreeSeed {
         structure.addChild(
             new ClientDataType(
                 QualifiedName.parse("0:BaseConfigurationDataType"),
-                new NodeId(0, 15434),
-                new NodeId(0, 16538),
-                new NodeId(0, 16587),
-                new NodeId(0, 16632),
+                NodeIds.BaseConfigurationDataType,
+                NodeIds.BaseConfigurationDataType_Encoding_DefaultBinary,
+                NodeIds.BaseConfigurationDataType_Encoding_DefaultXml,
+                NodeIds.BaseConfigurationDataType_Encoding_DefaultJson,
                 new StructureDefinition(
-                    new NodeId(0, 16538),
+                    NodeIds.BaseConfigurationDataType_Encoding_DefaultBinary,
                     NodeIds.Structure,
                     StructureType.Structure,
                     new StructureField[] {
@@ -5992,13 +5991,13 @@ public final class LazyClientDataTypeTreeSeed {
         baseConfigurationDataType.addChild(
             new ClientDataType(
                 QualifiedName.parse("0:ApplicationConfigurationDataType"),
-                new NodeId(0, 23743),
-                new NodeId(0, 23754),
-                new NodeId(0, 23762),
-                new NodeId(0, 23776),
+                NodeIds.ApplicationConfigurationDataType,
+                NodeIds.ApplicationConfigurationDataType_Encoding_DefaultBinary,
+                NodeIds.ApplicationConfigurationDataType_Encoding_DefaultXml,
+                NodeIds.ApplicationConfigurationDataType_Encoding_DefaultJson,
                 new StructureDefinition(
-                    new NodeId(0, 23754),
-                    new NodeId(0, 15434),
+                    NodeIds.ApplicationConfigurationDataType_Encoding_DefaultBinary,
+                    NodeIds.BaseConfigurationDataType,
                     StructureType.Structure,
                     new StructureField[] {
                       new StructureField(
@@ -6020,7 +6019,7 @@ public final class LazyClientDataTypeTreeSeed {
                       new StructureField(
                           "ApplicationIdentity",
                           LocalizedText.NULL_VALUE,
-                          new NodeId(0, 15556),
+                          NodeIds.ApplicationIdentityDataType,
                           -1,
                           null,
                           UInteger.valueOf(0),
@@ -6028,7 +6027,7 @@ public final class LazyClientDataTypeTreeSeed {
                       new StructureField(
                           "CertificateGroups",
                           LocalizedText.NULL_VALUE,
-                          new NodeId(0, 15436),
+                          NodeIds.CertificateGroupDataType,
                           1,
                           null,
                           UInteger.valueOf(0),
@@ -6036,7 +6035,7 @@ public final class LazyClientDataTypeTreeSeed {
                       new StructureField(
                           "ServerEndpoints",
                           LocalizedText.NULL_VALUE,
-                          new NodeId(0, 15558),
+                          NodeIds.ServerEndpointDataType,
                           1,
                           null,
                           UInteger.valueOf(0),
@@ -6044,7 +6043,7 @@ public final class LazyClientDataTypeTreeSeed {
                       new StructureField(
                           "ClientEndpoints",
                           LocalizedText.NULL_VALUE,
-                          new NodeId(0, 15557),
+                          NodeIds.EndpointDataType,
                           1,
                           null,
                           UInteger.valueOf(0),
@@ -6052,7 +6051,7 @@ public final class LazyClientDataTypeTreeSeed {
                       new StructureField(
                           "SecuritySettings",
                           LocalizedText.NULL_VALUE,
-                          new NodeId(0, 15559),
+                          NodeIds.SecuritySettingsDataType,
                           1,
                           null,
                           UInteger.valueOf(0),
@@ -6060,7 +6059,7 @@ public final class LazyClientDataTypeTreeSeed {
                       new StructureField(
                           "UserTokenSettings",
                           LocalizedText.NULL_VALUE,
-                          new NodeId(0, 15560),
+                          NodeIds.UserTokenSettingsDataType,
                           1,
                           null,
                           UInteger.valueOf(0),
@@ -6068,7 +6067,7 @@ public final class LazyClientDataTypeTreeSeed {
                       new StructureField(
                           "AuthorizationServices",
                           LocalizedText.NULL_VALUE,
-                          new NodeId(0, 23744),
+                          NodeIds.AuthorizationServiceConfigurationDataType,
                           1,
                           null,
                           UInteger.valueOf(0),
@@ -6079,12 +6078,12 @@ public final class LazyClientDataTypeTreeSeed {
         structure.addChild(
             new ClientDataType(
                 QualifiedName.parse("0:BaseConfigurationRecordDataType"),
-                new NodeId(0, 15435),
-                new NodeId(0, 16539),
-                new NodeId(0, 16588),
-                new NodeId(0, 16633),
+                NodeIds.BaseConfigurationRecordDataType,
+                NodeIds.BaseConfigurationRecordDataType_Encoding_DefaultBinary,
+                NodeIds.BaseConfigurationRecordDataType_Encoding_DefaultXml,
+                NodeIds.BaseConfigurationRecordDataType_Encoding_DefaultJson,
                 new StructureDefinition(
-                    new NodeId(0, 16539),
+                    NodeIds.BaseConfigurationRecordDataType_Encoding_DefaultBinary,
                     NodeIds.Structure,
                     StructureType.Structure,
                     new StructureField[] {
@@ -6110,13 +6109,13 @@ public final class LazyClientDataTypeTreeSeed {
         baseConfigurationRecordDataType.addChild(
             new ClientDataType(
                 QualifiedName.parse("0:CertificateGroupDataType"),
-                new NodeId(0, 15436),
-                new NodeId(0, 16540),
-                new NodeId(0, 16589),
-                new NodeId(0, 16634),
+                NodeIds.CertificateGroupDataType,
+                NodeIds.CertificateGroupDataType_Encoding_DefaultBinary,
+                NodeIds.CertificateGroupDataType_Encoding_DefaultXml,
+                NodeIds.CertificateGroupDataType_Encoding_DefaultJson,
                 new StructureDefinition(
-                    new NodeId(0, 16540),
-                    new NodeId(0, 15435),
+                    NodeIds.CertificateGroupDataType_Encoding_DefaultBinary,
+                    NodeIds.BaseConfigurationRecordDataType,
                     StructureType.Structure,
                     new StructureField[] {
                       new StructureField(
@@ -6173,13 +6172,13 @@ public final class LazyClientDataTypeTreeSeed {
         baseConfigurationRecordDataType.addChild(
             new ClientDataType(
                 QualifiedName.parse("0:ApplicationIdentityDataType"),
-                new NodeId(0, 15556),
-                new NodeId(0, 16543),
-                new NodeId(0, 16592),
-                new NodeId(0, 16637),
+                NodeIds.ApplicationIdentityDataType,
+                NodeIds.ApplicationIdentityDataType_Encoding_DefaultBinary,
+                NodeIds.ApplicationIdentityDataType_Encoding_DefaultXml,
+                NodeIds.ApplicationIdentityDataType_Encoding_DefaultJson,
                 new StructureDefinition(
-                    new NodeId(0, 16543),
-                    new NodeId(0, 15435),
+                    NodeIds.ApplicationIdentityDataType_Encoding_DefaultBinary,
+                    NodeIds.BaseConfigurationRecordDataType,
                     StructureType.Structure,
                     new StructureField[] {
                       new StructureField(
@@ -6228,13 +6227,13 @@ public final class LazyClientDataTypeTreeSeed {
         baseConfigurationRecordDataType.addChild(
             new ClientDataType(
                 QualifiedName.parse("0:EndpointDataType"),
-                new NodeId(0, 15557),
-                new NodeId(0, 16544),
-                new NodeId(0, 16593),
-                new NodeId(0, 16642),
+                NodeIds.EndpointDataType,
+                NodeIds.EndpointDataType_Encoding_DefaultBinary,
+                NodeIds.EndpointDataType_Encoding_DefaultXml,
+                NodeIds.EndpointDataType_Encoding_DefaultJson,
                 new StructureDefinition(
-                    new NodeId(0, 16544),
-                    new NodeId(0, 15435),
+                    NodeIds.EndpointDataType_Encoding_DefaultBinary,
+                    NodeIds.BaseConfigurationRecordDataType,
                     StructureType.Structure,
                     new StructureField[] {
                       new StructureField(
@@ -6283,13 +6282,13 @@ public final class LazyClientDataTypeTreeSeed {
         endpointDataType.addChild(
             new ClientDataType(
                 QualifiedName.parse("0:ServerEndpointDataType"),
-                new NodeId(0, 15558),
-                new NodeId(0, 16545),
-                new NodeId(0, 16594),
-                new NodeId(0, 16643),
+                NodeIds.ServerEndpointDataType,
+                NodeIds.ServerEndpointDataType_Encoding_DefaultBinary,
+                NodeIds.ServerEndpointDataType_Encoding_DefaultXml,
+                NodeIds.ServerEndpointDataType_Encoding_DefaultJson,
                 new StructureDefinition(
-                    new NodeId(0, 16545),
-                    new NodeId(0, 15557),
+                    NodeIds.ServerEndpointDataType_Encoding_DefaultBinary,
+                    NodeIds.EndpointDataType,
                     StructureType.Structure,
                     new StructureField[] {
                       new StructureField(
@@ -6378,13 +6377,13 @@ public final class LazyClientDataTypeTreeSeed {
         baseConfigurationRecordDataType.addChild(
             new ClientDataType(
                 QualifiedName.parse("0:SecuritySettingsDataType"),
-                new NodeId(0, 15559),
-                new NodeId(0, 16546),
-                new NodeId(0, 16595),
-                new NodeId(0, 16644),
+                NodeIds.SecuritySettingsDataType,
+                NodeIds.SecuritySettingsDataType_Encoding_DefaultBinary,
+                NodeIds.SecuritySettingsDataType_Encoding_DefaultXml,
+                NodeIds.SecuritySettingsDataType_Encoding_DefaultJson,
                 new StructureDefinition(
-                    new NodeId(0, 16546),
-                    new NodeId(0, 15435),
+                    NodeIds.SecuritySettingsDataType_Encoding_DefaultBinary,
+                    NodeIds.BaseConfigurationRecordDataType,
                     StructureType.Structure,
                     new StructureField[] {
                       new StructureField(
@@ -6433,13 +6432,13 @@ public final class LazyClientDataTypeTreeSeed {
         baseConfigurationRecordDataType.addChild(
             new ClientDataType(
                 QualifiedName.parse("0:UserTokenSettingsDataType"),
-                new NodeId(0, 15560),
-                new NodeId(0, 16547),
-                new NodeId(0, 16596),
-                new NodeId(0, 16645),
+                NodeIds.UserTokenSettingsDataType,
+                NodeIds.UserTokenSettingsDataType_Encoding_DefaultBinary,
+                NodeIds.UserTokenSettingsDataType_Encoding_DefaultXml,
+                NodeIds.UserTokenSettingsDataType_Encoding_DefaultJson,
                 new StructureDefinition(
-                    new NodeId(0, 16547),
-                    new NodeId(0, 15435),
+                    NodeIds.UserTokenSettingsDataType_Encoding_DefaultBinary,
+                    NodeIds.BaseConfigurationRecordDataType,
                     StructureType.Structure,
                     new StructureField[] {
                       new StructureField(
@@ -6512,13 +6511,13 @@ public final class LazyClientDataTypeTreeSeed {
         baseConfigurationRecordDataType.addChild(
             new ClientDataType(
                 QualifiedName.parse("0:AuthorizationServiceConfigurationDataType"),
-                new NodeId(0, 23744),
-                new NodeId(0, 23755),
-                new NodeId(0, 23763),
-                new NodeId(0, 23777),
+                NodeIds.AuthorizationServiceConfigurationDataType,
+                NodeIds.AuthorizationServiceConfigurationDataType_Encoding_DefaultBinary,
+                NodeIds.AuthorizationServiceConfigurationDataType_Encoding_DefaultXml,
+                NodeIds.AuthorizationServiceConfigurationDataType_Encoding_DefaultJson,
                 new StructureDefinition(
-                    new NodeId(0, 23755),
-                    new NodeId(0, 15435),
+                    NodeIds.AuthorizationServiceConfigurationDataType_Encoding_DefaultBinary,
+                    NodeIds.BaseConfigurationRecordDataType,
                     StructureType.Structure,
                     new StructureField[] {
                       new StructureField(
@@ -6548,7 +6547,7 @@ public final class LazyClientDataTypeTreeSeed {
                       new StructureField(
                           "ServiceCertificates",
                           LocalizedText.NULL_VALUE,
-                          new NodeId(0, 23724),
+                          NodeIds.ServiceCertificateDataType,
                           1,
                           null,
                           UInteger.valueOf(0),
@@ -7007,12 +7006,12 @@ public final class LazyClientDataTypeTreeSeed {
         structure.addChild(
             new ClientDataType(
                 QualifiedName.parse("0:ConfigurationUpdateTargetType"),
-                new NodeId(0, 15538),
-                new NodeId(0, 16541),
-                new NodeId(0, 16590),
-                new NodeId(0, 16635),
+                NodeIds.ConfigurationUpdateTargetType,
+                NodeIds.ConfigurationUpdateTargetType_Encoding_DefaultBinary,
+                NodeIds.ConfigurationUpdateTargetType_Encoding_DefaultXml,
+                NodeIds.ConfigurationUpdateTargetType_Encoding_DefaultJson,
                 new StructureDefinition(
-                    new NodeId(0, 16541),
+                    NodeIds.ConfigurationUpdateTargetType_Encoding_DefaultBinary,
                     NodeIds.Structure,
                     StructureType.Structure,
                     new StructureField[] {
@@ -7027,7 +7026,7 @@ public final class LazyClientDataTypeTreeSeed {
                       new StructureField(
                           "UpdateType",
                           LocalizedText.NULL_VALUE,
-                          new NodeId(0, 15539),
+                          NodeIds.ConfigurationUpdateType,
                           -1,
                           null,
                           UInteger.valueOf(0),
@@ -9466,12 +9465,12 @@ public final class LazyClientDataTypeTreeSeed {
         structure.addChild(
             new ClientDataType(
                 QualifiedName.parse("0:LogRecord"),
-                new NodeId(0, 19361),
-                new NodeId(0, 19379),
-                new NodeId(0, 19383),
-                new NodeId(0, 19387),
+                NodeIds.LogRecord,
+                NodeIds.LogRecord_Encoding_DefaultBinary,
+                NodeIds.LogRecord_Encoding_DefaultXml,
+                NodeIds.LogRecord_Encoding_DefaultJson,
                 new StructureDefinition(
-                    new NodeId(0, 19379),
+                    NodeIds.LogRecord_Encoding_DefaultBinary,
                     NodeIds.Structure,
                     StructureType.StructureWithOptionalFields,
                     new StructureField[] {
@@ -9526,7 +9525,7 @@ public final class LazyClientDataTypeTreeSeed {
                       new StructureField(
                           "TraceContext",
                           LocalizedText.NULL_VALUE,
-                          new NodeId(0, 19747),
+                          NodeIds.TraceContextDataType,
                           -1,
                           null,
                           UInteger.valueOf(0),
@@ -9534,7 +9533,7 @@ public final class LazyClientDataTypeTreeSeed {
                       new StructureField(
                           "AdditionalData",
                           LocalizedText.NULL_VALUE,
-                          new NodeId(0, 19748),
+                          NodeIds.NameValuePair,
                           1,
                           null,
                           UInteger.valueOf(0),
@@ -9545,19 +9544,19 @@ public final class LazyClientDataTypeTreeSeed {
         structure.addChild(
             new ClientDataType(
                 QualifiedName.parse("0:LogRecordsDataType"),
-                new NodeId(0, 19745),
-                new NodeId(0, 19753),
-                new NodeId(0, 19773),
-                new NodeId(0, 19803),
+                NodeIds.LogRecordsDataType,
+                NodeIds.LogRecordsDataType_Encoding_DefaultBinary,
+                NodeIds.LogRecordsDataType_Encoding_DefaultXml,
+                NodeIds.LogRecordsDataType_Encoding_DefaultJson,
                 new StructureDefinition(
-                    new NodeId(0, 19753),
+                    NodeIds.LogRecordsDataType_Encoding_DefaultBinary,
                     NodeIds.Structure,
                     StructureType.Structure,
                     new StructureField[] {
                       new StructureField(
                           "LogRecordArray",
                           LocalizedText.NULL_VALUE,
-                          new NodeId(0, 19361),
+                          NodeIds.LogRecord,
                           1,
                           null,
                           UInteger.valueOf(0),
@@ -9568,12 +9567,12 @@ public final class LazyClientDataTypeTreeSeed {
         structure.addChild(
             new ClientDataType(
                 QualifiedName.parse("0:SpanContextDataType"),
-                new NodeId(0, 19746),
-                new NodeId(0, 19754),
-                new NodeId(0, 19774),
-                new NodeId(0, 19804),
+                NodeIds.SpanContextDataType,
+                NodeIds.SpanContextDataType_Encoding_DefaultBinary,
+                NodeIds.SpanContextDataType_Encoding_DefaultXml,
+                NodeIds.SpanContextDataType_Encoding_DefaultJson,
                 new StructureDefinition(
-                    new NodeId(0, 19754),
+                    NodeIds.SpanContextDataType_Encoding_DefaultBinary,
                     NodeIds.Structure,
                     StructureType.Structure,
                     new StructureField[] {
@@ -9599,13 +9598,13 @@ public final class LazyClientDataTypeTreeSeed {
         spanContextDataType.addChild(
             new ClientDataType(
                 QualifiedName.parse("0:TraceContextDataType"),
-                new NodeId(0, 19747),
-                new NodeId(0, 19755),
-                new NodeId(0, 19775),
-                new NodeId(0, 19805),
+                NodeIds.TraceContextDataType,
+                NodeIds.TraceContextDataType_Encoding_DefaultBinary,
+                NodeIds.TraceContextDataType_Encoding_DefaultXml,
+                NodeIds.TraceContextDataType_Encoding_DefaultJson,
                 new StructureDefinition(
-                    new NodeId(0, 19755),
-                    new NodeId(0, 19746),
+                    NodeIds.TraceContextDataType_Encoding_DefaultBinary,
+                    NodeIds.SpanContextDataType,
                     StructureType.Structure,
                     new StructureField[] {
                       new StructureField(
@@ -9646,12 +9645,12 @@ public final class LazyClientDataTypeTreeSeed {
         structure.addChild(
             new ClientDataType(
                 QualifiedName.parse("0:NameValuePair"),
-                new NodeId(0, 19748),
-                new NodeId(0, 19756),
-                new NodeId(0, 19776),
-                new NodeId(0, 19806),
+                NodeIds.NameValuePair,
+                NodeIds.NameValuePair_Encoding_DefaultBinary,
+                NodeIds.NameValuePair_Encoding_DefaultXml,
+                NodeIds.NameValuePair_Encoding_DefaultJson,
                 new StructureDefinition(
-                    new NodeId(0, 19756),
+                    NodeIds.NameValuePair_Encoding_DefaultBinary,
                     NodeIds.Structure,
                     StructureType.Structure,
                     new StructureField[] {
@@ -9930,12 +9929,12 @@ public final class LazyClientDataTypeTreeSeed {
         structure.addChild(
             new ClientDataType(
                 QualifiedName.parse("0:ServiceCertificateDataType"),
-                new NodeId(0, 23724),
-                new NodeId(0, 23725),
-                new NodeId(0, 23735),
-                new NodeId(0, 23739),
+                NodeIds.ServiceCertificateDataType,
+                NodeIds.ServiceCertificateDataType_Encoding_DefaultBinary,
+                NodeIds.ServiceCertificateDataType_Encoding_DefaultXml,
+                NodeIds.ServiceCertificateDataType_Encoding_DefaultJson,
                 new StructureDefinition(
-                    new NodeId(0, 23725),
+                    NodeIds.ServiceCertificateDataType_Encoding_DefaultBinary,
                     NodeIds.Structure,
                     StructureType.Structure,
                     new StructureField[] {
@@ -9977,12 +9976,12 @@ public final class LazyClientDataTypeTreeSeed {
         structure.addChild(
             new ClientDataType(
                 QualifiedName.parse("0:NumberRange"),
-                new NodeId(0, 23903),
-                new NodeId(0, 24250),
-                new NodeId(0, 24352),
-                new NodeId(0, 24368),
+                NodeIds.NumberRange,
+                NodeIds.NumberRange_Encoding_DefaultBinary,
+                NodeIds.NumberRange_Encoding_DefaultXml,
+                NodeIds.NumberRange_Encoding_DefaultJson,
                 new StructureDefinition(
-                    new NodeId(0, 24250),
+                    NodeIds.NumberRange_Encoding_DefaultBinary,
                     NodeIds.Structure,
                     StructureType.Structure,
                     new StructureField[] {
@@ -10119,12 +10118,12 @@ public final class LazyClientDataTypeTreeSeed {
         structure.addChild(
             new ClientDataType(
                 QualifiedName.parse("0:AliasNameVerboseDataType"),
-                new NodeId(0, 24051),
-                new NodeId(0, 24262),
-                new NodeId(0, 24353),
-                new NodeId(0, 24369),
+                NodeIds.AliasNameVerboseDataType,
+                NodeIds.AliasNameVerboseDataType_Encoding_DefaultBinary,
+                NodeIds.AliasNameVerboseDataType_Encoding_DefaultXml,
+                NodeIds.AliasNameVerboseDataType_Encoding_DefaultJson,
                 new StructureDefinition(
-                    new NodeId(0, 24262),
+                    NodeIds.AliasNameVerboseDataType_Encoding_DefaultBinary,
                     NodeIds.Structure,
                     StructureType.Structure,
                     new StructureField[] {
@@ -10166,12 +10165,12 @@ public final class LazyClientDataTypeTreeSeed {
         structure.addChild(
             new ClientDataType(
                 QualifiedName.parse("0:AliasCategoryUpdateDataType"),
-                new NodeId(0, 24052),
-                new NodeId(0, 24338),
-                new NodeId(0, 24354),
-                new NodeId(0, 24370),
+                NodeIds.AliasCategoryUpdateDataType,
+                NodeIds.AliasCategoryUpdateDataType_Encoding_DefaultBinary,
+                NodeIds.AliasCategoryUpdateDataType_Encoding_DefaultXml,
+                NodeIds.AliasCategoryUpdateDataType_Encoding_DefaultJson,
                 new StructureDefinition(
-                    new NodeId(0, 24338),
+                    NodeIds.AliasCategoryUpdateDataType_Encoding_DefaultBinary,
                     NodeIds.Structure,
                     StructureType.Structure,
                     new StructureField[] {
@@ -10197,12 +10196,12 @@ public final class LazyClientDataTypeTreeSeed {
         structure.addChild(
             new ClientDataType(
                 QualifiedName.parse("0:AliasUpdateDataType"),
-                new NodeId(0, 24053),
-                new NodeId(0, 24339),
-                new NodeId(0, 24355),
-                new NodeId(0, 24371),
+                NodeIds.AliasUpdateDataType,
+                NodeIds.AliasUpdateDataType_Encoding_DefaultBinary,
+                NodeIds.AliasUpdateDataType_Encoding_DefaultXml,
+                NodeIds.AliasUpdateDataType_Encoding_DefaultJson,
                 new StructureDefinition(
-                    new NodeId(0, 24339),
+                    NodeIds.AliasUpdateDataType_Encoding_DefaultBinary,
                     NodeIds.Structure,
                     StructureType.Structure,
                     new StructureField[] {
@@ -10217,7 +10216,7 @@ public final class LazyClientDataTypeTreeSeed {
                       new StructureField(
                           "Categories",
                           LocalizedText.NULL_VALUE,
-                          new NodeId(0, 24052),
+                          NodeIds.AliasCategoryUpdateDataType,
                           1,
                           null,
                           UInteger.valueOf(0),
@@ -11586,7 +11585,7 @@ public final class LazyClientDataTypeTreeSeed {
         enumeration.addChild(
             new ClientDataType(
                 QualifiedName.parse("0:ConfigurationUpdateType"),
-                new NodeId(0, 15539),
+                NodeIds.ConfigurationUpdateType,
                 null,
                 null,
                 null,
