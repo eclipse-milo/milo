@@ -137,10 +137,15 @@ public abstract class AbstractUsernameIdentityValidator extends AbstractIdentity
       Session session, UserNameIdentityToken token, SecurityPolicy securityPolicy, String username)
       throws UaException {
 
+    // UA Part 4, Table 188: for SecureChannelEnhancement policies the client sets
+    // encryptionAlgorithm to null/empty and servers ignore any value. Routing to this path is
+    // already driven by the resolved token-policy profile (isSupportedEccProfile), so this field
+    // is not consulted for routing. For back-compat with older Milo clients that incorrectly sent
+    // the policy URI, a non-empty value is tolerated only when it matches the policy URI.
     String algorithmUri = token.getEncryptionAlgorithm();
-    if (algorithmUri == null
-        || algorithmUri.isEmpty()
-        || !securityPolicy.getUri().equals(algorithmUri)) {
+    if (algorithmUri != null
+        && !algorithmUri.isEmpty()
+        && !securityPolicy.getUri().equals(algorithmUri)) {
       throw new UaException(StatusCodes.Bad_IdentityTokenInvalid);
     }
 

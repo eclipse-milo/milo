@@ -75,6 +75,28 @@ class AbstractUsernameIdentityValidatorTest {
     assertEquals("user", ((Identity.UsernameIdentity) identity).getUsername());
   }
 
+  // UA Part 4, Table 188: spec-conformant ECC clients (e.g. UA-.NETStandard) send a null
+  // encryptionAlgorithm on enhanced username tokens; the server must accept them.
+  @ParameterizedTest
+  @MethodSource("representativeEnhancedProfiles")
+  void acceptsEnhancedUsernameTokenWithNullEncryptionAlgorithm(SecurityPolicyProfile profile)
+      throws Exception {
+    TokenFixture fixture = tokenFixture(profile);
+    UserNameIdentityToken nullAlgorithmToken =
+        new UserNameIdentityToken("username", "user", fixture.token().getPassword(), null);
+    TestUsernameValidator validator = new TestUsernameValidator("password");
+
+    Identity identity =
+        validator.validateIdentityToken(
+            session(fixture, SERVER_NONCE),
+            nullAlgorithmToken,
+            policy(profile.securityPolicy()),
+            new SignatureData(null, null));
+
+    assertEquals(UserTokenType.UserName, identity.getUserTokenType());
+    assertEquals("user", ((Identity.UsernameIdentity) identity).getUsername());
+  }
+
   // ActivateSession must fail clearly if CreateSession never issued receiver key material.
   @ParameterizedTest
   @MethodSource("representativeEnhancedProfiles")

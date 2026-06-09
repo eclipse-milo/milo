@@ -77,7 +77,9 @@ class UsernameProviderTest {
 
     UserNameIdentityToken token = (UserNameIdentityToken) signedIdentityToken.getToken();
 
-    assertEquals(profile.securityPolicy().getUri(), token.getEncryptionAlgorithm());
+    // UA Part 4, Table 188: enhanced (SecureChannelEnhancement) username tokens carry a null
+    // encryptionAlgorithm; the EccEncryptedSecret format already identifies the encryption used.
+    assertNull(token.getEncryptionAlgorithm());
     assertEquals(
         ByteString.of("password".getBytes(StandardCharsets.UTF_8)),
         EccEncryptedSecret.decrypt(

@@ -270,9 +270,10 @@ public class UsernameProvider implements IdentityProvider {
                 serverNonce,
                 ByteString.of(Arrays.copyOf(passwordBytes, passwordBytes.length)));
 
+        // UA Part 4, Table 188: for SecureChannelEnhancement policies the EncryptedSecret format
+        // already identifies the encryption used, so encryptionAlgorithm must be null/empty.
         UserNameIdentityToken token =
-            new UserNameIdentityToken(
-                tokenPolicy.getPolicyId(), username, encryptedSecret, securityPolicy.getUri());
+            new UserNameIdentityToken(tokenPolicy.getPolicyId(), username, encryptedSecret, null);
 
         return new SignedIdentityToken(token, new SignatureData(null, null));
       } else {
