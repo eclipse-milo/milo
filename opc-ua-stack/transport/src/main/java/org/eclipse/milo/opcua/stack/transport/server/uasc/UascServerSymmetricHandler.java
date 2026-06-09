@@ -24,6 +24,7 @@ import org.eclipse.milo.opcua.stack.core.channel.ChunkDecoder;
 import org.eclipse.milo.opcua.stack.core.channel.ChunkDecoder.DecodedMessage;
 import org.eclipse.milo.opcua.stack.core.channel.ChunkEncoder;
 import org.eclipse.milo.opcua.stack.core.channel.ChunkEncoder.EncodedMessage;
+import org.eclipse.milo.opcua.stack.core.channel.ExceptionHandler;
 import org.eclipse.milo.opcua.stack.core.channel.MessageAbortException;
 import org.eclipse.milo.opcua.stack.core.channel.MessageDecodeException;
 import org.eclipse.milo.opcua.stack.core.channel.MessageEncodeException;
@@ -113,7 +114,7 @@ public class UascServerSymmetricHandler extends ByteToMessageCodec<UascServiceRe
   @Override
   protected void encode(ChannelHandlerContext ctx, UascServiceResponse response, ByteBuf buffer)
       throws Exception {
-    sendServiceResponse(response, buffer);
+    sendServiceResponse(ctx, response, buffer);
   }
 
   @Override
@@ -217,7 +218,8 @@ public class UascServerSymmetricHandler extends ByteToMessageCodec<UascServiceRe
     }
   }
 
-  private void sendServiceResponse(UascServiceResponse response, ByteBuf outBuffer) {
+  private void sendServiceResponse(
+      ChannelHandlerContext ctx, UascServiceResponse response, ByteBuf outBuffer) {
     ByteBuf messageBuffer = BufferUtil.pooledBuffer();
     CompositeByteBuf chunkComposite = BufferUtil.compositeBuffer();
 
@@ -240,22 +242,23 @@ public class UascServerSymmetricHandler extends ByteToMessageCodec<UascServiceRe
     } catch (MessageEncodeException e) {
       logger.error("Error encoding {}: {}", response, e.getMessage(), e);
 
-      sendServiceFault(response, outBuffer, e);
+      sendServiceFault(ctx, response, outBuffer, e);
     } catch (UaSerializationException e) {
       logger.error("Error serializing response: {}", e.getStatusCode(), e);
 
-      sendServiceFault(response, outBuffer, e);
+      sendServiceFault(ctx, response, outBuffer, e);
     } catch (Throwable t) {
       logger.error("Uncaught error sending service response", t);
 
-      sendServiceFault(response, outBuffer, t);
+      sendServiceFault(ctx, response, outBuffer, t);
     } finally {
       messageBuffer.release();
       chunkComposite.release();
     }
   }
 
-  private void sendServiceFault(UascServiceResponse response, ByteBuf outBuffer, Throwable fault) {
+  private void sendServiceFault(
+      ChannelHandlerContext ctx, UascServiceResponse response, ByteBuf outBuffer, Throwable fault) {
     StatusCode statusCode =
         UaException.extract(fault)
             .map(UaException::getStatusCode)
@@ -290,13 +293,31 @@ public class UascServerSymmetricHandler extends ByteToMessageCodec<UascServiceRe
       }
 
       outBuffer.writeBytes(chunkComposite);
-    } catch (MessageEncodeException e) {
-      logger.error("Error encoding {}: {}", serviceFault, e.getMessage(), e);
-    } catch (UaSerializationException e) {
-      logger.error("Error serializing ServiceFault: {}", e.getStatusCode(), e);
+    } catch (MessageEncodeException | UaSerializationException e) {
+      // The ServiceFault could not be framed either. This happens when the outbound stream itself
+      // is unusable (for example an AEAD SecureChannel whose sequence stream cannot produce another
+      // unique nonce), so the server can never send anything more on this channel. Closing with an
+      // Error tells the client to drop the half-dead channel and reconnect instead of waiting for
+      // responses that will never arrive.
+      logger.error(
+          "Error encoding ServiceFault on secure channel id={}; closing channel with Error",
+          secureChannel.getChannelId(),
+          e);
+
+      closeChannelWithError(ctx, fault);
     } finally {
       messageBuffer.release();
       chunkComposite.release();
+    }
+  }
+
+  private void closeChannelWithError(ChannelHandlerContext ctx, Throwable cause) {
+    try {
+      ExceptionHandler.sendErrorMessage(ctx, cause);
+    } catch (Exception e) {
+      logger.error("Error sending Error message; closing channel", e);
+
+      ctx.close();
     }
   }
 

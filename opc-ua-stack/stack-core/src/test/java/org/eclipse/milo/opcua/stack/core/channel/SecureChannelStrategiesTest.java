@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.stack.core.channel;
 import static java.util.Objects.requireNonNull;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -249,9 +250,9 @@ class SecureChannelStrategiesTest {
   }
 
   // AEAD chunk security fails catastrophically if a token reuses a nonce, so the directional key
-  // state must own IV construction and counter exhaustion checks.
+  // state must own IV construction and reuse rejection.
   @Test
-  void aeadNonceStateBuildsProfileIvAndRejectsReuseOrExhaustion() throws UaException {
+  void aeadNonceStateBuildsProfileIvAndRejectsReuse() throws UaException {
     ChannelSecurity.SecretKeys keys =
         new ChannelSecurity.SecretKeys(new byte[0], new byte[16], nonce(12, 0x00).bytesOrEmpty());
 
@@ -272,11 +273,88 @@ class SecureChannelStrategiesTest {
         ChannelSecurity.SecretKeys.isAeadExhausted(
             UInteger.MAX_VALUE - ChannelSecurity.AEAD_RENEWAL_MARGIN));
     assertTrue(ChannelSecurity.SecretKeys.isAeadExhausted(UInteger.MAX_VALUE));
+  }
 
-    ChannelSecurity.SecretKeys exhaustedKeys =
+  // Part 6 6.7.2.4 allows the non-legacy stream to reach UInt32.MaxValue, so reserving a nonce at
+  // MAX must succeed; rejecting it would refuse the encoder's own final pre-wrap chunk and any
+  // spec-conformant peer. createAeadNonce mirrors that on the decode side.
+  @Test
+  void aeadNonceStateAcceptsMaxSequenceNumber() throws UaException {
+    ChannelSecurity.SecretKeys keys =
         new ChannelSecurity.SecretKeys(new byte[0], new byte[16], nonce(12, 0x00).bytesOrEmpty());
-    assertThrows(
-        UaException.class, () -> exhaustedKeys.reserveAeadNonce(0x01020304L, UInteger.MAX_VALUE));
+
+    assertDoesNotThrow(() -> keys.reserveAeadNonce(0x01020304L, UInteger.MAX_VALUE));
+    assertDoesNotThrow(() -> keys.createAeadNonce(0x01020304L, UInteger.MAX_VALUE));
+  }
+
+  // A token installed before the renewal window started its nonce stream at a low
+  // LastSequenceNumber,
+  // so it cannot follow the MAX->0 wrap without reusing those low values; the encode side must
+  // reject
+  // that wrap and rely on renewal having installed a fresh token.
+  @Test
+  void aeadNonceStateRejectsWrapForTokenInstalledEarly() throws UaException {
+    ChannelSecurity.SecretKeys keys =
+        new ChannelSecurity.SecretKeys(new byte[0], new byte[16], nonce(12, 0x00).bytesOrEmpty());
+
+    // First value this token used is 0, so post-wrap value 0 would reuse it.
+    assertDoesNotThrow(() -> keys.reserveAeadNonce(0x01020304L, 0L));
+    keys.reserveAeadNonce(0x01020304L, UInteger.MAX_VALUE);
+
+    assertThrows(UaException.class, () -> keys.reserveAeadNonce(0x01020304L, 0L));
+  }
+
+  // A token installed inside the renewal window started its nonce stream at a high
+  // LastSequenceNumber,
+  // so the low post-wrap values are fresh for that token's IV base and the MAX->0 wrap is safe.
+  // This
+  // is what makes the early-renewal feature able to extend channel life across the wrap.
+  @Test
+  void aeadNonceStateAllowsSingleWrapForTokenInstalledInRenewalWindow() throws UaException {
+    ChannelSecurity.SecretKeys keys =
+        new ChannelSecurity.SecretKeys(new byte[0], new byte[16], nonce(12, 0x00).bytesOrEmpty());
+
+    long firstValue = UInteger.MAX_VALUE - 1L;
+
+    assertDoesNotThrow(() -> keys.reserveAeadNonce(0x01020304L, firstValue));
+    assertDoesNotThrow(() -> keys.reserveAeadNonce(0x01020304L, UInteger.MAX_VALUE));
+
+    // Post-wrap values below the token's first value are unique for this token.
+    assertDoesNotThrow(() -> keys.reserveAeadNonce(0x01020304L, 0L));
+    assertDoesNotThrow(() -> keys.reserveAeadNonce(0x01020304L, 1L));
+
+    // Reaching the token's first value again would reuse a nonce, so it is rejected.
+    assertThrows(UaException.class, () -> keys.reserveAeadNonce(0x01020304L, firstValue));
+  }
+
+  // The encode and decode sides must agree on the nonce for every chunk, including across the
+  // MAX->0 wrap that Part 6 6.7.2.4 permits. A peer (decode side) that only reconstructs the
+  // predicted nonce must accept exactly what the local encode side reserves, so a token that renews
+  // before the wrap keeps producing verifiable chunks instead of either side rejecting the
+  // boundary.
+  @Test
+  void aeadEncoderAndDecoderAgreeOnNonceAcrossMaxToZeroWrap() throws UaException {
+    long tokenId = 0x01020304L;
+    byte[] baseIv = nonce(12, 0x10).bytesOrEmpty();
+
+    ChannelSecurity.SecretKeys encryptKeys =
+        new ChannelSecurity.SecretKeys(new byte[0], new byte[16], baseIv);
+    ChannelSecurity.SecretKeys decryptKeys =
+        new ChannelSecurity.SecretKeys(new byte[0], new byte[16], baseIv);
+
+    // A token installed inside the renewal window: first value MAX-2, then through the wrap.
+    long[] stream = {UInteger.MAX_VALUE - 2L, UInteger.MAX_VALUE - 1L, UInteger.MAX_VALUE, 0L, 1L};
+
+    for (long lastSequenceNumber : stream) {
+      byte[] reserved = encryptKeys.reserveAeadNonce(tokenId, lastSequenceNumber);
+      byte[] predicted = decryptKeys.createAeadNonce(tokenId, lastSequenceNumber);
+
+      assertArrayEquals(
+          reserved,
+          predicted,
+          "decode-side nonce must match encode-side nonce at lastSequenceNumber="
+              + lastSequenceNumber);
+    }
   }
 
   // The client transport uses this signal to start SecureChannel renewal while there is still an
@@ -293,6 +371,32 @@ class SecureChannelStrategiesTest {
 
     setNonLegacyLastSequenceNumber(encoder, ChannelSecurity.AEAD_RENEWAL_SEQUENCE_NUMBER - 1L);
     assertTrue(encoder.isSecureChannelRenewalRequired(channel));
+  }
+
+  // The renewal signal must clear once a renewal installs a fresh token inside the renewal window.
+  // Otherwise the never-reset stream counter keeps it latched true and the client sends an OPN
+  // Renew
+  // for every remaining chunk - a renew-per-RTT storm for the last ~1024 chunks before the wrap.
+  @Test
+  void aeadRenewalSignalClearsAfterTokenInstalledInRenewalWindow() throws Exception {
+    ChunkEncoder encoder =
+        new ChunkEncoder(new ChannelParameters(8192, 8192, 8192, 0, 8192, 8192, 8192, 0));
+    ServerSecureChannel channel = new ServerSecureChannel();
+    channel.setSecurityPolicy(SecurityPolicy.ECC_nistP256_AesGcm);
+
+    // Token installed at stream position 0 (before the window): the signal trips inside the window.
+    setNonLegacyLastSequenceNumber(encoder, ChannelSecurity.AEAD_RENEWAL_SEQUENCE_NUMBER);
+    assertTrue(encoder.isSecureChannelRenewalRequired(channel));
+
+    // A renewal installs a fresh token whose first chunk is inside the window; the signal clears so
+    // no further renewals are triggered while this token carries the stream across the wrap.
+    setNonLegacyTokenInstallSequenceNumber(
+        encoder, ChannelSecurity.AEAD_RENEWAL_SEQUENCE_NUMBER + 1L);
+    assertFalse(encoder.isSecureChannelRenewalRequired(channel));
+
+    // Advancing further toward the wrap does not re-trip it for this freshly installed token.
+    setNonLegacyLastSequenceNumber(encoder, UInteger.MAX_VALUE - 1L);
+    assertFalse(encoder.isSecureChannelRenewalRequired(channel));
   }
 
   // SecureChannelEnhancements sign the first OpenSecureChannel response over its own bytes plus the
@@ -470,6 +574,17 @@ class SecureChannelStrategiesTest {
     Field field = ChunkEncoder.class.getDeclaredField("nonLegacyLastSequenceNumber");
     field.setAccessible(true);
     field.setLong(encoder, lastSequenceNumber);
+  }
+
+  private static void setNonLegacyTokenInstallSequenceNumber(
+      ChunkEncoder encoder, long installSequenceNumber) throws Exception {
+
+    // Simulate a renewal having installed a fresh token at the given stream position, which the
+    // encoder normally records when it sees a new token id while encoding a chunk's security
+    // header.
+    Field field = ChunkEncoder.class.getDeclaredField("nonLegacyTokenInstallSequenceNumber");
+    field.setAccessible(true);
+    field.setLong(encoder, installSequenceNumber);
   }
 
   private record EphemeralExchange(

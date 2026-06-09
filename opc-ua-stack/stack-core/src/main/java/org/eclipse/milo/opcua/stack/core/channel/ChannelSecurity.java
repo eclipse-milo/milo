@@ -403,11 +403,24 @@ public class ChannelSecurity {
    * {@code LastSequenceNumber}. The encryption side reserves nonces monotonically so a channel
    * cannot reuse a key/nonce pair; the decryption side only recreates the predicted nonce because
    * tag verification must succeed before the encrypted SequenceHeader can be trusted.
+   *
+   * <p>Part 6 6.7.2.4 lets the non-legacy {@code SequenceNumber} reach {@code UInt32.MaxValue} and
+   * then wrap to a value below 1024, so a token may legitimately span that wrap. Because every
+   * token derives a fresh IV base, nonce uniqueness only has to hold for the lifetime of a single
+   * token. The encode side therefore enforces uniqueness per token: it accepts the strictly
+   * increasing stream up to {@code UInt32.MaxValue} and allows a single wrap as long as the wrapped
+   * values stay below the first {@code LastSequenceNumber} this token used. A token installed
+   * before the renewal window (one whose first value is at or below the post-wrap values it would
+   * reuse) is not allowed to wrap, which is the condition the early-renewal signal exists to avoid.
+   * The decode side only reconstructs the predicted nonce, so it accepts any value the wire allows
+   * and leaves uniqueness enforcement to the peer that produced the chunk.
    */
   private static final class AeadNonceState {
 
     private long tokenId = -1L;
+    private long firstLastSequenceNumber = -1L;
     private long highestLastSequenceNumber = -1L;
+    private boolean wrapped = false;
 
     synchronized byte[] reserve(byte[] baseIv, long tokenId, long lastSequenceNumber)
         throws UaException {
@@ -416,21 +429,48 @@ public class ChannelSecurity {
 
       if (this.tokenId != tokenId) {
         this.tokenId = tokenId;
+        firstLastSequenceNumber = lastSequenceNumber;
         highestLastSequenceNumber = -1L;
+        wrapped = false;
       }
 
-      if (lastSequenceNumber <= highestLastSequenceNumber) {
-        throw new UaException(
-            StatusCodes.Bad_SecurityChecksFailed,
-            "AEAD nonce reuse rejected for tokenId="
-                + tokenId
-                + ", lastSequenceNumber="
-                + lastSequenceNumber);
+      if (!wrapped) {
+        if (lastSequenceNumber > highestLastSequenceNumber) {
+          // Normal monotonic advance within the pre-wrap segment.
+          highestLastSequenceNumber = lastSequenceNumber;
+          return nonce;
+        }
+
+        if (highestLastSequenceNumber == UInteger.MAX_VALUE
+            && lastSequenceNumber < firstLastSequenceNumber) {
+          // The stream wrapped past UInt32.MaxValue. This token was installed late enough that the
+          // post-wrap values it is about to use were never used by this token before the wrap, so
+          // the (tokenId, LastSequenceNumber) nonce input stays unique for this token's IV base.
+          wrapped = true;
+          highestLastSequenceNumber = lastSequenceNumber;
+          return nonce;
+        }
+      } else if (lastSequenceNumber > highestLastSequenceNumber
+          && lastSequenceNumber < firstLastSequenceNumber) {
+        // Continue monotonically through the post-wrap segment, still below the first value used
+        // before the wrap.
+        highestLastSequenceNumber = lastSequenceNumber;
+        return nonce;
       }
 
-      highestLastSequenceNumber = lastSequenceNumber;
-
-      return nonce;
+      throw new UaException(
+          StatusCodes.Bad_SecurityChecksFailed,
+          "AEAD nonce reuse rejected for tokenId="
+              + tokenId
+              + ", lastSequenceNumber="
+              + lastSequenceNumber
+              + " (firstLastSequenceNumber="
+              + firstLastSequenceNumber
+              + ", highestLastSequenceNumber="
+              + highestLastSequenceNumber
+              + ", wrapped="
+              + wrapped
+              + "); renew the SecureChannel before the sequence stream wraps");
     }
 
     static byte[] createNonce(byte[] baseIv, long tokenId, long lastSequenceNumber)
@@ -460,17 +500,14 @@ public class ChannelSecurity {
             StatusCodes.Bad_SecurityChecksFailed, "invalid AEAD token id: " + tokenId);
       }
 
+      // UInt32.MaxValue is a valid LastSequenceNumber: Part 6 6.7.2.4 allows the non-legacy stream
+      // to reach it and then wrap. Rejecting it here would refuse spec-conformant peers and the
+      // local encode side's own final pre-wrap chunk. Per-token nonce uniqueness on the encode side
+      // is enforced separately in reserve().
       if (lastSequenceNumber < 0 || lastSequenceNumber > UInteger.MAX_VALUE) {
         throw new UaException(
             StatusCodes.Bad_SecurityChecksFailed,
             "invalid AEAD LastSequenceNumber: " + lastSequenceNumber);
-      }
-
-      if (SecretKeys.isAeadExhausted(lastSequenceNumber)) {
-        throw new UaException(
-            StatusCodes.Bad_SecurityChecksFailed,
-            "AEAD LastSequenceNumber would wrap before SecureChannel renewal: "
-                + lastSequenceNumber);
       }
     }
 

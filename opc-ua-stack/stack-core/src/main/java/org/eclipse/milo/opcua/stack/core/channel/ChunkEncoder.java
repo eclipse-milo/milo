@@ -75,6 +75,13 @@ public final class ChunkEncoder {
   private long nonLegacyNextSequenceNumber = 0L;
   private long nonLegacyLastSequenceNumber = -1L;
 
+  // The next sequence number at the moment the current AEAD token was installed. The renewal signal
+  // is measured relative to this position so that, once a renewal installs a fresh token, the
+  // signal
+  // clears instead of latching true and triggering an OPN Renew for every subsequent chunk.
+  private long nonLegacyTokenInstallSequenceNumber = 0L;
+  private long currentNonLegacyTokenId = -1L;
+
   private final ChannelParameters parameters;
 
   public ChunkEncoder(ChannelParameters parameters) {
@@ -162,6 +169,13 @@ public final class ChunkEncoder {
    * SecureChannel profiles, where nonce construction cannot safely continue once the non-legacy
    * sequence stream approaches {@code UInt32.MaxValue}.
    *
+   * <p>The signal is measured relative to the current token: it trips once the stream enters the
+   * renewal window while the active token was installed before that window, and clears as soon as a
+   * renewal installs a fresh token inside the window. Without the token-relative comparison the
+   * never-reset stream counter would keep the signal latched true and trigger an OPN Renew for
+   * every remaining chunk, while the freshly installed token can safely carry the stream across the
+   * wrap.
+   *
    * @param channel the channel whose selected security profile determines whether AEAD renewal
    *     tracking applies.
    * @return true when the client should start token renewal before sending more chunks.
@@ -169,12 +183,33 @@ public final class ChunkEncoder {
   public boolean isSecureChannelRenewalRequired(SecureChannel channel) {
     return channel.getSecurityPolicyProfile().secureChannelEnhancements()
         && SecureChannelStrategies.chunkProtection(channel.getSecurityPolicyProfile()).isAead()
-        && lastNonLegacySequenceNumberForRenewal()
-            >= ChannelSecurity.AEAD_RENEWAL_SEQUENCE_NUMBER - 1L;
+        && isNonLegacyRenewalWindowReachedForCurrentToken();
+  }
+
+  private synchronized boolean isNonLegacyRenewalWindowReachedForCurrentToken() {
+    long renewalTrip = ChannelSecurity.AEAD_RENEWAL_SEQUENCE_NUMBER - 1L;
+
+    return lastNonLegacySequenceNumberForRenewal() >= renewalTrip
+        && nonLegacyTokenInstallSequenceNumber < renewalTrip;
   }
 
   private synchronized long lastNonLegacySequenceNumberForRenewal() {
     return nonLegacyLastSequenceNumber == -1L ? 0L : nonLegacyLastSequenceNumber;
+  }
+
+  /**
+   * Records the AEAD token id carried by the chunk being encoded so the renewal signal can be
+   * measured relative to the stream position where the current token was installed.
+   *
+   * <p>Called from the symmetric encoder while writing each chunk's security header. The first
+   * observation of a new token id captures the next sequence number as the token's install
+   * position.
+   */
+  private synchronized void noteNonLegacyToken(long tokenId) {
+    if (tokenId != currentNonLegacyTokenId) {
+      currentNonLegacyTokenId = tokenId;
+      nonLegacyTokenInstallSequenceNumber = nonLegacyNextSequenceNumber;
+    }
   }
 
   /*
@@ -593,9 +628,11 @@ public final class ChunkEncoder {
 
       securityKeys = channelSecurity != null ? channelSecurity.getCurrentKeys() : null;
 
-      if (cipherId != currentTokenId
-          && channel.isSymmetricEncryptionEnabled()
-          && !chunkProtection(channel).isAead()) {
+      if (chunkProtection(channel).isAead()) {
+        // Track where each AEAD token was installed in the non-legacy stream so the renewal signal
+        // un-latches after a renewal instead of firing for every remaining chunk.
+        noteNonLegacyToken(currentTokenId);
+      } else if (cipherId != currentTokenId && channel.isSymmetricEncryptionEnabled()) {
         cipher = initCipher(channel);
         cipherId = currentTokenId;
       }
