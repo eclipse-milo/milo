@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
@@ -17,10 +18,12 @@ import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
+import org.eclipse.milo.opcua.stack.core.security.EccEncryptedSecret;
 import org.eclipse.milo.opcua.stack.core.security.EccUserTokenAdditionalHeader;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
@@ -30,6 +33,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
+import org.eclipse.milo.opcua.stack.core.types.structured.ActivateSessionResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.CreateSessionResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
@@ -402,6 +406,123 @@ class SessionEndpointValidationTest {
     assertEquals(StatusCodes.Bad_SecurityChecksFailed, exception.getStatusCode().getValue());
   }
 
+  // Part 6 6.8.2 makes the receiver EphemeralKey single-use: each ActivateSession response carries
+  // a
+  // fresh signed key the client must adopt for the next activation. A key signed by the endpoint
+  // certificate must verify and yield its public key so reactivation uses the most recent key.
+  @Test
+  void verifyActivateSessionEccUserTokenKeyAdoptsRotatedKey() throws Exception {
+    SecurityPolicy tokenPolicy = SecurityPolicy.ECC_nistP256_AesGcm;
+    KeyPair endpointKeyPair = SelfSignedCertificateGenerator.generateNistP256KeyPair();
+    X509Certificate endpointCertificate = eccCertificate("endpoint", endpointKeyPair);
+
+    EndpointDescription endpoint =
+        endpoint(
+            "urn:app",
+            "opc.tcp://a:4840",
+            ByteString.of(endpointCertificate.getEncoded()),
+            MessageSecurityMode.SignAndEncrypt,
+            tokenPolicy.getUri(),
+            new UserTokenPolicy[] {
+              new UserTokenPolicy(
+                  "username", UserTokenType.UserName, null, null, tokenPolicy.getUri())
+            },
+            TRANSPORT_OPC_TCP,
+            (short) 1);
+
+    KeyPair rotatedEphemeralKeyPair =
+        EccEncryptedSecret.generateEphemeralKeyPair(tokenPolicy.getProfile());
+    EphemeralKeyType rotatedKey =
+        EccEncryptedSecret.createEphemeralKey(
+            tokenPolicy.getProfile(), endpointKeyPair, rotatedEphemeralKeyPair);
+    ExtensionObject additionalHeader =
+        EccUserTokenAdditionalHeader.createResponse(
+            DefaultEncodingContext.INSTANCE, tokenPolicy, rotatedKey);
+
+    ByteString adopted =
+        SessionFsmFactory.verifyActivateSessionEccUserTokenKey(
+                DefaultEncodingContext.INSTANCE,
+                endpoint,
+                activateSessionResponse(additionalHeader),
+                tokenPolicy)
+            .orElseThrow();
+
+    assertEquals(rotatedKey.getPublicKey(), adopted);
+  }
+
+  // When a server returns no fresh key, the client must keep the most recent key rather than fail;
+  // the helper signals this by returning empty so the caller falls back.
+  @Test
+  void verifyActivateSessionEccUserTokenKeyReturnsEmptyWhenNoKeyRotated() throws Exception {
+    SecurityPolicy tokenPolicy = SecurityPolicy.ECC_nistP256_AesGcm;
+    X509Certificate endpointCertificate =
+        eccCertificate("endpoint", SelfSignedCertificateGenerator.generateNistP256KeyPair());
+
+    EndpointDescription endpoint =
+        endpoint(
+            "urn:app",
+            "opc.tcp://a:4840",
+            ByteString.of(endpointCertificate.getEncoded()),
+            MessageSecurityMode.SignAndEncrypt,
+            tokenPolicy.getUri(),
+            new UserTokenPolicy[] {
+              new UserTokenPolicy(
+                  "username", UserTokenType.UserName, null, null, tokenPolicy.getUri())
+            },
+            TRANSPORT_OPC_TCP,
+            (short) 1);
+
+    assertTrue(
+        SessionFsmFactory.verifyActivateSessionEccUserTokenKey(
+                DefaultEncodingContext.INSTANCE,
+                endpoint,
+                activateSessionResponse(null),
+                tokenPolicy)
+            .isEmpty());
+  }
+
+  // A rotated key signed by some other certificate must be rejected, otherwise a man-in-the-middle
+  // could swap the receiver key the client encrypts the next password against.
+  @Test
+  void verifyActivateSessionEccUserTokenKeyRejectsForeignSigner() throws Exception {
+    SecurityPolicy tokenPolicy = SecurityPolicy.ECC_nistP256_AesGcm;
+    X509Certificate endpointCertificate =
+        eccCertificate("endpoint", SelfSignedCertificateGenerator.generateNistP256KeyPair());
+    KeyPair foreignKeyPair = SelfSignedCertificateGenerator.generateNistP256KeyPair();
+
+    EndpointDescription endpoint =
+        endpoint(
+            "urn:app",
+            "opc.tcp://a:4840",
+            ByteString.of(endpointCertificate.getEncoded()),
+            MessageSecurityMode.SignAndEncrypt,
+            tokenPolicy.getUri(),
+            new UserTokenPolicy[] {
+              new UserTokenPolicy(
+                  "username", UserTokenType.UserName, null, null, tokenPolicy.getUri())
+            },
+            TRANSPORT_OPC_TCP,
+            (short) 1);
+
+    KeyPair rotatedEphemeralKeyPair =
+        EccEncryptedSecret.generateEphemeralKeyPair(tokenPolicy.getProfile());
+    EphemeralKeyType foreignKey =
+        EccEncryptedSecret.createEphemeralKey(
+            tokenPolicy.getProfile(), foreignKeyPair, rotatedEphemeralKeyPair);
+    ExtensionObject additionalHeader =
+        EccUserTokenAdditionalHeader.createResponse(
+            DefaultEncodingContext.INSTANCE, tokenPolicy, foreignKey);
+
+    assertThrows(
+        UaException.class,
+        () ->
+            SessionFsmFactory.verifyActivateSessionEccUserTokenKey(
+                DefaultEncodingContext.INSTANCE,
+                endpoint,
+                activateSessionResponse(additionalHeader),
+                tokenPolicy));
+  }
+
   private static EndpointDescription endpoint(
       String applicationUri,
       String endpointUrl,
@@ -470,8 +591,21 @@ class SessionEndpointValidationTest {
         UInteger.MAX);
   }
 
+  private static ActivateSessionResponse activateSessionResponse(ExtensionObject additionalHeader) {
+    return new ActivateSessionResponse(
+        new ResponseHeader(
+            DateTime.now(), UInteger.valueOf(1), StatusCode.GOOD, null, null, additionalHeader),
+        ByteString.of(new byte[32]),
+        new StatusCode[0],
+        new DiagnosticInfo[0]);
+  }
+
   private static X509Certificate eccCertificate(String commonName) throws Exception {
-    KeyPair keyPair = SelfSignedCertificateGenerator.generateNistP256KeyPair();
+    return eccCertificate(commonName, SelfSignedCertificateGenerator.generateNistP256KeyPair());
+  }
+
+  private static X509Certificate eccCertificate(String commonName, KeyPair keyPair)
+      throws Exception {
 
     return SelfSignedCertificateBuilder.forEccApplicationCertificate(keyPair)
         .setCommonName(commonName)

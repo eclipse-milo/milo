@@ -1272,6 +1272,26 @@ public class SessionFsmFactory {
     return identityProvider.getCreateSessionAdditionalHeader(context, endpoint);
   }
 
+  /**
+   * Build the ActivateSession request AdditionalHeader requesting a fresh enhanced user-token key.
+   *
+   * <p>Part 6, 6.8.2 requires the receiver EphemeralKey to be single-use. The client repeats the
+   * negotiated {@code ECDHPolicyUri} on every ActivateSession so the server rotates the key and
+   * returns a fresh one in the response. Returns {@code null} for legacy/non-enhanced policies so
+   * those requests carry no AdditionalHeader.
+   */
+  private static ExtensionObject buildActivateSessionAdditionalHeader(
+      EncodingContext context, Optional<SecurityPolicy> userTokenSecurityPolicy) throws Exception {
+
+    if (userTokenSecurityPolicy.isEmpty()
+        || !EccUserTokenAdditionalHeader.isSupportedEccProfile(
+            userTokenSecurityPolicy.get().getProfile())) {
+      return null;
+    }
+
+    return EccUserTokenAdditionalHeader.createRequest(context, userTokenSecurityPolicy.get());
+  }
+
   private static RequestHeader withAdditionalHeader(
       RequestHeader requestHeader, ExtensionObject additionalHeader) {
 
@@ -1457,6 +1477,63 @@ public class SessionFsmFactory {
     return Optional.of(ephemeralKey.getPublicKey());
   }
 
+  /**
+   * Decode and verify a refreshed enhanced user-token ephemeral key from an ActivateSession
+   * response.
+   *
+   * <p>Part 6, 6.8.2 makes the receiver EphemeralKey single-use: each successful ActivateSession
+   * returns a fresh signed key that the client must use for the next activation. Unlike
+   * CreateSession, an ActivateSession response carries no server certificate, so the key signature
+   * is verified against the certificate advertised by the selected endpoint, which was already
+   * matched and trusted during CreateSession.
+   *
+   * @param encodingContext the client encoding context.
+   * @param endpoint the selected endpoint whose advertised certificate signed the key.
+   * @param response the ActivateSession response that may carry a refreshed key.
+   * @param userTokenSecurityPolicy the negotiated enhanced user-token policy, or {@code null}.
+   * @return the refreshed receiver public key, or empty when the server returned no fresh key.
+   * @throws Exception if the header is malformed or the key signature fails verification.
+   */
+  static Optional<ByteString> verifyActivateSessionEccUserTokenKey(
+      EncodingContext encodingContext,
+      EndpointDescription endpoint,
+      ActivateSessionResponse response,
+      SecurityPolicy userTokenSecurityPolicy)
+      throws Exception {
+
+    if (userTokenSecurityPolicy == null
+        || !EccUserTokenAdditionalHeader.isSupportedEccProfile(
+            userTokenSecurityPolicy.getProfile())) {
+      return Optional.empty();
+    }
+
+    Optional<EphemeralKeyType> ephemeralKey =
+        EccUserTokenAdditionalHeader.decodeResponse(
+            encodingContext,
+            response.getResponseHeader().getAdditionalHeader(),
+            userTokenSecurityPolicy);
+
+    if (ephemeralKey.isEmpty()) {
+      // The server did not rotate the key on this activation; the caller keeps the most recent key.
+      return Optional.empty();
+    }
+
+    ByteString endpointServerCertificate = endpoint.getServerCertificate();
+    if (endpointServerCertificate == null || endpointServerCertificate.isNullOrEmpty()) {
+      throw new UaException(
+          StatusCodes.Bad_ConfigurationError,
+          "enhanced user-token negotiation requires an advertised server certificate");
+    }
+
+    X509Certificate signingCertificate =
+        CertificateUtil.decodeCertificate(endpointServerCertificate.bytesOrEmpty());
+
+    EccEncryptedSecret.verifyEphemeralKey(
+        userTokenSecurityPolicy.getProfile(), signingCertificate, ephemeralKey.get());
+
+    return Optional.of(ephemeralKey.get().getPublicKey());
+  }
+
   private static IdentityProviderContext buildIdentityProviderContext(
       OpcUaClient client,
       EndpointDescription endpoint,
@@ -1535,7 +1612,10 @@ public class SessionFsmFactory {
 
       ActivateSessionRequest request =
           new ActivateSessionRequest(
-              client.newRequestHeader(csr.getAuthenticationToken()),
+              withAdditionalHeader(
+                  client.newRequestHeader(csr.getAuthenticationToken()),
+                  buildActivateSessionAdditionalHeader(
+                      client.getStaticEncodingContext(), userTokenSecurityPolicy)),
               buildClientSignature(client, csr.getServerCertificate(), csrNonce, clientNonce),
               new SignedSoftwareCertificate[0],
               client.getConfig().getSessionLocaleIds(),
@@ -1554,31 +1634,50 @@ public class SessionFsmFactory {
           .thenApply(ActivateSessionResponse.class::cast)
           .thenCompose(
               asr -> {
-                ByteString asrNonce = asr.getServerNonce();
+                try {
+                  ByteString asrNonce = asr.getServerNonce();
 
-                // TODO check for repeated nonce?
+                  // TODO check for repeated nonce?
 
-                OpcUaSession session =
-                    new OpcUaSession(
-                        csr.getAuthenticationToken(),
-                        csr.getSessionId(),
-                        client.getConfig().getSessionName().get(),
-                        csr.getRevisedSessionTimeout(),
-                        csr.getMaxRequestMessageSize(),
-                        csr.getServerCertificate(),
-                        csr.getServerSoftwareCertificates());
+                  OpcUaSession session =
+                      new OpcUaSession(
+                          csr.getAuthenticationToken(),
+                          csr.getSessionId(),
+                          client.getConfig().getSessionName().get(),
+                          csr.getRevisedSessionTimeout(),
+                          csr.getMaxRequestMessageSize(),
+                          csr.getServerCertificate(),
+                          csr.getServerSoftwareCertificates());
 
-                session.setLastActivateSessionServiceResult(
-                    asr.getResponseHeader().getServiceResult());
-                session.setClientNonce(clientNonce);
-                session.setServerNonce(asrNonce);
-                receiverEccPublicKey.ifPresent(session::setUserTokenReceiverEccPublicKey);
+                  session.setLastActivateSessionServiceResult(
+                      asr.getResponseHeader().getServiceResult());
+                  session.setClientNonce(clientNonce);
+                  session.setServerNonce(asrNonce);
 
-                return completedFuture(session);
+                  // Prefer the single-use key the server rotated in this response; fall back to the
+                  // CreateSession key when the server did not return a fresh one.
+                  Optional<ByteString> refreshedKey =
+                      verifyActivateSessionEccUserTokenKey(
+                          client.getStaticEncodingContext(),
+                          endpoint,
+                          asr,
+                          userTokenSecurityPolicy.orElse(null));
+                  refreshedKey
+                      .or(() -> receiverEccPublicKey)
+                      .ifPresent(session::setUserTokenReceiverEccPublicKey);
+
+                  return completedFuture(session);
+                } catch (Exception ex) {
+                  return SessionFsmFactory.<OpcUaSession>failedActivation(ex);
+                }
               });
     } catch (Exception ex) {
       return failedFuture(ex);
     }
+  }
+
+  private static <T> CompletableFuture<T> failedActivation(Throwable ex) {
+    return failedFuture(ex);
   }
 
   private static CompletableFuture<OpcUaSession> reactivateSession(
@@ -1611,7 +1710,10 @@ public class SessionFsmFactory {
 
       var request =
           new ActivateSessionRequest(
-              client.newRequestHeader(session.getAuthenticationToken()),
+              withAdditionalHeader(
+                  client.newRequestHeader(session.getAuthenticationToken()),
+                  buildActivateSessionAdditionalHeader(
+                      client.getStaticEncodingContext(), userTokenSecurityPolicy)),
               buildClientSignature(
                   client, session.getServerCertificate(), serverNonce, session.getClientNonce()),
               new SignedSoftwareCertificate[0],
@@ -1631,11 +1733,24 @@ public class SessionFsmFactory {
           .thenApply(ActivateSessionResponse.class::cast)
           .thenCompose(
               asr -> {
-                session.setLastActivateSessionServiceResult(
-                    asr.getResponseHeader().getServiceResult());
-                session.setServerNonce(asr.getServerNonce());
+                try {
+                  session.setLastActivateSessionServiceResult(
+                      asr.getResponseHeader().getServiceResult());
+                  session.setServerNonce(asr.getServerNonce());
 
-                return completedFuture(session);
+                  // Adopt the single-use key the server rotated for the next reactivation; keep the
+                  // existing key when the server returned no fresh one.
+                  verifyActivateSessionEccUserTokenKey(
+                          client.getStaticEncodingContext(),
+                          endpoint,
+                          asr,
+                          userTokenSecurityPolicy.orElse(null))
+                      .ifPresent(session::setUserTokenReceiverEccPublicKey);
+
+                  return completedFuture(session);
+                } catch (Exception ex) {
+                  return SessionFsmFactory.<OpcUaSession>failedActivation(ex);
+                }
               });
     } catch (Exception ex) {
       return failedFuture(ex);

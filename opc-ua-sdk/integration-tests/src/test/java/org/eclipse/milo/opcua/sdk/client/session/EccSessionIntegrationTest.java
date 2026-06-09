@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.sdk.client.session;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -20,6 +21,7 @@ import io.netty.channel.Channel;
 import java.net.ServerSocket;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -48,6 +50,7 @@ import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig;
 import org.eclipse.milo.opcua.sdk.server.identity.AnonymousIdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.CompositeValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.UsernameIdentityValidator;
+import org.eclipse.milo.opcua.sdk.test.DelegatingSessionServiceSet;
 import org.eclipse.milo.opcua.sdk.test.TestNamespace;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -57,6 +60,7 @@ import org.eclipse.milo.opcua.stack.core.security.CertificateGroup;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
+import org.eclipse.milo.opcua.stack.core.security.EccUserTokenAdditionalHeader;
 import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.security.TrustListManager;
@@ -67,11 +71,14 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
+import org.eclipse.milo.opcua.stack.core.types.structured.ActivateSessionRequest;
+import org.eclipse.milo.opcua.stack.core.types.structured.ActivateSessionResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransport;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransportConfigBuilder;
+import org.eclipse.milo.opcua.stack.transport.server.ServiceRequestContext;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransport;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransportConfig;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransportConfigBuilder;
@@ -251,7 +258,10 @@ class EccSessionIntegrationTest {
   }
 
   // Reconnection reactivates the existing Session on a new SecureChannel; the ActivateSession
-  // signature must be verified against the new channel thumbprint, not the stale channel.
+  // signature must be verified against the new channel thumbprint, not the stale channel. After the
+  // Part 6 6.8.2 single-use fix the reactivation also exercises EphemeralKey rotation: the client
+  // sends the negotiated ECDHPolicyUri again and adopts the fresh receiver key the server returns.
+  // The explicit rotation assertions live in rotatesUserTokenEphemeralKeyOnReactivation.
   @ParameterizedTest
   @MethodSource("currentEnhancedPolicies")
   void reactivatesUsernameSessionOnNewSecureChannel(
@@ -309,6 +319,95 @@ class EccSessionIntegrationTest {
       } finally {
         disconnectQuietly(client);
       }
+    }
+  }
+
+  // Part 6 6.8.2 requires the receiver EphemeralKey to be single-use: a successful ActivateSession
+  // must return a fresh key and the server must not reuse the consumed one. This drives a real
+  // username session through CreateSession + two ActivateSessions (reconnect forces the second) and
+  // asserts the server rotated the receiver key, proving both the request ECDHPolicyUri is honored
+  // and a new signed key is returned in the response.
+  @Test
+  void rotatesUserTokenEphemeralKeyOnReactivation() throws Exception {
+    SecurityPolicy securityPolicy = SecurityPolicy.ECC_nistP256_AesGcm;
+    NodeId certificateTypeId = NodeIds.EccNistP256ApplicationCertificateType;
+
+    List<ByteString> rotatedReceiverKeys = Collections.synchronizedList(new ArrayList<>());
+    CountDownLatch sessionActive = new CountDownLatch(2);
+
+    try (RunningServer running =
+        startSecureServer(
+            securityPolicy,
+            certificateTypeId,
+            MessageSecurityMode.SignAndEncrypt,
+            b -> {},
+            server -> registerEphemeralKeyCapture(server, securityPolicy, rotatedReceiverKeys))) {
+
+      CertificateManager clientCertificateManager =
+          certificateManager(certificate(certificateTypeId, "client", CLIENT_URI));
+      OpcUaClient client =
+          createClient(
+              running,
+              securityPolicy,
+              MessageSecurityMode.SignAndEncrypt,
+              new UsernameProvider(USERNAME, PASSWORD),
+              clientCertificateManager,
+              b -> {},
+              b -> {});
+      client.addSessionActivityListener(
+          new SessionActivityListener() {
+            @Override
+            public void onSessionActive(UaSession session) {
+              sessionActive.countDown();
+            }
+          });
+
+      try {
+        client.connect();
+        closeActiveTcpChannel(client);
+
+        assertTrue(
+            sessionActive.await(10, TimeUnit.SECONDS),
+            "session did not reactivate after channel drop");
+        readWriteTestNode(client, running.namespaceIndex());
+      } finally {
+        disconnectQuietly(client);
+      }
+    }
+
+    // At least the initial activation plus the reactivation should each have issued a key.
+    assertTrue(
+        rotatedReceiverKeys.size() >= 2,
+        "expected the server to return a fresh EphemeralKey on each activation");
+    assertNotEquals(
+        rotatedReceiverKeys.get(0),
+        rotatedReceiverKeys.get(1),
+        "server reused the receiver EphemeralKey across activations");
+  }
+
+  private static void registerEphemeralKeyCapture(
+      OpcUaServer server, SecurityPolicy tokenPolicy, List<ByteString> capturedKeys) {
+
+    var capturingServiceSet =
+        new DelegatingSessionServiceSet(server) {
+          @Override
+          public ActivateSessionResponse onActivateSession(
+              ServiceRequestContext context, ActivateSessionRequest request) throws UaException {
+
+            ActivateSessionResponse response = super.onActivateSession(context, request);
+
+            EccUserTokenAdditionalHeader.decodeResponse(
+                    server.getStaticEncodingContext(),
+                    response.getResponseHeader().getAdditionalHeader(),
+                    tokenPolicy)
+                .ifPresent(key -> capturedKeys.add(key.getPublicKey()));
+
+            return response;
+          }
+        };
+
+    for (EndpointConfig endpoint : server.getConfig().getEndpoints()) {
+      server.addServiceSet(endpoint.getPath(), capturingServiceSet);
     }
   }
 
@@ -525,6 +624,18 @@ class EccSessionIntegrationTest {
       java.util.function.Consumer<OpcTcpServerTransportConfigBuilder> configureTransport)
       throws Exception {
 
+    return startSecureServer(
+        securityPolicy, certificateTypeId, securityMode, configureTransport, server -> {});
+  }
+
+  private static RunningServer startSecureServer(
+      SecurityPolicy securityPolicy,
+      NodeId certificateTypeId,
+      MessageSecurityMode securityMode,
+      java.util.function.Consumer<OpcTcpServerTransportConfigBuilder> configureTransport,
+      java.util.function.Consumer<OpcUaServer> configureServer)
+      throws Exception {
+
     int port = freePort();
     CertificateMaterial serverCertificate = certificate(certificateTypeId, "server", SERVER_URI);
     CertificateManager certificateManager = certificateManager(serverCertificate);
@@ -559,7 +670,7 @@ class EccSessionIntegrationTest {
     endpoints.add(secureEndpoint);
     endpoints.add(discoveryEndpoint);
 
-    return startServer(endpoints, certificateManager, configureTransport);
+    return startServer(endpoints, certificateManager, configureTransport, configureServer);
   }
 
   private static RunningServer startNoneEndpointWithoutCertificate(SecurityPolicy tokenPolicy)
@@ -589,6 +700,16 @@ class EccSessionIntegrationTest {
       Set<EndpointConfig> endpoints,
       CertificateManager certificateManager,
       java.util.function.Consumer<OpcTcpServerTransportConfigBuilder> configureTransport)
+      throws Exception {
+
+    return startServer(endpoints, certificateManager, configureTransport, server -> {});
+  }
+
+  private static RunningServer startServer(
+      Set<EndpointConfig> endpoints,
+      CertificateManager certificateManager,
+      java.util.function.Consumer<OpcTcpServerTransportConfigBuilder> configureTransport,
+      java.util.function.Consumer<OpcUaServer> configureServer)
       throws Exception {
 
     OpcUaServerConfig config =
@@ -624,6 +745,7 @@ class EccSessionIntegrationTest {
 
     TestNamespace namespace = new TestNamespace(server);
     namespace.startup();
+    configureServer.accept(server);
     server.startup().get();
 
     String endpointUrl =

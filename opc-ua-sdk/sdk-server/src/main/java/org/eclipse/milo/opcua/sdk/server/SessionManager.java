@@ -398,6 +398,60 @@ public class SessionManager {
 
     SecurityPolicy securityPolicy = requestedPolicy.get();
 
+    return issueUserTokenEphemeralKey(securityPolicy, securityConfiguration, session);
+  }
+
+  /**
+   * Rotate the session's enhanced user-token ephemeral key after a successful ActivateSession.
+   *
+   * <p>Part 6, 6.8.2 requires the receiver EphemeralKey to be single-use: once an ActivateSession
+   * consumes it, the server must reject the same key and hand the client a fresh one. The client
+   * requests the new key by repeating the {@code ECDHPolicyUri} in the ActivateSession request
+   * AdditionalHeader, and the server returns a new signed {@link EphemeralKeyType} in the response
+   * AdditionalHeader. Generating a new key pair here replaces the one just consumed, so any replay
+   * of the previous EphemeralKey fails the receiver-key match in {@link
+   * EccEncryptedSecret#decrypt}.
+   *
+   * @param request the ActivateSession request whose AdditionalHeader may request a fresh key.
+   * @param securityConfiguration the security configuration the session is (now) bound to.
+   * @param session the session being activated.
+   * @return the response AdditionalHeader carrying the fresh signed key, or {@code null} when no
+   *     enhanced user-token key was requested.
+   * @throws UaException if the requested policy is unavailable or key material cannot be created.
+   */
+  private @Nullable ExtensionObject activateSessionAdditionalHeader(
+      ActivateSessionRequest request, SecurityConfiguration securityConfiguration, Session session)
+      throws UaException {
+
+    Optional<SecurityPolicy> requestedPolicy =
+        EccUserTokenAdditionalHeader.decodeRequest(
+            server.getStaticEncodingContext(), request.getRequestHeader().getAdditionalHeader());
+
+    if (requestedPolicy.isEmpty()) {
+      return null;
+    }
+
+    return issueUserTokenEphemeralKey(requestedPolicy.get(), securityConfiguration, session);
+  }
+
+  /**
+   * Generate, store, and sign a fresh enhanced user-token ephemeral key for {@code session}.
+   *
+   * <p>Shared by CreateSession (initial issue) and ActivateSession (single-use rotation). Storing
+   * the new key pair on the session overwrites any previously issued one, which is what enforces
+   * the Part 6, 6.8.2 single-use property.
+   *
+   * @param securityPolicy the requested enhanced user-token security policy.
+   * @param securityConfiguration the security configuration used to select the signing key pair.
+   * @param session the session that owns the key material and whose endpoint advertises the policy.
+   * @return the encoded response AdditionalHeader carrying the signed {@link EphemeralKeyType}.
+   * @throws UaException if the policy is unavailable on the endpoint or key material cannot be
+   *     created.
+   */
+  private ExtensionObject issueUserTokenEphemeralKey(
+      SecurityPolicy securityPolicy, SecurityConfiguration securityConfiguration, Session session)
+      throws UaException {
+
     if (!EccUserTokenAdditionalHeader.hasUsernameTokenSecurityPolicy(
         session.getEndpoint(), securityPolicy)) {
       throw new UaException(
@@ -610,8 +664,14 @@ public class SessionManager {
           session.setLastNonce(serverNonce);
           session.setLocaleIds(request.getLocaleIds());
 
+          ExtensionObject additionalHeader =
+              activateSessionAdditionalHeader(request, securityConfiguration, session);
+
           return new ActivateSessionResponse(
-              createResponseHeader(request), serverNonce, results, new DiagnosticInfo[0]);
+              createResponseHeader(request, StatusCode.GOOD, additionalHeader),
+              serverNonce,
+              results,
+              new DiagnosticInfo[0]);
         } else {
           /*
            * Reactivation signatures are bound to the SecureChannel carrying this request. Verify
@@ -660,8 +720,14 @@ public class SessionManager {
             session.setLastNonce(serverNonce);
             session.setLocaleIds(request.getLocaleIds());
 
+            ExtensionObject additionalHeader =
+                activateSessionAdditionalHeader(request, newSecurityConfiguration, session);
+
             return new ActivateSessionResponse(
-                createResponseHeader(request), serverNonce, results, new DiagnosticInfo[0]);
+                createResponseHeader(request, StatusCode.GOOD, additionalHeader),
+                serverNonce,
+                results,
+                new DiagnosticInfo[0]);
           } else {
             throw new UaException(StatusCodes.Bad_SecurityChecksFailed);
           }
@@ -695,8 +761,14 @@ public class SessionManager {
       session.setLocaleIds(request.getLocaleIds());
       session.setLastNonce(serverNonce);
 
+      ExtensionObject additionalHeader =
+          activateSessionAdditionalHeader(request, session.getSecurityConfiguration(), session);
+
       return new ActivateSessionResponse(
-          createResponseHeader(request), serverNonce, results, new DiagnosticInfo[0]);
+          createResponseHeader(request, StatusCode.GOOD, additionalHeader),
+          serverNonce,
+          results,
+          new DiagnosticInfo[0]);
     }
   }
 
