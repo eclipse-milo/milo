@@ -302,10 +302,10 @@ class SessionEndpointValidationTest {
             new UsernameProvider("user", "password"), DefaultEncodingContext.INSTANCE, endpoint);
 
     assertEquals(
-        SecurityPolicy.ECC_nistP256_AesGcm,
+        new EccUserTokenAdditionalHeader.NegotiationRequest.Supported(
+            SecurityPolicy.ECC_nistP256_AesGcm),
         EccUserTokenAdditionalHeader.decodeRequest(
-                DefaultEncodingContext.INSTANCE, additionalHeader)
-            .orElseThrow());
+            DefaultEncodingContext.INSTANCE, additionalHeader));
   }
 
   // Anonymous auth on an enhanced endpoint must not trigger username-token key negotiation.

@@ -12,15 +12,15 @@ package org.eclipse.milo.opcua.stack.core.security;
 
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
@@ -58,10 +58,9 @@ class EccUserTokenAdditionalHeaderTest {
         EccUserTokenAdditionalHeader.createRequest(DefaultEncodingContext.INSTANCE, securityPolicy);
 
     assertEquals(
-        securityPolicy,
+        new EccUserTokenAdditionalHeader.NegotiationRequest.Supported(securityPolicy),
         EccUserTokenAdditionalHeader.decodeRequest(
-                DefaultEncodingContext.INSTANCE, additionalHeader)
-            .orElseThrow());
+            DefaultEncodingContext.INSTANCE, additionalHeader));
   }
 
   // The server's response must carry the signed session key in the generated UA structure.
@@ -144,23 +143,104 @@ class EccUserTokenAdditionalHeaderTest {
     assertEquals(StatusCodes.Bad_SecurityPolicyRejected, exception.getStatusCode().getValue());
   }
 
-  // Anonymous and unenhanced username-token paths do not negotiate ephemeral key material, so a
-  // missing header must be distinguishable from a malformed one.
+  // The server reports an unavailable user-token policy by succeeding and putting a StatusCode
+  // under
+  // ECDHKey; the round trip must match what the client's response decoder already accepts.
   @Test
-  void nullAdditionalHeaderDecodesAsEmpty() throws Exception {
-    assertTrue(
-        EccUserTokenAdditionalHeader.decodeRequest(DefaultEncodingContext.INSTANCE, null)
-            .isEmpty());
+  void createResponseStatusCodeRoundTripsThroughDecodeResponse() throws Exception {
+    ExtensionObject additionalHeader =
+        EccUserTokenAdditionalHeader.createResponse(
+            DefaultEncodingContext.INSTANCE,
+            new StatusCode(StatusCodes.Bad_SecurityPolicyRejected));
+
+    UaException exception =
+        assertThrows(
+            UaException.class,
+            () ->
+                EccUserTokenAdditionalHeader.decodeResponse(
+                    DefaultEncodingContext.INSTANCE,
+                    additionalHeader,
+                    SecurityPolicy.ECC_nistP256_AesGcm));
+
+    assertEquals(StatusCodes.Bad_SecurityPolicyRejected, exception.getStatusCode().getValue());
   }
 
-  // Malformed AdditionalParametersType payloads must fail before ActivateSession encrypts or
-  // validates a username secret against an ambiguous receiver key.
+  // Anonymous and unenhanced username-token paths do not negotiate ephemeral key material, so a
+  // missing header must be reported as "no negotiation requested" rather than failing.
   @Test
-  void malformedAdditionalHeaderFailsWithDecodingError() {
+  void nullAdditionalHeaderDecodesAsNone() throws Exception {
+    assertInstanceOf(
+        EccUserTokenAdditionalHeader.NegotiationRequest.None.class,
+        EccUserTokenAdditionalHeader.decodeRequest(DefaultEncodingContext.INSTANCE, null));
+  }
+
+  // Part 4 requires servers to IGNORE additional headers they do not recognize. A vendor or future
+  // header carries an unknown type id that does not decode; failing it would regress even pure
+  // legacy RSA clients that attach such a header to CreateSession.
+  @Test
+  void unknownTypeIdAdditionalHeaderDecodesAsNone() throws Exception {
     ExtensionObject additionalHeader =
-        ExtensionObject.of(
-            ByteString.of(new byte[] {0x01}),
-            NodeIds.AdditionalParametersType_Encoding_DefaultBinary);
+        ExtensionObject.of(ByteString.of(new byte[] {0x01}), new NodeId(0, 999_999));
+
+    assertInstanceOf(
+        EccUserTokenAdditionalHeader.NegotiationRequest.None.class,
+        EccUserTokenAdditionalHeader.decodeRequest(
+            DefaultEncodingContext.INSTANCE, additionalHeader));
+  }
+
+  // A header that decodes to some other structure is still not a negotiation request and must be
+  // ignored rather than faulted.
+  @Test
+  void nonAdditionalParametersTypeAdditionalHeaderDecodesAsNone() throws Exception {
+    ExtensionObject additionalHeader =
+        ExtensionObject.encode(
+            DefaultEncodingContext.INSTANCE,
+            new EphemeralKeyType(
+                ByteString.of(new byte[] {0x01}), ByteString.of(new byte[] {0x02})));
+
+    assertInstanceOf(
+        EccUserTokenAdditionalHeader.NegotiationRequest.None.class,
+        EccUserTokenAdditionalHeader.decodeRequest(
+            DefaultEncodingContext.INSTANCE, additionalHeader));
+  }
+
+  // Part 6, 6.8.2 (Table 70): an unknown/non-enhanced ECDHPolicyUri is not a hard fault. The
+  // service succeeds and the caller reports Bad_SecurityPolicyRejected in-parameter, so foreign
+  // clients using the deprecated suffix-less 1.05 ECC URIs can fall back gracefully.
+  @Test
+  void unknownPolicyUriDecodesAsUnsupported() throws Exception {
+    String suffixlessEccUri = "http://opcfoundation.org/UA/SecurityPolicy#ECC_nistP256";
+
+    ExtensionObject additionalHeader =
+        ExtensionObject.encode(
+            DefaultEncodingContext.INSTANCE,
+            new AdditionalParametersType(
+                new KeyValuePair[] {
+                  new KeyValuePair(
+                      new QualifiedName(0, EccEncryptedSecret.ECDH_POLICY_URI_PARAMETER),
+                      Variant.ofString(suffixlessEccUri))
+                }));
+
+    assertEquals(
+        new EccUserTokenAdditionalHeader.NegotiationRequest.Unsupported(suffixlessEccUri),
+        EccUserTokenAdditionalHeader.decodeRequest(
+            DefaultEncodingContext.INSTANCE, additionalHeader));
+  }
+
+  // A recognized AdditionalParametersType with a structurally invalid ECDHPolicyUri (not a String)
+  // is the one case that must still hard-fault, before ActivateSession encrypts or validates a
+  // username secret against an ambiguous receiver key.
+  @Test
+  void malformedPolicyUriParameterFailsWithDecodingError() {
+    ExtensionObject additionalHeader =
+        ExtensionObject.encode(
+            DefaultEncodingContext.INSTANCE,
+            new AdditionalParametersType(
+                new KeyValuePair[] {
+                  new KeyValuePair(
+                      new QualifiedName(0, EccEncryptedSecret.ECDH_POLICY_URI_PARAMETER),
+                      Variant.ofInt32(42))
+                }));
 
     UaException exception =
         assertThrows(

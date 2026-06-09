@@ -142,12 +142,11 @@ class UsernameProviderTest {
             tokenPolicies -> tokenPolicies.get(1));
 
     assertEquals(
-        SecurityPolicy.ECC_curve25519_ChaChaPoly,
+        new EccUserTokenAdditionalHeader.NegotiationRequest.Supported(
+            SecurityPolicy.ECC_curve25519_ChaChaPoly),
         EccUserTokenAdditionalHeader.decodeRequest(
-                DefaultEncodingContext.INSTANCE,
-                provider.getCreateSessionAdditionalHeader(
-                    DefaultEncodingContext.INSTANCE, endpoint))
-            .orElseThrow());
+            DefaultEncodingContext.INSTANCE,
+            provider.getCreateSessionAdditionalHeader(DefaultEncodingContext.INSTANCE, endpoint)));
   }
 
   // Certificate-token auth does not need the username-secret enhanced negotiation header.
@@ -190,12 +189,11 @@ class UsernameProviderTest {
             new UsernameProvider("user", "password"));
 
     assertEquals(
-        SecurityPolicy.ECC_nistP256_AesGcm,
+        new EccUserTokenAdditionalHeader.NegotiationRequest.Supported(
+            SecurityPolicy.ECC_nistP256_AesGcm),
         EccUserTokenAdditionalHeader.decodeRequest(
-                DefaultEncodingContext.INSTANCE,
-                provider.getCreateSessionAdditionalHeader(
-                    DefaultEncodingContext.INSTANCE, endpoint))
-            .orElseThrow());
+            DefaultEncodingContext.INSTANCE,
+            provider.getCreateSessionAdditionalHeader(DefaultEncodingContext.INSTANCE, endpoint)));
   }
 
   private static EndpointDescription endpoint(

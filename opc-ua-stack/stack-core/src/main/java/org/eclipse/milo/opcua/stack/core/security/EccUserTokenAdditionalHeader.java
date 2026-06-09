@@ -33,6 +33,8 @@ import org.eclipse.milo.opcua.stack.core.types.structured.EphemeralKeyType;
 import org.eclipse.milo.opcua.stack.core.types.structured.KeyValuePair;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Creates and decodes enhanced user-token additional-header negotiation parameters.
@@ -51,7 +53,35 @@ import org.jspecify.annotations.Nullable;
  */
 public final class EccUserTokenAdditionalHeader {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(EccUserTokenAdditionalHeader.class);
+
   private EccUserTokenAdditionalHeader() {}
+
+  /**
+   * The result of inspecting a CreateSession/ActivateSession request AdditionalHeader for an
+   * enhanced user-token key-negotiation request.
+   *
+   * <p>Part 4 requires servers to ignore additional headers they do not recognize, and Part 6,
+   * 6.8.2 (Table 70) requires EphemeralKey-creation errors to be reported as a {@link StatusCode}
+   * in the {@code ECDHKey} response parameter rather than as a service fault. This type lets the
+   * server distinguish "no negotiation requested" (ignore) from "an unavailable policy was
+   * requested" (succeed and return an in-parameter status code) without throwing.
+   */
+  public sealed interface NegotiationRequest {
+
+    /** No enhanced user-token negotiation was requested; the header should be ignored. */
+    record None() implements NegotiationRequest {}
+
+    /** A supported enhanced user-token policy was requested. */
+    record Supported(SecurityPolicy securityPolicy) implements NegotiationRequest {}
+
+    /**
+     * A user-token policy was requested by URI, but it is unknown or does not support enhanced
+     * negotiation. The server should still succeed and return {@code ECDHKey =
+     * StatusCode(Bad_SecurityPolicyRejected)}.
+     */
+    record Unsupported(String securityPolicyUri) implements NegotiationRequest {}
+  }
 
   /**
    * Return whether {@code endpoint} has a username token policy that needs enhanced user-token key
@@ -191,28 +221,38 @@ public final class EccUserTokenAdditionalHeader {
   }
 
   /**
-   * Decode the requested user-token security policy from a CreateSession request additional header.
+   * Decode the requested user-token key negotiation from a CreateSession/ActivateSession request
+   * additional header.
+   *
+   * <p>Per Part 4, an unrecognized additional header (one that is absent, undecodable, or not an
+   * {@link AdditionalParametersType}) is ignored and reported as {@link NegotiationRequest.None}; a
+   * server must not fail the request because a client attached a vendor or future header. A
+   * recognized {@code AdditionalParametersType} that names an unknown or non-enhanced policy in
+   * {@code ECDHPolicyUri} is reported as {@link NegotiationRequest.Unsupported} so the caller can
+   * succeed and return an in-parameter {@code ECDHKey} status code (Part 6, 6.8.2). Only a
+   * structurally malformed {@code AdditionalParametersType} payload throws.
    *
    * @param context an encoding context.
    * @param additionalHeader the request additional header.
-   * @return the requested policy, or empty when no header was supplied.
-   * @throws UaException if the header is malformed or requests an unsupported policy.
+   * @return the parsed negotiation request; never {@code null}.
+   * @throws UaException if the header decodes to an {@link AdditionalParametersType} whose payload
+   *     is malformed (for example, {@code ECDHPolicyUri} is not a String).
    */
-  public static Optional<SecurityPolicy> decodeRequest(
+  public static NegotiationRequest decodeRequest(
       EncodingContext context, @Nullable ExtensionObject additionalHeader) throws UaException {
 
     Optional<AdditionalParametersType> additionalParameters =
-        decodeAdditionalParameters(context, additionalHeader);
+        decodeRequestAdditionalParameters(context, additionalHeader);
 
     if (additionalParameters.isEmpty()) {
-      return Optional.empty();
+      return new NegotiationRequest.None();
     }
 
     Optional<Variant> policyUriValue =
         parameterValue(additionalParameters.get(), EccEncryptedSecret.ECDH_POLICY_URI_PARAMETER);
 
     if (policyUriValue.isEmpty()) {
-      return Optional.empty();
+      return new NegotiationRequest.None();
     }
 
     Object value = policyUriValue.get().getValue();
@@ -222,10 +262,12 @@ public final class EccUserTokenAdditionalHeader {
           EccEncryptedSecret.ECDH_POLICY_URI_PARAMETER + " must be a String");
     }
 
-    SecurityPolicy securityPolicy = SecurityPolicy.fromUri(securityPolicyUri);
-    requireEnhancedPolicy(securityPolicy);
+    Optional<SecurityPolicy> securityPolicy = SecurityPolicy.fromUriSafe(securityPolicyUri);
+    if (securityPolicy.isEmpty() || !isSupportedEccProfile(securityPolicy.get().getProfile())) {
+      return new NegotiationRequest.Unsupported(securityPolicyUri);
+    }
 
-    return Optional.of(securityPolicy);
+    return new NegotiationRequest.Supported(securityPolicy.get());
   }
 
   /**
@@ -255,6 +297,32 @@ public final class EccUserTokenAdditionalHeader {
             new KeyValuePair[] {
               parameter(
                   EccEncryptedSecret.ECDH_KEY_PARAMETER, Variant.ofExtensionObject(ephemeralKeyXo))
+            }));
+  }
+
+  /**
+   * Create a CreateSession/ActivateSession response additional header that reports an EphemeralKey
+   * creation failure as an {@code ECDHKey} status code.
+   *
+   * <p>Used when a client requested an unknown or non-enhanced user-token policy: the service still
+   * succeeds and carries the rejection in-parameter, as required by Part 6, 6.8.2 (Table 70).
+   *
+   * @param context an encoding context.
+   * @param statusCode the status code to report under {@code ECDHKey} (for example, {@code
+   *     Bad_SecurityPolicyRejected}).
+   * @return an encoded {@link AdditionalParametersType} extension object.
+   * @throws UaException if encoding fails.
+   */
+  public static ExtensionObject createResponse(EncodingContext context, StatusCode statusCode)
+      throws UaException {
+
+    requireNonNull(statusCode, "statusCode");
+
+    return encode(
+        context,
+        new AdditionalParametersType(
+            new KeyValuePair[] {
+              parameter(EccEncryptedSecret.ECDH_KEY_PARAMETER, Variant.ofStatusCode(statusCode))
             }));
   }
 
@@ -314,6 +382,37 @@ public final class EccUserTokenAdditionalHeader {
     throw new UaException(
         StatusCodes.Bad_DecodingError,
         EccEncryptedSecret.ECDH_KEY_PARAMETER + " must be an EphemeralKeyType");
+  }
+
+  /**
+   * Decode the request additional header tolerantly: an absent, undecodable, or non-{@link
+   * AdditionalParametersType} header is treated as "no negotiation requested" and ignored, so a
+   * server never fails a request because of a header it does not recognize.
+   */
+  private static Optional<AdditionalParametersType> decodeRequestAdditionalParameters(
+      EncodingContext context, @Nullable ExtensionObject additionalHeader) {
+
+    requireNonNull(context, "context");
+
+    if (additionalHeader == null || additionalHeader.isNull()) {
+      return Optional.empty();
+    }
+
+    try {
+      UaStructuredType decoded = additionalHeader.decode(context);
+
+      if (decoded instanceof AdditionalParametersType additionalParameters) {
+        return Optional.of(additionalParameters);
+      }
+
+      LOGGER.debug(
+          "ignoring unrecognized request AdditionalHeader of type {}",
+          decoded.getClass().getSimpleName());
+    } catch (RuntimeException e) {
+      LOGGER.debug("ignoring undecodable request AdditionalHeader", e);
+    }
+
+    return Optional.empty();
   }
 
   private static Optional<AdditionalParametersType> decodeAdditionalParameters(

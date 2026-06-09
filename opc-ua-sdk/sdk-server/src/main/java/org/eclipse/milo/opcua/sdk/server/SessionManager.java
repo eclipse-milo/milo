@@ -378,7 +378,7 @@ public class SessionManager {
         uint(maxRequestMessageSize));
   }
 
-  private ExtensionObject createSessionAdditionalHeader(
+  private @Nullable ExtensionObject createSessionAdditionalHeader(
       CreateSessionRequest request, SecurityConfiguration securityConfiguration, Session session)
       throws UaException {
 
@@ -388,17 +388,51 @@ public class SessionManager {
      * CreateSession RequestHeader AdditionalHeader, and the server answers with a signed
      * EphemeralKeyType in the response AdditionalHeader.
      */
-    Optional<SecurityPolicy> requestedPolicy =
-        EccUserTokenAdditionalHeader.decodeRequest(
-            server.getStaticEncodingContext(), request.getRequestHeader().getAdditionalHeader());
+    return resolveUserTokenEphemeralKeyHeader(
+        request.getRequestHeader().getAdditionalHeader(), securityConfiguration, session);
+  }
 
-    if (requestedPolicy.isEmpty()) {
+  /**
+   * Resolve the response AdditionalHeader for an enhanced user-token key negotiation, honoring the
+   * Part 4 "ignore unrecognized header" and Part 6, 6.8.2 "report failures in-parameter" rules.
+   *
+   * <p>An unrecognized request header (absent, undecodable, or not an AdditionalParametersType)
+   * yields {@code null}, so the service proceeds with no additional header. A request for an
+   * unknown or non-enhanced policy URI succeeds and returns {@code ECDHKey =
+   * StatusCode(Bad_SecurityPolicyRejected)} rather than a service fault, matching the convention
+   * the Milo client already accepts.
+   *
+   * @param additionalHeader the request AdditionalHeader, if any.
+   * @param securityConfiguration the security configuration used to select the signing key pair.
+   * @param session the session that owns the negotiated key material.
+   * @return the response AdditionalHeader, or {@code null} when no negotiation was requested.
+   * @throws UaException if the header payload is malformed or key material cannot be created.
+   */
+  private @Nullable ExtensionObject resolveUserTokenEphemeralKeyHeader(
+      @Nullable ExtensionObject additionalHeader,
+      SecurityConfiguration securityConfiguration,
+      Session session)
+      throws UaException {
+
+    EccUserTokenAdditionalHeader.NegotiationRequest negotiationRequest =
+        EccUserTokenAdditionalHeader.decodeRequest(
+            server.getStaticEncodingContext(), additionalHeader);
+
+    if (negotiationRequest
+        instanceof EccUserTokenAdditionalHeader.NegotiationRequest.Supported supported) {
+      return issueUserTokenEphemeralKey(supported.securityPolicy(), securityConfiguration, session);
+    } else if (negotiationRequest
+        instanceof EccUserTokenAdditionalHeader.NegotiationRequest.Unsupported unsupported) {
+      logger.debug(
+          "rejecting enhanced user-token negotiation for unavailable policy: {}",
+          unsupported.securityPolicyUri());
+
+      return EccUserTokenAdditionalHeader.createResponse(
+          server.getStaticEncodingContext(),
+          new StatusCode(StatusCodes.Bad_SecurityPolicyRejected));
+    } else {
       return null;
     }
-
-    SecurityPolicy securityPolicy = requestedPolicy.get();
-
-    return issueUserTokenEphemeralKey(securityPolicy, securityConfiguration, session);
   }
 
   /**
@@ -412,26 +446,22 @@ public class SessionManager {
    * of the previous EphemeralKey fails the receiver-key match in {@link
    * EccEncryptedSecret#decrypt}.
    *
+   * <p>A request for an unknown or non-enhanced policy URI does not fail the activation; it returns
+   * an {@code ECDHKey} status code as described on {@link #resolveUserTokenEphemeralKeyHeader}.
+   *
    * @param request the ActivateSession request whose AdditionalHeader may request a fresh key.
    * @param securityConfiguration the security configuration the session is (now) bound to.
    * @param session the session being activated.
-   * @return the response AdditionalHeader carrying the fresh signed key, or {@code null} when no
-   *     enhanced user-token key was requested.
-   * @throws UaException if the requested policy is unavailable or key material cannot be created.
+   * @return the response AdditionalHeader carrying the fresh signed key, an in-parameter status
+   *     code, or {@code null} when no enhanced user-token key was requested.
+   * @throws UaException if the header payload is malformed or key material cannot be created.
    */
   private @Nullable ExtensionObject activateSessionAdditionalHeader(
       ActivateSessionRequest request, SecurityConfiguration securityConfiguration, Session session)
       throws UaException {
 
-    Optional<SecurityPolicy> requestedPolicy =
-        EccUserTokenAdditionalHeader.decodeRequest(
-            server.getStaticEncodingContext(), request.getRequestHeader().getAdditionalHeader());
-
-    if (requestedPolicy.isEmpty()) {
-      return null;
-    }
-
-    return issueUserTokenEphemeralKey(requestedPolicy.get(), securityConfiguration, session);
+    return resolveUserTokenEphemeralKeyHeader(
+        request.getRequestHeader().getAdditionalHeader(), securityConfiguration, session);
   }
 
   /**
