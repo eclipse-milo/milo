@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.stack.core.security;
 import java.security.cert.X509Certificate;
 import java.util.List;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.util.validation.ValidationCheck;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +44,10 @@ public interface CertificateValidator {
    *
    * <p>The default implementation preserves legacy validation behavior and then applies
    * certificate/profile compatibility when {@code securityPolicyProfile} is not {@code null}.
-   * Implementations that need profile-specific trust or usage checks should override this method.
+   * Because no {@link ValidationCheck} set is available at this layer, compatibility is applied
+   * with {@link ValidationCheck#NO_OPTIONAL_CHECKS}, which leaves the legacy end-entity KeyUsage
+   * check suppressible. Implementations that need profile-specific trust or usage checks, or that
+   * track an active {@link ValidationCheck} set, should override this method.
    *
    * @param certificateChain the certificate chain to validate.
    * @param applicationUri the applicationUri of the remote endpoint. Ignored if {@code null}.
@@ -62,7 +66,8 @@ public interface CertificateValidator {
     validateCertificateChain(certificateChain, applicationUri, validHostnames);
 
     if (securityPolicyProfile != null) {
-      CertificateCompatibility.checkCompatible(securityPolicyProfile, certificateChain.get(0));
+      CertificateCompatibility.checkCompatible(
+          securityPolicyProfile, certificateChain.get(0), ValidationCheck.NO_OPTIONAL_CHECKS);
     }
   }
 
@@ -78,6 +83,19 @@ public interface CertificateValidator {
       X509Certificate certificate = certificateChain.get(0);
 
       LOGGER.warn("Skipping validation for certificate: {}", certificate.getSubjectX500Principal());
+    }
+
+    @Override
+    public void validateCertificateChain(
+        List<X509Certificate> certificateChain,
+        @Nullable String applicationUri,
+        @Nullable String[] validHostnames,
+        @Nullable SecurityPolicyProfile securityPolicyProfile) {
+
+      // Skip validation entirely, including certificate/profile compatibility checks. The default
+      // 4-arg implementation would otherwise enforce CertificateCompatibility, which an insecure
+      // validator must not do.
+      validateCertificateChain(certificateChain, applicationUri, validHostnames);
     }
   }
 }

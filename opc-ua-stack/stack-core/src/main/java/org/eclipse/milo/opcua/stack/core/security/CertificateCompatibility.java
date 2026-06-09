@@ -24,12 +24,14 @@ import java.security.spec.ECGenParameterSpec;
 import java.security.spec.ECParameterSpec;
 import java.security.spec.NamedParameterSpec;
 import java.util.Objects;
+import java.util.Set;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.util.validation.CertificateValidationUtil;
+import org.eclipse.milo.opcua.stack.core.util.validation.ValidationCheck;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -111,6 +113,39 @@ public final class CertificateCompatibility {
 
     checkPublicKey(securityPolicyProfile.authAxis(), certificate.getPublicKey());
     CertificateValidationUtil.checkEndEntityKeyUsage(certificate, securityPolicyProfile);
+  }
+
+  /**
+   * Check whether a certificate can be used with {@code securityPolicyProfile}, honoring {@link
+   * ValidationCheck} suppression for the end-entity KeyUsage check.
+   *
+   * <p>The public-key family and curve checks are always enforced. The end-entity KeyUsage check is
+   * suppressible for legacy RSA-era profiles per {@link
+   * CertificateValidationUtil#checkEndEntityKeyUsage(X509Certificate, SecurityPolicyProfile, Set)};
+   * ECC and Edwards-curve profiles always enforce their policy-specific KeyUsage rules.
+   *
+   * @param securityPolicyProfile the profile the certificate will be used with.
+   * @param certificate the certificate to check.
+   * @param validationChecks the set of active {@link ValidationCheck}s.
+   * @throws UaException if the certificate is not compatible.
+   */
+  public static void checkCompatible(
+      SecurityPolicyProfile securityPolicyProfile,
+      X509Certificate certificate,
+      Set<ValidationCheck> validationChecks)
+      throws UaException {
+
+    requireNonNull(securityPolicyProfile, "securityPolicyProfile");
+    requireNonNull(certificate, "certificate");
+    requireNonNull(validationChecks, "validationChecks");
+
+    if (securityPolicyProfile.authAxis() == AuthAxis.NONE) {
+      return;
+    }
+
+    checkPublicKey(securityPolicyProfile.authAxis(), certificate.getPublicKey());
+    CertificateValidationUtil.checkEndEntityKeyUsage(
+        certificate, securityPolicyProfile, validationChecks);
   }
 
   /**

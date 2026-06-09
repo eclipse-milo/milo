@@ -109,7 +109,8 @@ public class DefaultClientCertificateValidator implements CertificateValidator {
           securityPolicyProfile);
 
       if (securityPolicyProfile != null) {
-        CertificateCompatibility.checkCompatible(securityPolicyProfile, certificateChain.get(0));
+        CertificateCompatibility.checkCompatible(
+            securityPolicyProfile, certificateChain.get(0), validationChecks);
       }
     } catch (UaException e) {
       LOGGER.debug("validateCertificateChain failed, underlying status: {}", e.getStatusCode(), e);

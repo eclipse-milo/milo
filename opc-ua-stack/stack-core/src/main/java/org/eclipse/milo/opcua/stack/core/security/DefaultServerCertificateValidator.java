@@ -124,7 +124,8 @@ public class DefaultServerCertificateValidator implements CertificateValidator {
           securityPolicyProfile);
 
       if (securityPolicyProfile != null) {
-        CertificateCompatibility.checkCompatible(securityPolicyProfile, certificateChain.get(0));
+        CertificateCompatibility.checkCompatible(
+            securityPolicyProfile, certificateChain.get(0), validationChecks);
       }
     } catch (UaException e) {
       long statusCode = e.getStatusCode().value();

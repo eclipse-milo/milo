@@ -555,6 +555,51 @@ public class CertificateValidationUtil {
     checkEndEntityKeyUsage(certificate, null);
   }
 
+  /**
+   * Check end-entity KeyUsage with {@link ValidationCheck} suppression applied.
+   *
+   * <p>ECC and Edwards-curve profiles always enforce their policy-specific KeyUsage rules. For
+   * legacy RSA-era profiles (and the {@code null} profile) the end-entity KeyUsage check is
+   * suppressible: {@link ValidationCheck#KEY_USAGE_END_ENTITY} is not part of {@link
+   * ValidationCheck#NO_OPTIONAL_CHECKS}, so a failure is suppressed unless that check is active or
+   * the KeyUsage extension is marked critical. This keeps legacy certificates that lack the
+   * KeyUsage extension, or omit {@code nonRepudiation}/{@code dataEncipherment}, from being
+   * rejected by default while still allowing strict enforcement to be opted into.
+   *
+   * @param certificate the end-entity certificate to check.
+   * @param securityPolicyProfile the policy profile the certificate will be used with, or {@code
+   *     null} for legacy RSA-era usage checks.
+   * @param validationChecks the set of active {@link ValidationCheck}s.
+   * @throws UaException if the KeyUsage check fails and is not suppressible.
+   */
+  public static void checkEndEntityKeyUsage(
+      X509Certificate certificate,
+      @Nullable SecurityPolicyProfile securityPolicyProfile,
+      Set<ValidationCheck> validationChecks)
+      throws UaException {
+
+    try {
+      checkEndEntityKeyUsage(certificate, securityPolicyProfile);
+    } catch (UaException e) {
+      // ECC/Edwards profiles always enforce their policy-specific KeyUsage rules.
+      if (isEccOrEdwardsApplicationProfile(securityPolicyProfile)) {
+        throw e;
+      }
+
+      Set<String> criticalExtensions = certificate.getCriticalExtensionOIDs();
+
+      if (validationChecks.contains(ValidationCheck.KEY_USAGE_END_ENTITY)
+          || (criticalExtensions != null && criticalExtensions.contains(KEY_USAGE_OID))) {
+
+        throw e;
+      }
+
+      LOGGER.warn(
+          "check suppressed: certificate failed end-entity KeyUsage check: {}",
+          certificate.getSubjectX500Principal().getName());
+    }
+  }
+
   public static void checkEndEntityKeyUsage(
       X509Certificate certificate, @Nullable SecurityPolicyProfile securityPolicyProfile)
       throws UaException {
