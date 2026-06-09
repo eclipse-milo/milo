@@ -288,10 +288,8 @@ class SecureChannelStrategiesTest {
   }
 
   // A token installed before the renewal window started its nonce stream at a low
-  // LastSequenceNumber,
-  // so it cannot follow the MAX->0 wrap without reusing those low values; the encode side must
-  // reject
-  // that wrap and rely on renewal having installed a fresh token.
+  // LastSequenceNumber, so it cannot follow the MAX->0 wrap without reusing those low values; the
+  // encode side must reject that wrap and rely on renewal having installed a fresh token.
   @Test
   void aeadNonceStateRejectsWrapForTokenInstalledEarly() throws UaException {
     ChannelSecurity.SecretKeys keys =
@@ -305,10 +303,9 @@ class SecureChannelStrategiesTest {
   }
 
   // A token installed inside the renewal window started its nonce stream at a high
-  // LastSequenceNumber,
-  // so the low post-wrap values are fresh for that token's IV base and the MAX->0 wrap is safe.
-  // This
-  // is what makes the early-renewal feature able to extend channel life across the wrap.
+  // LastSequenceNumber, so the low post-wrap values are fresh for that token's IV base, and the
+  // MAX->0 wrap is safe. This is what makes the early-renewal feature able to extend channel life
+  // across the wrap.
   @Test
   void aeadNonceStateAllowsSingleWrapForTokenInstalledInRenewalWindow() throws UaException {
     ChannelSecurity.SecretKeys keys =
@@ -374,9 +371,9 @@ class SecureChannelStrategiesTest {
   }
 
   // The renewal signal must clear once a renewal installs a fresh token inside the renewal window.
-  // Otherwise the never-reset stream counter keeps it latched true and the client sends an OPN
-  // Renew
-  // for every remaining chunk - a renew-per-RTT storm for the last ~1024 chunks before the wrap.
+  // Otherwise the never-reset stream counter keeps it latched true, and the client sends an OPN
+  // Renew for every remaining chunk - a renew-per-RTT storm for the last ~1024 chunks before the
+  // wrap.
   @Test
   void aeadRenewalSignalClearsAfterTokenInstalledInRenewalWindow() throws Exception {
     ChunkEncoder encoder =

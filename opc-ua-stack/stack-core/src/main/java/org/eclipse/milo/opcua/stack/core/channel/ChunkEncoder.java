@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -77,8 +77,7 @@ public final class ChunkEncoder {
 
   // The next sequence number at the moment the current AEAD token was installed. The renewal signal
   // is measured relative to this position so that, once a renewal installs a fresh token, the
-  // signal
-  // clears instead of latching true and triggering an OPN Renew for every subsequent chunk.
+  // signal clears instead of latching true and triggering an OPN Renew for every subsequent chunk.
   private long nonLegacyTokenInstallSequenceNumber = 0L;
   private long currentNonLegacyTokenId = -1L;
 
