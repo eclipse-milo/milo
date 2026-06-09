@@ -12,9 +12,13 @@ package org.eclipse.milo.opcua.stack.core.util.validation;
 
 import com.google.common.base.Preconditions;
 import java.io.IOException;
+import java.security.AlgorithmParameters;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.Provider;
 import java.security.PublicKey;
+import java.security.Security;
 import java.security.SignatureException;
 import java.security.cert.CertPath;
 import java.security.cert.CertPathBuilder;
@@ -35,6 +39,9 @@ import java.security.cert.TrustAnchor;
 import java.security.cert.X509CRL;
 import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.ECPublicKey;
+import java.security.spec.ECGenParameterSpec;
+import java.security.spec.ECParameterSpec;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -49,6 +56,7 @@ import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.asn1.x509.GeneralName;
 import org.bouncycastle.asn1.x509.GeneralNames;
 import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
@@ -69,6 +77,14 @@ public class CertificateValidationUtil {
   private static final int SUBJECT_ALT_NAME_URI = 6;
   private static final int SUBJECT_ALT_NAME_DNS_NAME = 2;
   private static final int SUBJECT_ALT_NAME_IP_ADDRESS = 7;
+
+  private static final String BC_PROVIDER_NAME = "BC";
+
+  // Brainpool curves are not verifiable by the JDK's default JCA providers (SunEC parses the SPKI
+  // but throws "Curve not supported" at signature time). When a certificate in the picture uses one
+  // of these curves, signature verification is routed to Bouncy Castle.
+  private static final ECParameterSpec BRAINPOOL_P256R1 = brainpoolParameterSpec("brainpoolP256r1");
+  private static final ECParameterSpec BRAINPOOL_P384R1 = brainpoolParameterSpec("brainpoolP384r1");
 
   /**
    * Given a possibly partial certificate chain with at least one certificate in it, builds a path
@@ -229,6 +245,16 @@ public class CertificateValidationUtil {
         CertPathValidator certPathValidator = CertPathValidator.getInstance("PKIX", "SUN");
 
         PKIXParameters parameters = new PKIXParameters(Set.of(trustAnchor));
+
+        // The SUN PKIX validator verifies each link's signature using the default JCA providers,
+        // which cannot handle Brainpool curves. Route signature verification to Bouncy Castle when
+        // any certificate in the path uses such a curve, leaving the SUN validation flow (usage and
+        // revocation checkers) otherwise unchanged.
+        List<X509Certificate> pathCertificates = new ArrayList<>();
+        certPath.getCertificates().stream()
+            .map(X509Certificate.class::cast)
+            .forEach(pathCertificates::add);
+        configureSignatureProvider(parameters, pathCertificates, List.of(anchorCert));
 
         parameters.addCertPathChecker(
             new OpcUaCertificateUsageChecker(
@@ -411,6 +437,15 @@ public class CertificateValidationUtil {
         builderParams.addCertStore(certStore);
       }
 
+      // The default PKIX CertPathBuilder verifies each link's signature using the default JCA
+      // providers, which cannot handle Brainpool curves. Route signature verification to Bouncy
+      // Castle when any candidate certificate uses such a curve, leaving every other PKIX behavior
+      // (path building, anchor selection) unchanged.
+      List<X509Certificate> anchorCertificates =
+          trustAnchors.stream().map(TrustAnchor::getTrustedCert).collect(Collectors.toList());
+      configureSignatureProvider(
+          builderParams, certificateChain, intermediates, anchorCertificates);
+
       // Disable revocation checking in the CertPathBuilder; it will be
       // checked by a PKIXCertPathValidator after the CertPath is built.
       builderParams.setRevocationEnabled(false);
@@ -463,14 +498,27 @@ public class CertificateValidationUtil {
       return false;
     }
 
+    // Verify the certificate signature with its own public key.
+    PublicKey key = cert.getPublicKey();
+
     try {
-      // Verify the certificate signature with its own public key
-      PublicKey key = cert.getPublicKey();
       cert.verify(key);
       return true;
-    } catch (SignatureException | InvalidKeyException e) {
-      // Invalid signature or key: not self-signed
-      return false;
+    } catch (SignatureException | InvalidKeyException | NoSuchAlgorithmException e) {
+      // The default JCA providers could not verify the signature. This happens for curves the
+      // built-in providers cannot handle (e.g. Brainpool on SunEC, which throws SignatureException
+      // "Curve not supported"), so retry with the resolved Bouncy Castle provider before concluding
+      // the certificate is not self-signed. A genuine signature/key mismatch fails under BC too,
+      // and is reported as "not self-signed".
+      try {
+        cert.verify(key, bouncyCastleProvider());
+        return true;
+      } catch (SignatureException | InvalidKeyException | NoSuchAlgorithmException bcException) {
+        // Invalid signature or key under both providers: not self-signed.
+        return false;
+      } catch (Exception bcException) {
+        throw new UaException(StatusCodes.Bad_CertificateInvalid, bcException);
+      }
     } catch (Exception e) {
       throw new UaException(StatusCodes.Bad_CertificateInvalid, e);
     }
@@ -815,5 +863,105 @@ public class CertificateValidationUtil {
     } catch (CertificateParsingException e) {
       throw new UaException(StatusCodes.Bad_CertificateInvalid, e);
     }
+  }
+
+  /**
+   * Configure the signature provider used by a PKIX path build or validation when the certificate
+   * material requires a curve the JDK's default JCA providers cannot verify.
+   *
+   * <p>Brainpool ECDSA signatures cannot be verified by the built-in providers (SunEC throws "Curve
+   * not supported"). When a Brainpool certificate is present, the resolved Bouncy Castle provider
+   * is registered (append-only, lowest precedence) so it can be selected by name as the PKIX
+   * signature provider; this leaves provider selection for every other algorithm unchanged. For
+   * non-Brainpool material no signature provider is set, so the default JCA behavior is fully
+   * preserved.
+   *
+   * @param parameters the {@link PKIXParameters} (or {@link PKIXBuilderParameters}) to configure.
+   * @param certificateGroups the certificate collections that make up the path and trust material.
+   */
+  @SafeVarargs
+  private static void configureSignatureProvider(
+      PKIXParameters parameters, Collection<X509Certificate>... certificateGroups) {
+
+    boolean needsBouncyCastle =
+        Arrays.stream(certificateGroups)
+            .flatMap(Collection::stream)
+            .anyMatch(CertificateValidationUtil::usesUnsupportedCurve);
+
+    if (!needsBouncyCastle) {
+      return;
+    }
+
+    Provider provider = bouncyCastleProvider();
+
+    // PKIXParameters resolves the signature provider by name, so the resolved instance must be a
+    // registered provider. Register it append-only (lowest precedence) when absent; this is
+    // monotonic and race-safe and never changes selection for algorithms the default providers
+    // already handle.
+    if (Security.getProvider(provider.getName()) == null) {
+      Security.addProvider(provider);
+    }
+
+    parameters.setSigProvider(provider.getName());
+  }
+
+  /**
+   * Return {@code true} if {@code certificate} uses an EC curve the JDK's default JCA providers
+   * cannot verify (currently the Brainpool curves used by OPC UA ECC policies).
+   *
+   * @param certificate the certificate to inspect.
+   * @return {@code true} if the certificate's public key uses an unsupported curve.
+   */
+  private static boolean usesUnsupportedCurve(X509Certificate certificate) {
+    if (!(certificate.getPublicKey() instanceof ECPublicKey ecPublicKey)) {
+      return false;
+    }
+
+    ECParameterSpec params = ecPublicKey.getParams();
+
+    return isSameCurve(BRAINPOOL_P256R1, params) || isSameCurve(BRAINPOOL_P384R1, params);
+  }
+
+  private static boolean isSameCurve(
+      @Nullable ECParameterSpec expected, @Nullable ECParameterSpec actual) {
+
+    if (expected == null || actual == null) {
+      return false;
+    }
+
+    return Objects.equals(expected.getCurve(), actual.getCurve())
+        && Objects.equals(expected.getGenerator(), actual.getGenerator())
+        && Objects.equals(expected.getOrder(), actual.getOrder())
+        && expected.getCofactor() == actual.getCofactor();
+  }
+
+  @Nullable
+  private static ECParameterSpec brainpoolParameterSpec(String curveName) {
+    try {
+      AlgorithmParameters parameters =
+          AlgorithmParameters.getInstance("EC", new BouncyCastleProvider());
+      parameters.init(new ECGenParameterSpec(curveName));
+
+      return parameters.getParameterSpec(ECParameterSpec.class);
+    } catch (GeneralSecurityException e) {
+      // Bouncy Castle is on the classpath wherever ECC policies are configured, but if the curve
+      // cannot be resolved here, Brainpool detection simply degrades to "not detected" rather than
+      // failing class initialization.
+      LOGGER.debug("could not resolve Brainpool curve '{}' for signature routing", curveName, e);
+      return null;
+    }
+  }
+
+  /**
+   * Resolve the Bouncy Castle {@link Provider}, preferring an already-registered instance and
+   * falling back to a new instance otherwise. Mirrors the resolution used elsewhere in the stack
+   * (e.g. {@code SecurityProviderResolver}).
+   *
+   * @return the resolved Bouncy Castle {@link Provider}.
+   */
+  private static Provider bouncyCastleProvider() {
+    Provider provider = Security.getProvider(BC_PROVIDER_NAME);
+
+    return provider != null ? provider : new BouncyCastleProvider();
   }
 }
