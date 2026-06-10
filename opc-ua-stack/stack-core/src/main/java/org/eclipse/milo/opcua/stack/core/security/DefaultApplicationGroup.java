@@ -20,6 +20,8 @@ import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Default OPC UA application certificate group backed by a {@link CertificateStore}.
@@ -29,6 +31,8 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
  * additional certificate type IDs when a server manages multiple application identities.
  */
 public class DefaultApplicationGroup implements CertificateGroup {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(DefaultApplicationGroup.class);
 
   private final AtomicBoolean initialized = new AtomicBoolean(false);
 
@@ -89,20 +93,27 @@ public class DefaultApplicationGroup implements CertificateGroup {
     }
   }
 
-  public void initialize() throws Exception {
-    if (initialized.compareAndSet(false, true)) {
-      for (NodeId certificateTypeId : getSupportedCertificateTypeIds()) {
-        if (!certificateStore.contains(certificateTypeId)) {
-          KeyPair keyPair = certificateFactory.createKeyPair(certificateTypeId);
-          X509Certificate[] certificateChain =
-              certificateFactory.createCertificateChain(certificateTypeId, keyPair);
+  public synchronized void initialize() throws Exception {
+    if (initialized.get()) {
+      return;
+    }
 
-          certificateStore.set(
-              certificateTypeId,
-              new CertificateStore.Entry(keyPair.getPrivate(), certificateChain));
-        }
+    // Only latch the initialized flag after every configured certificate type has been
+    // successfully created/stored. If a later type fails (e.g. a factory throwing
+    // Bad_NotSupported for an ECC hook), the flag stays false so initialize() can be retried
+    // rather than leaving the group permanently half-initialized.
+    for (NodeId certificateTypeId : getSupportedCertificateTypeIds()) {
+      if (!certificateStore.contains(certificateTypeId)) {
+        KeyPair keyPair = certificateFactory.createKeyPair(certificateTypeId);
+        X509Certificate[] certificateChain =
+            certificateFactory.createCertificateChain(certificateTypeId, keyPair);
+
+        certificateStore.set(
+            certificateTypeId, new CertificateStore.Entry(keyPair.getPrivate(), certificateChain));
       }
     }
+
+    initialized.set(true);
   }
 
   @Override
@@ -134,7 +145,11 @@ public class DefaultApplicationGroup implements CertificateGroup {
                   getCertificateGroupId(), certificateTypeId, entry.certificateChain));
         }
       } catch (Exception e) {
-        return List.of();
+        // A failure for one certificate type (e.g. a bad ECC alias password or a corrupt entry)
+        // must not discard healthy entries already collected for other types; keep accumulating
+        // so a single bad entry can't disable the group's other identities.
+        LOGGER.warn(
+            "Failed to read certificate entry for certificateTypeId={}", certificateTypeId, e);
       }
     }
 

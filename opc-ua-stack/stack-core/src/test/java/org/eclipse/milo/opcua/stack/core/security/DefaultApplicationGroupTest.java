@@ -20,9 +20,11 @@ import java.security.cert.X509Certificate;
 import java.util.List;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.security.CertificateGroup.Entry;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 @NullMarked
@@ -98,6 +100,132 @@ class DefaultApplicationGroupTest {
             group.updateCertificate(
                 NodeIds.EccNistP256ApplicationCertificateType, keyPair, certificateChain));
     assertFalse(group.getKeyPair(NodeIds.EccNistP256ApplicationCertificateType).isPresent());
+  }
+
+  // A single bad certificate type (corrupt entry, bad ECC alias password) must not empty the whole
+  // group: the previously-working RSA identity must remain discoverable so its secured endpoints
+  // keep being advertised and thumbprint lookups keep succeeding.
+  @Test
+  void getCertificateEntriesSkipsFailingTypeAndKeepsHealthyTypes() throws Exception {
+    var store = new FailingGetCertificateStore(NodeIds.EccNistP256ApplicationCertificateType);
+    DefaultApplicationGroup group =
+        new DefaultApplicationGroup(
+            new MemoryTrustListManager(),
+            store,
+            new CurrentEccCertificateFactory(),
+            new CertificateValidator.InsecureCertificateValidator(),
+            List.of(
+                NodeIds.RsaSha256ApplicationCertificateType,
+                NodeIds.EccNistP256ApplicationCertificateType));
+
+    group.initialize();
+
+    // Arm the failure only after initialization has populated the store.
+    store.failGet = true;
+
+    List<Entry> entries = group.getCertificateEntries();
+
+    assertEquals(1, entries.size());
+    assertEquals(NodeIds.RsaSha256ApplicationCertificateType, entries.get(0).certificateTypeId);
+    assertTrue(group.getKeyPair(NodeIds.RsaSha256ApplicationCertificateType).isPresent());
+    assertFalse(group.getKeyPair(NodeIds.EccNistP256ApplicationCertificateType).isPresent());
+  }
+
+  // A failure partway through initialize() must leave the group retryable rather than latched as
+  // a silent permanent no-op; otherwise a transient store/factory error would require a restart.
+  @Test
+  void initializeIsRetryableAfterFailure() throws Exception {
+    var store = new FailingSetCertificateStore(NodeIds.EccNistP256ApplicationCertificateType);
+    DefaultApplicationGroup group =
+        new DefaultApplicationGroup(
+            new MemoryTrustListManager(),
+            store,
+            new CurrentEccCertificateFactory(),
+            new CertificateValidator.InsecureCertificateValidator(),
+            List.of(
+                NodeIds.RsaSha256ApplicationCertificateType,
+                NodeIds.EccNistP256ApplicationCertificateType));
+
+    store.failSet = true;
+    assertThrows(RuntimeException.class, group::initialize);
+
+    // Clear the fault and retry; the second call must do the work rather than no-op.
+    store.failSet = false;
+    group.initialize();
+
+    assertEquals(2, group.getCertificateEntries().size());
+    assertTrue(group.getKeyPair(NodeIds.RsaSha256ApplicationCertificateType).isPresent());
+    assertTrue(group.getKeyPair(NodeIds.EccNistP256ApplicationCertificateType).isPresent());
+  }
+
+  /** A {@link CertificateStore} whose {@link #get} throws for one configured type when armed. */
+  private static final class FailingGetCertificateStore implements CertificateStore {
+
+    private final MemoryCertificateStore delegate = new MemoryCertificateStore();
+    private final NodeId failingTypeId;
+    private volatile boolean failGet = false;
+
+    private FailingGetCertificateStore(NodeId failingTypeId) {
+      this.failingTypeId = failingTypeId;
+    }
+
+    @Override
+    public boolean contains(NodeId certificateTypeId) throws Exception {
+      return delegate.contains(certificateTypeId);
+    }
+
+    @Override
+    public CertificateStore.@Nullable Entry get(NodeId certificateTypeId) throws Exception {
+      if (failGet && certificateTypeId.equals(failingTypeId)) {
+        throw new RuntimeException("simulated read failure for " + certificateTypeId);
+      }
+      return delegate.get(certificateTypeId);
+    }
+
+    @Override
+    public CertificateStore.@Nullable Entry remove(NodeId certificateTypeId) throws Exception {
+      return delegate.remove(certificateTypeId);
+    }
+
+    @Override
+    public void set(NodeId certificateTypeId, CertificateStore.Entry entry) throws Exception {
+      delegate.set(certificateTypeId, entry);
+    }
+  }
+
+  /** A {@link CertificateStore} whose {@link #set} throws for one configured type when armed. */
+  private static final class FailingSetCertificateStore implements CertificateStore {
+
+    private final MemoryCertificateStore delegate = new MemoryCertificateStore();
+    private final NodeId failingTypeId;
+    private volatile boolean failSet = false;
+
+    private FailingSetCertificateStore(NodeId failingTypeId) {
+      this.failingTypeId = failingTypeId;
+    }
+
+    @Override
+    public boolean contains(NodeId certificateTypeId) throws Exception {
+      return delegate.contains(certificateTypeId);
+    }
+
+    @Override
+    public CertificateStore.@Nullable Entry get(NodeId certificateTypeId) throws Exception {
+      return delegate.get(certificateTypeId);
+    }
+
+    @Override
+    public CertificateStore.@Nullable Entry remove(NodeId certificateTypeId) throws Exception {
+      return delegate.remove(certificateTypeId);
+    }
+
+    @Override
+    public void set(NodeId certificateTypeId, CertificateStore.Entry entry) throws Exception {
+      if (failSet && certificateTypeId.equals(failingTypeId)) {
+        throw new RuntimeException("simulated write failure for " + certificateTypeId);
+      }
+      delegate.set(certificateTypeId, entry);
+    }
   }
 
   private static final class CurrentEccCertificateFactory extends TestCertificateFactory {
