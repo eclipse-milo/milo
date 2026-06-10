@@ -241,6 +241,59 @@ public class EndpointConfigTest {
     assertEquals(0, Objects.requireNonNull(response.getEndpoints()).length);
   }
 
+  // The legacy fixed-certificate API advertises the certificate verbatim, so an enhanced ECC policy
+  // paired with an RSA fixed certificate must be omitted: the public-key families are incompatible
+  // and the endpoint could never complete a handshake.
+  @Test
+  public void legacyFixedRsaCertificateWithEnhancedEccPolicyIsOmitted() throws Exception {
+    CertificateMaterial certificate = rsaCertificate("rsa-fixed");
+    CertificateManager certificateManager =
+        manager(
+            group(
+                NodeIds.ServerConfiguration_CertificateGroups_DefaultApplicationGroup,
+                certificate));
+
+    EndpointConfig endpoint =
+        EndpointConfig.newBuilder()
+            .setCertificate(certificate.certificate())
+            .setSecurityPolicy(SecurityPolicy.ECC_nistP256_AesGcm)
+            .setSecurityMode(MessageSecurityMode.SignAndEncrypt)
+            .build();
+
+    OpcUaServer server = server(Set.of(endpoint), certificateManager);
+
+    assertEquals(0, server.getApplicationContext().getEndpointDescriptions().size());
+  }
+
+  // A compatible EC fixed certificate paired with the matching enhanced ECC policy stays
+  // advertised, confirming the omission only targets incompatible certificate families.
+  @Test
+  public void legacyFixedEccCertificateWithEnhancedEccPolicyIsAdvertised() throws Exception {
+    CertificateMaterial certificate = nistP256Certificate();
+    CertificateManager certificateManager =
+        manager(
+            group(
+                NodeIds.ServerConfiguration_CertificateGroups_DefaultApplicationGroup,
+                certificate));
+
+    EndpointConfig endpoint =
+        EndpointConfig.newBuilder()
+            .setCertificate(certificate.certificate())
+            .setSecurityPolicy(SecurityPolicy.ECC_nistP256_AesGcm)
+            .setSecurityMode(MessageSecurityMode.SignAndEncrypt)
+            .build();
+
+    OpcUaServer server = server(Set.of(endpoint), certificateManager);
+
+    List<EndpointDescription> descriptions =
+        server.getApplicationContext().getEndpointDescriptions();
+
+    assertEquals(1, descriptions.size());
+    assertArrayEquals(
+        certificate.certificate().getEncoded(),
+        descriptions.get(0).getServerCertificate().bytesOrEmpty());
+  }
+
   // RSA-DH Sign endpoints are executable: AEAD is used as a tag-only signature footer without
   // symmetric encryption.
   @ParameterizedTest

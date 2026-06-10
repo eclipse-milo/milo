@@ -69,6 +69,7 @@ import org.eclipse.milo.opcua.stack.core.channel.messages.ErrorMessage;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingManager;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingManager;
+import org.eclipse.milo.opcua.stack.core.security.CertificateCompatibility;
 import org.eclipse.milo.opcua.stack.core.security.CertificateIdentity;
 import org.eclipse.milo.opcua.stack.core.security.CertificateIdentitySelectionContext;
 import org.eclipse.milo.opcua.stack.core.security.CertificateIdentitySelector;
@@ -621,6 +622,13 @@ public class OpcUaServer extends AbstractServiceHandler {
         if (endpoint.getEndpointCertificateConfig().isPresent()) {
           certificateIdentity = resolveCertificateIdentity(endpoint, profile, certificate);
           certificate = certificateIdentity.certificate();
+        } else if (certificate != null && profile.secureChannelEnhancements()) {
+          // The legacy fixed-certificate API (setCertificate) advertises the certificate verbatim,
+          // bypassing the CertificateIdentitySelector compatibility checks. Enhanced policies (e.g.
+          // ECC) require a matching certificate family, so an RSA fixed certificate paired with an
+          // ECC policy can never complete a handshake. Omit such endpoints from advertisement
+          // rather than advertise an unusable endpoint.
+          CertificateCompatibility.checkCompatible(profile, certificate);
         }
       }
 
