@@ -14,6 +14,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -268,6 +269,76 @@ public class EndpointConfigTest {
     OpcUaServer server = server(Set.of(endpoint), certificateManager);
 
     assertEquals(0, server.getApplicationContext().getEndpointDescriptions().size());
+  }
+
+  // The ApplicationDescription embedded in every advertised EndpointDescription derives its
+  // discoveryUrls from endpoints that actually resolved, not from raw config. An ECC endpoint that
+  // is omitted from advertisement must not leak its endpoint URL into the embedded discoveryUrls,
+  // and the embedded ApplicationDescription must agree with what GetEndpoints reports.
+  @Test
+  public void omittedEndpointDoesNotLeakDiscoveryUrlIntoApplicationDescription() throws Exception {
+    CertificateMaterial rsaCertificate = rsaCertificate("rsa-only");
+    CertificateManager certificateManager =
+        manager(
+            group(
+                NodeIds.ServerConfiguration_CertificateGroups_DefaultApplicationGroup,
+                rsaCertificate));
+
+    // Resolvable: RSA policy with a managed RSA identity available.
+    EndpointConfig resolvableEndpoint =
+        EndpointConfig.newBuilder()
+            .setPath("/secure")
+            .setEndpointCertificateConfig(
+                EndpointCertificateConfig.newBuilder()
+                    .setCertificateTypeId(NodeIds.RsaSha256ApplicationCertificateType)
+                    .build())
+            .setSecurityPolicy(SecurityPolicy.Basic256Sha256)
+            .setSecurityMode(MessageSecurityMode.SignAndEncrypt)
+            .build();
+
+    // Unsatisfiable: an ECC certificate type is requested but the manager only has RSA, so this
+    // endpoint is omitted from advertisement.
+    EndpointConfig omittedEndpoint =
+        EndpointConfig.newBuilder()
+            .setPath("/ecc")
+            .setEndpointCertificateConfig(
+                EndpointCertificateConfig.newBuilder()
+                    .setCertificateTypeId(NodeIds.EccNistP256ApplicationCertificateType)
+                    .build())
+            .setSecurityPolicy(SecurityPolicy.ECC_nistP256_AesGcm)
+            .setSecurityMode(MessageSecurityMode.SignAndEncrypt)
+            .build();
+
+    OpcUaServer server = server(Set.of(resolvableEndpoint, omittedEndpoint), certificateManager);
+
+    List<EndpointDescription> descriptions =
+        server.getApplicationContext().getEndpointDescriptions();
+
+    // Only the resolvable endpoint is advertised.
+    assertEquals(1, descriptions.size());
+    assertEquals(resolvableEndpoint.getEndpointUrl(), descriptions.get(0).getEndpointUrl());
+
+    // The embedded ApplicationDescription discoveryUrls must contain the resolved endpoint's URL
+    // and must NOT contain the omitted endpoint's phantom URL.
+    String[] embeddedDiscoveryUrls = descriptions.get(0).getServer().getDiscoveryUrls();
+    assertNotNull(embeddedDiscoveryUrls);
+    List<String> embeddedDiscoveryUrlList = List.of(embeddedDiscoveryUrls);
+    assertTrue(embeddedDiscoveryUrlList.contains(resolvableEndpoint.getEndpointUrl()));
+    assertFalse(embeddedDiscoveryUrlList.contains(omittedEndpoint.getEndpointUrl()));
+
+    // GetEndpoints must agree with the embedded ApplicationDescription: it returns only the
+    // resolved endpoint, and its embedded ApplicationDescription carries the same discoveryUrls.
+    DefaultDiscoveryServiceSet discoveryServiceSet = new DefaultDiscoveryServiceSet(server);
+    GetEndpointsResponse response =
+        discoveryServiceSet.onGetEndpoints(
+            null,
+            new GetEndpointsRequest(
+                requestHeader(), resolvableEndpoint.getEndpointUrl(), null, null));
+
+    EndpointDescription[] returned = Objects.requireNonNull(response.getEndpoints());
+    assertEquals(1, returned.length);
+    assertEquals(resolvableEndpoint.getEndpointUrl(), returned[0].getEndpointUrl());
+    assertArrayEquals(embeddedDiscoveryUrls, returned[0].getServer().getDiscoveryUrls());
   }
 
   // A compatible EC fixed certificate paired with the matching enhanced ECC policy stays

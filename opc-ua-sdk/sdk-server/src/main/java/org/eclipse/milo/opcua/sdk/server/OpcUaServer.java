@@ -10,7 +10,6 @@
 
 package org.eclipse.milo.opcua.sdk.server;
 
-import static java.util.stream.Collectors.toList;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 
 import com.google.common.collect.Sets;
@@ -118,8 +117,6 @@ public class OpcUaServer extends AbstractServiceHandler {
   }
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
-
-  private final Lazy<ApplicationDescription> applicationDescription = new Lazy<>();
 
   private final Map<UInteger, Subscription> subscriptions = new ConcurrentHashMap<>();
   private final AtomicLong monitoredItemCount = new AtomicLong(0L);
@@ -591,6 +588,14 @@ public class OpcUaServer extends AbstractServiceHandler {
    * <p>If any of the EndpointConfig returned by {@link OpcUaServerConfig#getEndpoints()} has
    * changed, e.g., because the certificate has changed, the cached EndpointDescriptions need to be
    * reset.
+   *
+   * <p><b>Limitation:</b> resetting the cache re-resolves which endpoints are advertised, but
+   * socket binding is performed once during {@link #startup()} and is not re-attempted here. An
+   * endpoint that was unsatisfiable at startup (and therefore never bound) may become advertised
+   * after a reset (e.g. following post-startup certificate provisioning), in which case its URL is
+   * advertised without a listening socket behind it. Conversely, an endpoint bound at startup
+   * remains bound even if it no longer resolves. Re-binding after a reset is not currently
+   * supported; a server restart is required to change the set of bound sockets.
    */
   public void resetEndpointDescriptionCache() {
     resolvedEndpoints.reset();
@@ -598,14 +603,52 @@ public class OpcUaServer extends AbstractServiceHandler {
 
   private List<ResolvedEndpoint> getResolvedEndpoints() {
     return resolvedEndpoints.get(
-        () ->
-            config.getEndpoints().stream()
-                .map(this::resolveEndpoint)
-                .flatMap(Optional::stream)
-                .toList());
+        () -> {
+          // Resolve (validate + select certificate) each configured endpoint first. Endpoints that
+          // cannot be satisfied are omitted here so that the ApplicationDescription advertised in
+          // every EndpointDescription, and the discovery URLs returned by GetEndpoints, are derived
+          // from the same set of endpoints that actually resolved -- never from raw config that
+          // includes unsatisfiable endpoints.
+          Set<EndpointConfig> configs = config.getEndpoints();
+
+          List<ResolvedCertificate> resolved =
+              configs.stream().map(this::resolveCertificate).flatMap(Optional::stream).toList();
+
+          int omittedCount = configs.size() - resolved.size();
+          if (omittedCount > 0) {
+            logger.warn(
+                "Omitted {} of {} configured endpoint(s) from advertisement; see preceding "
+                    + "per-endpoint warnings for the specific reasons.",
+                omittedCount,
+                configs.size());
+          }
+
+          List<String> resolvedEndpointUrls =
+              resolved.stream().map(r -> r.endpointConfig().getEndpointUrl()).distinct().toList();
+
+          ApplicationDescription applicationDescription =
+              buildApplicationDescription(resolvedEndpointUrls);
+
+          return resolved.stream()
+              .map(r -> buildResolvedEndpoint(r, applicationDescription))
+              .toList();
+        });
   }
 
-  private Optional<ResolvedEndpoint> resolveEndpoint(EndpointConfig endpoint) {
+  /**
+   * Validate an {@link EndpointConfig} and select the certificate to advertise for it.
+   *
+   * <p>This is the first phase of endpoint resolution: it performs all validation that may cause an
+   * endpoint to be omitted from advertisement, without yet constructing an {@link
+   * EndpointDescription}. Separating this phase lets the shared {@link ApplicationDescription} (and
+   * therefore its {@code discoveryUrls}) be derived solely from endpoints that successfully
+   * resolved.
+   *
+   * @param endpoint the configured endpoint to resolve.
+   * @return a {@link ResolvedCertificate} if the endpoint can be advertised, otherwise an empty
+   *     {@link Optional}.
+   */
+  private Optional<ResolvedCertificate> resolveCertificate(EndpointConfig endpoint) {
     SecurityPolicyProfile profile = SecurityPolicyProfiles.get(endpoint.getSecurityPolicy());
 
     try {
@@ -630,26 +673,39 @@ public class OpcUaServer extends AbstractServiceHandler {
         }
       }
 
-      return Optional.of(
-          new ResolvedEndpoint(
-              endpoint,
-              certificateIdentity,
-              new EndpointDescription(
-                  endpoint.getEndpointUrl(),
-                  getApplicationDescription(),
-                  certificateByteString(certificate),
-                  endpoint.getSecurityMode(),
-                  endpoint.getSecurityPolicy().getUri(),
-                  endpoint.getTokenPolicies().toArray(new UserTokenPolicy[0]),
-                  endpoint.getTransportProfile().getUri(),
-                  ubyte(
-                      getSecurityLevel(
-                          endpoint.getSecurityPolicy(), endpoint.getSecurityMode())))));
+      return Optional.of(new ResolvedCertificate(endpoint, certificateIdentity, certificate));
     } catch (UaException | EndpointResolutionException e) {
       logOmittedEndpoint(endpoint, e.getMessage());
       return Optional.empty();
     }
   }
+
+  private ResolvedEndpoint buildResolvedEndpoint(
+      ResolvedCertificate resolved, ApplicationDescription applicationDescription) {
+
+    EndpointConfig endpoint = resolved.endpointConfig();
+
+    return new ResolvedEndpoint(
+        endpoint,
+        resolved.certificateIdentity(),
+        new EndpointDescription(
+            endpoint.getEndpointUrl(),
+            applicationDescription,
+            certificateByteString(resolved.certificate()),
+            endpoint.getSecurityMode(),
+            endpoint.getSecurityPolicy().getUri(),
+            endpoint.getTokenPolicies().toArray(new UserTokenPolicy[0]),
+            endpoint.getTransportProfile().getUri(),
+            ubyte(getSecurityLevel(endpoint.getSecurityPolicy(), endpoint.getSecurityMode()))));
+  }
+
+  /**
+   * An {@link EndpointConfig} that resolved successfully, paired with the certificate to advertise.
+   */
+  private record ResolvedCertificate(
+      EndpointConfig endpointConfig,
+      @Nullable CertificateIdentity certificateIdentity,
+      @Nullable X509Certificate certificate) {}
 
   private static void requireEndpointAdvertisementSupported(
       EndpointConfig endpoint, SecurityPolicyProfile profile) throws EndpointResolutionException {
@@ -749,33 +805,37 @@ public class OpcUaServer extends AbstractServiceHandler {
     }
   }
 
-  private ApplicationDescription getApplicationDescription() {
-    return applicationDescription.get(
-        () -> {
-          List<String> discoveryUrls =
-              config.getEndpoints().stream()
-                  .map(EndpointConfig::getEndpointUrl)
-                  .filter(url -> url.endsWith("/discovery"))
-                  .distinct()
-                  .collect(toList());
+  /**
+   * Build the {@link ApplicationDescription} embedded in every advertised {@link
+   * EndpointDescription}.
+   *
+   * <p>The {@code discoveryUrls} are derived from {@code resolvedEndpointUrls} -- the URLs of
+   * endpoints that successfully resolved -- rather than from raw {@link
+   * OpcUaServerConfig#getEndpoints()}. This keeps the embedded ApplicationDescription consistent
+   * with the discovery URLs advertised by {@code DefaultDiscoveryServiceSet}, which is likewise
+   * derived from the resolved {@link EndpointDescription}s, so unsatisfiable/omitted endpoints do
+   * not leak phantom discovery URLs into either path. As with the discovery service, {@code
+   * /discovery} URLs are preferred when present and all resolved URLs are used otherwise.
+   *
+   * @param resolvedEndpointUrls the distinct endpoint URLs of endpoints that resolved successfully.
+   * @return the {@link ApplicationDescription} to embed in resolved {@link EndpointDescription}s.
+   */
+  private ApplicationDescription buildApplicationDescription(List<String> resolvedEndpointUrls) {
+    List<String> discoveryUrls =
+        resolvedEndpointUrls.stream().filter(url -> url.endsWith("/discovery")).distinct().toList();
 
-          if (discoveryUrls.isEmpty()) {
-            discoveryUrls =
-                config.getEndpoints().stream()
-                    .map(EndpointConfig::getEndpointUrl)
-                    .distinct()
-                    .toList();
-          }
+    if (discoveryUrls.isEmpty()) {
+      discoveryUrls = resolvedEndpointUrls.stream().distinct().toList();
+    }
 
-          return new ApplicationDescription(
-              config.getApplicationUri(),
-              config.getProductUri(),
-              config.getApplicationName(),
-              ApplicationType.Server,
-              null,
-              null,
-              discoveryUrls.toArray(new String[0]));
-        });
+    return new ApplicationDescription(
+        config.getApplicationUri(),
+        config.getProductUri(),
+        config.getApplicationName(),
+        ApplicationType.Server,
+        null,
+        null,
+        discoveryUrls.toArray(new String[0]));
   }
 
   private short getSecurityLevel(SecurityPolicy securityPolicy, MessageSecurityMode securityMode) {
