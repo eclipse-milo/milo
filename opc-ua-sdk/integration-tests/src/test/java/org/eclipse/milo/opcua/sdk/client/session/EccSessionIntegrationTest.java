@@ -55,24 +55,34 @@ import org.eclipse.milo.opcua.sdk.test.TestNamespace;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.security.CertificateFactory;
 import org.eclipse.milo.opcua.stack.core.security.CertificateGroup;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
+import org.eclipse.milo.opcua.stack.core.security.EccEncryptedSecret;
 import org.eclipse.milo.opcua.stack.core.security.EccUserTokenAdditionalHeader;
 import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.security.TrustListManager;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ActivateSessionRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.ActivateSessionResponse;
+import org.eclipse.milo.opcua.stack.core.types.structured.AdditionalParametersType;
+import org.eclipse.milo.opcua.stack.core.types.structured.CreateSessionRequest;
+import org.eclipse.milo.opcua.stack.core.types.structured.CreateSessionResponse;
+import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.KeyValuePair;
+import org.eclipse.milo.opcua.stack.core.types.structured.SignatureData;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
@@ -466,6 +476,163 @@ class EccSessionIntegrationTest {
         disconnectQuietly(client);
       }
     }
+  }
+
+  // The whole point of the channel-bound ActivateSession signature is that the server rejects a
+  // clientSignature that does not verify against the enhanced data layout for this SecureChannel. A
+  // silently-accepting verifyClientSignature would let a replayed or wrong-key signature activate
+  // the session, so a tampered enhanced-policy signature must surface
+  // Bad_ApplicationSignatureInvalid.
+  @Test
+  void serverRejectsTamperedClientSignatureOnEnhancedChannel() throws Exception {
+    assertServerRejectsTamperedClientSignature(
+        SecurityPolicy.ECC_nistP256_AesGcm, NodeIds.EccNistP256ApplicationCertificateType);
+  }
+
+  // The legacy RSA layout flows through the same verifyClientSignature method as the enhanced
+  // policies, so it must reject a tampered clientSignature too; this guards against the rework
+  // weakening the historical RSA path while only the enhanced path is exercised positively.
+  @Test
+  void serverRejectsTamperedClientSignatureOnLegacyChannel() throws Exception {
+    assertServerRejectsTamperedClientSignature(
+        SecurityPolicy.Basic256Sha256, NodeIds.RsaSha256ApplicationCertificateType);
+  }
+
+  private static void assertServerRejectsTamperedClientSignature(
+      SecurityPolicy securityPolicy, NodeId certificateTypeId) throws Exception {
+
+    try (RunningServer running =
+        startSecureServer(
+            securityPolicy,
+            certificateTypeId,
+            MessageSecurityMode.SignAndEncrypt,
+            b -> {},
+            server -> registerTamperedClientSignature(server))) {
+
+      CertificateManager clientCertificateManager =
+          certificateManager(certificate(certificateTypeId, "client", CLIENT_URI));
+      OpcUaClient client =
+          createClient(
+              running,
+              securityPolicy,
+              MessageSecurityMode.SignAndEncrypt,
+              AnonymousProvider.INSTANCE,
+              clientCertificateManager,
+              b -> {},
+              b -> {});
+
+      try {
+        UaException exception = assertThrows(UaException.class, client::connect);
+
+        assertEquals(
+            StatusCodes.Bad_ApplicationSignatureInvalid, exception.getStatusCode().getValue());
+      } finally {
+        disconnectQuietly(client);
+      }
+    }
+  }
+
+  // The client side of the binding is symmetric: a CreateSession serverSignature that does not
+  // verify against the enhanced data layout (here, the same bytes with one flipped) must fail the
+  // session FSM rather than letting the client trust a substituted server identity.
+  @Test
+  void clientRejectsTamperedServerSignatureOnEnhancedChannel() throws Exception {
+    SecurityPolicy securityPolicy = SecurityPolicy.ECC_nistP256_AesGcm;
+    NodeId certificateTypeId = NodeIds.EccNistP256ApplicationCertificateType;
+
+    try (RunningServer running =
+        startSecureServer(
+            securityPolicy,
+            certificateTypeId,
+            MessageSecurityMode.SignAndEncrypt,
+            b -> {},
+            server -> registerTamperedServerSignature(server))) {
+
+      CertificateManager clientCertificateManager =
+          certificateManager(certificate(certificateTypeId, "client", CLIENT_URI));
+      OpcUaClient client =
+          createClient(
+              running,
+              securityPolicy,
+              MessageSecurityMode.SignAndEncrypt,
+              AnonymousProvider.INSTANCE,
+              clientCertificateManager,
+              b -> {},
+              b -> {});
+
+      try {
+        UaException exception = assertThrows(UaException.class, client::connect);
+
+        assertEquals(StatusCodes.Bad_SecurityChecksFailed, exception.getStatusCode().getValue());
+      } finally {
+        disconnectQuietly(client);
+      }
+    }
+  }
+
+  private static void registerTamperedClientSignature(OpcUaServer server) {
+    var tamperingServiceSet =
+        new DelegatingSessionServiceSet(server) {
+          @Override
+          public ActivateSessionResponse onActivateSession(
+              ServiceRequestContext context, ActivateSessionRequest request) throws UaException {
+
+            ActivateSessionRequest tampered =
+                new ActivateSessionRequest(
+                    request.getRequestHeader(),
+                    tamper(request.getClientSignature()),
+                    request.getClientSoftwareCertificates(),
+                    request.getLocaleIds(),
+                    request.getUserIdentityToken(),
+                    request.getUserTokenSignature());
+
+            return super.onActivateSession(context, tampered);
+          }
+        };
+
+    for (EndpointConfig endpoint : server.getConfig().getEndpoints()) {
+      server.addServiceSet(endpoint.getPath(), tamperingServiceSet);
+    }
+  }
+
+  private static void registerTamperedServerSignature(OpcUaServer server) {
+    var tamperingServiceSet =
+        new DelegatingSessionServiceSet(server) {
+          @Override
+          public CreateSessionResponse onCreateSession(
+              ServiceRequestContext context, CreateSessionRequest request) throws UaException {
+
+            CreateSessionResponse response = super.onCreateSession(context, request);
+
+            return new CreateSessionResponse(
+                response.getResponseHeader(),
+                response.getSessionId(),
+                response.getAuthenticationToken(),
+                response.getRevisedSessionTimeout(),
+                response.getServerNonce(),
+                response.getServerCertificate(),
+                response.getServerEndpoints(),
+                response.getServerSoftwareCertificates(),
+                tamper(response.getServerSignature()),
+                response.getMaxRequestMessageSize());
+          }
+        };
+
+    for (EndpointConfig endpoint : server.getConfig().getEndpoints()) {
+      server.addServiceSet(endpoint.getPath(), tamperingServiceSet);
+    }
+  }
+
+  // Flip the last signature byte, preserving the algorithm and length so verification fails on the
+  // cryptographic check rather than on a length or layout guard.
+  private static SignatureData tamper(SignatureData signature) {
+    byte[] bytes = signature.getSignature().bytesOrEmpty().clone();
+    if (bytes.length == 0) {
+      throw new IllegalStateException("expected a non-empty signature to tamper");
+    }
+    bytes[bytes.length - 1] ^= (byte) 0xFF;
+
+    return new SignatureData(signature.getAlgorithm(), ByteString.of(bytes));
   }
 
   private static OpcUaClient connectClient(
@@ -996,6 +1163,12 @@ class EccSessionIntegrationTest {
     }
   }
 
+  // Sends a structurally valid AdditionalParametersType whose ECDHPolicyUri is the wrong Variant
+  // type. This is the malformed payload the server must reject with Bad_DecodingError rather than a
+  // header it should tolerantly ignore (Part 4): an undecodable or unrecognized header is treated
+  // as
+  // "no negotiation requested", so only a decoded AdditionalParametersType with a malformed
+  // parameter exercises the decode-error branch.
   private static final class MalformedHeaderUsernameProvider extends UsernameProvider {
 
     private MalformedHeaderUsernameProvider() {
@@ -1003,13 +1176,18 @@ class EccSessionIntegrationTest {
     }
 
     @Override
-    public org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject
-        getCreateSessionAdditionalHeader(
-            org.eclipse.milo.opcua.stack.core.encoding.EncodingContext context,
-            org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription endpoint) {
+    public ExtensionObject getCreateSessionAdditionalHeader(
+        EncodingContext context, EndpointDescription endpoint) {
 
-      return org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject.of(
-          ByteString.of(new byte[] {0x01}), NodeIds.AnonymousIdentityToken_Encoding_DefaultBinary);
+      AdditionalParametersType parameters =
+          new AdditionalParametersType(
+              new KeyValuePair[] {
+                new KeyValuePair(
+                    new QualifiedName(0, EccEncryptedSecret.ECDH_POLICY_URI_PARAMETER),
+                    Variant.ofInt32(0))
+              });
+
+      return ExtensionObject.encode(context, parameters);
     }
   }
 }
