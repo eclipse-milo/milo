@@ -10,6 +10,8 @@
 
 package org.eclipse.milo.opcua.stack.core.channel;
 
+import static java.util.Objects.requireNonNull;
+
 import io.netty.buffer.ByteBuf;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
@@ -619,14 +621,10 @@ final class SecureChannelStrategies {
         ByteString serverNonce,
         int initializationVectorSize) {
 
-      SecurityAlgorithm keyDerivation = profile.keyDerivationAlgorithm();
-
-      if (keyDerivation == null) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_SecurityPolicyRejected,
-            "profile does not define legacy P_SHA key derivation: "
-                + profile.securityPolicy().getUri());
-      }
+      SecurityAlgorithm keyDerivation =
+          requireNonNull(
+              profile.keyDerivationAlgorithm(),
+              "keyDerivationAlgorithm: " + profile.securityPolicy().getUri());
 
       int signatureKeySize = profile.symmetricSignatureKeySize();
       int encryptionKeySize = profile.symmetricEncryptionKeySize();
@@ -1213,14 +1211,9 @@ final class SecureChannelStrategies {
         throws UaException {
 
       SecurityAlgorithm signatureAlgorithm =
-          channel.getSecurityPolicy().getSymmetricSignatureAlgorithm();
-
-      if (signatureAlgorithm == null) {
-        throw new UaException(
-            StatusCodes.Bad_SecurityPolicyRejected,
-            "profile does not define a legacy symmetric signature algorithm: "
-                + channel.getSecurityPolicy().getUri());
-      }
+          requireNonNull(
+              channel.getSecurityPolicyProfile().symmetricSignatureAlgorithm(),
+              "symmetricSignatureAlgorithm: " + channel.getSecurityPolicy().getUri());
 
       byte[] signatureKey = channel.getEncryptionKeys(securityKeys).getSignatureKey();
 
@@ -1233,14 +1226,9 @@ final class SecureChannelStrategies {
         throws UaException {
 
       SecurityAlgorithm signatureAlgorithm =
-          channel.getSecurityPolicy().getSymmetricSignatureAlgorithm();
-
-      if (signatureAlgorithm == null) {
-        throw new UaException(
-            StatusCodes.Bad_SecurityPolicyRejected,
-            "profile does not define a legacy symmetric signature algorithm: "
-                + channel.getSecurityPolicy().getUri());
-      }
+          requireNonNull(
+              channel.getSecurityPolicyProfile().symmetricSignatureAlgorithm(),
+              "symmetricSignatureAlgorithm: " + channel.getSecurityPolicy().getUri());
 
       byte[] secretKey = channel.getDecryptionKeys(securityKeys).getSignatureKey();
       int signatureSize = channel.getSymmetricSignatureSize();
@@ -1265,14 +1253,9 @@ final class SecureChannelStrategies {
         SecureChannel channel, ChannelSecurity.SecurityKeys securityKeys) throws UaException {
 
       SecurityAlgorithm encryptionAlgorithm =
-          channel.getSecurityPolicy().getSymmetricEncryptionAlgorithm();
-
-      if (encryptionAlgorithm == null) {
-        throw new UaException(
-            StatusCodes.Bad_SecurityPolicyRejected,
-            "profile does not define a legacy symmetric encryption algorithm: "
-                + channel.getSecurityPolicy().getUri());
-      }
+          requireNonNull(
+              channel.getSecurityPolicyProfile().symmetricEncryptionAlgorithm(),
+              "symmetricEncryptionAlgorithm: " + channel.getSecurityPolicy().getUri());
 
       try {
         ChannelSecurity.SecretKeys secretKeys = channel.getEncryptionKeys(securityKeys);
@@ -1296,14 +1279,9 @@ final class SecureChannelStrategies {
         SecureChannel channel, ChannelSecurity.SecurityKeys securityKeys) throws UaException {
 
       SecurityAlgorithm encryptionAlgorithm =
-          channel.getSecurityPolicy().getSymmetricEncryptionAlgorithm();
-
-      if (encryptionAlgorithm == null) {
-        throw new UaException(
-            StatusCodes.Bad_SecurityPolicyRejected,
-            "profile does not define a legacy symmetric encryption algorithm: "
-                + channel.getSecurityPolicy().getUri());
-      }
+          requireNonNull(
+              channel.getSecurityPolicyProfile().symmetricEncryptionAlgorithm(),
+              "symmetricEncryptionAlgorithm: " + channel.getSecurityPolicy().getUri());
 
       try {
         ChannelSecurity.SecretKeys decryptionKeys = channel.getDecryptionKeys(securityKeys);
