@@ -41,7 +41,6 @@ import org.jspecify.annotations.Nullable;
  *     order. Empty when the profile does not use application certificates.
  * @param keyAgreementAxis the key-agreement family used during OpenSecureChannel.
  * @param chunkProtectionAxis the symmetric chunk-protection family used after key installation.
- * @param sequenceNumberMode the sequence-number validation mode required by the policy.
  * @param symmetricSignatureAlgorithm the legacy CBC/HMAC symmetric signature algorithm. {@link
  *     SecurityPolicy#None} uses {@link SecurityAlgorithm#None}; secured policies use {@code null}
  *     when they do not use one.
@@ -81,7 +80,6 @@ public record SecurityPolicyProfile(
     List<NodeId> certificateTypeIds,
     KeyAgreementAxis keyAgreementAxis,
     ChunkProtectionAxis chunkProtectionAxis,
-    SequenceNumberMode sequenceNumberMode,
     @Nullable SecurityAlgorithm symmetricSignatureAlgorithm,
     @Nullable SecurityAlgorithm symmetricEncryptionAlgorithm,
     SecurityAlgorithm asymmetricSignatureAlgorithm,
@@ -185,6 +183,18 @@ public record SecurityPolicyProfile(
       case AES_GCM, CHACHA20_POLY1305 -> true;
       case NONE, CBC_HMAC -> false;
     };
+  }
+
+  /**
+   * The sequence-number validation mode used for secured chunks.
+   *
+   * <p>SecureChannelEnhancements policies use {@link SequenceNumberMode#NON_LEGACY} validation;
+   * legacy policies use {@link SequenceNumberMode#LEGACY}.
+   *
+   * @return the sequence-number validation mode used by this policy.
+   */
+  public SequenceNumberMode sequenceNumberMode() {
+    return secureChannelEnhancements ? SequenceNumberMode.NON_LEGACY : SequenceNumberMode.LEGACY;
   }
 
   /**

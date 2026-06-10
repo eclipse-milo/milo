@@ -32,8 +32,6 @@ import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.K
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.RSA_NONCE;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.X25519;
 import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis.X448;
-import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.SequenceNumberMode.LEGACY;
-import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.SequenceNumberMode.NON_LEGACY;
 
 import java.util.EnumMap;
 import java.util.List;
@@ -42,7 +40,6 @@ import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.ChunkProtectionAxis;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis;
-import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.SequenceNumberMode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -97,7 +94,6 @@ public final class SecurityPolicyProfiles {
             List.of(),
             KeyAgreementAxis.NONE,
             ChunkProtectionAxis.NONE,
-            LEGACY,
             SecurityAlgorithm.None,
             SecurityAlgorithm.None,
             SecurityAlgorithm.None,
@@ -124,7 +120,6 @@ public final class SecurityPolicyProfiles {
                 NodeIds.RsaMinApplicationCertificateType),
             RSA_NONCE,
             CBC_HMAC,
-            LEGACY,
             SecurityAlgorithm.HmacSha1,
             SecurityAlgorithm.Aes128,
             SecurityAlgorithm.RsaSha1,
@@ -151,7 +146,6 @@ public final class SecurityPolicyProfiles {
                 NodeIds.RsaMinApplicationCertificateType),
             RSA_NONCE,
             CBC_HMAC,
-            LEGACY,
             SecurityAlgorithm.HmacSha1,
             SecurityAlgorithm.Aes256,
             SecurityAlgorithm.RsaSha1,
@@ -176,7 +170,6 @@ public final class SecurityPolicyProfiles {
             List.of(NodeIds.RsaSha256ApplicationCertificateType),
             RSA_NONCE,
             CBC_HMAC,
-            LEGACY,
             SecurityAlgorithm.HmacSha256,
             SecurityAlgorithm.Aes256,
             SecurityAlgorithm.RsaSha256,
@@ -201,7 +194,6 @@ public final class SecurityPolicyProfiles {
             List.of(NodeIds.RsaSha256ApplicationCertificateType),
             RSA_NONCE,
             CBC_HMAC,
-            LEGACY,
             SecurityAlgorithm.HmacSha256,
             SecurityAlgorithm.Aes128,
             SecurityAlgorithm.RsaSha256,
@@ -226,7 +218,6 @@ public final class SecurityPolicyProfiles {
             List.of(NodeIds.RsaSha256ApplicationCertificateType),
             RSA_NONCE,
             CBC_HMAC,
-            LEGACY,
             SecurityAlgorithm.HmacSha256,
             SecurityAlgorithm.Aes256,
             SecurityAlgorithm.RsaSha256Pss,
@@ -257,7 +248,6 @@ public final class SecurityPolicyProfiles {
             List.of(NodeIds.EccNistP256ApplicationCertificateType),
             ECDH_NIST_P256,
             AES_GCM,
-            NON_LEGACY,
             null,
             null,
             SecurityAlgorithm.None,
@@ -282,7 +272,6 @@ public final class SecurityPolicyProfiles {
             List.of(NodeIds.EccNistP256ApplicationCertificateType),
             ECDH_NIST_P256,
             CHACHA20_POLY1305,
-            NON_LEGACY,
             null,
             null,
             SecurityAlgorithm.None,
@@ -311,7 +300,6 @@ public final class SecurityPolicyProfiles {
             List.of(NodeIds.EccNistP384ApplicationCertificateType),
             ECDH_NIST_P384,
             AES_GCM,
-            NON_LEGACY,
             null,
             null,
             SecurityAlgorithm.None,
@@ -336,7 +324,6 @@ public final class SecurityPolicyProfiles {
             List.of(NodeIds.EccNistP384ApplicationCertificateType),
             ECDH_NIST_P384,
             CHACHA20_POLY1305,
-            NON_LEGACY,
             null,
             null,
             SecurityAlgorithm.None,
@@ -363,7 +350,6 @@ public final class SecurityPolicyProfiles {
             List.of(NodeIds.EccBrainpoolP256r1ApplicationCertificateType),
             ECDH_BRAINPOOL_P256R1,
             AES_GCM,
-            NON_LEGACY,
             null,
             null,
             SecurityAlgorithm.None,
@@ -388,7 +374,6 @@ public final class SecurityPolicyProfiles {
             List.of(NodeIds.EccBrainpoolP256r1ApplicationCertificateType),
             ECDH_BRAINPOOL_P256R1,
             CHACHA20_POLY1305,
-            NON_LEGACY,
             null,
             null,
             SecurityAlgorithm.None,
@@ -413,7 +398,6 @@ public final class SecurityPolicyProfiles {
             List.of(NodeIds.EccCurve25519ApplicationCertificateType),
             X25519,
             AES_GCM,
-            NON_LEGACY,
             null,
             null,
             SecurityAlgorithm.None,
@@ -438,7 +422,6 @@ public final class SecurityPolicyProfiles {
             List.of(NodeIds.EccCurve25519ApplicationCertificateType),
             X25519,
             CHACHA20_POLY1305,
-            NON_LEGACY,
             null,
             null,
             SecurityAlgorithm.None,
@@ -466,7 +449,6 @@ public final class SecurityPolicyProfiles {
             List.of(NodeIds.EccCurve448ApplicationCertificateType),
             X448,
             AES_GCM,
-            NON_LEGACY,
             null,
             null,
             SecurityAlgorithm.None,
@@ -491,7 +473,6 @@ public final class SecurityPolicyProfiles {
             List.of(NodeIds.EccCurve448ApplicationCertificateType),
             X448,
             CHACHA20_POLY1305,
-            NON_LEGACY,
             null,
             null,
             SecurityAlgorithm.None,
@@ -519,7 +500,6 @@ public final class SecurityPolicyProfiles {
             List.of(NodeIds.EccBrainpoolP384r1ApplicationCertificateType),
             ECDH_BRAINPOOL_P384R1,
             CHACHA20_POLY1305,
-            NON_LEGACY,
             null,
             null,
             SecurityAlgorithm.None,
@@ -544,7 +524,6 @@ public final class SecurityPolicyProfiles {
             List.of(NodeIds.EccBrainpoolP384r1ApplicationCertificateType),
             ECDH_BRAINPOOL_P384R1,
             AES_GCM,
-            NON_LEGACY,
             null,
             null,
             SecurityAlgorithm.None,
@@ -573,7 +552,6 @@ public final class SecurityPolicyProfiles {
             List.of(NodeIds.RsaSha256ApplicationCertificateType),
             FFDH_3072,
             AES_GCM,
-            NON_LEGACY,
             null,
             null,
             SecurityAlgorithm.RsaSha256,
@@ -598,7 +576,6 @@ public final class SecurityPolicyProfiles {
             List.of(NodeIds.RsaSha256ApplicationCertificateType),
             FFDH_3072,
             CHACHA20_POLY1305,
-            NON_LEGACY,
             null,
             null,
             SecurityAlgorithm.RsaSha256,
@@ -634,7 +611,6 @@ public final class SecurityPolicyProfiles {
       List<NodeId> certificateTypeIds,
       KeyAgreementAxis keyAgreementAxis,
       ChunkProtectionAxis chunkProtectionAxis,
-      SequenceNumberMode sequenceNumberMode,
       @Nullable SecurityAlgorithm symmetricSignatureAlgorithm,
       @Nullable SecurityAlgorithm symmetricEncryptionAlgorithm,
       SecurityAlgorithm asymmetricSignatureAlgorithm,
@@ -657,7 +633,6 @@ public final class SecurityPolicyProfiles {
         certificateTypeIds,
         keyAgreementAxis,
         chunkProtectionAxis,
-        sequenceNumberMode,
         symmetricSignatureAlgorithm,
         symmetricEncryptionAlgorithm,
         asymmetricSignatureAlgorithm,
