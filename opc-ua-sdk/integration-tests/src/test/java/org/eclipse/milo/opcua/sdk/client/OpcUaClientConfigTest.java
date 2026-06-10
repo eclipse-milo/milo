@@ -19,22 +19,29 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.security.KeyPair;
+import java.security.cert.X509Certificate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.milo.opcua.sdk.client.identity.AnonymousProvider;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.Stack;
+import org.eclipse.milo.opcua.stack.core.security.CertificateIdentity;
 import org.eclipse.milo.opcua.stack.core.security.CertificateIdentitySelector;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
+import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
+import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
 import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransport;
 import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransportConfig;
 import org.junit.jupiter.api.Test;
@@ -191,5 +198,72 @@ public class OpcUaClientConfigTest {
     assertTrue(client.getCertificateIdentity(SecurityPolicy.Basic256Sha256.getProfile()).isEmpty());
     assertTrue(client.getCertificateIdentity(SecurityPolicy.Basic256Sha256.getProfile()).isEmpty());
     assertEquals(1, selections.get());
+  }
+
+  // The ActivateSession flow looks up the user-token profile identity between the channel/session
+  // certificate lookups. A per-profile cache must keep that interleaving from re-invoking a
+  // stateful selector for the endpoint profile, otherwise the session signature key could diverge
+  // from the channel certificate (Bad_ApplicationSignatureInvalid).
+  @Test
+  public void certificateIdentityCacheSurvivesInterleavedProfileLookups() throws Exception {
+    SecurityPolicyProfile endpointProfile = SecurityPolicy.Basic256Sha256.getProfile();
+    SecurityPolicyProfile tokenProfile = SecurityPolicy.Aes128_Sha256_RsaOaep.getProfile();
+
+    KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+    X509Certificate certificate = rsaCertificate(keyPair);
+
+    CertificateIdentity identityA = identity(keyPair, certificate, "groupA");
+    CertificateIdentity identityB = identity(keyPair, certificate, "groupB");
+    CertificateIdentity identityU = identity(keyPair, certificate, "groupU");
+
+    // A stateful selector: the endpoint profile yields A on its first selection and B on every
+    // selection after, so a re-invocation would observably swap the endpoint identity.
+    AtomicInteger endpointSelections = new AtomicInteger();
+    Map<SecurityPolicyProfile, CertificateIdentity> tokenIdentities =
+        Map.of(tokenProfile, identityU);
+    CertificateIdentitySelector certificateIdentitySelector =
+        context -> {
+          CertificateIdentity tokenIdentity = tokenIdentities.get(context.securityPolicyProfile());
+          if (tokenIdentity != null) {
+            return Optional.of(tokenIdentity);
+          }
+          return Optional.of(endpointSelections.getAndIncrement() == 0 ? identityA : identityB);
+        };
+
+    OpcClientTransportConfig transportConfig = mock(OpcClientTransportConfig.class);
+    when(transportConfig.getExecutor()).thenReturn(Stack.sharedExecutor());
+    OpcClientTransport transport = mock(OpcClientTransport.class);
+    when(transport.getConfig()).thenReturn(transportConfig);
+
+    OpcUaClientConfig config =
+        OpcUaClientConfig.builder()
+            .setEndpoint(endpoint)
+            .setCertificateManager(new DefaultCertificateManager(new MemoryCertificateQuarantine()))
+            .setCertificateIdentitySelector(certificateIdentitySelector)
+            .build();
+    OpcUaClient client = new OpcUaClient(config, transport);
+
+    assertSame(identityA, client.getCertificateIdentity(endpointProfile).orElseThrow());
+    assertSame(identityU, client.getCertificateIdentity(tokenProfile).orElseThrow());
+    assertSame(identityA, client.getCertificateIdentity(endpointProfile).orElseThrow());
+    assertEquals(1, endpointSelections.get());
+  }
+
+  private static CertificateIdentity identity(
+      KeyPair keyPair, X509Certificate certificate, String group) {
+
+    return new CertificateIdentity(
+        new NodeId(0, group),
+        NodeIds.RsaSha256ApplicationCertificateType,
+        keyPair,
+        new X509Certificate[] {certificate});
+  }
+
+  private static X509Certificate rsaCertificate(KeyPair keyPair) throws Exception {
+    return new SelfSignedCertificateBuilder(keyPair)
+        .setCommonName("certificate-identity-cache-test")
+        .setApplicationUri("urn:eclipse:milo:test:certificate-identity-cache")
+        .addDnsName("localhost")
+        .build();
   }
 }

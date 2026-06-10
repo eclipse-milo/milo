@@ -17,6 +17,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -359,9 +360,8 @@ public class OpcUaClient {
 
   private final OpcClientTransport transport;
   private final Object certificateIdentityLock = new Object();
-  private @Nullable CertificateIdentity selectedCertificateIdentity;
-  private @Nullable SecurityPolicyProfile selectedCertificateIdentityProfile;
-  private boolean certificateIdentitySelected;
+  private final Map<SecurityPolicyProfile, Optional<CertificateIdentity>>
+      selectedCertificateIdentities = new HashMap<>();
 
   public OpcUaClient(OpcUaClientConfig config, OpcClientTransport transport) {
     this.config = config;
@@ -548,6 +548,10 @@ public class OpcUaClient {
    *     or completes exceptionally if an error occurs.
    */
   public CompletableFuture<OpcUaClient> connectAsync() {
+    // Discard any identities cached during a prior connection so a rotated CertificateManager
+    // entry is presented on this attempt.
+    clearCertificateIdentities();
+
     return transport
         .connect(applicationContext)
         .handle((u, ex) -> sessionFsm.openSession())
@@ -585,7 +589,13 @@ public class OpcUaClient {
         .closeSession()
         .exceptionally(ex -> Unit.VALUE)
         .thenCompose(u -> transport.disconnect().thenApply(c -> OpcUaClient.this))
-        .exceptionally(ex -> OpcUaClient.this);
+        .exceptionally(ex -> OpcUaClient.this)
+        .whenComplete(
+            (c, ex) -> {
+              // Drop cached identities so a CertificateManager rotation applies on the next
+              // connect.
+              clearCertificateIdentities();
+            });
   }
 
   /**
@@ -631,9 +641,12 @@ public class OpcUaClient {
   /**
    * Get the client certificate identity for the selected endpoint security policy.
    *
-   * <p>The selected identity is cached by this client instance for the last requested security
-   * policy profile. This keeps SecureChannel and Session setup on the client consistent even when a
-   * selector is stateful.
+   * <p>The selected identity is cached by this client instance per requested security-policy
+   * profile. This keeps SecureChannel and Session setup on the client consistent even when a
+   * selector is stateful: SecureChannel open, CreateSession, and the ActivateSession signature all
+   * resolve the same identity for a given profile, and interleaved lookups for a different (e.g.
+   * user-token) profile no longer evict it. The cache is cleared on connect and disconnect so a
+   * rotated {@link CertificateIdentity} is picked up on the next connection attempt.
    *
    * @param securityPolicyProfile the selected endpoint security-policy profile.
    * @return the selected identity, or empty when no policy-aware identity source is configured.
@@ -643,17 +656,27 @@ public class OpcUaClient {
       SecurityPolicyProfile securityPolicyProfile) throws UaException {
 
     synchronized (certificateIdentityLock) {
-      if (!certificateIdentitySelected
-          || !securityPolicyProfile.equals(selectedCertificateIdentityProfile)) {
-        Optional<CertificateIdentity> selected =
-            config.getCertificateIdentity(securityPolicyProfile);
-
-        selectedCertificateIdentity = selected.orElse(null);
-        selectedCertificateIdentityProfile = securityPolicyProfile;
-        certificateIdentitySelected = true;
+      Optional<CertificateIdentity> cached =
+          selectedCertificateIdentities.get(securityPolicyProfile);
+      if (cached != null) {
+        return cached;
       }
 
-      return Optional.ofNullable(selectedCertificateIdentity);
+      Optional<CertificateIdentity> selected = config.getCertificateIdentity(securityPolicyProfile);
+      selectedCertificateIdentities.put(securityPolicyProfile, selected);
+
+      return selected;
+    }
+  }
+
+  /**
+   * Clear the cached certificate identities so that the next {@link
+   * #getCertificateIdentity(SecurityPolicyProfile)} re-evaluates the configured selector, picking
+   * up any rotation in the underlying {@code CertificateManager}.
+   */
+  private void clearCertificateIdentities() {
+    synchronized (certificateIdentityLock) {
+      selectedCertificateIdentities.clear();
     }
   }
 
