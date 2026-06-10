@@ -12,8 +12,6 @@ package org.eclipse.milo.opcua.stack.core.security;
 
 import java.util.List;
 import java.util.Optional;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
-import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.jspecify.annotations.NullMarked;
@@ -75,7 +73,6 @@ import org.jspecify.annotations.Nullable;
  * @param symmetricBlockSize the chunk padding block size, or {@code 1} when chunks are not padded.
  * @param securityLevel the policy-strength bits used in endpoint descriptions.
  * @param secureChannelEnhancements whether the policy requires SecureChannelEnhancements behavior.
- * @param secureChannelSupported whether the stack can open a SecureChannel with this policy.
  */
 @NullMarked
 public record SecurityPolicyProfile(
@@ -99,8 +96,7 @@ public record SecurityPolicyProfile(
     int symmetricEncryptionKeySize,
     int symmetricBlockSize,
     int securityLevel,
-    boolean secureChannelEnhancements,
-    boolean secureChannelSupported) {
+    boolean secureChannelEnhancements) {
 
   public SecurityPolicyProfile {
     certificateTypeIds = List.copyOf(certificateTypeIds);
@@ -134,21 +130,6 @@ public record SecurityPolicyProfile(
    */
   public Optional<NodeId> preferredCertificateTypeId() {
     return certificateTypeIds.stream().findFirst();
-  }
-
-  /**
-   * Require this profile to be supported by the SecureChannel runtime.
-   *
-   * @throws UaException if the profile is known but not supported by the current SecureChannel
-   *     runtime.
-   */
-  public void requireSecureChannelSupported() throws UaException {
-    if (!secureChannelSupported) {
-      throw new UaException(
-          StatusCodes.Bad_SecurityPolicyRejected,
-          "security policy is recognized but not supported by the SecureChannel runtime: "
-              + securityPolicy.getUri());
-    }
   }
 
   /**
@@ -209,10 +190,11 @@ public record SecurityPolicyProfile(
   /**
    * Whether this profile can open a SecureChannel using the given message security mode.
    *
-   * <p>Legacy policies accept any mode. SecureChannelEnhancements policies always accept {@code
-   * SignAndEncrypt}; they accept {@code Sign} only when chunk protection is AEAD (the
-   * authentication tag doubles as the chunk signature) and the SecureChannel runtime supports the
-   * policy. No enhanced policy accepts {@code None} or {@code Invalid}.
+   * <p>Legacy policies accept any mode. SecureChannelEnhancements policies accept only {@code Sign}
+   * and {@code SignAndEncrypt}: OPC UA Part 4 (7.41) disallows pairing ECC and RSA-DH policies with
+   * {@code None} because their user-token encryption requires the ephemeral keys negotiated by a
+   * secured handshake, and the chunk layer applies no symmetric protection for {@code None} or
+   * {@code Invalid}.
    *
    * @param securityMode the message security mode being negotiated.
    * @return {@code true} when the mode is supported for this profile.
@@ -224,8 +206,7 @@ public record SecurityPolicyProfile(
     }
 
     return switch (securityMode) {
-      case SignAndEncrypt -> true;
-      case Sign -> secureChannelSupported && usesAeadChunkProtection();
+      case Sign, SignAndEncrypt -> true;
       default -> false;
     };
   }

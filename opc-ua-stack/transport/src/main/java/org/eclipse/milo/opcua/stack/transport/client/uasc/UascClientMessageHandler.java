@@ -56,7 +56,6 @@ import org.eclipse.milo.opcua.stack.core.security.CertificateIdentity;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
-import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfiles;
 import org.eclipse.milo.opcua.stack.core.types.UaMessageType;
 import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
 import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
@@ -389,7 +388,6 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
       CertificateValidator certificateValidator = application.getCertificateValidator();
 
       SecurityPolicy securityPolicy = SecurityPolicy.fromUri(securityHeader.getSecurityPolicyUri());
-      SecurityPolicyProfiles.requireSecureChannelSupported(securityPolicy);
 
       if (securityPolicy != SecurityPolicy.None) {
         ByteString serverCertificateBytes = securityHeader.getSenderCertificate();
@@ -849,7 +847,6 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
     EndpointDescription endpoint = application.getEndpoint();
 
     SecurityPolicy securityPolicy = SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri());
-    SecurityPolicyProfiles.requireSecureChannelSupported(securityPolicy);
     requireSupportedMessageSecurityMode(securityPolicy.getProfile(), endpoint.getSecurityMode());
 
     if (securityPolicy == SecurityPolicy.None) {

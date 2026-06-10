@@ -60,12 +60,10 @@ import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
-import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfiles;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.SecurityTokenRequestType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ChannelSecurityToken;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
@@ -252,7 +250,6 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
 
         String securityPolicyUri = header.getSecurityPolicyUri();
         SecurityPolicy securityPolicy = SecurityPolicy.fromUri(securityPolicyUri);
-        SecurityPolicyProfiles.requireSecureChannelSupported(securityPolicy);
 
         secureChannel.setSecurityPolicy(securityPolicy);
 
@@ -533,9 +530,6 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
     SecurityTokenRequestType requestType = request.getRequestType();
 
     if (requestType == SecurityTokenRequestType.Issue) {
-      requireSupportedMessageSecurityMode(
-          secureChannel.getSecurityPolicyProfile(), request.getSecurityMode());
-
       secureChannel.setMessageSecurityMode(request.getSecurityMode());
 
       String endpointUrl = ctx.channel().attr(UascServerHelloHandler.ENDPOINT_URL_KEY).get();
@@ -712,19 +706,6 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
               + messageSize
               + " > "
               + remoteMaxMessageSize);
-    }
-  }
-
-  private static void requireSupportedMessageSecurityMode(
-      SecurityPolicyProfile profile, MessageSecurityMode securityMode) throws UaException {
-
-    if (!profile.isMessageSecurityModeSupported(securityMode)) {
-      throw new UaException(
-          StatusCodes.Bad_SecurityPolicyRejected,
-          "message security mode is not supported for "
-              + profile.securityPolicy().getUri()
-              + ": "
-              + securityMode);
     }
   }
 }

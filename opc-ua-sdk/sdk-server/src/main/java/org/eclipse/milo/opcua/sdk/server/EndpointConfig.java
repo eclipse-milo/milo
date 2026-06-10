@@ -282,7 +282,8 @@ public class EndpointConfig {
         if (securityPolicy == SecurityPolicy.None) {
           throw new IllegalArgumentException("securityPolicy: " + securityPolicy);
         }
-        if (securityMode == MessageSecurityMode.None) {
+        if (securityMode != MessageSecurityMode.Sign
+            && securityMode != MessageSecurityMode.SignAndEncrypt) {
           throw new IllegalArgumentException("securityMode: " + securityMode);
         }
         if (certificateSupplier.get() == null && endpointCertificateConfig == null) {

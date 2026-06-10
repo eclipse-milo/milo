@@ -82,6 +82,15 @@ public class EndpointConfigTest {
                 .setSecurityPolicy(SecurityPolicy.None)
                 .setSecurityMode(MessageSecurityMode.SignAndEncrypt)
                 .build());
+
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            // secured endpoints require Sign or SignAndEncrypt
+            EndpointConfig.newBuilder()
+                .setSecurityPolicy(SecurityPolicy.Basic128Rsa15)
+                .setSecurityMode(MessageSecurityMode.Invalid)
+                .build());
   }
 
   @Test

@@ -250,7 +250,6 @@ public class SecurityPolicyTest {
     assertEquals(16, profile.symmetricEncryptionKeySize());
     assertEquals(16, profile.symmetricBlockSize());
     assertFalse(profile.secureChannelEnhancements());
-    assertTrue(profile.secureChannelSupported());
   }
 
   @Test
@@ -374,7 +373,6 @@ public class SecurityPolicyTest {
         expectation.signAndEncryptSecurityLevel(),
         profile.getSecurityLevel(MessageSecurityMode.SignAndEncrypt));
     assertTrue(profile.secureChannelEnhancements());
-    assertTrue(profile.secureChannelSupported());
   }
 
   @ParameterizedTest
@@ -402,7 +400,6 @@ public class SecurityPolicyTest {
         expectation.signAndEncryptSecurityLevel(),
         profile.getSecurityLevel(MessageSecurityMode.SignAndEncrypt));
     assertTrue(profile.secureChannelEnhancements());
-    assertTrue(profile.secureChannelSupported());
   }
 
   @Test
@@ -422,70 +419,11 @@ public class SecurityPolicyTest {
             .getSecurityLevel(MessageSecurityMode.SignAndEncrypt));
   }
 
-  @Test
-  public void testSecureChannelGateAllowsExecutablePolicies() {
-    assertDoesNotThrow(
-        () -> SecurityPolicyProfiles.requireSecureChannelSupported(SecurityPolicy.Basic256Sha256));
-    assertDoesNotThrow(
-        () ->
-            SecurityPolicyProfiles.requireSecureChannelSupported(
-                SecurityPolicy.ECC_nistP256_AesGcm));
-    assertDoesNotThrow(
-        () ->
-            SecurityPolicyProfiles.requireSecureChannelSupported(
-                SecurityPolicy.ECC_nistP256_ChaChaPoly));
-    assertDoesNotThrow(
-        () ->
-            SecurityPolicyProfiles.requireSecureChannelSupported(
-                SecurityPolicy.ECC_nistP384_AesGcm));
-    assertDoesNotThrow(
-        () ->
-            SecurityPolicyProfiles.requireSecureChannelSupported(
-                SecurityPolicy.ECC_nistP384_ChaChaPoly));
-    assertDoesNotThrow(
-        () ->
-            SecurityPolicyProfiles.requireSecureChannelSupported(
-                SecurityPolicy.ECC_brainpoolP256r1_AesGcm));
-    assertDoesNotThrow(
-        () ->
-            SecurityPolicyProfiles.requireSecureChannelSupported(
-                SecurityPolicy.ECC_brainpoolP256r1_ChaChaPoly));
-    assertDoesNotThrow(
-        () ->
-            SecurityPolicyProfiles.requireSecureChannelSupported(
-                SecurityPolicy.ECC_curve25519_AesGcm));
-    assertDoesNotThrow(
-        () ->
-            SecurityPolicyProfiles.requireSecureChannelSupported(
-                SecurityPolicy.ECC_curve25519_ChaChaPoly));
-    assertDoesNotThrow(
-        () ->
-            SecurityPolicyProfiles.requireSecureChannelSupported(
-                SecurityPolicy.ECC_curve448_AesGcm));
-    assertDoesNotThrow(
-        () ->
-            SecurityPolicyProfiles.requireSecureChannelSupported(
-                SecurityPolicy.ECC_curve448_ChaChaPoly));
-    assertDoesNotThrow(
-        () ->
-            SecurityPolicyProfiles.requireSecureChannelSupported(
-                SecurityPolicy.ECC_brainpoolP384r1_AesGcm));
-    assertDoesNotThrow(
-        () ->
-            SecurityPolicyProfiles.requireSecureChannelSupported(
-                SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly));
-    assertDoesNotThrow(
-        () -> SecurityPolicyProfiles.requireSecureChannelSupported(SecurityPolicy.RSA_DH_AesGcm));
-    assertDoesNotThrow(
-        () ->
-            SecurityPolicyProfiles.requireSecureChannelSupported(SecurityPolicy.RSA_DH_ChaChaPoly));
-  }
-
-  // These ephemeral-key-agreement and AEAD facts back the capability gates that endpoint
-  // advertisement, the client OPN, and the server OPN all consult. Pinning the exact set of
+  // The ephemeral fact drives ephemeral key generation in the client and server OPN handlers; the
+  // AEAD fact must agree with chunk-protection strategy selection. Pinning the exact set of
   // ephemeral/AEAD policies means a profile edit (or a future policy) that flips either fact has to
-  // change this expectation, instead of silently disappearing from advertisement or being treated
-  // as a random-nonce policy by one of the handlers.
+  // change this expectation, instead of being treated as a random-nonce policy or the wrong chunk
+  // family by one of the handlers.
   @ParameterizedTest
   @EnumSource(SecurityPolicy.class)
   public void testEphemeralAndAeadProfileFactsArePinned(SecurityPolicy policy) {
@@ -495,10 +433,9 @@ public class SecurityPolicyTest {
     assertEquals(AEAD_POLICIES.contains(policy), profile.usesAeadChunkProtection());
   }
 
-  // The single capability gate must answer identically for every policy x mode. Pinning the exact
-  // supported-mode set per policy keeps advertisement, the client OPN, and the server OPN agreeing
-  // on which modes a policy accepts; a profile edit that changed the answer would have to update
-  // this matrix rather than silently diverging one call site from the others.
+  // Pinning the exact supported-mode set per policy keeps the client-side OPN gate honest: a
+  // profile edit that changed the answer would have to update this matrix rather than silently
+  // changing which (policy, mode) pairs the client will open.
   @ParameterizedTest
   @EnumSource(SecurityPolicy.class)
   public void testMessageSecurityModeSupportMatchesProfileCapabilities(SecurityPolicy policy) {
@@ -513,9 +450,9 @@ public class SecurityPolicyTest {
     }
   }
 
-  // Legacy policies accept every mode; enhanced policies advertise SignAndEncrypt plus Sign (their
-  // AEAD tag doubles as the chunk signature) and reject None/Invalid. All 14 current enhanced
-  // policies are AEAD, so each accepts exactly {Sign, SignAndEncrypt}.
+  // Legacy policies accept every mode; enhanced policies accept exactly {Sign, SignAndEncrypt}.
+  // OPC UA Part 4 (7.41) disallows ECC/RSA-DH policies with mode None, and Invalid never forms a
+  // channel.
   private static Set<MessageSecurityMode> supportedModes(SecurityPolicy policy) {
     if (LEGACY_POLICIES.contains(policy)) {
       return EnumSet.allOf(MessageSecurityMode.class);

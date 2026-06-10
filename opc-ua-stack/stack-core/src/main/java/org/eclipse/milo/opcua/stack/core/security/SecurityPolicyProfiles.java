@@ -39,7 +39,6 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
-import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.ChunkProtectionAxis;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis;
@@ -51,8 +50,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * Registry for security policy profiles known to the stack.
  *
- * <p>Callers use this registry when they need policy metadata or when they need to verify that the
- * stack can open a SecureChannel using a known policy.
+ * <p>Callers use this registry when they need policy metadata.
  */
 @NullMarked
 public final class SecurityPolicyProfiles {
@@ -86,19 +84,6 @@ public final class SecurityPolicyProfiles {
    */
   public static List<SecurityPolicyProfile> values() {
     return PROFILES.values().stream().toList();
-  }
-
-  /**
-   * Require a security policy to be supported by the SecureChannel runtime.
-   *
-   * @param securityPolicy the security policy to check.
-   * @throws UaException if the policy is known but not supported by the current SecureChannel
-   *     runtime.
-   * @throws NullPointerException if {@code securityPolicy} is null.
-   */
-  public static void requireSecureChannelSupported(SecurityPolicy securityPolicy)
-      throws UaException {
-    get(securityPolicy).requireSecureChannelSupported();
   }
 
   private static Map<SecurityPolicy, SecurityPolicyProfile> buildProfiles() {
@@ -687,7 +672,6 @@ public final class SecurityPolicyProfiles {
         symmetricEncryptionKeySize,
         symmetricBlockSize,
         securityLevel,
-        secureChannelEnhancements,
-        true);
+        secureChannelEnhancements);
   }
 }
