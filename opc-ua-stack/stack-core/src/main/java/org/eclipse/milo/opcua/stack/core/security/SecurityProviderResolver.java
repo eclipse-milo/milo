@@ -28,7 +28,6 @@ import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
 import javax.crypto.Mac;
 import javax.crypto.SecretKeyFactory;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis;
@@ -170,10 +169,7 @@ public final class SecurityProviderResolver {
   private static void validateBouncyCastle(SecurityPolicyProfile profile)
       throws GeneralSecurityException {
 
-    Provider provider = Security.getProvider(BC_PROVIDER_NAME);
-    if (provider == null) {
-      provider = new BouncyCastleProvider();
-    }
+    Provider provider = SecurityProviderSupport.bouncyCastleProvider();
 
     validateAuth(profile.authAxis(), ProviderProfile.BOUNCY_CASTLE, provider);
     validateKeyAgreement(profile.keyAgreementAxis(), ProviderProfile.BOUNCY_CASTLE, provider);

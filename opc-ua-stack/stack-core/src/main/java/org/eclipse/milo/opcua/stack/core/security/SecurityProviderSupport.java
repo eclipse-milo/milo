@@ -31,6 +31,15 @@ final class SecurityProviderSupport {
 
   private static final String BC_PROVIDER_NAME = "BC";
 
+  /**
+   * Shared fallback Bouncy Castle provider used when BC is not registered with {@link Security}.
+   *
+   * <p>A {@link BouncyCastleProvider} is fully populated at construction, so constructing a fresh
+   * one per crypto operation is wasteful. A single instance is safe to share for {@code
+   * getInstance} -style lookups, which is the only way it is used here.
+   */
+  private static final BouncyCastleProvider BC_FALLBACK = new BouncyCastleProvider();
+
   private SecurityProviderSupport() {}
 
   static <T> T withProviderProfile(
@@ -43,10 +52,10 @@ final class SecurityProviderSupport {
     };
   }
 
-  private static Provider bouncyCastleProvider() {
+  static Provider bouncyCastleProvider() {
     Provider provider = Security.getProvider(BC_PROVIDER_NAME);
 
-    return provider != null ? provider : new BouncyCastleProvider();
+    return provider != null ? provider : BC_FALLBACK;
   }
 
   private static <T> T withJdkProvider(String operationName, ProviderOperation<T> operation)
