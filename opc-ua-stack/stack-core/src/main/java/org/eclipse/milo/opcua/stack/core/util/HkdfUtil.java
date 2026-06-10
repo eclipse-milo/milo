@@ -138,9 +138,9 @@ public final class HkdfUtil {
     try {
       byte[] effectiveSalt = salt.length > 0 ? salt : new byte[hashLength];
       byte[] prk = hmac(transformation, effectiveSalt, ikm, provider);
+      byte[] previous = new byte[0];
       try {
         byte[] okm = new byte[length];
-        byte[] previous = new byte[0];
         int offset = 0;
 
         for (int i = 1; offset < length; i++) {
@@ -159,7 +159,10 @@ public final class HkdfUtil {
 
         return okm;
       } finally {
+        // Zero the PRK and the final expand block (T(n)); the latter holds a full hash-length
+        // copy of the OKM tail that would otherwise linger on the heap until GC.
         Arrays.fill(prk, (byte) 0);
+        Arrays.fill(previous, (byte) 0);
       }
     } catch (GeneralSecurityException e) {
       throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);

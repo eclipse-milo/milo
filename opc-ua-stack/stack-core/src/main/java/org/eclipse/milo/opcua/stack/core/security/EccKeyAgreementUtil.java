@@ -351,11 +351,18 @@ public final class EccKeyAgreementUtil {
     byte[] serverMaterial =
         hkdf(providerProfile, profile, inputKeyMaterial, serverSalt, serverSalt, totalLength);
 
-    return new DerivedKeyMaterial(
-        Arrays.copyOfRange(clientMaterial, 0, profile.symmetricEncryptionKeySize()),
-        Arrays.copyOfRange(clientMaterial, profile.symmetricEncryptionKeySize(), totalLength),
-        Arrays.copyOfRange(serverMaterial, 0, profile.symmetricEncryptionKeySize()),
-        Arrays.copyOfRange(serverMaterial, profile.symmetricEncryptionKeySize(), totalLength));
+    try {
+      // DerivedKeyMaterial clones every array on construction, so the source key||IV
+      // concatenations are safe to clear once the record is built.
+      return new DerivedKeyMaterial(
+          Arrays.copyOfRange(clientMaterial, 0, profile.symmetricEncryptionKeySize()),
+          Arrays.copyOfRange(clientMaterial, profile.symmetricEncryptionKeySize(), totalLength),
+          Arrays.copyOfRange(serverMaterial, 0, profile.symmetricEncryptionKeySize()),
+          Arrays.copyOfRange(serverMaterial, profile.symmetricEncryptionKeySize(), totalLength));
+    } finally {
+      Arrays.fill(clientMaterial, (byte) 0);
+      Arrays.fill(serverMaterial, (byte) 0);
+    }
   }
 
   static byte[] hkdfSalt(

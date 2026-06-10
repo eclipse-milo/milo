@@ -184,7 +184,21 @@ public final class FiniteFieldDhKeyAgreementUtil {
       keyAgreement.init(privateKey);
       keyAgreement.doPhase(peerPublicKey, true);
 
-      return fixedWidthUnsigned(new BigInteger(1, keyAgreement.generateSecret()));
+      // Capture the raw provider secret in a local and the BigInteger's magnitude copy so both
+      // can be zeroed; the BigInteger itself is immutable and cannot be cleared, but its byte
+      // copies must not linger on the heap.
+      byte[] secretBytes = keyAgreement.generateSecret();
+      byte[] secretMagnitude = null;
+      try {
+        secretMagnitude = new BigInteger(1, secretBytes).toByteArray();
+
+        return fixedWidthUnsignedSecret(secretMagnitude);
+      } finally {
+        Arrays.fill(secretBytes, (byte) 0);
+        if (secretMagnitude != null) {
+          Arrays.fill(secretMagnitude, (byte) 0);
+        }
+      }
     } catch (GeneralSecurityException e) {
       throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
     }
@@ -207,19 +221,31 @@ public final class FiniteFieldDhKeyAgreementUtil {
   }
 
   private static byte[] fixedWidthUnsigned(BigInteger value) throws UaException {
-    byte[] bytes = value.toByteArray();
+    return fixedWidthUnsignedSecret(value.toByteArray());
+  }
+
+  /**
+   * Left-pad a {@code BigInteger.toByteArray()} magnitude to the fixed ffdhe3072 wire width.
+   *
+   * <p>The caller owns {@code magnitude} and is responsible for zeroing it when it holds secret
+   * material; this method only reads from it and never retains a reference.
+   */
+  private static byte[] fixedWidthUnsignedSecret(byte[] magnitude) throws UaException {
+    byte[] bytes = magnitude;
+    int from = 0;
 
     if (bytes.length > 1 && bytes[0] == 0) {
-      bytes = Arrays.copyOfRange(bytes, 1, bytes.length);
+      from = 1;
     }
 
-    if (bytes.length > FFDHE_3072_PUBLIC_KEY_LENGTH) {
+    int len = bytes.length - from;
+    if (len > FFDHE_3072_PUBLIC_KEY_LENGTH) {
       throw new UaException(StatusCodes.Bad_NonceInvalid, "public value does not fit wire width");
     }
 
     byte[] fixed = new byte[FFDHE_3072_PUBLIC_KEY_LENGTH];
 
-    System.arraycopy(bytes, 0, fixed, FFDHE_3072_PUBLIC_KEY_LENGTH - bytes.length, bytes.length);
+    System.arraycopy(bytes, from, fixed, FFDHE_3072_PUBLIC_KEY_LENGTH - len, len);
 
     return fixed;
   }
