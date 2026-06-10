@@ -13,8 +13,10 @@ package org.eclipse.milo.opcua.sdk.server;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
@@ -26,6 +28,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -496,6 +501,82 @@ public class EndpointConfigTest {
     assertArrayEquals(
         second.certificate().getEncoded(),
         refreshedDescription.getServerCertificate().bytesOrEmpty());
+  }
+
+  // A reset that overlaps an in-flight getEndpointDescriptions must still take effect: once
+  // resetEndpointDescriptionCache() returns, the next call re-runs endpoint resolution instead
+  // of serving descriptions cached by the racing call.
+  @Test
+  public void resetEndpointDescriptionCacheOverlappingGetStillReselectsCertificate()
+      throws Exception {
+    CertificateMaterial first = rsaCertificate("first");
+    CertificateMaterial second = rsaCertificate("second");
+    CertificateManager certificateManager =
+        manager(group(new NodeId(2, "group-a"), first), group(new NodeId(2, "group-b"), second));
+
+    AtomicReference<X509Certificate> certificateRef = new AtomicReference<>(first.certificate());
+    var gateSupplier = new AtomicBoolean(false);
+    var supplierEntered = new CountDownLatch(1);
+    var resumeSupplier = new CountDownLatch(1);
+
+    EndpointConfig endpoint =
+        EndpointConfig.newBuilder()
+            .setCertificate(
+                () -> {
+                  X509Certificate certificate = certificateRef.get();
+                  if (gateSupplier.get()) {
+                    supplierEntered.countDown();
+                    try {
+                      resumeSupplier.await();
+                    } catch (InterruptedException e) {
+                      Thread.currentThread().interrupt();
+                      throw new RuntimeException(e);
+                    }
+                  }
+                  return certificate;
+                })
+            .setSecurityPolicy(SecurityPolicy.Basic256Sha256)
+            .setSecurityMode(MessageSecurityMode.SignAndEncrypt)
+            .build();
+
+    OpcUaServer server = server(Set.of(endpoint), certificateManager);
+
+    assertArrayEquals(
+        first.certificate().getEncoded(),
+        server
+            .getApplicationContext()
+            .getEndpointDescriptions()
+            .get(0)
+            .getServerCertificate()
+            .bytesOrEmpty());
+
+    // Start a resolution that captures the pre-rotation certificate, then pauses mid-flight.
+    server.resetEndpointDescriptionCache();
+    gateSupplier.set(true);
+    Thread reader = new Thread(() -> server.getApplicationContext().getEndpointDescriptions());
+    reader.start();
+    assertTrue(supplierEntered.await(5, TimeUnit.SECONDS));
+
+    // Rotate the certificate and reset while the stale resolution is still in flight.
+    certificateRef.set(second.certificate());
+    gateSupplier.set(false);
+    Thread resetter = new Thread(server::resetEndpointDescriptionCache);
+    resetter.start();
+
+    resumeSupplier.countDown();
+    reader.join(5_000);
+    resetter.join(5_000);
+    assertFalse(reader.isAlive());
+    assertFalse(resetter.isAlive());
+
+    assertArrayEquals(
+        second.certificate().getEncoded(),
+        server
+            .getApplicationContext()
+            .getEndpointDescriptions()
+            .get(0)
+            .getServerCertificate()
+            .bytesOrEmpty());
   }
 
   private static RequestHeader requestHeader() {

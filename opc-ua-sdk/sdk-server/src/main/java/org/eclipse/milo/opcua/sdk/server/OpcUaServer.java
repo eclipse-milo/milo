@@ -150,7 +150,6 @@ public class OpcUaServer extends AbstractServiceHandler {
 
   private final ServerDiagnosticsSummary diagnosticsSummary = new ServerDiagnosticsSummary(this);
 
-  private final Lazy<List<EndpointDescription>> endpointDescriptions = new Lazy<>();
   private final Lazy<List<ResolvedEndpoint>> resolvedEndpoints = new Lazy<>();
 
   private final List<EndpointConfig> boundEndpoints = new CopyOnWriteArrayList<>();
@@ -594,7 +593,6 @@ public class OpcUaServer extends AbstractServiceHandler {
    * reset.
    */
   public void resetEndpointDescriptionCache() {
-    endpointDescriptions.reset();
     resolvedEndpoints.reset();
   }
 
@@ -825,9 +823,7 @@ public class OpcUaServer extends AbstractServiceHandler {
 
     @Override
     public List<EndpointDescription> getEndpointDescriptions() {
-      return endpointDescriptions.get(
-          () ->
-              getResolvedEndpoints().stream().map(ResolvedEndpoint::endpointDescription).toList());
+      return getResolvedEndpoints().stream().map(ResolvedEndpoint::endpointDescription).toList();
     }
 
     @Override
