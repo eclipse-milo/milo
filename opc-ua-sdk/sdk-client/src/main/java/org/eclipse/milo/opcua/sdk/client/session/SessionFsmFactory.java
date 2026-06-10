@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -69,6 +70,8 @@ import org.eclipse.milo.opcua.stack.core.security.EccUserTokenAdditionalHeader;
 import org.eclipse.milo.opcua.stack.core.security.SecurityAlgorithm;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
+import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
+import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
@@ -1708,18 +1711,26 @@ public class SessionFsmFactory {
       UserIdentityToken userIdentityToken = signedIdentityToken.getToken();
       SignatureData userTokenSignature = signedIdentityToken.getSignature();
 
-      var request =
-          new ActivateSessionRequest(
-              withAdditionalHeader(
-                  client.newRequestHeader(session.getAuthenticationToken()),
-                  buildActivateSessionAdditionalHeader(
-                      client.getStaticEncodingContext(), userTokenSecurityPolicy)),
-              buildClientSignature(
-                  client, session.getServerCertificate(), serverNonce, session.getClientNonce()),
-              new SignedSoftwareCertificate[0],
-              client.getConfig().getSessionLocaleIds(),
-              ExtensionObject.encode(client.getStaticEncodingContext(), userIdentityToken),
-              userTokenSignature);
+      // Reactivation may have to await an in-progress reconnect, so build the request (and
+      // therefore the channel-bound client signature) only once the new channel is ready. Reading
+      // getChannelThumbprint() before the handshake completes would sign over the dead channel's
+      // thumbprint and be rejected with Bad_ApplicationSignatureInvalid.
+      Callable<UaRequestMessageType> requestSupplier =
+          () ->
+              new ActivateSessionRequest(
+                  withAdditionalHeader(
+                      client.newRequestHeader(session.getAuthenticationToken()),
+                      buildActivateSessionAdditionalHeader(
+                          client.getStaticEncodingContext(), userTokenSecurityPolicy)),
+                  buildClientSignature(
+                      client,
+                      session.getServerCertificate(),
+                      serverNonce,
+                      session.getClientNonce()),
+                  new SignedSoftwareCertificate[0],
+                  client.getConfig().getSessionLocaleIds(),
+                  ExtensionObject.encode(client.getStaticEncodingContext(), userIdentityToken),
+                  userTokenSignature);
 
       try (MDCCloseable ignored =
           MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
@@ -1727,9 +1738,7 @@ public class SessionFsmFactory {
         LOGGER.debug("Sending ActivateSessionRequest...");
       }
 
-      return client
-          .getTransport()
-          .sendRequestMessage(request)
+      return sendWhenChannelReady(client.getTransport(), requestSupplier)
           .thenApply(ActivateSessionResponse.class::cast)
           .thenCompose(
               asr -> {
@@ -1755,6 +1764,42 @@ public class SessionFsmFactory {
     } catch (Exception ex) {
       return failedFuture(ex);
     }
+  }
+
+  /**
+   * Send a request whose contents may bind to the carrying SecureChannel, building it only once the
+   * transport's channel is ready.
+   *
+   * <p>{@link OpcClientTransport#sendRequestMessage} awaits an in-progress reconnect internally, so
+   * a channel-bound request built eagerly (e.g. an enhanced-policy ActivateSession signature over
+   * {@link OpcClientTransport#getChannelThumbprint()}) could sign over the dead channel's
+   * thumbprint and be sent on the channel that replaces it. For {@link OpcTcpClientTransport} the
+   * ChannelFsm's channel future completes only after the handshake publishes the new channel's
+   * thumbprint, so awaiting it before invoking {@code requestSupplier} guarantees a fresh read.
+   * Other transports have no channel binding and build immediately.
+   *
+   * @param transport the {@link OpcClientTransport} to send on.
+   * @param requestSupplier supplies the request to send, invoked once the channel is ready; any
+   *     exception it throws completes the returned future exceptionally.
+   * @return a {@link CompletableFuture} that completes successfully with the {@link
+   *     UaResponseMessageType} or completes exceptionally if an error occurred.
+   */
+  static CompletableFuture<UaResponseMessageType> sendWhenChannelReady(
+      OpcClientTransport transport, Callable<UaRequestMessageType> requestSupplier) {
+
+    CompletableFuture<?> channelReady =
+        transport instanceof OpcTcpClientTransport tcpTransport
+            ? tcpTransport.getChannelFsm().getChannel()
+            : completedFuture(null);
+
+    return channelReady.thenCompose(
+        ignored -> {
+          try {
+            return transport.sendRequestMessage(requestSupplier.call());
+          } catch (Exception e) {
+            return failedFuture(e);
+          }
+        });
   }
 
   @SuppressWarnings("Duplicates")
