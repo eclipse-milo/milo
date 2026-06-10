@@ -507,7 +507,7 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
 
       secureChannel.setRemoteNonce(serverNonce);
 
-      if (usesEphemeralKeyAgreement(secureChannel.getSecurityPolicyProfile())) {
+      if (secureChannel.getSecurityPolicyProfile().usesEphemeralKeyAgreement()) {
         KeyPair ephemeralKeyPair = localEphemeralKeyPair;
 
         if (ephemeralKeyPair == null) {
@@ -740,7 +740,7 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
 
     SecurityPolicyProfile profile = secureChannel.getSecurityPolicyProfile();
 
-    if (usesEphemeralKeyAgreement(profile)) {
+    if (profile.usesEphemeralKeyAgreement()) {
       localEphemeralKeyPair = ChannelSecurity.generateEphemeralKeyPair(profile);
 
       return ChannelSecurity.encodeEphemeralPublicKey(profile, localEphemeralKeyPair);
@@ -917,29 +917,10 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
     }
   }
 
-  private static boolean usesEphemeralKeyAgreement(SecurityPolicyProfile profile) {
-    // These axes replace random nonce bytes with ephemeral public keys in OpenSecureChannel
-    // ClientNonce/ServerNonce. Keep this gate aligned with NonceUtil, the profile registry, and
-    // ChannelSecurity key generation so Issue and Renew both retain the matching private key.
-    return switch (profile.keyAgreementAxis()) {
-      case ECDH_NIST_P256,
-          ECDH_NIST_P384,
-          ECDH_BRAINPOOL_P256R1,
-          ECDH_BRAINPOOL_P384R1,
-          X25519,
-          X448,
-          FFDH_3072 ->
-          true;
-      default -> false;
-    };
-  }
-
   private static void requireSupportedMessageSecurityMode(
       SecurityPolicyProfile profile, MessageSecurityMode securityMode) throws UaException {
 
-    if (profile.secureChannelEnhancements()
-        && securityMode != MessageSecurityMode.SignAndEncrypt
-        && !isAeadSignSupported(profile, securityMode)) {
+    if (!profile.isMessageSecurityModeSupported(securityMode)) {
       throw new UaException(
           StatusCodes.Bad_SecurityPolicyRejected,
           "message security mode is not supported for "
@@ -947,17 +928,5 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
               + ": "
               + securityMode);
     }
-  }
-
-  private static boolean isAeadSignSupported(
-      SecurityPolicyProfile profile, MessageSecurityMode mode) {
-    if (mode != MessageSecurityMode.Sign || !profile.secureChannelSupported()) {
-      return false;
-    }
-
-    return switch (profile.chunkProtectionAxis()) {
-      case AES_GCM, CHACHA20_POLY1305 -> true;
-      default -> false;
-    };
   }
 }

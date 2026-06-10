@@ -618,7 +618,7 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
       ByteString localNonce;
 
       SecurityPolicyProfile profile = secureChannel.getSecurityPolicyProfile();
-      if (usesEphemeralKeyAgreement(profile)) {
+      if (profile.usesEphemeralKeyAgreement()) {
         localEphemeralKeyPair = ChannelSecurity.generateEphemeralKeyPair(profile);
         localNonce = ChannelSecurity.encodeEphemeralPublicKey(profile, localEphemeralKeyPair);
       } else {
@@ -705,29 +705,10 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
     }
   }
 
-  private static boolean usesEphemeralKeyAgreement(SecurityPolicyProfile profile) {
-    // These axes replace random nonce bytes with ephemeral public keys in OpenSecureChannel
-    // ClientNonce/ServerNonce. Keep this gate aligned with NonceUtil, the profile registry, and
-    // ChannelSecurity key generation so Issue and Renew both generate fresh server-side material.
-    return switch (profile.keyAgreementAxis()) {
-      case ECDH_NIST_P256,
-          ECDH_NIST_P384,
-          ECDH_BRAINPOOL_P256R1,
-          ECDH_BRAINPOOL_P384R1,
-          X25519,
-          X448,
-          FFDH_3072 ->
-          true;
-      default -> false;
-    };
-  }
-
   private static void requireSupportedMessageSecurityMode(
       SecurityPolicyProfile profile, MessageSecurityMode securityMode) throws UaException {
 
-    if (profile.secureChannelEnhancements()
-        && securityMode != MessageSecurityMode.SignAndEncrypt
-        && !isAeadSignSupported(profile, securityMode)) {
+    if (!profile.isMessageSecurityModeSupported(securityMode)) {
       throw new UaException(
           StatusCodes.Bad_SecurityPolicyRejected,
           "message security mode is not supported for "
@@ -735,17 +716,5 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
               + ": "
               + securityMode);
     }
-  }
-
-  private static boolean isAeadSignSupported(
-      SecurityPolicyProfile profile, MessageSecurityMode mode) {
-    if (mode != MessageSecurityMode.Sign || !profile.secureChannelSupported()) {
-      return false;
-    }
-
-    return switch (profile.chunkProtectionAxis()) {
-      case AES_GCM, CHACHA20_POLY1305 -> true;
-      default -> false;
-    };
   }
 }

@@ -655,8 +655,7 @@ public class OpcUaServer extends AbstractServiceHandler {
       EndpointConfig endpoint, SecurityPolicyProfile profile) throws EndpointResolutionException {
 
     if (profile.secureChannelEnhancements()) {
-      if (endpoint.getSecurityMode() != MessageSecurityMode.SignAndEncrypt
-          && !isAeadSignSupported(profile, endpoint.getSecurityMode())) {
+      if (!profile.isMessageSecurityModeSupported(endpoint.getSecurityMode())) {
         throw new EndpointResolutionException(
             "message security mode is not supported for "
                 + endpoint.getSecurityPolicy().getUri()
@@ -664,7 +663,7 @@ public class OpcUaServer extends AbstractServiceHandler {
                 + endpoint.getSecurityMode());
       }
 
-      if (hasSdkSessionSupport(profile.securityPolicy())) {
+      if (profile.secureChannelSupported()) {
         return;
       }
 
@@ -674,35 +673,6 @@ public class OpcUaServer extends AbstractServiceHandler {
               + "; OpenSecureChannel transport support is available, but CreateSession/"
               + "ActivateSession integration is deferred");
     }
-  }
-
-  private static boolean isAeadSignSupported(
-      SecurityPolicyProfile profile, MessageSecurityMode mode) {
-    if (mode != MessageSecurityMode.Sign || !profile.secureChannelSupported()) {
-      return false;
-    }
-
-    return switch (profile.chunkProtectionAxis()) {
-      case AES_GCM, CHACHA20_POLY1305 -> true;
-      default -> false;
-    };
-  }
-
-  private static boolean hasSdkSessionSupport(SecurityPolicy securityPolicy) {
-    return securityPolicy == SecurityPolicy.ECC_nistP256_AesGcm
-        || securityPolicy == SecurityPolicy.ECC_nistP256_ChaChaPoly
-        || securityPolicy == SecurityPolicy.ECC_nistP384_AesGcm
-        || securityPolicy == SecurityPolicy.ECC_nistP384_ChaChaPoly
-        || securityPolicy == SecurityPolicy.ECC_brainpoolP256r1_AesGcm
-        || securityPolicy == SecurityPolicy.ECC_brainpoolP256r1_ChaChaPoly
-        || securityPolicy == SecurityPolicy.ECC_curve25519_AesGcm
-        || securityPolicy == SecurityPolicy.ECC_curve25519_ChaChaPoly
-        || securityPolicy == SecurityPolicy.ECC_curve448_AesGcm
-        || securityPolicy == SecurityPolicy.ECC_curve448_ChaChaPoly
-        || securityPolicy == SecurityPolicy.ECC_brainpoolP384r1_AesGcm
-        || securityPolicy == SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly
-        || securityPolicy == SecurityPolicy.RSA_DH_AesGcm
-        || securityPolicy == SecurityPolicy.RSA_DH_ChaChaPoly;
   }
 
   private CertificateIdentity resolveCertificateIdentity(

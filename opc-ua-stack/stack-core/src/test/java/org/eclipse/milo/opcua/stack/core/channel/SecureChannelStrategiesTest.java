@@ -522,6 +522,22 @@ class SecureChannelStrategiesTest {
                     ByteBuffer.wrap(new byte[] {0x01, 0x02, 0x03})));
   }
 
+  // The capability gates (endpoint advertisement, client OPN, server OPN) derive AEAD-Sign support
+  // from SecurityPolicyProfile.usesAeadChunkProtection(). If that profile fact ever disagreed with
+  // the chunk-protection strategy that actually frames symmetric chunks, a policy could advertise
+  // Sign while the codec produced a non-AEAD footer no peer could verify (or vice versa). Asserting
+  // agreement for every policy keeps the profile metadata and the strategy layer in lockstep.
+  @ParameterizedTest
+  @EnumSource(SecurityPolicy.class)
+  void profileAeadFactMatchesChunkProtectionStrategy(SecurityPolicy securityPolicy) {
+    SecurityPolicyProfile profile = securityPolicy.getProfile();
+
+    assertEquals(
+        SecureChannelStrategies.chunkProtection(profile).isAead(),
+        profile.usesAeadChunkProtection(),
+        securityPolicy.toString());
+  }
+
   private static ByteString nonce(int length, int seed) {
     byte[] bytes = new byte[length];
     for (int i = 0; i < bytes.length; i++) {

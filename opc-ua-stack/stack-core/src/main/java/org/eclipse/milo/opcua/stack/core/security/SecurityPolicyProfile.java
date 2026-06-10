@@ -170,6 +170,66 @@ public record SecurityPolicyProfile(
     return level;
   }
 
+  /**
+   * Whether OpenSecureChannel carries ephemeral public keys in {@code ClientNonce}/{@code
+   * ServerNonce} instead of random nonce bytes.
+   *
+   * <p>Callers that issue or renew a SecureChannel use this to decide whether to generate and
+   * retain an ephemeral key pair for the matching key-agreement axis.
+   *
+   * @return {@code true} when the key-agreement axis exchanges ephemeral public keys.
+   */
+  public boolean usesEphemeralKeyAgreement() {
+    return switch (keyAgreementAxis) {
+      case ECDH_NIST_P256,
+          ECDH_NIST_P384,
+          ECDH_BRAINPOOL_P256R1,
+          ECDH_BRAINPOOL_P384R1,
+          X25519,
+          X448,
+          FFDH_3072 ->
+          true;
+      case NONE, RSA_NONCE -> false;
+    };
+  }
+
+  /**
+   * Whether symmetric service chunks are protected with an AEAD cipher rather than a separate
+   * CBC/HMAC signature.
+   *
+   * @return {@code true} when the chunk-protection axis is an AEAD family.
+   */
+  public boolean usesAeadChunkProtection() {
+    return switch (chunkProtectionAxis) {
+      case AES_GCM, CHACHA20_POLY1305 -> true;
+      case NONE, CBC_HMAC -> false;
+    };
+  }
+
+  /**
+   * Whether this profile can open a SecureChannel using the given message security mode.
+   *
+   * <p>Legacy policies accept any mode. SecureChannelEnhancements policies always accept {@code
+   * SignAndEncrypt}; they accept {@code Sign} only when chunk protection is AEAD (the
+   * authentication tag doubles as the chunk signature) and the SecureChannel runtime supports the
+   * policy. No enhanced policy accepts {@code None} or {@code Invalid}.
+   *
+   * @param securityMode the message security mode being negotiated.
+   * @return {@code true} when the mode is supported for this profile.
+   * @throws NullPointerException if {@code securityMode} is null.
+   */
+  public boolean isMessageSecurityModeSupported(MessageSecurityMode securityMode) {
+    if (!secureChannelEnhancements) {
+      return true;
+    }
+
+    return switch (securityMode) {
+      case SignAndEncrypt -> true;
+      case Sign -> secureChannelSupported && usesAeadChunkProtection();
+      default -> false;
+    };
+  }
+
   /** The certificate and OpenSecureChannel signature family used by a policy. */
   public enum AuthAxis {
     NONE,

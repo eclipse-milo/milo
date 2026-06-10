@@ -69,6 +69,29 @@ public class SecurityPolicyTest {
   private static final Set<SecurityPolicy> RSA_DH_POLICIES =
       EnumSet.of(SecurityPolicy.RSA_DH_AesGcm, SecurityPolicy.RSA_DH_ChaChaPoly);
 
+  // Every current enhanced policy carries ephemeral public keys in ClientNonce/ServerNonce (ECDH,
+  // XDH, or ffdhe3072) and protects symmetric chunks with an AEAD cipher. The two facts coincide
+  // for the 14 policies that exist today, but they are pinned independently so a future policy that
+  // breaks the coincidence (e.g. an ephemeral CBC policy) is caught rather than assumed.
+  private static final Set<SecurityPolicy> EPHEMERAL_POLICIES =
+      EnumSet.of(
+          SecurityPolicy.ECC_nistP256_AesGcm,
+          SecurityPolicy.ECC_nistP256_ChaChaPoly,
+          SecurityPolicy.ECC_nistP384_AesGcm,
+          SecurityPolicy.ECC_nistP384_ChaChaPoly,
+          SecurityPolicy.ECC_brainpoolP256r1_AesGcm,
+          SecurityPolicy.ECC_brainpoolP256r1_ChaChaPoly,
+          SecurityPolicy.ECC_curve25519_AesGcm,
+          SecurityPolicy.ECC_curve25519_ChaChaPoly,
+          SecurityPolicy.ECC_curve448_AesGcm,
+          SecurityPolicy.ECC_curve448_ChaChaPoly,
+          SecurityPolicy.ECC_brainpoolP384r1_AesGcm,
+          SecurityPolicy.ECC_brainpoolP384r1_ChaChaPoly,
+          SecurityPolicy.RSA_DH_AesGcm,
+          SecurityPolicy.RSA_DH_ChaChaPoly);
+
+  private static final Set<SecurityPolicy> AEAD_POLICIES = EnumSet.copyOf(EPHEMERAL_POLICIES);
+
   @Test
   public void testPolicyUriLookupRecognizesCurrentEnhancedPolicies() throws UaException {
     assertSame(
@@ -456,6 +479,49 @@ public class SecurityPolicyTest {
     assertDoesNotThrow(
         () ->
             SecurityPolicyProfiles.requireSecureChannelSupported(SecurityPolicy.RSA_DH_ChaChaPoly));
+  }
+
+  // These ephemeral-key-agreement and AEAD facts back the capability gates that endpoint
+  // advertisement, the client OPN, and the server OPN all consult. Pinning the exact set of
+  // ephemeral/AEAD policies means a profile edit (or a future policy) that flips either fact has to
+  // change this expectation, instead of silently disappearing from advertisement or being treated
+  // as a random-nonce policy by one of the handlers.
+  @ParameterizedTest
+  @EnumSource(SecurityPolicy.class)
+  public void testEphemeralAndAeadProfileFactsArePinned(SecurityPolicy policy) {
+    SecurityPolicyProfile profile = policy.getProfile();
+
+    assertEquals(EPHEMERAL_POLICIES.contains(policy), profile.usesEphemeralKeyAgreement());
+    assertEquals(AEAD_POLICIES.contains(policy), profile.usesAeadChunkProtection());
+  }
+
+  // The single capability gate must answer identically for every policy x mode. Pinning the exact
+  // supported-mode set per policy keeps advertisement, the client OPN, and the server OPN agreeing
+  // on which modes a policy accepts; a profile edit that changed the answer would have to update
+  // this matrix rather than silently diverging one call site from the others.
+  @ParameterizedTest
+  @EnumSource(SecurityPolicy.class)
+  public void testMessageSecurityModeSupportMatchesProfileCapabilities(SecurityPolicy policy) {
+    SecurityPolicyProfile profile = policy.getProfile();
+    Set<MessageSecurityMode> supportedModes = supportedModes(policy);
+
+    for (MessageSecurityMode mode : MessageSecurityMode.values()) {
+      assertEquals(
+          supportedModes.contains(mode),
+          profile.isMessageSecurityModeSupported(mode),
+          policy + " / " + mode);
+    }
+  }
+
+  // Legacy policies accept every mode; enhanced policies advertise SignAndEncrypt plus Sign (their
+  // AEAD tag doubles as the chunk signature) and reject None/Invalid. All 14 current enhanced
+  // policies are AEAD, so each accepts exactly {Sign, SignAndEncrypt}.
+  private static Set<MessageSecurityMode> supportedModes(SecurityPolicy policy) {
+    if (LEGACY_POLICIES.contains(policy)) {
+      return EnumSet.allOf(MessageSecurityMode.class);
+    }
+
+    return EnumSet.of(MessageSecurityMode.Sign, MessageSecurityMode.SignAndEncrypt);
   }
 
   private static Stream<SecurityPolicy> legacyPolicies() {
