@@ -28,13 +28,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.milo.opcua.sdk.client.identity.AnonymousProvider;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.Stack;
+import org.eclipse.milo.opcua.stack.core.security.CertificateGroup;
 import org.eclipse.milo.opcua.stack.core.security.CertificateIdentity;
 import org.eclipse.milo.opcua.stack.core.security.CertificateIdentitySelector;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
+import org.eclipse.milo.opcua.stack.core.security.CertificateQuarantine;
 import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
@@ -247,6 +250,91 @@ public class OpcUaClientConfigTest {
     assertSame(identityU, client.getCertificateIdentity(tokenProfile).orElseThrow());
     assertSame(identityA, client.getCertificateIdentity(endpointProfile).orElseThrow());
     assertEquals(1, endpointSelections.get());
+  }
+
+  // setCertificate() configures an explicit client certificate. When a CertificateManager holds
+  // multiple compatible identities, the client must present the explicitly configured one rather
+  // than whatever the default selector would otherwise prefer, matching the server-side contract
+  // where an explicit certificate is a selection preference. Both the SecureChannel and the
+  // CreateSession identity lookups must resolve that configured certificate.
+  @Test
+  public void clientPrefersExplicitlyConfiguredCertificate() throws Exception {
+    KeyPair keyPairA = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+    KeyPair keyPairB = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+    X509Certificate certificateA = rsaCertificate(keyPairA);
+    X509Certificate certificateB = rsaCertificate(keyPairB);
+
+    // Both identities share the same group/type, so the default selection order treats them as
+    // equal and would otherwise pick the first (identity A).
+    CertificateIdentity identityA = identity(keyPairA, certificateA, "group");
+    CertificateIdentity identityB = identity(keyPairB, certificateB, "group");
+
+    CertificateManager certificateManager = multiIdentityManager(List.of(identityA, identityB));
+
+    OpcClientTransportConfig transportConfig = mock(OpcClientTransportConfig.class);
+    when(transportConfig.getExecutor()).thenReturn(Stack.sharedExecutor());
+    OpcClientTransport transport = mock(OpcClientTransport.class);
+    when(transport.getConfig()).thenReturn(transportConfig);
+
+    OpcUaClientConfig config =
+        OpcUaClientConfig.builder()
+            .setEndpoint(endpoint)
+            .setCertificateManager(certificateManager)
+            .setKeyPair(keyPairB)
+            .setCertificate(certificateB)
+            .build();
+    OpcUaClient client = new OpcUaClient(config, transport);
+
+    SecurityPolicyProfile profile = SecurityPolicy.Basic256Sha256.getProfile();
+    CertificateIdentity selected = client.getCertificateIdentity(profile).orElseThrow();
+
+    assertEquals(certificateB, selected.certificate());
+    // Repeated lookups (SecureChannel open and CreateSession) must resolve the same identity.
+    assertEquals(certificateB, client.getCertificateIdentity(profile).orElseThrow().certificate());
+  }
+
+  private static CertificateManager multiIdentityManager(List<CertificateIdentity> identities) {
+    return new CertificateManager() {
+      @Override
+      public List<CertificateIdentity> getCertificateIdentities() {
+        return identities;
+      }
+
+      @Override
+      public Optional<KeyPair> getKeyPair(ByteString thumbprint) {
+        return Optional.empty();
+      }
+
+      @Override
+      public Optional<X509Certificate> getCertificate(ByteString thumbprint) {
+        return Optional.empty();
+      }
+
+      @Override
+      public Optional<X509Certificate[]> getCertificateChain(ByteString thumbprint) {
+        return Optional.empty();
+      }
+
+      @Override
+      public Optional<CertificateGroup> getCertificateGroup(ByteString thumbprint) {
+        return Optional.empty();
+      }
+
+      @Override
+      public Optional<CertificateGroup> getCertificateGroup(NodeId certificateGroupId) {
+        return Optional.empty();
+      }
+
+      @Override
+      public List<CertificateGroup> getCertificateGroups() {
+        return List.of();
+      }
+
+      @Override
+      public CertificateQuarantine getCertificateQuarantine() {
+        throw new UnsupportedOperationException();
+      }
+    };
   }
 
   private static CertificateIdentity identity(

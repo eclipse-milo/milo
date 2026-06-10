@@ -82,13 +82,16 @@ public record CertificateIdentitySelectionContext(
    * @param securityPolicyProfile the selected endpoint security-policy profile.
    * @param certificateGroupId the certificate group to select from, or {@code null}.
    * @param certificateTypeId the preferred certificate type, or {@code null}.
+   * @param explicitCertificate the explicitly configured client certificate to prefer, or {@code
+   *     null}.
    * @return a selection context for client connection setup.
    */
   public static CertificateIdentitySelectionContext forClientConnectionSetup(
       CertificateManager certificateManager,
       SecurityPolicyProfile securityPolicyProfile,
       @Nullable NodeId certificateGroupId,
-      @Nullable NodeId certificateTypeId) {
+      @Nullable NodeId certificateTypeId,
+      @Nullable X509Certificate explicitCertificate) {
 
     return new CertificateIdentitySelectionContext(
         Purpose.CLIENT_CONNECTION_SETUP,
@@ -96,7 +99,7 @@ public record CertificateIdentitySelectionContext(
         securityPolicyProfile,
         certificateGroupId,
         certificateTypeId,
-        null);
+        explicitCertificate);
   }
 
   /**

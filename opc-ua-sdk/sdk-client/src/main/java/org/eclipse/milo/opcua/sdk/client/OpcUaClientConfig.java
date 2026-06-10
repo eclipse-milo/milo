@@ -139,7 +139,8 @@ public interface OpcUaClientConfig {
             certificateManager.get(),
             securityPolicyProfile,
             getCertificateGroupId().orElse(null),
-            getCertificateTypeId().orElse(null));
+            getCertificateTypeId().orElse(null),
+            getCertificate().orElse(null));
 
     return getCertificateIdentitySelector().select(context);
   }
