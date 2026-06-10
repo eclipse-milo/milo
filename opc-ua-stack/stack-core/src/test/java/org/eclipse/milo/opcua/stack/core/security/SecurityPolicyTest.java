@@ -30,6 +30,8 @@ import static org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.S
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -46,10 +48,26 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @NullMarked
 public class SecurityPolicyTest {
+
+  // The original RSA-era policies are the only ones whose legacy algorithm getters are non-null.
+  private static final Set<SecurityPolicy> LEGACY_POLICIES =
+      EnumSet.of(
+          SecurityPolicy.None,
+          SecurityPolicy.Basic128Rsa15,
+          SecurityPolicy.Basic256,
+          SecurityPolicy.Basic256Sha256,
+          SecurityPolicy.Aes128_Sha256_RsaOaep,
+          SecurityPolicy.Aes256_Sha256_RsaPss);
+
+  // RSA-DH is enhanced (non-legacy) but still uses RSA application certificates, so unlike the ECC
+  // policies it keeps a non-null certificate-signature axis.
+  private static final Set<SecurityPolicy> RSA_DH_POLICIES =
+      EnumSet.of(SecurityPolicy.RSA_DH_AesGcm, SecurityPolicy.RSA_DH_ChaChaPoly);
 
   @Test
   public void testPolicyUriLookupRecognizesCurrentEnhancedPolicies() throws UaException {
@@ -225,6 +243,89 @@ public class SecurityPolicyTest {
         SecurityAlgorithm.None, SecurityPolicy.None.getProfile().certificateThumbprintAlgorithm());
   }
 
+  // isLegacy() must partition the enum exactly into the six RSA-era policies and the enhanced
+  // ECC/RSA-DH policies, so it stays in sync with which constants expose non-null legacy getters.
+  @ParameterizedTest
+  @EnumSource(SecurityPolicy.class)
+  public void testIsLegacyMatchesRsaEraPolicies(SecurityPolicy policy) {
+    assertEquals(LEGACY_POLICIES.contains(policy), policy.isLegacy());
+  }
+
+  // Legacy policies must keep their legacy algorithm axes non-null; this is the API contract
+  // callers
+  // relied on before the enhanced policies were added, and the getters/optionals must agree.
+  @ParameterizedTest
+  @MethodSource("legacyPolicies")
+  public void testLegacyPolicyAlgorithmGettersAreNonNull(SecurityPolicy policy) {
+    assertNotNull(policy.getSymmetricSignatureAlgorithm());
+    assertNotNull(policy.getSymmetricEncryptionAlgorithm());
+    assertNotNull(policy.getKeyDerivationAlgorithm());
+    assertNotNull(policy.getCertificateSignatureAlgorithm());
+
+    assertEquals(
+        policy.getSymmetricSignatureAlgorithm(),
+        policy.findSymmetricSignatureAlgorithm().orElseThrow());
+    assertEquals(
+        policy.getSymmetricEncryptionAlgorithm(),
+        policy.findSymmetricEncryptionAlgorithm().orElseThrow());
+    assertEquals(
+        policy.getKeyDerivationAlgorithm(), policy.findKeyDerivationAlgorithm().orElseThrow());
+    assertEquals(
+        policy.getCertificateSignatureAlgorithm(),
+        policy.findCertificateSignatureAlgorithm().orElseThrow());
+  }
+
+  // The enhanced policies report null for the legacy symmetric/key-derivation axes, so embedders
+  // that enumerate values() and call these getters would NPE without first filtering on isLegacy().
+  @ParameterizedTest
+  @MethodSource("enhancedPolicies")
+  public void testEnhancedPolicyLegacyAlgorithmGettersAreNull(SecurityPolicy policy) {
+    assertNull(policy.getSymmetricSignatureAlgorithm());
+    assertNull(policy.getSymmetricEncryptionAlgorithm());
+    assertNull(policy.getKeyDerivationAlgorithm());
+
+    assertTrue(policy.findSymmetricSignatureAlgorithm().isEmpty());
+    assertTrue(policy.findSymmetricEncryptionAlgorithm().isEmpty());
+    assertTrue(policy.findKeyDerivationAlgorithm().isEmpty());
+  }
+
+  // The ECC policies describe certificate compatibility through profile metadata, so the
+  // certificate-signature getter is null for them. This is the only legacy axis where the enhanced
+  // families diverge, so pinning it keeps the documented nullability matrix honest.
+  @ParameterizedTest
+  @MethodSource("eccPolicies")
+  public void testEccPolicyCertificateSignatureGetterIsNull(SecurityPolicy policy) {
+    assertNull(policy.getCertificateSignatureAlgorithm());
+    assertTrue(policy.findCertificateSignatureAlgorithm().isEmpty());
+  }
+
+  // RSA-DH still authenticates with RSA application certificates, so its certificate-signature
+  // getter reports Sha256 (non-null) even though it is an enhanced, non-legacy policy. The Javadoc
+  // nullability matrix documents exactly this exception.
+  @ParameterizedTest
+  @MethodSource("rsaDhPolicies")
+  public void testRsaDhPolicyCertificateSignatureGetterIsSha256(SecurityPolicy policy) {
+    assertSame(SecurityAlgorithm.Sha256, policy.getCertificateSignatureAlgorithm());
+    assertSame(SecurityAlgorithm.Sha256, policy.findCertificateSignatureAlgorithm().orElseThrow());
+  }
+
+  // The whole point of isLegacy(): enumerating every constant and reading the nullable legacy
+  // getters only on the legacy ones must never throw, even as the enum grows.
+  @Test
+  public void testEnumerationFilteredByIsLegacyNeverThrows() {
+    assertDoesNotThrow(
+        () ->
+            Arrays.stream(SecurityPolicy.values())
+                .filter(SecurityPolicy::isLegacy)
+                .forEach(
+                    policy -> {
+                      assertNotNull(policy.getSymmetricSignatureAlgorithm());
+                      assertNotNull(policy.getSymmetricEncryptionAlgorithm());
+                      assertNotNull(policy.getKeyDerivationAlgorithm());
+                      assertNotNull(policy.getCertificateSignatureAlgorithm());
+                    }));
+  }
+
   // These tuples are the public policy contract that endpoint advertisement, certificate
   // selection, OpenSecureChannel, chunk codecs, and username-token encryption all share.
   @ParameterizedTest
@@ -355,6 +456,24 @@ public class SecurityPolicyTest {
     assertDoesNotThrow(
         () ->
             SecurityPolicyProfiles.requireSecureChannelSupported(SecurityPolicy.RSA_DH_ChaChaPoly));
+  }
+
+  private static Stream<SecurityPolicy> legacyPolicies() {
+    return LEGACY_POLICIES.stream();
+  }
+
+  private static Stream<SecurityPolicy> enhancedPolicies() {
+    return EnumSet.complementOf(EnumSet.copyOf(LEGACY_POLICIES)).stream();
+  }
+
+  private static Stream<SecurityPolicy> rsaDhPolicies() {
+    return RSA_DH_POLICIES.stream();
+  }
+
+  private static Stream<SecurityPolicy> eccPolicies() {
+    EnumSet<SecurityPolicy> ecc = EnumSet.complementOf(EnumSet.copyOf(LEGACY_POLICIES));
+    ecc.removeAll(RSA_DH_POLICIES);
+    return ecc.stream();
   }
 
   private static Stream<PolicyProfileExpectation> currentEccProfileExpectations() {

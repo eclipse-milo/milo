@@ -20,6 +20,20 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>Use {@link #fromUri(String)} to resolve a URI received from configuration, endpoints, or
  * SecureChannel headers. Use {@link #getProfile()} when policy metadata is needed.
+ *
+ * <p><b>Legacy vs. enhanced policies.</b> The original RSA-era policies ({@link #None}, {@link
+ * #Basic128Rsa15}, {@link #Basic256}, {@link #Basic256Sha256}, {@link #Aes128_Sha256_RsaOaep},
+ * {@link #Aes256_Sha256_RsaPss}) carry the full set of legacy algorithm axes, so {@link
+ * #getSymmetricSignatureAlgorithm()}, {@link #getSymmetricEncryptionAlgorithm()}, {@link
+ * #getKeyDerivationAlgorithm()}, and {@link #getCertificateSignatureAlgorithm()} return non-null
+ * values for them. The newer enhanced policies describe their behavior through profile axes
+ * instead, so the symmetric-signature, symmetric-encryption, and key-derivation getters return
+ * {@code null} for every ECC and RSA-DH policy. The certificate-signature getter returns {@code
+ * null} only for the ECC policies; the RSA-DH policies still authenticate with RSA application
+ * certificates and so return {@link SecurityAlgorithm#Sha256} from it. Code that enumerates {@link
+ * #values()} and reads the nullable legacy getters should first filter with {@link #isLegacy()}, or
+ * use the {@link Optional}-returning {@code find...Algorithm()} accessors, to avoid {@code
+ * NullPointerException} on the enhanced constants.
  */
 @SuppressWarnings("HttpUrlsUsage")
 public enum SecurityPolicy {
@@ -164,14 +178,45 @@ public enum SecurityPolicy {
   }
 
   /**
+   * Indicate whether this is a legacy RSA-era policy that exposes non-null legacy algorithm axes.
+   *
+   * <p>The legacy policies are {@link #None}, {@link #Basic128Rsa15}, {@link #Basic256}, {@link
+   * #Basic256Sha256}, {@link #Aes128_Sha256_RsaOaep}, and {@link #Aes256_Sha256_RsaPss}. For these
+   * constants the nullable getters ({@link #getSymmetricSignatureAlgorithm()}, {@link
+   * #getSymmetricEncryptionAlgorithm()}, {@link #getKeyDerivationAlgorithm()}, {@link
+   * #getCertificateSignatureAlgorithm()}) are guaranteed non-null. For every enhanced policy the
+   * symmetric-signature, symmetric-encryption, and key-derivation getters return {@code null}; the
+   * certificate-signature getter returns {@code null} only for the ECC policies, while the RSA-DH
+   * policies return {@link SecurityAlgorithm#Sha256} from it. Filter with this predicate before
+   * reading those getters when enumerating {@link #values()}.
+   *
+   * @return {@code true} if this is a legacy RSA-era policy whose legacy algorithm getters are
+   *     non-null; {@code false} for the ECC and RSA-DH policies.
+   */
+  public boolean isLegacy() {
+    return !getProfile().secureChannelEnhancements();
+  }
+
+  /**
    * Get the legacy symmetric signature algorithm for this policy.
    *
    * @return the symmetric signature algorithm. {@link SecurityPolicy#None} returns {@link
    *     SecurityAlgorithm#None}; secured policies return {@code null} when they do not use a legacy
    *     symmetric signature algorithm.
+   * @see #findSymmetricSignatureAlgorithm()
    */
   public @Nullable SecurityAlgorithm getSymmetricSignatureAlgorithm() {
     return getProfile().symmetricSignatureAlgorithm();
+  }
+
+  /**
+   * Get the legacy symmetric signature algorithm for this policy as an optional.
+   *
+   * @return the symmetric signature algorithm, or empty when this policy does not use a legacy
+   *     symmetric signature algorithm.
+   */
+  public Optional<SecurityAlgorithm> findSymmetricSignatureAlgorithm() {
+    return Optional.ofNullable(getSymmetricSignatureAlgorithm());
   }
 
   /**
@@ -180,9 +225,20 @@ public enum SecurityPolicy {
    * @return the symmetric encryption algorithm. {@link SecurityPolicy#None} returns {@link
    *     SecurityAlgorithm#None}; secured policies return {@code null} when they do not use a legacy
    *     symmetric encryption algorithm.
+   * @see #findSymmetricEncryptionAlgorithm()
    */
   public @Nullable SecurityAlgorithm getSymmetricEncryptionAlgorithm() {
     return getProfile().symmetricEncryptionAlgorithm();
+  }
+
+  /**
+   * Get the legacy symmetric encryption algorithm for this policy as an optional.
+   *
+   * @return the symmetric encryption algorithm, or empty when this policy does not use a legacy
+   *     symmetric encryption algorithm.
+   */
+  public Optional<SecurityAlgorithm> findSymmetricEncryptionAlgorithm() {
+    return Optional.ofNullable(getSymmetricEncryptionAlgorithm());
   }
 
   /**
@@ -224,9 +280,20 @@ public enum SecurityPolicy {
    * @return the key-derivation algorithm. {@link SecurityPolicy#None} returns {@link
    *     SecurityAlgorithm#None}; secured policies return {@code null} when they do not use a legacy
    *     key-derivation algorithm.
+   * @see #findKeyDerivationAlgorithm()
    */
   public @Nullable SecurityAlgorithm getKeyDerivationAlgorithm() {
     return getProfile().keyDerivationAlgorithm();
+  }
+
+  /**
+   * Get the legacy key-derivation algorithm for this policy as an optional.
+   *
+   * @return the key-derivation algorithm, or empty when this policy does not use a legacy
+   *     key-derivation algorithm.
+   */
+  public Optional<SecurityAlgorithm> findKeyDerivationAlgorithm() {
+    return Optional.ofNullable(getKeyDerivationAlgorithm());
   }
 
   /**
@@ -235,9 +302,20 @@ public enum SecurityPolicy {
    * @return the certificate signature algorithm. {@link SecurityPolicy#None} returns {@link
    *     SecurityAlgorithm#None}; secured policies return {@code null} when certificate
    *     compatibility is described by profile metadata instead.
+   * @see #findCertificateSignatureAlgorithm()
    */
   public @Nullable SecurityAlgorithm getCertificateSignatureAlgorithm() {
     return getProfile().certificateSignatureAlgorithm();
+  }
+
+  /**
+   * Get the legacy certificate signature algorithm for this policy as an optional.
+   *
+   * @return the certificate signature algorithm, or empty when certificate compatibility is
+   *     described by profile metadata instead.
+   */
+  public Optional<SecurityAlgorithm> findCertificateSignatureAlgorithm() {
+    return Optional.ofNullable(getCertificateSignatureAlgorithm());
   }
 
   /**
