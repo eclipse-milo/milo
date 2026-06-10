@@ -38,6 +38,28 @@
  * ffdhe3072 ephemeral public values in the nonce fields, HKDF-SHA-256 key derivation, and the same
  * AEAD chunk-protection boundary.
  *
+ * <h2>Supported ECC policy URIs</h2>
+ *
+ * <p>SecurityPolicy URIs use the base form {@code
+ * http://opcfoundation.org/UA/SecurityPolicy#<Name>}. The stack recognizes only the AEAD-suffixed
+ * ECC policy names: each supported curve ({@code ECC_nistP256}, {@code ECC_nistP384}, {@code
+ * ECC_brainpoolP256r1}, {@code ECC_brainpoolP384r1}, {@code ECC_curve25519}, {@code ECC_curve448})
+ * is paired with one of two chunk-protection suffixes, {@code _AesGcm} or {@code _ChaChaPoly}. For
+ * example, {@code http://opcfoundation.org/UA/SecurityPolicy#ECC_nistP256_AesGcm} resolves through
+ * {@link org.eclipse.milo.opcua.stack.core.security.SecurityPolicy#fromUri(String)} and {@link
+ * org.eclipse.milo.opcua.stack.core.security.SecurityPolicy#fromUriSafe(String)}, while {@code
+ * http://opcfoundation.org/UA/SecurityPolicy#ECC_nistP256} does not.
+ *
+ * <p>The original OPC UA 1.05 suffix-less ECC URIs ({@code #ECC_nistP256}, {@code #ECC_nistP384},
+ * {@code #ECC_brainpoolP256r1}, {@code #ECC_brainpoolP384r1}, {@code #ECC_curve25519}, {@code
+ * #ECC_curve448}) are deliberately not exposed and remain unknown to both {@code fromUri} and
+ * {@code fromUriSafe}. A peer that advertises only those suffix-less URIs will therefore find no
+ * common ECC policy: such endpoints are skipped during client-side endpoint selection, and an
+ * attempt to open a SecureChannel with one is rejected at the channel layer with {@code
+ * Bad_SecurityPolicyRejected}. This is the same handling as any other unknown URI, so it is not a
+ * behavioral regression relative to the base RSA-era policies. To negotiate ECC, both peers must
+ * advertise the AEAD-suffixed URIs above.
+ *
  * <p>For enhanced OpenSecureChannel policies, the OPC UA nonce fields carry ephemeral public keys
  * instead of random nonce bytes. That means endpoint advertisement, certificate selection, provider
  * resolution, nonce validation, and key derivation all need to agree on the same profile metadata.

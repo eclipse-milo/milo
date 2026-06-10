@@ -321,6 +321,10 @@ public enum SecurityPolicy {
   /**
    * Resolve a security policy URI.
    *
+   * <p>Only the AEAD-suffixed ECC URIs (e.g. {@code #ECC_nistP256_AesGcm}) are recognized; the
+   * deprecated OPC UA 1.05 suffix-less ECC URIs (e.g. {@code #ECC_nistP256}) are deliberately not
+   * exposed and are treated as unknown. See the package documentation for the full supported set.
+   *
    * @param securityPolicyUri the policy URI to resolve.
    * @return the matching security policy.
    * @throws UaException if {@code securityPolicyUri} is unknown.
