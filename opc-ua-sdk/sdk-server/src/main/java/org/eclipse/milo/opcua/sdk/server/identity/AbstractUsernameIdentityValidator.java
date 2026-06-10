@@ -178,7 +178,12 @@ public abstract class AbstractUsernameIdentityValidator extends AbstractIdentity
               receiverPublicKey,
               clientCertificate,
               session.getLastNonce(),
-              token.getPassword());
+              token.getPassword(),
+              session
+                  .getServer()
+                  .getConfig()
+                  .getLimits()
+                  .getMaxEccEncryptedSecretSigningTimeSkew());
     } catch (UaException e) {
       if (e.getStatusCode().getValue() == StatusCodes.Bad_NonceInvalid) {
         throw new UaException(StatusCodes.Bad_UserAccessDenied, e);

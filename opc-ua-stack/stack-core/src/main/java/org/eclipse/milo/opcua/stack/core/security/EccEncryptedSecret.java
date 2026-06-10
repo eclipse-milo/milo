@@ -92,11 +92,13 @@ public final class EccEncryptedSecret {
    * The core ActivateSession text does not define a freshness window for that timestamp. OPC
    * 10000-12, 9.5.4 does define one for RequestAccessToken when it uses the same UserIdentityToken
    * secret format: the range is server-configurable, with 5 minutes given as a suitable default.
-   * This helper applies that default for the current token-secret validation path.
+   * This helper applies that default when callers do not supply their own window; servers can pass a
+   * configured value through {@link #decrypt(SecurityPolicyProfile, KeyPair, ByteString,
+   * X509Certificate, ByteString, ByteString, long)} to accommodate clock-skewed deployments.
    *
    *   https://reference.opcfoundation.org/GDS/v104/docs/9.5.4
    */
-  private static final long MAX_SIGNING_TIME_SKEW_MILLIS = Duration.ofMinutes(5).toMillis();
+  public static final long DEFAULT_MAX_SIGNING_TIME_SKEW_MILLIS = Duration.ofMinutes(5).toMillis();
 
   private static final SecurityProviderResolver PROVIDER_RESOLVER =
       SecurityProviderResolver.create();
@@ -262,7 +264,8 @@ public final class EccEncryptedSecret {
   }
 
   /**
-   * Decrypts and validates an {@code EccEncryptedSecret} payload.
+   * Decrypts and validates an {@code EccEncryptedSecret} payload using the {@linkplain
+   * #DEFAULT_MAX_SIGNING_TIME_SKEW_MILLIS default} SigningTime freshness window.
    *
    * @param profile the expected user-token security policy profile.
    * @param receiverEphemeralKeyPair the receiver ephemeral key pair issued for the session.
@@ -273,6 +276,8 @@ public final class EccEncryptedSecret {
    * @param encodedSecret the encoded {@code EccEncryptedSecret} bytes.
    * @return the decrypted token secret.
    * @throws UaException if the payload is malformed, fails validation, or cannot be decrypted.
+   * @see #decrypt(SecurityPolicyProfile, KeyPair, ByteString, X509Certificate, ByteString,
+   *     ByteString, long)
    */
   public static ByteString decrypt(
       SecurityPolicyProfile profile,
@@ -283,13 +288,58 @@ public final class EccEncryptedSecret {
       ByteString encodedSecret)
       throws UaException {
 
+    return decrypt(
+        profile,
+        receiverEphemeralKeyPair,
+        receiverPublicKey,
+        senderCertificate,
+        expectedNonce,
+        encodedSecret,
+        DEFAULT_MAX_SIGNING_TIME_SKEW_MILLIS);
+  }
+
+  /**
+   * Decrypts and validates an {@code EccEncryptedSecret} payload.
+   *
+   * <p>The SigningTime carried in the payload is rejected with {@link
+   * StatusCodes#Bad_InvalidTimestamp} when it differs from the current time by more than {@code
+   * maxSigningTimeSkewMillis}. Part 4 defines no normative freshness window for this timestamp; the
+   * window exists only to bound replay exposure if a receiver ephemeral key and session nonce are
+   * reused, and replay is already bounded by the per-activation server-nonce echo. Servers should
+   * surface this value through configuration so deployments with clock-skewed clients (no RTC/NTP)
+   * can widen it; see {@link #DEFAULT_MAX_SIGNING_TIME_SKEW_MILLIS} for the suggested default.
+   *
+   * @param profile the expected user-token security policy profile.
+   * @param receiverEphemeralKeyPair the receiver ephemeral key pair issued for the session.
+   * @param receiverPublicKey the encoded receiver public key that was advertised to the sender.
+   * @param senderCertificate the sender application instance certificate known from the
+   *     SecureChannel, or {@code null} to require an embedded certificate.
+   * @param expectedNonce the expected session nonce.
+   * @param encodedSecret the encoded {@code EccEncryptedSecret} bytes.
+   * @param maxSigningTimeSkewMillis the maximum allowed absolute difference, in milliseconds,
+   *     between the payload SigningTime and the current time.
+   * @return the decrypted token secret.
+   * @throws UaException if the payload is malformed, fails validation, or cannot be decrypted.
+   */
+  public static ByteString decrypt(
+      SecurityPolicyProfile profile,
+      KeyPair receiverEphemeralKeyPair,
+      ByteString receiverPublicKey,
+      @Nullable X509Certificate senderCertificate,
+      ByteString expectedNonce,
+      ByteString encodedSecret,
+      long maxSigningTimeSkewMillis)
+      throws UaException {
+
     requireEnhancedSecretProfile(profile);
     requireNonNull(receiverEphemeralKeyPair, "receiverEphemeralKeyPair");
     requireNonNull(receiverPublicKey, "receiverPublicKey");
     requireNonNull(expectedNonce, "expectedNonce");
     requireNonNull(encodedSecret, "encodedSecret");
 
-    ParsedSecret parsed = parse(profile, senderCertificate, receiverPublicKey, encodedSecret);
+    ParsedSecret parsed =
+        parse(
+            profile, senderCertificate, receiverPublicKey, encodedSecret, maxSigningTimeSkewMillis);
 
     ProviderProfile providerProfile = PROVIDER_RESOLVER.resolve(profile);
     PublicKey senderEphemeralPublicKey =
@@ -402,7 +452,8 @@ public final class EccEncryptedSecret {
       SecurityPolicyProfile expectedProfile,
       @Nullable X509Certificate knownSenderCertificate,
       ByteString expectedReceiverPublicKey,
-      ByteString encodedSecret)
+      ByteString encodedSecret,
+      long maxSigningTimeSkewMillis)
       throws UaException {
 
     byte[] encodedBytes = encodedSecret.bytesOrEmpty();
@@ -449,7 +500,7 @@ public final class EccEncryptedSecret {
       }
 
       // Bound replay exposure if a receiver ephemeral key and session nonce are reused.
-      validateSigningTime(signingTime);
+      validateSigningTime(signingTime, maxSigningTimeSkewMillis);
 
       int keyDataLength = decoder.decodeUInt16().intValue();
       int keyDataStart = buffer.readerIndex();
@@ -572,12 +623,13 @@ public final class EccEncryptedSecret {
     }
   }
 
-  private static void validateSigningTime(DateTime signingTime) throws UaException {
+  private static void validateSigningTime(DateTime signingTime, long maxSigningTimeSkewMillis)
+      throws UaException {
     try {
       long deltaMillis =
           Math.abs(Math.subtractExact(DateTime.now().getJavaTime(), signingTime.getJavaTime()));
 
-      if (deltaMillis > MAX_SIGNING_TIME_SKEW_MILLIS) {
+      if (deltaMillis > maxSigningTimeSkewMillis) {
         throw new UaException(
             StatusCodes.Bad_InvalidTimestamp, "stale EccEncryptedSecret signing time");
       }

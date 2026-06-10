@@ -304,6 +304,59 @@ class EccEncryptedSecretTest {
     assertEquals(StatusCodes.Bad_InvalidTimestamp, exception.getStatusCode().getValue());
   }
 
+  // A configured skew window must accept a SigningTime the default 5-minute window would reject,
+  // so clock-skewed industrial clients can still activate enhanced username tokens.
+  @ParameterizedTest
+  @MethodSource("supportedEnhancedProfiles")
+  void honorsConfiguredSigningTimeSkew(SecurityPolicyProfile profile) throws Exception {
+    ApplicationIdentity sender = applicationIdentity(profile);
+    KeyPair receiverEphemeralKeyPair = EccEncryptedSecret.generateEphemeralKeyPair(profile);
+    ByteString receiverPublicKey =
+        EccEncryptedSecret.encodeEphemeralPublicKey(profile, receiverEphemeralKeyPair.getPublic());
+    ByteString encryptedSecret = encryptedSecret(profile, sender, receiverPublicKey);
+
+    ByteString staleSigningTimeSecret =
+        rewriteEncryptedSecret(
+            profile,
+            sender,
+            receiverEphemeralKeyPair,
+            encryptedSecret,
+            parts ->
+                Unpooled.wrappedBuffer(parts.bytes())
+                    .setLongLE(
+                        parts.signingTimeIndex(),
+                        new DateTime(Instant.now().minus(Duration.ofMinutes(10))).getUtcTime()),
+            UnaryOperator.identity());
+
+    long generousSkewMillis = Duration.ofMinutes(30).toMillis();
+
+    assertEquals(
+        SECRET,
+        EccEncryptedSecret.decrypt(
+            profile,
+            receiverEphemeralKeyPair,
+            receiverPublicKey,
+            sender.certificate(),
+            NONCE,
+            staleSigningTimeSecret,
+            generousSkewMillis));
+
+    UaException exception =
+        assertThrows(
+            UaException.class,
+            () ->
+                EccEncryptedSecret.decrypt(
+                    profile,
+                    receiverEphemeralKeyPair,
+                    receiverPublicKey,
+                    sender.certificate(),
+                    NONCE,
+                    staleSigningTimeSecret,
+                    EccEncryptedSecret.DEFAULT_MAX_SIGNING_TIME_SKEW_MILLIS));
+
+    assertEquals(StatusCodes.Bad_InvalidTimestamp, exception.getStatusCode().getValue());
+  }
+
   // The receiver key advertised in CreateSession is part of the encrypted secret's identity.
   @ParameterizedTest
   @MethodSource("supportedEnhancedProfiles")
