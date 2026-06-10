@@ -409,6 +409,16 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
                   StatusCodes.Bad_SecurityChecksFailed,
                   "secure channel renewal for secureChannelId=0");
             }
+          } else if (request.getRequestType() == SecurityTokenRequestType.Issue
+              && secureChannel.getChannelSecurity() != null) {
+            // An established channel can only be renewed, never re-issued. A second Issue would be
+            // chained off the current input key material on the renewal derivation path while the
+            // peer believes it performed a fresh issue, and would re-bind the channel
+            // thumbprint/security-mode contrary to the first-response-only binding of Part 6 6.7.5.
+            // Reject here, before any such mutation, so the original binding stays effective.
+            throw new UaException(
+                StatusCodes.Bad_SecurityChecksFailed,
+                "secure channel issue for an already-established channel");
           }
 
           sendOpenSecureChannelResponse(ctx, requestId, header, request, requestSignature);

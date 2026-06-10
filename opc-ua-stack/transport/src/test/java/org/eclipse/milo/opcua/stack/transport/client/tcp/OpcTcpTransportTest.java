@@ -45,6 +45,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.channel.ChannelParameters;
 import org.eclipse.milo.opcua.stack.core.channel.ChannelSecurity;
+import org.eclipse.milo.opcua.stack.core.channel.ChunkDecoder;
 import org.eclipse.milo.opcua.stack.core.channel.ChunkEncoder;
 import org.eclipse.milo.opcua.stack.core.channel.ChunkEncoder.EncodedMessage;
 import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
@@ -57,6 +58,7 @@ import org.eclipse.milo.opcua.stack.core.channel.messages.MessageType;
 import org.eclipse.milo.opcua.stack.core.channel.messages.TcpMessageEncoder;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
+import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaBinaryDecoder;
 import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaBinaryEncoder;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
@@ -78,6 +80,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription
 import org.eclipse.milo.opcua.stack.core.types.structured.CreateSessionRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.OpenSecureChannelRequest;
+import org.eclipse.milo.opcua.stack.core.types.structured.OpenSecureChannelResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.RequestHeader;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
@@ -730,6 +733,38 @@ class OpcTcpTransportTest extends SecurityFixture {
     }
   }
 
+  // Part 6 6.7.5 binds the channel thumbprint and security mode on the first response only; an
+  // established channel may be renewed but never re-issued. A second Issue would otherwise take the
+  // renewal-style key-derivation path (chaining off the current input key material) while the peer
+  // believed it performed a fresh issue, and would re-bind the channel thumbprint/mode out from
+  // under any sessions already created on the channel. The server must reject the repeat Issue
+  // instead. Driven over a None channel so the raw OpenSecureChannel request/response framing is
+  // deterministic without asymmetric crypto. A single encoder is shared across both requests so the
+  // asymmetric sequence number advances and the second Issue reaches the issue-rejection check
+  // rather than tripping the decoder's sequence-number validation first.
+  @Test
+  void openSecureChannelRejectsRepeatIssueOnEstablishedChannel() throws Exception {
+    OpcServerTransport serverTransport =
+        bindServerTransport(SecurityPolicy.None, MessageSecurityMode.None);
+
+    try (Socket socket = new Socket()) {
+      ChannelParameters channelParameters = openRawTcpChannel(socket);
+      ChunkEncoder chunkEncoder = new ChunkEncoder(channelParameters);
+
+      // First Issue establishes the channel; the response carries the server-assigned channel id.
+      writeRawIssueOpenSecureChannelRequest(socket, chunkEncoder, 0L, 1L);
+      OpenSecureChannelResponse firstResponse =
+          readOpenSecureChannelResponse(socket, channelParameters);
+      long establishedChannelId = firstResponse.getSecurityToken().getChannelId().longValue();
+
+      // A second valid Issue on the now-established channel must be rejected rather than re-issued.
+      writeRawIssueOpenSecureChannelRequest(socket, chunkEncoder, establishedChannelId, 2L);
+      assertRawOpenSecureChannelRejected(socket);
+    } finally {
+      serverTransport.unbind();
+    }
+  }
+
   private static void createSession(OpcTcpClientTransport transport) throws Exception {
     var header =
         new RequestHeader(
@@ -1132,6 +1167,78 @@ class OpcTcpTransportTest extends SecurityFixture {
       }
     } finally {
       messageBuffer.release();
+    }
+  }
+
+  private static void writeRawIssueOpenSecureChannelRequest(
+      Socket socket, ChunkEncoder chunkEncoder, long secureChannelId, long requestId)
+      throws Exception {
+
+    var secureChannel = new ClientSecureChannel(SecurityPolicy.None, MessageSecurityMode.None);
+    secureChannel.setChannelId(secureChannelId);
+
+    var header =
+        new RequestHeader(
+            NodeId.NULL_VALUE, DateTime.now(), uint(0), uint(0), null, uint(5_000), null);
+
+    var request =
+        new OpenSecureChannelRequest(
+            header,
+            uint(0),
+            SecurityTokenRequestType.Issue,
+            MessageSecurityMode.None,
+            ByteString.NULL_VALUE,
+            uint(60_000));
+
+    ByteBuf messageBuffer = Unpooled.buffer();
+    var binaryEncoder = new OpcUaBinaryEncoder(DefaultEncodingContext.INSTANCE);
+
+    try {
+      binaryEncoder.setBuffer(messageBuffer);
+      binaryEncoder.encodeMessage(null, request);
+
+      EncodedMessage encodedMessage =
+          chunkEncoder.encodeAsymmetric(
+              secureChannel, requestId, messageBuffer, MessageType.OpenSecureChannel);
+
+      try {
+        for (ByteBuf chunk : encodedMessage.getMessageChunks()) {
+          writeByteBuf(socket.getOutputStream(), chunk);
+        }
+      } finally {
+        encodedMessage.getMessageChunks().forEach(ByteBuf::release);
+      }
+    } finally {
+      messageBuffer.release();
+    }
+  }
+
+  /**
+   * Reads and decodes a single {@code None}-policy OpenSecureChannel response from the raw socket.
+   * No crypto is required because the channel is unsecured; the chunk is decoded only to recover
+   * the server-assigned channel id from the security token.
+   */
+  private static OpenSecureChannelResponse readOpenSecureChannelResponse(
+      Socket socket, ChannelParameters channelParameters) throws Exception {
+
+    byte[] responseBytes = readRawMessage(socket);
+    ByteBuf responseBuffer = Unpooled.wrappedBuffer(responseBytes);
+
+    assertEquals(
+        MessageType.OpenSecureChannel, MessageType.fromMediumInt(responseBuffer.getMediumLE(0)));
+
+    var secureChannel = new ClientSecureChannel(SecurityPolicy.None, MessageSecurityMode.None);
+    var chunkDecoder =
+        new ChunkDecoder(channelParameters, DefaultEncodingContext.INSTANCE.getEncodingLimits());
+
+    var message =
+        chunkDecoder.decodeAsymmetric(secureChannel, List.of(responseBuffer)).getMessage();
+
+    try {
+      var binaryDecoder = new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE);
+      return (OpenSecureChannelResponse) binaryDecoder.setBuffer(message).decodeMessage(null);
+    } finally {
+      message.release();
     }
   }
 
