@@ -35,6 +35,7 @@ import org.eclipse.milo.opcua.stack.core.channel.messages.TcpMessageEncoder;
 import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
+import org.eclipse.milo.opcua.stack.transport.client.uasc.InboundUascResponseHandler.DelegatingUascResponseHandler;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -360,7 +361,16 @@ public class UascClientAcknowledgeHandler extends ByteToMessageCodec<UaRequestMe
                       awaitingHandshake,
                       channelParameters);
 
-              ctx.pipeline().addFirst(messageHandler);
+              // Insert immediately before DelegatingUascResponseHandler rather than at
+              // position 0, so any pipeline-customizer handlers at the head (e.g. a
+              // PcapWriteHandler installed via addFirst) keep seeing raw wire bytes.
+              ChannelHandlerContext responseCtx =
+                  ctx.pipeline().context(DelegatingUascResponseHandler.class);
+              if (responseCtx != null) {
+                ctx.pipeline().addBefore(responseCtx.name(), null, messageHandler);
+              } else {
+                ctx.pipeline().addFirst(messageHandler);
+              }
             });
   }
 

@@ -576,14 +576,41 @@ public class OpcUaJsonDecoder implements UaDecoder {
         }
       }
 
-      if (jsonReader.peek() == JsonToken.NUMBER) {
+      JsonToken token = jsonReader.peek();
+      if (token == JsonToken.NUMBER) {
         long value = jsonReader.nextLong();
 
         return new StatusCode(value);
+      } else if (token == JsonToken.BEGIN_OBJECT) {
+        long code = 0L;
+
+        jsonReader.beginObject();
+        while (jsonReader.peek() == JsonToken.NAME) {
+          String nextName = nextName();
+          if (nextName == null) continue;
+
+          switch (nextName) {
+            case "Code":
+              code = jsonReader.nextLong();
+              break;
+            case "Symbol":
+              // Symbol is informational only — the numeric Code is authoritative.
+              jsonReader.nextString();
+              break;
+            default:
+              jsonReader.skipValue();
+              break;
+          }
+        }
+        jsonReader.endObject();
+
+        return new StatusCode(code);
+      } else if (token == JsonToken.NULL) {
+        jsonReader.nextNull();
+        return StatusCode.GOOD;
       } else {
         throw new UaSerializationException(
-            StatusCodes.Bad_DecodingError,
-            "readStatusCode: unexpected token: " + jsonReader.peek());
+            StatusCodes.Bad_DecodingError, "readStatusCode: unexpected token: " + token);
       }
     } catch (IOException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
@@ -613,8 +640,14 @@ public class OpcUaJsonDecoder implements UaDecoder {
       }
 
       if (s.startsWith("nsu=")) {
-        String uri = s.substring(4, s.indexOf(";"));
-        String name = s.substring(s.indexOf(";") + 1);
+        int sep = s.indexOf(";");
+        if (sep < 0) {
+          throw new UaSerializationException(
+              StatusCodes.Bad_DecodingError,
+              "readQualifiedName: malformed 'nsu=' value (missing ';'): " + s);
+        }
+        String uri = s.substring(4, sep);
+        String name = s.substring(sep + 1);
         UShort index = context.getNamespaceTable().getIndex(uri);
 
         if (index == null) {
@@ -640,6 +673,11 @@ public class OpcUaJsonDecoder implements UaDecoder {
           this.peekedNextName = nextName;
           return LocalizedText.NULL_VALUE;
         }
+      }
+
+      if (jsonReader.peek() == JsonToken.NULL) {
+        jsonReader.nextNull();
+        return LocalizedText.NULL_VALUE;
       }
 
       jsonReader.beginObject();
@@ -693,27 +731,26 @@ public class OpcUaJsonDecoder implements UaDecoder {
 
       NodeId encodingId = null;
       int encoding = 0;
-      Object body = null;
+      // Buffer the body as a generic JsonElement so the encoding doesn't have to be known
+      // until the whole object has been read — JSON field order isn't guaranteed.
+      JsonElement bodyElement = null;
 
       while (jsonReader.peek() == JsonToken.NAME) {
         String nextName = nextName();
         if (nextName == null) continue;
 
         switch (nextName) {
+          case "UaTypeId":
           case "TypeId":
             encodingId = decodeNodeId(null);
             break;
+          case "UaEncoding":
           case "Encoding":
             encoding = jsonReader.nextInt();
             break;
+          case "UaBody":
           case "Body":
-            body =
-                switch (encoding) {
-                  case 0 -> JsonParser.parseReader(jsonReader);
-                  case 1 -> decodeByteString(null);
-                  case 2 -> decodeXmlElement(null);
-                  default -> body;
-                };
+            bodyElement = JsonParser.parseReader(jsonReader);
             break;
           default:
             throw new UaSerializationException(
@@ -727,26 +764,24 @@ public class OpcUaJsonDecoder implements UaDecoder {
       if (encodingId == null) {
         throw new UaSerializationException(
             StatusCodes.Bad_DecodingError, "readExtensionObject: encodingId == null");
-      } else {
-        return switch (encoding) {
-          case 0 -> {
-            assert body instanceof JsonElement;
-            yield ExtensionObject.of(body.toString(), encodingId);
-          }
-          case 1 -> {
-            assert body instanceof ByteString;
-            yield ExtensionObject.of((ByteString) body, encodingId);
-          }
-          case 2 -> {
-            assert body instanceof XmlElement;
-            yield ExtensionObject.of((XmlElement) body, encodingId);
-          }
-          default ->
-              throw new UaSerializationException(
-                  StatusCodes.Bad_DecodingError,
-                  "readExtensionObject: unexpected encoding: " + encoding);
-        };
       }
+
+      return switch (encoding) {
+        case 0 ->
+            ExtensionObject.of(bodyElement == null ? "null" : bodyElement.toString(), encodingId);
+        case 1 -> {
+          String base64 = bodyElement == null ? "" : bodyElement.getAsString();
+          yield ExtensionObject.of(ByteString.of(Base64.getDecoder().decode(base64)), encodingId);
+        }
+        case 2 -> {
+          String xml = bodyElement == null ? "" : bodyElement.getAsString();
+          yield ExtensionObject.of(new XmlElement(xml), encodingId);
+        }
+        default ->
+            throw new UaSerializationException(
+                StatusCodes.Bad_DecodingError,
+                "readExtensionObject: unexpected encoding: " + encoding);
+      };
     } catch (IOException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
@@ -818,6 +853,11 @@ public class OpcUaJsonDecoder implements UaDecoder {
         }
       }
 
+      if (jsonReader.peek() == JsonToken.NULL) {
+        jsonReader.nextNull();
+        return Variant.NULL_VALUE;
+      }
+
       jsonReader.beginObject();
 
       int typeId = 0;
@@ -829,9 +869,11 @@ public class OpcUaJsonDecoder implements UaDecoder {
         if (nextName == null) continue;
 
         switch (nextName) {
+          case "UaType":
           case "Type":
             typeId = jsonReader.nextInt();
             break;
+          case "Value":
           case "Body":
             bodyElement = JsonParser.parseReader(jsonReader);
             break;
@@ -1011,10 +1053,10 @@ public class OpcUaJsonDecoder implements UaDecoder {
 
       jsonReader.beginObject();
 
-      int symbolicId = 0;
-      int namespaceUri = 0;
-      int locale = 0;
-      int localizedText = 0;
+      int symbolicId = -1;
+      int namespaceUri = -1;
+      int locale = -1;
+      int localizedText = -1;
       String additionalInfo = null;
       StatusCode innerStatusCode = null;
       DiagnosticInfo innerDiagnosticInfo = null;
