@@ -1,11 +1,11 @@
 /*
- *  Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
- *  This program and the accompanying materials are made
- *  available under the terms of the Eclipse Public License 2.0
- *  which is available at https://www.eclipse.org/legal/epl-2.0/
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
  *
- *  SPDX-License-Identifier: EPL-2.0
+ * SPDX-License-Identifier: EPL-2.0
  */
 
 package org.eclipse.milo.opcua.stack.core;
@@ -15,7 +15,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 
-public abstract class NodeIds0 extends NodeIds1 {
+abstract class NodeIds0 extends NodeIds1 {
   public static final NodeId Boolean = new NodeId(UShort.MIN, uint(1));
 
   public static final NodeId SByte = new NodeId(UShort.MIN, uint(2));

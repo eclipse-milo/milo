@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -1440,7 +1440,13 @@ class VariableTypeNodeLoader {
             new NodeId(0, 15318), new NodeId(0, 46), new NodeId(0, 17567).expanded(), true));
     node.addReference(
         new Reference(
+            new NodeId(0, 15318), new NodeId(0, 46), new NodeId(0, 23904).expanded(), true));
+    node.addReference(
+        new Reference(
             new NodeId(0, 15318), new NodeId(0, 46), new NodeId(0, 17568).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15318), new NodeId(0, 46), new NodeId(0, 23905).expanded(), true));
     node.addReference(
         new Reference(
             new NodeId(0, 15318), new NodeId(0, 46), new NodeId(0, 17569).expanded(), true));
@@ -1481,6 +1487,33 @@ class VariableTypeNodeLoader {
     var node =
         new UaVariableTypeNode(
             this.context,
+            new NodeId(0, 23906),
+            new QualifiedName(0, "AnalogNumberItemType"),
+            new LocalizedText("", "AnalogNumberItemType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            new DataValue(Variant.NULL_VALUE),
+            new NodeId(0, 26),
+            -2,
+            null,
+            false);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 23906), new NodeId(0, 46), new NodeId(0, 23907).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 23906), new NodeId(0, 45), new NodeId(0, 2368).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode41() {
+    var node =
+        new UaVariableTypeNode(
+            this.context,
             new NodeId(0, 17497),
             new QualifiedName(0, "AnalogUnitType"),
             new LocalizedText("", "AnalogUnitType"),
@@ -1504,7 +1537,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode41() {
+  void loadNode42() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -1531,7 +1564,34 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode42() {
+  void loadNode43() {
+    var node =
+        new UaVariableTypeNode(
+            this.context,
+            new NodeId(0, 23918),
+            new QualifiedName(0, "AnalogNumberUnitRangeType"),
+            new LocalizedText("", "AnalogNumberUnitRangeType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            new DataValue(Variant.NULL_VALUE),
+            new NodeId(0, 26),
+            -2,
+            null,
+            false);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 23918), new NodeId(0, 46), new NodeId(0, 23927).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 23918), new NodeId(0, 45), new NodeId(0, 17570).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode44() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -1555,7 +1615,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode43() {
+  void loadNode45() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -1585,7 +1645,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode44() {
+  void loadNode46() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -1612,7 +1672,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode45() {
+  void loadNode47() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -1642,7 +1702,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode46() {
+  void loadNode48() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -1681,7 +1741,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode47() {
+  void loadNode49() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -1708,7 +1768,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode48() {
+  void loadNode50() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -1735,7 +1795,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode49() {
+  void loadNode51() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -1765,7 +1825,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode50() {
+  void loadNode52() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -1798,7 +1858,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode51() {
+  void loadNode53() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -1825,7 +1885,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode52() {
+  void loadNode54() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -1864,7 +1924,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode53() {
+  void loadNode55() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -1890,7 +1950,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode54() {
+  void loadNode56() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -1917,7 +1977,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode55() {
+  void loadNode57() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -1959,7 +2019,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode56() {
+  void loadNode58() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -2012,7 +2072,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode57() {
+  void loadNode59() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -2072,7 +2132,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode58() {
+  void loadNode60() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -2108,7 +2168,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode59() {
+  void loadNode61() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -2138,7 +2198,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode60() {
+  void loadNode62() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -2165,7 +2225,7 @@ class VariableTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode61() {
+  void loadNode63() {
     var node =
         new UaVariableTypeNode(
             this.context,
@@ -2255,5 +2315,7 @@ class VariableTypeNodeLoader {
     loadNode59();
     loadNode60();
     loadNode61();
+    loadNode62();
+    loadNode63();
   }
 }

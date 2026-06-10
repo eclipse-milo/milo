@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -25,6 +25,7 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.AxisScaleEnumeration;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrokerTransportQualityOfService;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ChassisIdSubtype;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.ConfigurationUpdateType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ConversionLimitEnum;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.DataSetOrderingType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.DiagnosticsLevel;
@@ -66,14 +67,22 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AddNodesItem;
 import org.eclipse.milo.opcua.stack.core.types.structured.AddReferencesItem;
 import org.eclipse.milo.opcua.stack.core.types.structured.AdditionalParametersType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AggregateConfiguration;
+import org.eclipse.milo.opcua.stack.core.types.structured.AliasCategoryUpdateDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AliasNameDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.AliasNameVerboseDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.AliasUpdateDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.Annotation;
 import org.eclipse.milo.opcua.stack.core.types.structured.AnnotationDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AnonymousIdentityToken;
+import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationConfigurationDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationIdentityDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.AttributeOperand;
+import org.eclipse.milo.opcua.stack.core.types.structured.AuthorizationServiceConfigurationDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AxisInformation;
+import org.eclipse.milo.opcua.stack.core.types.structured.BaseConfigurationDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.BaseConfigurationRecordDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.BitFieldDefinition;
 import org.eclipse.milo.opcua.stack.core.types.structured.BrokerConnectionTransportDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.BrokerDataSetReaderTransportDataType;
@@ -81,7 +90,9 @@ import org.eclipse.milo.opcua.stack.core.types.structured.BrokerDataSetWriterTra
 import org.eclipse.milo.opcua.stack.core.types.structured.BrokerWriterGroupTransportDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.BuildInfo;
 import org.eclipse.milo.opcua.stack.core.types.structured.CartesianCoordinates;
+import org.eclipse.milo.opcua.stack.core.types.structured.CertificateGroupDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ComplexNumberType;
+import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationUpdateTargetType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationVersionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ConnectionTransportDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilter;
@@ -110,6 +121,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.DtlsPubSubConnectionDa
 import org.eclipse.milo.opcua.stack.core.types.structured.EUInformation;
 import org.eclipse.milo.opcua.stack.core.types.structured.ElementOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointConfiguration;
+import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointType;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointUrlListDataType;
@@ -137,13 +149,17 @@ import org.eclipse.milo.opcua.stack.core.types.structured.LiteralOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.LldpManagementAddressTxPortType;
 import org.eclipse.milo.opcua.stack.core.types.structured.LldpManagementAddressType;
 import org.eclipse.milo.opcua.stack.core.types.structured.LldpTlvType;
+import org.eclipse.milo.opcua.stack.core.types.structured.LogRecord;
+import org.eclipse.milo.opcua.stack.core.types.structured.LogRecordsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.MdnsDiscoveryConfiguration;
 import org.eclipse.milo.opcua.stack.core.types.structured.ModelChangeStructureDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ModificationInfo;
 import org.eclipse.milo.opcua.stack.core.types.structured.MonitoringFilter;
+import org.eclipse.milo.opcua.stack.core.types.structured.NameValuePair;
 import org.eclipse.milo.opcua.stack.core.types.structured.NetworkAddressDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.NetworkAddressUrlDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.NetworkGroupDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.NumberRange;
 import org.eclipse.milo.opcua.stack.core.types.structured.OptionSet;
 import org.eclipse.milo.opcua.stack.core.types.structured.Orientation;
 import org.eclipse.milo.opcua.stack.core.types.structured.PortableNodeId;
@@ -184,16 +200,21 @@ import org.eclipse.milo.opcua.stack.core.types.structured.RelativePathElement;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SamplingIntervalDiagnosticsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SecurityGroupDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.SecuritySettingsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SemanticChangeStructureDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ServerDiagnosticsSummaryDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.ServerEndpointDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ServerOnNetwork;
 import org.eclipse.milo.opcua.stack.core.types.structured.ServerStatusDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.ServiceCertificateDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ServiceCounterDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SessionDiagnosticsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SessionSecurityDiagnosticsDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.SignatureData;
 import org.eclipse.milo.opcua.stack.core.types.structured.SignedSoftwareCertificate;
 import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.SimpleTypeDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.SpanContextDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.StandaloneSubscribedDataSetDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.StandaloneSubscribedDataSetRefDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.StatusResult;
@@ -209,6 +230,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ThreeDFrame;
 import org.eclipse.milo.opcua.stack.core.types.structured.ThreeDOrientation;
 import org.eclipse.milo.opcua.stack.core.types.structured.ThreeDVector;
 import org.eclipse.milo.opcua.stack.core.types.structured.TimeZoneDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.TraceContextDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.TransactionErrorType;
 import org.eclipse.milo.opcua.stack.core.types.structured.TransmitQosDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.TransmitQosPriorityDataType;
@@ -223,6 +245,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.UserIdentityToken;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserManagementDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserNameIdentityToken;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
+import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenSettingsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.Vector;
 import org.eclipse.milo.opcua.stack.core.types.structured.WriterGroupDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.WriterGroupMessageDataType;
@@ -1518,6 +1541,27 @@ class DataTypeNodeLoader {
     var node =
         new UaDataTypeNode(
             this.context,
+            new NodeId(0, 23903),
+            new QualifiedName(0, "NumberRange"),
+            new LocalizedText("", "NumberRange"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            NumberRange.definition(context.getNamespaceTable()));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 23903), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode63() {
+    var node =
+        new UaDataTypeNode(
+            this.context,
             new NodeId(0, 32434),
             new QualifiedName(0, "AnnotationDataType"),
             new LocalizedText("", "AnnotationDataType"),
@@ -1535,7 +1579,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode63() {
+  void loadNode64() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -1556,7 +1600,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode64() {
+  void loadNode65() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -1580,7 +1624,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode65() {
+  void loadNode66() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -1601,7 +1645,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode66() {
+  void loadNode67() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -1624,7 +1668,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode67() {
+  void loadNode68() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -1647,7 +1691,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode68() {
+  void loadNode69() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -1671,7 +1715,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode69() {
+  void loadNode70() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -1692,7 +1736,115 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode70() {
+  void loadNode71() {
+    var node =
+        new UaDataTypeNode(
+            this.context,
+            new NodeId(0, 15434),
+            new QualifiedName(0, "BaseConfigurationDataType"),
+            new LocalizedText("", "BaseConfigurationDataType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            BaseConfigurationDataType.definition(context.getNamespaceTable()));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15434), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode72() {
+    var node =
+        new UaDataTypeNode(
+            this.context,
+            new NodeId(0, 15435),
+            new QualifiedName(0, "BaseConfigurationRecordDataType"),
+            new LocalizedText("", "BaseConfigurationRecordDataType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            true,
+            BaseConfigurationRecordDataType.definition(context.getNamespaceTable()));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15435), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode73() {
+    var node =
+        new UaDataTypeNode(
+            this.context,
+            new NodeId(0, 15436),
+            new QualifiedName(0, "CertificateGroupDataType"),
+            new LocalizedText("", "CertificateGroupDataType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            CertificateGroupDataType.definition(context.getNamespaceTable()));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15436), new NodeId(0, 45), new NodeId(0, 15435).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode74() {
+    var node =
+        new UaDataTypeNode(
+            this.context,
+            new NodeId(0, 15538),
+            new QualifiedName(0, "ConfigurationUpdateTargetType"),
+            new LocalizedText("", "ConfigurationUpdateTargetType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            ConfigurationUpdateTargetType.definition(context.getNamespaceTable()));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15538), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode75() {
+    var node =
+        new UaDataTypeNode(
+            this.context,
+            new NodeId(0, 15539),
+            new QualifiedName(0, "ConfigurationUpdateType"),
+            new LocalizedText("", "ConfigurationUpdateType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            ConfigurationUpdateType.definition());
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15539), new NodeId(0, 46), new NodeId(0, 15540).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15539), new NodeId(0, 45), new NodeId(0, 29).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode76() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -1713,7 +1865,175 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode71() {
+  void loadNode77() {
+    var node =
+        new UaDataTypeNode(
+            this.context,
+            new NodeId(0, 23743),
+            new QualifiedName(0, "ApplicationConfigurationDataType"),
+            new LocalizedText("", "ApplicationConfigurationDataType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            ApplicationConfigurationDataType.definition(context.getNamespaceTable()));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 23743), new NodeId(0, 45), new NodeId(0, 15434).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode78() {
+    var node =
+        new UaDataTypeNode(
+            this.context,
+            new NodeId(0, 15556),
+            new QualifiedName(0, "ApplicationIdentityDataType"),
+            new LocalizedText("", "ApplicationIdentityDataType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            ApplicationIdentityDataType.definition(context.getNamespaceTable()));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15556), new NodeId(0, 45), new NodeId(0, 15435).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode79() {
+    var node =
+        new UaDataTypeNode(
+            this.context,
+            new NodeId(0, 15557),
+            new QualifiedName(0, "EndpointDataType"),
+            new LocalizedText("", "EndpointDataType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            EndpointDataType.definition(context.getNamespaceTable()));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15557), new NodeId(0, 45), new NodeId(0, 15435).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode80() {
+    var node =
+        new UaDataTypeNode(
+            this.context,
+            new NodeId(0, 15558),
+            new QualifiedName(0, "ServerEndpointDataType"),
+            new LocalizedText("", "ServerEndpointDataType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            ServerEndpointDataType.definition(context.getNamespaceTable()));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15558), new NodeId(0, 45), new NodeId(0, 15557).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode81() {
+    var node =
+        new UaDataTypeNode(
+            this.context,
+            new NodeId(0, 15559),
+            new QualifiedName(0, "SecuritySettingsDataType"),
+            new LocalizedText("", "SecuritySettingsDataType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            SecuritySettingsDataType.definition(context.getNamespaceTable()));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15559), new NodeId(0, 45), new NodeId(0, 15435).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode82() {
+    var node =
+        new UaDataTypeNode(
+            this.context,
+            new NodeId(0, 15560),
+            new QualifiedName(0, "UserTokenSettingsDataType"),
+            new LocalizedText("", "UserTokenSettingsDataType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            UserTokenSettingsDataType.definition(context.getNamespaceTable()));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 15560), new NodeId(0, 45), new NodeId(0, 15435).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode83() {
+    var node =
+        new UaDataTypeNode(
+            this.context,
+            new NodeId(0, 23724),
+            new QualifiedName(0, "ServiceCertificateDataType"),
+            new LocalizedText("", "ServiceCertificateDataType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            ServiceCertificateDataType.definition(context.getNamespaceTable()));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 23724), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode84() {
+    var node =
+        new UaDataTypeNode(
+            this.context,
+            new NodeId(0, 23744),
+            new QualifiedName(0, "AuthorizationServiceConfigurationDataType"),
+            new LocalizedText("", "AuthorizationServiceConfigurationDataType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            AuthorizationServiceConfigurationDataType.definition(context.getNamespaceTable()));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 23744), new NodeId(0, 45), new NodeId(0, 15435).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode85() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -1734,7 +2054,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode72() {
+  void loadNode86() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -1755,7 +2075,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode73() {
+  void loadNode87() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -1776,7 +2096,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode74() {
+  void loadNode88() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -1797,7 +2117,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode75() {
+  void loadNode89() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -1818,7 +2138,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode76() {
+  void loadNode90() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -1839,7 +2159,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode77() {
+  void loadNode91() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -1860,7 +2180,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode78() {
+  void loadNode92() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -1881,7 +2201,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode79() {
+  void loadNode93() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -1902,7 +2222,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode80() {
+  void loadNode94() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -1926,7 +2246,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode81() {
+  void loadNode95() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -1947,7 +2267,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode82() {
+  void loadNode96() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -1968,7 +2288,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode83() {
+  void loadNode97() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -1991,7 +2311,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode84() {
+  void loadNode98() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2012,7 +2332,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode85() {
+  void loadNode99() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2033,7 +2353,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode86() {
+  void loadNode100() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2054,7 +2374,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode87() {
+  void loadNode101() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2075,7 +2395,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode88() {
+  void loadNode102() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2096,7 +2416,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode89() {
+  void loadNode103() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2117,7 +2437,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode90() {
+  void loadNode104() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2138,7 +2458,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode91() {
+  void loadNode105() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2159,7 +2479,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode92() {
+  void loadNode106() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2180,7 +2500,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode93() {
+  void loadNode107() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2204,7 +2524,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode94() {
+  void loadNode108() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2225,7 +2545,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode95() {
+  void loadNode109() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2246,7 +2566,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode96() {
+  void loadNode110() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2269,7 +2589,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode97() {
+  void loadNode111() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2290,7 +2610,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode98() {
+  void loadNode112() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2311,7 +2631,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode99() {
+  void loadNode113() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2332,7 +2652,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode100() {
+  void loadNode114() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2353,7 +2673,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode101() {
+  void loadNode115() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2374,7 +2694,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode102() {
+  void loadNode116() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2395,7 +2715,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode103() {
+  void loadNode117() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2416,7 +2736,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode104() {
+  void loadNode118() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2437,7 +2757,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode105() {
+  void loadNode119() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2458,7 +2778,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode106() {
+  void loadNode120() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2479,7 +2799,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode107() {
+  void loadNode121() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2500,7 +2820,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode108() {
+  void loadNode122() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2521,7 +2841,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode109() {
+  void loadNode123() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2542,7 +2862,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode110() {
+  void loadNode124() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2563,7 +2883,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode111() {
+  void loadNode125() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2584,7 +2904,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode112() {
+  void loadNode126() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2605,7 +2925,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode113() {
+  void loadNode127() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2626,7 +2946,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode114() {
+  void loadNode128() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2647,7 +2967,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode115() {
+  void loadNode129() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2668,7 +2988,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode116() {
+  void loadNode130() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2689,7 +3009,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode117() {
+  void loadNode131() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2713,7 +3033,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode118() {
+  void loadNode132() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2734,7 +3054,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode119() {
+  void loadNode133() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2755,7 +3075,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode120() {
+  void loadNode134() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2776,7 +3096,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode121() {
+  void loadNode135() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2797,7 +3117,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode122() {
+  void loadNode136() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2818,7 +3138,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode123() {
+  void loadNode137() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2839,7 +3159,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode124() {
+  void loadNode138() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2860,7 +3180,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode125() {
+  void loadNode139() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2884,7 +3204,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode126() {
+  void loadNode140() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2907,7 +3227,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode127() {
+  void loadNode141() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2928,7 +3248,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode128() {
+  void loadNode142() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2951,7 +3271,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode129() {
+  void loadNode143() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2972,7 +3292,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode130() {
+  void loadNode144() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -2993,7 +3313,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode131() {
+  void loadNode145() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3016,7 +3336,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode132() {
+  void loadNode146() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3037,7 +3357,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode133() {
+  void loadNode147() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3060,7 +3380,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode134() {
+  void loadNode148() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3081,7 +3401,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode135() {
+  void loadNode149() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3102,7 +3422,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode136() {
+  void loadNode150() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3123,7 +3443,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode137() {
+  void loadNode151() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3144,7 +3464,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode138() {
+  void loadNode152() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3165,7 +3485,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode139() {
+  void loadNode153() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3186,7 +3506,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode140() {
+  void loadNode154() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3207,7 +3527,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode141() {
+  void loadNode155() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3228,7 +3548,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode142() {
+  void loadNode156() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3249,7 +3569,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode143() {
+  void loadNode157() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3270,7 +3590,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode144() {
+  void loadNode158() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3291,7 +3611,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode145() {
+  void loadNode159() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3312,7 +3632,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode146() {
+  void loadNode160() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3333,7 +3653,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode147() {
+  void loadNode161() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3354,7 +3674,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode148() {
+  void loadNode162() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3378,7 +3698,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode149() {
+  void loadNode163() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3399,7 +3719,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode150() {
+  void loadNode164() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3420,7 +3740,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode151() {
+  void loadNode165() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3441,7 +3761,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode152() {
+  void loadNode166() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3464,7 +3784,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode153() {
+  void loadNode167() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3485,7 +3805,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode154() {
+  void loadNode168() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3506,7 +3826,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode155() {
+  void loadNode169() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3530,7 +3850,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode156() {
+  void loadNode170() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3554,7 +3874,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode157() {
+  void loadNode171() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3575,7 +3895,76 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode158() {
+  void loadNode172() {
+    var node =
+        new UaDataTypeNode(
+            this.context,
+            new NodeId(0, 24051),
+            new QualifiedName(0, "AliasNameVerboseDataType"),
+            new LocalizedText("", "AliasNameVerboseDataType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            AliasNameVerboseDataType.definition(context.getNamespaceTable()));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 24051), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode173() {
+    var node =
+        new UaDataTypeNode(
+            this.context,
+            new NodeId(0, 24052),
+            new QualifiedName(0, "AliasCategoryUpdateDataType"),
+            new LocalizedText("", "AliasCategoryUpdateDataType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            AliasCategoryUpdateDataType.definition(context.getNamespaceTable()));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 24052), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode174() {
+    var node =
+        new UaDataTypeNode(
+            this.context,
+            new NodeId(0, 24053),
+            new QualifiedName(0, "AliasUpdateDataType"),
+            new LocalizedText("", "AliasUpdateDataType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            AliasUpdateDataType.definition(context.getNamespaceTable()));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 24053), new NodeId(0, 46), new NodeId(0, 24499).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 24053), new NodeId(0, 46), new NodeId(0, 24500).expanded(), true));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 24053), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode175() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3598,7 +3987,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode159() {
+  void loadNode176() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3621,7 +4010,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode160() {
+  void loadNode177() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3642,7 +4031,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode161() {
+  void loadNode178() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3663,7 +4052,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode162() {
+  void loadNode179() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3687,7 +4076,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode163() {
+  void loadNode180() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3711,7 +4100,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode164() {
+  void loadNode181() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3735,7 +4124,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode165() {
+  void loadNode182() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3759,7 +4148,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode166() {
+  void loadNode183() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3783,7 +4172,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode167() {
+  void loadNode184() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3807,7 +4196,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode168() {
+  void loadNode185() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3831,7 +4220,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode169() {
+  void loadNode186() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3855,7 +4244,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode170() {
+  void loadNode187() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3879,7 +4268,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode171() {
+  void loadNode188() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3903,7 +4292,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode172() {
+  void loadNode189() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3927,7 +4316,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode173() {
+  void loadNode190() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3948,7 +4337,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode174() {
+  void loadNode191() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3969,7 +4358,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode175() {
+  void loadNode192() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -3990,7 +4379,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode176() {
+  void loadNode193() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4011,7 +4400,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode177() {
+  void loadNode194() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4034,7 +4423,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode178() {
+  void loadNode195() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4055,7 +4444,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode179() {
+  void loadNode196() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4076,7 +4465,135 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode180() {
+  void loadNode197() {
+    var node =
+        new UaDataTypeNode(
+            this.context,
+            new NodeId(0, 19361),
+            new QualifiedName(0, "LogRecord"),
+            new LocalizedText("", "LogRecord"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            LogRecord.definition(context.getNamespaceTable()));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19361), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode198() {
+    var node =
+        new UaDataTypeNode(
+            this.context,
+            new NodeId(0, 19745),
+            new QualifiedName(0, "LogRecordsDataType"),
+            new LocalizedText("", "LogRecordsDataType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            LogRecordsDataType.definition(context.getNamespaceTable()));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19745), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode199() {
+    var node =
+        new UaDataTypeNode(
+            this.context,
+            new NodeId(0, 19746),
+            new QualifiedName(0, "SpanContextDataType"),
+            new LocalizedText("", "SpanContextDataType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            SpanContextDataType.definition(context.getNamespaceTable()));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19746), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode200() {
+    var node =
+        new UaDataTypeNode(
+            this.context,
+            new NodeId(0, 19747),
+            new QualifiedName(0, "TraceContextDataType"),
+            new LocalizedText("", "TraceContextDataType"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            TraceContextDataType.definition(context.getNamespaceTable()));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19747), new NodeId(0, 45), new NodeId(0, 19746).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode201() {
+    var node =
+        new UaDataTypeNode(
+            this.context,
+            new NodeId(0, 19748),
+            new QualifiedName(0, "NameValuePair"),
+            new LocalizedText("", "NameValuePair"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            NameValuePair.definition(context.getNamespaceTable()));
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19748), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode202() {
+    var node =
+        new UaDataTypeNode(
+            this.context,
+            new NodeId(0, 19749),
+            new QualifiedName(0, "LogRecordMask"),
+            new LocalizedText("", "LogRecordMask"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            null);
+    node.addReference(
+        new Reference(
+            new NodeId(0, 19749), new NodeId(0, 46), new NodeId(0, 19750).expanded(), true));
+    node.addReference(
+        new Reference(new NodeId(0, 19749), new NodeId(0, 45), new NodeId(0, 7).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode203() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4098,7 +4615,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode181() {
+  void loadNode204() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4121,7 +4638,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode182() {
+  void loadNode205() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4143,7 +4660,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode183() {
+  void loadNode206() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4166,7 +4683,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode184() {
+  void loadNode207() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4189,7 +4706,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode185() {
+  void loadNode208() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4212,7 +4729,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode186() {
+  void loadNode209() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4234,7 +4751,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode187() {
+  void loadNode210() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4254,7 +4771,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode188() {
+  void loadNode211() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4274,7 +4791,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode189() {
+  void loadNode212() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4296,7 +4813,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode190() {
+  void loadNode213() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4316,7 +4833,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode191() {
+  void loadNode214() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4336,7 +4853,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode192() {
+  void loadNode215() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4356,7 +4873,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode193() {
+  void loadNode216() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4376,7 +4893,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode194() {
+  void loadNode217() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4396,7 +4913,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode195() {
+  void loadNode218() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4417,7 +4934,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode196() {
+  void loadNode219() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4438,7 +4955,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode197() {
+  void loadNode220() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4459,7 +4976,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode198() {
+  void loadNode221() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4480,7 +4997,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode199() {
+  void loadNode222() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4501,7 +5018,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode200() {
+  void loadNode223() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4522,7 +5039,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode201() {
+  void loadNode224() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4543,7 +5060,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode202() {
+  void loadNode225() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4563,7 +5080,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode203() {
+  void loadNode226() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4583,7 +5100,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode204() {
+  void loadNode227() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4603,7 +5120,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode205() {
+  void loadNode228() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4623,7 +5140,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode206() {
+  void loadNode229() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4643,7 +5160,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode207() {
+  void loadNode230() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4663,7 +5180,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode208() {
+  void loadNode231() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4685,7 +5202,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode209() {
+  void loadNode232() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4705,7 +5222,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode210() {
+  void loadNode233() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4725,7 +5242,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode211() {
+  void loadNode234() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4746,7 +5263,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode212() {
+  void loadNode235() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4766,7 +5283,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode213() {
+  void loadNode236() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4788,7 +5305,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode214() {
+  void loadNode237() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4810,7 +5327,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode215() {
+  void loadNode238() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4830,7 +5347,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode216() {
+  void loadNode239() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4850,7 +5367,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode217() {
+  void loadNode240() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4870,7 +5387,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode218() {
+  void loadNode241() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4891,7 +5408,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode219() {
+  void loadNode242() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4912,7 +5429,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode220() {
+  void loadNode243() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4934,7 +5451,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode221() {
+  void loadNode244() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4954,7 +5471,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode222() {
+  void loadNode245() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4974,7 +5491,27 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode223() {
+  void loadNode246() {
+    var node =
+        new UaDataTypeNode(
+            this.context,
+            new NodeId(0, 456),
+            new QualifiedName(0, "SignatureData"),
+            new LocalizedText("", "SignatureData"),
+            LocalizedText.NULL_VALUE,
+            UInteger.valueOf(0),
+            UInteger.valueOf(0),
+            null,
+            null,
+            new AccessRestrictionType(UShort.valueOf(0)),
+            false,
+            SignatureData.definition(context.getNamespaceTable()));
+    node.addReference(
+        new Reference(new NodeId(0, 456), new NodeId(0, 45), new NodeId(0, 22).expanded(), false));
+    this.nodeManager.addNode(node);
+  }
+
+  void loadNode247() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -4994,7 +5531,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode224() {
+  void loadNode248() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5014,7 +5551,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode225() {
+  void loadNode249() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5034,7 +5571,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode226() {
+  void loadNode250() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5054,7 +5591,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode227() {
+  void loadNode251() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5074,7 +5611,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode228() {
+  void loadNode252() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5097,7 +5634,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode229() {
+  void loadNode253() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5117,7 +5654,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode230() {
+  void loadNode254() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5137,7 +5674,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode231() {
+  void loadNode255() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5157,7 +5694,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode232() {
+  void loadNode256() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5177,7 +5714,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode233() {
+  void loadNode257() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5200,7 +5737,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode234() {
+  void loadNode258() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5220,7 +5757,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode235() {
+  void loadNode259() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5240,7 +5777,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode236() {
+  void loadNode260() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5260,7 +5797,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode237() {
+  void loadNode261() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5280,7 +5817,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode238() {
+  void loadNode262() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5300,7 +5837,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode239() {
+  void loadNode263() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5320,7 +5857,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode240() {
+  void loadNode264() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5342,7 +5879,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode241() {
+  void loadNode265() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5362,7 +5899,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode242() {
+  void loadNode266() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5382,7 +5919,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode243() {
+  void loadNode267() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5402,7 +5939,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode244() {
+  void loadNode268() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5422,7 +5959,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode245() {
+  void loadNode269() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5442,7 +5979,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode246() {
+  void loadNode270() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5462,7 +5999,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode247() {
+  void loadNode271() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5482,7 +6019,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode248() {
+  void loadNode272() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5503,7 +6040,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode249() {
+  void loadNode273() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5523,7 +6060,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode250() {
+  void loadNode274() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5544,7 +6081,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode251() {
+  void loadNode275() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5568,7 +6105,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode252() {
+  void loadNode276() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5592,7 +6129,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode253() {
+  void loadNode277() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5612,7 +6149,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode254() {
+  void loadNode278() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5632,7 +6169,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode255() {
+  void loadNode279() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5652,7 +6189,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode256() {
+  void loadNode280() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5672,7 +6209,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode257() {
+  void loadNode281() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5692,7 +6229,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode258() {
+  void loadNode282() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5714,7 +6251,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode259() {
+  void loadNode283() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5736,7 +6273,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode260() {
+  void loadNode284() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5756,7 +6293,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode261() {
+  void loadNode285() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5777,7 +6314,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode262() {
+  void loadNode286() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5798,7 +6335,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode263() {
+  void loadNode287() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5818,7 +6355,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode264() {
+  void loadNode288() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5838,7 +6375,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode265() {
+  void loadNode289() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5858,7 +6395,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode266() {
+  void loadNode290() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5878,7 +6415,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode267() {
+  void loadNode291() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5898,7 +6435,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode268() {
+  void loadNode292() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5918,7 +6455,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode269() {
+  void loadNode293() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5938,7 +6475,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode270() {
+  void loadNode294() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5958,7 +6495,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode271() {
+  void loadNode295() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5978,7 +6515,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode272() {
+  void loadNode296() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -5998,7 +6535,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode273() {
+  void loadNode297() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -6018,7 +6555,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode274() {
+  void loadNode298() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -6038,7 +6575,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode275() {
+  void loadNode299() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -6062,7 +6599,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode276() {
+  void loadNode300() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -6083,7 +6620,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode277() {
+  void loadNode301() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -6104,7 +6641,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode278() {
+  void loadNode302() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -6125,7 +6662,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode279() {
+  void loadNode303() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -6146,7 +6683,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode280() {
+  void loadNode304() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -6166,7 +6703,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode281() {
+  void loadNode305() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -6187,7 +6724,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode282() {
+  void loadNode306() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -6207,7 +6744,7 @@ class DataTypeNodeLoader {
     this.nodeManager.addNode(node);
   }
 
-  void loadNode283() {
+  void loadNode307() {
     var node =
         new UaDataTypeNode(
             this.context,
@@ -6514,5 +7051,29 @@ class DataTypeNodeLoader {
     loadNode281();
     loadNode282();
     loadNode283();
+    loadNode284();
+    loadNode285();
+    loadNode286();
+    loadNode287();
+    loadNode288();
+    loadNode289();
+    loadNode290();
+    loadNode291();
+    loadNode292();
+    loadNode293();
+    loadNode294();
+    loadNode295();
+    loadNode296();
+    loadNode297();
+    loadNode298();
+    loadNode299();
+    loadNode300();
+    loadNode301();
+    loadNode302();
+    loadNode303();
+    loadNode304();
+    loadNode305();
+    loadNode306();
+    loadNode307();
   }
 }

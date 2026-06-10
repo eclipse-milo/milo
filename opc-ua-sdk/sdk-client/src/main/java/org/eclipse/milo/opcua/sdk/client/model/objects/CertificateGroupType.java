@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -30,6 +30,14 @@ public interface CertificateGroupType extends BaseObjectType {
           ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
           1,
           NodeId[].class);
+
+  QualifiedProperty<NodeId> PURPOSE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "Purpose",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17"),
+          -1,
+          NodeId.class);
 
   /**
    * Get the local value of the CertificateTypes Node.
@@ -102,6 +110,78 @@ public interface CertificateGroupType extends BaseObjectType {
    *     exceptionally if an error occurs creating or getting the Node.
    */
   CompletableFuture<? extends PropertyType> getCertificateTypesNodeAsync();
+
+  /**
+   * Get the local value of the Purpose Node.
+   *
+   * <p>The returned value is the last seen; it is not read live from the server.
+   *
+   * @return the local value of the Purpose Node.
+   * @throws UaException if an error occurs creating or getting the Purpose Node.
+   */
+  NodeId getPurpose() throws UaException;
+
+  /**
+   * Set the local value of the Purpose Node.
+   *
+   * <p>The value is only updated locally; it is not written to the server.
+   *
+   * @param value the local value to set for the Purpose Node.
+   * @throws UaException if an error occurs creating or getting the Purpose Node.
+   */
+  void setPurpose(NodeId value) throws UaException;
+
+  /**
+   * Read the value of the Purpose Node from the server and update the local value if the operation
+   * succeeds.
+   *
+   * @return the {@link NodeId} value read from the server.
+   * @throws UaException if a service- or operation-level error occurs.
+   */
+  NodeId readPurpose() throws UaException;
+
+  /**
+   * Write a new value for the Purpose Node to the server and update the local value if the
+   * operation succeeds.
+   *
+   * @param value the {@link NodeId} value to write to the server.
+   * @throws UaException if a service- or operation-level error occurs.
+   */
+  void writePurpose(NodeId value) throws UaException;
+
+  /**
+   * An asynchronous implementation of {@link #readPurpose}.
+   *
+   * @return a CompletableFuture that completes successfully with the value or completes
+   *     exceptionally if an operation- or service-level error occurs.
+   */
+  CompletableFuture<? extends NodeId> readPurposeAsync();
+
+  /**
+   * An asynchronous implementation of {@link #writePurpose}.
+   *
+   * @return a CompletableFuture that completes successfully with the operation result or completes
+   *     exceptionally if a service-level error occurs.
+   */
+  CompletableFuture<StatusCode> writePurposeAsync(NodeId value);
+
+  /**
+   * Get the Purpose {@link PropertyType} Node, or {@code null} if it does not exist.
+   *
+   * <p>The Node is created when first accessed and cached for subsequent calls.
+   *
+   * @return the Purpose {@link PropertyType} Node, or {@code null} if it does not exist.
+   * @throws UaException if an error occurs creating or getting the Node.
+   */
+  PropertyType getPurposeNode() throws UaException;
+
+  /**
+   * Asynchronous implementation of {@link #getPurposeNode()}.
+   *
+   * @return a CompletableFuture that completes successfully with the PropertyType Node or completes
+   *     exceptionally if an error occurs creating or getting the Node.
+   */
+  CompletableFuture<? extends PropertyType> getPurposeNodeAsync();
 
   /**
    * Get the TrustList {@link TrustListType} Node, or {@code null} if it does not exist.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -29,7 +29,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/7.32">https://reference.opcfoundation.org/v105/Core/docs/Part4/7.32</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/7.31">https://reference.opcfoundation.org/v105/Core/docs/Part4/7.31</a>
  */
 public class RegisteredServer extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=432");

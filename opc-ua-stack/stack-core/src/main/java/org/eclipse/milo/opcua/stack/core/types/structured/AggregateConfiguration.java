@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -28,7 +28,7 @@ import org.eclipse.milo.opcua.stack.core.util.codegen.HashCodeBuilder;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/6.5.4/#6.5.4.1">https://reference.opcfoundation.org/v105/Core/docs/Part11/6.5.4/#6.5.4.1</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/7.22.4">https://reference.opcfoundation.org/v105/Core/docs/Part4/7.22.4</a>
  */
 public class AggregateConfiguration extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=948");

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -98,6 +98,39 @@ public class AliasNameCategoryTypeNode extends FolderTypeNode implements AliasNa
         findNode(
             "http://opcfoundation.org/UA/",
             "FindAlias",
+            node -> node instanceof UaMethodNode,
+            Reference.HAS_COMPONENT_PREDICATE);
+    return (UaMethodNode) methodNode.orElse(null);
+  }
+
+  @Override
+  public UaMethodNode getFindAliasVerboseMethodNode() {
+    Optional<UaNode> methodNode =
+        findNode(
+            "http://opcfoundation.org/UA/",
+            "FindAliasVerbose",
+            node -> node instanceof UaMethodNode,
+            Reference.HAS_COMPONENT_PREDICATE);
+    return (UaMethodNode) methodNode.orElse(null);
+  }
+
+  @Override
+  public UaMethodNode getAddAliasesToCategoryMethodNode() {
+    Optional<UaNode> methodNode =
+        findNode(
+            "http://opcfoundation.org/UA/",
+            "AddAliasesToCategory",
+            node -> node instanceof UaMethodNode,
+            Reference.HAS_COMPONENT_PREDICATE);
+    return (UaMethodNode) methodNode.orElse(null);
+  }
+
+  @Override
+  public UaMethodNode getDeleteAliasesFromCategoryMethodNode() {
+    Optional<UaNode> methodNode =
+        findNode(
+            "http://opcfoundation.org/UA/",
+            "DeleteAliasesFromCategory",
             node -> node instanceof UaMethodNode,
             Reference.HAS_COMPONENT_PREDICATE);
     return (UaMethodNode) methodNode.orElse(null);

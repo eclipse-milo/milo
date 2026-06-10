@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -24,13 +24,14 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.util.Lazy;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.4">https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.4</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.3">https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.3</a>
  */
 public interface ServerConfigurationType extends BaseObjectType {
   QualifiedProperty<String> APPLICATION_URI =
@@ -187,9 +188,11 @@ public interface ServerConfigurationType extends BaseObjectType {
 
   PropertyType getInApplicationSetupNode();
 
-  CertificateGroupFolderType getCertificateGroupsNode();
-
   MethodNode getUpdateCertificateMethodNode();
+
+  MethodNode getCreateSelfSignedCertificateMethodNode();
+
+  MethodNode getDeleteCertificateMethodNode();
 
   MethodNode getGetCertificatesMethodNode();
 
@@ -203,7 +206,11 @@ public interface ServerConfigurationType extends BaseObjectType {
 
   MethodNode getResetToServerDefaultsMethodNode();
 
+  CertificateGroupFolderType getCertificateGroupsNode();
+
   TransactionDiagnosticsType getTransactionDiagnosticsNode();
+
+  ApplicationConfigurationFileType getConfigurationFileNode();
 
   abstract class UpdateCertificateMethod extends AbstractMethodInvocationHandler {
     private final Lazy<Argument[]> inputArguments = new Lazy<>();
@@ -324,6 +331,195 @@ public interface ServerConfigurationType extends BaseObjectType {
         String privateKeyFormat,
         ByteString privateKey,
         Out<Boolean> applyChangesRequired)
+        throws UaException;
+  }
+
+  abstract class CreateSelfSignedCertificateMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+
+    private final Lazy<Argument[]> outputArguments = new Lazy<>();
+
+    public CreateSelfSignedCertificateMethod(UaMethodNode node) {
+      super(node);
+    }
+
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "CertificateGroupId",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "CertificateTypeId",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "SubjectName",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "DnsNames",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  1,
+                  new UInteger[] {UInteger.valueOf(0)},
+                  new LocalizedText("", "")),
+              new Argument(
+                  "IpAddresses",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  1,
+                  new UInteger[] {UInteger.valueOf(0)},
+                  new LocalizedText("", "")),
+              new Argument(
+                  "LifetimeInDays",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "KeySizeInBits",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return outputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "Certificate",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=15")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      NodeId certificateGroupId = (NodeId) inputValues[0].getValue();
+      NodeId certificateTypeId = (NodeId) inputValues[1].getValue();
+      String subjectName = (String) inputValues[2].getValue();
+      String[] dnsNames = (String[]) inputValues[3].getValue();
+      String[] ipAddresses = (String[]) inputValues[4].getValue();
+      UShort lifetimeInDays = (UShort) inputValues[5].getValue();
+      UShort keySizeInBits = (UShort) inputValues[6].getValue();
+      Out<ByteString> certificate = new Out<>();
+      invoke(
+          context,
+          certificateGroupId,
+          certificateTypeId,
+          subjectName,
+          dnsNames,
+          ipAddresses,
+          lifetimeInDays,
+          keySizeInBits,
+          certificate);
+      return new Variant[] {new Variant(certificate.get())};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        NodeId certificateGroupId,
+        NodeId certificateTypeId,
+        String subjectName,
+        String[] dnsNames,
+        String[] ipAddresses,
+        UShort lifetimeInDays,
+        UShort keySizeInBits,
+        Out<ByteString> certificate)
+        throws UaException;
+  }
+
+  abstract class DeleteCertificateMethod extends AbstractMethodInvocationHandler {
+    private final Lazy<Argument[]> inputArguments = new Lazy<>();
+
+    public DeleteCertificateMethod(UaMethodNode node) {
+      super(node);
+    }
+
+    @Override
+    public Argument[] getInputArguments() {
+      return inputArguments.get(
+          () -> {
+            NamespaceTable namespaceTable = getNode().getNodeContext().getNamespaceTable();
+
+            return new Argument[] {
+              new Argument(
+                  "CertificateGroupId",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", "")),
+              new Argument(
+                  "CertificateTypeId",
+                  ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=17")
+                      .toNodeId(namespaceTable)
+                      .orElseThrow(),
+                  -1,
+                  null,
+                  new LocalizedText("", ""))
+            };
+          });
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[] {};
+    }
+
+    @Override
+    protected Variant[] invoke(
+        AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+        throws UaException {
+      NodeId certificateGroupId = (NodeId) inputValues[0].getValue();
+      NodeId certificateTypeId = (NodeId) inputValues[1].getValue();
+      invoke(context, certificateGroupId, certificateTypeId);
+      return new Variant[] {};
+    }
+
+    protected abstract void invoke(
+        AbstractMethodInvocationHandler.InvocationContext context,
+        NodeId certificateGroupId,
+        NodeId certificateTypeId)
         throws UaException;
   }
 

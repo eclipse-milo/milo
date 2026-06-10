@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -24,7 +24,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/12.3.15">https://reference.opcfoundation.org/v105/Core/docs/Part5/12.3.15</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/7.40.1">https://reference.opcfoundation.org/v105/Core/docs/Part4/7.40.1</a>
  */
 public abstract class UserIdentityToken extends Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=316");
