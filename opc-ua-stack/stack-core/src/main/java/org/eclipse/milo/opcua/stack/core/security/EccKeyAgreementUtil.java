@@ -25,7 +25,6 @@ import javax.crypto.KeyAgreement;
 import javax.crypto.Mac;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis;
 import org.eclipse.milo.opcua.stack.core.security.SecurityProviderResolver.ProviderProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.util.HkdfUtil;
@@ -330,16 +329,10 @@ public final class EccKeyAgreementUtil {
     requireNonNull(clientNonce, "clientNonce");
     requireNonNull(serverNonce, "serverNonce");
 
-    if (profile.keyAgreementAxis() != KeyAgreementAxis.ECDH_NIST_P256
-        && profile.keyAgreementAxis() != KeyAgreementAxis.ECDH_NIST_P384
-        && profile.keyAgreementAxis() != KeyAgreementAxis.ECDH_BRAINPOOL_P256R1
-        && profile.keyAgreementAxis() != KeyAgreementAxis.ECDH_BRAINPOOL_P384R1
-        && profile.keyAgreementAxis() != KeyAgreementAxis.X25519
-        && profile.keyAgreementAxis() != KeyAgreementAxis.X448
-        && profile.keyAgreementAxis() != KeyAgreementAxis.FFDH_3072) {
+    if (!profile.usesEphemeralKeyAgreement()) {
       throw new UaException(
           StatusCodes.Bad_SecurityPolicyRejected,
-          "profile does not use an AEAD HKDF key-agreement axis: "
+          "profile does not use an ephemeral key-agreement axis: "
               + profile.securityPolicy().getUri());
     }
 

@@ -19,8 +19,6 @@ import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
-import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.ChunkProtectionAxis;
-import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgreementAxis;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -186,15 +184,7 @@ public final class EccUserTokenAdditionalHeader {
   public static boolean isSupportedEccProfile(SecurityPolicyProfile profile) {
     requireNonNull(profile, "profile");
 
-    return (profile.keyAgreementAxis() == KeyAgreementAxis.ECDH_NIST_P256
-            || profile.keyAgreementAxis() == KeyAgreementAxis.ECDH_NIST_P384
-            || profile.keyAgreementAxis() == KeyAgreementAxis.ECDH_BRAINPOOL_P256R1
-            || profile.keyAgreementAxis() == KeyAgreementAxis.ECDH_BRAINPOOL_P384R1
-            || profile.keyAgreementAxis() == KeyAgreementAxis.X25519
-            || profile.keyAgreementAxis() == KeyAgreementAxis.X448
-            || profile.keyAgreementAxis() == KeyAgreementAxis.FFDH_3072)
-        && (profile.chunkProtectionAxis() == ChunkProtectionAxis.AES_GCM
-            || profile.chunkProtectionAxis() == ChunkProtectionAxis.CHACHA20_POLY1305);
+    return profile.usesEphemeralKeyAgreement() && profile.usesAeadChunkProtection();
   }
 
   /**
