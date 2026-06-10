@@ -550,14 +550,18 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
     DateTime createdAt = response.getSecurityToken().getCreatedAt();
     long revisedLifetime = response.getSecurityToken().getRevisedLifetime().longValue();
 
+    // Cancel any previously scheduled lifetime timer before installing this token. A
+    // threshold-triggered renewal (renewSecureChannelIfRequired) installs a fresh token without
+    // firing the prior timer, so the prior chain would otherwise stay armed and later fire a
+    // second, overlapping Renew.
+    if (renewFuture != null) {
+      renewFuture.cancel(false);
+    }
+
     if (revisedLifetime > 0) {
       long renewAt = (long) (revisedLifetime * 0.75);
       renewFuture =
-          ctx.executor()
-              .schedule(
-                  () -> sendOpenSecureChannelRequest(ctx, SecurityTokenRequestType.Renew),
-                  renewAt,
-                  TimeUnit.MILLISECONDS);
+          ctx.executor().schedule(() -> renewSecureChannel(ctx), renewAt, TimeUnit.MILLISECONDS);
     } else {
       logger.warn("Server revised secure channel lifetime to 0; renewal will not occur.");
     }
@@ -748,12 +752,37 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
   }
 
   private void renewSecureChannelIfRequired(ChannelHandlerContext ctx) {
-    if (chunkEncoder.isSecureChannelRenewalRequired(secureChannel) && !renewalRequestPending) {
-      logger.debug(
-          "AEAD SecureChannel renewal threshold reached; sending OpenSecureChannel Renew request.");
+    if (chunkEncoder.isSecureChannelRenewalRequired(secureChannel)) {
+      logger.debug("AEAD SecureChannel renewal threshold reached.");
 
-      sendOpenSecureChannelRequest(ctx, SecurityTokenRequestType.Renew);
+      renewSecureChannel(ctx);
     }
+  }
+
+  /**
+   * Initiates a single OpenSecureChannel Renew exchange, suppressing it if one is already in flight
+   * or the channel is no longer active.
+   *
+   * <p>Both renewal initiators — the 75%-lifetime timer and the AEAD sequence-space threshold check
+   * in {@link #renewSecureChannelIfRequired} — funnel through here so at most one Renew is ever
+   * outstanding. A second Renew sent before the first response arrives would overwrite the single
+   * {@link #localEphemeralKeyPair}/{@code localNonce} slots and tear the channel down, so the
+   * in-flight {@link #renewalRequestPending} flag (cleared in {@link #installSecurityToken}) gates
+   * every initiator. The flag is read and set on the channel event loop, so the check-and-set is
+   * serialized without further synchronization.
+   */
+  private void renewSecureChannel(ChannelHandlerContext ctx) {
+    if (renewalRequestPending) {
+      logger.debug("OpenSecureChannel Renew already in flight; skipping renewal.");
+      return;
+    }
+
+    if (!ctx.channel().isActive()) {
+      logger.debug("Channel no longer active; skipping OpenSecureChannel Renew.");
+      return;
+    }
+
+    sendOpenSecureChannelRequest(ctx, SecurityTokenRequestType.Renew);
   }
 
   private void sendCloseSecureChannelRequest(
