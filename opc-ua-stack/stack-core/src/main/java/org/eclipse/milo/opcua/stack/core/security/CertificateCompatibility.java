@@ -61,24 +61,6 @@ public final class CertificateCompatibility {
    *
    * @param securityPolicyProfile the profile the identity will be used with.
    * @param identity the local certificate identity to check.
-   * @return {@code true} if the identity is compatible.
-   */
-  public static boolean isCompatible(
-      SecurityPolicyProfile securityPolicyProfile, CertificateIdentity identity) {
-
-    try {
-      checkCompatible(securityPolicyProfile, identity);
-      return true;
-    } catch (UaException | RuntimeException e) {
-      return false;
-    }
-  }
-
-  /**
-   * Check whether a local identity can be used with {@code securityPolicyProfile}.
-   *
-   * @param securityPolicyProfile the profile the identity will be used with.
-   * @param identity the local certificate identity to check.
    * @throws UaException if the identity is not compatible.
    */
   public static void checkCompatible(
@@ -167,6 +149,47 @@ public final class CertificateCompatibility {
     requireNonNull(certificateTypeId, "certificateTypeId");
     requireNonNull(certificate, "certificate");
 
+    checkCertificateType(securityPolicyProfile, certificateTypeId);
+    checkCompatible(securityPolicyProfile, certificate);
+  }
+
+  /**
+   * Check whether a local identity can be used with {@code securityPolicyProfile}, applying only
+   * the functional requirements relevant to the application's own certificates.
+   *
+   * <p>Unlike {@link #checkCompatible(SecurityPolicyProfile, CertificateIdentity)}, this overload
+   * does not gate legacy RSA-era identities on the strict end-entity KeyUsage bit set ({@code
+   * nonRepudiation}/{@code keyEncipherment}/{@code dataEncipherment}); externally provisioned RSA
+   * certificates commonly omit those bits, and the local side should still be able to use them. The
+   * certificate type ID, public-key family/curve, and the ECC/Edwards {@code keyCertSign}
+   * requirement for self-signed certificates are still enforced.
+   *
+   * @param securityPolicyProfile the profile the identity will be used with.
+   * @param identity the local certificate identity to check.
+   * @throws UaException if the identity is not compatible.
+   */
+  public static void checkLocalCompatible(
+      SecurityPolicyProfile securityPolicyProfile, CertificateIdentity identity)
+      throws UaException {
+
+    requireNonNull(securityPolicyProfile, "securityPolicyProfile");
+    requireNonNull(identity, "identity");
+
+    checkCertificateType(securityPolicyProfile, identity.certificateTypeId());
+
+    if (securityPolicyProfile.authAxis() == AuthAxis.NONE) {
+      return;
+    }
+
+    X509Certificate certificate = identity.certificate();
+    checkPublicKey(securityPolicyProfile.authAxis(), certificate.getPublicKey());
+    CertificateValidationUtil.checkEndEntityKeyUsage(
+        certificate, securityPolicyProfile, ValidationCheck.NO_OPTIONAL_CHECKS);
+  }
+
+  private static void checkCertificateType(
+      SecurityPolicyProfile securityPolicyProfile, NodeId certificateTypeId) throws UaException {
+
     if (!securityPolicyProfile.certificateTypeIds().isEmpty()
         && !securityPolicyProfile.certificateTypeIds().contains(certificateTypeId)) {
 
@@ -175,8 +198,6 @@ public final class CertificateCompatibility {
           "certificate type is not compatible with security policy: "
               + securityPolicyProfile.securityPolicy().getUri());
     }
-
-    checkCompatible(securityPolicyProfile, certificate);
   }
 
   private static void checkPublicKey(AuthAxis authAxis, PublicKey publicKey) throws UaException {

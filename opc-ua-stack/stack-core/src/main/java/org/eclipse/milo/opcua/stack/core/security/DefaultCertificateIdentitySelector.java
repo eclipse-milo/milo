@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.stack.core.security;
 import static java.util.Objects.requireNonNull;
 
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -22,17 +23,28 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Default deterministic selector for local certificate identities.
  *
- * <p>The selector limits candidates to the requested certificate group when one is provided, then
- * prefers an explicitly configured certificate when it is present in the manager, an exact
- * certificate type request, the type preferred by the security policy profile, and finally stable
- * certificate group/type ordering.
+ * <p>The selector limits candidates to the requested certificate group when one is provided and to
+ * identities that are locally compatible with the security policy profile (see {@link
+ * CertificateCompatibility#checkLocalCompatible(SecurityPolicyProfile, CertificateIdentity)}, which
+ * enforces functional requirements but does not reject legacy RSA identities for omitting the
+ * strict KeyUsage bit set). Among the remaining candidates it prefers an explicitly configured
+ * certificate when it is present in the manager, an exact certificate type request, the type
+ * preferred by the security policy profile, and finally stable certificate group/type ordering.
+ *
+ * <p>An identity that is excluded for incompatibility is logged at {@code WARN} with the reason, so
+ * a dropped identity — especially an explicitly configured certificate — is never silently lost.
  */
 @NullMarked
 public final class DefaultCertificateIdentitySelector implements CertificateIdentitySelector {
+
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(DefaultCertificateIdentitySelector.class);
 
   private DefaultCertificateIdentitySelector() {}
 
@@ -51,20 +63,45 @@ public final class DefaultCertificateIdentitySelector implements CertificateIden
 
     requireNonNull(context, "context");
 
-    List<CertificateIdentity> candidates =
-        context.certificateManager().getCertificateIdentities().stream()
-            .filter(identity -> matchesCertificateGroup(context.certificateGroupId(), identity))
-            .filter(
-                identity ->
-                    CertificateCompatibility.isCompatible(
-                        context.securityPolicyProfile(), identity))
-            .toList();
+    ByteString explicitThumbprint = explicitThumbprint(context);
+
+    List<CertificateIdentity> candidates = new ArrayList<>();
+
+    for (CertificateIdentity identity : context.certificateManager().getCertificateIdentities()) {
+
+      if (!matchesCertificateGroup(context.certificateGroupId(), identity)) {
+        continue;
+      }
+
+      try {
+        // Local selection only enforces functional requirements (certificate type, public-key
+        // family/curve, ECC keyCertSign for self-signed). It does not gate legacy RSA identities on
+        // the strict KeyUsage bit set, which externally provisioned certificates commonly omit.
+        CertificateCompatibility.checkLocalCompatible(context.securityPolicyProfile(), identity);
+        candidates.add(identity);
+      } catch (UaException | RuntimeException e) {
+        // Never let an incompatible identity vanish without an actionable reason; an explicitly
+        // configured certificate being rejected is especially worth surfacing.
+        if (explicitThumbprint != null && explicitThumbprint.equals(identity.thumbprint())) {
+          LOGGER.warn(
+              "Explicitly configured certificate is not compatible with security policy {}: {}",
+              context.securityPolicyProfile().securityPolicy().getUri(),
+              e.getMessage());
+        } else {
+          LOGGER.warn(
+              "Certificate identity is not compatible with security policy {}: {}",
+              context.securityPolicyProfile().securityPolicy().getUri(),
+              e.getMessage());
+        }
+      }
+    }
 
     if (candidates.isEmpty()) {
       return Optional.empty();
     }
 
-    Optional<CertificateIdentity> explicitIdentity = selectExplicitIdentity(context, candidates);
+    Optional<CertificateIdentity> explicitIdentity =
+        selectExplicitIdentity(context, explicitThumbprint, candidates);
 
     if (explicitIdentity.isPresent()) {
       return explicitIdentity;
@@ -74,16 +111,15 @@ public final class DefaultCertificateIdentitySelector implements CertificateIden
   }
 
   private static Optional<CertificateIdentity> selectExplicitIdentity(
-      CertificateIdentitySelectionContext context, List<CertificateIdentity> candidates)
+      CertificateIdentitySelectionContext context,
+      @Nullable ByteString explicitThumbprint,
+      List<CertificateIdentity> candidates)
       throws UaException {
 
-    X509Certificate explicitCertificate = context.explicitCertificate();
-
-    if (explicitCertificate == null) {
+    if (explicitThumbprint == null) {
       return Optional.empty();
     }
 
-    ByteString explicitThumbprint = CertificateUtil.thumbprint(explicitCertificate);
     CertificateIdentity selected = null;
     Comparator<CertificateIdentity> order = selectionOrder(context);
 
@@ -95,6 +131,14 @@ public final class DefaultCertificateIdentitySelector implements CertificateIden
     }
 
     return Optional.ofNullable(selected);
+  }
+
+  private static @Nullable ByteString explicitThumbprint(
+      CertificateIdentitySelectionContext context) throws UaException {
+
+    X509Certificate explicitCertificate = context.explicitCertificate();
+
+    return explicitCertificate != null ? CertificateUtil.thumbprint(explicitCertificate) : null;
   }
 
   private static Comparator<CertificateIdentity> selectionOrder(
