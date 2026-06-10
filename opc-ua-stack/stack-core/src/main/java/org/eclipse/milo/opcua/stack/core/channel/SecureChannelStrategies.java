@@ -113,10 +113,6 @@ final class SecureChannelStrategies {
   private static final ChunkProtectionStrategy CHACHA20_POLY1305_CHUNK_PROTECTION =
       new ChaCha20Poly1305ChunkProtectionStrategy();
 
-  @SuppressWarnings("unused")
-  private static final ChunkProtectionStrategy UNSUPPORTED_CHUNK_PROTECTION =
-      new UnsupportedChunkProtectionStrategy();
-
   private static final AsymmetricEncryptionStrategy NO_ASYMMETRIC_ENCRYPTION =
       new NoAsymmetricEncryptionStrategy();
   private static final AsymmetricEncryptionStrategy RSA_ASYMMETRIC_ENCRYPTION =
@@ -1544,84 +1540,6 @@ final class SecureChannelStrategies {
         throws UaException {
 
       return AeadCipherUtil.initChaCha20Poly1305(providerProfile, mode, key, nonce, aad);
-    }
-  }
-
-  private static final class UnsupportedChunkProtectionStrategy implements ChunkProtectionStrategy {
-
-    @Override
-    public int cipherTextBlockSize(SecurityPolicyProfile profile) {
-      return 1;
-    }
-
-    @Override
-    public int plainTextBlockSize(SecurityPolicyProfile profile) {
-      return 1;
-    }
-
-    @Override
-    public int signatureSize(SecurityPolicyProfile profile) {
-      return profile.symmetricSignatureSize();
-    }
-
-    @Override
-    public int paddingOverhead(int cipherTextBlockSize) {
-      return 0;
-    }
-
-    @Override
-    public void writePadding(int cipherTextBlockSize, int paddingSize, ByteBuf buffer) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_SecurityPolicyRejected, "unsupported chunk-protection axis");
-    }
-
-    @Override
-    public int getPaddingSize(int cipherTextBlockSize, int signatureSize, ByteBuf buffer) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_SecurityPolicyRejected, "unsupported chunk-protection axis");
-    }
-
-    @Override
-    public void verifyPadding(
-        int cipherTextBlockSize,
-        int signatureSize,
-        int paddingOverhead,
-        int paddingSize,
-        ByteBuf buffer)
-        throws UaException {
-
-      throw new UaException(
-          StatusCodes.Bad_SecurityPolicyRejected, "unsupported chunk-protection axis");
-    }
-
-    @Override
-    public byte[] sign(
-        SecureChannel channel, ChannelSecurity.SecurityKeys securityKeys, ByteBuffer chunkNioBuffer)
-        throws UaException {
-
-      throw unsupported(channel.getSecurityPolicy().getProfile(), "chunk-protection axis");
-    }
-
-    @Override
-    public void verify(
-        SecureChannel channel, ChannelSecurity.SecurityKeys securityKeys, ByteBuf chunkBuffer)
-        throws UaException {
-
-      throw unsupported(channel.getSecurityPolicy().getProfile(), "chunk-protection axis");
-    }
-
-    @Override
-    public Cipher getEncryptionCipher(
-        SecureChannel channel, ChannelSecurity.SecurityKeys securityKeys) throws UaException {
-
-      throw unsupported(channel.getSecurityPolicy().getProfile(), "chunk-protection axis");
-    }
-
-    @Override
-    public Cipher getDecryptionCipher(
-        SecureChannel channel, ChannelSecurity.SecurityKeys securityKeys) throws UaException {
-
-      throw unsupported(channel.getSecurityPolicy().getProfile(), "chunk-protection axis");
     }
   }
 
