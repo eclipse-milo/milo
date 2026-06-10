@@ -156,6 +156,21 @@ class CertificateIdentityTest {
     assertEquals(key(GROUP_A, NodeIds.RsaMinApplicationCertificateType), key(selected));
   }
 
+  // getCertificateEntries() and getKeyPair() read the store independently, so a rotation can
+  // interleave and pair the old chain with the new key pair. The default getCertificateIdentities()
+  // must omit such a mismatch instead of emitting a CertificateIdentity that violates its own
+  // public-key invariant, which would otherwise surface as confusing OPN/session signature
+  // failures.
+  @Test
+  void getCertificateIdentitiesOmitsChainAndKeyPairMismatchFromRotationRace() {
+    CertificateMaterial staleChain = certificate(NodeIds.RsaSha256ApplicationCertificateType);
+    KeyPair rotatedKeyPair = certificateFactory.createRsaSha256KeyPair();
+
+    CertificateGroup group = new RotationRaceCertificateGroup(GROUP_A, staleChain, rotatedKeyPair);
+
+    assertEquals(List.of(), group.getCertificateIdentities());
+  }
+
   // SecureChannel OPN still identifies the local receiver certificate by SHA-1 thumbprint.
   @Test
   void managerPreservesThumbprintLookupRoundTripForSelectedIdentity() throws Exception {
@@ -288,6 +303,61 @@ class CertificateIdentityTest {
       return Optional.ofNullable(certificates.get(certificateTypeId))
           .map(CertificateMaterial::certificateChain)
           .map(X509Certificate[]::clone);
+    }
+
+    @Override
+    public void updateCertificate(
+        NodeId certificateTypeId, KeyPair keyPair, X509Certificate[] certificateChain) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public CertificateFactory getCertificateFactory() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public CertificateValidator getCertificateValidator() {
+      throw new UnsupportedOperationException();
+    }
+  }
+
+  // Simulates the read interleaving: getCertificateEntries() returns the pre-rotation chain while
+  // getKeyPair() returns the post-rotation key pair, so their public keys do not match.
+  private record RotationRaceCertificateGroup(
+      NodeId certificateGroupId, CertificateMaterial staleChain, KeyPair rotatedKeyPair)
+      implements CertificateGroup {
+
+    @Override
+    public NodeId getCertificateGroupId() {
+      return certificateGroupId;
+    }
+
+    @Override
+    public List<NodeId> getSupportedCertificateTypeIds() {
+      return List.of(staleChain.certificateTypeId());
+    }
+
+    @Override
+    public TrustListManager getTrustListManager() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<Entry> getCertificateEntries() {
+      return List.of(
+          new CertificateGroup.Entry(
+              certificateGroupId, staleChain.certificateTypeId(), staleChain.certificateChain()));
+    }
+
+    @Override
+    public Optional<KeyPair> getKeyPair(NodeId certificateTypeId) {
+      return Optional.of(rotatedKeyPair);
+    }
+
+    @Override
+    public Optional<X509Certificate[]> getCertificateChain(NodeId certificateTypeId) {
+      return Optional.of(staleChain.certificateChain());
     }
 
     @Override
