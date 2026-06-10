@@ -86,11 +86,24 @@ public final class ChannelBoundSignatureData {
    * the latest server nonce, and the original CreateSession client nonce. For legacy profiles the
    * returned bytes keep the historical {@code ServerCertificate | ServerNonce} layout.
    *
+   * <p>On the legacy path {@code serverCertificate} is signed verbatim: the raw {@code ByteString}
+   * exactly as it was received in {@code CreateSessionResponse.serverCertificate} (or replayed on
+   * reactivation). It is <b>not</b> re-decoded to extract and sign only the leaf certificate
+   * encoding. This is deliberate — it matches the OPC UA reference (.NET) stack and the wire
+   * semantics, where the signature is computed over the bytes as transmitted. The interop
+   * implication: if a peer returns a multi-certificate chain in {@code serverCertificate} but
+   * verifies the client signature against only the re-extracted leaf encoding, the two inputs
+   * differ and verification fails. Milo's own server avoids this mismatch by verifying with a
+   * leaf-then-chain dual attempt (see {@code SessionManager.verifyClientSignature}): it first tries
+   * the leaf bytes, then retries with the full chain bytes, so it accepts a signature computed over
+   * either form. The behavior is pinned by {@code ChannelBoundSignatureDataTest}.
+   *
    * @param profile the security policy profile used by the selected endpoint.
    * @param channelThumbprint the first OpenSecureChannel response signature for enhancement
    *     profiles.
    * @param serverNonce the latest server nonce returned by CreateSession or ActivateSession.
-   * @param serverCertificate the server certificate returned by CreateSession.
+   * @param serverCertificate the server certificate returned by CreateSession; on the legacy path
+   *     its raw bytes are signed exactly as received (no leaf re-extraction).
    * @param serverChannelCertificate the server certificate used by the SecureChannel.
    * @param clientChannelCertificate the client certificate used by the SecureChannel.
    * @param clientNonce the original client nonce from CreateSession.
@@ -117,6 +130,9 @@ public final class ChannelBoundSignatureData {
           certificateHash(profile, clientChannelCertificate),
           requiredBytes(clientNonce, "client nonce"));
     } else {
+      // Sign the serverCertificate bytes verbatim (the chain as received, not a re-extracted
+      // leaf), matching the OPC UA reference stack and wire semantics. See the method Javadoc for
+      // the interop trade-off and the leaf-then-chain dual-attempt verification on Milo's server.
       return Bytes.concat(serverCertificate.bytesOrEmpty(), serverNonce.bytesOrEmpty());
     }
   }

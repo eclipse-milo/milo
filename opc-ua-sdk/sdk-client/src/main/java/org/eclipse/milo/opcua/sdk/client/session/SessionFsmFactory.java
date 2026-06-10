@@ -2034,6 +2034,20 @@ public class SessionFsmFactory {
     }
   }
 
+  /**
+   * Build the ActivateSession {@code clientSignature} over the channel-bound signature data.
+   *
+   * <p>For legacy (non-enhancement) policies the {@code serverCertificate} {@code ByteString} is
+   * passed straight through to {@link ChannelBoundSignatureData#clientSignatureData} and signed
+   * verbatim: the raw bytes exactly as received in {@code CreateSessionResponse.serverCertificate}
+   * (here {@code csr.getServerCertificate()}) or replayed from the session on reactivation. The
+   * blob is intentionally <b>not</b> re-decoded to sign only the first (leaf) certificate encoding.
+   * Signing the transmitted bytes as-is aligns with the OPC UA reference (.NET) stack and the wire
+   * semantics. A chain-returning peer that verifies against only a re-extracted leaf would reject
+   * this signature; Milo's server avoids that by verifying with a leaf-then-chain dual attempt (see
+   * {@code SessionManager.verifyClientSignature}). The byte layout is pinned by {@code
+   * ChannelBoundSignatureDataTest}.
+   */
   @SuppressWarnings("Duplicates")
   private static SignatureData buildClientSignature(
       OpcUaClient client,
