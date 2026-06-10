@@ -111,6 +111,19 @@ class RsaDhCryptoTest {
     assertThrows(
         UaException.class,
         () -> FiniteFieldDhKeyAgreementUtil.decodeFfdhe3072(ByteString.of(p), providerProfile));
+
+    // p-1 is the canonical order-2 small-subgroup element: accepting it would let a peer force a
+    // known/low-entropy shared secret. Pin the upper bound (y > p-2) so a future relaxation to
+    // y < p cannot silently readmit it.
+    byte[] pMinusOne =
+        fixedWidth(FiniteFieldDhKeyAgreementUtil.ffdhe3072Prime().subtract(BigInteger.ONE));
+    UaException pMinusOneException =
+        assertThrows(
+            UaException.class,
+            () ->
+                FiniteFieldDhKeyAgreementUtil.decodeFfdhe3072(
+                    ByteString.of(pMinusOne), providerProfile));
+    assertEquals(StatusCodes.Bad_NonceInvalid, pMinusOneException.getStatusCode().getValue());
   }
 
   // RSA_DH_AesGcm uses the same Part 6 directional salt layout as the ECC AEAD policies, but with
