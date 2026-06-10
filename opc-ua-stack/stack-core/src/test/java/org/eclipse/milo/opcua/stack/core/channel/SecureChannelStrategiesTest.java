@@ -18,13 +18,20 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
@@ -394,6 +401,71 @@ class SecureChannelStrategiesTest {
     // Advancing further toward the wrap does not re-trip it for this freshly installed token.
     setNonLegacyLastSequenceNumber(encoder, UInteger.MAX_VALUE - 1L);
     assertFalse(encoder.isSecureChannelRenewalRequired(channel));
+  }
+
+  // The non-legacy sequence stream is shared across the asymmetric encoder, the symmetric encoder,
+  // and the renewal signal. Allocation is confined to a single ChunkEncoder monitor; without that
+  // monitor two threads could read the same counter and emit a duplicate SequenceNumber (a fatal
+  // UASC error on the peer, and AEAD nonce reuse) or skip one (an AEAD nonce gap). Two threads
+  // allocating from one encoder must therefore observe every number in 0..(2*perThread - 1) exactly
+  // once.
+  @Test
+  void nonLegacySequenceAllocationIsContiguousUnderConcurrency() throws Exception {
+    int perThread = 100_000;
+
+    ChunkEncoder encoder =
+        new ChunkEncoder(new ChannelParameters(8192, 8192, 8192, 0, 8192, 8192, 8192, 0));
+
+    Method nextNonLegacySequenceNumbers =
+        ChunkEncoder.class.getDeclaredMethod("nextNonLegacySequenceNumbers");
+    nextNonLegacySequenceNumbers.setAccessible(true);
+
+    Method current = nextNonLegacySequenceNumbers.getReturnType().getDeclaredMethod("current");
+    current.setAccessible(true);
+
+    ConcurrentLinkedQueue<Long> currents = new ConcurrentLinkedQueue<>();
+    AtomicReference<Throwable> failure = new AtomicReference<>();
+    CountDownLatch start = new CountDownLatch(1);
+
+    Runnable worker =
+        () -> {
+          try {
+            start.await();
+
+            for (int i = 0; i < perThread; i++) {
+              Object sequenceNumbers = nextNonLegacySequenceNumbers.invoke(encoder);
+              currents.add((Long) current.invoke(sequenceNumbers));
+            }
+          } catch (Throwable t) {
+            failure.compareAndSet(null, t);
+          }
+        };
+
+    Thread t1 = new Thread(worker, "allocate-1");
+    Thread t2 = new Thread(worker, "allocate-2");
+    t1.start();
+    t2.start();
+    start.countDown();
+    t1.join();
+    t2.join();
+
+    if (failure.get() != null) {
+      fail("concurrent sequence allocation failed", failure.get());
+    }
+
+    List<Long> sorted = new ArrayList<>(currents);
+    sorted.sort(Long::compareTo);
+
+    int total = 2 * perThread;
+    assertEquals(total, sorted.size());
+
+    List<Long> expected = new ArrayList<>(total);
+    for (long n = 0; n < total; n++) {
+      expected.add(n);
+    }
+
+    // Exact equality proves both uniqueness (no reused number) and contiguity (no skipped number).
+    assertEquals(expected, sorted);
   }
 
   // SecureChannelEnhancements sign the first OpenSecureChannel response over its own bytes plus the

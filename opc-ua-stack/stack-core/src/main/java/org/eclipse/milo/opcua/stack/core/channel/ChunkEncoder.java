@@ -72,6 +72,13 @@ public final class ChunkEncoder {
   private final LongSequence legacySequenceNumber =
       new LongSequence(1L, UInteger.MAX_VALUE - 1024 + 1);
 
+  // The non-legacy sequence stream and its AEAD-token tracking are one logically shared piece of
+  // state spanning the asymmetric and symmetric encode paths plus the renewal signal. Every read
+  // and mutation is confined to the outer ChunkEncoder monitor (this) so allocation, last-number
+  // tracking, token-install tracking, and the renewal predicate never observe a torn stream. In
+  // normal operation a single transport's event loop confines all calls to one thread; the monitor
+  // additionally guarantees correctness for any caller that touches one encoder from more than one
+  // thread.
   private long nonLegacyNextSequenceNumber = 0L;
   private long nonLegacyLastSequenceNumber = -1L;
 
@@ -209,6 +216,23 @@ public final class ChunkEncoder {
       currentNonLegacyTokenId = tokenId;
       nonLegacyTokenInstallSequenceNumber = nonLegacyNextSequenceNumber;
     }
+  }
+
+  /**
+   * Allocates the next non-legacy {@link SequenceNumbers} pair, advancing the shared stream.
+   *
+   * <p>{@code current} is the value written into the plaintext SequenceHeader; {@code last} is the
+   * protocol {@code LastSequenceNumber} fed into AEAD nonce construction. The stream wraps from
+   * {@code UInt32.MaxValue} back to 0 per Part 6 6.7.2.4, with no legacy wrap window.
+   */
+  private synchronized SequenceNumbers nextNonLegacySequenceNumbers() {
+    long current = nonLegacyNextSequenceNumber;
+    long last = nonLegacyLastSequenceNumber == -1L ? 0L : nonLegacyLastSequenceNumber;
+
+    nonLegacyLastSequenceNumber = current;
+    nonLegacyNextSequenceNumber = current == UInteger.MAX_VALUE ? 0L : current + 1L;
+
+    return new SequenceNumbers(current, last);
   }
 
   /*
@@ -409,20 +433,6 @@ public final class ChunkEncoder {
       }
 
       return nextNonLegacySequenceNumbers();
-    }
-
-    private synchronized SequenceNumbers nextNonLegacySequenceNumbers() {
-      long current = nonLegacyNextSequenceNumber;
-      long last = lastNonLegacySequenceNumberForAead();
-
-      nonLegacyLastSequenceNumber = current;
-      nonLegacyNextSequenceNumber = current == UInteger.MAX_VALUE ? 0L : current + 1L;
-
-      return new SequenceNumbers(current, last);
-    }
-
-    private synchronized long lastNonLegacySequenceNumberForAead() {
-      return nonLegacyLastSequenceNumber == -1L ? 0L : nonLegacyLastSequenceNumber;
     }
 
     protected abstract byte[] signChunk(
