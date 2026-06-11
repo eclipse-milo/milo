@@ -20,11 +20,9 @@ import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.util.Lazy;
 import org.eclipse.milo.opcua.stack.transport.server.OpcServerTransport;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
-import org.eclipse.milo.opcua.stack.transport.server.uasc.UascServerHelloHandler;
 import org.slf4j.LoggerFactory;
 
 public class OpcTcpServerTransport implements OpcServerTransport {
@@ -33,8 +31,11 @@ public class OpcTcpServerTransport implements OpcServerTransport {
   private final Set<Channel> channelReferences = new HashSet<>();
   private final Set<Channel> childChannelReferences = Collections.synchronizedSet(new HashSet<>());
   private final Lazy<ServerBootstrap> serverBootstrap = new Lazy<>();
+  private final Lazy<OpcTcpServerReverseConnector> reverseConnector = new Lazy<>();
 
   private final OpcTcpServerTransportConfig config;
+
+  private boolean reverseConnectsClosed = false;
 
   public OpcTcpServerTransport(OpcTcpServerTransportConfig config) {
     this.config = config;
@@ -57,21 +58,8 @@ public class OpcTcpServerTransport implements OpcServerTransport {
                         new ChannelInitializer<SocketChannel>() {
                           @Override
                           protected void initChannel(SocketChannel channel) {
-                            channel.pipeline().addLast(RateLimitingHandler.getInstance());
-                            channel
-                                .pipeline()
-                                .addLast(
-                                    new UascServerHelloHandler(
-                                        config,
-                                        applicationContext,
-                                        TransportProfile.TCP_UASC_UABINARY));
-
-                            config.getChannelPipelineCustomizer().accept(channel.pipeline());
-
-                            childChannelReferences.add(channel);
-                            channel
-                                .closeFuture()
-                                .addListener(future -> childChannelReferences.remove(channel));
+                            OpcTcpServerChannelInitializer.initializePassiveChannel(
+                                channel, config, applicationContext, childChannelReferences);
                           }
                         }));
 
@@ -84,11 +72,20 @@ public class OpcTcpServerTransport implements OpcServerTransport {
 
       boundAddresses.add(bindAddress);
       channelReferences.add(bindFuture.channel());
+      reverseConnectsClosed = false;
     }
   }
 
   @Override
   public synchronized void unbind() {
+    reverseConnectsClosed = true;
+
+    OpcTcpServerReverseConnector connector = reverseConnector.get(() -> null);
+    if (connector != null) {
+      connector.close();
+    }
+    reverseConnector.reset();
+
     boundAddresses.clear();
 
     channelReferences.forEach(
@@ -110,5 +107,35 @@ public class OpcTcpServerTransport implements OpcServerTransport {
     }
 
     serverBootstrap.reset();
+  }
+
+  /**
+   * Start one outbound UA-TCP reverse-connect attempt.
+   *
+   * <p>The attempt opens a client-direction socket, sends {@code ReverseHello}, and then hands a
+   * successful channel to the normal server-side UASC pipeline. This method does not bind or
+   * require a passive server listener. The returned attempt owns the channel only until handoff;
+   * after the client sends {@code Hello}, normal server transport and SecureChannel handling own
+   * the channel lifecycle.
+   *
+   * @param parameters the reverse-connect attempt parameters.
+   * @return a handle that observes and controls the attempt.
+   */
+  public OpcTcpServerReverseConnectAttempt connectReverse(
+      OpcTcpServerReverseConnectParameters parameters) {
+
+    synchronized (this) {
+      if (reverseConnectsClosed) {
+        throw new IllegalStateException("transport is unbound");
+      }
+
+      OpcTcpServerReverseConnector connector =
+          reverseConnector.get(() -> new OpcTcpServerReverseConnector(config));
+
+      // Issue the connect under the transport lock so a concurrent unbind cannot close the
+      // connector and surface a misleading "OpcTcpServerReverseConnector is closed" message from
+      // a freshly issued connect.
+      return connector.connect(parameters);
+    }
   }
 }

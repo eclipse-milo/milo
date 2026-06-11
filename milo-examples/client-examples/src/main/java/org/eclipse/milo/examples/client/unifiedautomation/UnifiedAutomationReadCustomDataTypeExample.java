@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package org.eclipse.milo.examples.client;
+package org.eclipse.milo.examples.client.unifiedautomation;
 
 import static java.util.Objects.requireNonNull;
 
@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.milo.examples.client.ClientExample;
+import org.eclipse.milo.examples.client.ClientExampleRunner;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.core.types.DynamicEnumType;
 import org.eclipse.milo.opcua.sdk.core.types.DynamicOptionSetType;
@@ -31,15 +33,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An example that shows reading the value of a node whose DataType is a custom structure type.
+ * Reads and writes dynamic custom structure values from the Unified Automation C++ demo server.
  *
- * <p>Requires the Unified Automation CPP Demo server be running and the endpoint URL be pointing to
- * it.
+ * <p>The demo server exposes several vendor-specific nodes whose values decode through Milo's
+ * dynamic data type support. This example stays outside the default local-server examples because
+ * the endpoint URL, namespace indexes, and writable demo nodes all come from the external Unified
+ * Automation server.
  */
-public class UnifiedAutomationReadCustomDataTypeExample1 implements ClientExample {
+public class UnifiedAutomationReadCustomDataTypeExample implements ClientExample {
 
   public static void main(String[] args) throws Exception {
-    var example = new UnifiedAutomationReadCustomDataTypeExample1();
+    var example = new UnifiedAutomationReadCustomDataTypeExample();
 
     new ClientExampleRunner(example, false).run();
   }
@@ -142,9 +146,6 @@ public class UnifiedAutomationReadCustomDataTypeExample1 implements ClientExampl
 
   private static StatusCode writeValue(OpcUaClient client, NodeId nodeId, UaStructuredType value)
       throws Exception {
-
-    NodeId binaryEncodingId =
-        value.getBinaryEncodingId().toNodeIdOrThrow(client.getNamespaceTable());
 
     ExtensionObject xo = ExtensionObject.encode(client.getDynamicEncodingContext(), value);
 

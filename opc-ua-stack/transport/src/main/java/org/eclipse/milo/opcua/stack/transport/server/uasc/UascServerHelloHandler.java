@@ -18,8 +18,11 @@ import io.netty.util.AttributeKey;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.channel.ChannelParameters;
@@ -38,6 +41,15 @@ import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Handles the server side of the UA-TCP {@code Hello}/{@code Acknowledge} exchange before an
+ * incoming client SecureChannel is opened.
+ *
+ * <p>The handler validates the endpoint URL carried by {@code Hello}, negotiates channel parameters
+ * with {@code Acknowledge}, and then installs {@link UascServerAsymmetricHandler} for the {@code
+ * OpenSecureChannel} phase. It also enforces the configured Hello deadline whether it is present
+ * before channel activation or attached to a channel that is already active.
+ */
 public class UascServerHelloHandler extends ByteToMessageDecoder implements HeaderDecoder {
 
   static final AttributeKey<String> ENDPOINT_URL_KEY = AttributeKey.valueOf("endpoint-url");
@@ -46,9 +58,12 @@ public class UascServerHelloHandler extends ByteToMessageDecoder implements Head
   @SuppressWarnings("WeakerAccess")
   public static final AtomicLong CUMULATIVE_DEADLINES_MISSED = new AtomicLong(0L);
 
-  private static final int MAX_HELLO_MESSAGE_SIZE = 8 + 20 + 4 + 4096;
+  public static final int MAX_HELLO_MESSAGE_SIZE = 8 + 20 + 4 + 4096;
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
+
+  private final AtomicBoolean helloDeadlineScheduled = new AtomicBoolean(false);
+  private final AtomicReference<ScheduledFuture<?>> helloDeadlineFuture = new AtomicReference<>();
 
   private volatile boolean receivedHello = false;
 
@@ -74,28 +89,49 @@ public class UascServerHelloHandler extends ByteToMessageDecoder implements Head
 
   @Override
   public void channelActive(ChannelHandlerContext ctx) throws Exception {
+    scheduleHelloDeadline(ctx);
+
+    super.channelActive(ctx);
+  }
+
+  @Override
+  public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+    if (ctx.channel().isActive()) {
+      scheduleHelloDeadline(ctx);
+    }
+
+    super.handlerAdded(ctx);
+  }
+
+  private void scheduleHelloDeadline(ChannelHandlerContext ctx) {
+    if (!helloDeadlineScheduled.compareAndSet(false, true)) {
+      return;
+    }
+
     int helloDeadlineMs = config.getHelloDeadline().intValue();
 
     logger.debug("Scheduling Hello deadline for +{}ms", helloDeadlineMs);
 
-    ctx.executor()
-        .schedule(
-            () -> {
-              if (!receivedHello) {
-                long cumulativeDeadlinesMissed = CUMULATIVE_DEADLINES_MISSED.incrementAndGet();
+    ScheduledFuture<?> future =
+        ctx.executor()
+            .schedule(
+                () -> {
+                  if (!receivedHello) {
+                    long cumulativeDeadlinesMissed = CUMULATIVE_DEADLINES_MISSED.incrementAndGet();
 
-                logger.debug(
-                    "No Hello received after {}ms; closing channel. cumulativeDeadlinesMissed={}",
-                    helloDeadlineMs,
-                    cumulativeDeadlinesMissed);
+                    logger.debug(
+                        "No Hello received after {}ms; closing channel."
+                            + " cumulativeDeadlinesMissed={}",
+                        helloDeadlineMs,
+                        cumulativeDeadlinesMissed);
 
-                ctx.close();
-              }
-            },
-            helloDeadlineMs,
-            TimeUnit.MILLISECONDS);
+                    ctx.close();
+                  }
+                },
+                helloDeadlineMs,
+                TimeUnit.MILLISECONDS);
 
-    super.channelActive(ctx);
+    helloDeadlineFuture.set(future);
   }
 
   @Override
@@ -147,6 +183,11 @@ public class UascServerHelloHandler extends ByteToMessageDecoder implements Head
     logger.debug("[remote={}] Received Hello message.", ctx.channel().remoteAddress());
 
     receivedHello = true;
+
+    ScheduledFuture<?> deadlineFuture = helloDeadlineFuture.getAndSet(null);
+    if (deadlineFuture != null) {
+      deadlineFuture.cancel(false);
+    }
 
     final HelloMessage hello = TcpMessageDecoder.decodeHello(buffer);
 

@@ -29,6 +29,7 @@ public class OpcTcpServerTransportConfigBuilder {
   private UInteger minimumSecureChannelLifetime = uint(60_000);
   private UInteger maximumSecureChannelLifetime = uint(60_000 * 60 * 24);
   private Consumer<ServerBootstrap> bootstrapCustomizer = b -> {};
+  private Consumer<Bootstrap> reverseConnectBootstrapCustomizer = b -> {};
   private Consumer<ChannelPipeline> channelPipelineCustomizer = p -> {};
 
   public OpcTcpServerTransportConfigBuilder setExecutor(ExecutorService executor) {
@@ -53,6 +54,21 @@ public class OpcTcpServerTransportConfigBuilder {
       Consumer<ServerBootstrap> bootstrapCustomizer) {
 
     this.bootstrapCustomizer = bootstrapCustomizer;
+    return this;
+  }
+
+  /**
+   * Set a {@link Consumer} that will be given a chance to customize the outbound {@link Bootstrap}
+   * used by internal reverse-connect attempts.
+   *
+   * @param reverseConnectBootstrapCustomizer a {@link Consumer} that will customize the outbound
+   *     {@link Bootstrap}.
+   * @return this {@link OpcTcpServerTransportConfigBuilder}.
+   */
+  public OpcTcpServerTransportConfigBuilder setReverseConnectBootstrapCustomizer(
+      Consumer<Bootstrap> reverseConnectBootstrapCustomizer) {
+
+    this.reverseConnectBootstrapCustomizer = reverseConnectBootstrapCustomizer;
     return this;
   }
 
@@ -100,6 +116,7 @@ public class OpcTcpServerTransportConfigBuilder {
         executor,
         eventLoop,
         bootstrapCustomizer,
+        reverseConnectBootstrapCustomizer,
         channelPipelineCustomizer,
         helloDeadline,
         minimumSecureChannelLifetime,
@@ -114,12 +131,14 @@ public class OpcTcpServerTransportConfigBuilder {
     private final UInteger minimumSecureChannelLifetime;
     private final UInteger maximumSecureChannelLifetime;
     private final Consumer<ServerBootstrap> bootstrapCustomizer;
+    private final Consumer<Bootstrap> reverseConnectBootstrapCustomizer;
     private final Consumer<ChannelPipeline> channelPipelineCustomizer;
 
     public OpcTcpServerTransportConfigImpl(
         ExecutorService executor,
         EventLoopGroup eventLoop,
         Consumer<ServerBootstrap> bootstrapCustomizer,
+        Consumer<Bootstrap> reverseConnectBootstrapCustomizer,
         Consumer<ChannelPipeline> channelPipelineCustomizer,
         UInteger helloDeadline,
         UInteger minimumSecureChannelLifetime,
@@ -128,6 +147,7 @@ public class OpcTcpServerTransportConfigBuilder {
       this.executor = executor;
       this.eventLoop = eventLoop;
       this.bootstrapCustomizer = bootstrapCustomizer;
+      this.reverseConnectBootstrapCustomizer = reverseConnectBootstrapCustomizer;
       this.channelPipelineCustomizer = channelPipelineCustomizer;
       this.helloDeadline = helloDeadline;
       this.minimumSecureChannelLifetime = minimumSecureChannelLifetime;
@@ -147,6 +167,11 @@ public class OpcTcpServerTransportConfigBuilder {
     @Override
     public Consumer<ServerBootstrap> getBootstrapCustomizer() {
       return bootstrapCustomizer;
+    }
+
+    @Override
+    public Consumer<Bootstrap> getReverseConnectBootstrapCustomizer() {
+      return reverseConnectBootstrapCustomizer;
     }
 
     @Override
