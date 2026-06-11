@@ -805,6 +805,9 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
 
     getNodeManager().addNode(dataTypeNode);
 
+    // Add a DataTypeEncodingNode for binary encoding of the new DataType
+    addDataTypeEncodingNode(dataTypeId, binaryEncodingId);
+
     // Define the structure
     StructureField[] fields =
         new StructureField[] {
@@ -880,6 +883,9 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
 
     getNodeManager().addNode(dataTypeNode);
 
+    // Add a DataTypeEncodingNode for binary encoding of the new DataType
+    addDataTypeEncodingNode(dataTypeId, binaryEncodingId);
+
     StructureField[] fields =
         new StructureField[] {
           new StructureField(
@@ -910,6 +916,47 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
         .getServer()
         .getStaticDataTypeManager()
         .registerType(dataTypeId, new CustomUnionType.Codec(), binaryEncodingId, null, null);
+  }
+
+  /**
+   * Add a DataTypeEncoding Node for the "Default Binary" encoding of a DataType and link it to the
+   * DataType Node with a HasEncoding Reference.
+   *
+   * <p>The encoding NodeId identifies the type of every ExtensionObject value on the wire, so
+   * clients need to be able to find it in the AddressSpace to map values back to their DataType.
+   *
+   * @param dataTypeId the NodeId of the DataType Node.
+   * @param binaryEncodingId the NodeId of the "Default Binary" DataTypeEncoding Node.
+   */
+  private void addDataTypeEncodingNode(NodeId dataTypeId, NodeId binaryEncodingId) {
+    DataTypeEncodingTypeNode dataTypeEncodingNode =
+        new DataTypeEncodingTypeNode(
+            getNodeContext(),
+            binaryEncodingId,
+            new QualifiedName(0, "Default Binary"),
+            LocalizedText.english("Default Binary"),
+            LocalizedText.NULL_VALUE,
+            uint(0),
+            uint(0),
+            null,
+            null,
+            null);
+
+    dataTypeEncodingNode.addReference(
+        new Reference(
+            dataTypeEncodingNode.getNodeId(),
+            NodeIds.HasTypeDefinition,
+            NodeIds.DataTypeEncodingType.expanded(),
+            Reference.Direction.FORWARD));
+
+    dataTypeEncodingNode.addReference(
+        new Reference(
+            dataTypeEncodingNode.getNodeId(),
+            NodeIds.HasEncoding,
+            dataTypeId.expanded(),
+            Reference.Direction.INVERSE));
+
+    getNodeManager().addNode(dataTypeEncodingNode);
   }
 
   private DataType registerDynamicEnumType() throws Exception {
@@ -1010,34 +1057,7 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
     getNodeManager().addNode(dataTypeNode);
 
     // Add a DataTypeEncodingNode for binary encoding of the new DataType
-    DataTypeEncodingTypeNode dataTypeEncodingNode =
-        new DataTypeEncodingTypeNode(
-            getNodeContext(),
-            binaryEncodingId,
-            new QualifiedName(0, "Default Binary"),
-            LocalizedText.english("Default Binary"),
-            LocalizedText.NULL_VALUE,
-            uint(0),
-            uint(0),
-            null,
-            null,
-            null);
-
-    dataTypeEncodingNode.addReference(
-        new Reference(
-            dataTypeEncodingNode.getNodeId(),
-            NodeIds.HasTypeDefinition,
-            NodeIds.DataTypeEncodingType.expanded(),
-            Reference.Direction.FORWARD));
-
-    dataTypeEncodingNode.addReference(
-        new Reference(
-            dataTypeEncodingNode.getNodeId(),
-            NodeIds.HasEncoding,
-            dataTypeId.expanded(),
-            Reference.Direction.INVERSE));
-
-    getNodeManager().addNode(dataTypeEncodingNode);
+    addDataTypeEncodingNode(dataTypeId, binaryEncodingId);
 
     // Define the structure
     StructureField[] fields =
