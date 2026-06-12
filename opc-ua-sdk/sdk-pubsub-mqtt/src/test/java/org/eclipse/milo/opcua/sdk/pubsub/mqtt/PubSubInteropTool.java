@@ -226,9 +226,15 @@ public final class PubSubInteropTool {
 
         subscribe <address> <port> [--interface <name>] [--publisher-id <type:value>]
                   [--writer-group-id <n>] [--data-set-writer-id <n>]
+                  [--receive-timeout <ms>]
             Run a PubSubService DataSetReader and print every received DataSet,
             metadata announcement, and state change, plus a diagnostics dump every
             10 seconds. All filters are wildcards unless specified (id 0 = wildcard).
+            --receive-timeout <ms> sets the reader's MessageReceiveTimeout (Part 14
+            6.2.9.6): with no DataSetMessage (including keep-alives) for that long the
+            reader transitions to Error (Bad_Timeout), logged as a state change. UDP
+            is connectionless, so this is the only publisher-liveness signal; 0 (the
+            default) disables the watchdog.
 
         raw <address> <port> [--interface <name>]
             No engine: receive raw datagrams, hexdump each packet, attempt a UADP
@@ -267,7 +273,7 @@ public final class PubSubInteropTool {
         mqtt-subscribe <brokerUri> --topic <dataTopic> [--mapping json|uadp]
                        [--metadata-topic <t>] [--field <name>:<type>]...
                        [--publisher-id <type:value>] [--writer-group-id <n>]
-                       [--data-set-writer-id <n>]
+                       [--data-set-writer-id <n>] [--receive-timeout <ms>]
             Run a PubSubService DataSetReader on broker topics, printing DataSets,
             metadata, and state changes like the subscribe mode. --topic is REQUIRED
             (MQTT readers cannot derive the publisher's topic names). Filters are
@@ -277,7 +283,11 @@ public final class PubSubInteropTool {
             matching the publish modes); without --field the policy is
             ACCEPT_DISCOVERED and field names arrive via --metadata-topic or stay
             generic. Field types: bool|sbyte|byte|int16|uint16|int32|uint32|int64|
-            uint64|float|double|string|datetime.
+            uint64|float|double|string|datetime. --receive-timeout <ms> sets the
+            DataSetReader's MessageReceiveTimeout (Part 14 6.2.9.6): if no
+            DataSetMessage (including keep-alives) arrives within that window the
+            reader transitions to Error (Bad_Timeout), logged as a state change;
+            0 (the default) disables the watchdog.
 
         mqtt-raw <brokerUri> [--topic <filter>]
             No engine: a plain MQTT 5 client subscribed to --topic (default
@@ -316,7 +326,8 @@ public final class PubSubInteropTool {
                       "--interface",
                       "--publisher-id",
                       "--writer-group-id",
-                      "--data-set-writer-id")));
+                      "--data-set-writer-id",
+                      "--receive-timeout")));
       case "raw" -> runRaw(parseArgs(args, Set.of("--interface")));
       case "publish" ->
           runPublish(
@@ -358,6 +369,7 @@ public final class PubSubInteropTool {
                       "--publisher-id",
                       "--writer-group-id",
                       "--data-set-writer-id",
+                      "--receive-timeout",
                       "--username",
                       "--password",
                       "--client-id",
@@ -387,6 +399,9 @@ public final class PubSubInteropTool {
     if (args.dataSetWriterId != 0) {
       reader.dataSetWriterId(ushort(args.dataSetWriterId));
     }
+    if (args.receiveTimeoutMs > 0) {
+      reader.messageReceiveTimeout(Duration.ofMillis(args.receiveTimeoutMs));
+    }
 
     PubSubConfig config =
         PubSubConfig.builder()
@@ -405,7 +420,9 @@ public final class PubSubInteropTool {
     addStateAndDiagnosticsLogging(service);
     closeOnShutdown(service);
 
-    log("subscribing on %s", address);
+    log(
+        "subscribing on %s: receiveTimeout=%s",
+        address, args.receiveTimeoutMs > 0 ? args.receiveTimeoutMs + " ms" : "disabled");
     service.startup().get();
     log("service started; Ctrl-C to exit");
 
@@ -842,6 +859,9 @@ public final class PubSubInteropTool {
     if (args.dataSetWriterId != 0) {
       reader.dataSetWriterId(ushort(args.dataSetWriterId));
     }
+    if (args.receiveTimeoutMs > 0) {
+      reader.messageReceiveTimeout(Duration.ofMillis(args.receiveTimeoutMs));
+    }
 
     BrokerTransportSettings.Builder brokerTransport =
         BrokerTransportSettings.builder().queueName(args.topic);
@@ -866,14 +886,16 @@ public final class PubSubInteropTool {
     closeOnShutdown(service);
 
     log(
-        "subscribing over MQTT/%s to %s: data topic=%s metadata topic=%s policy=%s",
+        "subscribing over MQTT/%s to %s: data topic=%s metadata topic=%s policy=%s"
+            + " receiveTimeout=%s",
         args.mapping,
         args.brokerUri,
         args.topic,
         orDash(args.metadataTopic),
         args.fields.isEmpty()
             ? "ACCEPT_DISCOVERED"
-            : "REQUIRE_CONFIGURED (" + args.fields.size() + " configured fields)");
+            : "REQUIRE_CONFIGURED (" + args.fields.size() + " configured fields)",
+        args.receiveTimeoutMs > 0 ? args.receiveTimeoutMs + " ms" : "disabled");
     service.startup().get();
     log("service started; Ctrl-C to exit");
 
@@ -1213,6 +1235,7 @@ public final class PubSubInteropTool {
         case "--writer-group-id" -> parsed.writerGroupId = parseInt(option, value);
         case "--data-set-writer-id" -> parsed.dataSetWriterId = parseInt(option, value);
         case "--interval-ms" -> parsed.intervalMs = parseInt(option, value);
+        case "--receive-timeout" -> parsed.receiveTimeoutMs = parseInt(option, value);
         default -> throw usageError("unknown option: " + option);
       }
       i += 2;
@@ -1252,6 +1275,7 @@ public final class PubSubInteropTool {
         case "--field" -> parsed.fields.add(parseField(value));
         case "--writer-group-id" -> parsed.writerGroupId = parseInt(option, value);
         case "--data-set-writer-id" -> parsed.dataSetWriterId = parseInt(option, value);
+        case "--receive-timeout" -> parsed.receiveTimeoutMs = parseInt(option, value);
         case "--username" -> parsed.username = value;
         case "--password" -> parsed.password = value;
         case "--client-id" -> parsed.clientId = value;
@@ -1383,6 +1407,8 @@ public final class PubSubInteropTool {
     int dataSetWriterId;
     int intervalMs = 100;
     boolean dataValue;
+    int receiveTimeoutMs =
+        0; // subscribe modes: 0 = MessageReceiveTimeout disabled (engine default)
 
     // MQTT modes
     String brokerUri;
