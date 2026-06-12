@@ -43,7 +43,11 @@ import org.eclipse.milo.opcua.stack.core.util.BufferUtil;
  * DataValue field encoding, security mode None only. Event message emission, the RawData field
  * encoding, PromotedFields, chunking, and message security are not supported and are rejected with
  * {@code Bad_NotSupported}. (The blanket RawData rejection also covers §7.2.4.5.11's "RawField
- * encoding shall only be applied to Data Key Frame DataSetMessages".)
+ * encoding shall only be applied to Data Key Frame DataSetMessages".) The RawData, PromotedFields,
+ * and message-security rejections are backstops: for the built-in mapping, service validation and
+ * the group- and writer-level activation re-checks reject those configurations with the same status
+ * code before a publish cycle ever runs, whatever the enablement order, so the encode-time throws
+ * are reachable only via direct invocation.
  *
  * <p>Delta frames signal their type in the DataSetFlags2 type bits ({@code 0001}, §7.2.4.5.4 Table
  * 162) and write the Table 164 body: {@code FieldCount} followed by {@code FieldCount} pairs of

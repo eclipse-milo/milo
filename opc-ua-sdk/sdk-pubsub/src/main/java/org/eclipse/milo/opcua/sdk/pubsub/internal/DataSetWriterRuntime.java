@@ -334,13 +334,42 @@ final class DataSetWriterRuntime extends AbstractComponentRuntime {
     return List.of();
   }
 
+  /**
+   * Activate the writer: re-run the writer-level subset of the startup validation and publish
+   * broker metadata. A throw is mapped by {@link PubSubStateMachine} to {@code PubSubState.Error}
+   * with the exception's status code, leaving the group Operational.
+   */
   @Override
-  void activate() {
+  void activate() throws UaException {
+    checkUnsupportedUadpFeatures();
+
     // broker connections publish this writer's (retained) metadata when the writer activates;
     // failures are recorded in diagnostics, never thrown: metadata publication is auxiliary
     MetaDataPublisher metaDataPublisher = group.connectionRuntime().metaDataPublisher();
     if (metaDataPublisher != null) {
       metaDataPublisher.onWriterActivated(group, this);
+    }
+  }
+
+  /**
+   * Re-check the writer-level unsupported-UADP-feature rule ({@link
+   * PubSubServiceImpl#unsupportedUadpFeatureError}) at activation: this writer's RawData
+   * field-content-mask bit, applied only when the group's "uadp" mapping resolves to the built-in
+   * provider — a custom provider shadowing "uadp" owns its wire format and is never second-guessed.
+   * Startup/reconfigure validation and {@link WriterGroupRuntime#activate} only ever see enabled
+   * writers, so a writer disabled at startup (tolerated, config round-trip posture) and enabled
+   * after its group activated is first checked here — it fails into {@code PubSubState.Error} with
+   * {@code Bad_NotSupported} instead of going Operational while the encoder backstop rejects every
+   * publish cycle. The group-level PromotedFields bit is not re-checked here: a writer only
+   * activates under an Operational group, and a PromotedFields group fails its own activation.
+   */
+  private void checkUnsupportedUadpFeatures() throws UaException {
+    String error =
+        service.unsupportedUadpFeatureError(group.config(), List.of(config), group.path());
+    if (error != null) {
+      var e = new UaException(StatusCodes.Bad_NotSupported, error);
+      service.getDiagnostics().error(path(), e.getStatusCode(), e.getMessage(), e);
+      throw e;
     }
   }
 

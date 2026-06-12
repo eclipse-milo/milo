@@ -159,9 +159,17 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
     return writers;
   }
 
+  /**
+   * Activate the group: re-run the activation-time subset of the startup validation (message
+   * security, unsupported UADP emission features, mapping-provider resolution) and schedule the
+   * publish task. Validation only ever sees enabled components, so a group configured disabled at
+   * startup and enabled later is first checked here; a throw is mapped by {@link
+   * PubSubStateMachine} to {@code PubSubState.Error} with the exception's status code.
+   */
   @Override
   void activate() throws UaException {
     checkMessageSecurity();
+    checkUnsupportedUadpFeatures();
 
     MessageMappingProvider provider = service.resolveMappingProvider(mappingName);
     if (provider == null) {
@@ -248,6 +256,33 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
               "MessageSecurityMode %s is not supported (writer group '%s'); only None is"
                       .formatted(security.getMode(), path())
                   + " supported in this version");
+      service.getDiagnostics().error(path(), e.getStatusCode(), e.getMessage(), e);
+      throw e;
+    }
+  }
+
+  /**
+   * Re-check the unsupported-UADP-feature rules ({@link
+   * PubSubServiceImpl#unsupportedUadpFeatureError}) at activation: group-level PromotedFields and
+   * the RawData field-content mask of currently enabled writers, applied only when the "uadp"
+   * mapping resolves to the built-in provider. Startup/reconfigure validation tolerates disabled
+   * components (config round-trip posture), so this closes the disabled-at-startup-then-enabled gap
+   * — the group fails into {@code PubSubState.Error} with {@code Bad_NotSupported} instead of
+   * activating and having the encoder backstop reject every publish cycle. A writer enabled later
+   * still, after this group activated, is covered by the writer-level re-check of its own RawData
+   * bit in {@link DataSetWriterRuntime#activate}, so no enablement order reaches the encoder with
+   * an unsupported feature.
+   */
+  private void checkUnsupportedUadpFeatures() throws UaException {
+    List<DataSetWriterConfig> enabledWriters =
+        writers.stream()
+            .filter(AbstractComponentRuntime::isEnabled)
+            .map(DataSetWriterRuntime::config)
+            .toList();
+
+    String error = service.unsupportedUadpFeatureError(config, enabledWriters, path());
+    if (error != null) {
+      var e = new UaException(StatusCodes.Bad_NotSupported, error);
       service.getDiagnostics().error(path(), e.getStatusCode(), e.getMessage(), e);
       throw e;
     }

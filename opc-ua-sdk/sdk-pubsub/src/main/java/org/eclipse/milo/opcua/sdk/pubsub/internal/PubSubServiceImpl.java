@@ -1078,10 +1078,14 @@ public final class PubSubServiceImpl implements PubSubService {
    * groups, missing transport or mapping providers for enabled components, missing sources for
    * enabled writers, publisher-less connections with enabled writer groups, enabled readers on
    * broker connections without a configured data queueName, enabled writer groups on UDP
-   * connections with a maxNetworkMessageSize above the Part 14 §7.3.2.1 limit of 65535, and enabled
+   * connections with a maxNetworkMessageSize above the Part 14 §7.3.2.1 limit of 65535, enabled
    * writers whose keyFrameCount > 1 cannot be honored — JSON writers whose effective content masks
    * cannot express delta frames, and UADP writers with a non-zero ConfiguredSize; both only when
-   * the group's mapping resolves to the built-in provider (see {@link #deltaFrameConfigError}).
+   * the group's mapping resolves to the built-in provider (see {@link #deltaFrameConfigError}) —
+   * and enabled UADP writer groups asking for emission features the built-in mapping does not
+   * implement: the group-level PromotedFields content-mask bit and the RawData field-content-mask
+   * bit of enabled writers, rejected with {@code Bad_NotSupported} (see {@link
+   * #unsupportedUadpFeatureError}).
    */
   private void validateStartup(PubSubConfig config) throws UaException {
     if (!config.isEnabled()) {
@@ -1128,6 +1132,12 @@ public final class PubSubServiceImpl implements PubSubService {
               StatusCodes.Bad_ConfigurationError,
               "no MessageMappingProvider for mapping '%s' (writer group '%s')"
                   .formatted(mappingName, groupPath));
+        }
+
+        String unsupportedFeature =
+            unsupportedUadpFeatureError(group, enabledWriters(group), groupPath);
+        if (unsupportedFeature != null) {
+          throw new UaException(StatusCodes.Bad_NotSupported, unsupportedFeature);
         }
 
         for (DataSetWriterConfig writer : group.getDataSetWriters()) {
@@ -1203,6 +1213,14 @@ public final class PubSubServiceImpl implements PubSubService {
    * even though the runtime degrades such writers safely to every-cycle key frames: a configuration
    * asking for delta frames it cannot express or safely carry is a contradiction better rejected
    * than silently ignored.
+   *
+   * <p>The unsupported-UADP-feature check ({@link #unsupportedUadpFeatureError}) is enforced here
+   * too, throwing {@code Bad_NotSupported} — the one rejection in this method that is not {@code
+   * Bad_ConfigurationError}, keeping the status code aligned with {@link #validateStartup} and the
+   * encoder backstop. There is no useful degradation path to accept the config into: a group asking
+   * the built-in UADP mapping for PromotedFields or RawData emission can never publish and would
+   * only fail into {@code Error} when {@link WriterGroupRuntime#activate} re-checks, so the
+   * contradiction is rejected before the running configuration is replaced.
    */
   private void validateReconfigure(PubSubConfig config) {
     if (!config.isEnabled()) {
@@ -1220,30 +1238,34 @@ public final class PubSubServiceImpl implements PubSubService {
         if (!group.isEnabled()) {
           continue;
         }
+
+        String groupPath = connection.name() + "/" + group.getName();
+
         if (!broker
             && group.getMaxNetworkMessageSize().longValue() > MAX_UDP_NETWORK_MESSAGE_SIZE) {
           throw new UaRuntimeException(
               StatusCodes.Bad_ConfigurationError,
-              "maxNetworkMessageSize %s exceeds the OPC UA UDP limit of %d (writer group '%s/%s')"
+              "maxNetworkMessageSize %s exceeds the OPC UA UDP limit of %d (writer group '%s')"
                   .formatted(
-                      group.getMaxNetworkMessageSize(),
-                      MAX_UDP_NETWORK_MESSAGE_SIZE,
-                      connection.name(),
-                      group.getName()));
+                      group.getMaxNetworkMessageSize(), MAX_UDP_NETWORK_MESSAGE_SIZE, groupPath));
         }
         String mappingName = mappingNameOf(group.getMessageSettings());
         if (resolveMappingProvider(mappingName) == null) {
           throw new UaRuntimeException(
               StatusCodes.Bad_ConfigurationError,
-              "no MessageMappingProvider for mapping '%s' (writer group '%s/%s')"
-                  .formatted(mappingName, connection.name(), group.getName()));
+              "no MessageMappingProvider for mapping '%s' (writer group '%s')"
+                  .formatted(mappingName, groupPath));
+        }
+        String unsupportedFeature =
+            unsupportedUadpFeatureError(group, enabledWriters(group), groupPath);
+        if (unsupportedFeature != null) {
+          throw new UaRuntimeException(StatusCodes.Bad_NotSupported, unsupportedFeature);
         }
         for (DataSetWriterConfig writer : group.getDataSetWriters()) {
           if (!writer.isEnabled()) {
             continue;
           }
-          String deltaConfigError =
-              deltaFrameConfigError(group, writer, connection.name() + "/" + group.getName());
+          String deltaConfigError = deltaFrameConfigError(group, writer, groupPath);
           if (deltaConfigError != null) {
             throw new UaRuntimeException(StatusCodes.Bad_ConfigurationError, deltaConfigError);
           }
@@ -1357,6 +1379,60 @@ public final class PubSubServiceImpl implements PubSubService {
     }
 
     return null;
+  }
+
+  /**
+   * The first emission feature in {@code group}'s configuration that the built-in UADP mapping does
+   * not implement, as an error message naming the offending component, or {@code null} when there
+   * is none: the group-level PromotedFields bit of the UadpNetworkMessageContentMask (Part 14
+   * §6.3.1.1.4) and the RawData bit of the DataSetFieldContentMask (§6.2.4.2) of each writer in
+   * {@code writers}. Callers pass only the writers in scope (the enabled ones — disabled components
+   * are tolerated so imported configs keep round-tripping) and reject a non-null result with {@code
+   * Bad_NotSupported}, the same code the UADP encoder backstop uses.
+   *
+   * <p>Applies only when the group is UADP-mapped AND the "uadp" mapping name resolves to the
+   * built-in provider ({@link #isBuiltinMapping}): a custom {@link MessageMappingProvider}
+   * registered under "uadp" shadows the built-in, owns its wire format, and may support these
+   * features, so it is never second-guessed here. JSON-mapped writers are out of scope by
+   * construction: their RawData bit is a legitimate, implemented Variant-representation modifier
+   * (§7.2.5.4.3), and JsonNetworkMessageContentMask has no PromotedFields bit.
+   *
+   * <p>Enforced at startup ({@link #validateStartup}), reconfigure ({@link #validateReconfigure}),
+   * group activation ({@link WriterGroupRuntime#activate}: PromotedFields plus the RawData bit of
+   * the writers enabled at that point, covering groups enabled after startup), and writer
+   * activation ({@link DataSetWriterRuntime#activate}: the activating writer's RawData bit,
+   * covering writers enabled after their group activated). Every enablement order is therefore
+   * rejected before the first publish cycle; the per-cycle encoder rejection remains only as a
+   * backstop for direct invocation of the mapping.
+   */
+  @Nullable String unsupportedUadpFeatureError(
+      WriterGroupConfig group, List<DataSetWriterConfig> writers, String groupPath) {
+
+    if (!(group.getMessageSettings() instanceof UadpWriterGroupSettings groupSettings)) {
+      return null;
+    }
+    if (!isBuiltinMapping(mappingNameOf(group.getMessageSettings()))) {
+      // a custom provider registered under "uadp" owns its wire format; whether it supports
+      // PromotedFields or RawData emission is its own concern
+      return null;
+    }
+
+    if (groupSettings.getNetworkMessageContentMask().getPromotedFields()) {
+      return "PromotedFields emission is not supported (writer group '%s')".formatted(groupPath);
+    }
+
+    for (DataSetWriterConfig writer : writers) {
+      if (writer.getFieldContentMask().getRawData()) {
+        return "RawData field encoding is not supported (dataset writer '%s/%s')"
+            .formatted(groupPath, writer.getName());
+      }
+    }
+
+    return null;
+  }
+
+  private static List<DataSetWriterConfig> enabledWriters(WriterGroupConfig group) {
+    return group.getDataSetWriters().stream().filter(DataSetWriterConfig::isEnabled).toList();
   }
 
   private static boolean hasDataQueueName(DataSetReaderConfig reader) {
