@@ -16,6 +16,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.netty.buffer.ByteBuf;
@@ -289,6 +290,19 @@ class ReaderMatchingTest {
       DataSetMessageDraft... drafts)
       throws UaException {
 
+    return encode(publisherId, networkMessageContentMask, writerGroupId, groupVersion, 0, drafts);
+  }
+
+  /** Encode one NetworkMessage with an explicit NetworkMessage SequenceNumber header value. */
+  private static byte[] encode(
+      PublisherId publisherId,
+      UadpNetworkMessageContentMask networkMessageContentMask,
+      int writerGroupId,
+      UInteger groupVersion,
+      int networkMessageSequenceNumber,
+      DataSetMessageDraft... drafts)
+      throws UaException {
+
     WriterGroupConfig group =
         WriterGroupConfig.builder("EncodeWG")
             .writerGroupId(ushort(writerGroupId))
@@ -307,7 +321,7 @@ class ReaderMatchingTest {
                     group,
                     groupVersion,
                     ushort(1),
-                    ushort(0),
+                    ushort(networkMessageSequenceNumber),
                     null,
                     List.of(drafts)));
 
@@ -335,6 +349,47 @@ class ReaderMatchingTest {
       ConfigurationVersionDataType configurationVersion,
       int value) {
 
+    return draft(
+        dataSetWriterId,
+        dataSetMessageContentMask,
+        configurationVersion,
+        0,
+        false,
+        List.of(new DataValue(Variant.ofInt32(value))));
+  }
+
+  /** A key-frame draft that puts the DataSetMessage SequenceNumber on the wire. */
+  private static DataSetMessageDraft sequencedDraft(
+      int dataSetWriterId, int sequenceNumber, int value) {
+
+    return draft(
+        dataSetWriterId,
+        UadpDataSetMessageContentMask.of(UadpDataSetMessageContentMask.Field.SequenceNumber),
+        new ConfigurationVersionDataType(uint(0), uint(0)),
+        sequenceNumber,
+        false,
+        List.of(new DataValue(Variant.ofInt32(value))));
+  }
+
+  /** A keep-alive draft carrying the next expected sequence number (Part 14 §7.2.4.5.8). */
+  private static DataSetMessageDraft keepAliveDraft(int dataSetWriterId, int sequenceNumber) {
+    return draft(
+        dataSetWriterId,
+        UadpDataSetMessageContentMask.of(UadpDataSetMessageContentMask.Field.SequenceNumber),
+        new ConfigurationVersionDataType(uint(0), uint(0)),
+        sequenceNumber,
+        true,
+        List.of());
+  }
+
+  private static DataSetMessageDraft draft(
+      int dataSetWriterId,
+      UadpDataSetMessageContentMask dataSetMessageContentMask,
+      ConfigurationVersionDataType configurationVersion,
+      int sequenceNumber,
+      boolean keepAlive,
+      List<DataValue> values) {
+
     DataSetWriterConfig writer =
         DataSetWriterConfig.builder("EncodeW" + dataSetWriterId)
             .dataSet(new PublishedDataSetRef("EncodePDS"))
@@ -346,13 +401,7 @@ class ReaderMatchingTest {
             .build();
 
     return new DataSetMessageDraft(
-        writer,
-        ushort(0),
-        null,
-        null,
-        configurationVersion,
-        false,
-        List.of(new DataValue(Variant.ofInt32(value))));
+        writer, ushort(sequenceNumber), null, null, configurationVersion, keepAlive, values);
   }
 
   private static UadpNetworkMessageContentMask nmMask(
@@ -838,4 +887,303 @@ class ReaderMatchingTest {
     assertEquals(1, connection.decodeErrors());
     assertEquals(new StatusCode(StatusCodes.Bad_DecodingError), connection.lastError());
   }
+
+  // region Part 14 §7.2.3 sequence-number window
+
+  private static final UadpNetworkMessageContentMask SEQ_TEST_MASK =
+      UadpNetworkMessageContentMask.of(
+          UadpNetworkMessageContentMask.Field.PublisherId,
+          UadpNetworkMessageContentMask.Field.PayloadHeader);
+
+  /** PublisherId | GroupHeader | WriterGroupId | SequenceNumber | PayloadHeader. */
+  private static final UadpNetworkMessageContentMask GROUP_SEQ_MASK =
+      UadpNetworkMessageContentMask.of(
+          UadpNetworkMessageContentMask.Field.PublisherId,
+          UadpNetworkMessageContentMask.Field.GroupHeader,
+          UadpNetworkMessageContentMask.Field.WriterGroupId,
+          UadpNetworkMessageContentMask.Field.SequenceNumber,
+          UadpNetworkMessageContentMask.Field.PayloadHeader);
+
+  @Test
+  void duplicateDataSetMessageIsDroppedAndCounted() throws Exception {
+    startService(DataSetReaderConfig.builder("R1").build());
+
+    PublisherId pub = PublisherId.uint16(ushort(1));
+    byte[] seq5 = encode(pub, SEQ_TEST_MASK, 1, uint(0), sequencedDraft(10, 5, 1));
+
+    injectAndFlush(seq5);
+    assertEquals(1, eventCount("R1"));
+    DataSetReceivedEvent event = takeEvent("R1");
+    assertEquals(uint(5), event.dataSetMessageSequenceNumber());
+    // no GroupHeader on the wire: no NetworkMessage sequence number
+    assertNull(event.networkMessageSequenceNumber());
+
+    // the exact same DataSetMessage again: dropped as stale, listener sees nothing
+    injectAndFlush(seq5);
+    assertEquals(0, eventCount("R1"));
+
+    PubSubDiagnostics.ComponentDiagnostics reader = diagnostics("conn/RG/R1");
+    assertEquals(1, reader.staleSequenceMessages());
+    assertEquals(0, reader.invalidSequenceMessages());
+    // sequence drops are not "received" DataSetMessages and are not error-class events
+    assertEquals(1, reader.dataSetMessagesReceived());
+    assertEquals(0, reader.decodeErrors());
+    assertNull(reader.lastError());
+
+    // the next number still flows
+    injectAndFlush(encode(pub, SEQ_TEST_MASK, 1, uint(0), sequencedDraft(10, 6, 2)));
+    assertEquals(1, eventCount("R1"));
+    assertEquals(uint(6), takeEvent("R1").dataSetMessageSequenceNumber());
+  }
+
+  @Test
+  void reorderedOlderDataSetMessageIsDropped() throws Exception {
+    startService(DataSetReaderConfig.builder("R1").build());
+
+    PublisherId pub = PublisherId.uint16(ushort(1));
+
+    injectAndFlush(encode(pub, SEQ_TEST_MASK, 1, uint(0), sequencedDraft(10, 5, 1)));
+    injectAndFlush(encode(pub, SEQ_TEST_MASK, 1, uint(0), sequencedDraft(10, 6, 2)));
+    assertEquals(2, eventCount("R1"));
+    clearEvents();
+
+    // older-than-last-processed arrivals are "older than (or same as)" and dropped
+    injectAndFlush(encode(pub, SEQ_TEST_MASK, 1, uint(0), sequencedDraft(10, 5, 1)));
+    injectAndFlush(encode(pub, SEQ_TEST_MASK, 1, uint(0), sequencedDraft(10, 4, 1)));
+    assertEquals(0, eventCount("R1"));
+    assertEquals(2, diagnostics("conn/RG/R1").staleSequenceMessages());
+
+    injectAndFlush(encode(pub, SEQ_TEST_MASK, 1, uint(0), sequencedDraft(10, 7, 3)));
+    assertEquals(1, eventCount("R1"));
+  }
+
+  @Test
+  void largeForwardJumpIsInvalidAndDoesNotAdvanceTheWindow() throws Exception {
+    startService(DataSetReaderConfig.builder("R1").build());
+
+    PublisherId pub = PublisherId.uint16(ushort(1));
+
+    injectAndFlush(encode(pub, SEQ_TEST_MASK, 1, uint(0), sequencedDraft(10, 100, 1)));
+    assertEquals(1, eventCount("R1"));
+    clearEvents();
+
+    // (received - 1 - last) mod 2^16 = 16384 = the lower bound: "other results are invalid"
+    injectAndFlush(encode(pub, SEQ_TEST_MASK, 1, uint(0), sequencedDraft(10, 100 + 16385, 2)));
+    assertEquals(0, eventCount("R1"));
+
+    PubSubDiagnostics.ComponentDiagnostics reader = diagnostics("conn/RG/R1");
+    assertEquals(1, reader.invalidSequenceMessages());
+    assertEquals(0, reader.staleSequenceMessages());
+
+    // the invalid message did not advance the window: the genuine next number is still NEW
+    injectAndFlush(encode(pub, SEQ_TEST_MASK, 1, uint(0), sequencedDraft(10, 101, 3)));
+    assertEquals(1, eventCount("R1"));
+  }
+
+  @Test
+  void wildcardReaderTracksEachPublisherStreamIndependently() throws Exception {
+    startService(DataSetReaderConfig.builder("R1").build());
+
+    PublisherId pubA = PublisherId.uint16(ushort(1));
+    PublisherId pubB = PublisherId.uint16(ushort(2));
+
+    // interleaved streams from two publishers, both at sequence number 5: independent windows
+    injectAndFlush(encode(pubA, SEQ_TEST_MASK, 1, uint(0), sequencedDraft(10, 5, 1)));
+    injectAndFlush(encode(pubB, SEQ_TEST_MASK, 1, uint(0), sequencedDraft(10, 5, 2)));
+    assertEquals(2, eventCount("R1"));
+    clearEvents();
+
+    // a duplicate from A is dropped while B's stream advances normally
+    injectAndFlush(encode(pubA, SEQ_TEST_MASK, 1, uint(0), sequencedDraft(10, 5, 1)));
+    injectAndFlush(encode(pubB, SEQ_TEST_MASK, 1, uint(0), sequencedDraft(10, 6, 3)));
+
+    assertEquals(1, eventCount("R1"));
+    assertEquals(PublisherId.uint16(ushort(2)), takeEvent("R1").publisherId());
+    assertEquals(1, diagnostics("conn/RG/R1").staleSequenceMessages());
+  }
+
+  /**
+   * The off-by-one trap (Part 14 §7.2.4.5.8): a keep-alive carries the NEXT EXPECTED sequence
+   * number without consuming it, so the data DataSetMessage that follows carries the SAME number
+   * and must be accepted; repeated keep-alives must not count as duplicates.
+   */
+  @Test
+  void keepAliveSeedsTheWindowAndTheDataMessageWithTheSameNumberIsAccepted() throws Exception {
+    startService(DataSetReaderConfig.builder("R1").build());
+
+    PublisherId pub = PublisherId.uint16(ushort(1));
+
+    // a keep-alive seeds the unseeded stream (next expected = 7); not delivered to listeners
+    injectAndFlush(encode(pub, SEQ_TEST_MASK, 1, uint(0), keepAliveDraft(10, 7)));
+    assertEquals(0, eventCount("R1"));
+
+    // the data message carrying the same number 7 is NEW
+    injectAndFlush(encode(pub, SEQ_TEST_MASK, 1, uint(0), sequencedDraft(10, 7, 1)));
+    assertEquals(1, eventCount("R1"));
+    assertEquals(uint(7), takeEvent("R1").dataSetMessageSequenceNumber());
+
+    // repeated keep-alives (all carrying next expected 8) never advance the window and never
+    // tick the sequence-drop counters
+    injectAndFlush(encode(pub, SEQ_TEST_MASK, 1, uint(0), keepAliveDraft(10, 8)));
+    injectAndFlush(encode(pub, SEQ_TEST_MASK, 1, uint(0), keepAliveDraft(10, 8)));
+    injectAndFlush(encode(pub, SEQ_TEST_MASK, 1, uint(0), sequencedDraft(10, 8, 2)));
+    assertEquals(1, eventCount("R1"));
+
+    PubSubDiagnostics.ComponentDiagnostics reader = diagnostics("conn/RG/R1");
+    assertEquals(0, reader.staleSequenceMessages());
+    assertEquals(0, reader.invalidSequenceMessages());
+    // 2 data messages + 3 keep-alives were received
+    assertEquals(5, reader.dataSetMessagesReceived());
+  }
+
+  /**
+   * The NetworkMessage window is checked first: a duplicated NetworkMessage drops every matched
+   * DataSetMessage it carries, ticking the stale counter once per suppressed DataSetMessage.
+   */
+  @Test
+  void duplicateNetworkMessageDropsAllItsDataSetMessages() throws Exception {
+    startService(DataSetReaderConfig.builder("R1").build());
+
+    PublisherId pub = PublisherId.uint16(ushort(1));
+    byte[] nmSeq3 = encode(pub, GROUP_SEQ_MASK, 7, uint(0), 3, draft(10, 1), draft(11, 2));
+
+    injectAndFlush(nmSeq3);
+    assertEquals(2, eventCount("R1"));
+    DataSetReceivedEvent event = takeEvent("R1");
+    assertEquals(ushort(3), event.networkMessageSequenceNumber());
+    // the drafts carry no DataSetMessage sequence number
+    assertNull(event.dataSetMessageSequenceNumber());
+    clearEvents();
+
+    // the same NetworkMessage again: both DataSetMessages suppressed, one tick each
+    injectAndFlush(nmSeq3);
+    assertEquals(0, eventCount("R1"));
+    assertEquals(2, diagnostics("conn/RG/R1").staleSequenceMessages());
+
+    // the next NetworkMessage number flows, both DataSetMessages delivered
+    injectAndFlush(encode(pub, GROUP_SEQ_MASK, 7, uint(0), 4, draft(10, 3), draft(11, 4)));
+    assertEquals(2, eventCount("R1"));
+  }
+
+  /**
+   * The NetworkMessage carrying a keep-alive consumes a NetworkMessage sequence number like any
+   * other (Part 14 §7.2.3; §7.2.4.5.8's next-expected rule applies to the DataSetMessage number
+   * only), so keep-alive-only NetworkMessages must advance the NetworkMessage window — otherwise a
+   * long keep-alive-only period freezes the window while the publisher's counter advances, and
+   * resumed data is wrongly dropped as invalid, then stale. The keep-alive itself is never dropped
+   * on the NetworkMessage verdict.
+   */
+  @Test
+  void keepAliveNetworkMessagesAdvanceTheNetworkMessageWindow() throws Exception {
+    startService(DataSetReaderConfig.builder("R1").build());
+
+    PublisherId pub = PublisherId.uint16(ushort(1));
+
+    // data seeds the NetworkMessage window at 10
+    injectAndFlush(encode(pub, GROUP_SEQ_MASK, 7, uint(0), 10, draft(10, 1)));
+    assertEquals(1, eventCount("R1"));
+    clearEvents();
+
+    // a keep-alive-only NetworkMessage advances the window to 11; not delivered, no drop ticks
+    injectAndFlush(encode(pub, GROUP_SEQ_MASK, 7, uint(0), 11, keepAliveDraft(10, 5)));
+    assertEquals(0, eventCount("R1"));
+    assertEquals(0, diagnostics("conn/RG/R1").staleSequenceMessages());
+    assertEquals(0, diagnostics("conn/RG/R1").invalidSequenceMessages());
+
+    // a data NetworkMessage replaying the keep-alive's number is "older than (or same as)" the
+    // last processed NetworkMessage and dropped
+    injectAndFlush(encode(pub, GROUP_SEQ_MASK, 7, uint(0), 11, draft(10, 2)));
+    assertEquals(0, eventCount("R1"));
+    assertEquals(1, diagnostics("conn/RG/R1").staleSequenceMessages());
+
+    // a keep-alive in a stale NetworkMessage is itself never dropped: still received (it must
+    // keep resetting the receive timeout per §6.2.9.6), and it ticks no drop counters
+    long received = diagnostics("conn/RG/R1").dataSetMessagesReceived();
+    injectAndFlush(encode(pub, GROUP_SEQ_MASK, 7, uint(0), 11, keepAliveDraft(10, 5)));
+    assertEquals(received + 1, diagnostics("conn/RG/R1").dataSetMessagesReceived());
+    assertEquals(1, diagnostics("conn/RG/R1").staleSequenceMessages());
+    assertEquals(0, diagnostics("conn/RG/R1").invalidSequenceMessages());
+
+    // the next NetworkMessage number flows
+    injectAndFlush(encode(pub, GROUP_SEQ_MASK, 7, uint(0), 12, draft(10, 3)));
+    assertEquals(1, eventCount("R1"));
+  }
+
+  /**
+   * The NetworkMessage window advances on every NEW NetworkMessage, even when its matched
+   * DataSetMessages are all dropped at the DataSetMessage window: the publisher consumed the number
+   * (§7.2.3), so deferring the advance to delivery would open the same window-freeze gap as
+   * keep-alive-only periods.
+   */
+  @Test
+  void networkMessageWindowAdvancesWhenAllDataSetMessagesAreDroppedAtTheDataSetMessageWindow()
+      throws Exception {
+
+    startService(DataSetReaderConfig.builder("R1").build());
+
+    PublisherId pub = PublisherId.uint16(ushort(1));
+
+    injectAndFlush(encode(pub, GROUP_SEQ_MASK, 7, uint(0), 0, sequencedDraft(10, 5, 1)));
+    assertEquals(1, eventCount("R1"));
+    clearEvents();
+
+    // NetworkMessage 1 is NEW and advances its window even though its only DataSetMessage is a
+    // duplicate dropped at the DataSetMessage window
+    injectAndFlush(encode(pub, GROUP_SEQ_MASK, 7, uint(0), 1, sequencedDraft(10, 5, 1)));
+    assertEquals(0, eventCount("R1"));
+    assertEquals(1, diagnostics("conn/RG/R1").staleSequenceMessages());
+
+    // so a replay of NetworkMessage 1 is dropped at the NetworkMessage window, fresh payload
+    // notwithstanding ...
+    injectAndFlush(encode(pub, GROUP_SEQ_MASK, 7, uint(0), 1, sequencedDraft(10, 6, 2)));
+    assertEquals(0, eventCount("R1"));
+    assertEquals(2, diagnostics("conn/RG/R1").staleSequenceMessages());
+
+    // ... and the genuine next NetworkMessage flows, its DataSetMessage still NEW
+    injectAndFlush(encode(pub, GROUP_SEQ_MASK, 7, uint(0), 2, sequencedDraft(10, 6, 3)));
+    assertEquals(1, eventCount("R1"));
+    assertEquals(uint(6), takeEvent("R1").dataSetMessageSequenceNumber());
+  }
+
+  @Test
+  void bothSequenceNumbersSurfaceOnTheEvent() throws Exception {
+    startService(DataSetReaderConfig.builder("R1").build());
+
+    injectAndFlush(
+        encode(
+            PublisherId.uint16(ushort(1)),
+            GROUP_SEQ_MASK,
+            7,
+            uint(0),
+            9,
+            sequencedDraft(10, 5, 1)));
+
+    assertEquals(1, eventCount("R1"));
+    DataSetReceivedEvent event = takeEvent("R1");
+    assertEquals(ushort(9), event.networkMessageSequenceNumber());
+    assertEquals(uint(5), event.dataSetMessageSequenceNumber());
+  }
+
+  /** §6.2.9.6: without a sequence number "each received DataSetMessage is considered new". */
+  @Test
+  void dataSetMessagesWithoutSequenceNumbersBypassTheWindow() throws Exception {
+    startService(DataSetReaderConfig.builder("R1").build());
+
+    PublisherId pub = PublisherId.uint16(ushort(1));
+    byte[] frame = encode(pub, SEQ_TEST_MASK, 1, uint(0), draft(10, 1));
+
+    injectAndFlush(frame);
+    injectAndFlush(frame);
+    injectAndFlush(frame);
+
+    assertEquals(3, eventCount("R1"));
+    assertNull(takeEvent("R1").dataSetMessageSequenceNumber());
+
+    PubSubDiagnostics.ComponentDiagnostics reader = diagnostics("conn/RG/R1");
+    assertEquals(0, reader.staleSequenceMessages());
+    assertEquals(0, reader.invalidSequenceMessages());
+    assertEquals(3, reader.dataSetMessagesReceived());
+  }
+
+  // endregion
 }

@@ -543,6 +543,8 @@ class TargetVariablesWriterTest {
         PublisherId.uint16(ushort(1)),
         ushort(1),
         ushort(1),
+        null,
+        null,
         "ds",
         null,
         List.of(fields));

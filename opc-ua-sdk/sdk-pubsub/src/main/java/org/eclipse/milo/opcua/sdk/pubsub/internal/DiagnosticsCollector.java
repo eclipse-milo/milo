@@ -82,6 +82,30 @@ final class DiagnosticsCollector implements PubSubDiagnostics {
     }
   }
 
+  /**
+   * Record a DataSetMessage dropped by a reader's Part 14 §7.2.3 sequence-number window as older
+   * than or duplicating the last processed message. A normal-operation counter: no {@code
+   * lastError} and no diagnostics event ("shall be ignored" is not an error condition).
+   */
+  void staleSequenceMessage(String path) {
+    Counters counters = countersByPath.get(path);
+    if (counters != null) {
+      counters.staleSequenceMessages.increment();
+    }
+  }
+
+  /**
+   * Record a DataSetMessage dropped by a reader's Part 14 §7.2.3 sequence-number window with a
+   * recency result in the invalid band (neither provably newer nor older). A normal-operation
+   * counter: no {@code lastError} and no diagnostics event.
+   */
+  void invalidSequenceMessage(String path) {
+    Counters counters = countersByPath.get(path);
+    if (counters != null) {
+      counters.invalidSequenceMessages.increment();
+    }
+  }
+
   /** Record a dropped message (decode failure, version mismatch, invalid message). */
   void decodeError(String path, StatusCode statusCode, String message, @Nullable Throwable error) {
     Counters counters = countersByPath.get(path);
@@ -135,6 +159,8 @@ final class DiagnosticsCollector implements PubSubDiagnostics {
     final LongAdder dataSetMessagesReceived = new LongAdder();
     final LongAdder decodeErrors = new LongAdder();
     final LongAdder sourceErrors = new LongAdder();
+    final LongAdder staleSequenceMessages = new LongAdder();
+    final LongAdder invalidSequenceMessages = new LongAdder();
 
     volatile @Nullable StatusCode lastError;
 
@@ -153,6 +179,8 @@ final class DiagnosticsCollector implements PubSubDiagnostics {
           dataSetMessagesReceived.sum(),
           decodeErrors.sum(),
           sourceErrors.sum(),
+          staleSequenceMessages.sum(),
+          invalidSequenceMessages.sum(),
           lastError);
     }
   }

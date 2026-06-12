@@ -60,6 +60,20 @@ public interface PubSubDiagnostics {
    *     maxNetworkMessageSize} at the group; version mismatches and invalid DataSetMessages at the
    *     reader.
    * @param sourceErrors the number of {@link PublishedDataSetSource} read failures.
+   * @param staleSequenceMessages the number of DataSetMessages dropped by a DataSetReader's Part 14
+   *     §7.2.3 sequence-number window as older than — or duplicating — the last processed message.
+   *     The unit is dropped DataSetMessages: a NetworkMessage-level drop counts once per matched
+   *     DataSetMessage it suppressed. A per-reader counter: both sequence-drop counters tick at
+   *     DataSetReader paths only, where {@code dataSetMessagesReceived} plus the two sequence-drop
+   *     counters equals the total matched DataSetMessages; at group and connection paths the
+   *     sequence-drop counters stay zero and {@code dataSetMessagesReceived} does not count
+   *     window-dropped DataSetMessages, so no such equality holds there. A normal-operation counter
+   *     (the spec says such messages "shall be ignored"): drops do not set {@code lastError}. A
+   *     Milo extension; Part 14 defines no counter for sequence-window drops.
+   * @param invalidSequenceMessages the number of DataSetMessages dropped by a DataSetReader's Part
+   *     14 §7.2.3 sequence-number window with a recency result in the invalid band — neither
+   *     provably newer nor older than the last processed message, e.g. a huge forward jump after a
+   *     publisher restarted its numbering. Same unit and posture as {@code staleSequenceMessages}.
    * @param lastError the status code of the most recent error, or {@code null} if no error has
    *     occurred.
    */
@@ -71,5 +85,7 @@ public interface PubSubDiagnostics {
       long dataSetMessagesReceived,
       long decodeErrors,
       long sourceErrors,
+      long staleSequenceMessages,
+      long invalidSequenceMessages,
       @Nullable StatusCode lastError) {}
 }

@@ -14,6 +14,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -436,6 +437,41 @@ class JsonEngineEndToEndTest {
     assertEquals(TEMPERATURE_FIELD_ID, discoveredFields.get(0).dataSetFieldId());
     assertEquals("status", discoveredFields.get(1).name());
     assertEquals(STATUS_FIELD_ID, discoveredFields.get(1).dataSetFieldId());
+
+    // endregion
+
+    // region sequence numbers: surfaced on the event, duplicate documents dropped
+
+    // the default JSON DataSetMessage mask puts the UInt32 SequenceNumber on the wire; the JSON
+    // NetworkMessage has no sequence number at all (Part 14 §7.2.5.3 Table 184)
+    assertNotNull(configuredEvent.dataSetMessageSequenceNumber());
+    assertNull(configuredEvent.networkMessageSequenceNumber());
+    assertEquals(
+        configuredEvent.dataSetMessageSequenceNumber(),
+        discoveredEvent.dataSetMessageSequenceNumber());
+
+    // re-injecting the same captured document is the broker QoS AtLeastOnce duplicate shape
+    // (§6.4.2.1: "Readers shall de-duplicate based on message id or sequence number"): the
+    // §7.2.3 window drops it for both readers, one staleSequenceMessages tick each, no delivery
+    subscriberTransport.inject("opcua/json/data/line-7/grp", dataSent.json());
+    flushSubscriber();
+
+    assertNull(configuredEvents.poll());
+    assertNull(discoveredEvents.poll());
+    assertEquals(
+        1,
+        subscriber
+            .diagnostics()
+            .snapshot()
+            .get("sub-conn/rgrp/reader-cfg")
+            .staleSequenceMessages());
+    assertEquals(
+        1,
+        subscriber
+            .diagnostics()
+            .snapshot()
+            .get("sub-conn/rgrp/reader-disc")
+            .staleSequenceMessages());
 
     // endregion
 

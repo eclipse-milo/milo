@@ -229,14 +229,36 @@ class ReaderOperationalGateTest {
 
   /** Encode one NetworkMessage with the default UADP-Dynamic masks (PublisherId+PayloadHeader). */
   private static byte[] encodeKeyFrameMessage(int dataSetWriterId, int value) throws UaException {
-    return encode(dataSetWriterId, false, List.of(new DataValue(Variant.ofInt32(value))));
+    return encode(
+        dataSetWriterId,
+        UadpDataSetMessageContentMask.of(),
+        0,
+        false,
+        List.of(new DataValue(Variant.ofInt32(value))));
+  }
+
+  /** Encode a key frame whose DataSetMessage SequenceNumber is on the wire. */
+  private static byte[] encodeSequencedKeyFrameMessage(
+      int dataSetWriterId, int sequenceNumber, int value) throws UaException {
+
+    return encode(
+        dataSetWriterId,
+        UadpDataSetMessageContentMask.of(UadpDataSetMessageContentMask.Field.SequenceNumber),
+        sequenceNumber,
+        false,
+        List.of(new DataValue(Variant.ofInt32(value))));
   }
 
   private static byte[] encodeKeepAliveMessage(int dataSetWriterId) throws UaException {
-    return encode(dataSetWriterId, true, List.of());
+    return encode(dataSetWriterId, UadpDataSetMessageContentMask.of(), 0, true, List.of());
   }
 
-  private static byte[] encode(int dataSetWriterId, boolean keepAlive, List<DataValue> values)
+  private static byte[] encode(
+      int dataSetWriterId,
+      UadpDataSetMessageContentMask dataSetMessageContentMask,
+      int sequenceNumber,
+      boolean keepAlive,
+      List<DataValue> values)
       throws UaException {
 
     WriterGroupConfig group =
@@ -248,14 +270,14 @@ class ReaderOperationalGateTest {
             .dataSetWriterId(ushort(dataSetWriterId))
             .settings(
                 UadpDataSetWriterSettings.builder()
-                    .dataSetMessageContentMask(UadpDataSetMessageContentMask.of())
+                    .dataSetMessageContentMask(dataSetMessageContentMask)
                     .build())
             .build();
 
     var draft =
         new DataSetMessageDraft(
             writer,
-            ushort(0),
+            ushort(sequenceNumber),
             null,
             null,
             new ConfigurationVersionDataType(uint(0), uint(0)),
@@ -299,6 +321,49 @@ class ReaderOperationalGateTest {
         0x00, // FieldCount = 1
         fieldIndex & 0xFF,
         (fieldIndex >>> 8) & 0xFF, // FieldIndex
+        0x06, // Variant type id 6 = Int32
+        value & 0xFF,
+        (value >>> 8) & 0xFF,
+        (value >>> 16) & 0xFF,
+        (value >>> 24) & 0xFF);
+  }
+
+  /**
+   * Like {@link #deltaFrameWithInt32Field(int, int)} but with the DataSetMessageSequenceNumber on
+   * the wire (DataSetFlags1 bit 3, §7.2.4.5.4 Table 162). Headerless like the other hand-built
+   * frames, so it shares the (null, null) stream identity with {@link
+   * #keyFrameWithSequenceNumber(int, int)}.
+   */
+  private static byte[] deltaFrameWithSequenceNumber(int sequenceNumber, int value) {
+    return bytes(
+        0x01, // byte 0: version 1, all optional NetworkMessage headers off
+        0x89, // DataSetFlags1: valid 0x01 | Variant encoding | SequenceNumber 0x08 | Flags2 0x80
+        0x01, // DataSetFlags2: type 0001 = Data Delta Frame
+        sequenceNumber & 0xFF,
+        (sequenceNumber >>> 8) & 0xFF, // DataSetMessageSequenceNumber (UInt16 LE)
+        0x01,
+        0x00, // FieldCount = 1
+        0x01,
+        0x00, // FieldIndex = 1
+        0x06, // Variant type id 6 = Int32
+        value & 0xFF,
+        (value >>> 8) & 0xFF,
+        (value >>> 16) & 0xFF,
+        (value >>> 24) & 0xFF);
+  }
+
+  /**
+   * A key frame with the DataSetMessageSequenceNumber on the wire (no DataSetFlags2: message type
+   * defaults to key frame) and one Variant Int32 field, hand-built per §7.2.4.5.4 Table 162.
+   */
+  private static byte[] keyFrameWithSequenceNumber(int sequenceNumber, int value) {
+    return bytes(
+        0x01, // byte 0: version 1, all optional NetworkMessage headers off
+        0x09, // DataSetFlags1: valid 0x01 | Variant encoding | SequenceNumber 0x08
+        sequenceNumber & 0xFF,
+        (sequenceNumber >>> 8) & 0xFF, // DataSetMessageSequenceNumber (UInt16 LE)
+        0x01,
+        0x00, // FieldCount = 1
         0x06, // Variant type id 6 = Int32
         value & 0xFF,
         (value >>> 8) & 0xFF,
@@ -480,5 +545,82 @@ class ReaderOperationalGateTest {
     awaitTrue(
         "reader to recover to Operational on the next delta",
         () -> service.state(reader) == PubSubState.Operational);
+  }
+
+  /**
+   * Part 14 §6.2.9.6: "A DataSetMessage is considered new if the sequence number increments" — a
+   * stream of pure duplicates does not reset the receive timeout, so the watchdog still moves the
+   * reader to Error; dropped duplicates do not recover it either, but the next new message does.
+   */
+  @Test
+  void duplicateDataMessagesDoNotResetTheReceiveTimeout() throws Exception {
+    PubSubHandle reader =
+        startReaderService(
+            DataSetReaderConfig.builder("R1").messageReceiveTimeout(Duration.ofSeconds(1)).build());
+
+    byte[] seq5 = encodeSequencedKeyFrameMessage(10, 5, 1);
+
+    injectAndFlush(seq5);
+    assertEquals(PubSubState.Operational, service.state(reader));
+    assertEquals(1, events.size());
+
+    // keep injecting the SAME message at a cadence well below the timeout: the drops do not
+    // reset the receive timeout, so the watchdog expires despite the steady traffic
+    long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+    while (service.state(reader) != PubSubState.Error && System.nanoTime() < deadline) {
+      injectAndFlush(seq5);
+      Thread.sleep(60);
+    }
+    assertEquals(PubSubState.Error, service.state(reader));
+
+    // a dropped duplicate does not recover the reader from Error — injected immediately upon
+    // observing Error: the watchdog fired at 1x the timeout while the §7.2.3 record-discard
+    // fires only at 2x, so a full timeout of real-time headroom remains before a discarded
+    // record would make this duplicate re-seed the stream and wrongly recover the reader
+    injectAndFlush(seq5);
+    assertEquals(PubSubState.Error, service.state(reader));
+
+    assertEquals(
+        new StatusCode(StatusCodes.Bad_Timeout),
+        service.diagnostics().snapshot().get("conn/RG/R1").lastError());
+
+    // none of the duplicates was delivered, all were counted
+    assertEquals(1, events.size());
+    assertTrue(
+        readerCounter("R1", PubSubDiagnostics.ComponentDiagnostics::staleSequenceMessages) > 0);
+
+    // the next new sequence number does recover the reader
+    injectAndFlush(encodeSequencedKeyFrameMessage(10, 6, 2));
+    awaitTrue(
+        "reader to recover to Operational on the next new message",
+        () -> service.state(reader) == PubSubState.Operational);
+  }
+
+  /**
+   * A duplicate key frame dropped by the §7.2.3 window does not complete startup: the window is
+   * seeded by a pre-key delta frame (delivered, reader still PreOperational per §6.2.1 Table 2),
+   * then a key frame re-using the delta's sequence number is dropped without a state change.
+   */
+  @Test
+  void droppedDuplicateKeyFrameDoesNotCompleteStartup() throws Exception {
+    PubSubHandle reader = startReaderService(DataSetReaderConfig.builder("R1").build());
+    assertEquals(PubSubState.PreOperational, service.state(reader));
+
+    // a delta with sequence number 5 seeds the (null, null) stream window; delivered, no startup
+    injectAndFlush(deltaFrameWithSequenceNumber(5, 100));
+    assertEquals(PubSubState.PreOperational, service.state(reader));
+    assertEquals(1, events.size());
+
+    // a key frame duplicating sequence number 5 is dropped: no delivery, no startup completion
+    injectAndFlush(keyFrameWithSequenceNumber(5, 7));
+    assertEquals(PubSubState.PreOperational, service.state(reader));
+    assertEquals(1, events.size());
+    assertEquals(
+        1, readerCounter("R1", PubSubDiagnostics.ComponentDiagnostics::staleSequenceMessages));
+
+    // the next new key frame completes startup
+    injectAndFlush(keyFrameWithSequenceNumber(6, 8));
+    assertEquals(PubSubState.Operational, service.state(reader));
+    assertEquals(2, events.size());
   }
 }

@@ -41,6 +41,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.uadp.UadpMetaDataAnnouncement;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.PubSubState;
 import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationVersionDataType;
@@ -64,8 +65,26 @@ import org.jspecify.annotations.Nullable;
  * nothing: a buffer no mapping could decode ticks {@code decodeErrors} once per failed mapping. A
  * reader group with a non-zero {@code maxNetworkMessageSize} never sees messages larger than it;
  * such messages tick {@code decodeErrors} at the group path with {@code
- * Bad_EncodingLimitsExceeded}. Subscriber-side sequence number tracking (duplicate/reordering
- * detection) is not implemented in this version.
+ * Bad_EncodingLimitsExceeded}.
+ *
+ * <p>Data and event DataSetMessages that carry sequence numbers pass a per-reader, per-stream Part
+ * 14 §7.2.3 recency window before delivery — the NetworkMessage window first (a stale or invalid
+ * NetworkMessage suppresses all its matched DataSetMessages for that reader), then the
+ * DataSetMessage window. The DataSetMessage window advances only on delivered messages; the
+ * NetworkMessage window advances on every NEW NetworkMessage at classification time — including
+ * NetworkMessages carrying only keep-alives or only DataSetMessages dropped at the DataSetMessage
+ * window — because the publisher consumes one NetworkMessage sequence number for every
+ * NetworkMessage it sends (§7.2.3 "incremented by exactly one for each message"). Stale and invalid
+ * messages are dropped: not delivered, counted in the reader's {@code staleSequenceMessages} /
+ * {@code invalidSequenceMessages} (not in {@code dataSetMessagesReceived}), and — per §6.2.9.6,
+ * where a data DataSetMessage is "new" only if its sequence number increments — they do not reset
+ * the receive timeout, complete startup, or recover the reader from Error. Messages without a
+ * sequence number bypass the window entirely ("each received DataSetMessage is considered new",
+ * §6.2.9.6). Keep-alives are window-neutral at the DataSetMessage level — they may seed an unseeded
+ * stream with their carried next-expected number but never advance a seeded window (they do refresh
+ * the stream's §7.2.3 record-discard clock: a keep-alive is a received message), and they always
+ * reset the receive timeout — while the NetworkMessage that carries them is an ordinary
+ * NetworkMessage whose sequence number advances the NetworkMessage window normally.
  */
 final class ReaderDispatcher {
 
@@ -284,10 +303,15 @@ final class ReaderDispatcher {
         }
 
         if (!decoded.messages().isEmpty() && matchesNetworkMessage(reader.config(), decoded)) {
+          // one NetworkMessage-window verdict per (reader, NetworkMessage): classified lazily on
+          // the first DataSetMessage that reaches the window seam and reused for its siblings, so
+          // the first accepted DataSetMessage advancing the NetworkMessage window does not make
+          // the rest of the same NetworkMessage classify as duplicates
+          var networkMessageVerdict = new NetworkMessageVerdict();
           for (DecodedDataSetMessage message : decoded.messages()) {
             if (dataSetWriterIdMatches(reader.config(), message.dataSetWriterId())) {
               groupMatched = true;
-              deliver(connection, group, reader, decoded, message);
+              deliver(connection, group, reader, decoded, message, networkMessageVerdict);
             }
           }
         }
@@ -352,10 +376,8 @@ final class ReaderDispatcher {
       ReaderGroupRuntime group,
       DataSetReaderRuntime reader,
       DecodedNetworkMessage networkMessage,
-      DecodedDataSetMessage message) {
-
-    service.getDiagnostics().dataSetMessageReceived(group.path());
-    service.getDiagnostics().dataSetMessageReceived(reader.path());
+      DecodedDataSetMessage message,
+      NetworkMessageVerdict networkMessageVerdict) {
 
     // a matched message reveals the identifiers a wildcard-filtered REQUEST_IF_MISSING reader
     // needs before it can emit discovery probes
@@ -365,12 +387,41 @@ final class ReaderDispatcher {
           reader, networkMessage.publisherId(), message.dataSetWriterId());
     }
 
+    ReaderSequenceTracker tracker = reader.sequenceTracker();
+    long nowNanos = System.nanoTime();
+
     if (message.kind() == DataSetMessageKind.KEEP_ALIVE) {
+      // the NetworkMessage carrying a keep-alive is an ordinary NetworkMessage: the publisher
+      // consumed one NetworkMessage sequence number for it (§7.2.3 "incremented by exactly one
+      // for each message"; §7.2.4.5.8's next-expected rule applies to the DataSetMessage number
+      // only), so a NEW NetworkMessage advances the NetworkMessage window here too — otherwise a
+      // long keep-alive-only period freezes the window while the publisher's counter advances,
+      // and resumed data is wrongly dropped as invalid, then stale. The keep-alive itself is
+      // never dropped on the NetworkMessage verdict: keep-alives always reset the receive
+      // timeout (§6.2.9.6 "The DataSetMessages that reset the period include keep-alive and
+      // heartbeat messages").
+      observeNetworkMessage(tracker, networkMessage, networkMessageVerdict, nowNanos);
+
+      // a keep-alive carries the next expected sequence number WITHOUT consuming it (Part 14
+      // §7.2.4.5.8, §7.2.5.4.1): it may seed an unseeded stream window but never advances a
+      // seeded one — advancing would make the next data message, which carries the same number,
+      // classify as a duplicate. It refreshes the stream's §7.2.3 record-discard clock (a
+      // keep-alive is a received message, so a keep-alive-only period must not discard the
+      // record) and always resets the receive timeout (§6.2.9.6)
+      UInteger keepAliveSequence = message.sequenceNumber();
+      if (keepAliveSequence != null) {
+        tracker.observeKeepAlive(
+            networkMessage.publisherId(), message.dataSetWriterId(), keepAliveSequence, nowNanos);
+      }
+      service.getDiagnostics().dataSetMessageReceived(group.path());
+      service.getDiagnostics().dataSetMessageReceived(reader.path());
       reader.onMessageAccepted();
       return;
     }
 
     if (!message.valid()) {
+      service.getDiagnostics().dataSetMessageReceived(group.path());
+      service.getDiagnostics().dataSetMessageReceived(reader.path());
       service
           .getDiagnostics()
           .decodeError(
@@ -394,6 +445,8 @@ final class ReaderDispatcher {
 
       // do not reset the receive timeout: per §6.2.9.4 a reader that cannot obtain matching
       // metadata within messageReceiveTimeout goes to Error
+      service.getDiagnostics().dataSetMessageReceived(group.path());
+      service.getDiagnostics().dataSetMessageReceived(reader.path());
       service
           .getDiagnostics()
           .decodeError(
@@ -404,6 +457,44 @@ final class ReaderDispatcher {
               null);
       return;
     }
+
+    // Part 14 §7.2.3 sequence-number windows: the NetworkMessage window first — a stale or
+    // invalid NetworkMessage suppresses every matched DataSetMessage it carries for this reader —
+    // then the DataSetMessage window. Messages without a sequence number bypass the windows
+    // ("each received DataSetMessage is considered new", §6.2.9.6). Drops are not delivered, do
+    // not reset the receive timeout, do not complete startup, and do not recover from Error
+    // (§6.2.9.6: a data DataSetMessage is "new" only if the sequence number increments).
+    SequenceNumberWindow.Classification networkMessageClassification =
+        observeNetworkMessage(tracker, networkMessage, networkMessageVerdict, nowNanos);
+    if (networkMessageClassification != null
+        && networkMessageClassification != SequenceNumberWindow.Classification.NEW) {
+      sequenceDrop(reader, networkMessageClassification);
+      return;
+    }
+
+    UInteger dataSetMessageSequence = message.sequenceNumber();
+    if (dataSetMessageSequence != null) {
+      SequenceNumberWindow.Classification classification =
+          tracker.classifyDataSetMessage(
+              networkMessage.publisherId(),
+              message.dataSetWriterId(),
+              dataSetMessageSequence,
+              nowNanos);
+      if (classification != SequenceNumberWindow.Classification.NEW) {
+        sequenceDrop(reader, classification);
+        return;
+      }
+
+      // the DataSetMessage will be delivered: its window advances only on accept
+      tracker.acceptDataSetMessage(
+          networkMessage.publisherId(),
+          message.dataSetWriterId(),
+          dataSetMessageSequence,
+          nowNanos);
+    }
+
+    service.getDiagnostics().dataSetMessageReceived(group.path());
+    service.getDiagnostics().dataSetMessageReceived(reader.path());
 
     reader.onMessageAccepted();
 
@@ -461,11 +552,86 @@ final class ReaderDispatcher {
             eventPublisherId(connection, reader, networkMessage),
             eventWriterGroupId(reader, networkMessage),
             eventDataSetWriterId(reader, message),
+            networkMessage.sequenceNumber(),
+            dataSetMessageSequence,
             dataSetName,
             metaData,
             fields);
 
     service.getEventDispatcher().notifyDataSet(reader.readerRef(), event);
+  }
+
+  /**
+   * Classify the carrying NetworkMessage's sequence number against its (PublisherId, WriterGroupId)
+   * stream window — once per (reader, NetworkMessage), cached on {@code verdict} and reused for
+   * sibling DataSetMessages — advancing the window immediately on a NEW verdict.
+   *
+   * <p>The advance happens at classification time, not on DataSetMessage delivery: the publisher
+   * consumes one NetworkMessage sequence number for EVERY NetworkMessage (§7.2.3 "incremented by
+   * exactly one for each message"), including NetworkMessages carrying only keep-alives or only
+   * DataSetMessages subsequently dropped at the DataSetMessage window. Deferring the advance to
+   * delivery would freeze the window while the publisher's counter keeps advancing: after a
+   * keep-alive-only period longer than 2^(N-2) NetworkMessages, resumed data would be wrongly
+   * dropped — invalid, then stale — for up to 2^N - 2^(N-2) consecutive messages. Known residue: a
+   * NetworkMessage whose matched DataSetMessages ALL fail the valid/metadata-version gates (which
+   * deliberately run before the windows, so those drops tick {@code decodeErrors}) never reaches
+   * this seam and leaves the window unadvanced; such a stream is loudly broken already ({@code
+   * decodeErrors} and {@code lastError} tick per message), not silently wedged.
+   *
+   * @return the cached verdict, or {@code null} when the NetworkMessage carries no sequence number
+   *     and the NetworkMessage window is bypassed.
+   */
+  private SequenceNumberWindow.@Nullable Classification observeNetworkMessage(
+      ReaderSequenceTracker tracker,
+      DecodedNetworkMessage networkMessage,
+      NetworkMessageVerdict verdict,
+      long nowNanos) {
+
+    UShort sequenceNumber = networkMessage.sequenceNumber();
+    if (sequenceNumber == null) {
+      return null;
+    }
+
+    if (verdict.classification == null) {
+      verdict.classification =
+          tracker.classifyNetworkMessage(
+              networkMessage.publisherId(),
+              networkMessage.writerGroupId(),
+              sequenceNumber,
+              nowNanos);
+
+      if (verdict.classification == SequenceNumberWindow.Classification.NEW) {
+        tracker.acceptNetworkMessage(
+            networkMessage.publisherId(), networkMessage.writerGroupId(), sequenceNumber, nowNanos);
+      }
+    }
+
+    return verdict.classification;
+  }
+
+  /**
+   * Count one DataSetMessage dropped by the §7.2.3 window. Sequence drops are normal operation
+   * ("shall be ignored"), counted apart from {@code dataSetMessagesReceived} and from the
+   * error-class counters: no {@code lastError}, no diagnostics event.
+   */
+  private void sequenceDrop(
+      DataSetReaderRuntime reader, SequenceNumberWindow.Classification classification) {
+
+    if (classification == SequenceNumberWindow.Classification.STALE) {
+      service.getDiagnostics().staleSequenceMessage(reader.path());
+    } else {
+      service.getDiagnostics().invalidSequenceMessage(reader.path());
+    }
+  }
+
+  /**
+   * The NetworkMessage-window verdict for one (reader, NetworkMessage) pair: {@code null} until the
+   * first matched DataSetMessage — keep-alives included — reaches {@link #observeNetworkMessage},
+   * then reused for every sibling DataSetMessage of the same NetworkMessage, so the verdict that
+   * advanced the window does not make the siblings classify as duplicates.
+   */
+  private static final class NetworkMessageVerdict {
+    SequenceNumberWindow.@Nullable Classification classification;
   }
 
   private void handleMetaData(

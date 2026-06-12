@@ -277,6 +277,27 @@ class UdpLoopbackIntegrationTest {
                 "sub-conn",
                 PubSubDiagnostics.ComponentDiagnostics::networkMessagesReceived)
             > 0);
+
+    // organic traffic puts both Part 14 §7.2.3 sequence streams on the wire (GROUP_SETTINGS and
+    // WRITER_SETTINGS both include SequenceNumber) ...
+    assertNotNull(eventA.networkMessageSequenceNumber());
+    assertNotNull(eventA.dataSetMessageSequenceNumber());
+
+    // ... and produces no sequence-window drops (false-positive guard for the §7.2.3 window)
+    for (String readerPath : List.of("sub-conn/rgrp/reader-a", "sub-conn/rgrp/reader-b")) {
+      assertEquals(
+          0,
+          counter(
+              subscriber,
+              readerPath,
+              PubSubDiagnostics.ComponentDiagnostics::staleSequenceMessages));
+      assertEquals(
+          0,
+          counter(
+              subscriber,
+              readerPath,
+              PubSubDiagnostics.ComponentDiagnostics::invalidSequenceMessages));
+    }
   }
 
   @Test

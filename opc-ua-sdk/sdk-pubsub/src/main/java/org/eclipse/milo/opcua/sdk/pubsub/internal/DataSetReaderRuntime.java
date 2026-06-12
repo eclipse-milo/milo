@@ -23,18 +23,20 @@ import org.eclipse.milo.opcua.sdk.pubsub.config.StandaloneSubscribedDataSetRef;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.PubSubState;
 import org.jspecify.annotations.Nullable;
 
 /**
  * Runtime for one DataSetReader: carries the reader's matching filters, its resolved configured
- * metadata, and the message-receive-timeout watchdog.
+ * metadata, its Part 14 §7.2.3 sequence-number tracking state, and the message-receive-timeout
+ * watchdog.
  *
  * <p>Per Part 14 §6.2.1 the reader stays {@code PreOperational} until its first key frame or event
  * DataSetMessage is decoded (delta frames are delivered but do not complete startup); with a
  * configured {@code messageReceiveTimeout} it transitions to {@code Error} when no (new) message
  * arrives within the timeout and back to {@code Operational} on the next message (keep-alives
- * count).
+ * count, sequence-window drops do not).
  */
 final class DataSetReaderRuntime extends AbstractComponentRuntime {
 
@@ -47,6 +49,13 @@ final class DataSetReaderRuntime extends AbstractComponentRuntime {
   private final long timeoutNanos;
 
   private final AtomicLong lastMessageNanos = new AtomicLong(System.nanoTime());
+
+  /**
+   * Part 14 §7.2.3 sequence-number window state; reset by replacement in {@link #activate()}
+   * (engine threads), read and mutated on the serialized per-connection dispatch thread. Volatile
+   * for safe publication across the two.
+   */
+  private volatile ReaderSequenceTracker sequenceTracker;
 
   /** Guarded by {@code this}. */
   private @Nullable ScheduledFuture<?> watchdog;
@@ -79,6 +88,18 @@ final class DataSetReaderRuntime extends AbstractComponentRuntime {
         config.getMessageReceiveTimeout().isZero()
             ? 0L
             : config.getMessageReceiveTimeout().toNanos();
+    this.sequenceTracker = newSequenceTracker();
+  }
+
+  private ReaderSequenceTracker newSequenceTracker() {
+    // the §7.2.3 window needs the wire width N of the sequence numbers, which the widened decoded
+    // model does not carry: the UADP mapping is UInt16; JSON and unknown custom mappings, whose
+    // decoded slot spans UInt32, get N=32
+    int bitWidth = PubSubServiceImpl.MAPPING_UADP.equals(mappingName) ? 16 : 32;
+
+    // §7.2.3: records are discarded after two times the message receive timeout of silence;
+    // 0 (timeout disabled) means no time-based discard
+    return new ReaderSequenceTracker(path(), bitWidth, 2 * timeoutNanos);
   }
 
   DataSetReaderConfig config() {
@@ -102,6 +123,20 @@ final class DataSetReaderRuntime extends AbstractComponentRuntime {
     return mappingName;
   }
 
+  /** The Part 14 §7.2.3 sequence-number tracking state of this reader. */
+  ReaderSequenceTracker sequenceTracker() {
+    return sequenceTracker;
+  }
+
+  /**
+   * The sequence number of the last DataSetMessage accepted by this reader's §7.2.3 window, or
+   * {@code null} if none since the last activation: the source for a future Part 14 §9.1.11.12
+   * Table 331 {@code MessageSequenceNumber} LiveValue.
+   */
+  @Nullable UInteger lastDataSetMessageSequenceNumber() {
+    return sequenceTracker.lastAcceptedDataSetMessageSequenceNumber();
+  }
+
   @Override
   List<? extends AbstractComponentRuntime> children() {
     return List.of();
@@ -114,6 +149,11 @@ final class DataSetReaderRuntime extends AbstractComponentRuntime {
 
   @Override
   void activate() throws UaException {
+    // reset the §7.2.3 sequence-number windows on every PreOperational entry (startup, enable
+    // after disable; reconfigure recreates the runtime) — deliberately NOT in onEnterOperational,
+    // which also runs on Error→Operational recovery and must keep the last processed numbers
+    sequenceTracker = newSequenceTracker();
+
     if (service.resolveMappingProvider(mappingName) == null) {
       var e =
           new UaException(

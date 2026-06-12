@@ -17,6 +17,7 @@ import java.util.Map;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetMetaDataConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.jspecify.annotations.Nullable;
 
@@ -27,6 +28,13 @@ import org.jspecify.annotations.Nullable;
  * @param publisherId the id of the publisher the DataSet originated from.
  * @param writerGroupId the id of the WriterGroup the DataSet originated from.
  * @param dataSetWriterId the id of the DataSetWriter the DataSet originated from.
+ * @param networkMessageSequenceNumber the Part 14 §7.2.3 sequence number of the NetworkMessage that
+ *     carried the DataSet, as present on the wire (UADP GroupHeader, UInt16), or {@code null} when
+ *     absent — the JSON mapping has no NetworkMessage sequence number, and the UADP GroupHeader is
+ *     optional.
+ * @param dataSetMessageSequenceNumber the Part 14 §7.2.3 sequence number of the DataSetMessage, as
+ *     present on the wire, or {@code null} when absent; UInt32 to span both mappings (UADP carries
+ *     UInt16 values, JSON UInt32).
  * @param dataSetName the name of the DataSet, if known from metadata, otherwise {@code null}.
  * @param metaData the metadata the DataSet was decoded against, or {@code null} if none.
  * @param fields the decoded field values, in wire order.
@@ -36,6 +44,8 @@ public record DataSetReceivedEvent(
     PublisherId publisherId,
     UShort writerGroupId,
     UShort dataSetWriterId,
+    @Nullable UShort networkMessageSequenceNumber,
+    @Nullable UInteger dataSetMessageSequenceNumber,
     @Nullable String dataSetName,
     @Nullable DataSetMetaDataConfig metaData,
     List<DataSetFieldValue> fields) {
@@ -47,6 +57,10 @@ public record DataSetReceivedEvent(
    * @param publisherId the id of the publisher the DataSet originated from.
    * @param writerGroupId the id of the WriterGroup the DataSet originated from.
    * @param dataSetWriterId the id of the DataSetWriter the DataSet originated from.
+   * @param networkMessageSequenceNumber the sequence number of the carrying NetworkMessage, or
+   *     {@code null} when absent on the wire.
+   * @param dataSetMessageSequenceNumber the sequence number of the DataSetMessage, or {@code null}
+   *     when absent on the wire.
    * @param dataSetName the name of the DataSet, if known from metadata, otherwise {@code null}.
    * @param metaData the metadata the DataSet was decoded against, or {@code null} if none.
    * @param fields the decoded field values, in wire order.

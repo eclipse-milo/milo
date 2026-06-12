@@ -247,10 +247,27 @@ class NameKeyedDecodeDispatchTest {
 
   private static DecodedNetworkMessage networkMessage(
       @Nullable PublisherId publisherId, List<DecodedField> fields) {
+    return networkMessage(publisherId, 1, fields);
+  }
+
+  /**
+   * A canned message with an explicit DataSetMessage sequence number: repeated injections on the
+   * same (PublisherId, DataSetWriterId) stream must increment it, or the §7.2.3 window drops the
+   * repeat as a duplicate.
+   */
+  private static DecodedNetworkMessage networkMessage(
+      @Nullable PublisherId publisherId, int sequenceNumber, List<DecodedField> fields) {
 
     var message =
         new DecodedDataSetMessage(
-            ushort(10), DataSetMessageKind.KEY_FRAME, true, uint(1), null, null, null, fields);
+            ushort(10),
+            DataSetMessageKind.KEY_FRAME,
+            true,
+            uint(sequenceNumber),
+            null,
+            null,
+            null,
+            fields);
 
     return DecodedNetworkMessage.of(
         publisherId, null, null, null, null, null, List.of(message), List.of());
@@ -354,14 +371,15 @@ class NameKeyedDecodeDispatchTest {
     clearEvents();
 
     // canonical numeric form has no leading zeros: string "05" matches nothing but the wildcard
-    injectAndFlush(networkMessage(PublisherId.string("05"), List.of()));
+    injectAndFlush(networkMessage(PublisherId.string("05"), 2, List.of()));
     assertEquals(0, eventCount("u16-5"));
     assertEquals(0, eventCount("u16-6"));
     assertEquals(1, eventCount("wild"));
     clearEvents();
 
-    // exact-type matches keep working through the same path
-    injectAndFlush(networkMessage(PublisherId.uint16(ushort(5)), List.of()));
+    // exact-type matches keep working through the same path; uint16(5) canonicalizes to the
+    // same "5" stream the first injection seeded, so the sequence number must increment
+    injectAndFlush(networkMessage(PublisherId.uint16(ushort(5)), 2, List.of()));
     assertEquals(1, eventCount("u16-5"));
     assertEquals(0, eventCount("u16-6"));
     assertEquals(0, eventCount("str-pub"));
