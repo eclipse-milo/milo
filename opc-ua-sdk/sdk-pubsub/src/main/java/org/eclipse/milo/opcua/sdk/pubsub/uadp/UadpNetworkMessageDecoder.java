@@ -16,6 +16,7 @@ import io.netty.buffer.ByteBuf;
 import java.util.ArrayList;
 import java.util.List;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherId;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaBinaryDecoder;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
@@ -38,6 +39,14 @@ import org.slf4j.LoggerFactory;
  * represented as entries with {@code valid == false} and no fields. A NetworkMessage whose header
  * cannot be decoded at all yields an empty {@link DecodedNetworkMessage}.
  *
+ * <p>Failures that end decoding early are surfaced via {@link DecodedNetworkMessage#failure()}
+ * rather than thrown: truncated or malformed input that raises an exception mid-decode, any
+ * explicit length field exceeding the remaining bytes (a DataSetMessage Sizes entry, the
+ * PromotedFields Size, the SecurityHeader NonceLength, a discovery probe's DataSetWriterIds count —
+ * the truncation signatures), and chunked NetworkMessages, including chunked discovery messages
+ * ({@code Bad_NotSupported}). Input that is merely tolerated and skipped — a non-UADP version
+ * nibble, reserved flag or type values, unsupported discovery content — reports no failure.
+ *
  * <p>Scope and limitations:
  *
  * <ul>
@@ -54,7 +63,8 @@ import org.slf4j.LoggerFactory;
  *       announcement types are tolerated and skipped.
  *   <li>Only security mode None is supported: a SecurityHeader with any SecurityFlags bit set
  *       causes the payload to be skipped.
- *   <li>Chunked NetworkMessages and ActionHeaders are detected and their payloads skipped. A
+ *   <li>Chunked NetworkMessages are not reassembled: their payloads are skipped with a {@code
+ *       Bad_NotSupported} failure. ActionHeaders are detected and their payloads skipped. A
  *       PromotedFields block is skipped via its Size field and the payload after it is decoded
  *       normally.
  *   <li>If the PayloadHeader is absent the payload is assumed to contain a single DataSetMessage.
@@ -86,6 +96,8 @@ final class UadpNetworkMessageDecoder {
 
   private @Nullable UadpDiscoveryProbe probe;
   private @Nullable UadpMetaDataAnnouncement announcement;
+
+  private DecodedNetworkMessage.@Nullable Failure failure;
 
   private @Nullable PublisherId publisherId;
   private @Nullable UShort writerGroupId;
@@ -125,6 +137,7 @@ final class UadpNetworkMessageDecoder {
       decoder.decodeNetworkMessage();
     } catch (Exception e) {
       LOGGER.debug("failed to fully decode NetworkMessage: {}", e.getMessage(), e);
+      decoder.recordFailure(e);
     }
 
     return decoder.legacyResult();
@@ -147,9 +160,21 @@ final class UadpNetworkMessageDecoder {
       decoder.decodeNetworkMessage();
     } catch (Exception e) {
       LOGGER.debug("failed to fully decode NetworkMessage: {}", e.getMessage(), e);
+      decoder.recordFailure(e);
     }
 
     return decoder.result();
+  }
+
+  /** Record the exception that ended decoding, unless a failure was already recorded. */
+  private void recordFailure(Exception e) {
+    if (failure == null) {
+      failure =
+          new DecodedNetworkMessage.Failure(
+              new StatusCode(StatusCodes.Bad_DecodingError),
+              "failed to fully decode NetworkMessage: " + e.getMessage(),
+              e);
+    }
   }
 
   private UadpDecodedMessage result() {
@@ -186,7 +211,8 @@ final class UadpNetworkMessageDecoder {
         sequenceNumber,
         timestamp,
         messages,
-        metaData);
+        metaData,
+        failure);
   }
 
   private void decodeNetworkMessage() {
@@ -293,7 +319,13 @@ final class UadpNetworkMessageDecoder {
       // decodable.
       int size = decoder.decodeUInt16().intValue();
       if (size > buffer.readableBytes()) {
+        // a truncation signature: the Size field promised more bytes than arrived
         LOGGER.debug("PromotedFields size exceeds remaining bytes: {}", size);
+        failure =
+            new DecodedNetworkMessage.Failure(
+                new StatusCode(StatusCodes.Bad_DecodingError),
+                "PromotedFields size exceeds remaining bytes: " + size,
+                null);
         return;
       }
       buffer.skipBytes(size);
@@ -309,7 +341,14 @@ final class UadpNetworkMessageDecoder {
     }
 
     if (chunk) {
+      // Reassembly of Chunk NetworkMessages (Part 14 §7.2.4.4.4) is not implemented; surface the
+      // skip as a failure so subscribers can observe chunked traffic instead of silent loss.
       LOGGER.debug("chunked NetworkMessage is not supported; skipping payload");
+      failure =
+          new DecodedNetworkMessage.Failure(
+              new StatusCode(StatusCodes.Bad_NotSupported),
+              "chunked NetworkMessage is not supported",
+              null);
       return;
     }
 
@@ -367,7 +406,13 @@ final class UadpNetworkMessageDecoder {
 
     int nonceLength = buffer.readUnsignedByte();
     if (nonceLength > buffer.readableBytes()) {
+      // a truncation signature: the NonceLength promised more bytes than arrived
       LOGGER.debug("NonceLength exceeds remaining bytes: {}", nonceLength);
+      failure =
+          new DecodedNetworkMessage.Failure(
+              new StatusCode(StatusCodes.Bad_DecodingError),
+              "SecurityHeader NonceLength exceeds remaining bytes: " + nonceLength,
+              null);
       return false;
     }
     buffer.skipBytes(nonceLength);
@@ -431,7 +476,13 @@ final class UadpNetworkMessageDecoder {
     // (-1) or empty array surfaces as an empty list.
     int count = decoder.decodeInt32();
     if (count > buffer.readableBytes() / 2) {
+      // a truncation signature: the array count promised more bytes than arrived
       LOGGER.debug("DataSetWriterIds count exceeds remaining bytes: {}", count);
+      failure =
+          new DecodedNetworkMessage.Failure(
+              new StatusCode(StatusCodes.Bad_DecodingError),
+              "discovery probe DataSetWriterIds count exceeds remaining bytes: " + count,
+              null);
       return;
     }
 
@@ -471,7 +522,14 @@ final class UadpNetworkMessageDecoder {
       if (sizes != null) {
         int size = sizes[i];
         if (size > buffer.readableBytes()) {
+          // a truncated NetworkMessage: the Sizes array promised more payload than arrived;
+          // everything decoded before this point is still delivered
           LOGGER.debug("DataSetMessage size exceeds remaining bytes: {}", size);
+          failure =
+              new DecodedNetworkMessage.Failure(
+                  new StatusCode(StatusCodes.Bad_DecodingError),
+                  "DataSetMessage size exceeds remaining bytes: " + size,
+                  null);
           return;
         }
 

@@ -448,7 +448,8 @@ class PubSubConfigMapperFromDataTypeTest {
     assertEquals(Duration.ofMillis(1000), wg.getPublishingInterval());
     assertNull(wg.getKeepAliveTime());
     assertEquals(ubyte(0), wg.getPriority());
-    assertEquals(uint(1400), wg.getMaxNetworkMessageSize());
+    // a null wire MaxNetworkMessageSize keeps the builder default: 0 = no enforced limit
+    assertEquals(uint(0), wg.getMaxNetworkMessageSize());
     assertNull(wg.getMessageSecurity());
     assertEquals(UadpWriterGroupSettings.builder().build(), wg.getMessageSettings());
     assertEquals(1, wg.getDataSetWriters().size());

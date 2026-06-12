@@ -59,7 +59,9 @@ import org.slf4j.LoggerFactory;
  * §6.4.2.5.1); queue names and delivery guarantees are resolved engine-side per §7.3.4.7/§7.3.4.5,
  * so transports apply the address verbatim. A mapping may also split one partition into multiple
  * NetworkMessages (e.g. the JSON mapping's SingleDataSetMessage); the engine sends every message
- * the mapping returns.
+ * the mapping returns, except those exceeding the group's non-zero {@code maxNetworkMessageSize},
+ * which are skipped and recorded with {@code Bad_EncodingLimitsExceeded} (Part 14 §6.2.5.5, Annex
+ * B.3.1).
  *
  * <p>Keep-alive: when a keep-alive time is configured, a keep-alive DataSetMessage is emitted for
  * every writer that has not produced a DataSetMessage within the keep-alive time (in practice the
@@ -317,7 +319,6 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
         partition = sharedPartition;
       }
       partition.drafts.add(draft);
-      partition.writerPaths.add(writer.path());
     }
 
     for (Partition partition : partitions) {
@@ -356,6 +357,8 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
           .error(path(), statusCodeOf(e), "failed to encode NetworkMessage: " + e.getMessage(), e);
       return;
     }
+
+    encodedMessages = dropOversizeMessages(encodedMessages);
 
     if (encodedMessages.isEmpty()) {
       return;
@@ -402,9 +405,60 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
       return;
     }
 
-    service.getDiagnostics().dataSetMessagesSent(path(), partition.drafts.size());
-    partition.writerPaths.forEach(
-        writerPath -> service.getDiagnostics().dataSetMessagesSent(writerPath, 1));
+    // attribute dataSetMessagesSent from the messages actually handed to the channel, so
+    // DataSetMessages carried only by skipped oversize NetworkMessages are not counted
+    int dataSetMessagesSent = 0;
+    for (EncodedNetworkMessage encoded : encodedMessages) {
+      dataSetMessagesSent += encoded.writers().size();
+      for (EncodedNetworkMessage.Writer writer : encoded.writers()) {
+        service.getDiagnostics().dataSetMessagesSent(path() + "/" + writer.name(), 1);
+      }
+    }
+    service.getDiagnostics().dataSetMessagesSent(path(), dataSetMessagesSent);
+  }
+
+  /**
+   * Enforce the group's {@code maxNetworkMessageSize} encode budget (Part 14 §6.2.5.5: the size of
+   * the complete encoded NetworkMessage, before transport headers): when non-zero, encoded
+   * NetworkMessages exceeding it are released and skipped instead of sent, recording {@code
+   * Bad_EncodingLimitsExceeded} with the actual and maximum sizes — the Annex B.3.1 behavior for
+   * mappings that do not support chunking ("the NetworkMessages exceeding the maximum size must be
+   * skipped. Diagnostic information for such error scenarios are provided."), mirroring the
+   * Actual/Maximum properties of PubSubTransportLimitsExceedEventType (§9.1.13.2). 0 = no enforced
+   * limit.
+   */
+  private List<EncodedNetworkMessage> dropOversizeMessages(
+      List<EncodedNetworkMessage> encodedMessages) {
+
+    long maxNetworkMessageSize = config.getMaxNetworkMessageSize().longValue();
+    if (maxNetworkMessageSize == 0) {
+      return encodedMessages;
+    }
+
+    List<EncodedNetworkMessage> accepted = null; // lazily created when a message is dropped
+    for (int index = 0; index < encodedMessages.size(); index++) {
+      EncodedNetworkMessage encoded = encodedMessages.get(index);
+
+      int actualSize = encoded.data().readableBytes();
+      if (actualSize > maxNetworkMessageSize) {
+        if (accepted == null) {
+          accepted = new ArrayList<>(encodedMessages.subList(0, index));
+        }
+        encoded.data().release();
+        service
+            .getDiagnostics()
+            .error(
+                path(),
+                new StatusCode(StatusCodes.Bad_EncodingLimitsExceeded),
+                "NetworkMessage skipped: actual size %d exceeds maximum size %d"
+                    .formatted(actualSize, maxNetworkMessageSize),
+                null);
+      } else if (accepted != null) {
+        accepted.add(encoded);
+      }
+    }
+
+    return accepted != null ? accepted : encodedMessages;
   }
 
   /** The address of data NetworkMessages on transports without broker semantics. */
@@ -461,7 +515,6 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
     final @Nullable DataSetWriterConfig overrideWriter;
 
     final List<DataSetMessageDraft> drafts = new ArrayList<>();
-    final List<String> writerPaths = new ArrayList<>();
 
     private Partition(@Nullable DataSetWriterConfig overrideWriter) {
       this.overrideWriter = overrideWriter;

@@ -18,6 +18,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.FixedRecvByteBufAllocator;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.InternetProtocolFamily;
@@ -55,8 +56,18 @@ import org.slf4j.LoggerFactory;
  * loop thread. The buffer is not retained for the consumer: it is valid only for the duration of
  * the callback and is released by the channel after the consumer returns, so the consumer must
  * {@code retain()} it to keep it longer and must never {@code release()} it.
+ *
+ * <p>The per-read receive buffer is fixed at {@value #MAX_DATAGRAM_SIZE} bytes so any datagram a
+ * conforming publisher can emit is read intact; without it Netty's 2048-byte datagram default
+ * silently truncates larger datagrams on read.
  */
 final class UdpSubscriberChannel implements SubscriberChannel {
+
+  /**
+   * The largest UDP datagram a conforming publisher can emit: OPC UA Part 14 §7.3.2.1, "For OPC UA
+   * UDP the MaxNetworkMessageSize plus additional headers shall be limited to 65535 Byte."
+   */
+  private static final int MAX_DATAGRAM_SIZE = 65535;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(UdpSubscriberChannel.class);
 
@@ -125,6 +136,8 @@ final class UdpSubscriberChannel implements SubscriberChannel {
             .group(eventLoopGroup)
             .channel(NioDatagramChannel.class)
             .option(ChannelOption.SO_REUSEADDR, true)
+            .option(
+                ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(MAX_DATAGRAM_SIZE))
             .handler(new MessageHandler(messageConsumer));
 
     ChannelFuture bindFuture = bootstrap.bind(bindAddress).awaitUninterruptibly();
@@ -174,6 +187,8 @@ final class UdpSubscriberChannel implements SubscriberChannel {
             .group(eventLoopGroup)
             .channelFactory(() -> new NioDatagramChannel(family))
             .option(ChannelOption.SO_REUSEADDR, true)
+            .option(
+                ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(MAX_DATAGRAM_SIZE))
             .handler(new MessageHandler(messageConsumer));
 
     // Bind the wildcard address rather than the group address; binding a multicast group

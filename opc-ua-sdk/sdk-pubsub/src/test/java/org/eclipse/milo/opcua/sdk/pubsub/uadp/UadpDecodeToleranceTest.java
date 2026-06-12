@@ -32,6 +32,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherId;
 import org.eclipse.milo.opcua.sdk.pubsub.config.UadpDataSetWriterSettings;
 import org.eclipse.milo.opcua.sdk.pubsub.config.UadpWriterGroupSettings;
 import org.eclipse.milo.opcua.sdk.pubsub.config.WriterGroupConfig;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
@@ -48,6 +49,11 @@ import org.junit.jupiter.api.Test;
 /**
  * Decode tolerance tests for the UADP codec: malformed, truncated, or unsupported input must never
  * raise an exception to the caller; whatever was decoded before the problem is returned.
+ *
+ * <p>Failures that end decoding early (truncation — including any explicit length field exceeding
+ * the remaining bytes — and chunked NetworkMessages) are additionally surfaced via {@link
+ * DecodedNetworkMessage#failure()}; tolerated-and-skipped input (foreign version nibbles, reserved
+ * flag values) reports no failure.
  *
  * <p>Bit positions reference OPC UA Part 14 v1.05 §7.2.4.4.2 Table 154 and §7.2.4.5.4 Table 162.
  */
@@ -109,6 +115,10 @@ class UadpDecodeToleranceTest {
 
     // The unbounded (no Sizes) DataSetMessage failed mid-decode and is not surfaced.
     assertTrue(decoded.messages().isEmpty());
+
+    // The failure that ended decoding is observable.
+    assertNotNull(decoded.failure());
+    assertEquals(StatusCodes.Bad_DecodingError, decoded.failure().statusCode().value());
   }
 
   /** With Sizes, a corrupt DataSetMessage is surfaced invalid and decoding continues. */
@@ -155,6 +165,102 @@ class UadpDecodeToleranceTest {
     DecodedNetworkMessage decoded = decode(message);
 
     assertTrue(decoded.messages().isEmpty());
+
+    // The Sizes/buffer mismatch is the truncated-datagram signature and is surfaced as a failure.
+    assertNotNull(decoded.failure());
+    assertEquals(StatusCodes.Bad_DecodingError, decoded.failure().statusCode().value());
+  }
+
+  /**
+   * A buffer cut exactly at a DataSetMessage boundary: everything decoded before the cut is
+   * delivered AND the failure is surfaced (partial-delivery posture with observability).
+   */
+  @Test
+  void cutAtDataSetMessageBoundaryDeliversPartialAndSurfacesFailure() {
+    byte[] full =
+        bytes(
+            0x41, // byte 0: version 1 | PayloadHeader 0x40
+            0x02, // PayloadHeader: Count = 2
+            0x01, 0x00, // DataSetWriterIds[0] = 1
+            0x02, 0x00, // DataSetWriterIds[1] = 2
+            0x05, 0x00, // Sizes[0] = 5
+            0x05, 0x00, // Sizes[1] = 5
+            0x01, 0x01, 0x00, 0x01, 0x01, // DSM 1: valid key frame, Boolean true
+            0x01, 0x01, 0x00, 0x01, 0x00); // DSM 2: valid key frame, Boolean false
+
+    // Sanity: the full message decodes both DataSetMessages without a failure.
+    DecodedNetworkMessage fullDecoded = decode(full);
+    assertEquals(2, fullDecoded.messages().size());
+    assertNull(fullDecoded.failure());
+
+    // Cut exactly at the DSM 1 / DSM 2 boundary: Sizes[1] exceeds the zero remaining bytes.
+    DecodedNetworkMessage decoded = decode(Arrays.copyOf(full, full.length - 5));
+
+    assertEquals(1, decoded.messages().size());
+    assertEquals(ushort(1), decoded.messages().get(0).dataSetWriterId());
+    assertTrue(decoded.messages().get(0).valid());
+    assertNotNull(decoded.failure());
+    assertEquals(StatusCodes.Bad_DecodingError, decoded.failure().statusCode().value());
+  }
+
+  /** A buffer that ends exactly at the NetworkMessage header boundary surfaces a failure. */
+  @Test
+  void cutAtNetworkMessageHeaderBoundarySurfacesFailure() {
+    byte[] message =
+        bytes(
+            0x11, // byte 0: version 1 | PublisherId 0x10
+            0x07); // PublisherId: Byte = 7; the payload is missing entirely
+
+    DecodedNetworkMessage decoded = decode(message);
+
+    assertEquals(PublisherId.ubyte(ubyte(7)), decoded.publisherId());
+    assertTrue(decoded.messages().isEmpty());
+    assertNotNull(decoded.failure());
+    assertEquals(StatusCodes.Bad_DecodingError, decoded.failure().statusCode().value());
+  }
+
+  /** One byte short of a complete message surfaces a failure; nothing partial is fabricated. */
+  @Test
+  void oneByteShortSurfacesFailure() {
+    byte[] full =
+        bytes(
+            0x01, // byte 0: version 1
+            0x01, // DataSetFlags1: valid | Variant encoding
+            0x01, 0x00, // FieldCount = 1
+            0x06, 0x2A, 0x00, 0x00, 0x00); // Variant Int32 = 42
+
+    // Sanity: the full message decodes cleanly.
+    DecodedNetworkMessage fullDecoded = decode(full);
+    assertEquals(1, fullDecoded.messages().size());
+    assertNull(fullDecoded.failure());
+
+    DecodedNetworkMessage decoded = decode(Arrays.copyOf(full, full.length - 1));
+
+    assertTrue(decoded.messages().isEmpty());
+    assertNotNull(decoded.failure());
+    assertEquals(StatusCodes.Bad_DecodingError, decoded.failure().statusCode().value());
+  }
+
+  /** One trailing garbage byte after a complete message is tolerated: full decode, no failure. */
+  @Test
+  void oneByteLongWithTrailingGarbageDecodesWithoutFailure() {
+    byte[] full =
+        bytes(
+            0x01, // byte 0: version 1
+            0x01, // DataSetFlags1: valid | Variant encoding
+            0x01, 0x00, // FieldCount = 1
+            0x06, 0x2A, 0x00, 0x00, 0x00); // Variant Int32 = 42
+
+    byte[] oneLong = Arrays.copyOf(full, full.length + 1);
+    oneLong[full.length] = (byte) 0xFF; // trailing garbage, never read
+
+    DecodedNetworkMessage decoded = decode(oneLong);
+
+    assertEquals(1, decoded.messages().size());
+    assertEquals(
+        List.of(new DecodedField(0, goodValue(Variant.ofInt32(42)))),
+        decoded.messages().get(0).fields());
+    assertNull(decoded.failure());
   }
 
   // endregion
@@ -209,7 +315,7 @@ class UadpDecodeToleranceTest {
 
   /** A NonceLength larger than the remaining buffer ends decoding without an exception. */
   @Test
-  void nonceLengthExceedingBufferSkipsPayload() {
+  void nonceLengthExceedingBufferSurfacesFailure() {
     byte[] message =
         bytes(
             0x91, // byte 0: version 1 | PublisherId | ExtendedFlags1
@@ -224,6 +330,10 @@ class UadpDecodeToleranceTest {
 
     assertEquals(PublisherId.ubyte(ubyte(7)), decoded.publisherId());
     assertTrue(decoded.messages().isEmpty());
+
+    // the NonceLength/buffer mismatch is a truncation signature and is surfaced as a failure
+    assertNotNull(decoded.failure());
+    assertEquals(StatusCodes.Bad_DecodingError, decoded.failure().statusCode().value());
   }
 
   // endregion
@@ -244,6 +354,10 @@ class UadpDecodeToleranceTest {
 
     assertTrue(decoded.messages().isEmpty());
     assertTrue(decoded.metaData().isEmpty());
+
+    // The skip is no longer silent: chunk reassembly is unsupported, surfaced as a failure.
+    assertNotNull(decoded.failure());
+    assertEquals(StatusCodes.Bad_NotSupported, decoded.failure().statusCode().value());
   }
 
   /**
@@ -264,6 +378,8 @@ class UadpDecodeToleranceTest {
     DecodedNetworkMessage decoded = decode(message);
 
     assertTrue(decoded.messages().isEmpty());
+    assertNotNull(decoded.failure());
+    assertEquals(StatusCodes.Bad_NotSupported, decoded.failure().statusCode().value());
   }
 
   /** A PromotedFields block is skipped via its Size field; the payload after it IS decoded. */
@@ -290,7 +406,7 @@ class UadpDecodeToleranceTest {
 
   /** A PromotedFields Size larger than the remaining buffer drops the message, no exception. */
   @Test
-  void promotedFieldsSizeExceedingBufferDropsMessage() {
+  void promotedFieldsSizeExceedingBufferSurfacesFailure() {
     byte[] message =
         bytes(
             0x81, // byte 0: version 1 | ExtendedFlags1
@@ -302,6 +418,10 @@ class UadpDecodeToleranceTest {
     DecodedNetworkMessage decoded = decode(message);
 
     assertTrue(decoded.messages().isEmpty());
+
+    // the Size/buffer mismatch is a truncation signature and is surfaced as a failure
+    assertNotNull(decoded.failure());
+    assertEquals(StatusCodes.Bad_DecodingError, decoded.failure().statusCode().value());
   }
 
   /** An ActionHeader (ExtendedFlags2 bit 5) is unsupported; the payload is skipped. */
@@ -409,6 +529,9 @@ class UadpDecodeToleranceTest {
 
       assertNull(decoded.publisherId(), "version " + version);
       assertTrue(decoded.messages().isEmpty(), "version " + version);
+
+      // foreign input (e.g. another mapping's document) is tolerated, not a decode failure
+      assertNull(decoded.failure(), "version " + version);
     }
   }
 
@@ -553,6 +676,30 @@ class UadpDecodeToleranceTest {
 
     assertTrue(decoded.messages().isEmpty());
     assertTrue(decoded.metaData().isEmpty());
+  }
+
+  /** A discovery probe DataSetWriterIds count overrunning the buffer surfaces a failure. */
+  @Test
+  void discoveryProbeWriterIdsCountExceedingBufferSurfacesFailure() {
+    byte[] message =
+        bytes(
+            0x91, // byte 0: version 1 | PublisherId 0x10 | ExtendedFlags1 0x80
+            0x80, // ExtendedFlags1: ExtendedFlags2 present (PublisherId type Byte)
+            0x04, // ExtendedFlags2: NetworkMessage type 001 = discovery probe
+            0x07, // PublisherId: Byte = 7
+            0x01, // ProbeType = 1 (PublisherInformation)
+            0x02, // InformationType = 2 (DataSetMetaData)
+            0x10, 0x00, 0x00, 0x00, // DataSetWriterIds count = 16: more than the buffer holds
+            0x01, 0x00); // only one UInt16 follows
+
+    DecodedNetworkMessage decoded = decode(message);
+
+    assertEquals(PublisherId.ubyte(ubyte(7)), decoded.publisherId());
+    assertTrue(decoded.messages().isEmpty());
+
+    // the count/buffer mismatch is a truncation signature and is surfaced as a failure
+    assertNotNull(decoded.failure());
+    assertEquals(StatusCodes.Bad_DecodingError, decoded.failure().statusCode().value());
   }
 
   /** Discovery messages shall not carry a PayloadHeader; such a message is dropped. */

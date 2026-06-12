@@ -44,7 +44,9 @@ import org.eclipse.milo.opcua.stack.core.types.structured.DataSetMetaDataType;
  * announcements are decoded; DataSetMessages that cannot be decoded (RawData field encoding,
  * reserved types, the valid bit clear on the wire) are returned with {@code valid == false} and no
  * fields. NetworkMessages that are chunked, carry an ActionHeader, or indicate any security other
- * than None have their payloads skipped.
+ * than None have their payloads skipped. Truncated or malformed input and chunked NetworkMessages
+ * additionally report a {@link DecodedNetworkMessage#failure()} alongside whatever was decoded
+ * before the failure point.
  *
  * <p><b>Discovery</b> (OPC UA Part 14 §7.2.4.6) is UADP-internal and not part of the {@link
  * MessageMappingProvider} SPI. {@link #decodeMessage(DecodeContext, ByteBuf)} surfaces
@@ -132,8 +134,10 @@ public final class UadpMessageMapping implements MessageMappingProvider {
    * <p>Like {@link #decode(DecodeContext, ByteBuf)} this never throws: malformed or unsupported
    * input — including discovery content that is tolerated but not surfaced (FindApplications
    * probes, probe InformationTypes other than DataSetMetaData, announcement types other than
-   * DataSetMetaData, chunked discovery NetworkMessages) — yields a possibly partial or empty {@link
-   * DecodedNetworkMessage}.
+   * DataSetMetaData) — yields a possibly partial or empty {@link DecodedNetworkMessage}. Truncated
+   * or malformed input and chunked NetworkMessages — including chunked discovery messages, whose
+   * chunk flag is checked before the message type ({@code Bad_NotSupported}) — report a {@link
+   * DecodedNetworkMessage#failure()} alongside the partial result.
    *
    * <p>The payload buffer is only valid for the duration of the call; the caller retains ownership
    * and releases it afterwards.

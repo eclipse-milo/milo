@@ -100,6 +100,13 @@ public final class PubSubServiceImpl implements PubSubService {
   static final String MAPPING_UADP = "uadp";
   static final String MAPPING_JSON = "json";
 
+  /**
+   * The largest maxNetworkMessageSize configurable on an OPC UA UDP writer group: Part 14 §7.3.2.1,
+   * "For OPC UA UDP the MaxNetworkMessageSize plus additional headers shall be limited to 65535
+   * Byte."
+   */
+  private static final long MAX_UDP_NETWORK_MESSAGE_SIZE = 65535L;
+
   private final Object lock = new Object();
 
   private final PubSubServiceConfig serviceConfig;
@@ -1056,8 +1063,9 @@ public final class PubSubServiceImpl implements PubSubService {
   /**
    * Validate the conditions pinned to fail {@code startup()}: unsupported security modes on enabled
    * groups, missing transport or mapping providers for enabled components, missing sources for
-   * enabled writers, publisher-less connections with enabled writer groups, and enabled readers on
-   * broker connections without a configured data queueName.
+   * enabled writers, publisher-less connections with enabled writer groups, enabled readers on
+   * broker connections without a configured data queueName, and enabled writer groups on UDP
+   * connections with a maxNetworkMessageSize above the Part 14 §7.3.2.1 limit of 65535.
    */
   private void validateStartup(PubSubConfig config) throws UaException {
     if (!config.isEnabled()) {
@@ -1088,6 +1096,15 @@ public final class PubSubServiceImpl implements PubSubService {
         String groupPath = connection.name() + "/" + group.getName();
 
         checkMessageSecurity(group.getMessageSecurity(), groupPath);
+
+        if (!broker
+            && group.getMaxNetworkMessageSize().longValue() > MAX_UDP_NETWORK_MESSAGE_SIZE) {
+          throw new UaException(
+              StatusCodes.Bad_ConfigurationError,
+              "maxNetworkMessageSize %s exceeds the OPC UA UDP limit of %d (writer group '%s')"
+                  .formatted(
+                      group.getMaxNetworkMessageSize(), MAX_UDP_NETWORK_MESSAGE_SIZE, groupPath));
+        }
 
         String mappingName = mappingNameOf(group.getMessageSettings());
         if (resolveMappingProvider(mappingName) == null) {
@@ -1155,9 +1172,10 @@ public final class PubSubServiceImpl implements PubSubService {
   /**
    * Validate the subset of the {@link #validateStartup} conditions that reconfiguration must also
    * enforce, because the runtime cannot degrade gracefully on them: missing mapping providers for
-   * enabled components and enabled readers on broker connections without a configured data
-   * queueName. Throws {@link UaRuntimeException} with {@code Bad_ConfigurationError} (the
-   * reconfigure API has no checked-exception surface). Startup-only conditions with a graceful
+   * enabled components, enabled readers on broker connections without a configured data queueName,
+   * and enabled writer groups on UDP connections with a maxNetworkMessageSize above the Part 14
+   * §7.3.2.1 limit of 65535. Throws {@link UaRuntimeException} with {@code Bad_ConfigurationError}
+   * (the reconfigure API has no checked-exception surface). Startup-only conditions with a graceful
    * runtime degradation path (e.g. unbound sources, which surface as source errors) are not
    * re-checked here.
    */
@@ -1176,6 +1194,17 @@ public final class PubSubServiceImpl implements PubSubService {
       for (WriterGroupConfig group : connection.writerGroups()) {
         if (!group.isEnabled()) {
           continue;
+        }
+        if (!broker
+            && group.getMaxNetworkMessageSize().longValue() > MAX_UDP_NETWORK_MESSAGE_SIZE) {
+          throw new UaRuntimeException(
+              StatusCodes.Bad_ConfigurationError,
+              "maxNetworkMessageSize %s exceeds the OPC UA UDP limit of %d (writer group '%s/%s')"
+                  .formatted(
+                      group.getMaxNetworkMessageSize(),
+                      MAX_UDP_NETWORK_MESSAGE_SIZE,
+                      connection.name(),
+                      group.getName()));
         }
         String mappingName = mappingNameOf(group.getMessageSettings());
         if (resolveMappingProvider(mappingName) == null) {

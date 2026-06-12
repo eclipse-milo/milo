@@ -71,6 +71,7 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrokerTransportQualityOfService;
 import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationVersionDataType;
 import org.jspecify.annotations.Nullable;
@@ -473,6 +474,66 @@ class AddressedSendEngineTest {
     } finally {
       encoded.forEach(message -> message.data().release());
     }
+  }
+
+  /**
+   * Boundary of the writer-side maxNetworkMessageSize budget (Part 14 §6.2.5.5; enforcement is
+   * strict greater-than): a NetworkMessage whose encoded size EXACTLY equals the group's budget is
+   * sent. The size of the fixed message — fixed-width headers and a fixed-width Int32 value, so
+   * every cycle encodes to the same size — is captured first under no limit, then the service is
+   * reconfigured with that exact size as the budget.
+   */
+  @Test
+  void networkMessageExactlyAtMaxNetworkMessageSizeIsSent() throws Exception {
+    int port = freeUdpPort();
+    int discoveryPort = freeUdpPort();
+
+    CapturingTransport transport = startService(sizedConnection(port, discoveryPort, uint(0)));
+
+    Sent first = transport.sent.poll(10, TimeUnit.SECONDS);
+    assertNotNull(first, "no NetworkMessage published");
+    int encodedSize = first.payload().length;
+
+    // reconfigure with the budget set to exactly the captured size; the ports are reused so only
+    // maxNetworkMessageSize differs
+    PubSubConfig exactBudget =
+        PubSubConfig.builder()
+            .publishedDataSet(publishedDataSet())
+            .connection(sizedConnection(port, discoveryPort, uint(encodedSize)))
+            .build();
+    service.reconfigure(exactBudget, PubSubService.ReconfigureMode.DISABLE_AFFECTED);
+    transport.sent.clear();
+
+    // publishing is periodic, so multiple post-reconfigure cycles must keep sending the
+    // exactly-at-budget message (a backlog message captured mid-reconfigure has the same size,
+    // but cannot account for more than one poll)
+    for (int i = 0; i < 3; i++) {
+      Sent atLimit = transport.sent.poll(10, TimeUnit.SECONDS);
+      assertNotNull(atLimit, "NetworkMessage exactly at maxNetworkMessageSize was not sent");
+      assertEquals(encodedSize, atLimit.payload().length);
+    }
+
+    // nothing was skipped: no Bad_EncodingLimitsExceeded recorded at the group path
+    assertNull(service.diagnostics().snapshot().get("conn/WG").lastError());
+  }
+
+  /** A UDP connection whose single writer group "WG" carries the given maxNetworkMessageSize. */
+  private static UdpConnectionConfig sizedConnection(
+      int port, int discoveryPort, UInteger maxNetworkMessageSize) {
+
+    return UdpConnectionConfig.builder("conn")
+        .publisherId(PublisherId.uint16(ushort(1)))
+        .address(UdpDatagramAddress.unicast("127.0.0.1", port))
+        // network safety: pin discovery to loopback, never the 224.0.2.14:4840 default
+        .discoveryAddress(UdpDatagramAddress.unicast("127.0.0.1", discoveryPort))
+        .writerGroup(
+            WriterGroupConfig.builder("WG")
+                .writerGroupId(ushort(1))
+                .publishingInterval(Duration.ofMillis(25))
+                .maxNetworkMessageSize(maxNetworkMessageSize)
+                .dataSetWriter(writer("W1", 1).build())
+                .build())
+        .build();
   }
 
   private static DataSetMessageDraft draft(String writerName, int dataSetWriterId, int value) {

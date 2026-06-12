@@ -14,8 +14,10 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 
 import io.netty.buffer.ByteBuf;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.eclipse.milo.opcua.sdk.pubsub.DataSetFieldValue;
 import org.eclipse.milo.opcua.sdk.pubsub.DataSetReceivedEvent;
@@ -50,8 +52,20 @@ import org.jspecify.annotations.Nullable;
  * filter values are wildcards.
  *
  * <p>Runs entirely on the transport executor; decode and match failures are counted in diagnostics
- * and never thrown. Subscriber-side sequence number tracking (duplicate/reordering detection) is
- * not implemented in this version.
+ * and never thrown. The connection's {@code networkMessagesReceived} counter ticks once per
+ * arrival, before any decode attempt; decode failures tick {@code decodeErrors} at the connection
+ * path unless another of the connection's mappings decoded content — DataSetMessages, metadata, or
+ * a discovery message — from the same buffer (on mixed-mapping broker connections every message is
+ * offered to every mapping, so the "wrong" mapping's failure on a message the right mapping decoded
+ * is expected and not an error). A mapping's own partial content never suppresses its own failure:
+ * a truncated message that still delivered a decodable prefix ticks that mapping's failure once
+ * while suppressing the other mappings' failures on the same bytes. A tolerated skip that decoded
+ * nothing, such as the UADP decoder skipping foreign input by its version nibble, suppresses
+ * nothing: a buffer no mapping could decode ticks {@code decodeErrors} once per failed mapping. A
+ * reader group with a non-zero {@code maxNetworkMessageSize} never sees messages larger than it;
+ * such messages tick {@code decodeErrors} at the group path with {@code
+ * Bad_EncodingLimitsExceeded}. Subscriber-side sequence number tracking (duplicate/reordering
+ * detection) is not implemented in this version.
  */
 final class ReaderDispatcher {
 
@@ -73,7 +87,21 @@ final class ReaderDispatcher {
    * Bad-status denials — reach the metadata path regardless of which socket they arrived on.
    */
   void dispatch(ConnectionRuntime connection, ByteBuf buffer) {
+    // "received" means "a message arrived and was offered to decode": tick once per arrival,
+    // before any mapping runs, so the counter is independent of the decode outcome
+    service.getDiagnostics().networkMessageReceived(connection.path());
+
+    // Milo extension: a reader group with a non-zero maxNetworkMessageSize does not accept
+    // messages larger than it (Part 14 gives the parameter no receive-side semantics)
+    Set<ReaderGroupRuntime> oversizeGroups = oversizeGroups(connection, buffer.readableBytes());
+
     Map<String, MessageMappingProvider> mappings = connection.subscriberMappings();
+
+    // decode failures are deferred: on mixed-mapping connections every message is offered to
+    // every mapping, so a mapping's failure only counts when no OTHER mapping decoded content
+    // from the buffer; a mapping's own partial content never suppresses its own failure
+    Set<String> mappingsWithContent = null;
+    List<DecodeFailure> failures = null;
 
     for (Map.Entry<String, MessageMappingProvider> entry : mappings.entrySet()) {
       String mappingName = entry.getKey();
@@ -88,36 +116,155 @@ final class ReaderDispatcher {
           decoded = provider.decode(context, buffer.slice());
         }
       } catch (Exception e) {
-        service
-            .getDiagnostics()
-            .decodeError(
-                connection.path(),
+        if (failures == null) {
+          failures = new ArrayList<>(1);
+        }
+        failures.add(
+            new DecodeFailure(
+                mappingName,
                 UaException.extractStatusCode(e)
                     .orElse(new StatusCode(StatusCodes.Bad_DecodingError)),
                 "failed to decode NetworkMessage: " + e.getMessage(),
-                e);
+                e));
         continue;
       }
 
-      service.getDiagnostics().networkMessageReceived(connection.path());
+      DecodedNetworkMessage.Failure failure =
+          decoded instanceof DecodedNetworkMessage networkMessage ? networkMessage.failure() : null;
+      if (failure != null) {
+        // the tolerant UADP decode surfaced a failure: count it, but still deliver whatever was
+        // decoded before the failure point (partial-delivery posture)
+        if (failures == null) {
+          failures = new ArrayList<>(1);
+        }
+        failures.add(
+            new DecodeFailure(
+                mappingName,
+                failure.statusCode(),
+                "failed to decode NetworkMessage: " + failure.message(),
+                failure.cause()));
+      }
+
+      // content is tracked independently of failure: a truncated message that still delivered a
+      // decodable prefix makes the OTHER mappings' failures on the same bytes expected, while its
+      // own failure above stays observable
+      if (decodedContent(decoded)) {
+        if (mappingsWithContent == null) {
+          mappingsWithContent = new HashSet<>(2);
+        }
+        mappingsWithContent.add(mappingName);
+      }
 
       if (decoded instanceof DecodedNetworkMessage networkMessage) {
-        handleDecoded(connection, mappingName, networkMessage);
+        handleDecoded(connection, mappingName, networkMessage, oversizeGroups);
       } else if (decoded instanceof UadpDiscoveryProbe probe) {
         DiscoveryRuntime discovery = connection.discoveryRuntime();
         if (discovery != null) {
           discovery.onProbeReceived(probe);
         }
       } else if (decoded instanceof UadpMetaDataAnnouncement announcement) {
-        handleAnnouncement(connection, mappingName, announcement);
+        handleAnnouncement(connection, mappingName, announcement, oversizeGroups);
+      }
+    }
+
+    if (failures != null) {
+      for (DecodeFailure failure : failures) {
+        if (otherMappingDecodedContent(mappingsWithContent, failure.mappingName())) {
+          continue;
+        }
+        service
+            .getDiagnostics()
+            .decodeError(
+                connection.path(), failure.statusCode(), failure.message(), failure.error());
       }
     }
   }
 
-  private void handleDecoded(
-      ConnectionRuntime connection, String mappingName, DecodedNetworkMessage decoded) {
+  /** A decode failure deferred until every mapping has had its decode attempt. */
+  private record DecodeFailure(
+      String mappingName, StatusCode statusCode, String message, @Nullable Throwable error) {}
+
+  /**
+   * Whether any mapping other than {@code mappingName} decoded content from the buffer: the
+   * mixed-mapping suppression condition for a failure recorded by {@code mappingName}. A mapping's
+   * own partial content keeps its own failure observable.
+   */
+  private static boolean otherMappingDecodedContent(
+      @Nullable Set<String> mappingsWithContent, String mappingName) {
+
+    if (mappingsWithContent == null) {
+      return false;
+    }
+    for (String name : mappingsWithContent) {
+      if (!name.equals(mappingName)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Whether a decode actually decoded something from the buffer: DataSetMessages, metadata, or a
+   * discovery probe/announcement — including content decoded before a surfaced failure point.
+   *
+   * <p>The distinction carries the mixed-mapping suppression guard: only a mapping that decoded
+   * content from a buffer makes another mapping's failure on the same buffer expected. The tolerant
+   * UADP decode returns an empty, failure-free result for foreign input it merely skips (e.g. a
+   * JSON document's '{' fails the version-nibble check), and an empty skip that decoded nothing
+   * must not suppress another mapping's genuine failure — otherwise a malformed JSON payload on a
+   * mixed uadp+json connection would never tick {@code decodeErrors}.
+   */
+  private static boolean decodedContent(UadpDecodedMessage decoded) {
+    if (decoded instanceof DecodedNetworkMessage networkMessage) {
+      return !networkMessage.messages().isEmpty() || !networkMessage.metaData().isEmpty();
+    }
+    // a discovery probe or metadata announcement is decoded content by definition
+    return true;
+  }
+
+  /**
+   * The receiving reader groups whose non-zero maxNetworkMessageSize excludes a message of {@code
+   * messageSize} bytes, each ticked with a group-path decodeError.
+   */
+  private Set<ReaderGroupRuntime> oversizeGroups(ConnectionRuntime connection, int messageSize) {
+    Set<ReaderGroupRuntime> oversizeGroups = Set.of();
 
     for (ReaderGroupRuntime group : connection.readerGroupRuntimes()) {
+      if (!isReceiving(group.state())) {
+        continue;
+      }
+      long maxNetworkMessageSize = group.config().getMaxNetworkMessageSize().longValue();
+      if (maxNetworkMessageSize > 0 && messageSize > maxNetworkMessageSize) {
+        service
+            .getDiagnostics()
+            .decodeError(
+                group.path(),
+                new StatusCode(StatusCodes.Bad_EncodingLimitsExceeded),
+                "NetworkMessage not accepted: size %d exceeds maxNetworkMessageSize %d"
+                    .formatted(messageSize, maxNetworkMessageSize),
+                null);
+
+        if (oversizeGroups.isEmpty()) {
+          oversizeGroups = new HashSet<>(2);
+        }
+        oversizeGroups.add(group);
+      }
+    }
+
+    return oversizeGroups;
+  }
+
+  private void handleDecoded(
+      ConnectionRuntime connection,
+      String mappingName,
+      DecodedNetworkMessage decoded,
+      Set<ReaderGroupRuntime> oversizeGroups) {
+
+    for (ReaderGroupRuntime group : connection.readerGroupRuntimes()) {
+      if (oversizeGroups.contains(group)) {
+        continue;
+      }
+
       boolean groupMatched = false;
 
       for (DataSetReaderRuntime reader : group.readerRuntimes()) {
@@ -160,6 +307,14 @@ final class ReaderDispatcher {
    */
   void handleAnnouncement(
       ConnectionRuntime connection, String mappingName, UadpMetaDataAnnouncement announcement) {
+    handleAnnouncement(connection, mappingName, announcement, Set.of());
+  }
+
+  private void handleAnnouncement(
+      ConnectionRuntime connection,
+      String mappingName,
+      UadpMetaDataAnnouncement announcement,
+      Set<ReaderGroupRuntime> oversizeGroups) {
 
     if (announcement.statusCode().isBad()) {
       DiscoveryRuntime discovery = connection.discoveryRuntime();
@@ -172,6 +327,10 @@ final class ReaderDispatcher {
     var metaData = new DecodedMetaData(announcement.dataSetWriterId(), announcement.metaData());
 
     for (ReaderGroupRuntime group : connection.readerGroupRuntimes()) {
+      if (oversizeGroups.contains(group)) {
+        continue;
+      }
+
       for (DataSetReaderRuntime reader : group.readerRuntimes()) {
         if (!reader.mappingName().equals(mappingName)) {
           continue;

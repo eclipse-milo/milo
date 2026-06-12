@@ -147,7 +147,8 @@ class UadpDiscoveryModelTest {
             ushort(16),
             timestamp,
             messages,
-            metaData),
+            metaData,
+            null),
         DecodedNetworkMessage.of(
             publisherId,
             ushort(258),
@@ -163,7 +164,7 @@ class UadpDiscoveryModelTest {
   @Test
   void decodedNetworkMessageOfAcceptsAllNullHeaders() {
     assertEquals(
-        new DecodedNetworkMessage(null, null, null, null, null, null, List.of(), List.of()),
+        new DecodedNetworkMessage(null, null, null, null, null, null, List.of(), List.of(), null),
         DecodedNetworkMessage.of(null, null, null, null, null, null, List.of(), List.of()));
   }
 

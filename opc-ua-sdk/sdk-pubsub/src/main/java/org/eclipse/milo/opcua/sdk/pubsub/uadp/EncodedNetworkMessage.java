@@ -21,6 +21,10 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
  * <p>The attribution lets the engine and broker transports route per-writer queues: a
  * NetworkMessage carrying a single writer's messages can be published to that writer's queue.
  *
+ * <p>Attribution also drives diagnostics: the engine counts {@code dataSetMessagesSent} at the
+ * writer group and per-writer paths from the writers attributed to each sent message, so a custom
+ * {@link MessageMappingProvider} that returns unattributed messages gets no per-writer sent counts.
+ *
  * @param data the buffer containing the encoded NetworkMessage; the receiver of this record assumes
  *     ownership and is responsible for releasing it.
  * @param writers the contributing DataSetWriters, in payload order; empty when the message has no
@@ -44,6 +48,10 @@ public record EncodedNetworkMessage(ByteBuf data, List<Writer> writers) {
 
   /**
    * Create a new {@link EncodedNetworkMessage} without writer attribution.
+   *
+   * <p>Unattributed messages are still sent, but contribute nothing to the {@code
+   * dataSetMessagesSent} counters at the writer group and writer paths, which are derived from
+   * {@link #writers()}.
    *
    * @param data the buffer containing the encoded NetworkMessage; the receiver of this record
    *     assumes ownership and is responsible for releasing it.

@@ -121,9 +121,15 @@ public final class WriterGroupConfig {
   }
 
   /**
-   * Get the maximum size of NetworkMessages produced by this group.
+   * Get the maximum size of NetworkMessages produced by this group: the size of the complete
+   * encoded NetworkMessage, before transport protocol headers (Part 14 §6.2.5.5).
    *
-   * @return the maximum NetworkMessage size in bytes.
+   * <p>When non-zero, an encoded NetworkMessage exceeding this size is skipped instead of sent and
+   * recorded as a group error with {@code Bad_EncodingLimitsExceeded} (the Part 14 Annex B.3.1
+   * behavior for mappings without chunking support). On OPC UA UDP connections values above 65535
+   * are rejected at startup and reconfiguration (§7.3.2.1).
+   *
+   * @return the maximum NetworkMessage size in bytes; 0 means no enforced limit.
    */
   public UInteger getMaxNetworkMessageSize() {
     return maxNetworkMessageSize;
@@ -280,7 +286,7 @@ public final class WriterGroupConfig {
     private Duration publishingInterval = Duration.ofMillis(1000);
     private @Nullable Duration keepAliveTime;
     private UByte priority = ubyte(0);
-    private UInteger maxNetworkMessageSize = uint(1400);
+    private UInteger maxNetworkMessageSize = uint(0);
     private @Nullable MessageSecurityConfig messageSecurity;
     private WriterGroupMessageSettings messageSettings = UadpWriterGroupSettings.builder().build();
     private @Nullable BrokerTransportSettings brokerTransport;
@@ -349,9 +355,13 @@ public final class WriterGroupConfig {
     }
 
     /**
-     * Set the maximum size of NetworkMessages produced by this group.
+     * Set the maximum size of NetworkMessages produced by this group. When non-zero, encoded
+     * NetworkMessages exceeding this size are skipped instead of sent and recorded as group errors
+     * with {@code Bad_EncodingLimitsExceeded}; see {@link
+     * WriterGroupConfig#getMaxNetworkMessageSize()}.
      *
-     * @param maxNetworkMessageSize the maximum NetworkMessage size in bytes; defaults to 1400.
+     * @param maxNetworkMessageSize the maximum NetworkMessage size in bytes; defaults to 0 (no
+     *     enforced limit).
      * @return this {@link Builder}.
      */
     public Builder maxNetworkMessageSize(UInteger maxNetworkMessageSize) {

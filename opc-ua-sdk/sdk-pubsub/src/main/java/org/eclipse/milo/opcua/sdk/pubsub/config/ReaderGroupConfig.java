@@ -71,6 +71,12 @@ public final class ReaderGroupConfig {
   /**
    * Get the maximum size of NetworkMessages accepted by this group.
    *
+   * <p>When non-zero, a received NetworkMessage larger than this (its size on the wire, before
+   * decoding) is not delivered to this group's readers and is counted as a group decode error with
+   * {@code Bad_EncodingLimitsExceeded}. This receive-side enforcement is a Milo extension: Part 14
+   * defines the parameter on the shared PubSubGroup (§6.2.5.5) but gives it no receive-side
+   * semantics.
+   *
    * @return the maximum NetworkMessage size in bytes; 0 means unrestricted.
    */
   public UInteger getMaxNetworkMessageSize() {
@@ -210,7 +216,9 @@ public final class ReaderGroupConfig {
     }
 
     /**
-     * Set the maximum size of NetworkMessages accepted by this group.
+     * Set the maximum size of NetworkMessages accepted by this group. When non-zero, larger
+     * received NetworkMessages are not delivered to this group's readers and are counted as group
+     * decode errors; see {@link ReaderGroupConfig#getMaxNetworkMessageSize()}.
      *
      * @param maxNetworkMessageSize the maximum NetworkMessage size in bytes; defaults to 0
      *     (unrestricted).

@@ -12,7 +12,9 @@ package org.eclipse.milo.opcua.sdk.pubsub;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -23,6 +25,7 @@ import java.net.DatagramSocket;
 import java.net.SocketException;
 import java.net.URI;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -57,6 +60,8 @@ import org.eclipse.milo.opcua.sdk.pubsub.config.WriterGroupConfig;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
@@ -87,11 +92,14 @@ class UdpLoopbackIntegrationTest {
   private static final UUID TEMPERATURE_FIELD_ID = new UUID(0L, 0xA1L);
   private static final UUID STATUS_FIELD_ID = new UUID(0L, 0xA2L);
   private static final UUID COUNTER_FIELD_ID = new UUID(0L, 0xB1L);
+  private static final UUID BLOB_FIELD_ID = new UUID(0L, 0xC1L);
 
   private static final DataSetReaderRef READER_A_REF =
       new DataSetReaderRef("sub-conn", "rgrp", "reader-a");
   private static final DataSetReaderRef READER_B_REF =
       new DataSetReaderRef("sub-conn", "rgrp", "reader-b");
+  private static final DataSetReaderRef READER_BLOB_REF =
+      new DataSetReaderRef("sub-conn", "rgrp", "reader-blob");
 
   /**
    * Group settings that put the GroupHeader with WriterGroupId on the wire so readers can apply
@@ -563,6 +571,236 @@ class UdpLoopbackIntegrationTest {
     assertEquals(5, event.fieldsByName().get("counter").value().value());
   }
 
+  /**
+   * Regression for the receive-side 2048-byte truncation: without an explicit receive buffer
+   * allocator, Netty's datagram default truncated reads at 2048 bytes, so a larger NetworkMessage
+   * could never arrive intact. The subscriber channel now sizes its receive buffer to the Part 14
+   * §7.3.2.1 UDP maximum of 65535, so an ~8 KB dataset must deliver end-to-end.
+   */
+  @Test
+  void datagramsLargerThan2048BytesDeliverEndToEnd() throws Exception {
+    int port = freeUdpPort();
+
+    byte[] blob = new byte[8000];
+    Arrays.fill(blob, (byte) 0x5A);
+
+    var values =
+        new AtomicReference<Map<String, DataValue>>(
+            Map.of("blob", new DataValue(Variant.ofByteString(ByteString.of(blob)))));
+
+    PubSubService publisher =
+        track(
+            PubSubService.create(
+                blobPublisherConfig(port, freeUdpPort(), uint(0)),
+                PubSubBindings.builder()
+                    .source(new PublishedDataSetRef("ds-blob"), mapSource(values))
+                    .build()));
+
+    var events = new LinkedBlockingQueue<DataSetReceivedEvent>();
+
+    PubSubService subscriber =
+        track(
+            PubSubService.create(
+                blobSubscriberConfig(port),
+                PubSubBindings.builder().listener(READER_BLOB_REF, events::add).build()));
+
+    subscriber.startup().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+    publisher.startup().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+
+    DataSetReceivedEvent event = awaitEvent(events, e -> true);
+    ByteString received = blobOf(event);
+    assertEquals(8000, received.length());
+    assertArrayEquals(blob, received.bytesOrEmpty());
+  }
+
+  /**
+   * Writer-side maxNetworkMessageSize enforcement (Part 14 §6.2.5.5 / Annex B.3.1): a
+   * NetworkMessage whose encoded size exceeds the group's non-zero budget is skipped with {@code
+   * Bad_EncodingLimitsExceeded} and never delivered, while messages within the budget keep flowing.
+   */
+  @Test
+  void oversizePublishIsRejectedWhileSmallerMessagesKeepFlowing() throws Exception {
+    int port = freeUdpPort();
+
+    byte[] initialBlob = new byte[64];
+    Arrays.fill(initialBlob, (byte) 0x01);
+    byte[] oversizeBlob = new byte[8000];
+    Arrays.fill(oversizeBlob, (byte) 0x02);
+    byte[] resumedBlob = new byte[64];
+    Arrays.fill(resumedBlob, (byte) 0x03);
+
+    var values =
+        new AtomicReference<Map<String, DataValue>>(
+            Map.of("blob", new DataValue(Variant.ofByteString(ByteString.of(initialBlob)))));
+
+    PubSubService publisher =
+        track(
+            PubSubService.create(
+                blobPublisherConfig(port, freeUdpPort(), uint(2048)),
+                PubSubBindings.builder()
+                    .source(new PublishedDataSetRef("ds-blob"), mapSource(values))
+                    .build()));
+
+    var events = new LinkedBlockingQueue<DataSetReceivedEvent>();
+
+    PubSubService subscriber =
+        track(
+            PubSubService.create(
+                blobSubscriberConfig(port),
+                PubSubBindings.builder().listener(READER_BLOB_REF, events::add).build()));
+
+    subscriber.startup().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+    publisher.startup().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+
+    // messages within the budget flow
+    awaitEvent(events, event -> blobOf(event).bytesOrEmpty()[0] == 0x01);
+
+    // an oversize message is skipped at publish time and recorded at the group path
+    values.set(Map.of("blob", new DataValue(Variant.ofByteString(ByteString.of(oversizeBlob)))));
+    awaitTrue(
+        () -> {
+          PubSubDiagnostics.ComponentDiagnostics diagnostics =
+              publisher.diagnostics().component("pub-conn/grp").orElse(null);
+          return diagnostics != null
+              && new StatusCode(StatusCodes.Bad_EncodingLimitsExceeded)
+                  .equals(diagnostics.lastError());
+        },
+        "writer group lastError Bad_EncodingLimitsExceeded");
+
+    // smaller messages keep flowing afterwards, and nothing oversize was ever delivered
+    values.set(Map.of("blob", new DataValue(Variant.ofByteString(ByteString.of(resumedBlob)))));
+    awaitEvent(
+        events,
+        event -> {
+          ByteString blob = blobOf(event);
+          assertNotEquals(8000, blob.length(), "oversize NetworkMessage must not be delivered");
+          return blob.bytesOrEmpty()[0] == 0x03;
+        });
+  }
+
+  /** Part 14 §7.3.2.1: a UDP writer group's maxNetworkMessageSize must not exceed 65535. */
+  @Test
+  void startupFailsWhenUdpWriterGroupMaxNetworkMessageSizeExceeds65535() throws Exception {
+    int port = freeUdpPort();
+
+    var values =
+        new AtomicReference<Map<String, DataValue>>(
+            Map.of("blob", new DataValue(Variant.ofByteString(ByteString.of(new byte[16])))));
+
+    PubSubService service =
+        track(
+            PubSubService.create(
+                blobPublisherConfig(port, freeUdpPort(), uint(65536)),
+                PubSubBindings.builder()
+                    .source(new PublishedDataSetRef("ds-blob"), mapSource(values))
+                    .build()));
+
+    StatusCode statusCode = assertStartupFails(service);
+    assertEquals(StatusCodes.Bad_ConfigurationError, statusCode.value());
+  }
+
+  /** §7.3.2.1 boundary: maxNetworkMessageSize of exactly 65535 is valid (the check is strict >). */
+  @Test
+  void startupSucceedsWhenUdpWriterGroupMaxNetworkMessageSizeIs65535() throws Exception {
+    int port = freeUdpPort();
+
+    var values =
+        new AtomicReference<Map<String, DataValue>>(
+            Map.of("blob", new DataValue(Variant.ofByteString(ByteString.of(new byte[16])))));
+
+    PubSubService service =
+        track(
+            PubSubService.create(
+                blobPublisherConfig(port, freeUdpPort(), uint(65535)),
+                PubSubBindings.builder()
+                    .source(new PublishedDataSetRef("ds-blob"), mapSource(values))
+                    .build()));
+
+    service.startup().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+
+    PubSubHandle group = service.components().writerGroup("pub-conn", "grp").orElseThrow();
+    awaitTrue(() -> service.state(group) == PubSubState.Operational, "writer group Operational");
+  }
+
+  /** Disabled-component tolerance: the §7.3.2.1 limit is only validated for enabled groups. */
+  @Test
+  void disabledUdpWriterGroupMayExceed65535AtStartup() throws Exception {
+    int port = freeUdpPort();
+
+    PublishedDataSetConfig dataSet =
+        PublishedDataSetConfig.builder("ds-blob")
+            .field(FieldDefinition.builder("blob").dataType(NodeIds.ByteString).build())
+            .build();
+
+    PubSubConfig config =
+        PubSubConfig.builder()
+            .publishedDataSet(dataSet)
+            .connection(
+                PubSubConnectionConfig.udp("pub-conn")
+                    .publisherId(PUBLISHER_ID)
+                    .address(UdpDatagramAddress.unicast("127.0.0.1", port))
+                    .discoveryAddress(UdpDatagramAddress.unicast("127.0.0.1", freeUdpPort()))
+                    .writerGroup(
+                        WriterGroupConfig.builder("grp")
+                            .enabled(false)
+                            .writerGroupId(GROUP_ID)
+                            .maxNetworkMessageSize(uint(100_000))
+                            .dataSetWriter(
+                                DataSetWriterConfig.builder("writer")
+                                    .dataSet(dataSet.ref())
+                                    .dataSetWriterId(ushort(1))
+                                    .build())
+                            .build())
+                    .build())
+            .build();
+
+    PubSubService service = track(PubSubService.create(config));
+
+    service.startup().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+
+    PubSubHandle group = service.components().writerGroup("pub-conn", "grp").orElseThrow();
+    assertEquals(PubSubState.Disabled, service.state(group));
+  }
+
+  /**
+   * The §7.3.2.1 limit is enforced at reconfiguration too, and the invalid config is rejected
+   * BEFORE anything is applied: the running writer group is untouched.
+   */
+  @Test
+  void reconfigureRejectsUdpWriterGroupMaxNetworkMessageSizeExceeding65535() throws Exception {
+    int port = freeUdpPort();
+    int discoveryPort = freeUdpPort(); // reused so only maxNetworkMessageSize differs
+
+    var values =
+        new AtomicReference<Map<String, DataValue>>(
+            Map.of("blob", new DataValue(Variant.ofByteString(ByteString.of(new byte[16])))));
+
+    PubSubService service =
+        track(
+            PubSubService.create(
+                blobPublisherConfig(port, discoveryPort, uint(0)),
+                PubSubBindings.builder()
+                    .source(new PublishedDataSetRef("ds-blob"), mapSource(values))
+                    .build()));
+
+    service.startup().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+
+    PubSubConfig invalid = blobPublisherConfig(port, discoveryPort, uint(65536));
+
+    UaRuntimeException e =
+        assertThrows(
+            UaRuntimeException.class,
+            () -> service.reconfigure(invalid, PubSubService.ReconfigureMode.DISABLE_AFFECTED));
+    assertEquals(StatusCodes.Bad_ConfigurationError, e.getStatusCode().value());
+    assertTrue(
+        e.getMessage().contains("exceeds the OPC UA UDP limit"),
+        "unexpected message: " + e.getMessage());
+
+    // rejected before applying: the running writer group is still Operational
+    PubSubHandle group = service.components().writerGroup("pub-conn", "grp").orElseThrow();
+    assertEquals(PubSubState.Operational, service.state(group));
+  }
+
   // region fixtures
 
   /**
@@ -680,6 +918,84 @@ class UdpLoopbackIntegrationTest {
         .build();
   }
 
+  /**
+   * Publisher config for the large-payload tests: one writer group at 75 ms with a single writer on
+   * a ByteString dataset, sending to 127.0.0.1:{@code port}.
+   *
+   * @param discoveryPort the discovery port, passed explicitly so a reconfiguration config can keep
+   *     the connection shell identical.
+   * @param maxNetworkMessageSize the writer group's maxNetworkMessageSize; 0 = no enforced limit.
+   */
+  private static PubSubConfig blobPublisherConfig(
+      int port, int discoveryPort, UInteger maxNetworkMessageSize) {
+
+    PublishedDataSetConfig dataSet =
+        PublishedDataSetConfig.builder("ds-blob")
+            .field(
+                FieldDefinition.builder("blob")
+                    .dataType(NodeIds.ByteString)
+                    .dataSetFieldId(BLOB_FIELD_ID)
+                    .build())
+            .configurationVersion(uint(1), uint(1))
+            .build();
+
+    WriterGroupConfig writerGroup =
+        WriterGroupConfig.builder("grp")
+            .writerGroupId(GROUP_ID)
+            .publishingInterval(Duration.ofMillis(75))
+            .maxNetworkMessageSize(maxNetworkMessageSize)
+            .messageSettings(GROUP_SETTINGS)
+            .dataSetWriter(
+                DataSetWriterConfig.builder("writer-blob")
+                    .dataSet(dataSet.ref())
+                    .dataSetWriterId(ushort(1))
+                    .settings(WRITER_SETTINGS)
+                    .build())
+            .build();
+
+    return PubSubConfig.builder()
+        .publishedDataSet(dataSet)
+        .connection(
+            PubSubConnectionConfig.udp("pub-conn")
+                .publisherId(PUBLISHER_ID)
+                .address(UdpDatagramAddress.unicast("127.0.0.1", port))
+                .discoveryAddress(UdpDatagramAddress.unicast("127.0.0.1", discoveryPort))
+                .writerGroup(writerGroup)
+                .build())
+        .build();
+  }
+
+  /**
+   * Subscriber config matching {@link #blobPublisherConfig}: one REQUIRE_CONFIGURED reader on the
+   * ByteString dataset, bound to 127.0.0.1:{@code port}.
+   */
+  private static PubSubConfig blobSubscriberConfig(int port) throws SocketException {
+    DataSetMetaDataConfig metaData =
+        DataSetMetaDataConfig.builder("ds-blob")
+            .field("blob", NodeIds.ByteString, BLOB_FIELD_ID)
+            .configurationVersion(uint(1), uint(1))
+            .build();
+
+    return PubSubConfig.builder()
+        .connection(
+            PubSubConnectionConfig.udp("sub-conn")
+                .address(UdpDatagramAddress.unicast("127.0.0.1", port))
+                .discoveryAddress(UdpDatagramAddress.unicast("127.0.0.1", freeUdpPort()))
+                .readerGroup(
+                    ReaderGroupConfig.builder("rgrp")
+                        .dataSetReader(
+                            DataSetReaderConfig.builder("reader-blob")
+                                .publisherId(PUBLISHER_ID)
+                                .writerGroupId(GROUP_ID)
+                                .dataSetWriterId(ushort(1))
+                                .dataSetMetaData(metaData)
+                                .metadataPolicy(MetadataPolicy.REQUIRE_CONFIGURED)
+                                .build())
+                        .build())
+                .build())
+        .build();
+  }
+
   // endregion
 
   // region helpers
@@ -748,6 +1064,13 @@ class UdpLoopbackIntegrationTest {
       }
       Thread.sleep(25);
     }
+  }
+
+  /** The "blob" field of an event from the {@link #blobSubscriberConfig} reader. */
+  private static ByteString blobOf(DataSetReceivedEvent event) {
+    DataValue value = event.fieldsByName().get("blob");
+    assertNotNull(value, "no 'blob' field in event");
+    return (ByteString) value.value().value();
   }
 
   private static long counter(
