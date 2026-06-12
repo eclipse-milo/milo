@@ -148,7 +148,109 @@ class JsonMappingBehaviorTest {
 
   // endregion
 
-  // region delta frames and events (decode only; emission is deferred)
+  // region delta frames and events
+
+  private static final DataSetMetaDataType TWO_FIELD_META =
+      metaData(field("Speed", 11, NodeIds.Double, -1), field("Mode", 6, NodeIds.Int32, -1));
+
+  /** A DataSetMessage mask able to express delta frames: MessageType present (Annex A.3.3.4). */
+  private static final JsonDataSetMessageContentMask DELTA_DSM_MASK =
+      JsonDataSetMessageContentMask.of(
+          JsonDataSetMessageContentMask.Field.DataSetWriterId,
+          JsonDataSetMessageContentMask.Field.SequenceNumber,
+          JsonDataSetMessageContentMask.Field.MessageType,
+          JsonDataSetMessageContentMask.Field.FieldEncoding2);
+
+  /**
+   * A delta frame draft encodes MessageType {@code "ua-deltaframe"} and a Payload containing only
+   * the changed fields, name-resolved from the draft metadata by index (Table 185).
+   */
+  @Test
+  void deltaFrameEncodesOnlyChangedFields() throws Exception {
+    var draft =
+        JsonTestFixtures.deltaFrame(
+            writer("w", 17, DELTA_DSM_MASK, DataSetFieldContentMask.of()),
+            9,
+            TWO_FIELD_META,
+            new DataSetMessageDraft.DeltaField(
+                1, new DataValue(Variant.of(3), StatusCode.GOOD, null, null)));
+
+    JsonObject message =
+        firstMessage(encodeSingle(group(JsonNetworkMessageContentMask.of()), List.of(draft)));
+
+    assertEquals("ua-deltaframe", message.get("MessageType").getAsString());
+    assertEquals(9, message.get("SequenceNumber").getAsInt());
+
+    JsonObject payload = message.get("Payload").getAsJsonObject();
+    assertEquals(List.of("Mode"), List.copyOf(payload.keySet()));
+    assertEquals(3, payload.get("Mode").getAsInt());
+  }
+
+  /**
+   * A delta frame whose effective DataSetMessage mask lacks the MessageType member is rejected: the
+   * wire shape would be indistinguishable from a key frame (Annex A.3.3.4: "If the KeyFrameCount is
+   * not 1, the MessageType bit shall be true").
+   */
+  @Test
+  void deltaFrameWithoutMessageTypeMaskRejected() {
+    var draft =
+        JsonTestFixtures.deltaFrame(
+            writer("w", 17, JsonDataSetMessageContentMask.of(), DataSetFieldContentMask.of()),
+            9,
+            TWO_FIELD_META,
+            new DataSetMessageDraft.DeltaField(
+                0, new DataValue(Variant.of(1.5), StatusCode.GOOD, null, null)));
+
+    UaException e =
+        assertThrows(
+            UaException.class,
+            () ->
+                MAPPING.encode(
+                    encodeContext(group(JsonNetworkMessageContentMask.of()), List.of(draft))));
+    assertEquals(StatusCodes.Bad_ConfigurationError, e.getStatusCode().value());
+  }
+
+  /** A delta frame with the DataSetMessageHeader disabled is rejected for the same reason. */
+  @Test
+  void deltaFrameWithoutDataSetMessageHeaderRejected() {
+    var nmMask =
+        JsonNetworkMessageContentMask.of(
+            JsonNetworkMessageContentMask.Field.NetworkMessageHeader,
+            JsonNetworkMessageContentMask.Field.PublisherId);
+
+    var draft =
+        JsonTestFixtures.deltaFrame(
+            writer("w", 17, DELTA_DSM_MASK, DataSetFieldContentMask.of()),
+            9,
+            TWO_FIELD_META,
+            new DataSetMessageDraft.DeltaField(
+                0, new DataValue(Variant.of(1.5), StatusCode.GOOD, null, null)));
+
+    UaException e =
+        assertThrows(
+            UaException.class, () -> MAPPING.encode(encodeContext(group(nmMask), List.of(draft))));
+    assertEquals(StatusCodes.Bad_ConfigurationError, e.getStatusCode().value());
+  }
+
+  /** Delta field indices must resolve to a metadata field name. */
+  @Test
+  void deltaFrameFieldIndexOutsideMetaDataRejected() {
+    var draft =
+        JsonTestFixtures.deltaFrame(
+            writer("w", 17, DELTA_DSM_MASK, DataSetFieldContentMask.of()),
+            9,
+            TWO_FIELD_META,
+            new DataSetMessageDraft.DeltaField(
+                2, new DataValue(Variant.of(1.5), StatusCode.GOOD, null, null)));
+
+    UaException e =
+        assertThrows(
+            UaException.class,
+            () ->
+                MAPPING.encode(
+                    encodeContext(group(JsonNetworkMessageContentMask.of()), List.of(draft))));
+    assertEquals(StatusCodes.Bad_ConfigurationError, e.getStatusCode().value());
+  }
 
   /** Name-keyed delta payloads decode as DELTA_FRAME with {@code fieldName} set per field. */
   @Test

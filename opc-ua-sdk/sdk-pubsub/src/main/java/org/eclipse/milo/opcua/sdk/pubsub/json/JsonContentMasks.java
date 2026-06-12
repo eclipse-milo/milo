@@ -26,8 +26,13 @@ import org.slf4j.LoggerFactory;
  * NonReversibleEncoding (FieldEncoding1=0, FieldEncoding2=0) becomes VerboseEncoding and
  * ReversibleFieldEncoding (FieldEncoding1=1, FieldEncoding2=0) becomes CompactEncoding, each with a
  * one-time WARN.
+ *
+ * <p>The effective-mask methods are public because the engine consults the same resolution outside
+ * the mapping: startup/reconfigure validation and the writer runtime's delta-frame capability check
+ * (a JSON delta frame requires the DataSetMessageHeader and the MessageType member, Part 14 Annex
+ * A.3.3.4/A.3.4.4).
  */
-final class JsonContentMasks {
+public final class JsonContentMasks {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(JsonContentMasks.class);
 
@@ -60,8 +65,13 @@ final class JsonContentMasks {
 
   private JsonContentMasks() {}
 
-  /** The effective NetworkMessage content mask: the configured mask, or the default when empty. */
-  static JsonNetworkMessageContentMask effectiveNetworkMessageMask(
+  /**
+   * The effective NetworkMessage content mask: the configured mask, or the default when empty.
+   *
+   * @param configured the configured {@link JsonNetworkMessageContentMask}.
+   * @return the effective {@link JsonNetworkMessageContentMask}.
+   */
+  public static JsonNetworkMessageContentMask effectiveNetworkMessageMask(
       JsonNetworkMessageContentMask configured) {
 
     if (configured.getValue().longValue() == 0L) {
@@ -71,8 +81,13 @@ final class JsonContentMasks {
     }
   }
 
-  /** The effective DataSetMessage content mask: the configured mask, or the default when empty. */
-  static JsonDataSetMessageContentMask effectiveDataSetMessageMask(
+  /**
+   * The effective DataSetMessage content mask: the configured mask, or the default when empty.
+   *
+   * @param configured the configured {@link JsonDataSetMessageContentMask}.
+   * @return the effective {@link JsonDataSetMessageContentMask}.
+   */
+  public static JsonDataSetMessageContentMask effectiveDataSetMessageMask(
       JsonDataSetMessageContentMask configured) {
 
     if (configured.getValue().longValue() == 0L) {

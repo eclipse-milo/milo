@@ -74,6 +74,8 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrokerTransportQualityOfService;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.PubSubState;
+import org.eclipse.milo.opcua.stack.core.types.structured.JsonDataSetMessageContentMask;
+import org.eclipse.milo.opcua.stack.core.types.structured.JsonNetworkMessageContentMask;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -478,6 +480,201 @@ class JsonEngineEndToEndTest {
     // E3: the engine never used the unaddressed send path
     assertEquals(0, publisherTransport.unaddressedSends.get());
     assertEquals(0, subscriberTransport.unaddressedSends.get());
+  }
+
+  /**
+   * A JSON writer with {@code keyFrameCount} = 3 (and the MessageType member the Annex A.3.3.4 rule
+   * requires) publishes {@code ua-keyframe} and {@code ua-deltaframe} documents through the real
+   * engine; the delta Payload carries only the changed field. The subscriber decodes both and the
+   * reader delivers the delta's field name-matched against its configured metadata, so listeners
+   * can merge it onto the key frame state they already hold.
+   */
+  @Test
+  void jsonDeltaFramesEndToEnd() throws Exception {
+    var publisherTransport = new StubBrokerTransport();
+    var subscriberTransport = new StubBrokerTransport();
+    subscriberExecutor = Executors.newSingleThreadExecutor();
+
+    PublishedDataSetConfig dataSet =
+        PublishedDataSetConfig.builder("ds")
+            .field(
+                FieldDefinition.builder("temperature")
+                    .dataType(NodeIds.Double)
+                    .dataSetFieldId(TEMPERATURE_FIELD_ID)
+                    .build())
+            .field(
+                FieldDefinition.builder("status")
+                    .dataType(NodeIds.String)
+                    .dataSetFieldId(STATUS_FIELD_ID)
+                    .build())
+            .build();
+
+    var nmMask =
+        JsonNetworkMessageContentMask.of(
+            JsonNetworkMessageContentMask.Field.NetworkMessageHeader,
+            JsonNetworkMessageContentMask.Field.DataSetMessageHeader,
+            JsonNetworkMessageContentMask.Field.PublisherId);
+
+    // delta frames require the MessageType member (Part 14 Annex A.3.3.4)
+    var dsmMask =
+        JsonDataSetMessageContentMask.of(
+            JsonDataSetMessageContentMask.Field.DataSetWriterId,
+            JsonDataSetMessageContentMask.Field.SequenceNumber,
+            JsonDataSetMessageContentMask.Field.MetaDataVersion,
+            JsonDataSetMessageContentMask.Field.MessageType,
+            JsonDataSetMessageContentMask.Field.FieldEncoding2);
+
+    PubSubConfig publisherConfig =
+        PubSubConfig.builder()
+            .publishedDataSet(dataSet)
+            .connection(
+                PubSubConnectionConfig.mqtt("pub-conn")
+                    .publisherId(PUBLISHER_ID)
+                    .brokerUri(URI.create("mqtt://127.0.0.1:1883"))
+                    .writerGroup(
+                        WriterGroupConfig.builder("grp")
+                            .writerGroupId(ushort(1))
+                            .publishingInterval(Duration.ofMillis(75))
+                            .messageSettings(
+                                JsonWriterGroupSettings.builder()
+                                    .networkMessageContentMask(nmMask)
+                                    .build())
+                            .dataSetWriter(
+                                DataSetWriterConfig.builder("writer")
+                                    .dataSet(dataSet.ref())
+                                    .dataSetWriterId(ushort(1))
+                                    .keyFrameCount(uint(3))
+                                    .settings(
+                                        JsonDataSetWriterSettings.builder()
+                                            .dataSetMessageContentMask(dsmMask)
+                                            .build())
+                                    .build())
+                            .build())
+                    .build())
+            .build();
+
+    // temperature changes on every read; status never does
+    var reads = new AtomicInteger(0);
+    PublishedDataSetSource source =
+        context -> {
+          DataSetSnapshot.Builder builder = DataSetSnapshot.builder(context);
+          builder.field(
+              "temperature", new DataValue(Variant.ofDouble(20.0 + reads.incrementAndGet())));
+          builder.field("status", new DataValue(Variant.ofString("running")));
+          return builder.build();
+        };
+
+    publisher =
+        PubSubService.create(
+            publisherConfig,
+            PubSubBindings.builder().source(dataSet.ref(), source).build(),
+            PubSubServiceConfig.builder().transportProvider(publisherTransport).build());
+
+    DataSetMetaDataConfig configuredMetaData =
+        DataSetMetaDataConfig.builder("ds")
+            .field("temperature", NodeIds.Double, CONFIGURED_TEMPERATURE_FIELD_ID)
+            .field("status", NodeIds.String, CONFIGURED_STATUS_FIELD_ID)
+            .build();
+
+    PubSubConfig subscriberConfig =
+        PubSubConfig.builder()
+            .connection(
+                PubSubConnectionConfig.mqtt("sub-conn")
+                    .brokerUri(URI.create("mqtt://127.0.0.1:1883"))
+                    .readerGroup(
+                        ReaderGroupConfig.builder("rgrp")
+                            .dataSetReader(
+                                DataSetReaderConfig.builder("reader")
+                                    .publisherId(PUBLISHER_ID)
+                                    .dataSetWriterId(ushort(1))
+                                    .dataSetMetaData(configuredMetaData)
+                                    .metadataPolicy(MetadataPolicy.REQUIRE_CONFIGURED)
+                                    .settings(JsonDataSetReaderSettings.builder().build())
+                                    .brokerTransport(
+                                        BrokerTransportSettings.builder()
+                                            .queueName("opcua/json/data/line-7/grp")
+                                            .build())
+                                    .build())
+                            .build())
+                    .build())
+            .build();
+
+    var events = new LinkedBlockingQueue<DataSetReceivedEvent>();
+
+    subscriber =
+        PubSubService.create(
+            subscriberConfig,
+            PubSubBindings.builder()
+                .listener(new DataSetReaderRef("sub-conn", "rgrp", "reader"), events::add)
+                .build(),
+            PubSubServiceConfig.builder()
+                .transportProvider(subscriberTransport)
+                .transportExecutor(subscriberExecutor)
+                .build());
+
+    subscriber.startup().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+    publisher.startup().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+
+    PubSubHandle reader =
+        subscriber.components().dataSetReader("sub-conn", "rgrp", "reader").orElseThrow();
+    assertEquals(PubSubState.PreOperational, subscriber.state(reader));
+
+    // the first data document of the cadence is a key frame, the second a delta frame whose
+    // Payload carries only the changed field
+    Sent keyFrameSent = awaitSent(publisherTransport, MessageAddress.Kind.DATA);
+    Sent deltaFrameSent = awaitSent(publisherTransport, MessageAddress.Kind.DATA);
+
+    JsonObject keyFrame = firstDataSetMessage(keyFrameSent);
+    assertEquals("ua-keyframe", keyFrame.get("MessageType").getAsString());
+    JsonObject keyFramePayload = keyFrame.get("Payload").getAsJsonObject();
+    assertEquals(2, keyFramePayload.keySet().size());
+
+    JsonObject deltaFrame = firstDataSetMessage(deltaFrameSent);
+    assertEquals("ua-deltaframe", deltaFrame.get("MessageType").getAsString());
+    JsonObject deltaFramePayload = deltaFrame.get("Payload").getAsJsonObject();
+    assertEquals(List.of("temperature"), List.copyOf(deltaFramePayload.keySet()));
+    assertEquals(
+        keyFrame.get("SequenceNumber").getAsLong() + 1,
+        deltaFrame.get("SequenceNumber").getAsLong());
+
+    // the key frame completes reader startup and delivers both fields
+    subscriberTransport.inject("opcua/json/data/line-7/grp", keyFrameSent.json());
+    flushSubscriber();
+
+    assertEquals(PubSubState.Operational, subscriber.state(reader));
+
+    DataSetReceivedEvent keyFrameEvent = events.poll(10, TimeUnit.SECONDS);
+    assertNotNull(keyFrameEvent);
+    assertEquals(2, keyFrameEvent.fields().size());
+
+    // the delta delivers only the changed field, name-matched against the configured metadata,
+    // so the listener can merge it onto the state the key frame established
+    subscriberTransport.inject("opcua/json/data/line-7/grp", deltaFrameSent.json());
+    flushSubscriber();
+
+    DataSetReceivedEvent deltaFrameEvent = events.poll(10, TimeUnit.SECONDS);
+    assertNotNull(deltaFrameEvent);
+    assertEquals(1, deltaFrameEvent.fields().size());
+
+    DataSetFieldValue changed = deltaFrameEvent.fields().get(0);
+    assertEquals("temperature", changed.name());
+    assertEquals(0, changed.index());
+    assertEquals(CONFIGURED_TEMPERATURE_FIELD_ID, changed.dataSetFieldId());
+    assertEquals(
+        deltaFramePayload.get("temperature").getAsDouble(), changed.value().value().value());
+
+    // delta frames consume sequence numbers like key frames (Part 14 §7.2.3)
+    assertNotNull(keyFrameEvent.dataSetMessageSequenceNumber());
+    assertNotNull(deltaFrameEvent.dataSetMessageSequenceNumber());
+    assertEquals(
+        keyFrameEvent.dataSetMessageSequenceNumber().longValue() + 1,
+        deltaFrameEvent.dataSetMessageSequenceNumber().longValue());
+  }
+
+  /** The first DataSetMessage object of a captured {@code ua-data} document. */
+  private static JsonObject firstDataSetMessage(Sent sent) {
+    JsonObject networkMessage = JsonParser.parseString(sent.json()).getAsJsonObject();
+    return networkMessage.get("Messages").getAsJsonArray().get(0).getAsJsonObject();
   }
 
   private void flushSubscriber() throws Exception {

@@ -80,8 +80,8 @@ import org.junit.jupiter.api.Test;
  *
  * <p>Exercised through {@link PubSubService} with a stub in-memory transport (no sockets, CI-safe;
  * a reader-only service opens no discovery channels, and the explicit loopback discoveryAddress is
- * defense in depth). Delta and event frames are hand-built bytes because the encoder does not emit
- * them in this version.
+ * defense in depth). Delta and event frames are hand-built bytes so the gate behavior is pinned
+ * independent of the encoder (which emits deltas, but never events).
  */
 class ReaderOperationalGateTest {
 
@@ -309,8 +309,9 @@ class ReaderOperationalGateTest {
 
   /**
    * A Data Delta Frame with one Variant Int32 field, hand-built per Part 14 §7.2.4.5.6 Table 164
-   * (the encoder never emits delta frames in this version). No optional NetworkMessage headers; a
-   * payload without a PayloadHeader is one DataSetMessage with no DataSetWriterId on the wire.
+   * (built by hand so these gate tests stay independent of the encoder's delta emission). No
+   * optional NetworkMessage headers; a payload without a PayloadHeader is one DataSetMessage with
+   * no DataSetWriterId on the wire.
    */
   private static byte[] deltaFrameWithInt32Field(int fieldIndex, int value) {
     return bytes(
@@ -465,9 +466,12 @@ class ReaderOperationalGateTest {
   }
 
   /**
-   * Part 14 §6.2.1 Table 2: a delta frame received before the first key frame does not complete
-   * startup — but it is still delivered to listeners, still counted in diagnostics, and the reader
-   * does not enter Error from its receive timeout while deltas keep flowing.
+   * Part 14 §6.2.1 Table 2 (SHALL): a delta frame received before the first key frame does not
+   * complete startup — but it is DELIBERATELY still delivered to listeners, still counted in
+   * diagnostics, and the reader does not enter Error from its receive timeout while deltas keep
+   * flowing. §7.2.4.3 leaves the pre-baseline delivery policy to the application: listeners receive
+   * honest partial state while the PreOperational state signals "no full baseline seen yet", and
+   * the publisher-side keyFrameCount cadence bounds the wait for a key frame.
    */
   @Test
   void preKeyDeltaFramesAreDeliveredAndCountedButDoNotCompleteStartup() throws Exception {

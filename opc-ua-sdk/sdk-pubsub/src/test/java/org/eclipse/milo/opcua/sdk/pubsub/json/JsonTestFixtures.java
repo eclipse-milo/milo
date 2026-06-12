@@ -158,6 +158,23 @@ final class JsonTestFixtures {
         metaData);
   }
 
+  /** A delta frame draft at the given sequence number with no timestamp and no status. */
+  static DataSetMessageDraft deltaFrame(
+      DataSetWriterConfig writer,
+      int sequenceNumber,
+      DataSetMetaDataType metaData,
+      DataSetMessageDraft.DeltaField... fields) {
+
+    return DataSetMessageDraft.ofDeltaFrame(
+        writer,
+        ushort(sequenceNumber),
+        null,
+        null,
+        new ConfigurationVersionDataType(uint(1), uint(1)),
+        List.of(fields),
+        metaData);
+  }
+
   static List<EncodedNetworkMessage> encode(
       WriterGroupConfig group, List<DataSetMessageDraft> drafts) throws UaException {
 

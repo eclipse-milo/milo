@@ -59,7 +59,9 @@ public final class UadpDataSetWriterSettings implements DataSetWriterMessageSett
   /**
    * Get the fixed encoded size of the DataSetMessage.
    *
-   * @return the configured size in bytes; 0 means the size is dynamic.
+   * @return the configured size in bytes; 0 means the size is dynamic. A non-zero size cannot be
+   *     combined with a {@code keyFrameCount} greater than 1: fixed-size layouts are key-frame-only
+   *     (Part 14 Annex A.2.1.7), enforced at startup and reconfigure.
    */
   public UShort getConfiguredSize() {
     return configuredSize;
@@ -154,7 +156,9 @@ public final class UadpDataSetWriterSettings implements DataSetWriterMessageSett
     /**
      * Set the fixed encoded size of the DataSetMessage.
      *
-     * @param configuredSize the size in bytes; 0 (the default) means the size is dynamic.
+     * @param configuredSize the size in bytes; 0 (the default) means the size is dynamic. A
+     *     non-zero size cannot be combined with a {@code keyFrameCount} greater than 1: fixed-size
+     *     layouts are key-frame-only (Part 14 Annex A.2.1.7), enforced at startup and reconfigure.
      * @return this {@link Builder}.
      */
     public Builder configuredSize(UShort configuredSize) {

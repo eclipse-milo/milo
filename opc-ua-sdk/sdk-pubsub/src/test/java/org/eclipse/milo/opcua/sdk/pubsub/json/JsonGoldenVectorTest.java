@@ -335,6 +335,68 @@ class JsonGoldenVectorTest {
     assertEquals(1240.0, field.value().value().value());
   }
 
+  /**
+   * Encoding a delta frame draft reproduces grounding worked example 7.2 (the decode vector above):
+   * a headerless single-DSM {@code ua-deltaframe} whose Payload carries only the changed field,
+   * name-resolved from the draft metadata by its explicit index (Part 14 §7.2.5.4.1 Table 185).
+   * Member order is pinned to the Table 185 order.
+   */
+  @Test
+  void encodeWorkedExampleDeltaFrame() throws Exception {
+    // headerless single DataSetMessage: DataSetMessageHeader + SingleDataSetMessage, no
+    // NetworkMessageHeader (§7.2.5.3 collapse)
+    var nmMask =
+        JsonNetworkMessageContentMask.of(
+            JsonNetworkMessageContentMask.Field.DataSetMessageHeader,
+            JsonNetworkMessageContentMask.Field.SingleDataSetMessage);
+
+    var dsmMask =
+        JsonDataSetMessageContentMask.of(
+            JsonDataSetMessageContentMask.Field.DataSetWriterId,
+            JsonDataSetMessageContentMask.Field.SequenceNumber,
+            JsonDataSetMessageContentMask.Field.MinorVersion,
+            JsonDataSetMessageContentMask.Field.MessageType,
+            JsonDataSetMessageContentMask.Field.FieldEncoding2);
+
+    var draft =
+        DataSetMessageDraft.ofDeltaFrame(
+            writer("commands-writer", 17, dsmMask, DataSetFieldContentMask.of()),
+            ushort(1043),
+            null,
+            null,
+            EXAMPLE_VERSION,
+            List.of(
+                new DataSetMessageDraft.DeltaField(
+                    0, new DataValue(Variant.of(1240.0), StatusCode.GOOD, null, null))),
+            exampleMetaData());
+
+    JsonObject actual = encodeSingle(group(nmMask), List.of(draft)).getAsJsonObject();
+
+    JsonObject expected =
+        JsonParser.parseString(
+                """
+                {
+                  "DataSetWriterId": 17,
+                  "SequenceNumber": 1043,
+                  "MinorVersion": 1444863033,
+                  "MessageType": "ua-deltaframe",
+                  "Payload": {
+                    "CommandedSpeed": 1240.0
+                  }
+                }
+                """)
+            .getAsJsonObject();
+
+    assertEquals(expected, actual);
+
+    // member order pinned to Table 185
+    assertEquals(
+        List.of("DataSetWriterId", "SequenceNumber", "MinorVersion", "MessageType", "Payload"),
+        List.copyOf(actual.keySet()));
+    assertEquals(
+        List.of("CommandedSpeed"), List.copyOf(actual.get("Payload").getAsJsonObject().keySet()));
+  }
+
   /** The spec's own §7.2.5.4.2 example 1, verbatim: collapsed Verbose fields, no field status. */
   @Test
   void decodeSpecExampleWithoutFieldStatus() throws Exception {

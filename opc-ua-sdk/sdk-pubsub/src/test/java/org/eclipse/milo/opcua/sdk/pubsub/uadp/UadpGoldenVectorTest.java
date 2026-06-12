@@ -567,6 +567,58 @@ class UadpGoldenVectorTest {
     assertTrue(message.fields().isEmpty());
   }
 
+  /**
+   * Data Delta Frame DataSetMessage (§7.2.4.5.6 Table 164): the message type is signaled in the
+   * DataSetFlags2 type bits ({@code 0001}, §7.2.4.5.4 Table 162), and the body is {@code
+   * FieldCount} followed by {@code FieldCount} pairs of explicit {@code FieldIndex} (UInt16, the
+   * field's position in the DataSetMetaData, each used at most once) and the field value in the
+   * same Variant field encoding as key frames.
+   */
+  @Test
+  void deltaFrameDataSetMessage() throws UaException {
+    // NM mask 0x00: bare NetworkMessage, every optional header off. DSM mask 0x20: SequenceNumber.
+    DataSetWriterConfig writer =
+        writer(1, new UadpDataSetMessageContentMask(uint(0x20)), VARIANT_FIELDS, 0);
+    WriterGroupConfig group = group(uint(0x00), writer);
+
+    DataSetMessageDraft draft =
+        deltaFrame(
+            writer,
+            7,
+            new DataSetMessageDraft.DeltaField(1, goodValue(Variant.ofInt32(42))),
+            new DataSetMessageDraft.DeltaField(3, goodValue(Variant.ofBoolean(true))));
+
+    EncodeContext context = encodeContext(PublisherId.ubyte(ubyte(1)), group, null, draft);
+
+    byte[] expected =
+        bytes(
+            0x01, // byte 0: version 1, all optional NetworkMessage headers off
+            0x89, // DataSetFlags1: valid 0x01 | Variant encoding 00 | seq 0x08 | Flags2 0x80
+            0x01, // DataSetFlags2: type 0001 = Data Delta Frame (Table 162)
+            0x07, 0x00, // DataSetMessageSequenceNumber = 7 (UInt16 LE)
+            0x02, 0x00, // FieldCount = 2 (Table 164)
+            0x01, 0x00, // FieldIndex = 1 (position in the DataSetMetaData)
+            0x06, 0x2A, 0x00, 0x00, 0x00, // FieldValue: Variant, type Int32 (6), value 42
+            0x03, 0x00, // FieldIndex = 3
+            0x01, 0x01); // FieldValue: Variant, type Boolean (1), value true
+
+    assertArrayEquals(expected, encodeToBytes(context));
+
+    DecodedNetworkMessage decoded = decode(expected);
+
+    assertEquals(1, decoded.messages().size());
+    DecodedDataSetMessage message = decoded.messages().get(0);
+
+    assertEquals(DataSetMessageKind.DELTA_FRAME, message.kind());
+    assertTrue(message.valid());
+    assertEquals(uint(7), message.sequenceNumber());
+    assertEquals(
+        List.of(
+            new DecodedField(1, goodValue(Variant.ofInt32(42))),
+            new DecodedField(3, goodValue(Variant.ofBoolean(true)))),
+        message.fields());
+  }
+
   /** ConfiguredSize larger than the encoded message: zero-padding (Part 14 §6.3.1.3.3). */
   @Test
   void configuredSizePadsWithZeroBytes() throws UaException {
@@ -850,6 +902,19 @@ class UadpGoldenVectorTest {
         new ConfigurationVersionDataType(uint(0), uint(0)),
         false,
         List.of(fields));
+  }
+
+  private static DataSetMessageDraft deltaFrame(
+      DataSetWriterConfig writer, int sequenceNumber, DataSetMessageDraft.DeltaField... fields) {
+
+    return DataSetMessageDraft.ofDeltaFrame(
+        writer,
+        ushort(sequenceNumber),
+        null,
+        null,
+        new ConfigurationVersionDataType(uint(0), uint(0)),
+        List.of(fields),
+        null);
   }
 
   private EncodeContext encodeContext(

@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.sdk.pubsub.uadp;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -56,8 +57,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Encode/decode round trips for the UADP codec across a matrix of content-mask combinations, status
- * propagation rules, hand-built delta-frame/event/heartbeat decoding, and the encode-side error
- * contracts.
+ * propagation rules, delta-frame round trips against hand-derived Table 164 bytes, hand-built
+ * event/heartbeat decoding, and the encode-side error contracts.
  *
  * <p>Wire-format expectations follow OPC UA Part 14 v1.05 §6.2.4.2, §6.3.1.1.4, §6.3.1.3.2, and
  * §7.2.4.4-7.2.4.5.
@@ -468,14 +469,15 @@ class UadpRoundTripTest {
 
   // endregion
 
-  // region hand-built decode: delta frames, event, heartbeat
+  // region delta frame round trips, hand-built decode: event, heartbeat
 
   /**
-   * Data Delta Frame with Variant field encoding, hand-built per Part 14 §7.2.4.5.6 Table 164. The
-   * encoder never emits delta frames in v1, so the bytes are built by hand.
+   * Data Delta Frame with Variant field encoding, hand-built per Part 14 §7.2.4.5.6 Table 164 and
+   * round-tripped: the encoder produces the hand-derived bytes bit-exactly and the decoder recovers
+   * the (index, value) pairs.
    */
   @Test
-  void deltaFrameDecodeWithVariantEncoding() {
+  void deltaFrameRoundTripWithVariantEncoding() throws UaException {
     byte[] message =
         bytes(
             0x01, // byte 0: version 1, all optional NetworkMessage headers off
@@ -486,6 +488,19 @@ class UadpRoundTripTest {
             0x06, 0x2A, 0x00, 0x00, 0x00, // FieldValue: Variant Int32 = 42
             0x03, 0x00, // FieldIndex = 3
             0x0C, 0x02, 0x00, 0x00, 0x00, 0x6F, 0x6B); // FieldValue: Variant String "ok"
+
+    DataSetWriterConfig writer =
+        writer(1, new UadpDataSetMessageContentMask(uint(0)), new DataSetFieldContentMask(uint(0)));
+    WriterGroupConfig group = group(new UadpNetworkMessageContentMask(uint(0)), List.of(writer));
+
+    DataSetMessageDraft draft =
+        deltaFrame(
+            writer,
+            1,
+            new DataSetMessageDraft.DeltaField(1, goodValue(Variant.ofInt32(42))),
+            new DataSetMessageDraft.DeltaField(3, goodValue(Variant.ofString("ok"))));
+
+    assertArrayEquals(message, encodeToBytes(encodeContext(group, List.of(draft))));
 
     DecodedNetworkMessage decoded = decode(message);
 
@@ -501,9 +516,12 @@ class UadpRoundTripTest {
         dsm.fields());
   }
 
-  /** Data Delta Frame with DataValue field encoding, hand-built per Table 164. */
+  /**
+   * Data Delta Frame with DataValue field encoding, hand-built per Table 164 and round-tripped. The
+   * encoded DataValue carries exactly the mask-selected members (§6.2.4.2).
+   */
   @Test
-  void deltaFrameDecodeWithDataValueEncoding() {
+  void deltaFrameRoundTripWithDataValueEncoding() throws UaException {
     byte[] message =
         bytes(
             0x01, // byte 0: version 1
@@ -514,6 +532,23 @@ class UadpRoundTripTest {
             0x03, // DataValue mask: Value 0x01 | StatusCode 0x02
             0x06, 0x07, 0x00, 0x00, 0x00, // Value: Variant Int32 = 7
             0x00, 0x00, 0x95, 0x40); // StatusCode = 0x40950000 (Uncertain_SubNormal)
+
+    // field mask 0x01: StatusCode -> DataValue field encoding with value + status on the wire
+    DataSetWriterConfig writer =
+        writer(
+            1, new UadpDataSetMessageContentMask(uint(0)), new DataSetFieldContentMask(uint(0x01)));
+    WriterGroupConfig group = group(new UadpNetworkMessageContentMask(uint(0)), List.of(writer));
+
+    DataSetMessageDraft draft =
+        deltaFrame(
+            writer,
+            1,
+            new DataSetMessageDraft.DeltaField(
+                4,
+                new DataValue(
+                    Variant.ofInt32(7), new StatusCode(0x40950000L), null, null, null, null)));
+
+    assertArrayEquals(message, encodeToBytes(encodeContext(group, List.of(draft))));
 
     DecodedNetworkMessage decoded = decode(message);
 
@@ -533,6 +568,110 @@ class UadpRoundTripTest {
             DateTime.MIN_VALUE,
             null),
         dsm.fields().get(0).value());
+  }
+
+  /**
+   * A group cycle mixing a key frame and a delta frame through the Sizes path: the delta carries
+   * ONLY the changed fields with their explicit indices, the key frame all fields positionally, and
+   * both survive the round trip — the wire shape of a key frame following deltas (the per-cadence
+   * baseline refresh) is identical to any other key frame.
+   */
+  @Test
+  void mixedKeyFrameAndDeltaFrameRoundTrip() throws UaException {
+    UadpDataSetMessageContentMask dataSetMask = new UadpDataSetMessageContentMask(uint(0x20));
+    DataSetFieldContentMask fieldMask = new DataSetFieldContentMask(uint(0));
+
+    DataSetWriterConfig writer1 = writer(1, dataSetMask, fieldMask);
+    DataSetWriterConfig writer2 = writer(2, dataSetMask, fieldMask);
+    WriterGroupConfig group =
+        group(new UadpNetworkMessageContentMask(uint(0x41)), List.of(writer1, writer2));
+
+    DataSetMessageDraft keyFrame =
+        keyFrame(
+            writer1, 21, List.of(goodValue(Variant.ofInt32(7)), goodValue(Variant.ofInt32(8))));
+    DataSetMessageDraft deltaFrame =
+        deltaFrame(
+            writer2, 33, new DataSetMessageDraft.DeltaField(1, goodValue(Variant.ofInt32(9))));
+
+    DecodedNetworkMessage decoded =
+        decode(encodeToBytes(encodeContext(group, List.of(keyFrame, deltaFrame))));
+
+    assertEquals(2, decoded.messages().size());
+
+    DecodedDataSetMessage first = decoded.messages().get(0);
+    assertEquals(ushort(1), first.dataSetWriterId());
+    assertEquals(DataSetMessageKind.KEY_FRAME, first.kind());
+    assertEquals(uint(21), first.sequenceNumber());
+    assertEquals(2, first.fields().size());
+
+    DecodedDataSetMessage second = decoded.messages().get(1);
+    assertEquals(ushort(2), second.dataSetWriterId());
+    assertEquals(DataSetMessageKind.DELTA_FRAME, second.kind());
+    assertEquals(uint(33), second.sequenceNumber());
+    assertEquals(List.of(new DecodedField(1, goodValue(Variant.ofInt32(9)))), second.fields());
+  }
+
+  /**
+   * Frame behavior across the UInt16 DataSetMessage sequence number wraparound: a delta frame draft
+   * at 0xFFFF followed by a key frame draft at 0 — consecutive cycles of one writer, since the
+   * engine's counter wraps after 0xFFFF (§7.2.3) — encodes and decodes correctly, with kind,
+   * sequence number, and fields intact on both sides of the wrap. Drafts carry the sequence number,
+   * so the wrap is pinned without 65536 publish cycles. The key-frame cadence counter
+   * (cyclesSinceKeyFrame in the engine's DataSetWriterRuntime) is a separate per-writer long that
+   * never derives from the sequence number, but it is engine-internal with no seam reachable from
+   * this package; its independence is covered behaviorally by DeltaFrameCadenceTest, whose frame
+   * classification never consults sequence numbers.
+   */
+  @Test
+  void sequenceNumberWrapAroundRoundTrip() throws UaException {
+    // DSM mask 0x20: SequenceNumber on the wire
+    DataSetWriterConfig writer =
+        writer(
+            1, new UadpDataSetMessageContentMask(uint(0x20)), new DataSetFieldContentMask(uint(0)));
+    WriterGroupConfig group = group(new UadpNetworkMessageContentMask(uint(0x41)), List.of(writer));
+
+    DataSetMessageDraft delta =
+        deltaFrame(
+            writer, 0xFFFF, new DataSetMessageDraft.DeltaField(0, goodValue(Variant.ofInt32(1))));
+
+    DecodedDataSetMessage decodedDelta =
+        decode(encodeToBytes(encodeContext(group, List.of(delta)))).messages().get(0);
+    assertEquals(DataSetMessageKind.DELTA_FRAME, decodedDelta.kind());
+    assertEquals(uint(0xFFFF), decodedDelta.sequenceNumber());
+    assertEquals(
+        List.of(new DecodedField(0, goodValue(Variant.ofInt32(1)))), decodedDelta.fields());
+
+    DataSetMessageDraft keyFrame = keyFrame(writer, 0, List.of(goodValue(Variant.ofInt32(2))));
+
+    DecodedDataSetMessage decodedKey =
+        decode(encodeToBytes(encodeContext(group, List.of(keyFrame)))).messages().get(0);
+    assertEquals(DataSetMessageKind.KEY_FRAME, decodedKey.kind());
+    assertEquals(uint(0), decodedKey.sequenceNumber());
+    assertEquals(List.of(new DecodedField(0, goodValue(Variant.ofInt32(2)))), decodedKey.fields());
+  }
+
+  /** Event DataSetMessage drafts are rejected: emission is out of scope. */
+  @Test
+  void encodeRejectsEventDrafts() {
+    DataSetWriterConfig writer = variantWriter(1);
+    WriterGroupConfig group = group(new UadpNetworkMessageContentMask(uint(0x41)), List.of(writer));
+
+    DataSetMessageDraft draft =
+        new DataSetMessageDraft(
+            writer,
+            ushort(1),
+            null,
+            null,
+            new ConfigurationVersionDataType(uint(0), uint(0)),
+            DataSetMessageKind.EVENT,
+            List.of(goodValue(Variant.ofInt32(1))),
+            List.of(),
+            null);
+
+    EncodeContext context = encodeContext(group, List.of(draft));
+
+    UaException e = assertThrows(UaException.class, () -> new UadpMessageMapping().encode(context));
+    assertEquals(StatusCodes.Bad_NotSupported, e.getStatusCode().value());
   }
 
   /** Event DataSetMessage (type 0010), fields encoded as Variants (§7.2.4.5.7 Table 165). */
@@ -722,6 +861,56 @@ class UadpRoundTripTest {
     assertEquals(StatusCodes.Bad_EncodingLimitsExceeded, e.getStatusCode().value());
   }
 
+  /**
+   * Delta frame drafts combined with a non-zero ConfiguredSize are rejected: fixed-size layouts are
+   * key-frame-only (Part 14 Annex A.2.1.7), and a delta exceeding the ConfiguredSize would be
+   * valid-bit cleared (§6.3.1.3.3) yet still sent, silently losing the changed values. The engine
+   * never produces the combination (startup/reconfigure validation plus every-cycle key-frame
+   * degradation); this pins the backstop for external mapping users.
+   */
+  @Test
+  void encodeRejectsDeltaFrameWithConfiguredSize() {
+    DataSetWriterConfig writer =
+        DataSetWriterConfig.builder("writer-1")
+            .dataSet(new PublishedDataSetRef("ds"))
+            .dataSetWriterId(ushort(1))
+            .settings(UadpDataSetWriterSettings.builder().configuredSize(ushort(64)).build())
+            .build();
+    WriterGroupConfig group = group(new UadpNetworkMessageContentMask(uint(0x41)), List.of(writer));
+
+    EncodeContext context =
+        encodeContext(
+            group,
+            List.of(
+                deltaFrame(
+                    writer,
+                    1,
+                    new DataSetMessageDraft.DeltaField(0, goodValue(Variant.ofInt32(1))))));
+
+    UaException e = assertThrows(UaException.class, () -> new UadpMessageMapping().encode(context));
+    assertEquals(StatusCodes.Bad_ConfigurationError, e.getStatusCode().value());
+  }
+
+  /**
+   * Part 14 §7.2.4.5.6 Table 164: "A Publisher shall use an index only once." The engine's diff
+   * cannot produce duplicate indices; the draft factory guards external mapping users.
+   */
+  @Test
+  void ofDeltaFrameRejectsDuplicateFieldIndex() {
+    DataSetWriterConfig writer = variantWriter(1);
+
+    IllegalArgumentException e =
+        assertThrows(
+            IllegalArgumentException.class,
+            () ->
+                deltaFrame(
+                    writer,
+                    1,
+                    new DataSetMessageDraft.DeltaField(2, goodValue(Variant.ofInt32(1))),
+                    new DataSetMessageDraft.DeltaField(2, goodValue(Variant.ofInt32(2)))));
+    assertTrue(e.getMessage().contains("index 2"), "unexpected message: " + e.getMessage());
+  }
+
   // endregion
 
   // region helpers
@@ -788,6 +977,19 @@ class UadpRoundTripTest {
         new ConfigurationVersionDataType(uint(0), uint(0)),
         false,
         fields);
+  }
+
+  private static DataSetMessageDraft deltaFrame(
+      DataSetWriterConfig writer, int sequenceNumber, DataSetMessageDraft.DeltaField... fields) {
+
+    return DataSetMessageDraft.ofDeltaFrame(
+        writer,
+        ushort(sequenceNumber),
+        null,
+        null,
+        new ConfigurationVersionDataType(uint(0), uint(0)),
+        List.of(fields),
+        null);
   }
 
   private EncodeContext encodeContext(WriterGroupConfig group, List<DataSetMessageDraft> drafts) {

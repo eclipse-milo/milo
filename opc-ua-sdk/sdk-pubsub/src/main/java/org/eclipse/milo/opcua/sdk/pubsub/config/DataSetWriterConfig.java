@@ -95,10 +95,16 @@ public final class DataSetWriterConfig {
   }
 
   /**
-   * Get the key frame count: every {@code keyFrameCount}-th DataSetMessage is a key frame.
+   * Get the key frame count: the maximum number of times the publishing interval expires before a
+   * key frame with values for all fields is sent (Part 14 §6.2.4.3); the cycles in between send
+   * delta frames of the changed fields, and a no-change cycle sends nothing.
    *
-   * @return the key frame count; 1 means every message is a key frame. Stored for the delta-frame
-   *     contract; this release always publishes key frames.
+   * @return the key frame count; 1 means every message is a key frame. 0 (the spec's
+   *     non-cyclic/event value, which Milo does not model) is clamped to 1 at runtime, so configs
+   *     round-trip unmodified. For JSON writers a value greater than 1 requires the
+   *     DataSetMessageHeader and MessageType content-mask members (Part 14 Annex A.3.3.4); for UADP
+   *     writers it cannot be combined with a non-zero ConfiguredSize (fixed-size layouts are
+   *     key-frame-only, Annex A.2.1.7); both enforced at startup and reconfigure.
    */
   public UInteger getKeyFrameCount() {
     return keyFrameCount;
@@ -284,10 +290,15 @@ public final class DataSetWriterConfig {
     }
 
     /**
-     * Set the key frame count: every {@code keyFrameCount}-th DataSetMessage is a key frame.
+     * Set the key frame count: the maximum number of times the publishing interval expires before a
+     * key frame with values for all fields is sent (Part 14 §6.2.4.3); the cycles in between send
+     * delta frames of the changed fields, and a no-change cycle sends nothing.
      *
-     * @param keyFrameCount the key frame count; defaults to 1 (every message is a key frame).
-     *     Stored for the delta-frame contract; this release always publishes key frames.
+     * @param keyFrameCount the key frame count; defaults to 1 (every message is a key frame). 0 is
+     *     clamped to 1 at runtime. For JSON writers a value greater than 1 requires the
+     *     DataSetMessageHeader and MessageType content-mask members (Part 14 Annex A.3.3.4); for
+     *     UADP writers it cannot be combined with a non-zero ConfiguredSize (fixed-size layouts are
+     *     key-frame-only, Annex A.2.1.7); both enforced at startup and reconfigure.
      * @return this {@link Builder}.
      */
     public Builder keyFrameCount(UInteger keyFrameCount) {

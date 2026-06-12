@@ -66,6 +66,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.config.UadpWriterGroupSettings;
 import org.eclipse.milo.opcua.sdk.pubsub.config.UdpConnectionConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.WriterGroupConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.WriterGroupMessageSettings;
+import org.eclipse.milo.opcua.sdk.pubsub.json.JsonContentMasks;
 import org.eclipse.milo.opcua.sdk.pubsub.json.JsonMessageMappingProvider;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.TransportProvider;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.udp.UdpTransportProvider;
@@ -988,6 +989,18 @@ public final class PubSubServiceImpl implements PubSubService {
     return null;
   }
 
+  /**
+   * Whether {@code mappingName} resolves to one of the built-in mapping providers. A configured
+   * provider registered under "uadp" or "json" shadows the built-in and owns its wire format, so
+   * rules derived from the built-in mappings' capabilities (e.g. the delta-frame expressibility
+   * rules) must not be applied to it. Stable for the lifetime of the service: the configured
+   * provider list is fixed at construction.
+   */
+  boolean isBuiltinMapping(String mappingName) {
+    MessageMappingProvider provider = resolveMappingProvider(mappingName);
+    return provider == builtinUadpMapping || provider == builtinJsonMapping;
+  }
+
   static String mappingNameOf(WriterGroupMessageSettings settings) {
     if (settings instanceof UadpWriterGroupSettings) {
       return MAPPING_UADP;
@@ -1064,8 +1077,11 @@ public final class PubSubServiceImpl implements PubSubService {
    * Validate the conditions pinned to fail {@code startup()}: unsupported security modes on enabled
    * groups, missing transport or mapping providers for enabled components, missing sources for
    * enabled writers, publisher-less connections with enabled writer groups, enabled readers on
-   * broker connections without a configured data queueName, and enabled writer groups on UDP
-   * connections with a maxNetworkMessageSize above the Part 14 §7.3.2.1 limit of 65535.
+   * broker connections without a configured data queueName, enabled writer groups on UDP
+   * connections with a maxNetworkMessageSize above the Part 14 §7.3.2.1 limit of 65535, and enabled
+   * writers whose keyFrameCount > 1 cannot be honored — JSON writers whose effective content masks
+   * cannot express delta frames, and UADP writers with a non-zero ConfiguredSize; both only when
+   * the group's mapping resolves to the built-in provider (see {@link #deltaFrameConfigError}).
    */
   private void validateStartup(PubSubConfig config) throws UaException {
     if (!config.isEnabled()) {
@@ -1125,6 +1141,10 @@ public final class PubSubServiceImpl implements PubSubService {
                         .formatted(writer.getDataSet().name())
                     + " '%s/%s')".formatted(groupPath, writer.getName()));
           }
+          String deltaConfigError = deltaFrameConfigError(group, writer, groupPath);
+          if (deltaConfigError != null) {
+            throw new UaException(StatusCodes.Bad_ConfigurationError, deltaConfigError);
+          }
         }
       }
 
@@ -1178,6 +1198,11 @@ public final class PubSubServiceImpl implements PubSubService {
    * (the reconfigure API has no checked-exception surface). Startup-only conditions with a graceful
    * runtime degradation path (e.g. unbound sources, which surface as source errors) are not
    * re-checked here.
+   *
+   * <p>The delta-frame consistency check ({@link #deltaFrameConfigError}) is also enforced here,
+   * even though the runtime degrades such writers safely to every-cycle key frames: a configuration
+   * asking for delta frames it cannot express or safely carry is a contradiction better rejected
+   * than silently ignored.
    */
   private void validateReconfigure(PubSubConfig config) {
     if (!config.isEnabled()) {
@@ -1213,6 +1238,16 @@ public final class PubSubServiceImpl implements PubSubService {
               "no MessageMappingProvider for mapping '%s' (writer group '%s/%s')"
                   .formatted(mappingName, connection.name(), group.getName()));
         }
+        for (DataSetWriterConfig writer : group.getDataSetWriters()) {
+          if (!writer.isEnabled()) {
+            continue;
+          }
+          String deltaConfigError =
+              deltaFrameConfigError(group, writer, connection.name() + "/" + group.getName());
+          if (deltaConfigError != null) {
+            throw new UaRuntimeException(StatusCodes.Bad_ConfigurationError, deltaConfigError);
+          }
+        }
       }
 
       for (ReaderGroupConfig group : connection.readerGroups()) {
@@ -1242,6 +1277,86 @@ public final class PubSubServiceImpl implements PubSubService {
         }
       }
     }
+  }
+
+  /**
+   * The delta-frame configuration error for an enabled writer with keyFrameCount > 1, or {@code
+   * null} when the configuration can honor delta emission.
+   *
+   * <p>The rules below are capabilities of the BUILT-IN mappings, so they apply only when the
+   * group's mapping name resolves to the built-in UADP or JSON provider. A custom {@link
+   * MessageMappingProvider} — including one registered under "uadp" or "json", shadowing the
+   * built-in — owns its wire format and must not be second-guessed; such writers are never rejected
+   * here, and the runtime treats them as delta-capable ({@code
+   * DataSetWriterRuntime#resolveDeltaCapable}).
+   *
+   * <p>A JSON writer requires the DataSetMessageHeader in the group's effective
+   * JsonNetworkMessageContentMask and the MessageType member in its effective
+   * JsonDataSetMessageContentMask (Part 14 Annex A.3.3.4/A.3.4.4: "If the KeyFrameCount is not 1,
+   * the MessageType bit shall be true") — without them a delta payload is indistinguishable from a
+   * key frame on the wire.
+   *
+   * <p>A UADP writer requires ConfiguredSize 0 (dynamic size): the fixed-size layout is
+   * key-frame-only (Annex A.2.1.7: "Only data key frame DataSetMessages are supported", with
+   * KeyFrameCount fixed to 1). Operationally, a DataSetMessage exceeding its ConfiguredSize is
+   * re-encoded header-only with the valid bit clear (§6.3.1.3.3) and still sends successfully,
+   * bypassing the not-transmitted baseline invalidation in {@link WriterGroupRuntime} — a delta
+   * lost that way would leave subscribers silently stale against a baseline they never received.
+   * The UADP message-type bits themselves are always expressible: DataSetFlags2 is part of the
+   * unconditional DataSetMessage header (Table 158 defines no mask bit that could disable it).
+   *
+   * <p>A writer that slips past this validation (e.g. enabled after startup) degrades safely to
+   * every-cycle key frames in {@link DataSetWriterRuntime}.
+   */
+  private @Nullable String deltaFrameConfigError(
+      WriterGroupConfig group, DataSetWriterConfig writer, String groupPath) {
+
+    if (writer.getKeyFrameCount().longValue() <= 1) {
+      return null;
+    }
+
+    if (!isBuiltinMapping(mappingNameOf(group.getMessageSettings()))) {
+      // a custom provider owns the wire format; its delta expressibility is its own concern
+      return null;
+    }
+
+    if (writer.getSettings() instanceof UadpDataSetWriterSettings uadpSettings) {
+      if (uadpSettings.getConfiguredSize().intValue() > 0) {
+        return ("keyFrameCount %s cannot be combined with ConfiguredSize %s: fixed-size"
+                + " DataSetMessage layouts are key-frame-only (Part 14 A.2.1.7) (dataset writer"
+                + " '%s/%s')")
+            .formatted(
+                writer.getKeyFrameCount(),
+                uadpSettings.getConfiguredSize(),
+                groupPath,
+                writer.getName());
+      }
+      return null;
+    }
+
+    if (!(writer.getSettings() instanceof JsonDataSetWriterSettings writerSettings)) {
+      return null;
+    }
+    if (!(group.getMessageSettings() instanceof JsonWriterGroupSettings groupSettings)) {
+      // mixed JSON writer settings in a non-JSON group are rejected per publish cycle
+      return null;
+    }
+
+    if (!JsonContentMasks.effectiveNetworkMessageMask(groupSettings.getNetworkMessageContentMask())
+        .getDataSetMessageHeader()) {
+      return ("keyFrameCount %s requires the DataSetMessageHeader in the effective"
+              + " JsonNetworkMessageContentMask (Part 14 A.3.3.4) (dataset writer '%s/%s')")
+          .formatted(writer.getKeyFrameCount(), groupPath, writer.getName());
+    }
+
+    if (!JsonContentMasks.effectiveDataSetMessageMask(writerSettings.getDataSetMessageContentMask())
+        .getMessageType()) {
+      return ("keyFrameCount %s requires the MessageType member in the effective"
+              + " JsonDataSetMessageContentMask (Part 14 A.3.3.4) (dataset writer '%s/%s')")
+          .formatted(writer.getKeyFrameCount(), groupPath, writer.getName());
+    }
+
+    return null;
   }
 
   private static boolean hasDataQueueName(DataSetReaderConfig reader) {

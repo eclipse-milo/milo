@@ -39,9 +39,19 @@ import org.eclipse.milo.opcua.stack.core.util.BufferUtil;
 /**
  * Encodes one UADP NetworkMessage (OPC UA Part 14 §7.2.4) from an {@link EncodeContext}.
  *
- * <p>Scope: Data Key Frame and Keep Alive DataSetMessages with Variant or DataValue field encoding,
- * security mode None only. The RawData field encoding, PromotedFields, chunking, and message
- * security are not supported and are rejected with {@code Bad_NotSupported}.
+ * <p>Scope: Data Key Frame, Data Delta Frame, and Keep Alive DataSetMessages with Variant or
+ * DataValue field encoding, security mode None only. Event message emission, the RawData field
+ * encoding, PromotedFields, chunking, and message security are not supported and are rejected with
+ * {@code Bad_NotSupported}. (The blanket RawData rejection also covers §7.2.4.5.11's "RawField
+ * encoding shall only be applied to Data Key Frame DataSetMessages".)
+ *
+ * <p>Delta frames signal their type in the DataSetFlags2 type bits ({@code 0001}, §7.2.4.5.4 Table
+ * 162) and write the Table 164 body: {@code FieldCount} followed by {@code FieldCount} pairs of
+ * {@code FieldIndex} (UInt16) and the field value in the same Variant/DataValue field encoding as
+ * key frames. A delta frame draft combined with a non-zero ConfiguredSize is rejected with {@code
+ * Bad_ConfigurationError}: the fixed-size layout is key-frame-only (Annex A.2.1.7), and an
+ * overflowing delta would otherwise be valid-bit cleared (§6.3.1.3.3) yet still sent — silently
+ * losing the changed values without any transmission failure the publisher could observe.
  *
  * <p>Stateless: sequence numbers, GroupVersion, and timestamps are supplied by the caller via the
  * {@link EncodeContext}.
@@ -59,8 +69,10 @@ final class UadpNetworkMessageEncoder {
    * @return the encoded NetworkMessage; the caller assumes ownership of its buffer.
    * @throws UaException if the message could not be encoded; {@code Bad_NotSupported} if the
    *     configuration requires a feature that is out of scope (RawData field encoding,
-   *     PromotedFields, message security), {@code Bad_ConfigurationError} if the group or a writer
-   *     does not carry UADP message settings.
+   *     PromotedFields, message security, event message emission), {@code Bad_ConfigurationError}
+   *     if the group or a writer does not carry UADP message settings or a delta frame draft
+   *     carries a non-zero ConfiguredSize (fixed-size layouts are key-frame-only, Part 14 Annex
+   *     A.2.1.7).
    */
   static EncodedNetworkMessage encode(EncodeContext context) throws UaException {
     if (context.messages().isEmpty()) {
@@ -93,7 +105,7 @@ final class UadpNetworkMessageEncoder {
     for (DataSetMessageDraft draft : context.messages()) {
       DataSetWriterConfig writer = draft.writer();
 
-      if (!(writer.getSettings() instanceof UadpDataSetWriterSettings)) {
+      if (!(writer.getSettings() instanceof UadpDataSetWriterSettings writerSettings)) {
         throw new UaException(
             StatusCodes.Bad_ConfigurationError,
             "DataSetWriter \"" + writer.getName() + "\" does not have UadpDataSetWriterSettings");
@@ -102,6 +114,26 @@ final class UadpNetworkMessageEncoder {
         throw new UaException(
             StatusCodes.Bad_NotSupported,
             "RawData field encoding is not supported (DataSetWriter \"" + writer.getName() + "\")");
+      }
+      if (draft.kind() == DataSetMessageKind.EVENT) {
+        throw new UaException(
+            StatusCodes.Bad_NotSupported,
+            "Event DataSetMessage emission is not supported (DataSetWriter \""
+                + writer.getName()
+                + "\")");
+      }
+      if (draft.kind() == DataSetMessageKind.DELTA_FRAME
+          && writerSettings.getConfiguredSize().intValue() > 0) {
+        // Annex A.2.1.7: the fixed-size layout is key-frame-only. A delta exceeding the
+        // ConfiguredSize would be valid-bit cleared (§6.3.1.3.3) yet still sent, silently
+        // losing the changed values; the engine never produces this combination (validation
+        // plus every-cycle key-frame degradation), so this guards external mapping users.
+        throw new UaException(
+            StatusCodes.Bad_ConfigurationError,
+            "delta frame DataSetMessage with a non-zero ConfiguredSize is not supported:"
+                + " fixed-size layouts are key-frame-only (Part 14 A.2.1.7) (DataSetWriter \""
+                + writer.getName()
+                + "\")");
       }
     }
 
@@ -309,7 +341,9 @@ final class UadpNetworkMessageEncoder {
           buffer.writeZero(configuredSize - buffer.readableBytes());
         } else if (buffer.readableBytes() > configuredSize) {
           // Too large for the fixed size: send the header only, with the "message is
-          // valid" bit clear (Part 14 §6.3.1.3.3).
+          // valid" bit clear (Part 14 §6.3.1.3.3). Only key frames and keep-alives can
+          // reach this branch (delta drafts with a ConfiguredSize are rejected up front);
+          // a valid-cleared key frame self-heals on the next publish cycle.
           buffer.clear();
           writeDataSetMessage(encodingContext, draft, settings, buffer, false);
 
@@ -350,7 +384,15 @@ final class UadpNetworkMessageEncoder {
     boolean timestampEnabled = mask.getTimestamp();
     boolean picoSecondsEnabled = timestampEnabled && mask.getPicoSeconds();
 
-    int flags2 = draft.keepAlive() ? 0x03 : 0x00;
+    // DataSetFlags2 type bits, §7.2.4.5.4 Table 162; EVENT is rejected by encode() and listed
+    // here only for exhaustiveness
+    int flags2 =
+        switch (draft.kind()) {
+          case KEY_FRAME -> 0x00;
+          case DELTA_FRAME -> 0x01;
+          case EVENT -> 0x02;
+          case KEEP_ALIVE -> 0x03;
+        };
     if (timestampEnabled) {
       flags2 |= 0x10;
     }
@@ -409,7 +451,35 @@ final class UadpNetworkMessageEncoder {
       encoder.encodeUInt32(draft.configurationVersion().getMinorVersion());
     }
 
-    if (valid && !draft.keepAlive()) {
+    if (valid && draft.kind() == DataSetMessageKind.DELTA_FRAME) {
+      // Data Delta Frame body, §7.2.4.5.6 Table 164: FieldCount, then per changed field the
+      // explicit FieldIndex (the field's position in the DataSetMetaData for the message's
+      // ConfigurationVersion, each used at most once) and the field value in the same
+      // Variant/DataValue field encoding as key frames
+      List<DataSetMessageDraft.DeltaField> deltaFields = draft.deltaFields();
+
+      if (deltaFields.size() > 65535) {
+        throw new UaSerializationException(
+            StatusCodes.Bad_EncodingLimitsExceeded, "too many fields: " + deltaFields.size());
+      }
+
+      encoder.encodeUInt16(ushort(deltaFields.size()));
+
+      for (DataSetMessageDraft.DeltaField field : deltaFields) {
+        int index = field.index();
+        if (index < 0 || index > 65535) {
+          throw new UaSerializationException(
+              StatusCodes.Bad_EncodingLimitsExceeded, "FieldIndex exceeds UInt16 range: " + index);
+        }
+        encoder.encodeUInt16(ushort(index));
+
+        if (dataValueEncoding) {
+          encoder.encodeDataValue(filterDataValue(field.value(), fieldMask));
+        } else {
+          encodeVariantField(encoder, field.value());
+        }
+      }
+    } else if (valid && !draft.keepAlive()) {
       List<DataValue> fields = draft.fields();
 
       if (fields.size() > 65535) {

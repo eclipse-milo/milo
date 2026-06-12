@@ -24,6 +24,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetWriterConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.JsonDataSetWriterSettings;
 import org.eclipse.milo.opcua.sdk.pubsub.config.JsonWriterGroupSettings;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DataSetMessageDraft;
+import org.eclipse.milo.opcua.sdk.pubsub.uadp.DataSetMessageKind;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.EncodeContext;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.EncodedNetworkMessage;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.MetaDataEncodeContext;
@@ -50,6 +51,12 @@ import org.jspecify.annotations.Nullable;
  * {@link JsonNetworkMessageContentMask} the top-level JSON value is the full NetworkMessage object,
  * a single DataSetMessage object, an array of DataSetMessages, an array of bare payload objects, or
  * a single bare payload object.
+ *
+ * <p>Key frame, delta frame, and keep-alive drafts are supported; a delta frame emits MessageType
+ * {@code "ua-deltaframe"} with a Payload containing only the changed fields, name-resolved from the
+ * draft metadata by index (§7.2.5.4.1 Table 185), and requires the DataSetMessageHeader and the
+ * MessageType member (Annex A.3.3.4: without them the wire shape is indistinguishable from a key
+ * frame). Event message emission is not supported.
  */
 final class JsonNetworkMessageEncoder {
 
@@ -83,6 +90,9 @@ final class JsonNetworkMessageEncoder {
 
     for (DataSetMessageDraft draft : drafts) {
       validateDraft(draft);
+      if (draft.kind() == DataSetMessageKind.DELTA_FRAME) {
+        requireDeltaExpressible(networkMask, draft);
+      }
     }
 
     // group drafts by DataSetClassId when the mask requires homogeneous NetworkMessages
@@ -176,6 +186,13 @@ final class JsonNetworkMessageEncoder {
       return;
     }
 
+    if (draft.kind() == DataSetMessageKind.EVENT) {
+      throw new UaException(
+          StatusCodes.Bad_NotSupported,
+          "Event DataSetMessage emission is not supported (writer '%s')"
+              .formatted(draft.writer().getName()));
+    }
+
     DataSetMetaDataType metaData = draft.metaData();
     if (metaData == null) {
       throw new UaException(
@@ -187,11 +204,52 @@ final class JsonNetworkMessageEncoder {
 
     FieldMetaData[] fields = metaData.getFields();
     int metaFieldCount = fields != null ? fields.length : 0;
-    if (draft.fields().size() != metaFieldCount) {
+
+    if (draft.kind() == DataSetMessageKind.DELTA_FRAME) {
+      // a delta frame carries only the changed fields (Table 185), so there is no full-count
+      // requirement; every index must resolve to a metadata field name
+      for (DataSetMessageDraft.DeltaField field : draft.deltaFields()) {
+        if (field.index() < 0 || field.index() >= metaFieldCount) {
+          throw new UaException(
+              StatusCodes.Bad_ConfigurationError,
+              "writer '%s' delta draft field index %d is outside its DataSetMetaData (%d fields)"
+                  .formatted(draft.writer().getName(), field.index(), metaFieldCount));
+        }
+      }
+    } else if (draft.fields().size() != metaFieldCount) {
       throw new UaException(
           StatusCodes.Bad_ConfigurationError,
           "writer '%s' draft has %d fields but its DataSetMetaData describes %d"
               .formatted(draft.writer().getName(), draft.fields().size(), metaFieldCount));
+    }
+  }
+
+  /**
+   * Reject a delta frame draft whose effective masks cannot represent it: without the
+   * DataSetMessageHeader, or without the MessageType member, a delta payload is indistinguishable
+   * from a key frame on the wire (the decoder defaults to key frame). Part 14 Annex A.3.3.4 and
+   * A.3.4.4: "If the KeyFrameCount is not 1, the MessageType bit shall be true."
+   */
+  private static void requireDeltaExpressible(
+      JsonNetworkMessageContentMask networkMask, DataSetMessageDraft draft) throws UaException {
+
+    if (!networkMask.getDataSetMessageHeader()) {
+      throw new UaException(
+          StatusCodes.Bad_ConfigurationError,
+          ("writer '%s' delta frame requires the DataSetMessageHeader in the"
+                  + " JsonNetworkMessageContentMask (Part 14 A.3.3.4)")
+              .formatted(draft.writer().getName()));
+    }
+
+    var settings = (JsonDataSetWriterSettings) draft.writer().getSettings();
+    JsonDataSetMessageContentMask messageMask =
+        JsonContentMasks.effectiveDataSetMessageMask(settings.getDataSetMessageContentMask());
+    if (!messageMask.getMessageType()) {
+      throw new UaException(
+          StatusCodes.Bad_ConfigurationError,
+          ("writer '%s' delta frame requires the MessageType member in the effective"
+                  + " JsonDataSetMessageContentMask (Part 14 A.3.3.4)")
+              .formatted(draft.writer().getName()));
     }
   }
 
@@ -362,7 +420,15 @@ final class JsonNetworkMessageEncoder {
       }
     }
     if (messageMask.getMessageType()) {
-      writer.name("MessageType").value(draft.keepAlive() ? "ua-keepalive" : "ua-keyframe");
+      // Table 185 MessageType values; event emission is rejected by validateDraft
+      String messageType =
+          switch (draft.kind()) {
+            case KEY_FRAME -> "ua-keyframe";
+            case DELTA_FRAME -> "ua-deltaframe";
+            case EVENT -> "ua-event";
+            case KEEP_ALIVE -> "ua-keepalive";
+          };
+      writer.name("MessageType").value(messageType);
     }
 
     if (!draft.keepAlive()) {
@@ -387,7 +453,7 @@ final class JsonNetworkMessageEncoder {
     }
 
     if (!JsonFieldEncoder.isDataValueRepresentation(fieldMask)) {
-      for (DataValue value : draft.fields()) {
+      for (DataValue value : transmittedValues(draft)) {
         if (value.statusCode().isUncertain()) {
           return value.statusCode();
         }
@@ -395,6 +461,15 @@ final class JsonNetworkMessageEncoder {
     }
 
     return status;
+  }
+
+  /** The field values this draft puts on the wire: key frame fields or delta changed fields. */
+  private static List<DataValue> transmittedValues(DataSetMessageDraft draft) {
+    if (draft.kind() == DataSetMessageKind.DELTA_FRAME) {
+      return draft.deltaFields().stream().map(DataSetMessageDraft.DeltaField::value).toList();
+    } else {
+      return draft.fields();
+    }
   }
 
   private static void writePayload(
@@ -409,17 +484,36 @@ final class JsonNetworkMessageEncoder {
     FieldMetaData[] metaFields = metaData != null ? metaData.getFields() : null;
 
     writer.beginObject();
-    List<DataValue> values = draft.fields();
-    for (int i = 0; i < values.size(); i++) {
-      FieldMetaData fieldMetaData =
-          metaFields != null && i < metaFields.length ? metaFields[i] : null;
+    if (draft.kind() == DataSetMessageKind.DELTA_FRAME) {
+      // Table 185: a delta frame Payload contains "only name and value for the changed fields";
+      // names are resolved from the draft metadata by each field's explicit index
+      for (DataSetMessageDraft.DeltaField field : draft.deltaFields()) {
+        int index = field.index();
+        FieldMetaData fieldMetaData =
+            metaFields != null && index >= 0 && index < metaFields.length
+                ? metaFields[index]
+                : null;
 
-      String name =
-          fieldMetaData != null && fieldMetaData.getName() != null
-              ? fieldMetaData.getName()
-              : "Field_" + i;
+        String name =
+            fieldMetaData != null && fieldMetaData.getName() != null
+                ? fieldMetaData.getName()
+                : "Field_" + index;
 
-      fieldEncoder.writeField(writer, name, values.get(i), fieldMetaData, fieldMask, encoding);
+        fieldEncoder.writeField(writer, name, field.value(), fieldMetaData, fieldMask, encoding);
+      }
+    } else {
+      List<DataValue> values = draft.fields();
+      for (int i = 0; i < values.size(); i++) {
+        FieldMetaData fieldMetaData =
+            metaFields != null && i < metaFields.length ? metaFields[i] : null;
+
+        String name =
+            fieldMetaData != null && fieldMetaData.getName() != null
+                ? fieldMetaData.getName()
+                : "Field_" + i;
+
+        fieldEncoder.writeField(writer, name, values.get(i), fieldMetaData, fieldMask, encoding);
+      }
     }
     writer.endObject();
   }

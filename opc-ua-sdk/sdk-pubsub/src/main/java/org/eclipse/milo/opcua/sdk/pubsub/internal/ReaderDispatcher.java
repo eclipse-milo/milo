@@ -498,9 +498,13 @@ final class ReaderDispatcher {
 
     reader.onMessageAccepted();
 
-    // Part 14 §6.2.1 Table 2: a DataSetReader changes to Operational after the first key frame
-    // or event DataSetMessage; pre-key delta frames are still delivered and reset the receive
-    // timeout but do not complete startup
+    // Part 14 §6.2.1 Table 2 (SHALL): a DataSetReader changes to Operational only after the
+    // first key frame or event DataSetMessage. Pre-baseline delta frames are DELIBERATELY still
+    // delivered to listeners and still reset the receive timeout (their sequence numbers
+    // increment, so they are "new" per §6.2.9.6; §7.2.4.3 leaves the delivery policy to the
+    // application): listeners receive honest partial state while the reader's PreOperational
+    // state signals "no full baseline seen yet", and the publisher-side keyFrameCount cadence
+    // bounds the wait for a key frame.
     if (reader.state() == PubSubState.PreOperational
         && (message.kind() == DataSetMessageKind.KEY_FRAME
             || message.kind() == DataSetMessageKind.EVENT)) {

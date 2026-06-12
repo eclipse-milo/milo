@@ -61,11 +61,15 @@ import org.slf4j.LoggerFactory;
  * NetworkMessages (e.g. the JSON mapping's SingleDataSetMessage); the engine sends every message
  * the mapping returns, except those exceeding the group's non-zero {@code maxNetworkMessageSize},
  * which are skipped and recorded with {@code Bad_EncodingLimitsExceeded} (Part 14 §6.2.5.5, Annex
- * B.3.1).
+ * B.3.1). Any NetworkMessage that is not transmitted — encode failure, oversize skip, send failure
+ * — invalidates the delta baselines of the writers whose data DataSetMessages it carried, forcing
+ * their next message to be a key frame (see {@link DataSetWriterRuntime}).
  *
  * <p>Keep-alive: when a keep-alive time is configured, a keep-alive DataSetMessage is emitted for
- * every writer that has not produced a DataSetMessage within the keep-alive time (in practice the
- * non-operational writers, since operational writers publish a key frame every cycle).
+ * every writer that has not produced a DataSetMessage within the keep-alive time (Part 14 §6.2.6.3:
+ * "no DataSetMessage was sent in this period"). That covers non-operational writers and operational
+ * writers whose delta cycles are suppressed because no fields changed (§6.2.4.3) — a suppressed
+ * cycle does not count as "sent".
  *
  * <p>The publish task is the single writer of all sequence counters; everything it reads from the
  * runtime tree is either immutable config or a volatile snapshot, so reconfiguration takes effect
@@ -176,7 +180,16 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
     groupVersion = resolveGroupVersion();
 
     long now = System.nanoTime();
-    writers.forEach(w -> w.resetLastSent(now));
+    writers.forEach(
+        w -> {
+          w.resetLastSent(now);
+          // first message after a (re)activation is a key frame. The reset is only REQUESTED
+          // here: a stale publish cycle that passed its generation check before this point may
+          // still be executing, and the frame state is publish-thread-confined, so the writer
+          // applies the reset at the top of its next data draft on the publish task thread —
+          // before any frame decision — instead of this thread mutating it mid-cycle.
+          w.requestFrameStateReset();
+        });
 
     long intervalNanos = config.getPublishingInterval().toNanos();
     long generation = ++this.generation;
@@ -302,12 +315,18 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
     partitions.add(sharedPartition);
 
     for (DataSetWriterRuntime writer : writers) {
-      DataSetMessageDraft draft;
+      DataSetMessageDraft draft = null;
       if (writer.state() == PubSubState.Operational) {
+        // null = suppressed no-change delta cycle, nothing is sent (Part 14 §6.2.4.3); the
+        // suppressed writer falls through to the keep-alive check like a non-operational one
         draft = writer.createDataDraft(now, nowNanos);
-      } else if (keepAliveNanos != null && nowNanos - writer.lastSentNanos() >= keepAliveNanos) {
+      }
+      if (draft == null
+          && keepAliveNanos != null
+          && nowNanos - writer.lastSentNanos() >= keepAliveNanos) {
         draft = writer.createKeepAliveDraft(now, nowNanos);
-      } else {
+      }
+      if (draft == null) {
         continue;
       }
 
@@ -318,7 +337,7 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
       } else {
         partition = sharedPartition;
       }
-      partition.drafts.add(draft);
+      partition.add(writer, draft);
     }
 
     for (Partition partition : partitions) {
@@ -328,7 +347,17 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
     }
   }
 
-  /** Encode one partition's drafts and send the resulting NetworkMessages to its address. */
+  /**
+   * Encode one partition's drafts and send the resulting NetworkMessages to its address.
+   *
+   * <p>A NetworkMessage that is NOT transmitted — encode failure, oversize skip, send failure —
+   * additionally invalidates the delta baseline of every writer whose data DataSetMessage it
+   * carried ({@link DataSetWriterRuntime#invalidateDeltaBaseline()}): the §5.3.3 baseline is the
+   * last TRANSMITTED per-field values, and the writers' drafts already committed theirs, so without
+   * the invalidation the next delta would diff against values no subscriber received. The forced
+   * key frame on the next cycle retransmits the full field image; the dropped message's consumed
+   * sequence number is not rolled back (the gap is wire-indistinguishable from network loss).
+   */
   private void publishPartition(
       MessageMappingProvider mapping,
       PublisherChannel channel,
@@ -355,10 +384,12 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
       service
           .getDiagnostics()
           .error(path(), statusCodeOf(e), "failed to encode NetworkMessage: " + e.getMessage(), e);
+      // nothing of this partition was transmitted
+      invalidateDeltaBaselines(partition, List.of());
       return;
     }
 
-    encodedMessages = dropOversizeMessages(encodedMessages);
+    encodedMessages = dropOversizeMessages(encodedMessages, partition);
 
     if (encodedMessages.isEmpty()) {
       return;
@@ -370,8 +401,9 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
     int index = 0;
     try {
       for (; index < encodedMessages.size(); index++) {
+        EncodedNetworkMessage encoded = encodedMessages.get(index);
         channel
-            .send(encodedMessages.get(index).data(), address)
+            .send(encoded.data(), address)
             .whenComplete(
                 (v, ex) -> {
                   if (ex != null) {
@@ -382,6 +414,10 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
                             new StatusCode(StatusCodes.Bad_CommunicationError),
                             "failed to send NetworkMessage: " + ex.getMessage(),
                             ex);
+                    // not transmitted; may run on a transport thread, after later cycles —
+                    // invalidateDeltaBaseline is the thread-safe seam and heals at the latest
+                    // one cycle after it lands
+                    invalidateDeltaBaselines(partition, encoded.writers());
                   }
                 });
 
@@ -394,6 +430,10 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
       // handed to the channel are still ours to release
       for (int i = index + 1; i < encodedMessages.size(); i++) {
         encodedMessages.get(i).data().release();
+      }
+      // neither the message whose send threw nor the unsent remainder was transmitted
+      for (int i = index; i < encodedMessages.size(); i++) {
+        invalidateDeltaBaselines(partition, encodedMessages.get(i).writers());
       }
       service
           .getDiagnostics()
@@ -426,9 +466,14 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
    * skipped. Diagnostic information for such error scenarios are provided."), mirroring the
    * Actual/Maximum properties of PubSubTransportLimitsExceedEventType (§9.1.13.2). 0 = no enforced
    * limit.
+   *
+   * <p>A skipped message invalidates its contributing writers' delta baselines (it was never
+   * transmitted). A writer whose KEY frame exceeds the budget therefore re-forces (and re-drops) a
+   * key frame every cycle and transmits nothing — an honest, per-cycle-diagnosed failure — rather
+   * than emitting deltas against a baseline that can never be transmitted.
    */
   private List<EncodedNetworkMessage> dropOversizeMessages(
-      List<EncodedNetworkMessage> encodedMessages) {
+      List<EncodedNetworkMessage> encodedMessages, Partition partition) {
 
     long maxNetworkMessageSize = config.getMaxNetworkMessageSize().longValue();
     if (maxNetworkMessageSize == 0) {
@@ -445,6 +490,7 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
           accepted = new ArrayList<>(encodedMessages.subList(0, index));
         }
         encoded.data().release();
+        invalidateDeltaBaselines(partition, encoded.writers());
         service
             .getDiagnostics()
             .error(
@@ -459,6 +505,41 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
     }
 
     return accepted != null ? accepted : encodedMessages;
+  }
+
+  /**
+   * Invalidate the delta baselines of the partition writers whose data DataSetMessages were carried
+   * by a NetworkMessage that was not transmitted, so their next data draft is a key frame (the
+   * §5.3.3 baseline is the last TRANSMITTED values). Keep-alive drafts are skipped: they carry no
+   * field values, so losing one leaves the baseline accurate.
+   *
+   * @param attribution the {@link EncodedNetworkMessage#writers()} of the dropped message; empty
+   *     means unattributed (e.g. a custom mapping), conservatively treated as carrying every data
+   *     draft of the partition — a spurious key frame is always safe, a missed one is not.
+   */
+  private static void invalidateDeltaBaselines(
+      Partition partition, List<EncodedNetworkMessage.Writer> attribution) {
+
+    for (int i = 0; i < partition.drafts.size(); i++) {
+      DataSetMessageDraft draft = partition.drafts.get(i);
+      if (draft.keepAlive()) {
+        continue;
+      }
+      if (attribution.isEmpty() || attributionContains(attribution, draft.writer().getName())) {
+        partition.contributors.get(i).invalidateDeltaBaseline();
+      }
+    }
+  }
+
+  private static boolean attributionContains(
+      List<EncodedNetworkMessage.Writer> attribution, String writerName) {
+
+    for (EncodedNetworkMessage.Writer writer : attribution) {
+      if (writer.name().equals(writerName)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /** The address of data NetworkMessages on transports without broker semantics. */
@@ -507,7 +588,9 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
   }
 
   /**
-   * One NetworkMessage partition of a publish cycle: its drafts and the writer owning its queue.
+   * One NetworkMessage partition of a publish cycle: its drafts, the runtimes that contributed them
+   * (parallel to {@link #drafts}; consulted when a NetworkMessage is not transmitted and the
+   * contributing writers' delta baselines must be invalidated), and the writer owning its queue.
    */
   private static final class Partition {
 
@@ -515,9 +598,15 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
     final @Nullable DataSetWriterConfig overrideWriter;
 
     final List<DataSetMessageDraft> drafts = new ArrayList<>();
+    final List<DataSetWriterRuntime> contributors = new ArrayList<>();
 
     private Partition(@Nullable DataSetWriterConfig overrideWriter) {
       this.overrideWriter = overrideWriter;
+    }
+
+    void add(DataSetWriterRuntime contributor, DataSetMessageDraft draft) {
+      drafts.add(draft);
+      contributors.add(contributor);
     }
   }
 

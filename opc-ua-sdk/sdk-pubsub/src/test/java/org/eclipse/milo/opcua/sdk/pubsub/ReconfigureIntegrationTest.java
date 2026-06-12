@@ -10,15 +10,22 @@
 
 package org.eclipse.milo.opcua.sdk.pubsub;
 
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +36,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetMetaDataConfig;
@@ -47,11 +55,18 @@ import org.eclipse.milo.opcua.sdk.pubsub.config.UadpDataSetWriterSettings;
 import org.eclipse.milo.opcua.sdk.pubsub.config.UadpWriterGroupSettings;
 import org.eclipse.milo.opcua.sdk.pubsub.config.UdpDatagramAddress;
 import org.eclipse.milo.opcua.sdk.pubsub.config.WriterGroupConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.uadp.DataSetMessageKind;
+import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodeContext;
+import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedDataSetMessage;
+import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedNetworkMessage;
+import org.eclipse.milo.opcua.sdk.pubsub.uadp.UadpMessageMapping;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpDataSetMessageContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpNetworkMessageContentMask;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -75,6 +90,8 @@ class ReconfigureIntegrationTest {
 
   private static final UUID FIELD_A_ID = new UUID(0L, 0xC1L);
   private static final UUID FIELD_B_ID = new UUID(0L, 0xC2L);
+  private static final UUID FIELD_COUNTER_ID = new UUID(0L, 0xC3L);
+  private static final UUID FIELD_CONSTANT_ID = new UUID(0L, 0xC4L);
 
   private static final DataSetReaderRef READER_A_REF =
       new DataSetReaderRef("sub-conn", "rgrp", "reader-a");
@@ -238,6 +255,112 @@ class ReconfigureIntegrationTest {
     awaitEvent(eventsA, event -> true);
   }
 
+  /**
+   * Delta-frame baseline and cadence reset across a writer-affecting reconfigure: the writer
+   * runtime is recreated, so its sequence number restarts at 0, the first post-restart message is a
+   * key frame, and delta emission resumes correctly against the fresh baseline. Observed on the raw
+   * UDP wire with a plain DatagramSocket — deliberately not through a subscriber service, whose
+   * Part 14 §7.2.3 sequence-number window would (correctly) drop the restarted writer's small
+   * sequence numbers as stale until they catch up.
+   */
+  @Test
+  void writerAffectingReconfigureResetsDeltaBaseline() throws Exception {
+    int port = freeUdpPort();
+    int discoveryPort = freeUdpPort();
+
+    var counter = new AtomicInteger(0);
+    PublishedDataSetSource countingSource =
+        context ->
+            DataSetSnapshot.builder(context)
+                .field("counter", new DataValue(Variant.ofInt32(counter.incrementAndGet())))
+                .field("constant", new DataValue(Variant.ofInt32(100)))
+                .build();
+
+    PubSubService publisher =
+        track(
+            PubSubService.create(
+                deltaPublisherConfig(port, discoveryPort, 3),
+                PubSubBindings.builder()
+                    .source(new PublishedDataSetRef("ds-delta"), countingSource)
+                    .build()));
+
+    try (DatagramSocket socket = new DatagramSocket(port, InetAddress.getByName("127.0.0.1"))) {
+      socket.setSoTimeout(1_000);
+
+      publisher.startup().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+
+      // phase 1: the keyFrameCount = 3 cadence is live — key frames carry both fields, deltas
+      // carry only the changing field with its explicit index
+      boolean sawKeyFrame = false;
+      boolean sawDeltaFrame = false;
+      long deadline = System.nanoTime() + TIMEOUT.toNanos();
+      while ((!sawKeyFrame || !sawDeltaFrame) && System.nanoTime() < deadline) {
+        DecodedDataSetMessage message = receiveDataSetMessage(socket);
+        if (message == null) {
+          continue;
+        }
+        if (message.kind() == DataSetMessageKind.KEY_FRAME) {
+          assertEquals(2, message.fields().size());
+          sawKeyFrame = true;
+        } else if (message.kind() == DataSetMessageKind.DELTA_FRAME) {
+          assertEquals(1, message.fields().size());
+          assertEquals(0, message.fields().get(0).index());
+          sawDeltaFrame = true;
+        }
+      }
+      assertTrue(sawKeyFrame, "no key frame observed before the reconfigure");
+      assertTrue(sawDeltaFrame, "no delta frame observed before the reconfigure");
+
+      // phase 2: a writer-level change (keyFrameCount 3 -> 4) recreates the writer runtime
+      publisher.reconfigure(
+          deltaPublisherConfig(port, discoveryPort, 4),
+          PubSubService.ReconfigureMode.DISABLE_AFFECTED);
+
+      // the restarted writer's counter begins at 0 again: scan for the restart marker
+      DecodedDataSetMessage restartFrame = null;
+      deadline = System.nanoTime() + TIMEOUT.toNanos();
+      while (restartFrame == null && System.nanoTime() < deadline) {
+        DecodedDataSetMessage message = receiveDataSetMessage(socket);
+        if (message != null
+            && message.sequenceNumber() != null
+            && message.sequenceNumber().intValue() == 0) {
+          restartFrame = message;
+        }
+      }
+      assertNotNull(restartFrame, "no post-restart frame with sequence number 0 observed");
+
+      // the first post-restart message is a key frame: the baseline did not survive the restart
+      assertEquals(DataSetMessageKind.KEY_FRAME, restartFrame.kind());
+      assertEquals(2, restartFrame.fields().size());
+
+      // and delta emission resumes correctly under the new keyFrameCount = 4 cadence:
+      // sequence numbers 1-3 are deltas of only the changing field, 4 is the next key frame
+      int previousCounterValue = (Integer) restartFrame.fields().get(0).value().value().value();
+      for (int expectedSequence = 1; expectedSequence <= 4; expectedSequence++) {
+        DecodedDataSetMessage message = null;
+        deadline = System.nanoTime() + TIMEOUT.toNanos();
+        while (message == null && System.nanoTime() < deadline) {
+          message = receiveDataSetMessage(socket);
+        }
+        assertNotNull(message, "no frame with sequence number " + expectedSequence);
+        assertEquals(expectedSequence, message.sequenceNumber().intValue());
+
+        if (expectedSequence < 4) {
+          assertEquals(DataSetMessageKind.DELTA_FRAME, message.kind());
+          assertEquals(1, message.fields().size());
+          assertEquals(0, message.fields().get(0).index());
+        } else {
+          assertEquals(DataSetMessageKind.KEY_FRAME, message.kind());
+          assertEquals(2, message.fields().size());
+        }
+
+        int counterValue = (Integer) message.fields().get(0).value().value().value();
+        assertTrue(counterValue > previousCounterValue, "counter value advances every frame");
+        previousCounterValue = counterValue;
+      }
+    }
+  }
+
   // region fixtures
 
   /**
@@ -313,6 +436,77 @@ class ReconfigureIntegrationTest {
                 .writerGroup(groupB.build())
                 .build())
         .build();
+  }
+
+  /**
+   * Publisher config for the delta-baseline test: one UDP connection, one writer group "grp-delta"
+   * carrying "writer-delta" on the two-field dataset "ds-delta" with the given keyFrameCount.
+   */
+  private static PubSubConfig deltaPublisherConfig(int port, int discoveryPort, int keyFrameCount) {
+
+    PublishedDataSetConfig dataSet =
+        PublishedDataSetConfig.builder("ds-delta")
+            .field(
+                FieldDefinition.builder("counter")
+                    .dataType(NodeIds.Int32)
+                    .dataSetFieldId(FIELD_COUNTER_ID)
+                    .build())
+            .field(
+                FieldDefinition.builder("constant")
+                    .dataType(NodeIds.Int32)
+                    .dataSetFieldId(FIELD_CONSTANT_ID)
+                    .build())
+            .build();
+
+    WriterGroupConfig group =
+        WriterGroupConfig.builder("grp-delta")
+            .writerGroupId(ushort(7))
+            .publishingInterval(Duration.ofMillis(50))
+            .messageSettings(GROUP_SETTINGS)
+            .dataSetWriter(
+                DataSetWriterConfig.builder("writer-delta")
+                    .dataSet(dataSet.ref())
+                    .dataSetWriterId(ushort(7))
+                    .keyFrameCount(uint(keyFrameCount))
+                    .settings(WRITER_SETTINGS)
+                    .build())
+            .build();
+
+    return PubSubConfig.builder()
+        .publishedDataSet(dataSet)
+        .connection(
+            PubSubConnectionConfig.udp("pub-conn")
+                .publisherId(PUBLISHER_ID)
+                .address(UdpDatagramAddress.unicast("127.0.0.1", port))
+                .discoveryAddress(UdpDatagramAddress.unicast("127.0.0.1", discoveryPort))
+                .writerGroup(group)
+                .build())
+        .build();
+  }
+
+  /**
+   * Receive and decode one datagram, returning its single DataSetMessage, or {@code null} when the
+   * receive timed out.
+   */
+  private static @Nullable DecodedDataSetMessage receiveDataSetMessage(DatagramSocket socket)
+      throws Exception {
+
+    byte[] buffer = new byte[65535];
+    var packet = new DatagramPacket(buffer, buffer.length);
+    try {
+      socket.receive(packet);
+    } catch (SocketTimeoutException e) {
+      return null;
+    }
+
+    ByteBuf data = Unpooled.wrappedBuffer(packet.getData(), 0, packet.getLength());
+    try {
+      DecodedNetworkMessage decoded =
+          new UadpMessageMapping().decode(new DecodeContext(new DefaultEncodingContext()), data);
+      return decoded.messages().size() == 1 ? decoded.messages().get(0) : null;
+    } finally {
+      data.release();
+    }
   }
 
   /**
