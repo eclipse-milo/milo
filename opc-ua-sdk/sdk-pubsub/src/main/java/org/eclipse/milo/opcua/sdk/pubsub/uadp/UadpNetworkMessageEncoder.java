@@ -1,0 +1,474 @@
+/*
+ * Copyright (c) 2026 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
+package org.eclipse.milo.opcua.sdk.pubsub.uadp;
+
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
+
+import io.netty.buffer.ByteBuf;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetWriterConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.MessageSecurityConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherId;
+import org.eclipse.milo.opcua.sdk.pubsub.config.UadpDataSetWriterSettings;
+import org.eclipse.milo.opcua.sdk.pubsub.config.UadpWriterGroupSettings;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
+import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
+import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaBinaryEncoder;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
+import org.eclipse.milo.opcua.stack.core.types.structured.DataSetFieldContentMask;
+import org.eclipse.milo.opcua.stack.core.types.structured.UadpDataSetMessageContentMask;
+import org.eclipse.milo.opcua.stack.core.types.structured.UadpNetworkMessageContentMask;
+import org.eclipse.milo.opcua.stack.core.util.BufferUtil;
+
+/**
+ * Encodes one UADP NetworkMessage (OPC UA Part 14 §7.2.4) from an {@link EncodeContext}.
+ *
+ * <p>Scope: Data Key Frame and Keep Alive DataSetMessages with Variant or DataValue field encoding,
+ * security mode None only. The RawData field encoding, PromotedFields, chunking, and message
+ * security are not supported and are rejected with {@code Bad_NotSupported}.
+ *
+ * <p>Stateless: sequence numbers, GroupVersion, and timestamps are supplied by the caller via the
+ * {@link EncodeContext}.
+ */
+final class UadpNetworkMessageEncoder {
+
+  private static final int UADP_VERSION = 1;
+
+  private UadpNetworkMessageEncoder() {}
+
+  /**
+   * Encode one NetworkMessage from the draft DataSetMessages in {@code context}.
+   *
+   * @param context the encode context.
+   * @return the encoded NetworkMessage; the caller assumes ownership of its buffer.
+   * @throws UaException if the message could not be encoded; {@code Bad_NotSupported} if the
+   *     configuration requires a feature that is out of scope (RawData field encoding,
+   *     PromotedFields, message security), {@code Bad_ConfigurationError} if the group or a writer
+   *     does not carry UADP message settings.
+   */
+  static EncodedNetworkMessage encode(EncodeContext context) throws UaException {
+    if (context.messages().isEmpty()) {
+      throw new UaException(StatusCodes.Bad_InvalidArgument, "no DataSetMessages to encode");
+    }
+
+    if (!(context.writerGroup().getMessageSettings()
+        instanceof UadpWriterGroupSettings groupSettings)) {
+
+      throw new UaException(
+          StatusCodes.Bad_ConfigurationError,
+          "WriterGroup \""
+              + context.writerGroup().getName()
+              + "\" does not have UadpWriterGroupSettings");
+    }
+
+    UadpNetworkMessageContentMask networkMask = groupSettings.getNetworkMessageContentMask();
+
+    if (networkMask.getPromotedFields()) {
+      throw new UaException(
+          StatusCodes.Bad_NotSupported, "PromotedFields emission is not supported");
+    }
+
+    MessageSecurityConfig security = context.writerGroup().getMessageSecurity();
+    if (security != null && security.getMode() != MessageSecurityMode.None) {
+      throw new UaException(
+          StatusCodes.Bad_NotSupported, "message security is not supported: " + security.getMode());
+    }
+
+    for (DataSetMessageDraft draft : context.messages()) {
+      DataSetWriterConfig writer = draft.writer();
+
+      if (!(writer.getSettings() instanceof UadpDataSetWriterSettings)) {
+        throw new UaException(
+            StatusCodes.Bad_ConfigurationError,
+            "DataSetWriter \"" + writer.getName() + "\" does not have UadpDataSetWriterSettings");
+      }
+      if (writer.getFieldContentMask().getRawData()) {
+        throw new UaException(
+            StatusCodes.Bad_NotSupported,
+            "RawData field encoding is not supported (DataSetWriter \"" + writer.getName() + "\")");
+      }
+    }
+
+    boolean payloadHeaderEnabled = networkMask.getPayloadHeader();
+    int count = context.messages().size();
+
+    if (payloadHeaderEnabled && count > 255) {
+      throw new UaException(
+          StatusCodes.Bad_EncodingLimitsExceeded, "too many DataSetMessages: " + count);
+    }
+
+    List<ByteBuf> bodies = new ArrayList<>(count);
+    ByteBuf buffer = BufferUtil.pooledBuffer();
+    boolean success = false;
+
+    try {
+      for (DataSetMessageDraft draft : context.messages()) {
+        bodies.add(encodeDataSetMessage(context.encodingContext(), draft));
+      }
+
+      OpcUaBinaryEncoder encoder =
+          new OpcUaBinaryEncoder(context.encodingContext()).setBuffer(buffer);
+
+      encodeNetworkMessageHeader(context, networkMask, encoder, buffer);
+
+      // Sizes: present iff the PayloadHeader is enabled and there is more than one
+      // DataSetMessage (Part 14 §7.2.4.5.3, Table 161).
+      if (payloadHeaderEnabled && count > 1) {
+        for (ByteBuf body : bodies) {
+          int size = body.readableBytes();
+          if (size > 65535) {
+            throw new UaException(
+                StatusCodes.Bad_EncodingLimitsExceeded,
+                "DataSetMessage size exceeds 65535 bytes: " + size);
+          }
+          encoder.encodeUInt16(ushort(size));
+        }
+      }
+
+      for (ByteBuf body : bodies) {
+        buffer.writeBytes(body);
+      }
+
+      success = true;
+
+      return new EncodedNetworkMessage(buffer);
+    } catch (UaSerializationException e) {
+      throw new UaException(e.getStatusCode().value(), e.getMessage(), e);
+    } finally {
+      bodies.forEach(ByteBuf::release);
+      if (!success) {
+        buffer.release();
+      }
+    }
+  }
+
+  private static void encodeNetworkMessageHeader(
+      EncodeContext context,
+      UadpNetworkMessageContentMask mask,
+      OpcUaBinaryEncoder encoder,
+      ByteBuf buffer) {
+
+    boolean publisherIdEnabled = mask.getPublisherId();
+    boolean groupHeaderEnabled = mask.getGroupHeader();
+    boolean payloadHeaderEnabled = mask.getPayloadHeader();
+    boolean timestampEnabled = mask.getTimestamp();
+    boolean picoSecondsEnabled = timestampEnabled && mask.getPicoSeconds();
+    boolean dataSetClassIdEnabled = mask.getDataSetClassId();
+
+    int extendedFlags1 = 0;
+    if (publisherIdEnabled) {
+      extendedFlags1 |= publisherIdTypeBits(context.publisherId());
+    }
+    if (dataSetClassIdEnabled) {
+      extendedFlags1 |= 0x08;
+    }
+    if (timestampEnabled) {
+      extendedFlags1 |= 0x20;
+    }
+    if (picoSecondsEnabled) {
+      extendedFlags1 |= 0x40;
+    }
+
+    int byte0 = UADP_VERSION;
+    if (publisherIdEnabled) {
+      byte0 |= 0x10;
+    }
+    if (groupHeaderEnabled) {
+      byte0 |= 0x20;
+    }
+    if (payloadHeaderEnabled) {
+      byte0 |= 0x40;
+    }
+    if (extendedFlags1 != 0) {
+      byte0 |= 0x80;
+    }
+
+    buffer.writeByte(byte0);
+    if (extendedFlags1 != 0) {
+      buffer.writeByte(extendedFlags1);
+    }
+
+    if (publisherIdEnabled) {
+      encodePublisherId(encoder, context.publisherId());
+    }
+
+    if (dataSetClassIdEnabled) {
+      // The EncodeContext does not carry a DataSetClassId; encode the null Guid.
+      encoder.encodeGuid(new UUID(0L, 0L));
+    }
+
+    if (groupHeaderEnabled) {
+      int groupFlags = 0;
+      if (mask.getWriterGroupId()) {
+        groupFlags |= 0x01;
+      }
+      if (mask.getGroupVersion()) {
+        groupFlags |= 0x02;
+      }
+      if (mask.getNetworkMessageNumber()) {
+        groupFlags |= 0x04;
+      }
+      if (mask.getSequenceNumber()) {
+        groupFlags |= 0x08;
+      }
+
+      buffer.writeByte(groupFlags);
+
+      if ((groupFlags & 0x01) != 0) {
+        encoder.encodeUInt16(context.writerGroup().getWriterGroupId());
+      }
+      if ((groupFlags & 0x02) != 0) {
+        encoder.encodeUInt32(context.groupVersion());
+      }
+      if ((groupFlags & 0x04) != 0) {
+        encoder.encodeUInt16(context.networkMessageNumber());
+      }
+      if ((groupFlags & 0x08) != 0) {
+        encoder.encodeUInt16(context.networkMessageSequenceNumber());
+      }
+    }
+
+    if (payloadHeaderEnabled) {
+      buffer.writeByte(context.messages().size());
+      for (DataSetMessageDraft draft : context.messages()) {
+        encoder.encodeUInt16(draft.writer().getDataSetWriterId());
+      }
+    }
+
+    if (timestampEnabled) {
+      DateTime timestamp = context.timestamp();
+      encoder.encodeDateTime(timestamp != null ? timestamp : DateTime.now());
+    }
+    if (picoSecondsEnabled) {
+      // No sub-100ns time source is available; encode 0.
+      encoder.encodeUInt16(ushort(0));
+    }
+  }
+
+  /** PublisherId type bits for ExtendedFlags1 bits 0-2; also used by the discovery encoder. */
+  static int publisherIdTypeBits(PublisherId publisherId) {
+    if (publisherId instanceof PublisherId.ByteId) {
+      return 0x00;
+    } else if (publisherId instanceof PublisherId.UInt16Id) {
+      return 0x01;
+    } else if (publisherId instanceof PublisherId.UInt32Id) {
+      return 0x02;
+    } else if (publisherId instanceof PublisherId.UInt64Id) {
+      return 0x03;
+    } else {
+      return 0x04;
+    }
+  }
+
+  /** Encode the PublisherId in its wire representation; also used by the discovery encoder. */
+  static void encodePublisherId(OpcUaBinaryEncoder encoder, PublisherId publisherId) {
+    if (publisherId instanceof PublisherId.ByteId id) {
+      encoder.encodeByte(id.value());
+    } else if (publisherId instanceof PublisherId.UInt16Id id) {
+      encoder.encodeUInt16(id.value());
+    } else if (publisherId instanceof PublisherId.UInt32Id id) {
+      encoder.encodeUInt32(id.value());
+    } else if (publisherId instanceof PublisherId.UInt64Id id) {
+      encoder.encodeUInt64(id.value());
+    } else if (publisherId instanceof PublisherId.StringId id) {
+      encoder.encodeString(id.value());
+    }
+  }
+
+  private static ByteBuf encodeDataSetMessage(
+      EncodingContext encodingContext, DataSetMessageDraft draft) throws UaException {
+
+    UadpDataSetWriterSettings settings = (UadpDataSetWriterSettings) draft.writer().getSettings();
+    int configuredSize = settings.getConfiguredSize().intValue();
+
+    ByteBuf buffer = BufferUtil.pooledBuffer();
+    boolean success = false;
+
+    try {
+      writeDataSetMessage(encodingContext, draft, settings, buffer, true);
+
+      if (configuredSize > 0) {
+        if (buffer.readableBytes() < configuredSize) {
+          // Pad with zero bytes up to ConfiguredSize (Part 14 §6.3.1.3.3).
+          buffer.writeZero(configuredSize - buffer.readableBytes());
+        } else if (buffer.readableBytes() > configuredSize) {
+          // Too large for the fixed size: send the header only, with the "message is
+          // valid" bit clear (Part 14 §6.3.1.3.3).
+          buffer.clear();
+          writeDataSetMessage(encodingContext, draft, settings, buffer, false);
+
+          if (buffer.readableBytes() > configuredSize) {
+            throw new UaException(
+                StatusCodes.Bad_EncodingLimitsExceeded,
+                "DataSetMessage header exceeds ConfiguredSize ("
+                    + configuredSize
+                    + ") for DataSetWriter \""
+                    + draft.writer().getName()
+                    + "\"");
+          }
+          buffer.writeZero(configuredSize - buffer.readableBytes());
+        }
+      }
+
+      success = true;
+
+      return buffer;
+    } finally {
+      if (!success) {
+        buffer.release();
+      }
+    }
+  }
+
+  private static void writeDataSetMessage(
+      EncodingContext encodingContext,
+      DataSetMessageDraft draft,
+      UadpDataSetWriterSettings settings,
+      ByteBuf buffer,
+      boolean valid) {
+
+    UadpDataSetMessageContentMask mask = settings.getDataSetMessageContentMask();
+    DataSetFieldContentMask fieldMask = draft.writer().getFieldContentMask();
+    boolean dataValueEncoding = isDataValueEncoding(fieldMask);
+
+    boolean timestampEnabled = mask.getTimestamp();
+    boolean picoSecondsEnabled = timestampEnabled && mask.getPicoSeconds();
+
+    int flags2 = draft.keepAlive() ? 0x03 : 0x00;
+    if (timestampEnabled) {
+      flags2 |= 0x10;
+    }
+    if (picoSecondsEnabled) {
+      flags2 |= 0x20;
+    }
+
+    int flags1 = valid ? 0x01 : 0x00;
+    if (dataValueEncoding) {
+      // Field Encoding "10" = DataValue, at bits 1-2.
+      flags1 |= 0x04;
+    }
+    if (mask.getSequenceNumber()) {
+      flags1 |= 0x08;
+    }
+    if (mask.getStatus()) {
+      flags1 |= 0x10;
+    }
+    if (mask.getMajorVersion()) {
+      flags1 |= 0x20;
+    }
+    if (mask.getMinorVersion()) {
+      flags1 |= 0x40;
+    }
+    if (flags2 != 0) {
+      flags1 |= 0x80;
+    }
+
+    OpcUaBinaryEncoder encoder = new OpcUaBinaryEncoder(encodingContext).setBuffer(buffer);
+
+    buffer.writeByte(flags1);
+    if (flags2 != 0) {
+      buffer.writeByte(flags2);
+    }
+
+    if (mask.getSequenceNumber()) {
+      encoder.encodeUInt16(draft.sequenceNumber());
+    }
+    if (timestampEnabled) {
+      DateTime timestamp = draft.timestamp();
+      encoder.encodeDateTime(timestamp != null ? timestamp : DateTime.now());
+    }
+    if (picoSecondsEnabled) {
+      encoder.encodeUInt16(ushort(0));
+    }
+    if (mask.getStatus()) {
+      StatusCode status = draft.status();
+      long statusValue = status != null ? status.value() : 0L;
+      // The header Status is the high-order 16 bits of the StatusCode.
+      encoder.encodeUInt16(ushort((int) ((statusValue >>> 16) & 0xFFFFL)));
+    }
+    if (mask.getMajorVersion()) {
+      encoder.encodeUInt32(draft.configurationVersion().getMajorVersion());
+    }
+    if (mask.getMinorVersion()) {
+      encoder.encodeUInt32(draft.configurationVersion().getMinorVersion());
+    }
+
+    if (valid && !draft.keepAlive()) {
+      List<DataValue> fields = draft.fields();
+
+      if (fields.size() > 65535) {
+        throw new UaSerializationException(
+            StatusCodes.Bad_EncodingLimitsExceeded, "too many fields: " + fields.size());
+      }
+
+      encoder.encodeUInt16(ushort(fields.size()));
+
+      for (DataValue field : fields) {
+        if (dataValueEncoding) {
+          encoder.encodeDataValue(filterDataValue(field, fieldMask));
+        } else {
+          encodeVariantField(encoder, field);
+        }
+      }
+    }
+  }
+
+  private static boolean isDataValueEncoding(DataSetFieldContentMask fieldMask) {
+    return fieldMask.getStatusCode()
+        || fieldMask.getSourceTimestamp()
+        || fieldMask.getServerTimestamp()
+        || fieldMask.getSourcePicoSeconds()
+        || fieldMask.getServerPicoSeconds();
+  }
+
+  /**
+   * Build the DataValue actually encoded on the wire: only the members selected by the
+   * DataSetFieldContentMask are retained (Part 14 §6.2.4.2).
+   */
+  private static DataValue filterDataValue(DataValue value, DataSetFieldContentMask mask) {
+    boolean sourceTimestamp = mask.getSourceTimestamp();
+    boolean serverTimestamp = mask.getServerTimestamp();
+
+    return new DataValue(
+        value.value(),
+        mask.getStatusCode() ? value.statusCode() : StatusCode.GOOD,
+        sourceTimestamp ? value.sourceTime() : null,
+        sourceTimestamp && mask.getSourcePicoSeconds() ? value.sourcePicoseconds() : null,
+        serverTimestamp ? value.serverTime() : null,
+        serverTimestamp && mask.getServerPicoSeconds() ? value.serverPicoseconds() : null);
+  }
+
+  /**
+   * Encode one field with the Variant field encoding, applying the status propagation rules of Part
+   * 14 Table 34: Good fields encode the value, Uncertain fields encode a DataValue carrying value
+   * and status, Bad fields encode the StatusCode itself.
+   */
+  private static void encodeVariantField(OpcUaBinaryEncoder encoder, DataValue value) {
+    StatusCode status = value.statusCode();
+
+    if (status.isBad()) {
+      encoder.encodeVariant(Variant.ofStatusCode(status));
+    } else if (status.isUncertain()) {
+      DataValue uncertain = new DataValue(value.value(), status, null, null, null, null);
+      encoder.encodeVariant(Variant.of(uncertain));
+    } else {
+      encoder.encodeVariant(value.value());
+    }
+  }
+}

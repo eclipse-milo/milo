@@ -32,6 +32,7 @@
     <module>dtd-reader</module>
     <module>sdk-client</module>
     <module>sdk-core</module>
+    <module>sdk-pubsub</module>
     <module>sdk-server</module>
     <module>integration-tests</module>
   </modules>

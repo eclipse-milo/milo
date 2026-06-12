@@ -1,0 +1,484 @@
+/*
+ * Copyright (c) 2026 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
+package org.eclipse.milo.opcua.sdk.pubsub.json;
+
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import org.eclipse.milo.opcua.sdk.pubsub.DataSetFieldValue;
+import org.eclipse.milo.opcua.sdk.pubsub.DataSetReaderRef;
+import org.eclipse.milo.opcua.sdk.pubsub.DataSetReceivedEvent;
+import org.eclipse.milo.opcua.sdk.pubsub.DataSetSnapshot;
+import org.eclipse.milo.opcua.sdk.pubsub.MetaDataReceivedEvent;
+import org.eclipse.milo.opcua.sdk.pubsub.PubSubBindings;
+import org.eclipse.milo.opcua.sdk.pubsub.PubSubHandle;
+import org.eclipse.milo.opcua.sdk.pubsub.PubSubService;
+import org.eclipse.milo.opcua.sdk.pubsub.PubSubServiceConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.PublishedDataSetSource;
+import org.eclipse.milo.opcua.sdk.pubsub.config.BrokerTransportSettings;
+import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetMetaDataConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetReaderConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetWriterConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.FieldDefinition;
+import org.eclipse.milo.opcua.sdk.pubsub.config.JsonDataSetReaderSettings;
+import org.eclipse.milo.opcua.sdk.pubsub.config.JsonDataSetWriterSettings;
+import org.eclipse.milo.opcua.sdk.pubsub.config.JsonWriterGroupSettings;
+import org.eclipse.milo.opcua.sdk.pubsub.config.MetadataPolicy;
+import org.eclipse.milo.opcua.sdk.pubsub.config.MqttConnectionConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConnectionConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedDataSetConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherId;
+import org.eclipse.milo.opcua.sdk.pubsub.config.ReaderGroupConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.WriterGroupConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.transport.MessageAddress;
+import org.eclipse.milo.opcua.sdk.pubsub.transport.PublisherChannel;
+import org.eclipse.milo.opcua.sdk.pubsub.transport.PublisherTransportContext;
+import org.eclipse.milo.opcua.sdk.pubsub.transport.SubscriberChannel;
+import org.eclipse.milo.opcua.sdk.pubsub.transport.SubscriberTransportContext;
+import org.eclipse.milo.opcua.sdk.pubsub.transport.TransportProvider;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.BrokerTransportQualityOfService;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.PubSubState;
+import org.jspecify.annotations.Nullable;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+
+/**
+ * Engine-level end-to-end test of the JSON mapping over a stub broker transport: a publisher
+ * service produces {@code ua-data} and retained {@code ua-metadata} wire JSON through the addressed
+ * send path; the captured documents are fed into a subscriber service's consumer, where a
+ * REQUIRE_CONFIGURED reader delivers fields with configured names and goes Operational on the JSON
+ * key frame, and an ACCEPT_DISCOVERED reader applies the {@code ua-metadata} message via the
+ * handleMetaData path ({@link MetaDataReceivedEvent}).
+ *
+ * <p>No sockets are opened: the connections are MQTT configs served by an in-memory {@link
+ * TransportProvider}, so the test is CI-safe and cannot reach the live multicast traffic on the
+ * build host.
+ */
+class JsonEngineEndToEndTest {
+
+  private static final Duration TIMEOUT = Duration.ofSeconds(10);
+
+  private static final PublisherId PUBLISHER_ID = PublisherId.string("line-7");
+
+  /** The publisher-side dataSetFieldIds, carried by the derived (discovered) metadata. */
+  private static final UUID TEMPERATURE_FIELD_ID = new UUID(0L, 0xA1L);
+
+  private static final UUID STATUS_FIELD_ID = new UUID(0L, 0xA2L);
+
+  /** Distinct configured ids so configured-vs-discovered metadata attribution is observable. */
+  private static final UUID CONFIGURED_TEMPERATURE_FIELD_ID = new UUID(0L, 0xC1L);
+
+  private static final UUID CONFIGURED_STATUS_FIELD_ID = new UUID(0L, 0xC2L);
+
+  private record Sent(MessageAddress address, String json) {}
+
+  /** An in-memory broker transport: captures addressed sends, exposes the receive consumers. */
+  private static final class StubBrokerTransport implements TransportProvider {
+
+    final BlockingQueue<Sent> sent = new LinkedBlockingQueue<>();
+    final AtomicInteger unaddressedSends = new AtomicInteger(0);
+    final AtomicReference<@Nullable BiConsumer<String, ByteBuf>> topicConsumer =
+        new AtomicReference<>();
+    final AtomicReference<@Nullable Consumer<ByteBuf>> consumer = new AtomicReference<>();
+
+    @Override
+    public String transportProfileUri() {
+      return "urn:eclipse:milo:test:stub-broker";
+    }
+
+    @Override
+    public boolean supports(PubSubConnectionConfig connection) {
+      return connection instanceof MqttConnectionConfig;
+    }
+
+    @Override
+    public PublisherChannel openPublisher(PublisherTransportContext context) {
+      return new PublisherChannel() {
+        @Override
+        public CompletableFuture<Void> send(ByteBuf message) {
+          // E3 pins that the engine always uses the addressed form on data and metadata paths
+          unaddressedSends.incrementAndGet();
+          message.release();
+          return CompletableFuture.completedFuture(null);
+        }
+
+        @Override
+        public CompletableFuture<Void> send(ByteBuf message, MessageAddress address) {
+          String json = message.toString(StandardCharsets.UTF_8);
+          message.release();
+          sent.add(new Sent(address, json));
+          return CompletableFuture.completedFuture(null);
+        }
+
+        @Override
+        public CompletableFuture<Void> closeAsync() {
+          return CompletableFuture.completedFuture(null);
+        }
+      };
+    }
+
+    @Override
+    public SubscriberChannel openSubscriber(SubscriberTransportContext context) {
+      topicConsumer.set(context.topicMessageConsumer());
+      consumer.set(context.messageConsumer());
+      return new SubscriberChannel() {
+        @Override
+        public CompletableFuture<Void> closeAsync() {
+          return CompletableFuture.completedFuture(null);
+        }
+      };
+    }
+
+    /** Deliver one wire document the way a broker subscription would. */
+    void inject(String topic, String json) {
+      BiConsumer<String, ByteBuf> topicMessageConsumer = topicConsumer.get();
+      Consumer<ByteBuf> messageConsumer = consumer.get();
+      assertTrue(
+          topicMessageConsumer != null || messageConsumer != null,
+          "subscriber channel was never opened");
+
+      ByteBuf buffer = Unpooled.wrappedBuffer(json.getBytes(StandardCharsets.UTF_8));
+      try {
+        if (topicMessageConsumer != null) {
+          topicMessageConsumer.accept(topic, buffer);
+        } else {
+          messageConsumer.accept(buffer);
+        }
+      } finally {
+        buffer.release();
+      }
+    }
+  }
+
+  private @Nullable PubSubService publisher;
+  private @Nullable PubSubService subscriber;
+  private @Nullable ExecutorService subscriberExecutor;
+
+  @AfterEach
+  void tearDown() throws Exception {
+    if (publisher != null) {
+      publisher.close();
+      publisher = null;
+    }
+    if (subscriber != null) {
+      subscriber.close();
+      subscriber = null;
+    }
+    if (subscriberExecutor != null) {
+      subscriberExecutor.shutdown();
+      assertTrue(subscriberExecutor.awaitTermination(10, TimeUnit.SECONDS));
+      subscriberExecutor = null;
+    }
+  }
+
+  @Test
+  void jsonOverBrokerEndToEnd() throws Exception {
+    var publisherTransport = new StubBrokerTransport();
+    var subscriberTransport = new StubBrokerTransport();
+    subscriberExecutor = Executors.newSingleThreadExecutor();
+
+    // region publisher service
+
+    PublishedDataSetConfig dataSet =
+        PublishedDataSetConfig.builder("ds")
+            .field(
+                FieldDefinition.builder("temperature")
+                    .dataType(NodeIds.Double)
+                    .dataSetFieldId(TEMPERATURE_FIELD_ID)
+                    .build())
+            .field(
+                FieldDefinition.builder("status")
+                    .dataType(NodeIds.String)
+                    .dataSetFieldId(STATUS_FIELD_ID)
+                    .build())
+            .build(); // default ConfigurationVersion (1, 1)
+
+    PubSubConfig publisherConfig =
+        PubSubConfig.builder()
+            .publishedDataSet(dataSet)
+            .connection(
+                PubSubConnectionConfig.mqtt("pub-conn")
+                    .publisherId(PUBLISHER_ID)
+                    .brokerUri(URI.create("mqtt://127.0.0.1:1883"))
+                    .writerGroup(
+                        WriterGroupConfig.builder("grp")
+                            .writerGroupId(ushort(1))
+                            .publishingInterval(Duration.ofMillis(75))
+                            .messageSettings(JsonWriterGroupSettings.builder().build())
+                            .dataSetWriter(
+                                DataSetWriterConfig.builder("writer")
+                                    .dataSet(dataSet.ref())
+                                    .dataSetWriterId(ushort(1))
+                                    .settings(JsonDataSetWriterSettings.builder().build())
+                                    .build())
+                            .build())
+                    .build())
+            .build();
+
+    PublishedDataSetSource source =
+        context -> {
+          DataSetSnapshot.Builder builder = DataSetSnapshot.builder(context);
+          builder.field("temperature", new DataValue(Variant.ofDouble(21.5)));
+          builder.field("status", new DataValue(Variant.ofString("running")));
+          return builder.build();
+        };
+
+    publisher =
+        PubSubService.create(
+            publisherConfig,
+            PubSubBindings.builder().source(dataSet.ref(), source).build(),
+            PubSubServiceConfig.builder().transportProvider(publisherTransport).build());
+
+    // endregion
+
+    // region subscriber service
+
+    DataSetMetaDataConfig configuredMetaData =
+        DataSetMetaDataConfig.builder("ds")
+            .field("temperature", NodeIds.Double, CONFIGURED_TEMPERATURE_FIELD_ID)
+            .field("status", NodeIds.String, CONFIGURED_STATUS_FIELD_ID)
+            .build(); // default ConfigurationVersion (1, 1), matching the published dataset
+
+    // a reader on a broker connection requires an explicit data queueName (M7 validation)
+    BrokerTransportSettings readerQueue =
+        BrokerTransportSettings.builder().queueName("opcua/json/data/line-7/grp").build();
+
+    PubSubConfig subscriberConfig =
+        PubSubConfig.builder()
+            .connection(
+                PubSubConnectionConfig.mqtt("sub-conn")
+                    .brokerUri(URI.create("mqtt://127.0.0.1:1883"))
+                    .readerGroup(
+                        ReaderGroupConfig.builder("rgrp")
+                            .dataSetReader(
+                                DataSetReaderConfig.builder("reader-cfg")
+                                    .publisherId(PUBLISHER_ID)
+                                    .dataSetWriterId(ushort(1))
+                                    .dataSetMetaData(configuredMetaData)
+                                    .metadataPolicy(MetadataPolicy.REQUIRE_CONFIGURED)
+                                    .settings(JsonDataSetReaderSettings.builder().build())
+                                    .brokerTransport(readerQueue)
+                                    .build())
+                            .dataSetReader(
+                                DataSetReaderConfig.builder("reader-disc")
+                                    .publisherId(PUBLISHER_ID)
+                                    .dataSetWriterId(ushort(1))
+                                    .metadataPolicy(MetadataPolicy.ACCEPT_DISCOVERED)
+                                    .settings(JsonDataSetReaderSettings.builder().build())
+                                    .brokerTransport(readerQueue)
+                                    .build())
+                            .build())
+                    .build())
+            .build();
+
+    var configuredEvents = new LinkedBlockingQueue<DataSetReceivedEvent>();
+    var discoveredEvents = new LinkedBlockingQueue<DataSetReceivedEvent>();
+    var metaDataEvents = new LinkedBlockingQueue<MetaDataReceivedEvent>();
+
+    subscriber =
+        PubSubService.create(
+            subscriberConfig,
+            PubSubBindings.builder()
+                .listener(
+                    new DataSetReaderRef("sub-conn", "rgrp", "reader-cfg"), configuredEvents::add)
+                .listener(
+                    new DataSetReaderRef("sub-conn", "rgrp", "reader-disc"), discoveredEvents::add)
+                .build(),
+            PubSubServiceConfig.builder()
+                .transportProvider(subscriberTransport)
+                .transportExecutor(subscriberExecutor)
+                .build());
+    subscriber.addMetaDataListener(metaDataEvents::add);
+
+    // endregion
+
+    subscriber.startup().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+    publisher.startup().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+
+    PubSubHandle configuredReader =
+        subscriber.components().dataSetReader("sub-conn", "rgrp", "reader-cfg").orElseThrow();
+    PubSubHandle discoveredReader =
+        subscriber.components().dataSetReader("sub-conn", "rgrp", "reader-disc").orElseThrow();
+    assertEquals(PubSubState.PreOperational, subscriber.state(configuredReader));
+    assertEquals(PubSubState.PreOperational, subscriber.state(discoveredReader));
+
+    // region captured wire messages
+
+    // metadata is published retained at writer activation (broker connection), data every cycle
+    Sent metaDataSent = awaitSent(publisherTransport, MessageAddress.Kind.METADATA);
+    Sent dataSent = awaitSent(publisherTransport, MessageAddress.Kind.DATA);
+
+    // E5/E7/E8: the metadata address is the derived per-writer metadata topic, retained, QoS1
+    assertEquals("opcua/json/metadata/line-7/grp/writer", metaDataSent.address().queueName());
+    assertTrue(metaDataSent.address().retain());
+    assertEquals(
+        BrokerTransportQualityOfService.AtLeastOnce, metaDataSent.address().deliveryGuarantee());
+    assertEquals(MessageAddress.CONTENT_TYPE_JSON, metaDataSent.address().contentTypeHint());
+
+    JsonObject metaDataWire = JsonParser.parseString(metaDataSent.json()).getAsJsonObject();
+    assertEquals("ua-metadata", metaDataWire.get("MessageType").getAsString());
+    assertEquals("line-7", metaDataWire.get("PublisherId").getAsString());
+    assertEquals(1, metaDataWire.get("DataSetWriterId").getAsInt());
+    assertEquals("grp", metaDataWire.get("WriterGroupName").getAsString());
+    assertEquals("writer", metaDataWire.get("DataSetWriterName").getAsString());
+    assertEquals("ds", metaDataWire.get("MetaData").getAsJsonObject().get("Name").getAsString());
+
+    // E7/E8: the data address is the derived group data topic, not retained, QoS0
+    assertEquals("opcua/json/data/line-7/grp", dataSent.address().queueName());
+    assertTrue(!dataSent.address().retain());
+    assertEquals(
+        BrokerTransportQualityOfService.AtMostOnce, dataSent.address().deliveryGuarantee());
+    assertEquals(MessageAddress.CONTENT_TYPE_JSON, dataSent.address().contentTypeHint());
+
+    JsonObject dataWire = JsonParser.parseString(dataSent.json()).getAsJsonObject();
+    assertEquals("ua-data", dataWire.get("MessageType").getAsString());
+    assertEquals("line-7", dataWire.get("PublisherId").getAsString());
+    JsonObject payload =
+        dataWire
+            .get("Messages")
+            .getAsJsonArray()
+            .get(0)
+            .getAsJsonObject()
+            .get("Payload")
+            .getAsJsonObject();
+    assertEquals(21.5, payload.get("temperature").getAsDouble());
+    assertEquals("running", payload.get("status").getAsString());
+
+    // endregion
+
+    // region ua-metadata wire message feeds handleMetaData
+
+    subscriberTransport.inject("opcua/json/metadata/line-7/grp/writer", metaDataSent.json());
+    flushSubscriber();
+
+    // the ACCEPT_DISCOVERED reader receives (and applies) the discovered metadata
+    MetaDataReceivedEvent metaDataEvent =
+        awaitMetaDataEvent(metaDataEvents, "sub-conn/rgrp/reader-disc");
+    assertEquals("ds", metaDataEvent.dataSetName());
+    assertEquals("ds", metaDataEvent.metaData().getName());
+    assertEquals(uint(1), metaDataEvent.configurationVersion().getMajorVersion());
+    assertEquals(uint(1), metaDataEvent.configurationVersion().getMinorVersion());
+
+    // metadata alone does not complete reader startup
+    assertEquals(PubSubState.PreOperational, subscriber.state(configuredReader));
+    assertEquals(PubSubState.PreOperational, subscriber.state(discoveredReader));
+
+    // endregion
+
+    // region the JSON key frame completes startup and delivers named fields
+
+    subscriberTransport.inject("opcua/json/data/line-7/grp", dataSent.json());
+    flushSubscriber();
+
+    // both readers transition PreOperational -> Operational on the JSON key frame
+    assertEquals(PubSubState.Operational, subscriber.state(configuredReader));
+    assertEquals(PubSubState.Operational, subscriber.state(discoveredReader));
+
+    // the REQUIRE_CONFIGURED reader names fields via its CONFIGURED metadata
+    DataSetReceivedEvent configuredEvent = configuredEvents.poll(10, TimeUnit.SECONDS);
+    assertNotNull(configuredEvent);
+    assertEquals(PUBLISHER_ID, configuredEvent.publisherId());
+    assertEquals(ushort(1), configuredEvent.dataSetWriterId());
+    assertEquals("ds", configuredEvent.dataSetName());
+    assertNotNull(configuredEvent.metaData());
+
+    List<DataSetFieldValue> configuredFields = configuredEvent.fields();
+    assertEquals(2, configuredFields.size());
+    assertEquals("temperature", configuredFields.get(0).name());
+    assertEquals(0, configuredFields.get(0).index());
+    assertEquals(CONFIGURED_TEMPERATURE_FIELD_ID, configuredFields.get(0).dataSetFieldId());
+    assertEquals(21.5, configuredFields.get(0).value().value().value());
+    assertEquals("status", configuredFields.get(1).name());
+    assertEquals(CONFIGURED_STATUS_FIELD_ID, configuredFields.get(1).dataSetFieldId());
+    assertEquals("running", configuredFields.get(1).value().value().value());
+
+    // the ACCEPT_DISCOVERED reader names fields via the DISCOVERED (wire) metadata
+    DataSetReceivedEvent discoveredEvent = discoveredEvents.poll(10, TimeUnit.SECONDS);
+    assertNotNull(discoveredEvent);
+    List<DataSetFieldValue> discoveredFields = discoveredEvent.fields();
+    assertEquals(2, discoveredFields.size());
+    assertEquals("temperature", discoveredFields.get(0).name());
+    assertEquals(TEMPERATURE_FIELD_ID, discoveredFields.get(0).dataSetFieldId());
+    assertEquals("status", discoveredFields.get(1).name());
+    assertEquals(STATUS_FIELD_ID, discoveredFields.get(1).dataSetFieldId());
+
+    // endregion
+
+    // E3: the engine never used the unaddressed send path
+    assertEquals(0, publisherTransport.unaddressedSends.get());
+    assertEquals(0, subscriberTransport.unaddressedSends.get());
+  }
+
+  private void flushSubscriber() throws Exception {
+    assertNotNull(subscriberExecutor);
+    subscriberExecutor.submit(() -> {}).get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+  }
+
+  /** Poll captured sends until one of the requested kind appears. */
+  private static Sent awaitSent(StubBrokerTransport transport, MessageAddress.Kind kind)
+      throws InterruptedException {
+
+    long deadline = System.nanoTime() + TIMEOUT.toNanos();
+    while (System.nanoTime() < deadline) {
+      Sent sent = transport.sent.poll(100, TimeUnit.MILLISECONDS);
+      if (sent != null && sent.address().kind() == kind) {
+        return sent;
+      }
+    }
+    fail("timed out waiting for a " + kind + " send");
+    throw new AssertionError("unreachable");
+  }
+
+  /**
+   * Poll metadata events until the one for the given reader path appears (handleMetaData notifies
+   * every matched reader; only ACCEPT_DISCOVERED readers apply the metadata).
+   */
+  private static MetaDataReceivedEvent awaitMetaDataEvent(
+      BlockingQueue<MetaDataReceivedEvent> events, String readerPath) throws InterruptedException {
+
+    long deadline = System.nanoTime() + TIMEOUT.toNanos();
+    while (System.nanoTime() < deadline) {
+      MetaDataReceivedEvent event = events.poll(100, TimeUnit.MILLISECONDS);
+      if (event != null && readerPath.equals(event.reader().path())) {
+        return event;
+      }
+    }
+    fail("timed out waiting for a MetaDataReceivedEvent for " + readerPath);
+    throw new AssertionError("unreachable");
+  }
+}
