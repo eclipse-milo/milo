@@ -107,84 +107,106 @@ import org.eclipse.milo.opcua.stack.core.types.structured.UadpNetworkMessageCont
 import org.jspecify.annotations.Nullable;
 
 /**
- * Interactive command line harness for PubSub interop testing against third-party implementations
- * (e.g. a Prosys OPC UA server publishing or subscribing on the local network, or any MQTT broker
- * such as Mosquitto or HiveMQ).
+ * Interactive command-line harness for exercising OPC UA PubSub against third-party implementations
+ * — for example a Prosys OPC UA server publishing or subscribing on the local network, or any MQTT
+ * broker such as Mosquitto or HiveMQ.
  *
- * <p>Not a JUnit test; run it via the exec plugin from the test classpath (this module's test
- * classpath sees sdk-pubsub with the built-in "uadp" and "json" mappings, the MQTT transport, and
- * the HiveMQ client):
+ * <p>This is not a JUnit test. It drives the real {@link PubSubService} engine (or, in the "raw"
+ * modes, a bare datagram socket or MQTT client) and prints everything it sends and receives, so
+ * interop can be confirmed by eye against a live peer. Pass no arguments to print full usage,
+ * including every option and its defaults.
+ *
+ * <h2>Running</h2>
+ *
+ * <p>Run from this module's test classpath, which sees sdk-pubsub with the built-in "uadp" and
+ * "json" mappings, the MQTT transport, and the HiveMQ client. Build once:
  *
  * <pre>{@code
- * mvn -q -pl opc-ua-sdk/sdk-pubsub-mqtt -am test-compile exec:java \
+ * mvn -q -pl opc-ua-sdk/sdk-pubsub-mqtt -am test-compile
+ * }</pre>
+ *
+ * <p>then run any mode with {@code exec:java}, changing only the {@code -Dexec.args} value:
+ *
+ * <pre>{@code
+ * mvn -q -pl opc-ua-sdk/sdk-pubsub-mqtt exec:java \
  *   -Dexec.classpathScope=test \
  *   -Dexec.mainClass=org.eclipse.milo.opcua.sdk.pubsub.mqtt.PubSubInteropTool \
  *   -Dexec.args="subscribe 224.0.2.14 4840"
  * }</pre>
  *
- * <p>Modes:
+ * <p>Keep {@code -am} on the one-time {@code test-compile} only. Adding it to the {@code exec:java}
+ * step pulls the reactor root into the build, and {@code exec:java} then runs against that root
+ * first — which does not contain this class — and fails with {@code ClassNotFoundException} before
+ * reaching this module. Every mode runs until interrupted with Ctrl-C.
+ *
+ * <h2>Modes</h2>
+ *
+ * <p>Each transport offers a publisher, a subscriber, and a no-engine "raw" capture mode. The
+ * publish and subscribe modes run a real {@link PubSubService}; the raw modes use a bare socket or
+ * MQTT client and do no PubSub processing, so they still work against a misconfigured or unknown
+ * peer. The publishers all emit the same built-in "MiloInterop" dataset: Ramp (Double sawtooth),
+ * Counter (Int32), Message (String), and Toggle (Boolean).
+ *
+ * <p>UDP/UADP modes take {@code <address> <port>} (multicast if the address is a multicast IP, else
+ * unicast):
  *
  * <ul>
- *   <li>{@code subscribe}: a PubSubService DataSetReader over UDP/UADP with wildcard filters by
- *       default and {@link MetadataPolicy#ACCEPT_DISCOVERED}, printing every received DataSet,
- *       metadata announcement, and state change, plus a diagnostics dump every 10 seconds.
- *   <li>{@code raw}: no engine; receives datagrams on a plain socket, hexdumps each packet,
- *       attempts a UADP decode, and saves every packet to /tmp/pubsub-capture as a golden interop
- *       fixture.
- *   <li>{@code publish}: publishes the "MiloInterop" dataset (Ramp, Counter, Message, Toggle) over
- *       UDP/UADP with interop-friendly header masks.
- *   <li>{@code mqtt-publish}: publishes the "MiloInterop" dataset through an MQTT broker with the
- *       "json" (default) or "uadp" mapping; topics default to the Part 14 §7.3.4.7 standardized
- *       tree (printed at startup) and metadata is published retained by the engine.
- *   <li>{@code mqtt-subscribe}: a PubSubService DataSetReader on broker topics; the data topic is
- *       required, field names come from configured {@code --field} metadata or from an optional
- *       metadata topic.
- *   <li>{@code mqtt-raw}: no engine; a plain MQTT 5 client subscribed to a topic filter, printing
- *       every message as pretty JSON or a hex dump.
+ *   <li>{@code publish} — publishes "MiloInterop" with interop-friendly header masks.
+ *   <li>{@code subscribe} — a DataSetReader with wildcard filters and {@link
+ *       MetadataPolicy#ACCEPT_DISCOVERED}, printing each received DataSet, metadata announcement,
+ *       and state change, plus a periodic diagnostics dump.
+ *   <li>{@code raw} — hexdumps each datagram, attempts a UADP decode, and saves every packet under
+ *       /tmp/pubsub-capture as a golden interop fixture.
  * </ul>
  *
- * <p>For example, to publish the "MiloInterop" dataset over MQTT with the default "json" mapping
- * (the resolved topic tree is printed at startup):
+ * <p>MQTT modes take {@code <brokerUri>} (e.g. {@code mqtt://localhost:1883}, {@code mqtts://} for
+ * TLS):
+ *
+ * <ul>
+ *   <li>{@code mqtt-publish} — publishes "MiloInterop" with the "json" (default) or "uadp" mapping;
+ *       topics default to the Part 14 §7.3.4.7 standardized tree (printed at startup) and metadata
+ *       is published retained.
+ *   <li>{@code mqtt-subscribe} — a DataSetReader on broker topics. The data topic is required (an
+ *       MQTT reader cannot derive the publisher's topic names); field names come from {@code
+ *       --field} metadata or from an optional metadata topic.
+ *   <li>{@code mqtt-raw} — a plain MQTT 5 client on a topic filter, printing each message as pretty
+ *       JSON or a hex dump.
+ * </ul>
+ *
+ * <h2>Examples</h2>
+ *
+ * <p>The snippets below are {@code -Dexec.args} values for the {@code exec:java} command above.
+ * Publish "MiloInterop" over MQTT/JSON (the resolved topics are printed at startup), then, on
+ * another terminal, subscribe to it — metadata supplies the field names, so no {@code --field} is
+ * needed:
  *
  * <pre>{@code
- * mvn -q -pl opc-ua-sdk/sdk-pubsub-mqtt -am test-compile exec:java \
- *   -Dexec.classpathScope=test \
- *   -Dexec.mainClass=org.eclipse.milo.opcua.sdk.pubsub.mqtt.PubSubInteropTool \
- *   -Dexec.args="mqtt-publish mqtt://localhost:1883"
+ * mqtt-publish mqtt://localhost:1883
+ *
+ * mqtt-subscribe mqtt://localhost:1883 \
+ *     --topic opcua/json/data/62541/MiloInterop \
+ *     --metadata-topic opcua/json/metadata/62541/MiloInterop/writer
  * }</pre>
  *
- * <p>And, against the same broker, to subscribe to that publisher's JSON data topic (metadata
- * supplies the field names, so no {@code --field} is required):
+ * <p>The "uadp" mapping is the same, except the binary payload carries no field names, so the
+ * subscriber either reads the metadata topic or declares the fields with {@code --field}:
  *
  * <pre>{@code
- * mvn -q -pl opc-ua-sdk/sdk-pubsub-mqtt -am test-compile exec:java \
- *   -Dexec.classpathScope=test \
- *   -Dexec.mainClass=org.eclipse.milo.opcua.sdk.pubsub.mqtt.PubSubInteropTool \
- *   -Dexec.args="mqtt-subscribe mqtt://localhost:1883 \
- *       --topic opcua/json/data/62541/MiloInterop \
- *       --metadata-topic opcua/json/metadata/62541/MiloInterop/writer"
+ * mqtt-publish mqtt://localhost:1883 --mapping uadp
+ *
+ * mqtt-subscribe mqtt://localhost:1883 --mapping uadp \
+ *     --topic opcua/uadp/data/62541/MiloInterop \
+ *     --field Ramp:double --field Counter:int32 \
+ *     --field Message:string --field Toggle:bool
  * }</pre>
  *
- * <p>The {@code uadp} mapping works the same way; publish with {@code --mapping uadp}:
+ * <p>Against a third-party broker whose topic tree is unknown, discover it with {@code mqtt-raw}
+ * (MQTT wildcards allowed) before configuring {@code mqtt-subscribe}, which needs the concrete data
+ * and metadata topics. A retained message on a {@code .../metadata/...} topic identifies the
+ * metadata topic; live data flows on the sibling {@code .../data/...} topic:
  *
  * <pre>{@code
- * mvn -q -pl opc-ua-sdk/sdk-pubsub-mqtt -am test-compile exec:java \
- *   -Dexec.classpathScope=test \
- *   -Dexec.mainClass=org.eclipse.milo.opcua.sdk.pubsub.mqtt.PubSubInteropTool \
- *   -Dexec.args="mqtt-publish mqtt://localhost:1883 --mapping uadp"
- * }</pre>
- *
- * <p>And subscribe on the {@code uadp} topic tree (the binary UADP payload carries no field names,
- * so either subscribe to the metadata topic or declare the fields with {@code --field}):
- *
- * <pre>{@code
- * mvn -q -pl opc-ua-sdk/sdk-pubsub-mqtt -am test-compile exec:java \
- *   -Dexec.classpathScope=test \
- *   -Dexec.mainClass=org.eclipse.milo.opcua.sdk.pubsub.mqtt.PubSubInteropTool \
- *   -Dexec.args="mqtt-subscribe mqtt://localhost:1883 --mapping uadp \
- *       --topic opcua/uadp/data/62541/MiloInterop \
- *       --field Ramp:double --field Counter:int32 \
- *       --field Message:string --field Toggle:bool"
+ * mqtt-raw mqtt://localhost:1883 --topic "opcua/#"
  * }</pre>
  */
 public final class PubSubInteropTool {
