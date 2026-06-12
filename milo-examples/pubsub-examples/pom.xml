@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (c) 2026 the Eclipse Milo Authors
+  ~
+  ~ This program and the accompanying materials are made
+  ~ available under the terms of the Eclipse Public License 2.0
+  ~ which is available at https://www.eclipse.org/legal/epl-2.0/
+  ~
+  ~ SPDX-License-Identifier: EPL-2.0
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.eclipse.milo</groupId>
+    <artifactId>milo-examples</artifactId>
+    <version>1.1.5-SNAPSHOT</version>
+  </parent>
+
+  <name>Milo :: PubSub Examples</name>
+
+  <artifactId>milo-pubsub-examples</artifactId>
+
+  <properties>
+    <javaModuleName>org.eclipse.milo.examples.pubsub</javaModuleName>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.milo</groupId>
+      <artifactId>milo-sdk-pubsub</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.milo</groupId>
+      <artifactId>milo-sdk-pubsub-mqtt</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.milo</groupId>
+      <artifactId>milo-sdk-pubsub-server</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+    <dependency>
+      <!-- The MQTT examples embed a HiveMQ Community Edition broker in main code so they
+           run with zero external infrastructure; in sdk-pubsub-mqtt this dependency is
+           test-scoped for the same purpose. -->
+      <groupId>com.hivemq</groupId>
+      <artifactId>hivemq-community-edition-embedded</artifactId>
+      <version>${hivemq-community-edition.version}</version>
+      <exclusions>
+        <!-- Milo's examples logging convention is slf4j-simple; the examples build the
+             embedded broker with withoutLoggingBootstrap(), which makes logback safe to
+             exclude. -->
+        <exclusion>
+          <groupId>ch.qos.logback</groupId>
+          <artifactId>logback-classic</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>io.dropwizard.metrics</groupId>
+          <artifactId>metrics-logback</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <!-- Maven's nearest-wins would put hivemq-mqtt-client's jctools 2.1.2 on the
+           classpath, and the embedded broker fails to bootstrap on it (InstantiationError:
+           MpscLinkedQueue); the client works with 4.0.6 (CE 2026.5's version). -->
+      <groupId>org.jctools</groupId>
+      <artifactId>jctools-core</artifactId>
+      <version>4.0.6</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>
