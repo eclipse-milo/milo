@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
@@ -99,9 +100,10 @@ import org.jspecify.annotations.Nullable;
  * Maps a Part 14 {@link PubSubConfiguration2DataType} to an authored {@link PubSubConfig}. See
  * {@link PubSubConfigMapper} for the mapping contract, normalizations, and documented losses.
  *
- * <p>Generated datatype instances may carry null arrays and null boxed scalars; this mapper
- * tolerates both. Settings structures with no typed config representation are preserved in the raw
- * escape hatches.
+ * <p>Generated datatype instances may carry null arrays, null entries within the top-level
+ * component arrays (connections, groups, writers, readers, datasets, security groups), and null
+ * boxed scalars; this mapper tolerates them. Settings structures with no typed config
+ * representation are preserved in the raw escape hatches.
  */
 final class DataTypeToConfigMapper {
 
@@ -133,39 +135,43 @@ final class DataTypeToConfigMapper {
     builder.enabled(isEnabled(value.getEnabled()));
 
     // Security groups first: connection mapping resolves SecurityGroupRefs against them.
-    SecurityGroupDataType[] securityGroupDataTypes = value.getSecurityGroups();
-    if (securityGroupDataTypes != null) {
-      for (SecurityGroupDataType securityGroup : securityGroupDataTypes) {
-        SecurityGroupConfig config = mapSecurityGroup(securityGroup);
-        securityGroups.add(config);
-        builder.securityGroup(config);
-      }
+    for (SecurityGroupDataType securityGroup : nonNullElements(value.getSecurityGroups())) {
+      SecurityGroupConfig config = mapSecurityGroup(securityGroup);
+      securityGroups.add(config);
+      builder.securityGroup(config);
     }
 
-    PublishedDataSetDataType[] publishedDataSets = value.getPublishedDataSets();
-    if (publishedDataSets != null) {
-      for (PublishedDataSetDataType publishedDataSet : publishedDataSets) {
-        builder.publishedDataSet(mapPublishedDataSet(publishedDataSet));
-      }
+    for (PublishedDataSetDataType publishedDataSet :
+        nonNullElements(value.getPublishedDataSets())) {
+      builder.publishedDataSet(mapPublishedDataSet(publishedDataSet));
     }
 
-    StandaloneSubscribedDataSetDataType[] subscribedDataSets = value.getSubscribedDataSets();
-    if (subscribedDataSets != null) {
-      for (StandaloneSubscribedDataSetDataType subscribedDataSet : subscribedDataSets) {
-        builder.standaloneSubscribedDataSet(mapStandaloneSubscribedDataSet(subscribedDataSet));
-      }
+    for (StandaloneSubscribedDataSetDataType subscribedDataSet :
+        nonNullElements(value.getSubscribedDataSets())) {
+      builder.standaloneSubscribedDataSet(mapStandaloneSubscribedDataSet(subscribedDataSet));
     }
 
-    PubSubConnectionDataType[] connections = value.getConnections();
-    if (connections != null) {
-      for (PubSubConnectionDataType connection : connections) {
-        builder.connection(mapConnection(connection));
-      }
+    for (PubSubConnectionDataType connection : nonNullElements(value.getConnections())) {
+      builder.connection(mapConnection(connection));
     }
 
     fromKeyValuePairs(value.getConfigurationProperties()).forEach(builder::property);
 
     return builder.build();
+  }
+
+  /**
+   * The non-null elements of {@code array}, or an empty list when {@code array} itself is null.
+   *
+   * <p>A DataType array decoded from the wire may be absent or carry null gaps (e.g. a sparse
+   * {@code PublishedDataSetDataType[]}); both are tolerated by skipping them, so one malformed
+   * entry never fails the whole mapping.
+   */
+  private static <T> List<T> nonNullElements(@Nullable T @Nullable [] array) {
+    if (array == null) {
+      return List.of();
+    }
+    return Arrays.stream(array).filter(Objects::nonNull).toList();
   }
 
   // region Connections
@@ -237,18 +243,12 @@ final class DataTypeToConfigMapper {
       builder.publisherId(PublisherId.fromVariant(publisherId));
     }
 
-    WriterGroupDataType[] writerGroups = connection.getWriterGroups();
-    if (writerGroups != null) {
-      for (WriterGroupDataType writerGroup : writerGroups) {
-        builder.writerGroup(mapWriterGroup(writerGroup, path));
-      }
+    for (WriterGroupDataType writerGroup : nonNullElements(connection.getWriterGroups())) {
+      builder.writerGroup(mapWriterGroup(writerGroup, path));
     }
 
-    ReaderGroupDataType[] readerGroups = connection.getReaderGroups();
-    if (readerGroups != null) {
-      for (ReaderGroupDataType readerGroup : readerGroups) {
-        builder.readerGroup(mapReaderGroup(readerGroup, path));
-      }
+    for (ReaderGroupDataType readerGroup : nonNullElements(connection.getReaderGroups())) {
+      builder.readerGroup(mapReaderGroup(readerGroup, path));
     }
 
     fromKeyValuePairs(connection.getConnectionProperties()).forEach(builder::property);
@@ -310,18 +310,12 @@ final class DataTypeToConfigMapper {
       builder.publisherId(PublisherId.fromVariant(publisherId));
     }
 
-    WriterGroupDataType[] writerGroups = connection.getWriterGroups();
-    if (writerGroups != null) {
-      for (WriterGroupDataType writerGroup : writerGroups) {
-        builder.writerGroup(mapWriterGroup(writerGroup, path));
-      }
+    for (WriterGroupDataType writerGroup : nonNullElements(connection.getWriterGroups())) {
+      builder.writerGroup(mapWriterGroup(writerGroup, path));
     }
 
-    ReaderGroupDataType[] readerGroups = connection.getReaderGroups();
-    if (readerGroups != null) {
-      for (ReaderGroupDataType readerGroup : readerGroups) {
-        builder.readerGroup(mapReaderGroup(readerGroup, path));
-      }
+    for (ReaderGroupDataType readerGroup : nonNullElements(connection.getReaderGroups())) {
+      builder.readerGroup(mapReaderGroup(readerGroup, path));
     }
 
     fromKeyValuePairs(connection.getConnectionProperties()).forEach(builder::property);
@@ -448,11 +442,8 @@ final class DataTypeToConfigMapper {
       }
     }
 
-    DataSetWriterDataType[] dataSetWriters = group.getDataSetWriters();
-    if (dataSetWriters != null) {
-      for (DataSetWriterDataType writer : dataSetWriters) {
-        builder.dataSetWriter(mapDataSetWriter(writer, path));
-      }
+    for (DataSetWriterDataType writer : nonNullElements(group.getDataSetWriters())) {
+      builder.dataSetWriter(mapDataSetWriter(writer, path));
     }
 
     return builder.build();
@@ -580,11 +571,8 @@ final class DataTypeToConfigMapper {
       builder.rawMessageSettings(encodeRaw(messageSettings, encodingContext, path));
     }
 
-    DataSetReaderDataType[] dataSetReaders = group.getDataSetReaders();
-    if (dataSetReaders != null) {
-      for (DataSetReaderDataType reader : dataSetReaders) {
-        builder.dataSetReader(mapDataSetReader(reader, path));
-      }
+    for (DataSetReaderDataType reader : nonNullElements(group.getDataSetReaders())) {
+      builder.dataSetReader(mapDataSetReader(reader, path));
     }
 
     return builder.build();
