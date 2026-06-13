@@ -37,14 +37,17 @@ The headline capabilities, at a glance:
 | [UDP metadata discovery](metadata-and-discovery.md#udp-discovery): publishers answer metadata probes, `REQUEST_IF_MISSING` readers send them | Works |
 | [Server integration](server-integration.md): publishing live node values, and writing received values into nodes (TargetVariables) | Works |
 | [Live reconfiguration](operations.md#live-reconfiguration) of a running service | Works |
+| [Delta-frame](limitations-and-interop.md#delta-frames) (changed-fields-only) publishing | Works — `keyFrameCount` is honored; cycles between key frames send only the changed fields, or nothing at all when nothing changed |
+| Subscriber [sequence-number tracking](limitations-and-interop.md#sequence-numbers): duplicate, reordered-older, and out-of-window messages are dropped and counted | Works |
 | Message security (Sign/SignAndEncrypt) and SKS (Security Key Service) key distribution | Not yet — enabled secure groups fail startup with `Bad_NotSupported` ([details](limitations-and-interop.md#message-security-and-sks)) |
-| [Delta-frame](limitations-and-interop.md#delta-frames) (changed-fields-only) and [event](limitations-and-interop.md#events) publishing | Not yet — both are decode-only; every published frame is a full key frame, and `keyFrameCount` is silently inert |
-| [NetworkMessage chunking](limitations-and-interop.md#chunking-and-message-size) (splitting oversized messages) | Not yet — `maxNetworkMessageSize` is silently inert |
+| [Event](limitations-and-interop.md#events) publishing | Not yet — received event messages are decoded and delivered, but none are published |
+| [NetworkMessage chunking](limitations-and-interop.md#chunking-and-message-size) (splitting oversized messages) | Not yet — a configured `maxNetworkMessageSize` is enforced, not chunked: an oversized message is skipped with a `Bad_EncodingLimitsExceeded` diagnostics error, and inbound chunked messages are detected but not reassembled |
+| UADP [`RawData` field encoding and PromotedFields](limitations-and-interop.md#rawdata-and-promoted-fields) | Not yet — rejected with `Bad_NotSupported` at startup, reconfigure, and activation |
 | Ethernet, AMQP, and MQTT-over-WebSocket [transports](limitations-and-interop.md#transports) | Not yet — rejected at config build or connection open |
 | Remote configuration over OPC UA | Not yet — the standard PubSub method nodes (ns0) return `Bad_NotImplemented` ([details](limitations-and-interop.md#server-integration-limits)) |
 | `ServerPubSub` over MQTT | Not yet — UDP/UADP only; rejected with `Bad_ConfigurationError` |
 
-The distinction in the right column matters: some unsupported configuration is rejected with a
+A distinction that matters beyond this table: some unsupported configuration is rejected with a
 named error, and some is accepted and silently ignored. The full per-module matrix — every
 feature, its status, and exactly what happens if you configure it anyway — is in
 [Limitations and interop](limitations-and-interop.md). Read it before depending on a Part 14
@@ -76,8 +79,9 @@ Three pages serve as reference once you're past the tutorial:
   content masks, and which knobs do nothing yet.
 - [Metadata and discovery](metadata-and-discovery.md) — how subscribers learn field names and
   types: the three `MetadataPolicy` values, UDP discovery, and retained MQTT metadata.
-- [Operations](operations.md) — the component state machine, the receive-timeout watchdog, live
-  reconfiguration, diagnostics, and threading and shutdown rules.
+- [Operations](operations.md) — the component state machine, the receive-timeout watchdog,
+  sequence-number tracking and what it drops, live reconfiguration, diagnostics, and threading
+  and shutdown rules.
 
 Finally, [Examples](examples.md) is the lab bench: a catalog of every runnable example in
 `milo-examples/pubsub-examples`, with a port map, verified run commands, expected output, and a

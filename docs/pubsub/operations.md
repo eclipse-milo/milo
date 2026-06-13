@@ -1,10 +1,10 @@
 # Operations
 
 This page covers running PubSub over time: the component state machine, the receive-timeout
-watchdog, live reconfiguration, diagnostics, and the threading and shutdown rules that every
-long-running or self-terminating program needs. It assumes you already have a publisher and
-subscriber exchanging data — if not, start with [getting started](getting-started.md) and the
-[configuration model](configuration.md).
+watchdog, sequence numbers and duplicate handling, live reconfiguration, diagnostics, and the
+threading and shutdown rules that every long-running or self-terminating program needs. It
+assumes you already have a publisher and subscriber exchanging data — if not, start with
+[getting started](getting-started.md) and the [configuration model](configuration.md).
 
 The runnable anchor for this page is `ReconfigureExample`
 (`milo-examples/pubsub-examples`, package `org.eclipse.milo.examples.pubsub`): a single
@@ -47,10 +47,10 @@ frame (including a zero-field heartbeat key frame — a key frame with no fields
 stacks send as a liveness signal) or an event DataSetMessage (Milo decodes event messages from
 peers but never publishes them; see [events](limitations-and-interop.md#events)). A keep-alive
 resets the receive watchdog but is never delivered as a data event; a delta frame — a partial
-update carrying only changed fields, which fuller-featured peers may send but Milo never emits
-(see [delta frames](limitations-and-interop.md#delta-frames)) — is delivered and counted;
-neither completes reader startup. A `PreOperational` reader is already listening — the state
-means "no proof of a decodable stream yet", not "deaf".
+update carrying only changed fields, which Milo decodes from any peer and emits when a writer's
+`keyFrameCount` exceeds 1 (see [delta frames](limitations-and-interop.md#delta-frames)) — is
+delivered and counted; neither completes reader startup. A `PreOperational` reader is already
+listening — the state means "no full baseline yet", not "deaf".
 
 Look up components by the names used in your config via `PubSubService.components()`, which has
 `connection`, `writerGroup`, `dataSetWriter`, `readerGroup`, and `dataSetReader` lookups, each
@@ -80,11 +80,78 @@ recorded against the reader's path and delivered to diagnostics listeners. Recov
 automatic: the next accepted message — key frame, delta frame, or keep-alive — moves the reader
 back to `Operational` and re-arms the watchdog.
 
+*Accepted* is doing real work in both of those sentences. A message rejected by the
+[sequence-number window](#sequence-numbers-and-duplicate-handling) — a duplicate, say — resets
+nothing and recovers nothing: a publisher that only ever repeats old messages looks exactly like
+a silent one to the watchdog. Keep-alives, by contrast, always reset it, whatever the window
+makes of them. A positive timeout also sets the window's record-discard clock (twice the
+timeout; see below), which is what lets a subscriber ride out a publisher restart.
+
 This watchdog is the subscriber's only staleness signal, so use it whenever silence matters.
 It is especially relevant over MQTT: a broker outage surfaces on the publisher side only as
 send-failure diagnostics (flattened to `Bad_CommunicationError`) and never changes publisher
 state, so subscriber-side `messageReceiveTimeout` is the one mechanism that turns an outage
 into a state transition.
+
+## Sequence numbers and duplicate handling
+
+Every DataSetReader tracks the Part 14 §7.2.3 sequence-number windows, on every transport: the
+NetworkMessage sequence per (publisher, writer group) stream — UADP only; the JSON mapping has
+no NetworkMessage sequence number — and the DataSetMessage sequence per (publisher, writer)
+stream, UInt16 wide for UADP and UInt32 for JSON. The first message on a stream seeds its
+window; a wildcard reader matching several publishers or writers tracks each stream
+independently, bounded at 4096 streams per reader and window kind (least-recently-used
+eviction, purely as rogue-traffic protection).
+
+The window classifies every data or event DataSetMessage that carries a sequence number, and a
+message classified *stale* (a duplicate of, or older than, the last processed message) or
+*invalid* (outside the window in either direction — neither provably newer nor older, such as a
+huge forward jump) is dropped: not delivered to listeners, not counted in
+`dataSetMessagesReceived`, and — because per §6.2.9.6 a message is "new" only if its sequence
+number increments — it does not reset the receive-timeout watchdog, does not complete reader
+startup, and does not recover a reader from `Error`. UDP duplication and MQTT QoS 1 redelivery
+are absorbed here, before your listener sees anything; a stale or invalid NetworkMessage
+suppresses every DataSetMessage it carries for that reader. Drops tick the per-reader
+`staleSequenceMessages` / `invalidSequenceMessages` counters and nothing else: dropping a
+duplicate is normal operation ("shall be ignored"), so there is no `lastError` and no
+diagnostics event. Messages that carry no sequence number bypass the windows entirely — every
+such message is "new" per §6.2.9.6 and is delivered.
+
+Keep-alives interact with the windows without passing through them. A keep-alive carries the
+writer's next expected sequence number without consuming it, so it seeds an unseeded stream,
+never advances a window it agrees with, and — when the carried value is off-window — reseeds the
+window to match it (with a WARN naming the stream), because the publisher is authoritative about
+its own counter. Whatever the window makes of one, a keep-alive always resets the receive
+timeout and refreshes the stream's record-discard clock.
+
+That reseed is one of three ways a subscriber recovers from a publisher whose numbering
+restarted at zero — a process restart, or a reconfigure on the publisher that recreated the
+writer (writer recreation restarts the DataSetMessage sequence):
+
+- **Keep-alive reseed** — the next keep-alive that arrives reseeds the stream on the spot. This
+  is the steady-state path for delta-emitting writers with a `keepAliveTime` configured, whose
+  quiet cycles produce keep-alives; a writer that sends a data frame every cycle never emits
+  keep-alives (see [timing behavior](#timing-behavior-worth-knowing)) and recovers by one of the
+  paths below instead.
+- **Record discard** — with a positive `messageReceiveTimeout`, a stream's window record is
+  discarded after twice the timeout passes without an accepted message or keep-alive on it
+  (§7.2.3), and the next message re-seeds. Rejected messages deliberately do not refresh that
+  clock, so a restarted publisher recovers even if it never falls silent.
+- **Rejection heuristic** — with the default timeout of zero there is no time-based discard; as
+  a documented Milo extension, 16 consecutive rejections on one stream with no intervening
+  accept or keep-alive discard the record (WARN), bounding the outage at 16 dropped messages.
+  With a positive timeout this heuristic is inert and the pure spec semantics stand.
+
+Both wire sequence numbers are surfaced on `DataSetReceivedEvent`:
+`networkMessageSequenceNumber` (`UShort`; null for JSON, or when the UADP GroupHeader omits it)
+and `dataSetMessageSequenceNumber` (`UInteger`; null when absent on the wire).
+
+What the window does not do: rejects are dropped, never buffered and reordered — a message that
+arrives after a newer one is gone, not delivered late. JSON streams whose DataSetMessages carry
+no sequence numbers get no dedup at all (`MessageId`-based dedup is absent). And the two drop
+counters are Milo vendor counters on the SDK diagnostics API only — the spec-named Part 14
+diagnostics counters are not exposed. See
+[sequence numbers](limitations-and-interop.md#sequence-numbers).
 
 ## Live reconfiguration
 
@@ -156,17 +223,16 @@ A run looks like this (each line carries a `[thread] INFO logger -` prefix under
 
 ```
 [received] phase=1 dataSet=demo temperature=20.99, tick=1
-[received] phase=1 dataSet=demo temperature=21.95, tick=2
 ...
+[received] phase=1 dataSet=demo temperature=24.66, tick=6
 [reconfigured] addedPaths=[]
 [reconfigured] removedPaths=[]
 [reconfigured] restartedPaths=[pub-conn/group]
-[received] phase=2 dataSet=demo temperature=15.03, tick=23
-[received] phase=2 dataSet=demo temperature=15.21, tick=25
+[received] phase=2 dataSet=demo temperature=22.58, tick=13
 ...
 [summary] phase 1: 6 DataSets received in ~5s at 1000ms
-[summary] phase 2: 20 DataSets received in ~5s at 250ms
-[summary] diagnostics: writer sent 20 DataSetMessages since the group restart, reader received 26 across both phases
+[summary] phase 2: 14 DataSets received in ~5s at 250ms
+[summary] diagnostics: writer sent 20 DataSetMessages since the group restart, reader received 20 across both phases
 shutdown complete, exiting
 ```
 
@@ -174,6 +240,12 @@ Note `restartedPaths=[pub-conn/group]`: only the writer group restarted, because
 interval is a group-level property and nothing at the connection level changed. The result lists
 the minimal covering components; descendants (here `pub-conn/group/writer`) restart with their
 parent but are not listed separately.
+
+Note also where phase 2 starts: at tick=13, after a quiet ~1.5 seconds, not at tick=7. The
+restarted group restarted its sequence numbering, and the reader's
+[sequence-number window](#sequence-numbers-and-duplicate-handling) silently dropped the first
+post-restart messages as stale. The end of this section returns to that gap and to the summary
+arithmetic it produces.
 
 What escalates a change to a connection-level restart is the connection "shell": the enabled
 flag, the PublisherId, the data address, connection properties, and raw transport settings (for
@@ -234,11 +306,25 @@ long dataSetsReceived =
         .orElse(0L);
 ```
 
-That is why the verified summary line reads writer sent 20 but reader received 26: the
-restarted writer's counters cover phase 2 only, while the untouched reader counted both phases.
-Restarted paths get fresh counters; components the reconfigure did not touch stay cumulative.
-If you scrape counters into a monitoring system, treat any path that appears in
-`restartedPaths` as a counter reset.
+That is why the verified summary line reads writer sent 20 and reader received 20 — equal
+numbers counting different things. The restarted writer's counter covers phase 2 only: 20
+DataSetMessages sent since the restart. The untouched reader's counter spans both phases but
+counts accepted messages only: the 6 from phase 1 plus the 14 from phase 2. The other 6 phase-2
+messages — the quiet ~1.5 seconds and the jump from tick=6 to tick=13 in the transcript — were
+dropped by the sequence-number window and ticked `staleSequenceMessages` instead. Restarted
+paths get fresh counters; components the reconfigure did not touch stay cumulative. If you
+scrape counters into a monitoring system, treat any path that appears in `restartedPaths` as a
+counter reset.
+
+A restarted writer also restarts its DataSetMessage sequence numbering at zero, and until the
+subscriber's window catches up, the restarted writer's messages are dropped as stale or
+invalid — expect a brief gap after a reconfigure that restarts a writer. The gap ends at
+whichever comes first: the restarted counter overtaking the reader's window on its own — the
+run above, where phase 1 was only 6 messages deep, so 6 silent drops and ~1.5 seconds covered
+it — or one of the recovery paths described in
+[sequence numbers and duplicate handling](#sequence-numbers-and-duplicate-handling): a
+keep-alive reseed when the writer emits keep-alives, otherwise the record discard or the
+16-rejection heuristic.
 
 ## Diagnostics
 
@@ -247,15 +333,34 @@ If you scrape counters into a monitoring system, treat any path that appears in
 `component(path)` returns an `Optional` for one. Keys are the slash-joined config names you saw
 above (`"pub-conn/group/writer"`, `"sub-conn/readers/reader"`). Each `ComponentDiagnostics`
 carries `networkMessagesSent`, `networkMessagesReceived`, `dataSetMessagesSent`,
-`dataSetMessagesReceived`, `decodeErrors`, `sourceErrors`, and a nullable `lastError`
+`dataSetMessagesReceived`, `decodeErrors`, `sourceErrors`, the per-reader sequence-drop
+counters `staleSequenceMessages` and `invalidSequenceMessages`, and a nullable `lastError`
 status code; counters that do not apply to a component type stay zero.
+
+A few counters reward knowing exactly where they tick. `networkMessagesReceived` on a
+connection counts data-path arrivals — one tick per datagram or broker message, before decoding
+and regardless of the outcome — while on a reader group it counts NetworkMessages that carried
+at least one DataSetMessage matching one of the group's readers; a climbing connection counter
+over flat group counters therefore means traffic that does not decode or does not match.
+`decodeErrors` counts messages dropped for cause, at the path that dropped them: undecodable or
+truncated input and unsupported chunked NetworkMessages at the connection, NetworkMessages
+larger than a reader group's non-zero `maxNetworkMessageSize` at the group, version mismatches
+and invalid DataSetMessages at the reader. The sequence-drop counters are the exception to
+"drops are errors": a duplicate dropped by the
+[sequence-number window](#sequence-numbers-and-duplicate-handling) is normal operation, so they
+tick without touching `lastError` and without emitting any diagnostics event — visible in
+snapshots only. At a reader's path, `dataSetMessagesReceived` plus the two sequence-drop
+counters equals the total DataSetMessages matched to that reader.
 
 For push-style monitoring, `addDiagnosticsListener` registers a `PubSubDiagnosticsListener`. In
 this version only *error* events are delivered — decode failures, source read failures, send
-failures, receive timeouts — each as a `PubSubDiagnosticsEvent` with the component path, a
-classifying `StatusCode`, a message, and the underlying exception when there is one. Happy-path
-activity is visible only through the counters; do not wait for informational events that will
-never come.
+failures, receive timeouts, and publish-side oversize skips (a NetworkMessage exceeding the
+writer group's non-zero `maxNetworkMessageSize` is skipped, not sent, and reported at the group
+path with `Bad_EncodingLimitsExceeded` and the actual and maximum sizes) — each as a
+`PubSubDiagnosticsEvent` with the component path, a classifying `StatusCode`, a message, and
+the underlying exception when there is one. Happy-path activity is visible only through the
+counters, and sequence-window drops emit no events at all; do not wait for informational events
+that will never come.
 
 ## Threading and shutdown
 
@@ -308,24 +413,38 @@ The first publish cycle fires immediately when a writer group starts, not after 
 A 5-second window at 1000 ms therefore yields 6 messages, not 5 — which is exactly the verified
 phase-1 count above — and a group restarted by reconfiguration also publishes immediately.
 
+Delta frames change the cycle arithmetic. With `keyFrameCount` greater than 1, a writer emits a
+key frame on its first cycle after start or activation and again every `keyFrameCount`-th
+publishing interval (suppressed and keep-alive cycles count toward the cadence); cycles in
+between emit a delta frame carrying only the fields whose transmitted values changed — and a
+cycle where nothing changed emits nothing at all, consuming no sequence number. A restart, or a
+reconfigure that recreates the writer, resets the cadence with a fresh key frame.
+
 Keep-alives behave differently than many readers expect. `keepAliveTime` is unset by default,
-meaning never emit. When set, keep-alive messages are emitted only for writers that are *not*
-`Operational` (disabled or paused) and whose last send lapsed past `keepAliveTime`. An
-`Operational` writer publishes a key frame every cycle, so it never lapses, and a fully healthy
-group never sends keep-alives at all; an idle group with no `keepAliveTime` sends nothing (no
-empty NetworkMessages). So do not build subscriber liveness on keep-alives from a healthy Milo
-publisher — use `messageReceiveTimeout`, which data frames reset just as well.
+meaning never emit. When set, a keep-alive is emitted for any writer that has had no
+DataSetMessage actually handed to the transport within `keepAliveTime`: disabled and paused
+writers, but also `Operational` writers that go quiet — a delta-emitting writer in a no-change
+spell, or a writer whose every message is skipped at the size gate ("sent" means handed to the
+channel, never merely drafted). Two exclusions: with the default `keyFrameCount` of 1 an
+`Operational` writer publishes a key frame every cycle and never lapses, so a fully healthy
+default-config group sends no keep-alives at all (and an idle group with no `keepAliveTime`
+sends nothing — no empty NetworkMessages); and a writer in `Error` never emits keep-alives — a
+keep-alive asserts the writer is still active, and emitting one would mask the failure from
+subscribers. So for default configs, build subscriber liveness on `messageReceiveTimeout`,
+which data frames reset just as well; but if you raise `keyFrameCount` above 1, set
+`keepAliveTime` below your subscribers' `messageReceiveTimeout`, or a no-change quiet spell
+reads as publisher death.
 
 ## Known limits
 
 - There is no listener-removal API: `PubSubService` has `add*` methods only. Listeners live as
   long as the service; embedders that outlive their interest in events must make their
   listeners self-disabling.
-- There is no subscriber-side sequence-number tracking: duplicate or reordered NetworkMessages
-  are delivered as-is, not detected, and sequence numbers are not surfaced on
-  `DataSetReceivedEvent`. If your application needs ordering or dedup, publish an
-  application-level counter as a dataset field (as the examples' `tick`/`counter` fields do)
-  and check it in your listener.
+- Sequence-number rejects are dropped, never reordered: there is no reorder buffer, so a
+  message that arrives after a newer one is gone, not delivered late. JSON streams whose
+  DataSetMessages carry no sequence numbers get no dedup at all (`MessageId`-based dedup is
+  absent), and the sequence-drop counters exist only on the SDK diagnostics API — the
+  spec-named Part 14 diagnostics counters are not exposed.
 - The diagnostics listener delivers error events only; there are no informational or
   recovery events.
 - A reconfigure that changes only a UDP connection's `discoveryAddress` is silently inert until

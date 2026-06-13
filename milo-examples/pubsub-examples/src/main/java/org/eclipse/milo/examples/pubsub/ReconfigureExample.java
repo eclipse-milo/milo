@@ -68,9 +68,16 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Expected output: about 6 {@code [received]} lines roughly 1 second apart (phase 1; the first
  * cycle fires immediately); three {@code [reconfigured]} lines reporting {@code
- * restartedPaths=[pub-conn/group]} with empty added and removed paths; about 20 {@code [received]}
- * lines roughly 250ms apart (phase 2); and finally {@code [summary]} lines comparing the per-phase
- * message counts. Total runtime is about 15 seconds, then the process exits 0.
+ * restartedPaths=[pub-conn/group]} with empty added and removed paths; a quiet ~1.5 seconds, then
+ * about 14 {@code [received]} lines roughly 250ms apart (phase 2); and finally {@code [summary]}
+ * lines comparing the per-phase message counts. Total runtime is about 15 seconds, then the process
+ * exits 0.
+ *
+ * <p>The quiet gap opening phase 2 is the subscriber's Part 14 §7.2.3 sequence-number tracking at
+ * work: the restarted writer group also restarted its sequence numbers at 0, so the reader silently
+ * drops the first post-restart messages as stale — as many as phase 1 sent — until the restarted
+ * counters overtake its windows. The drops tick only the reader's {@code staleSequenceMessages}
+ * diagnostics counter; nothing is logged.
  */
 public class ReconfigureExample {
 

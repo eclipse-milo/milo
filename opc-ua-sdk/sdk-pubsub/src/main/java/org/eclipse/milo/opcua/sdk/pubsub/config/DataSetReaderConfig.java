@@ -161,8 +161,10 @@ public final class DataSetReaderConfig {
   }
 
   /**
-   * Get the maximum acceptable gap between received DataSetMessages before the reader transitions
-   * to the Error state; it returns to Operational on the next received message.
+   * Get the maximum acceptable gap between accepted DataSetMessages before the reader transitions
+   * to the Error state; it returns to Operational on the next accepted message. Keep-alives reset
+   * the timeout; messages dropped before delivery — invalid, metadata-version mismatched, or
+   * rejected by the Part 14 §7.2.3 sequence-number window — do not.
    *
    * @return the message receive timeout; {@link Duration#ZERO} means the timeout is disabled.
    */
@@ -413,7 +415,7 @@ public final class DataSetReaderConfig {
     }
 
     /**
-     * Set the maximum acceptable gap between received DataSetMessages before the reader transitions
+     * Set the maximum acceptable gap between accepted DataSetMessages before the reader transitions
      * to the Error state.
      *
      * @param timeout the message receive timeout; {@link Duration#ZERO} (the default) disables the

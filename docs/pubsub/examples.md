@@ -289,13 +289,16 @@ Expected output over roughly 15 seconds — note the visibly higher rate of phas
 
 ```
 [received] phase=1 dataSet=demo temperature=20.99, tick=1
+[received] phase=1 dataSet=demo temperature=24.66, tick=6
 [reconfigured] restartedPaths=[pub-conn/group]
-[received] phase=2 dataSet=demo temperature=15.03, tick=23
+[received] phase=2 dataSet=demo temperature=22.58, tick=13
 [summary] phase 1: 6 DataSets received in ~5s at 1000ms
-[summary] phase 2: 20 DataSets received in ~5s at 250ms
+[summary] phase 2: 14 DataSets received in ~5s at 250ms
 ```
 
-The summary also reports diagnostics: the writer's sent counter covers only phase 2 because restarted components start with fresh counters, while the untouched reader's received counter spans both phases. See [Operations](operations.md) for what restarts when.
+Phase 2 receives fewer DataSets than the restarted writer sends — about 14 received against about 20 sent, visible in the run above as the tick jump from 6 to 13; the exact counts drift by one or two with timing. The group restart also restarts the writer's sequence numbers at 0, and the reader, untouched and still holding phase 1's sequence window, drops the restarted stream's first messages as stale duplicates — about as many as phase 1 received — until the new numbers pass the window. The drops land in the reader's `staleSequenceMessages` counter.
+
+The summary also reports diagnostics: the writer's sent counter covers only phase 2 because restarted components start with fresh counters, while the untouched reader's received counter spans both phases — and counts only accepted messages, 6 + 14 = 20 in the run above. See [Operations](operations.md) for what restarts when, the sequence-tracking rules, and how subscribers recover from a publisher's sequence restart.
 
 ## Troubleshooting
 

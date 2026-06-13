@@ -101,15 +101,27 @@ covers:
 - an enabled reader on a broker (MQTT) connection without a data `queueName` in its
   `BrokerTransportSettings`
 - a connection that has writer groups but no `publisherId`
+- an enabled writer group on a UDP connection whose `maxNetworkMessageSize` exceeds 65535, the
+  Part 14 ceiling for UDP NetworkMessages (see
+  [size budgets](#networkmessage-size-budgets-maxnetworkmessagesize))
+- an enabled writer with a `keyFrameCount` greater than 1 that its mapping cannot honor: JSON
+  masks missing `DataSetMessageHeader` or `MessageType`, or a UADP writer with a non-zero
+  `ConfiguredSize` (see [key frames and delta frames](#key-frames-and-delta-frames-keyframecount))
 
 `Bad_NotSupported` is reserved for features that are recognized but not implemented in this
-release: any enabled group whose `MessageSecurityConfig` mode is anything other than `None`, and
-MQTT-over-WebSocket broker URIs. Disabled groups with non-`None` security modes are tolerated so
-that configs can round-trip.
+release: any enabled group whose `MessageSecurityConfig` mode is anything other than `None`,
+MQTT-over-WebSocket broker URIs, and — on UADP-mapped writer groups — the `PromotedFields`
+network-message mask bit and the `RawData` field-content mask bit of enabled writers (see
+[field encoding](#field-encoding-datasetfieldcontentmask)). Disabled components with these
+settings are tolerated so that configs can round-trip; a component that is enabled later instead
+fails into PubSubState Error with the same code at activation. The UADP mask checks apply only
+when the `"uadp"` mapping resolves to the built-in provider — a custom provider registered under
+that name owns its wire format and is never second-guessed.
 
 At reconfigure time, `reconfigure(...)` and `update(...)` run the same startup checks before
-applying anything. Failures throw an unchecked `UaRuntimeException` with `Bad_ConfigurationError`,
-no part of the change is applied, and existing component handles stay valid.
+applying anything. Failures throw an unchecked `UaRuntimeException` with `Bad_ConfigurationError`
+— or `Bad_NotSupported` for the PromotedFields/RawData rejection — no part of the change is
+applied, and existing component handles stay valid.
 
 ## PublisherId
 
@@ -299,9 +311,13 @@ private static final DataSetFieldContentMask FIELD_MASK =
         DataSetFieldContentMask.Field.StatusCode, DataSetFieldContentMask.Field.SourceTimestamp);
 ```
 
-The `RawData` bit is not supported for UADP publishing: the encoder rejects it with
-`Bad_NotSupported`, which surfaces per publish cycle as a diagnostics error and a skipped cycle —
-startup does not fail. Received RawData messages decode their headers but carry no usable fields.
+The `RawData` bit is not supported for UADP publishing, and the rejection is up front: an enabled
+UADP writer with it fails `startup()` and reconfigure with `Bad_NotSupported`, and a writer
+enabled later fails into PubSubState Error with the same code at activation — there is no
+healthy-looking writer silently skipping cycles. Under the JSON mapping `RawData` is implemented:
+it switches field values to their raw JSON representation instead of the Variant wrapper. The
+decode side is unchanged either way: received UADP RawData messages decode their headers but carry
+no usable fields.
 
 ### JSON defaults
 
@@ -331,22 +347,106 @@ The JSON masks have three quirks:
   message, and for JSON it never is. Leave the filter unset, as `MqttJsonSubscriberExample` does.
 - The default DataSetMessage mask omits `MessageType`, so default-config JSON keep-alive messages
   carry no `"ua-keepalive"` marker on the wire. Decoders, including Milo's, still classify them as
-  keep-alives by the absence of a payload.
+  keep-alives by the absence of a payload. The same omission is why a default-mask JSON writer
+  cannot use a `keyFrameCount` greater than 1: a delta frame without its `"ua-deltaframe"` marker
+  would be indistinguishable from a key frame, so startup validation requires the `MessageType`
+  member (and the `DataSetMessageHeader` network-mask member, which the default does include)
+  before a JSON writer may emit delta frames — see
+  [key frames and delta frames](#key-frames-and-delta-frames-keyframecount).
+
+## NetworkMessage size budgets: maxNetworkMessageSize
+
+`WriterGroupConfig.maxNetworkMessageSize(...)` is enforced. The budget applies to the complete
+encoded NetworkMessage, before transport protocol headers, on every transport: when the value is
+non-zero, an encoded NetworkMessage that exceeds it is skipped — never sent — and recorded as a
+group-path diagnostics error with `Bad_EncodingLimitsExceeded` carrying the actual and maximum
+sizes. The skipped DataSetMessages are not counted as sent, and the affected writers' delta
+baselines are invalidated so their next message is a key frame. There is still no chunking in
+either direction: an oversize message is dropped, not split.
+
+The default changed along with the enforcement: it is now `uint(0)`, meaning no enforced limit —
+earlier revisions of this module defaulted to 1400 and ignored the value. On UDP connections, an
+enabled writer group with a value above 65535 — the Part 14 ceiling for UDP NetworkMessages —
+fails startup and reconfigure with `Bad_ConfigurationError`. Discovery responses (which have a
+fixed 4096-byte budget of their own) and broker metadata publishing are not subject to the group
+budget.
+
+`ReaderGroupConfig.maxNetworkMessageSize(...)` (default 0 = unrestricted) is honored on receive,
+as a documented Milo extension — Part 14 gives the reader side no size semantics. When non-zero, a
+received NetworkMessage larger than the value is never seen by the group's readers; each such
+exclusion ticks `decodeErrors` at the group path with `Bad_EncodingLimitsExceeded`.
+
+What bounds a dataset end-to-end — wire-format limits, datagram limits, MTU — is the subject of
+[Structuring and sizing](structuring-and-sizing.md).
+
+## Key frames and delta frames: keyFrameCount
+
+`DataSetWriterConfig.keyFrameCount(...)` is honored. The default of 1 means every published
+DataSetMessage is a key frame carrying every field. A value greater than 1 turns on delta
+emission: the writer sends a key frame on the first cycle after start or activation and every
+keyFrameCount-th publishing interval after that, and the cycles in between send delta frames
+carrying only the fields that changed. 0 is clamped to 1 at runtime — it is the spec's
+non-cyclic/event value, which Milo does not model — so 0 and 1 both mean every-message-key-frame,
+and imported configs round-trip unmodified.
+
+"Changed" means the mask-projected wire value differs from the last transmitted one: a
+timestamp-only change counts only when timestamps actually travel (see
+[field encoding](#field-encoding-datasetfieldcontentmask)), while a status transition always
+counts, even when the masks keep the status off the wire. Two edges of the cadence are worth
+knowing. A delta cycle in which nothing changed sends nothing at all — no empty delta, no sequence
+number consumed — so pair `keyFrameCount` > 1 with a `keepAliveTime` (next section) if subscribers
+need to tell a quiet publisher from a dead one. And a delta frame that would carry every field is
+emitted as a key frame instead, resetting the cadence.
+
+The mapping must be able to express delta frames, and startup and reconfigure validate that with
+`Bad_ConfigurationError`: a JSON writer with `keyFrameCount` > 1 needs the `DataSetMessageHeader`
+network-mask member and the `MessageType` DataSetMessage-mask member — the recommended JSON
+defaults omit `MessageType`, so a default-mask JSON writer is rejected (see the
+[JSON quirks](#json-defaults) above) — and a UADP writer cannot combine it with a non-zero
+`ConfiguredSize`, because fixed-size layouts are key-frame-only. The default UADP masks need no
+change: the delta frame type travels in the unconditional part of the UADP DataSetMessage header.
+Disabled writers are tolerated; a writer that slips past validation by being enabled later
+degrades to every-cycle key frames rather than failing. Custom mapping providers registered under
+`"uadp"` or `"json"` own their wire format and are never second-guessed.
+
+On the receiving side, a reader goes Operational only on its first key frame or event message.
+Delta frames that arrive before the reader has a baseline are still delivered to listeners — the
+reader's PreOperational state is the signal that no baseline has arrived yet — and still reset the
+receive timeout. The reader-side `DataSetReaderConfig.keyFrameCount` is round-trip only (see
+[the inert list](#knobs-that-exist-but-are-inert-or-rejected-today)).
 
 ## Keep-alive and the receive timeout
 
 `WriterGroupConfig.keepAliveTime(Duration)` is nullable and defaults to null: keep-alive messages
 are never sent unless you configure it. `build()` rejects zero and negative values, and a Part 14
-`KeepAliveTime` of 0 imports as "disabled". Mind the semantics: a keep-alive is emitted only for a
-writer that is not Operational (disabled or paused) and has been quiet longer than the keep-alive
-time. Operational writers publish a key frame every publishing interval anyway, so a healthy group
-never sends keep-alives, and an all-idle group with no `keepAliveTime` sends nothing at all.
+`KeepAliveTime` of 0 imports as "disabled". Mind the semantics: a keep-alive is emitted for every
+writer that has not had a DataSetMessage actually handed to the transport within the keep-alive
+time. That covers disabled and paused writers, Operational writers whose delta cycles were
+suppressed because nothing changed, and writers whose data was drafted but never transmitted — an
+oversize skip, an encode failure, a send failure. The one exception is a writer in PubSubState
+Error: it emits no keep-alives, because a keep-alive asserts the writer is still active and an
+Error writer is not. With the default `keyFrameCount` of 1 an Operational writer publishes a key
+frame every publishing interval anyway, so a healthy default-config group never sends keep-alives,
+and an all-idle group with no `keepAliveTime` sends nothing at all. With `keyFrameCount` > 1,
+`keepAliveTime` is what covers the no-change silences — configure it.
 
 On the subscribing side, `DataSetReaderConfig.messageReceiveTimeout(Duration)` is the watchdog that
 keep-alives exist to feed. The default is `Duration.ZERO`, which disables it. A positive timeout
 arms once the reader reaches Operational; if no message (data, keep-alive, or delta frame) arrives
 within the window, the reader transitions to Error with a `Bad_Timeout` diagnostics entry, and the
-next accepted message brings it back to Operational.
+next accepted message brings it back to Operational. Accepted, not merely received:
+messages the reader's Part 14 sequence-number tracking rejects as duplicates or out-of-window are
+dropped — they do not reset the timeout, do not complete a PreOperational reader's startup, and do
+not recover Error. The drops tick the per-reader `staleSequenceMessages` and
+`invalidSequenceMessages` counters.
+
+The timeout has a second job: twice the `messageReceiveTimeout` is the lifetime of the reader's
+per-stream sequence records. A stream that produces no accepted message or keep-alive for two
+timeout periods has its record discarded, so the next message re-seeds the tracking — this is one
+of the ways a subscriber recovers a publisher that restarted its numbering. With the default of
+`Duration.ZERO` there is no time-based discard; as a documented Milo extension, 16 consecutive
+rejections on one stream discard its record instead, with a WARN log. See
+[Operations](operations.md) for the runtime picture.
 
 ## Part 14 round-trip and escape hatches
 
@@ -383,13 +483,18 @@ into one of two camps: rejected (you get an error) or inert (silently ignored). 
 
 | Knob | Behavior today |
 | --- | --- |
-| `DataSetWriterConfig.keyFrameCount` > 1 | Inert. Every published DataSetMessage is a key frame; delta frames are decoded when received but never emitted. |
-| `WriterGroupConfig.maxNetworkMessageSize` | Inert. No chunking or size limiting exists; a NetworkMessage exceeding the fixed UADP wire limits fails at encode with `Bad_EncodingLimitsExceeded`. |
+| `DataSetReaderConfig.keyFrameCount` | Inert. Round-trip only; the reader never consults the expected cadence — frame classification and the key-frame startup gate work from message content alone. |
 | `MessageSecurityConfig` with mode `Sign` or `SignAndEncrypt` | Rejected. `startup()` fails with `Bad_NotSupported` for any enabled group; disabled groups are tolerated for round-trip. |
+| UADP `PromotedFields` network-message mask bit / `RawData` field-content mask bit | Rejected. `startup()` and reconfigure fail with `Bad_NotSupported` for enabled UADP-mapped groups and writers; components enabled later fail into Error at activation. Disabled components are tolerated for round-trip; JSON `RawData` is implemented; custom `"uadp"` providers are exempt. |
 | `SecurityKeyProvider` / `SecurityGroupConfig` (SKS) | Inert. Providers are accepted but never invoked; the one non-silent edge is that binding a provider to an unknown security group name throws `IllegalArgumentException` at create time. |
 | UADP timing offsets (`SamplingOffset`, `PublishingOffset`, `ReceiveOffset`, `ProcessingOffset`) | Inert. No typed config fields exist; imported values are preserved in `rawMessageSettings` and never consulted by the publish or receive paths. |
 | `BrokerTransportSettings.resourceUri` / `authenticationProfileUri` | Inert. Round-trip only; never read by the runtime. |
 | Writer-level `BrokerTransportSettings` QoS without a `queueName` override | Inert for data messages — the writer stays in the group's shared partition. Writer QoS is honored when combined with a queue override. |
+
+Two former entries have graduated out of this list: `DataSetWriterConfig.keyFrameCount` is honored
+now (see [key frames and delta frames](#key-frames-and-delta-frames-keyframecount)) and
+`maxNetworkMessageSize` is enforced on both group kinds (see
+[size budgets](#networkmessage-size-budgets-maxnetworkmessagesize)).
 
 See [limitations](limitations-and-interop.md) for the full picture of what is and is not
 implemented, including the receive-side behavior for features that are emit-rejected here.

@@ -30,13 +30,14 @@ import org.eclipse.milo.opcua.stack.core.types.structured.DataSetMetaDataType;
  * timestamps) are supplied by the caller via the {@link EncodeContext}.
  *
  * <p><b>Encoding</b> produces a single NetworkMessage per call containing all draft
- * DataSetMessages, as Data Key Frame or Keep Alive messages. The {@link UadpWriterGroupSettings} of
- * the WriterGroup decide which NetworkMessage header fields are emitted, and each writer's {@link
- * UadpDataSetWriterSettings} and {@link DataSetFieldContentMask} decide the DataSetMessage header
- * fields and the field representation (Variant or DataValue). The Sizes array is emitted iff the
- * PayloadHeader is enabled and there is more than one DataSetMessage. Out of scope and rejected
- * with {@code Bad_NotSupported}: the RawData field encoding, PromotedFields emission, and any
- * message security mode other than None.
+ * DataSetMessages, as Data Key Frame, Data Delta Frame, or Keep Alive messages. The {@link
+ * UadpWriterGroupSettings} of the WriterGroup decide which NetworkMessage header fields are
+ * emitted, and each writer's {@link UadpDataSetWriterSettings} and {@link DataSetFieldContentMask}
+ * decide the DataSetMessage header fields and the field representation (Variant or DataValue). The
+ * Sizes array is emitted iff the PayloadHeader is enabled and there is more than one
+ * DataSetMessage. Out of scope and rejected with {@code Bad_NotSupported}: Event message emission,
+ * the RawData field encoding, PromotedFields emission, and any message security mode other than
+ * None.
  *
  * <p><b>Decoding</b> is tolerant and never throws on malformed or unsupported input: whatever was
  * decoded successfully is returned, possibly an empty {@link DecodedNetworkMessage}. Data Key

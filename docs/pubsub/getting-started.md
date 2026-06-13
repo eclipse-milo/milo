@@ -43,7 +43,7 @@ The core module depends only on the Milo stack — not on `milo-sdk-client` or `
 
 The complete programs for this walk-through are `UadpPublisherExample` and `UadpSubscriberExample` in `milo-examples/pubsub-examples` (package `org.eclipse.milo.examples.pubsub.udp`). Every snippet below is lifted from them. (`ushort(...)` and `uint(...)` are static imports from `org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned`.)
 
-Start with what you want to publish. A `PublishedDataSetConfig` is the schema: a named, ordered list of fields. Order matters: on the wire, a UADP key frame carries a complete snapshot of every field as raw values, positionally, with no names — so the field order you declare here is the wire order. (A key frame's counterpart is the delta frame, which carries only the fields that changed; Milo decodes delta frames from other publishers but only ever publishes key frames — see [Limitations and interop](limitations-and-interop.md).)
+Start with what you want to publish. A `PublishedDataSetConfig` is the schema: a named, ordered list of fields. Order matters: on the wire, a UADP key frame carries a complete snapshot of every field as raw values, positionally, with no names — so the field order you declare here is the wire order. (A key frame's counterpart is the delta frame, which carries only the fields that changed; Milo publishes and decodes both, but at the default `keyFrameCount` of 1 — which this page never changes — every published frame is a key frame. See [Limitations and interop](limitations-and-interop.md).)
 
 ```java
 private static PublishedDataSetConfig telemetryDataSet() {

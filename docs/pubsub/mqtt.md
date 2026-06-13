@@ -158,7 +158,7 @@ The transport reconnects automatically and re-issues every subscription on recon
 Be aware of what an outage does *not* do: PubSub component state does not change while the broker is down. Writers and readers stay Operational and no state-change events fire, so applications cannot observe a broker outage through state listeners. What you get instead:
 
 - Publisher side: each failed publish surfaces as a diagnostics error (`Bad_CommunicationError`). Publishes fail fast with `Bad_ServerNotConnected` while disconnected, so QoS 1/2 messages are not buffered and replayed after reconnect — data published during an outage is lost.
-- Subscriber side: opt in to the `messageReceiveTimeout` watchdog on `DataSetReaderConfig` (default off). The reader then goes to Error/`Bad_Timeout` after the configured silence and returns to Operational on the next message — an indirect but observable outage signal.
+- Subscriber side: opt in to the `messageReceiveTimeout` watchdog on `DataSetReaderConfig` (default off). The reader then goes to Error/`Bad_Timeout` after the configured silence and returns to Operational on the next message it accepts — an indirect but observable outage signal. Sequence tracking applies here: a message dropped as a stale duplicate (a QoS 1 redelivery, for example) neither resets the watchdog nor recovers the reader; see [operations](operations.md).
 
 Retained metadata is not re-published on reconnect; the broker's retained copy already covers late and reconnecting subscribers.
 

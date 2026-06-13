@@ -140,10 +140,14 @@ public interface PubSubService extends AutoCloseable {
    * @param newConfig the new {@link PubSubConfig}.
    * @param mode the {@link ReconfigureMode} governing how affected components are restarted.
    * @return a {@link ReconfigureResult} listing the added, removed, and restarted components.
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException with {@code
-   *     Bad_ConfigurationError}, before any change is applied, if the new configuration fails a
-   *     validation that {@code startup()} also enforces (a mapping name with no provider, or an
-   *     enabled DataSetReader on a broker connection without a configured data queueName).
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException, before any change is applied, if
+   *     the new configuration fails a validation that {@code startup()} also enforces: {@code
+   *     Bad_ConfigurationError} for a mapping name with no provider, an enabled DataSetReader on a
+   *     broker connection without a configured data queueName, an enabled writer group on a UDP
+   *     connection with a maxNetworkMessageSize above 65535, or an enabled writer asking for delta
+   *     frames ({@code keyFrameCount > 1}) its masks cannot express or safely carry; {@code
+   *     Bad_NotSupported} for an enabled UADP-mapped writer group configuring PromotedFields
+   *     emission, or an enabled writer in one configuring the RawData field encoding.
    */
   ReconfigureResult reconfigure(PubSubConfig newConfig, ReconfigureMode mode);
 
@@ -153,10 +157,15 @@ public interface PubSubService extends AutoCloseable {
    *
    * @param transform a function producing the new {@link PubSubConfig} from the current one.
    * @return a {@link ReconfigureResult} listing the added, removed, and restarted components.
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException with {@code
-   *     Bad_ConfigurationError}, before any change is applied, if the transformed configuration
-   *     fails a validation that {@code startup()} also enforces (a mapping name with no provider,
-   *     or an enabled DataSetReader on a broker connection without a configured data queueName).
+   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException, before any change is applied, if
+   *     the transformed configuration fails a validation that {@code startup()} also enforces:
+   *     {@code Bad_ConfigurationError} for a mapping name with no provider, an enabled
+   *     DataSetReader on a broker connection without a configured data queueName, an enabled writer
+   *     group on a UDP connection with a maxNetworkMessageSize above 65535, or an enabled writer
+   *     asking for delta frames ({@code keyFrameCount > 1}) its masks cannot express or safely
+   *     carry; {@code Bad_NotSupported} for an enabled UADP-mapped writer group configuring
+   *     PromotedFields emission, or an enabled writer in one configuring the RawData field
+   *     encoding.
    */
   ReconfigureResult update(UnaryOperator<PubSubConfig> transform);
 
